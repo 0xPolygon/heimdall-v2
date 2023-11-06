@@ -1,0 +1,11 @@
+.DS_Store
+
+# ignore build
+build
+logs
+*.log
+
+.idea
+.vscode
+
+.dccache
