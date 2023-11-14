@@ -40,7 +40,7 @@ linters:
     - nilerr
     - nilnil
     - noctx
-    #- nosprintfhostport # TODO: do we use IPv6?
+    #- nosprintfhostport
     - paralleltest
     - prealloc
     - predeclared
@@ -53,7 +53,7 @@ linters:
     - unconvert
     - unparam
     # - wsl
-    #- errorlint causes stack overflow. TODO: recheck after each golangci update
+    #- errorlint
 
 linters-settings:
   gofmt:
@@ -146,16 +146,6 @@ linters-settings:
 issues:
   exclude-rules:
     # Exclude some linters from running on tests files.
-    - path: test\.go
-      linters:
-        - gosec
-        - gocritic
-    - path: checkpoint/simulation/header.go
-      linters:
-        - gosec
-    - path: simulation/simulate.go
-      linters:
-        - prealloc
   max-issues-per-linter: 0
   max-same-issues: 0
   #new: true

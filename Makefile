@@ -18,6 +18,6 @@ clean:
 LINT_COMMAND := $(shell command -v golangci-lint 2> /dev/null)
 lint:
 ifndef LINT_COMMAND
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.53.3
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2
 endif
 	golangci-lint run --config ./.golangci.yml
