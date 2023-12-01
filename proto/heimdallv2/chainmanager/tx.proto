@@ -1,0 +1,7 @@
+syntax = "proto3";
+package heimdallv2.chainmanager;
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
+
+// Msg defines the Msg service.
+service Msg {}

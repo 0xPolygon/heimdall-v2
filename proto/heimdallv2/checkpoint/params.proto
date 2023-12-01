@@ -1,0 +1,12 @@
+syntax = "proto3";
+package heimdallv2.checkpoint;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
+
+// Params defines the parameters for the module.
+message Params {
+  option (gogoproto.goproto_stringer) = false;
+  
+}

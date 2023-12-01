@@ -1,0 +1,12 @@
+syntax = "proto3";
+package heimdallv2.clerk;
+
+import "gogoproto/gogo.proto";
+import "heimdallv2/clerk/params.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
+
+// GenesisState defines the clerk module's genesis state.
+message GenesisState {
+  Params params = 1 [(gogoproto.nullable) = false];
+}
