@@ -10,6 +10,7 @@ import (
 )
 
 func TestParamsQuery(t *testing.T) {
+	t.Parallel()
 	keeper, ctx := testkeeper.BorKeeper(t)
 	wctx := sdk.WrapSDKContext(ctx)
 	params := types.DefaultParams()

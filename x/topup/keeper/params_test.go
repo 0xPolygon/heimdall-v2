@@ -9,6 +9,7 @@ import (
 )
 
 func TestGetParams(t *testing.T) {
+	t.Parallel()
 	k, ctx := testkeeper.TopupKeeper(t)
 	params := types.DefaultParams()
 

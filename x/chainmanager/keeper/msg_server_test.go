@@ -11,12 +11,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setupMsgServer(t testing.TB) (types.MsgServer, context.Context) {
-	k, ctx := keepertest.ChainmanagerKeeper(t)
+func setupMsgServer(tb testing.TB) (types.MsgServer, context.Context) {
+	tb.Helper()
+	k, ctx := keepertest.ChainmanagerKeeper(tb)
 	return keeper.NewMsgServerImpl(*k), sdk.WrapSDKContext(ctx)
 }
 
 func TestMsgServer(t *testing.T) {
+	t.Parallel()
 	ms, ctx := setupMsgServer(t)
 	require.NotNil(t, ms)
 	require.NotNil(t, ctx)
