@@ -1,10 +1,10 @@
 package app
 
 import (
+	"cosmossdk.io/x/auth/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/std"
-	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 
 	"github.com/0xPolygon/heimdall-v2/app/params"
 )
