@@ -9,27 +9,23 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cast"
 
 	storetypes "cosmossdk.io/store/types"
-	"cosmossdk.io/x/tx/signing"
 	"cosmossdk.io/x/upgrade"
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/consensus"
-	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	"github.com/cosmos/cosmos-sdk/x/staking"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"cosmossdk.io/client/v2/autocli"
@@ -38,8 +34,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
@@ -69,32 +63,27 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
-	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 )
 
 var (
 	DefaultNodeHome string
 	// module account permissions
 	maccPerms = map[string][]string{
-		authtypes.FeeCollectorName:     nil,
-		distrtypes.ModuleName:          nil,
-		stakingtypes.BondedPoolName:    {authtypes.Burner, authtypes.Staking},
-		stakingtypes.NotBondedPoolName: {authtypes.Burner, authtypes.Staking},
-		govtypes.ModuleName:            {authtypes.Burner},
+		authtypes.FeeCollectorName: nil,
+		govtypes.ModuleName:        {authtypes.Burner},
 	}
 )
 
 var (
-	_ runtime.AppI            = (*App)(nil)
-	_ servertypes.Application = (*App)(nil)
+	_ runtime.AppI            = (*HeimdallApp)(nil)
+	_ servertypes.Application = (*HeimdallApp)(nil)
 )
 
-type App struct {
+type HeimdallApp struct {
 	*baseapp.BaseApp
 
 	legacyAmino       *codec.LegacyAmino //nolint:staticcheck
@@ -107,16 +96,25 @@ type App struct {
 	memKeys map[string]*storetypes.MemoryStoreKey
 
 	// keepers
-	AccountKeeper         authkeeper.AccountKeeper
-	BankKeeper            bankkeeper.Keeper
-	StakingKeeper         *stakingkeeper.Keeper
-	DistrKeeper           distrkeeper.Keeper
-	GovKeeper             govkeeper.Keeper
-	UpgradeKeeper         *upgradekeeper.Keeper
-	ParamsKeeper          paramskeeper.Keeper
-	ConsensusParamsKeeper consensusparamkeeper.Keeper
+	AccountKeeper authkeeper.AccountKeeper
+	BankKeeper    bankkeeper.Keeper
+	// StakingKeeper *stakingkeeper.Keeper
+	DistrKeeper   distrkeeper.Keeper
+	GovKeeper     govkeeper.Keeper
+	UpgradeKeeper *upgradekeeper.Keeper
+	ParamsKeeper  paramskeeper.Keeper
 
 	// Custom Keepers
+	// TODO: uncomment when implemented
+	// StakeKeeper stakekeeper.Keeper
+	// BorKeeper borkeeper.Keeper
+	// ClerkKeeper clerkkeeper.Keeper
+	// CheckpointKeeper checkpointkeeper.Keeper
+	// TopupKeeper topupkeeper.Keeper
+	// ChainKeeper chainmanagerkeeper.Keeper
+
+	// utility for invoking contracts in Ethereum and Bor chain
+	// caller helper.ContractCaller
 
 	mm           *module.Manager
 	BasicManager module.BasicManager
@@ -132,31 +130,68 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, ".appd")
+	DefaultNodeHome = filepath.Join(userHomeDir, ".heimdalld")
 }
 
-func NewApp(
+//
+// Module communicator
+//
+
+// ModuleCommunicator retriever
+type ModuleCommunicator struct {
+	App *HeimdallApp
+}
+
+// TODO: uncomment when implemented
+
+// // GetACKCount returns ack count
+// func (d ModuleCommunicator) GetACKCount(ctx sdk.Context) uint64 {
+// 	return d.App.CheckpointKeeper.GetACKCount(ctx)
+// }
+
+// // IsCurrentValidatorByAddress check if validator is current validator
+// func (d ModuleCommunicator) IsCurrentValidatorByAddress(ctx sdk.Context, address []byte) bool {
+// 	return d.App.StakingKeeper.IsCurrentValidatorByAddress(ctx, address)
+// }
+
+// // GetAllDividendAccounts fetches all dividend accounts from topup module
+// func (d ModuleCommunicator) GetAllDividendAccounts(ctx sdk.Context) []types.DividendAccount {
+// 	return d.App.TopupKeeper.GetAllDividendAccounts(ctx)
+// }
+
+// // SetCoins sets coins
+// func (d ModuleCommunicator) SetCoins(ctx sdk.Context, addr types.HeimdallAddress, amt sdk.Coins) sdk.Error {
+// 	return d.App.BankKeeper.SetCoins(ctx, addr, amt)
+// }
+
+// // GetCoins gets coins
+// func (d ModuleCommunicator) GetCoins(ctx sdk.Context, addr types.HeimdallAddress) sdk.Coins {
+// 	return d.App.BankKeeper.GetCoins(ctx, addr)
+// }
+
+// // SendCoins transfers coins
+// func (d ModuleCommunicator) SendCoins(ctx sdk.Context, fromAddr types.HeimdallAddress, toAddr types.HeimdallAddress, amt sdk.Coins) sdk.Error {
+// 	return d.App.BankKeeper.SendCoins(ctx, fromAddr, toAddr, amt)
+// }
+
+// // CreateValidatorSigningInfo used by slashing module
+// func (d ModuleCommunicator) CreateValidatorSigningInfo(ctx sdk.Context, valID types.ValidatorID, valSigningInfo types.ValidatorSigningInfo) {
+// 	d.App.SlashingKeeper.SetValidatorSigningInfo(ctx, valID, valSigningInfo)
+// }
+
+func NewHeimdallApp(
 	logger log.Logger,
 	db dbm.DB,
 	traceStore io.Writer,
 	loadLatest bool,
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
-) *App {
-	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
-		ProtoFiles: proto.HybridResolver,
-		SigningOptions: signing.Options{
-			AddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
-			},
-			ValidatorAddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
-			},
-		},
-	})
-	appCodec := codec.NewProtoCodec(interfaceRegistry)
-	legacyAmino := codec.NewLegacyAmino()
-	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
+) *HeimdallApp {
+	encodingConfig := RegisterEncodingConfig()
+	appCodec := encodingConfig.Marshaler
+	legacyAmino := encodingConfig.Amino
+	txConfig := encodingConfig.TxConfig
+	interfaceRegistry := encodingConfig.InterfaceRegistry
 
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
@@ -170,12 +205,18 @@ func NewApp(
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey,
 		banktypes.StoreKey,
-		stakingtypes.StoreKey,
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
 		upgradetypes.StoreKey,
-		consensusparamtypes.StoreKey,
+
+		// TODO: uncomment when implemented
+		// staketypes.StoreKey,
+		// bortypes.StoreKey,
+		// clerktypes.StoreKey,
+		// checkpointtypes.StoreKey,
+		// topuptypes.StoreKey,
+		// chainmanagertypes.StoreKey,
 	)
 
 	// register streaming services
@@ -186,7 +227,7 @@ func NewApp(
 	tkeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
 	// memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, ibcmock.MemStoreKey)
 
-	app := &App{
+	app := &HeimdallApp{
 		BaseApp:           bApp,
 		legacyAmino:       legacyAmino,
 		txConfig:          txConfig,
@@ -197,8 +238,23 @@ func NewApp(
 		// memKeys:           memKeys,
 	}
 
-	// proposalHandler := abci2.NewProposalHandler(logger, txConfig)
-	// voteExtHandler := abci2.NewVoteExtensionHandler(logger, randProvider)
+	// Contract caller
+	// TODO: uncomment when implemented
+
+	// contractCallerObj, err := helper.NewContractCaller()
+	// if err != nil {
+	// 	cmn.Exit(err.Error())
+	// }
+
+	// app.caller = contractCallerObj
+
+	// module communicator
+	// TODO: uncomment when implemented
+
+	// moduleCommunicator := ModuleCommunicator{App: app}
+
+	// proposalHandler := abci.NewProposalHandler(logger, txConfig)
+	// voteExtHandler := abci.NewVoteExtensionHandler(logger, randProvider)
 
 	// Set ABCI++ Handlers
 	// bApp.SetPrepareProposal(proposalHandler.PrepareProposalHandler())
@@ -209,10 +265,6 @@ func NewApp(
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
-
-	// set the BaseApp's parameter store
-	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[consensusparamtypes.StoreKey]), authtypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.EventService{})
-	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
 	// SDK module keepers
 
@@ -236,22 +288,12 @@ func NewApp(
 		logger,
 	)
 
-	app.StakingKeeper = stakingkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
-		app.AccountKeeper,
-		app.BankKeeper,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		authcodec.NewBech32Codec(sdk.Bech32PrefixValAddr),
-		authcodec.NewBech32Codec(sdk.Bech32PrefixConsAddr),
-	)
-
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		app.StakingKeeper,
+		nil, // should the param here be our modified stake keeper ?
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -267,7 +309,7 @@ func NewApp(
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		app.StakingKeeper,
+		nil, // TODO: add our modified stake keeper as the param
 		app.DistrKeeper,
 		app.MsgServiceRouter(),
 		govConfig,
@@ -282,6 +324,9 @@ func NewApp(
 		// register the governance hooks
 		),
 	)
+
+	// custom keepers
+	// TODO: initialize custom module keepers
 
 	skipUpgradeHeights := map[int64]bool{}
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
@@ -298,25 +343,21 @@ func NewApp(
 	)
 
 	app.mm = module.NewManager(
-		genutil.NewAppModule(
-			app.AccountKeeper, app.StakingKeeper, app,
-			txConfig,
-		),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, app.StakingKeeper, app.GetSubspace(distrtypes.ModuleName)),
-		staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
+		// TODO: replace with our stake module
+		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
-		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
+		// TODO: add custom modules
 	)
 
 	// Basic manager
 	app.BasicManager = module.NewBasicManagerFromManager(
 		app.mm,
 		map[string]module.AppModuleBasic{
-			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 			govtypes.ModuleName: gov.NewAppModuleBasic(
 				[]govclient.ProposalHandler{
 					paramsclient.ProposalHandler,
@@ -330,8 +371,7 @@ func NewApp(
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
 		distrtypes.ModuleName,
-		stakingtypes.ModuleName,
-		genutiltypes.ModuleName,
+		// stakingtypes.ModuleName, replace with our stake module
 	)
 
 	// NOTE: upgrade module is required to be prioritized
@@ -342,19 +382,22 @@ func NewApp(
 	app.mm.SetOrderEndBlockers(
 		govtypes.ModuleName,
 		stakingtypes.ModuleName,
-		genutiltypes.ModuleName,
 	)
 
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
-		stakingtypes.ModuleName,
 		govtypes.ModuleName,
-		genutiltypes.ModuleName,
-		paramstypes.ModuleName,
 		upgradetypes.ModuleName,
-		consensusparamtypes.ModuleName,
+		// TODO: uncomment when implemented
+		// staketypes.ModuleName,
+		// checkpointtypes.ModuleName,
+		// bortypes.ModuleName,
+		// clerktypes.ModuleName,
+		// topuptypes.ModuleName,
+		// chainmanagertypes.ModuleName,
+
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
@@ -392,8 +435,6 @@ func NewApp(
 	app.SetEndBlocker(app.EndBlocker)
 	app.setAnteHandler(txConfig)
 
-	// app.setAnteHandler(txConfig)
-
 	// At startup, after all modules have been registered, check that all prot
 	// annotations are correct.
 	protoFiles, err := proto.MergedRegistry()
@@ -419,7 +460,10 @@ func NewApp(
 	return app
 }
 
-func (app *App) setAnteHandler(txConfig client.TxConfig) {
+func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
+	// TODO: pass contract caller and keepers for chainmanager and distribution
+	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
+	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			ante.HandlerOptions{
@@ -438,41 +482,167 @@ func (app *App) setAnteHandler(txConfig client.TxConfig) {
 	app.SetAnteHandler(anteHandler)
 }
 
-func (app *App) Name() string { return app.BaseApp.Name() }
+func (app *HeimdallApp) Name() string { return app.BaseApp.Name() }
+
+// InitChainer application update at chain initialization
+func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	var genesisState GenesisState
+	if err := jsoniter.ConfigFastest.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+		panic(err)
+	}
+	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()) //nolint:errcheck
+
+	// get validator updates
+	if err := app.BasicManager.ValidateGenesis(app.AppCodec(), app.txConfig, genesisState); err != nil {
+		panic(err)
+	}
+
+	// check fee collector module account
+	if moduleAcc := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName); moduleAcc == nil {
+		panic(fmt.Sprintf("%s module account has not been set", authtypes.FeeCollectorName))
+	}
+
+	// init genesis
+	app.mm.InitGenesis(ctx, app.AppCodec(), genesisState)
+
+	// TODO: uncomment when implemented
+	// stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
+	// checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
+
+	// // check if validator is current validator
+	// // add to val updates else skip
+	// var valUpdates []abci.ValidatorUpdate
+
+	// for _, validator := range stakingState.Validators {
+	// 	if validator.IsCurrentValidator(checkpointState.AckCount) {
+	// 		// convert to Validator Update
+	// 		updateVal := abci.ValidatorUpdate{
+	// 			Power:  validator.VotingPower,
+	// 			PubKey: validator.PubKey.ABCIPubKey(),
+	// 		}
+	// 		// Add validator to validator updated to be processed below
+	// 		valUpdates = append(valUpdates, updateVal)
+	// 	}
+	// }
+
+	// TODO: make sure old validtors don't go in validator updates i.e. deactivated validators have to be removed
+	// update validators
+	return &abci.ResponseInitChain{
+		// validator updates
+		// Validators: valUpdates,
+	}, nil
+}
 
 // PreBlocker application updates every pre block
-func (app *App) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	//veTx := req.Txs[0]
-	// process VE
+func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	// TODO: Implement VE processing logic here
 
 	return app.mm.PreBlock(ctx)
 }
 
 // BeginBlocker application updates every begin block
-func (app *App) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	// TODO: implement
+	// app.AccountKeeper.SetBlockProposer(
+	// 	ctx,
+	// 	types.BytesToHeimdallAddress(req.Header.GetProposerAddress()),
+	// )
 	return app.mm.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
-func (app *App) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	// TODO: consider moving the validator set update logic to staking module's EndBlock
+	// under x/staking/module.go
+
+	// transfer fees to current proposer
+	// if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
+	// 	moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
+	// 	amount := moduleAccount.GetCoins().AmountOf(authTypes.FeeToken)
+	// 	if !amount.IsZero() {
+	// 		coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: amount}}
+	// 		if err := app.SupplyKeeper.SendCoinsFromModuleToAccount(ctx, authTypes.FeeCollectorName, proposer, coins); err != nil {
+	// 			logger.Error("EndBlocker | SendCoinsFromModuleToAccount", "Error", err)
+	// 		}
+	// 	}
+	// 	// remove block proposer
+	// 	app.AccountKeeper.RemoveBlockProposer(ctx)
+	// }
+
+	// var tmValUpdates []abci.ValidatorUpdate
+
+	// // --- Start update to new validators
+	// currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)
+	// allValidators := app.StakingKeeper.GetAllValidators(ctx)
+	// ackCount := app.CheckpointKeeper.GetACKCount(ctx)
+
+	// // get validator updates
+	// setUpdates := helper.GetUpdatedValidators(
+	// 	&currentValidatorSet, // pointer to current validator set -- UpdateValidators will modify it
+	// 	allValidators,        // All validators
+	// 	ackCount,             // ack count
+	// )
+
+	// if len(setUpdates) > 0 {
+	// 	// create new validator set
+	// 	if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
+	// 		// return with nothing
+	// 		logger.Error("Unable to update current validator set", "Error", err)
+	// 		return abci.ResponseEndBlock{}
+	// 	}
+
+	// 	//Hardfork to remove the rotation of validator list on stake update
+	// 	if ctx.BlockHeight() < helper.GetAalborgHardForkHeight() {
+	// 		// increment proposer priority
+	// 		currentValidatorSet.IncrementProposerPriority(1)
+	// 	}
+
+	// 	// validator set change
+	// 	logger.Debug("[ENDBLOCK] Updated current validator set", "proposer", currentValidatorSet.GetProposer())
+
+	// 	// save set in store
+	// 	if err := app.StakingKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
+	// 		// return with nothing
+	// 		logger.Error("Unable to update current validator set in state", "Error", err)
+	// 		return abci.ResponseEndBlock{}
+	// 	}
+
+	// 	// convert updates from map to array
+	// 	for _, v := range setUpdates {
+	// 		tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
+	// 			Power:  v.VotingPower,
+	// 			PubKey: v.PubKey.ABCIPubKey(),
+	// 		})
+	// 	}
+	// }
+
+	// TODO: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
+	// under x/chainmanager/module.go
+
+	// // Change root chain contract addresses if required
+	// if chainManagerAddressMigration, found := helper.GetChainManagerAddressMigration(ctx.BlockHeight()); found {
+	// 	params := app.ChainKeeper.GetParams(ctx)
+
+	// 	params.ChainParams.MaticTokenAddress = chainManagerAddressMigration.MaticTokenAddress
+	// 	params.ChainParams.StakingManagerAddress = chainManagerAddressMigration.StakingManagerAddress
+	// 	params.ChainParams.RootChainAddress = chainManagerAddressMigration.RootChainAddress
+	// 	params.ChainParams.SlashManagerAddress = chainManagerAddressMigration.SlashManagerAddress
+	// 	params.ChainParams.StakingInfoAddress = chainManagerAddressMigration.StakingInfoAddress
+	// 	params.ChainParams.StateSenderAddress = chainManagerAddressMigration.StateSenderAddress
+
+	// 	// update chain manager state
+	// 	app.ChainKeeper.SetParams(ctx, params)
+	// 	logger.Info("Updated chain manager state", "params", params)
+	// }
+
 	return app.mm.EndBlock(ctx)
 }
 
-// InitChainer application update at chain initialization
-func (app *App) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
-	var genesisState GenesisState
-	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
-		panic(err)
-	}
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()) //nolint:errcheck
-	return app.mm.InitGenesis(ctx, app.appCodec, genesisState)
-}
-
-func (app *App) LoadHeight(height int64) error {
+func (app *HeimdallApp) LoadHeight(height int64) error {
 	return app.LoadVersion(height)
 }
 
-func (app *App) ModuleAccountAddrs() map[string]bool {
+func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 	modAccAddrs := make(map[string]bool)
 	for acc := range maccPerms {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
@@ -481,29 +651,29 @@ func (app *App) ModuleAccountAddrs() map[string]bool {
 	return modAccAddrs
 }
 
-func (app *App) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
+func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	return modAccAddrs
 }
 
-func (app *App) LegacyAmino() *codec.LegacyAmino {
+func (app *HeimdallApp) LegacyAmino() *codec.LegacyAmino {
 	return app.legacyAmino
 }
 
-func (app *App) AppCodec() codec.Codec {
+func (app *HeimdallApp) AppCodec() codec.Codec {
 	return app.appCodec
 }
 
-func (app *App) InterfaceRegistry() types.InterfaceRegistry {
+func (app *HeimdallApp) InterfaceRegistry() types.InterfaceRegistry {
 	return app.interfaceRegistry
 }
 
-func (app *App) GetTxConfig() client.TxConfig {
+func (app *HeimdallApp) GetTxConfig() client.TxConfig {
 	return app.txConfig
 }
 
 // AutoCliOpts returns the autocli options for the app.
-func (app *App) AutoCliOpts() autocli.AppOptions {
+func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
 	modules := make(map[string]appmodule.AppModule, 0)
 	for _, m := range app.mm.Modules {
 		if moduleWithName, ok := m.(module.HasName); ok {
@@ -524,19 +694,26 @@ func (app *App) AutoCliOpts() autocli.AppOptions {
 }
 
 // DefaultGenesis returns a default genesis from the registered AppModuleBasic's.
-func (app *App) DefaultGenesis() map[string]json.RawMessage {
+func (app *HeimdallApp) DefaultGenesis() map[string]json.RawMessage {
 	return app.BasicManager.DefaultGenesis(app.appCodec)
 }
 
 // GetKey returns the KVStoreKey for the provided store key.
 //
 // NOTE: This is solely to be used for testing purposes.
-func (app *App) GetKey(storeKey string) *storetypes.KVStoreKey {
+func (app *HeimdallApp) GetKey(storeKey string) *storetypes.KVStoreKey {
 	return app.keys[storeKey]
 }
 
+// GetTKey returns the TransientStoreKey for the provided store key.
+//
+// NOTE: This is solely to be used for testing purposes.
+func (app *HeimdallApp) GetTKey(storeKey string) *storetypes.TransientStoreKey {
+	return app.tkeys[storeKey]
+}
+
 // GetStoreKeys returns all the stored store keys.
-func (app *App) GetStoreKeys() []storetypes.StoreKey {
+func (app *HeimdallApp) GetStoreKeys() []storetypes.StoreKey {
 	keys := make([]storetypes.StoreKey, 0, len(app.keys))
 	for _, key := range app.keys {
 		keys = append(keys, key)
@@ -546,11 +723,11 @@ func (app *App) GetStoreKeys() []storetypes.StoreKey {
 }
 
 // SimulationManager implements the SimulationApp interface
-func (app *App) SimulationManager() *module.SimulationManager {
+func (app *HeimdallApp) SimulationManager() *module.SimulationManager {
 	return app.simulationManager
 }
 
-func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
+func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig) {
 	clientCtx := apiSvr.ClientCtx
 	// Register new tx routes from grpc-gateway.
 	authtx.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
@@ -570,12 +747,12 @@ func (app *App) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APIConfig
 	}
 }
 
-func (app *App) RegisterTxService(clientCtx client.Context) {
+func (app *HeimdallApp) RegisterTxService(clientCtx client.Context) {
 	authtx.RegisterTxService(app.BaseApp.GRPCQueryRouter(), clientCtx, app.BaseApp.Simulate, app.interfaceRegistry)
 }
 
 // RegisterTendermintService implements the Application.RegisterTendermintService method.
-func (app *App) RegisterTendermintService(clientCtx client.Context) {
+func (app *HeimdallApp) RegisterTendermintService(clientCtx client.Context) {
 	cmtApp := server.NewCometABCIWrapper(app)
 	cmtservice.RegisterTendermintService(
 		clientCtx,
@@ -585,17 +762,17 @@ func (app *App) RegisterTendermintService(clientCtx client.Context) {
 	)
 }
 
-func (app *App) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+func (app *HeimdallApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
 	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
 }
 
-func (app *App) OnTxSucceeded(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
+func (app *HeimdallApp) OnTxSucceeded(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
 }
 
-func (app *App) OnTxFailed(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
+func (app *HeimdallApp) OnTxFailed(_ sdk.Context, _, _ string, _ []byte, _ []byte) {
 }
 
-func (app *App) GetBaseApp() *baseapp.BaseApp {
+func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
@@ -615,11 +792,21 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 // GetSubspace returns a param subspace for a given module name.
 //
 // NOTE: This is solely to be used for testing purposes.
-func (app *App) GetSubspace(moduleName string) paramstypes.Subspace {
+func (app *HeimdallApp) GetSubspace(moduleName string) paramstypes.Subspace {
 	subspace, _ := app.ParamsKeeper.GetSubspace(moduleName)
 	return subspace
 }
 
-func (app *App) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
+func (app *HeimdallApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
+}
+
+// GetMaccPerms returns a copy of the module account permissions
+func GetMaccPerms() map[string][]string {
+	dupMaccPerms := make(map[string][]string)
+	for k, v := range maccPerms {
+		dupMaccPerms[k] = v
+	}
+
+	return dupMaccPerms
 }
