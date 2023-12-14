@@ -37,11 +37,11 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
 	return servertypes.ExportedApp{
 		AppState: appState,
-		// TODO: uncomment when implemented
+		// TODO CHECK HEIMDALL-V2: uncomment when implemented
 		// Validators:      validators,
 		Height:          height,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
@@ -51,11 +51,11 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 // prepare for fresh start at zero height
 // NOTE zero height genesis is a temporary feature which will be deprecated
 // in favour of export at a block height
-// TODO: What would a "fresh start at zero height" mean for Heimdall ?
+// TODO CHECK HEIMDALL-V2: What would a "fresh start at zero height" mean for Heimdall ?
 // What would we need to preserve (checkpoints, state sync, validator state) and what data would be reset ?
 // Decide and implement accordingly
 func (app *HeimdallApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs []string) {
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// applyAllowedAddrs := false
 
 	// // check if there is a allowed address list
@@ -77,7 +77,7 @@ func (app *HeimdallApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAdd
 
 	// withdraw all validator commission
 	//nolint:ineffassign
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// err := app.StakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
 	// 	valBz, err := app.StakingKeeper.ValidatorAddressCodec().StringToBytes(val.GetOperator())
 	// 	if err != nil {
@@ -90,7 +90,7 @@ func (app *HeimdallApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAdd
 	// 	panic(err)
 	// }
 
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// withdraw all delegator rewards
 	// dels, err := app.StakingKeeper.GetAllDelegations(ctx)
 	// for _, delegation := range dels {
@@ -120,7 +120,7 @@ func (app *HeimdallApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAdd
 	height := ctx.BlockHeight()
 	ctx = ctx.WithBlockHeight(0)
 
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// reinitialize all validators
 	// err = app.StakingKeeper.IterateValidators(ctx, func(_ int64, val stakingtypes.ValidatorI) (stop bool) {
 	// 	valBz, err := app.StakingKeeper.ValidatorAddressCodec().StringToBytes(val.GetOperator())
@@ -147,7 +147,7 @@ func (app *HeimdallApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAdd
 	// 	return false
 	// })
 
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// reinitialize all delegations
 	// for _, del := range dels {
 	// 	valAddr, err := sdk.ValAddressFromBech32(del.ValidatorAddress)
@@ -171,7 +171,7 @@ func (app *HeimdallApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAdd
 
 	/* Handle staking state. */
 
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// iterate through redelegations, reset creation height
 	//nolint:errcheck
 	// app.StakingKeeper.IterateRedelegations(ctx, func(_ int64, red stakingtypes.Redelegation) (stop bool) {
@@ -199,7 +199,7 @@ func (app *HeimdallApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAdd
 	// update bond intra-tx counters.
 	store := ctx.KVStore(app.GetKey(stakingtypes.StoreKey))
 	iter := storetypes.KVStoreReversePrefixIterator(store, stakingtypes.ValidatorsKey)
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// counter := int16(0)
 
 	// // Closure to ensure iterator doesn't leak.

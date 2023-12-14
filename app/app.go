@@ -105,7 +105,7 @@ type HeimdallApp struct {
 	ParamsKeeper  paramskeeper.Keeper
 
 	// Custom Keepers
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// StakeKeeper stakekeeper.Keeper
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
@@ -142,7 +142,7 @@ type ModuleCommunicator struct {
 	App *HeimdallApp
 }
 
-// TODO: uncomment when implemented
+// TODO CHECK HEIMDALL-V2: uncomment when implemented
 
 // // GetACKCount returns ack count
 // func (d ModuleCommunicator) GetACKCount(ctx sdk.Context) uint64 {
@@ -210,7 +210,7 @@ func NewHeimdallApp(
 		paramstypes.StoreKey,
 		upgradetypes.StoreKey,
 
-		// TODO: uncomment when implemented
+		// TODO CHECK HEIMDALL-V2: uncomment when implemented
 		// staketypes.StoreKey,
 		// bortypes.StoreKey,
 		// clerktypes.StoreKey,
@@ -239,7 +239,7 @@ func NewHeimdallApp(
 	}
 
 	// Contract caller
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 
 	// contractCallerObj, err := helper.NewContractCaller()
 	// if err != nil {
@@ -249,7 +249,7 @@ func NewHeimdallApp(
 	// app.caller = contractCallerObj
 
 	// module communicator
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 
 	// moduleCommunicator := ModuleCommunicator{App: app}
 
@@ -309,7 +309,7 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		nil, // TODO: add our modified stake keeper as the param
+		nil, // TODO CHECK HEIMDALL-V2: add our modified stake keeper as the param
 		app.DistrKeeper,
 		app.MsgServiceRouter(),
 		govConfig,
@@ -326,7 +326,7 @@ func NewHeimdallApp(
 	)
 
 	// custom keepers
-	// TODO: initialize custom module keepers
+	// TODO CHECK HEIMDALL-V2: initialize custom module keepers
 
 	skipUpgradeHeights := map[int64]bool{}
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
@@ -347,11 +347,11 @@ func NewHeimdallApp(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
-		// TODO: replace with our stake module
+		// TODO CHECK HEIMDALL-V2: replace with our stake module
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
-		// TODO: add custom modules
+		// TODO CHECK HEIMDALL-V2: add custom modules
 	)
 
 	// Basic manager
@@ -390,7 +390,7 @@ func NewHeimdallApp(
 		distrtypes.ModuleName,
 		govtypes.ModuleName,
 		upgradetypes.ModuleName,
-		// TODO: uncomment when implemented
+		// TODO CHECK HEIMDALL-V2: uncomment when implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
@@ -461,7 +461,7 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
-	// TODO: pass contract caller and keepers for chainmanager and distribution
+	// TODO CHECK HEIMDALL-V2: pass contract caller and keepers for chainmanager and distribution
 	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
 	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
@@ -505,7 +505,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	// init genesis
 	app.mm.InitGenesis(ctx, app.AppCodec(), genesisState)
 
-	// TODO: uncomment when implemented
+	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
 	// checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
 
@@ -535,14 +535,14 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	// TODO: Implement VE processing logic here
+	// TODO CHECK HEIMDALL-V2: Implement VE processing logic here
 
 	return app.mm.PreBlock(ctx)
 }
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	// TODO: implement
+	// TODO CHECK HEIMDALL-V2: implement
 	// app.AccountKeeper.SetBlockProposer(
 	// 	ctx,
 	// 	types.BytesToHeimdallAddress(req.Header.GetProposerAddress()),
@@ -552,7 +552,7 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
-	// TODO: consider moving the validator set update logic to staking module's EndBlock
+	// TODO CHECK HEIMDALL-V2: consider moving the validator set update logic to staking module's EndBlock
 	// under x/staking/module.go
 
 	// transfer fees to current proposer
@@ -616,7 +616,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// 	}
 	// }
 
-	// TODO: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
+	// TODO CHECK HEIMDALL-V2: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
 	// under x/chainmanager/module.go
 
 	// // Change root chain contract addresses if required
