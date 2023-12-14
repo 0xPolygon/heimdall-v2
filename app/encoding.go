@@ -35,8 +35,7 @@ func MakeEncodingConfig() EncodingConfig {
 	})
 
 	// TODO CHECK HEIMDALL-V2: register proto format of secp256k1 keys
-	// interfaceRegistry.RegisterImplementations((*crypto.PrivKey)(nil), &secp256k1.PrivKey{})
-	// interfaceRegistry.RegisterImplementations((*crypto.PubKey)(nil), &secp256k1.PrivKey{})
+	// interfaceRegistry.RegisterImplementations((*crypto.PubKey)(nil), &secp256k1.PubKey{})
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	legacyAmino := codec.NewLegacyAmino()
 	txConfig := tx.NewTxConfig(appCodec, tx.DefaultSignModes)
