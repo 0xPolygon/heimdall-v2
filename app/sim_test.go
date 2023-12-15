@@ -52,6 +52,7 @@ func interBlockCacheOpt() func(*baseapp.BaseApp) {
 	return baseapp.SetInterBlockCache(store.NewCommitKVStoreCacheManager())
 }
 
+//nolint:paralleltest
 func TestFullAppSimulation(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = HeimdallAppChainID
@@ -97,6 +98,7 @@ func TestFullAppSimulation(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest
 func TestAppImportExport(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = HeimdallAppChainID
@@ -205,6 +207,7 @@ func TestAppImportExport(t *testing.T) {
 	}
 }
 
+//nolint:paralleltest
 func TestAppSimulationAfterImport(t *testing.T) {
 	config := simcli.NewConfigFromFlags()
 	config.ChainID = HeimdallAppChainID
@@ -273,10 +276,11 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	newApp := NewHeimdallApp(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(HeimdallAppChainID))
 	require.Equal(t, "HeimdallApp", newApp.Name())
 
-	newApp.InitChain(&abci.RequestInitChain{
+	_, err = newApp.InitChain(&abci.RequestInitChain{
 		AppStateBytes: exported.AppState,
 		ChainId:       HeimdallAppChainID,
 	})
+	require.NoError(t, err)
 
 	_, _, err = simulation.SimulateFromSeed(
 		t,
@@ -294,6 +298,8 @@ func TestAppSimulationAfterImport(t *testing.T) {
 
 // TODO: Make another test for the fuzzer itself, which just has noOp txs
 // and doesn't depend on the application.
+//
+//nolint:paralleltest
 func TestAppStateDeterminism(t *testing.T) {
 	if !simcli.FlagEnabledValue {
 		t.Skip("skipping application simulation")
@@ -333,7 +339,7 @@ func TestAppStateDeterminism(t *testing.T) {
 
 	for i := 0; i < numSeeds; i++ {
 		if config.Seed == simcli.DefaultSeedValue {
-			config.Seed = rand.Int63()
+			config.Seed = rand.Int63() //nolint:gosec
 		}
 
 		fmt.Println("config.Seed: ", config.Seed)
