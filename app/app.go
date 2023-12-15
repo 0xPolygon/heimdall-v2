@@ -503,7 +503,9 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}
 
 	// init genesis
-	app.mm.InitGenesis(ctx, app.AppCodec(), genesisState)
+	if _, err := app.mm.InitGenesis(ctx, app.AppCodec(), genesisState); err != nil {
+		return &abci.ResponseInitChain{}, err
+	}
 
 	// TODO CHECK HEIMDALL-V2: uncomment when implemented
 	// stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
