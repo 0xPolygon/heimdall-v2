@@ -105,7 +105,7 @@ type HeimdallApp struct {
 	ParamsKeeper  paramskeeper.Keeper
 
 	// Custom Keepers
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 	// StakeKeeper stakekeeper.Keeper
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
@@ -122,6 +122,9 @@ type HeimdallApp struct {
 	simulationManager *module.SimulationManager
 
 	configurator module.Configurator
+
+	// Vote Extension handler
+	VoteExtensionProcessor *VoteExtensionProcessor
 }
 
 func init() {
@@ -142,7 +145,7 @@ type ModuleCommunicator struct {
 	App *HeimdallApp
 }
 
-// TODO CHECK HEIMDALL-V2: uncomment when implemented
+// TODO HV2: uncomment when implemented
 
 // // GetACKCount returns ack count
 // func (d ModuleCommunicator) GetACKCount(ctx sdk.Context) uint64 {
@@ -210,7 +213,7 @@ func NewHeimdallApp(
 		paramstypes.StoreKey,
 		upgradetypes.StoreKey,
 
-		// TODO CHECK HEIMDALL-V2: uncomment when implemented
+		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
 		// bortypes.StoreKey,
 		// clerktypes.StoreKey,
@@ -239,7 +242,7 @@ func NewHeimdallApp(
 	}
 
 	// Contract caller
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 
 	// contractCallerObj, err := helper.NewContractCaller()
 	// if err != nil {
@@ -249,17 +252,18 @@ func NewHeimdallApp(
 	// app.caller = contractCallerObj
 
 	// module communicator
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 
 	// moduleCommunicator := ModuleCommunicator{App: app}
 
-	// proposalHandler := abci.NewProposalHandler(logger, txConfig)
-	// voteExtHandler := abci.NewVoteExtensionHandler(logger, randProvider)
+	voteExtProcessor := NewVoteExtensionProcessor(app)
+	app.VoteExtensionProcessor = voteExtProcessor
+	extVoteHandler := voteExtProcessor.ExtendVote()
 
 	// Set ABCI++ Handlers
-	// bApp.SetPrepareProposal(proposalHandler.PrepareProposalHandler())
-	// bApp.SetProcessProposal(proposalHandler.ProcessProposalHandler())
-	// bApp.SetExtendVoteHandler(voteExtHandler.ExtendVoteHandler())
+	bApp.SetPrepareProposal(app.PrepareProposalHandler())
+	bApp.SetProcessProposal(app.NewProcessProposalHandler())
+	bApp.SetExtendVoteHandler(extVoteHandler)
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
@@ -309,7 +313,7 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		nil, // TODO CHECK HEIMDALL-V2: add our modified stake keeper as the param
+		nil, // TODO HV2: add our modified stake keeper as the param
 		app.DistrKeeper,
 		app.MsgServiceRouter(),
 		govConfig,
@@ -326,7 +330,7 @@ func NewHeimdallApp(
 	)
 
 	// custom keepers
-	// TODO CHECK HEIMDALL-V2: initialize custom module keepers
+	// TODO HV2: initialize custom module keepers
 
 	skipUpgradeHeights := map[int64]bool{}
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
@@ -347,11 +351,11 @@ func NewHeimdallApp(
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
-		// TODO CHECK HEIMDALL-V2: replace with our stake module
+		// TODO HV2: replace with our stake module
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
-		// TODO CHECK HEIMDALL-V2: add custom modules
+		// TODO HV2: add custom modules
 	)
 
 	// Basic manager
@@ -390,7 +394,7 @@ func NewHeimdallApp(
 		distrtypes.ModuleName,
 		govtypes.ModuleName,
 		upgradetypes.ModuleName,
-		// TODO CHECK HEIMDALL-V2: uncomment when implemented
+		// TODO HV2: uncomment when implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
@@ -461,7 +465,7 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
-	// TODO CHECK HEIMDALL-V2: pass contract caller and keepers for chainmanager and distribution
+	// TODO HV2: pass contract caller and keepers for chainmanager and distribution
 	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
 	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
@@ -507,7 +511,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 	// stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
 	// checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
 
@@ -535,16 +539,9 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}, nil
 }
 
-// PreBlocker application updates every pre block
-func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	// TODO CHECK HEIMDALL-V2: Implement VE processing logic here
-
-	return app.mm.PreBlock(ctx)
-}
-
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	// TODO CHECK HEIMDALL-V2: implement
+	// TODO HV2: implement
 	// app.AccountKeeper.SetBlockProposer(
 	// 	ctx,
 	// 	types.BytesToHeimdallAddress(req.Header.GetProposerAddress()),
@@ -554,7 +551,7 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
-	// TODO CHECK HEIMDALL-V2: consider moving the validator set update logic to staking module's EndBlock
+	// TODO HV2: consider moving the validator set update logic to staking module's EndBlock
 	// under x/staking/module.go
 
 	// transfer fees to current proposer
@@ -618,7 +615,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// 	}
 	// }
 
-	// TODO CHECK HEIMDALL-V2: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
+	// TODO HV2: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
 	// under x/chainmanager/module.go
 
 	// // Change root chain contract addresses if required
@@ -801,6 +798,15 @@ func (app *HeimdallApp) GetSubspace(moduleName string) paramstypes.Subspace {
 
 func (app *HeimdallApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
+}
+
+// cacheTxContext returns a new context based off of the provided context with
+// a cache wrapped multi-store.
+func (app *HeimdallApp) cacheTxContext(ctx sdk.Context, _ []byte) (sdk.Context, storetypes.CacheMultiStore) {
+	ms := ctx.MultiStore()
+	msCache := ms.CacheMultiStore()
+
+	return ctx.WithMultiStore(msCache), msCache
 }
 
 // GetMaccPerms returns a copy of the module account permissions
