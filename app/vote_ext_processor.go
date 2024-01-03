@@ -137,7 +137,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			return &abci.ResponseExtendVote{VoteExtension: []byte{}}, nil
 		}
 
-		sideTxRes := make([]*types.SideTxResponse, 0, 0)
+		sideTxRes := make([]*types.SideTxResponse, 0)
 
 		if len(req.Txs) > 1 || (len(req.Txs) >= 1 && req.Height == ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight) {
 			var extVoteInfo []abci.ExtendedVoteInfo
@@ -278,7 +278,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 			msgs := tx.GetMsgs()
 			for _, msg := range msgs {
-				_, ok := app.VoteExtensionProcessor.modVoteExtHandler[sdk.MsgTypeURL(msg)]
+				_, ok := app.VoteExtensionProcessor.modVoteExtHandler[sdk.MsgTypeURL(msg)] //nolint:staticcheck
+				//nolint:staticcheck
 				if ok {
 					// TODO HV2: uncomment when implemented
 					// app.VoteExtensionKeeper.storeTxData(ctx, txBytes.Hash(), tx)
@@ -339,7 +340,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			// 		// TODO HV2: how do we process the events ?
 			// 		err := fn(ctx, msg, types.Vote_VOTE_YES)
 			// 		if err != nil {
-			// 			logger.Error("Error occured while executing post handler", "error", err, "tx", tx)
+			// 			logger.Error("Error occurred while executing post handler", "error", err, "tx", tx)
 			// 			continue
 
 			// 		}

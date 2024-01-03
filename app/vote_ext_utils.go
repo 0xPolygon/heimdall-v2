@@ -119,6 +119,8 @@ import (
 
 // tallyVotes is a helper function to tally votes received for the side txs
 // It returns lists of txs which got >2/3+ YES, NO and SKIP votes
+//
+//nolint:unused
 func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validators []abci.Validator) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
 
@@ -133,15 +135,15 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 		return nil, nil, nil, err
 	}
 
-	approvedTxs, rejectedTxs, skippedTxs := make([][]byte, 0, 0), make([][]byte, 0, 0), make([][]byte, 0, 0)
-
 	// check for vote majority
-	txHashList := make([]string, 0, 0)
+	txHashList := make([]string, 0, len(voteByTxHash))
 	for txHash := range voteByTxHash {
 		txHashList = append(txHashList, txHash)
 	}
 
-	txHashList = sort.StringSlice(txHashList)
+	sort.Strings(txHashList)
+
+	approvedTxs, rejectedTxs, skippedTxs := make([][]byte, 0, len(txHashList)), make([][]byte, 0, len(txHashList)), make([][]byte, 0, len(txHashList))
 
 	for _, txHash := range txHashList {
 		voteMap := voteByTxHash[txHash]
@@ -170,6 +172,8 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 }
 
 // aggregateVotes collates votes received for a side tx
+//
+//nolint:unused
 func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[types.Vote]int64, error) {
 	voteByTxHash := make(map[string]map[types.Vote]int64, 0)    // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}, 0) // ensure a validator doesn't procure conflicting votes for a side tx
