@@ -9,6 +9,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cast"
 
@@ -20,6 +21,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
@@ -74,6 +77,7 @@ var (
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
+		distrtypes.ModuleName:      nil,
 		govtypes.ModuleName:        {authtypes.Burner},
 	}
 )
@@ -99,10 +103,11 @@ type HeimdallApp struct {
 	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper    bankkeeper.Keeper
 	// StakingKeeper *stakingkeeper.Keeper
-	DistrKeeper   distrkeeper.Keeper
-	GovKeeper     govkeeper.Keeper
-	UpgradeKeeper *upgradekeeper.Keeper
-	ParamsKeeper  paramskeeper.Keeper
+	DistrKeeper           distrkeeper.Keeper
+	GovKeeper             govkeeper.Keeper
+	UpgradeKeeper         *upgradekeeper.Keeper
+	ParamsKeeper          paramskeeper.Keeper
+	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	// Custom Keepers
 	// TODO CHECK HEIMDALL-V2: uncomment when implemented
@@ -205,6 +210,7 @@ func NewHeimdallApp(
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey,
 		banktypes.StoreKey,
+		consensusparamtypes.StoreKey,
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
@@ -265,6 +271,10 @@ func NewHeimdallApp(
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
+
+	// set the BaseApp's parameter store
+	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[consensusparamtypes.StoreKey]), authtypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.EventService{})
+	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
 	// SDK module keepers
 
@@ -351,6 +361,7 @@ func NewHeimdallApp(
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
+		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO CHECK HEIMDALL-V2: add custom modules
 	)
 
@@ -390,6 +401,7 @@ func NewHeimdallApp(
 		distrtypes.ModuleName,
 		govtypes.ModuleName,
 		upgradetypes.ModuleName,
+		consensusparamtypes.ModuleName,
 		// TODO CHECK HEIMDALL-V2: uncomment when implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
@@ -776,6 +788,10 @@ func (app *HeimdallApp) OnTxFailed(_ sdk.Context, _, _ string, _ []byte, _ []byt
 
 func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
+}
+
+func (a *HeimdallApp) Configurator() module.Configurator {
+	return a.configurator
 }
 
 type EmptyAppOptions struct{}
