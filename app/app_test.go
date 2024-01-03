@@ -25,6 +25,7 @@ import (
 )
 
 func TestHeimdallAppExport(t *testing.T) {
+	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
 
 	// finalize block so we have CheckTx state set
@@ -43,7 +44,9 @@ func TestHeimdallAppExport(t *testing.T) {
 	require.NoError(t, err)
 }
 
+//nolint:tparallel
 func TestRunMigrations(t *testing.T) {
+	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
 
 	// Create a new baseapp and configurator for the purpose of this test.
@@ -119,6 +122,7 @@ func TestRunMigrations(t *testing.T) {
 		},
 	}
 
+	//nolint:paralleltest
 	for _, tc := range testCases {
 		t.Run(tc.name, func(tt *testing.T) {
 			var err error
@@ -182,6 +186,7 @@ func TestRunMigrations(t *testing.T) {
 }
 
 func TestInitGenesisOnMigration(t *testing.T) {
+	t.Parallel()
 	app, _, _ := SetupApp(t, 1)
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 
@@ -219,6 +224,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 }
 
 func TestUpgradeStateOnGenesis(t *testing.T) {
+	t.Parallel()
 	app, _, _ := SetupApp(t, 1)
 
 	// make sure the upgrade keeper has version map in state
@@ -238,6 +244,7 @@ func TestValidateGenesis(t *testing.T) {
 	happ, _, _ := SetupApp(t, 1)
 
 	// not valid app state
+	//nolint:errcheck
 	require.Panics(t, func() {
 		happ.InitChain(
 			&abci.RequestInitChain{
