@@ -1,0 +1,108 @@
+syntax = "proto3";
+package cosmos.staking.v1beta1;
+
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos_proto/cosmos.proto";
+import "cosmos/query/v1/query.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/staking/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Validators queries all validators that match the given status.
+  //
+  // When called from another module, this query might consume a high amount of
+  // gas if the pagination field is incorrectly set.
+  rpc CurrentValidatorSet(QueryCurrentValidatorSetRequest)
+      returns (QueryCurrentValidatorSetResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/staking/validator-set";
+  }
+
+  // Validator queries validator info for given validator address.
+  rpc Validator(QuerySignerRequest) returns (QuerySignerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/staking/signer/{address}";
+  }
+
+  //  TotalPower queries total power of a validator set
+  rpc TotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/staking/totalpower";
+  }
+
+  // CurrentProposer queries validator info for the current proposer
+  rpc CurrentProposer(QueryCurrentProposerRequest)
+      returns (QueryCurrentProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/staking/signer/current-proposer";
+  }
+}
+
+// QueryCurrentValidatorSetRequest is request type for Query/CurrentValidatorSet
+// RPC method.
+message QueryCurrentValidatorSetRequest {
+  // status enables to query for validators matching a given status.
+  string status = 1;
+
+  // pagination defines an optional pagination for the request.
+  cosmos.base.query.v1beta1.PageRequest pagination = 2;
+}
+
+// QueryCurrentValidatorSetResponse is response type for the Query/ValidatorSet
+// RPC method
+message QueryCurrentValidatorSetResponse {
+  // validators contains all the queried svalidators.
+  repeated string validators = 1 [ (amino.dont_omitempty) = true ];
+
+  // pagination defines the pagination in the response.
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
+}
+
+// QuerySignerRequest is response type for the Query/Validator RPC method
+message QuerySignerRequest {
+  // address defines the validator address to query for.
+  string address = 1;
+}
+
+// QuerySignerResponse is response type for the Query/Validator RPC method
+message QuerySignerResponse {
+  // validator defines the validator info.
+  string validator = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryValidatorRequest is response type for the Query/Validator RPC method
+message QueryValidatorRequest {
+  // validator_id defines the validator id to query for.
+  uint32 validator_id = 1;
+}
+
+// QueryValidatorResponse is response type for the Query/Validator RPC method
+message QueryValidatorResponse {
+  // validator defines the validator info.
+  string validator = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryTotalPowerRequest is request type for the
+// Query/TotalPower RPC method
+message QueryTotalPowerRequest {}
+
+// QueryTotalPowerResponse is response type for the
+// Query/TotalPower RPC method
+message QueryTotalPowerResponse {
+  uint64 total_power = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryCurrentProposerRequest is request type for the Query/CurrentProposer RPC
+// method
+message QueryCurrentProposerRequest {}
+
+// QueryCurrentProposerRequest is response type for the Query/CurrentProposer
+// RPC method
+message QueryCurrentProposerResponse {
+  // validator defines the validator info.
+  string validator = 1 [ (amino.dont_omitempty) = true ];
+}

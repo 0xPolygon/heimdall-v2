@@ -1,0 +1,110 @@
+syntax = "proto3";
+package cosmos.staking.v1beta1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/staking/types";
+
+// Msg defines the staking Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // JoinValidator defines a method for joining a new validator.
+  rpc JoinValidator(MsgValidatorJoin) returns (MsgValidatorJoinResponse);
+
+  // StakeUpdate defines a method for updating an existing validator's stake.
+  rpc StakeUpdate(MsgStakeUpdate) returns (MsgStakeUpdateResponse);
+
+  // v defines a method for updating an existing validator's signer.
+  rpc SignerUpdate(MsgSignerUpdate) returns (MsgSignerUpdateResponse);
+
+  // ValidatorExit defines a method for exiting an existing validator
+  rpc ValidatorExit(MsgValidatorExit) returns (MsgValidatorExitResponse);
+}
+
+message MsgValidatorJoin {
+  option (cosmos.msg.v1.signer) = "validator_address";
+  option (amino.name) = "staking/MsgValidatorJoin";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [ (amino.dont_omitempty) = true ];
+  string i_d = 2 [ (amino.dont_omitempty) = true ];
+  uint64 activation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  string amount = 4 [ (amino.dont_omitempty) = true ];
+  string signer_pub_key = 5 [ (amino.dont_omitempty) = true ];
+  string tx_hash = 6 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgValidatorJoinResponse defines the Msg/ValidatorJoin response type.
+message MsgValidatorJoinResponse {}
+
+// MsgDelegate defines a SDK message for performing a delegation of coins
+// from a delegator to a validator.
+message MsgStakeUpdate {
+  option (amino.name) = "cosmos-sdk/MsgStakeUpdate";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [ (amino.dont_omitempty) = true ];
+  string i_d = 2 [ (amino.dont_omitempty) = true ];
+  string new_amount = 3 [ (amino.dont_omitempty) = true ];
+  string tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgDelegateResponse defines the Msg/Delegate response type.
+message MsgStakeUpdateResponse {}
+
+// MsgSignerUpdate defines a SDK message for updating signer of the existing
+// validator
+message MsgSignerUpdate {
+  option (amino.name) = "cosmos-sdk/MsgSignerUpdate";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [ (amino.dont_omitempty) = true ];
+  string i_d = 2 [ (amino.dont_omitempty) = true ];
+  string new_signer_pub_key = 3 [ (amino.dont_omitempty) = true ];
+  string tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgSignerUpdate defines the Msg/SignerUpdate response type.
+message MsgSignerUpdateResponse {}
+
+// MsgValidatorExit defines a SDK message for exiting the validator
+message MsgValidatorExit {
+  option (amino.name) = "cosmos-sdk/MsgValidatorExit";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [ (amino.dont_omitempty) = true ];
+  string i_d = 2 [ (amino.dont_omitempty) = true ];
+  uint64 deactivation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  string amount = 4 [ (amino.dont_omitempty) = true ];
+  string tx_hash = 6 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgValidatorExit defines the Msg/ValidatorExit response type.
+message MsgValidatorExitResponse {}

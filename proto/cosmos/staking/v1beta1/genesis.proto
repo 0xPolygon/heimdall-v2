@@ -1,0 +1,23 @@
+syntax = "proto3";
+package cosmos.staking.v1beta1;
+
+option go_package = "github.com/cosmos/cosmos-sdk/x/staking/types";
+
+import "gogoproto/gogo.proto";
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+
+// GenesisState defines the staking module's genesis state.
+message GenesisState {
+  // validators defines the validator set at genesis.
+  repeated string validators = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  // currentValidatorSet defines the active current validator set at genesis.
+  repeated string current_validator_Set = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  // staking_sequences defines the staking sequences at genesis.
+  repeated string staking_sequences = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

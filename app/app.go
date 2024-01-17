@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/spf13/cast"
@@ -50,6 +51,7 @@ import (
 	"cosmossdk.io/log"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmn "github.com/cometbft/cometbft/libs/os"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -116,7 +118,8 @@ type App struct {
 	ParamsKeeper          paramskeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
-	// Custom Keepers
+	// contract keeper
+	caller helper.ContractCaller
 
 	mm           *module.Manager
 	BasicManager module.BasicManager
@@ -296,6 +299,17 @@ func NewApp(
 		app.BaseApp,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
+
+	//
+	// Contract caller
+	//
+
+	contractCallerObj, err := helper.NewContractCaller()
+	if err != nil {
+		cmn.Exit(err.Error())
+	}
+
+	app.caller = contractCallerObj
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(
