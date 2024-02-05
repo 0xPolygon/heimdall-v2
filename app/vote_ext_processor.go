@@ -130,12 +130,6 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		logger := v.app.Logger()
 
-		// this check might be redundant given CometBFT ensures precommits are extended once vote extensions are enabled
-		voteExtsEnabled := req.Height >= ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight
-
-		if !voteExtsEnabled {
-			return &abci.ResponseExtendVote{VoteExtension: []byte{}}, nil
-		}
 
 		sideTxRes := make([]*types.SideTxResponse, 0)
 
