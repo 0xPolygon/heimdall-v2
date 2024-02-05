@@ -40,7 +40,7 @@ func (v *VoteExtensionProcessor) SetModPostHandler(modPostHandler ModPostHandler
 	v.modPostHandler = make(map[string]ModPostHandler, 0)
 }
 
-func (app *HeimdallApp) PrepareProposalHandler() sdk.PrepareProposalHandler {
+func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
