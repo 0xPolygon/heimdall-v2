@@ -5,7 +5,7 @@ GOPATH = $(shell go env GOPATH)
 
 GIT_COMMIT ?= $(shell git rev-list -1 HEAD)
 
-PACKAGE_NAME := github.com/0xPolygon/heimdall-v2\
+PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME)
 GOLANG_CROSS_VERSION  ?= v1.21.0
 
