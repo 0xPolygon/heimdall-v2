@@ -256,14 +256,14 @@ func NewHeimdallApp(
 
 	// moduleCommunicator := ModuleCommunicator{App: app}
 
+	// TODO HV2: Set vote extension and post handlers for each module
 	voteExtProcessor := NewVoteExtensionProcessor(app)
 	app.VoteExtensionProcessor = voteExtProcessor
-	extVoteHandler := voteExtProcessor.ExtendVote()
 
 	// Set ABCI++ Handlers
-	bApp.SetPrepareProposal(app.PrepareProposalHandler())
+	bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
 	bApp.SetProcessProposal(app.NewProcessProposalHandler())
-	bApp.SetExtendVoteHandler(extVoteHandler)
+	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 

@@ -74,7 +74,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		txs = append(txs, bz)
 
 		// encode the txs
-		txs = append(txs, rawTxs...)
+		totalTxBytes := len(txs)
+		for _, rtx := range rawTxs {
+			totalTxBytes += len(rtx)
+			if totalTxBytes > int(req.MaxTxBytes) {
+				break
+			}
+			txs = append(txs, rtx)
+		}
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
