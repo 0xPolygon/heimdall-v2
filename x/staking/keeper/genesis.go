@@ -5,8 +5,8 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -27,10 +27,10 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 
 	// get current val set
 	var vals []*hmTypes.Validator
-	if len(data.CurrentValSet.Validators) == 0 {
+	if len(data.CurrentValidatorSet.Validators) == 0 {
 		vals = data.Validators
 	} else {
-		vals = data.CurrentValSet.Validators
+		vals = data.CurrentValidatorSet.Validators
 	}
 
 	if len(vals) != 0 {
@@ -49,7 +49,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 			}
 
 			// increment accum if init validator set
-			if len(data.CurrentValSet.Validators) == 0 {
+			if len(data.CurrentValidatorSet.Validators) == 0 {
 				k.IncrementAccum(ctx, 1)
 			}
 		}

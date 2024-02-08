@@ -17,10 +17,11 @@ import (
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
 
-	"github.com/0xPolygon/heimdall-v2/x/staking/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/staking/exported"
 	"github.com/0xPolygon/heimdall-v2/x/staking/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/staking/simulation"
+	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
+
+	//"github.com/0xPolygon/heimdall-v2/x/staking/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -31,6 +32,7 @@ import (
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/cosmos/cosmos-sdk/x/staking/simulation"
 )
 
 const (
@@ -38,12 +40,12 @@ const (
 )
 
 var (
-	_ module.AppModuleBasic      = AppModuleBasic{}
-	_ module.AppModuleSimulation = AppModule{}
-	_ module.HasServices         = AppModule{}
-	_ module.HasInvariants       = AppModule{}
-	_ module.HasABCIGenesis      = AppModule{}
-	_ module.HasABCIEndBlock     = AppModule{}
+	_ module.AppModuleBasic = AppModuleBasic{}
+	//_ module.AppModuleSimulation = AppModule{}
+	_ module.HasServices     = AppModule{}
+	_ module.HasInvariants   = AppModule{}
+	_ module.HasABCIGenesis  = AppModule{}
+	_ module.HasABCIEndBlock = AppModule{}
 
 	_ appmodule.AppModule       = AppModule{}
 	_ appmodule.HasBeginBlocker = AppModule{}
@@ -52,7 +54,6 @@ var (
 // AppModuleBasic defines the basic application module used by the staking module.
 type AppModuleBasic struct {
 	cdc codec.Codec
-	ak  types.AccountKeeper
 }
 
 // Name returns the staking module's name.
@@ -95,7 +96,10 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *g
 
 // GetTxCmd returns the root tx command for the staking module.
 func (amb AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
+	return nil
+	// TODO H2 Please implement the CLI
+	//
+	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 
 // AppModule implements an application module for the staking module.
@@ -103,8 +107,6 @@ type AppModule struct {
 	AppModuleBasic
 
 	keeper         *keeper.Keeper
-	accountKeeper  types.AccountKeeper
-	bankKeeper     types.BankKeeper
 	contractCaller helper.IContractCaller
 
 	// legacySubspace is used solely for migration of x/params managed parameters
@@ -115,16 +117,12 @@ type AppModule struct {
 func NewAppModule(
 	cdc codec.Codec,
 	keeper *keeper.Keeper,
-	ak types.AccountKeeper,
-	bk types.BankKeeper,
 	contractCaller helper.IContractCaller,
 	ls exported.Subspace,
 ) AppModule {
 	return AppModule{
-		AppModuleBasic: AppModuleBasic{cdc: cdc, ak: ak},
+		AppModuleBasic: AppModuleBasic{cdc: cdc},
 		keeper:         keeper,
-		accountKeeper:  ak,
-		bankKeeper:     bk,
 		legacySubspace: ls,
 		contractCaller: contractCaller,
 	}
@@ -160,6 +158,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
 		panic(fmt.Sprintf("failed to migrate x/%s from version 4 to 5: %v", types.ModuleName, err))
 	}
+}
+
+// RegisterSideTxServicess registers side handler module services.
+func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
+	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
 // InitGenesis performs genesis initialization for the staking module.
@@ -205,10 +208,9 @@ type ModuleInputs struct {
 	Config                *modulev1.Module
 	ValidatorAddressCodec runtime.ValidatorAddressCodec
 	ConsensusAddressCodec runtime.ConsensusAddressCodec
-	AccountKeeper         types.AccountKeeper
-	BankKeeper            types.BankKeeper
 	Cdc                   codec.Codec
 	StoreService          store.KVStoreService
+	ModuleCommunicator    types.ModuleCommunicator
 	contractCaller        helper.IContractCaller
 
 	// LegacySubspace is used solely for migration of x/params managed parameters
@@ -233,13 +235,11 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 	k := keeper.NewKeeper(
 		in.Cdc,
 		in.StoreService,
-		in.AccountKeeper,
-		in.BankKeeper,
 		authority.String(),
-		in.ValidatorAddressCodec,
-		in.ConsensusAddressCodec,
+		in.ModuleCommunicator,
+		in.contractCaller,
 	)
-	m := NewAppModule(in.Cdc, k, in.AccountKeeper, in.BankKeeper, in.contractCaller, in.LegacySubspace)
+	m := NewAppModule(in.Cdc, k, in.contractCaller, in.LegacySubspace)
 	return ModuleOutputs{StakingKeeper: k, Module: m}
 }
 
@@ -297,12 +297,4 @@ func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.Weight
 // RegisterStoreDecoder registers a decoder for staking module's types
 func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
 	sdr[types.StoreKey] = simulation.NewDecodeStore(am.cdc)
-}
-
-// WeightedOperations returns the all the staking module operations with their respective weights.
-func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-	return simulation.WeightedOperations(
-		simState.AppParams, simState.Cdc, simState.TxConfig,
-		am.accountKeeper, am.bankKeeper, am.keeper,
-	)
 }

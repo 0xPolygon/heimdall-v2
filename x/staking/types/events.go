@@ -1,7 +1,7 @@
 package types
 
 // staking module event types
-const (
+var (
 	EventTypeNewProposer   = "new-proposer"
 	EventTypeValidatorJoin = "validator-join"
 	EventTypeSignerUpdate  = "signer-update"

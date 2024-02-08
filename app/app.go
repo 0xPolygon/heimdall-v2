@@ -51,7 +51,6 @@ import (
 	"cosmossdk.io/log"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
-	cmn "github.com/cometbft/cometbft/libs/os"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -304,12 +303,13 @@ func NewApp(
 	// Contract caller
 	//
 
-	contractCallerObj, err := helper.NewContractCaller()
-	if err != nil {
-		cmn.Exit(err.Error())
-	}
+	// contractCallerObj, err := helper.NewContractCaller()
+	// if err != nil {
+	// 	cmn.Exit(err.Error())
+	// }
 
-	app.caller = contractCallerObj
+	mockContractCaller := helper.ContractCaller{}
+	app.caller = mockContractCaller
 
 	app.mm = module.NewManager(
 		genutil.NewAppModule(

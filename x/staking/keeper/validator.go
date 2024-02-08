@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
@@ -51,7 +52,6 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address []byte
 // GetValidatorInfo returns validator
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address []byte) (validator hmTypes.Validator, err error) {
 	store := k.storeService.OpenKVStore(ctx)
-
 	// check if validator exists
 	key := types.GetValidatorKey(address)
 
@@ -175,7 +175,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 }
 
 // UpdateSigner updates validator with signer and pubkey + validator => signer map
-func (k *Keeper) UpdateSigner(ctx context.Context, newSigner hmTypes.HeimdallAddress, newPubkey hmTypes.PubKey, prevSigner hmTypes.HeimdallAddress) error {
+func (k *Keeper) UpdateSigner(ctx context.Context, newSigner hmTypes.HeimdallAddress, newPubkey *codecTypes.Any, prevSigner hmTypes.HeimdallAddress) error {
 	// get old validator from state and make power 0
 	validator, err := k.GetValidatorInfo(ctx, prevSigner.Bytes())
 	if err != nil {
@@ -297,9 +297,9 @@ func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID hmTypes.Val
 	// check if validator address has been mapped
 
 	bz, err := store.Get(key)
-	if err != nil {
+	if err != nil || bz == nil {
 		k.Logger(ctx).Error("GetSignerFromValidatorID | ValidatorIDKeyDoesNotExist ", "error", err)
-		return helper.ZeroAddress, false
+		return common.Address{}, false
 	}
 
 	// return address from bytes
@@ -313,9 +313,11 @@ func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID hmTypes.Valida
 		return validator, ok
 	}
 
+	fmt.Println(signerAddr.Bytes())
 	// query for validator signer address
 	validator, err := k.GetValidatorInfo(ctx, signerAddr.Bytes())
 	if err != nil {
+		fmt.Print("Here2s", err)
 		return validator, false
 	}
 

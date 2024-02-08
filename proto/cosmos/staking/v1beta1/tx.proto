@@ -8,8 +8,9 @@ import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/msg/v1/msg.proto";
 import "amino/amino.proto";
+import "cosmos/types/staking.proto";
 
-option go_package = "github.com/cosmos/cosmos-sdk/x/staking/types";
+option go_package = "x/staking/types";
 
 // Msg defines the staking Msg service.
 service Msg {
@@ -29,18 +30,25 @@ service Msg {
 }
 
 message MsgValidatorJoin {
-  option (cosmos.msg.v1.signer) = "validator_address";
   option (amino.name) = "staking/MsgValidatorJoin";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  string from = 1 [ (amino.dont_omitempty) = true ];
-  string i_d = 2 [ (amino.dont_omitempty) = true ];
+  cosmos.types.HeimdallAddress from = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.types.ValidatorID i_d = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   uint64 activation_epoch = 3 [ (amino.dont_omitempty) = true ];
-  string amount = 4 [ (amino.dont_omitempty) = true ];
-  string signer_pub_key = 5 [ (amino.dont_omitempty) = true ];
-  string tx_hash = 6 [ (amino.dont_omitempty) = true ];
+  string amount = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (amino.dont_omitempty) = true
+  ];
+  google.protobuf.Any signer_pub_key = 5
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+  cosmos.types.TxHash tx_hash = 6
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
@@ -57,10 +65,17 @@ message MsgStakeUpdate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  string from = 1 [ (amino.dont_omitempty) = true ];
-  string i_d = 2 [ (amino.dont_omitempty) = true ];
-  string new_amount = 3 [ (amino.dont_omitempty) = true ];
-  string tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  cosmos.types.HeimdallAddress from = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.types.ValidatorID i_d = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string new_amount = 3 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.customtype) = "cosmossdk.io/math.Int"
+  ];
+  cosmos.types.TxHash tx_hash = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
@@ -77,10 +92,14 @@ message MsgSignerUpdate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  string from = 1 [ (amino.dont_omitempty) = true ];
-  string i_d = 2 [ (amino.dont_omitempty) = true ];
-  string new_signer_pub_key = 3 [ (amino.dont_omitempty) = true ];
-  string tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  cosmos.types.HeimdallAddress from = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.types.ValidatorID i_d = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  google.protobuf.Any new_signer_pub_key = 3
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+  cosmos.types.TxHash tx_hash = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
@@ -96,14 +115,16 @@ message MsgValidatorExit {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  string from = 1 [ (amino.dont_omitempty) = true ];
-  string i_d = 2 [ (amino.dont_omitempty) = true ];
+  cosmos.types.HeimdallAddress from = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.types.ValidatorID i_d = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   uint64 deactivation_epoch = 3 [ (amino.dont_omitempty) = true ];
-  string amount = 4 [ (amino.dont_omitempty) = true ];
-  string tx_hash = 6 [ (amino.dont_omitempty) = true ];
-  uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
-  uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
-  uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
+  cosmos.types.TxHash tx_hash = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 
 // MsgValidatorExit defines the Msg/ValidatorExit response type.

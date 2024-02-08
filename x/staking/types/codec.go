@@ -6,7 +6,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	"github.com/cosmos/cosmos-sdk/x/authz"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/staking interfaces and concrete types
@@ -27,10 +26,11 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgSignerUpdate{},
 		&MsgValidatorExit{},
 	)
-	registry.RegisterImplementations(
-		(*authz.Authorization)(nil),
-		&StakeAuthorization{},
-	)
+	//TODO H2 Please check whether we need this
+	// registry.RegisterImplementations(
+	// 	(*authz.Authorization)(nil),
+	// 	&StakeAuthorization{},
+	// )
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }

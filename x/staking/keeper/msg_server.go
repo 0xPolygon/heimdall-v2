@@ -10,9 +10,10 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	hmerrors "github.com/0xPolygon/heimdall-v2/types/error"
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
@@ -43,7 +44,13 @@ func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoi
 
 	// Generate PubKey from Pubkey in message and signer
 	pubkey := msg.SignerPubKey
-	signer := pubkey.Address()
+	pk, ok := pubkey.GetCachedValue().(cryptotypes.PubKey)
+	if !ok {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
+	}
+
+	addBytes := pk.Address().Bytes()
+	signer := hmTypes.HeimdallAddress{addBytes}
 
 	// Check if validator has been validator before
 	if _, ok := k.GetSignerFromValidatorID(ctx, msg.ID); ok {
@@ -58,7 +65,7 @@ func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoi
 	}
 
 	// validate voting power
-	_, err = helper.GetPowerFromAmount(msg.Amount.Int.BigInt())
+	_, err = helper.GetPowerFromAmount(msg.Amount.BigInt())
 	if err != nil {
 		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.Amount, msg.ID))
 	}
@@ -129,7 +136,7 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	}
 
 	// set validator amount
-	_, err := helper.GetPowerFromAmount(msg.NewAmount.Int.BigInt())
+	_, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
 	if err != nil {
 		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.NewAmount, msg.ID))
 	}
@@ -157,8 +164,15 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		"blockNumber", msg.BlockNumber,
 	)
 
-	newPubKey := msg.NewSignerPubKey
-	newSigner := newPubKey.Address()
+	// Generate PubKey from Pubkey in message and signer
+	pubkey := msg.NewSignerPubKey
+	pk, ok := pubkey.GetCachedValue().(cryptotypes.PubKey)
+	if !ok {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
+	}
+
+	addBytes := pk.Address().Bytes()
+	newSigner := hmTypes.HeimdallAddress{addBytes}
 
 	// pull validator from store
 	validator, ok := k.GetValidatorFromValID(ctx, msg.ID)
