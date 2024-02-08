@@ -99,6 +99,7 @@ type HeimdallApp struct {
 	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper    bankkeeper.Keeper
 	// StakingKeeper *stakingkeeper.Keeper
+	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	DistrKeeper   distrkeeper.Keeper
 	GovKeeper     govkeeper.Keeper
 	UpgradeKeeper *upgradekeeper.Keeper
@@ -288,6 +289,7 @@ func NewHeimdallApp(
 		logger,
 	)
 
+	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
@@ -346,6 +348,7 @@ func NewHeimdallApp(
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
 		// TODO HV2: replace with our stake module
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
@@ -370,6 +373,7 @@ func NewHeimdallApp(
 
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
+		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distrtypes.ModuleName,
 		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
 	)
@@ -387,7 +391,7 @@ func NewHeimdallApp(
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		distrtypes.ModuleName,
+		distrtypes.ModuleName, // TODO HV2: consider removing distribution module since rewards are distributed on L1
 		govtypes.ModuleName,
 		upgradetypes.ModuleName,
 		// TODO HV2: uncomment when implemented
