@@ -25,8 +25,7 @@ message Validator {
   int64 voting_power = 5 [ (amino.dont_omitempty) = true ];
   google.protobuf.Any pub_key = 6
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
-  HeimdallAddress signer = 7
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string signer = 7 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
   string last_updated = 8 [ (amino.dont_omitempty) = true ];
   bool jailed = 9 [ (amino.dont_omitempty) = true ];
   int64 proposer_priority = 10 [ (amino.dont_omitempty) = true ];

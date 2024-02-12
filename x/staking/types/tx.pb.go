@@ -21,7 +21,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	types "github.com/0xPolygon/heimdall-v2/x/types"
+	types "x/types"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
