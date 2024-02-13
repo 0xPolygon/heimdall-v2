@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"github.com/0xPolygon/heimdall-v2/x/staking/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // func (s *KeeperTestSuite) TestGRPCQueryValidator() {
@@ -86,7 +87,7 @@ func (s *KeeperTestSuite) TesthandleQuerySigner() {
 	require := s.Require()
 
 	req := &types.QuerySignerRequest{
-		ValAddress: make([]byte, 20),
+		ValAddress: common.Address{}.String(),
 	}
 
 	res, err := queryClient.Signer(ctx, req)
@@ -98,7 +99,7 @@ func (s *KeeperTestSuite) TesthandleQuerySigner() {
 	validators := keeper.GetAllValidators(ctx)
 
 	req = &types.QuerySignerRequest{
-		ValAddress: validators[0].Signer.Address,
+		ValAddress: validators[0].Signer,
 	}
 
 	res, err = queryClient.Signer(ctx, req)
@@ -139,7 +140,7 @@ func (s *KeeperTestSuite) TesthandleQueryValidator() {
 	validators := keeper.GetAllValidators(ctx)
 
 	req = &types.QueryValidatorRequest{
-		Id: validators[0].GetID().ID,
+		Id: validators[0].ValId,
 	}
 
 	res, err = queryClient.Validator(ctx, req)
@@ -161,7 +162,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	validators := keeper.GetAllValidators(ctx)
 
 	req := &types.QueryValidatorStatusRequest{
-		ValAddress: validators[0].Signer.Address,
+		ValAddress: validators[0].Signer,
 	}
 	res, err := queryClient.ValidatorStatus(ctx, req)
 	// check no error found
@@ -172,7 +173,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	require.True(res.Status)
 
 	req = &types.QueryValidatorStatusRequest{
-		ValAddress: make([]byte, 20),
+		ValAddress: common.Address{}.String(),
 	}
 	res, err = queryClient.ValidatorStatus(ctx, req)
 	// check no error found

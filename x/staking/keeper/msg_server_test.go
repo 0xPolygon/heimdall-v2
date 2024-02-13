@@ -35,8 +35,8 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	require.NoError(err)
 
 	msgValJoin := stakingtypes.MsgValidatorJoin{
-		From:            hmTypes.HeimdallAddress{Address: pk1.Address().Bytes()},
-		ID:              hmTypes.ValidatorID{ID: uint64(1)},
+		From:            pk1.Address().String(),
+		ValId:           uint64(1),
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pubkey,
@@ -49,7 +49,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	_, err = msgServer.JoinValidator(ctx, &msgValJoin)
 	require.NoError(err)
 
-	_, ok := keeper.GetValidatorFromValID(ctx, hmTypes.ValidatorID{uint64(1)})
+	_, ok := keeper.GetValidatorFromValID(ctx, uint64(1))
 	require.False(false, ok, "Should not add validator")
 }
 
@@ -63,13 +63,13 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorUpdate() {
 	// vals := oldValSet.(*Validators)
 	oldSigner := oldValSet.Validators[0]
 	newSigner := testutil.GenRandomVal(1, 0, 10, 10, false, 1)
-	newSigner[0].ID = oldSigner.ID
+	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 
 	// gen msg
 	msgSignerUpdate := stakingtypes.MsgSignerUpdate{
-		From:            hmTypes.HeimdallAddress{Address: newSigner[0].Signer.Address},
-		ID:              hmTypes.ValidatorID{ID: uint64(1)},
+		From:            newSigner[0].Signer,
+		ValId:           uint64(1),
 		NewSignerPubKey: newSigner[0].GetPubKey(),
 		TxHash:          hmTypes.TxHash{},
 		LogIndex:        uint64(0),
@@ -91,12 +91,12 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorUpdate() {
 
 	_ = keeper.UpdateValidatorSetInStore(ctx, oldValSet)
 
-	ValFrmID, ok := keeper.GetValidatorFromValID(ctx, oldSigner.ID)
+	ValFrmID, ok := keeper.GetValidatorFromValID(ctx, oldSigner.ValId)
 	require.True(ok, "signer should be found, got %v", ok)
-	require.NotEqual(oldSigner.Signer.Bytes(), newSigner[0].Signer.Bytes(), "Should not update state")
+	require.NotEqual(oldSigner.Signer, newSigner[0].Signer, "Should not update state")
 	require.Equal(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
 
-	removedVal, err := keeper.GetValidatorInfo(ctx, oldSigner.Signer.Bytes())
+	removedVal, err := keeper.GetValidatorInfo(ctx, oldSigner.Signer)
 	require.Empty(err)
 	require.NotEqual(removedVal.VotingPower, int64(0), "should not update state")
 }
@@ -111,8 +111,8 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 
 	validators[0].EndEpoch = 10
 	msgValidatorExit := stakingtypes.MsgValidatorExit{
-		From:              hmTypes.HeimdallAddress{Address: validators[0].Signer.Address},
-		ID:                hmTypes.ValidatorID{ID: uint64(1)},
+		From:              validators[0].Signer,
+		ValId:             uint64(1),
 		DeactivationEpoch: validators[0].EndEpoch,
 		TxHash:            hmTypes.TxHash(msgTxHash),
 		LogIndex:          uint64(0),
@@ -124,12 +124,12 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 
 	require.NoError(err, "expected validator exit to be ok")
 
-	updatedValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer.Bytes())
+	updatedValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	// updatedValInfo.EndEpoch = 10
-	require.NoError(err, "Unable to get validator info from val address,ValAddr:%v Error:%v ", validators[0].Signer.String(), err)
+	require.NoError(err, "Unable to get validator info from val address,ValAddr:%v Error:%v ", validators[0].Signer, err)
 	require.NotEqual(updatedValInfo.EndEpoch, validators[0].EndEpoch, "should not update deactivation epoch")
 
-	_, found := keeper.GetValidatorFromValID(ctx, validators[0].ID)
+	_, found := keeper.GetValidatorFromValID(ctx, validators[0].ValId)
 	require.True(found, "Validator should be present even after deactivation")
 
 	_, err = msgServer.ValidatorExit(ctx, &msgValidatorExit)
@@ -149,8 +149,8 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	newAmount := math.NewInt(2000000000000000000)
 
 	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
-		From:        hmTypes.HeimdallAddress{Address: oldVal.Signer.Address},
-		ID:          hmTypes.ValidatorID{ID: oldVal.ID.GetID()},
+		From:        oldVal.Signer,
+		ValId:       oldVal.ValId,
 		NewAmount:   newAmount,
 		TxHash:      hmTypes.TxHash(msgTxHash),
 		LogIndex:    uint64(0),
@@ -161,7 +161,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	_, err := msgServer.StakeUpdate(ctx, &msgStakeUpdate)
 	require.NoError(err, "expected validator stake update to be ok")
 
-	updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer.Bytes())
+	updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer)
 	require.NoError(err, "unable to fetch validator info %v-", err)
 	require.NotEqual(newAmount.Int64(), updatedVal.VotingPower, "Validator VotingPower should not be updated to %v", newAmount.Int64())
 }
@@ -179,12 +179,12 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	pubkey, err := codectypes.NewAnyWithValue(pk1)
 	require.NoError(err)
 
-	addr := pk1.Address().Bytes()
+	addr := pk1.Address().String()
 
 	index := simulation.RandIntBetween(r1, 0, 100)
 	logIndex := uint64(index)
 
-	validatorId := hmTypes.NewValidatorID(uint64(1))
+	validatorId := uint64(1)
 	validator := hmTypes.NewValidator(
 		validatorId,
 		10,
@@ -192,7 +192,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		1,
 		int64(0), // power
 		pk1,
-		hmTypes.HeimdallAddress{addr},
+		addr,
 	)
 
 	err = keeper.AddValidator(ctx, *validator)
@@ -203,10 +203,10 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	require.False(isCurrentValidator)
 
 	totalValidators := keeper.GetAllValidators(ctx)
-	require.Equal(totalValidators[0].Signer.Bytes(), addr)
+	require.Equal(totalValidators[0].Signer, addr)
 	msgValJoin := stakingtypes.MsgValidatorJoin{
-		From:            hmTypes.HeimdallAddress{Address: addr},
-		ID:              hmTypes.ValidatorID{ID: validatorId.Uint64()},
+		From:            addr,
+		ValId:           validatorId,
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(100000)),
 		SignerPubKey:    pubkey,

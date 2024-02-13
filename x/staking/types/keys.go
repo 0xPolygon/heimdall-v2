@@ -50,7 +50,7 @@ func GetUpdatedValidators(
 		// create copy of validator
 		validator := v.Copy()
 
-		address := validator.Signer.Bytes()
+		address := validator.Signer
 
 		_, val := currentSet.GetByAddress(address)
 		if val != nil && !validator.IsCurrentValidator(ackCount) {

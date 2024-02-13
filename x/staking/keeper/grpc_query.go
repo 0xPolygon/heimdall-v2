@@ -54,7 +54,7 @@ func (k Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest
 	}
 
 	fmt.Print("-------IN VALIDATOR", req.Id)
-	validator, ok := k.GetValidatorFromValID(ctx, hmTypes.ValidatorID{req.Id})
+	validator, ok := k.GetValidatorFromValID(ctx, req.Id)
 	fmt.Print("-------OUT VALIDATOR", ok)
 
 	if !ok {

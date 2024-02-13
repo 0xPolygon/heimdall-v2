@@ -207,7 +207,6 @@ type ModuleInputs struct {
 
 	Config                *modulev1.Module
 	ValidatorAddressCodec runtime.ValidatorAddressCodec
-	ConsensusAddressCodec runtime.ConsensusAddressCodec
 	Cdc                   codec.Codec
 	StoreService          store.KVStoreService
 	ModuleCommunicator    types.ModuleCommunicator
@@ -229,7 +228,7 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 	// default to governance authority if not provided
 	authority := authtypes.NewModuleAddress(govtypes.ModuleName)
 	if in.Config.Authority != "" {
-		authority = authtypes.NewModuleAddressOrBech32Address(in.Config.Authority)
+		authority = authtypes.NewModuleAddressOrHexAddress(in.Config.Authority)
 	}
 
 	k := keeper.NewKeeper(
@@ -237,6 +236,7 @@ func ProvideModule(in ModuleInputs) ModuleOutputs {
 		in.StoreService,
 		authority.String(),
 		in.ModuleCommunicator,
+		in.ValidatorAddressCodec,
 		in.contractCaller,
 	)
 	m := NewAppModule(in.Cdc, k, in.contractCaller, in.LegacySubspace)

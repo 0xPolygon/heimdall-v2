@@ -1,11 +1,11 @@
 package keeper
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	errorsmod "cosmossdk.io/errors"
 
@@ -33,7 +33,7 @@ var _ types.MsgServer = msgServer{}
 // CreateValidator defines a method for creating a new validator
 func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating validator join msg",
-		"validatorId", msg.ID,
+		"validatorId", msg.ValId,
 		"activationEpoch", msg.ActivationEpoch,
 		"amount", msg.Amount,
 		"SignerPubkey", msg.SignerPubKey.String(),
@@ -49,25 +49,26 @@ func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
 	}
 
-	addBytes := pk.Address().Bytes()
-	signer := hmTypes.HeimdallAddress{addBytes}
+	//TODO H2 Can any attack possible about it?
+	//String directly coming from it is not of correct length
+	signer := strings.ToLower(pk.Address().String())
 
 	// Check if validator has been validator before
-	if _, ok := k.GetSignerFromValidatorID(ctx, msg.ID); ok {
-		k.Logger(ctx).Error("validator has been validator beforeV, cannot join with same ID", "validatorId", msg.ID)
+	if _, ok := k.GetSignerFromValidatorID(ctx, msg.ValId); ok {
+		k.Logger(ctx).Error("validator has been validator beforeV, cannot join with same ID", "validatorId", msg.ValId)
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator has been validator before")
 	}
 
 	// get validator by signer
-	checkVal, err := k.GetValidatorInfo(ctx, signer.Bytes())
-	if err == nil || bytes.Equal(checkVal.Signer.Bytes(), signer.Bytes()) {
+	checkVal, err := k.GetValidatorInfo(ctx, signer)
+	if err == nil || checkVal.Signer == signer {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator already exist")
 	}
 
 	// validate voting power
 	_, err = helper.GetPowerFromAmount(msg.Amount.BigInt())
 	if err != nil {
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.Amount, msg.ID))
+		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.Amount, msg.ValId))
 	}
 
 	// sequence id
@@ -87,7 +88,7 @@ func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoi
 		sdk.NewEvent(
 			types.EventTypeValidatorJoin,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(msg.ID.Uint64(), 10)),
+			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(msg.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
@@ -98,7 +99,7 @@ func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoi
 // EditValidator defines a method for editing an existing validator
 func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (*types.MsgStakeUpdateResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating stake update msg",
-		"validatorID", msg.ID,
+		"validatorID", msg.ValId,
 		"newAmount", msg.NewAmount,
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
@@ -106,9 +107,9 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	)
 
 	// pull validator from store
-	_, ok := k.GetValidatorFromValID(ctx, msg.ID)
+	_, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ID)
+		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId)
 		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
@@ -124,9 +125,9 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	}
 
 	// pull validator from store
-	validator, ok := k.GetValidatorFromValID(ctx, msg.ID)
+	validator, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ID)
+		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId)
 		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
@@ -138,7 +139,7 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	// set validator amount
 	_, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
 	if err != nil {
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.NewAmount, msg.ID))
+		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.NewAmount, msg.ValId))
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -146,7 +147,7 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 		sdk.NewEvent(
 			types.EventTypeStakeUpdate,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ID.Uint64(), 10)),
+			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
@@ -157,7 +158,7 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 // Delegate defines a method for performing a delegation of coins from a delegator to a validator
 func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating signer update msg",
-		"validatorID", msg.ID,
+		"validatorID", msg.ValId,
 		"NewSignerPubkey", msg.NewSignerPubKey.String(),
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
@@ -171,13 +172,12 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
 	}
 
-	addBytes := pk.Address().Bytes()
-	newSigner := hmTypes.HeimdallAddress{addBytes}
+	newSigner := strings.ToLower(pk.Address().String())
 
 	// pull validator from store
-	validator, ok := k.GetValidatorFromValID(ctx, msg.ID)
+	validator, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ID)
+		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId)
 		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
@@ -193,7 +193,7 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	}
 
 	// check if new signer address is same as existing signer
-	if bytes.Equal(newSigner.Bytes(), validator.Signer.Bytes()) {
+	if newSigner == validator.Signer {
 		// No signer change
 		k.Logger(ctx).Error("NewSigner same as OldSigner.")
 		return nil, errorsmod.Wrap(hmerrors.ErrNoSignerChange, "NewSigner same as OldSigner")
@@ -211,7 +211,7 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		sdk.NewEvent(
 			types.EventTypeSignerUpdate,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ID.Uint64(), 10)),
+			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
@@ -222,16 +222,16 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 // BeginRedelegate defines a method for performing a redelegation of coins from a source validator to a destination validator of given delegator
 func (k msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExit) (*types.MsgValidatorExitResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating validator exit msg",
-		"validatorID", msg.ID,
+		"validatorID", msg.ValId,
 		"deactivatonEpoch", msg.DeactivationEpoch,
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
 
-	validator, ok := k.GetValidatorFromValID(ctx, msg.ID)
+	validator, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorID", msg.ID)
+		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorID", msg.ValId)
 		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
@@ -264,7 +264,7 @@ func (k msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		sdk.NewEvent(
 			types.EventTypeValidatorExit,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ID.Uint64(), 10)),
+			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})

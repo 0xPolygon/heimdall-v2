@@ -5,10 +5,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
+	addresscodec "cosmossdk.io/core/address"
 	storetypes "cosmossdk.io/store/types"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
@@ -23,19 +26,24 @@ func (k *Keeper) AddValidator(ctx context.Context, validator hmTypes.Validator) 
 		return err
 	}
 
-	// store validator with address prefixed with validator key as index
-	store.Set(types.GetValidatorKey(validator.Signer.Bytes()), bz)
+	valAddrBytes, err := k.validatorAddressCodec.StringToBytes(validator.Signer)
+	if err != nil {
+		return err
+	}
 
-	k.Logger(ctx).Debug("Validator stored", "key", hex.EncodeToString(types.GetValidatorKey(validator.Signer.Bytes())), "validator", validator.String())
+	// store validator with address prefixed with validator key as index
+	store.Set(types.GetValidatorKey(valAddrBytes), bz)
+
+	k.Logger(ctx).Debug("Validator stored", "key", hex.EncodeToString(types.GetValidatorKey(valAddrBytes)), "validator", validator.String())
 
 	// add validator to validator ID => SignerAddress map
-	k.SetValidatorIDToSignerAddr(ctx, validator.ID, validator.Signer)
+	k.SetValidatorIDToSignerAddr(ctx, validator.ValId, validator.Signer)
 
 	return nil
 }
 
 // IsCurrentValidatorByAddress check if validator is in current validator set by signer address
-func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address []byte) bool {
+func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) bool {
 	// get ack count
 	ackCount := k.moduleCommunicator.GetACKCount(ctx)
 
@@ -50,10 +58,16 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address []byte
 }
 
 // GetValidatorInfo returns validator
-func (k *Keeper) GetValidatorInfo(ctx context.Context, address []byte) (validator hmTypes.Validator, err error) {
+func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator hmTypes.Validator, err error) {
 	store := k.storeService.OpenKVStore(ctx)
+	address = strings.ToLower(address)
+	valAddr, err := k.validatorAddressCodec.StringToBytes(address)
+	if err != nil {
+		return validator, err
+	}
+
 	// check if validator exists
-	key := types.GetValidatorKey(address)
+	key := types.GetValidatorKey(valAddr)
 
 	valBytes, err := store.Get(key)
 
@@ -76,7 +90,7 @@ func (k *Keeper) GetValidatorInfo(ctx context.Context, address []byte) (validato
 }
 
 // GetActiveValidatorInfo returns active validator
-func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address []byte) (validator hmTypes.Validator, err error) {
+func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (validator hmTypes.Validator, err error) {
 	validator, err = k.GetValidatorInfo(ctx, address)
 	if err != nil {
 		return validator, err
@@ -112,8 +126,8 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []hmTypes
 }
 
 func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64) {
-	k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator *hmTypes.Validator) bool {
-		totalPower += validator.VotingPower
+	k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator cosmosTypes.ValidatorI) bool {
+		totalPower += validator.GetBondedTokens().Int64()
 		return true
 	})
 
@@ -175,9 +189,9 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 }
 
 // UpdateSigner updates validator with signer and pubkey + validator => signer map
-func (k *Keeper) UpdateSigner(ctx context.Context, newSigner hmTypes.HeimdallAddress, newPubkey *codecTypes.Any, prevSigner hmTypes.HeimdallAddress) error {
+func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *codecTypes.Any, prevSigner string) error {
 	// get old validator from state and make power 0
-	validator, err := k.GetValidatorInfo(ctx, prevSigner.Bytes())
+	validator, err := k.GetValidatorInfo(ctx, prevSigner)
 	if err != nil {
 		k.Logger(ctx).Error("Unable to fetch validator from store")
 		return err
@@ -281,19 +295,23 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *hmTypes.Validator {
 }
 
 // SetValidatorIDToSignerAddr sets mapping for validator ID to signer address
-func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID hmTypes.ValidatorID, signerAddr hmTypes.HeimdallAddress) {
+func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, signerAddr string) {
 	store := k.storeService.OpenKVStore(ctx)
+	signerAddrBytes, err := k.validatorAddressCodec.StringToBytes(signerAddr)
+	if err != nil {
+		k.Logger(ctx).Error("SetValidatorIDToSignerAddr | Error while converting addr to bytes", "error", err)
+	}
 
-	err := store.Set(types.GetValidatorMapKey(valID.Bytes()), signerAddr.Bytes())
+	err = store.Set(types.GetValidatorMapKey(hmTypes.ValIDToBytes(valID)), signerAddrBytes)
 	if err != nil {
 		k.Logger(ctx).Error("SetValidatorIDToSignerAddr | Key or value is nil", "error", err)
 	}
 }
 
 // GetSignerFromValidatorID get signer address from validator ID
-func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID hmTypes.ValidatorID) (common.Address, bool) {
+func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (common.Address, bool) {
 	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetValidatorMapKey(valID.Bytes())
+	key := types.GetValidatorMapKey(hmTypes.ValIDToBytes(valID))
 	// check if validator address has been mapped
 
 	bz, err := store.Get(key)
@@ -307,7 +325,7 @@ func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID hmTypes.Val
 }
 
 // GetValidatorFromValID returns signer from validator ID
-func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID hmTypes.ValidatorID) (validator hmTypes.Validator, ok bool) {
+func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (validator hmTypes.Validator, ok bool) {
 	signerAddr, ok := k.GetSignerFromValidatorID(ctx, valID)
 	if !ok {
 		return validator, ok
@@ -315,9 +333,8 @@ func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID hmTypes.Valida
 
 	fmt.Println(signerAddr.Bytes())
 	// query for validator signer address
-	validator, err := k.GetValidatorInfo(ctx, signerAddr.Bytes())
+	validator, err := k.GetValidatorInfo(ctx, signerAddr.String())
 	if err != nil {
-		fmt.Print("Here2s", err)
 		return validator, false
 	}
 
@@ -325,7 +342,7 @@ func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID hmTypes.Valida
 }
 
 // GetLastUpdated get last updated at for validator
-func (k *Keeper) GetLastUpdated(ctx context.Context, valID hmTypes.ValidatorID) (updatedAt string, found bool) {
+func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt string, found bool) {
 	// get validator
 	validator, ok := k.GetValidatorFromValID(ctx, valID)
 	if !ok {
@@ -335,15 +352,15 @@ func (k *Keeper) GetLastUpdated(ctx context.Context, valID hmTypes.ValidatorID) 
 	return validator.LastUpdated, true
 }
 
-// IterateCurrentValidatorsAndApplyFn iterate through current validators
-func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator *hmTypes.Validator) bool) {
-	currentValidatorSet := k.GetValidatorSet(ctx)
-	for _, v := range currentValidatorSet.Validators {
-		if stop := f(v); stop {
-			return
-		}
-	}
-}
+// // IterateCurrentValidatorsAndApplyFn iterate through current validators
+// func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator *hmTypes.Validator) bool) {
+// 	currentValidatorSet := k.GetValidatorSet(ctx)
+// 	for _, v := range currentValidatorSet.Validators {
+// 		if stop := f(v); stop {
+// 			return
+// 		}
+// 	}
+// }
 
 //
 // Staking sequence
@@ -401,6 +418,39 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 			return
 		}
 	}
+}
+
+// GetValIdFromAddress returns a validator's id given its address string
+func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint64, error) {
+	// get ack count
+	ackCount := k.moduleCommunicator.GetACKCount(ctx)
+
+	address = strings.ToLower(address)
+
+	// get validator info
+	validator, err := k.GetValidatorInfo(ctx, address)
+	if err != nil {
+		return 0, err
+	}
+
+	// check if validator is current validator
+	if validator.IsCurrentValidator(ackCount) {
+		return validator.ValId, nil
+	}
+
+	return 0, errors.New("Address not found in current validator set")
+}
+
+// TODO H2 Please how to use the stop parameter here
+// IterateCurrentValidatorsAndApplyFn iterate through current validators
+func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
+	currentValidatorSet := k.GetValidatorSet(ctx)
+	for _, v := range currentValidatorSet.Validators {
+		if stop := f(v); !stop {
+			return nil
+		}
+	}
+	return nil
 }
 
 // MilestoneIncrementAccum increments accum for milestone validator set by n times and replace validator set in store
@@ -467,6 +517,11 @@ func (k *Keeper) GetMilestoneCurrentProposer(ctx context.Context) *hmTypes.Valid
 
 	// return get proposer
 	return validatorSet.GetProposer()
+}
+
+// ValidatorAddressCodec return the validator address codec
+func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
+	return k.validatorAddressCodec
 }
 
 ////////////////////////    Slashing Code //////////////////////////////

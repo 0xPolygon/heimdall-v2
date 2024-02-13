@@ -8,7 +8,7 @@ import (
 	cosmossdk_io_math "cosmossdk.io/math"
 	fmt "fmt"
 	_ "github.com/cosmos/cosmos-proto"
-	types1 "github.com/cosmos/cosmos-sdk/codec/types"
+	types "github.com/cosmos/cosmos-sdk/codec/types"
 	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
@@ -21,7 +21,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	types "github.com/0xPolygon/heimdall-v2/x/types"
+	types1 "github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -36,12 +36,12 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type MsgValidatorJoin struct {
-	From            types.HeimdallAddress `protobuf:"bytes,1,opt,name=from,proto3" json:"from"`
-	ID              types.ValidatorID     `protobuf:"bytes,2,opt,name=i_d,json=iD,proto3" json:"i_d"`
+	From            string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId           uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
 	ActivationEpoch uint64                `protobuf:"varint,3,opt,name=activation_epoch,json=activationEpoch,proto3" json:"activation_epoch,omitempty"`
 	Amount          cosmossdk_io_math.Int `protobuf:"bytes,4,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`
-	SignerPubKey    *types1.Any           `protobuf:"bytes,5,opt,name=signer_pub_key,json=signerPubKey,proto3" json:"signer_pub_key,omitempty"`
-	TxHash          types.TxHash          `protobuf:"bytes,6,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
+	SignerPubKey    *types.Any            `protobuf:"bytes,5,opt,name=signer_pub_key,json=signerPubKey,proto3" json:"signer_pub_key,omitempty"`
+	TxHash          types1.TxHash         `protobuf:"bytes,6,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
 	LogIndex        uint64                `protobuf:"varint,7,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 	BlockNumber     uint64                `protobuf:"varint,8,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
 	Nonce           uint64                `protobuf:"varint,9,opt,name=nonce,proto3" json:"nonce,omitempty"`
@@ -80,18 +80,18 @@ func (m *MsgValidatorJoin) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgValidatorJoin proto.InternalMessageInfo
 
-func (m *MsgValidatorJoin) GetFrom() types.HeimdallAddress {
+func (m *MsgValidatorJoin) GetFrom() string {
 	if m != nil {
 		return m.From
 	}
-	return types.HeimdallAddress{}
+	return ""
 }
 
-func (m *MsgValidatorJoin) GetID() types.ValidatorID {
+func (m *MsgValidatorJoin) GetValId() uint64 {
 	if m != nil {
-		return m.ID
+		return m.ValId
 	}
-	return types.ValidatorID{}
+	return 0
 }
 
 func (m *MsgValidatorJoin) GetActivationEpoch() uint64 {
@@ -101,18 +101,18 @@ func (m *MsgValidatorJoin) GetActivationEpoch() uint64 {
 	return 0
 }
 
-func (m *MsgValidatorJoin) GetSignerPubKey() *types1.Any {
+func (m *MsgValidatorJoin) GetSignerPubKey() *types.Any {
 	if m != nil {
 		return m.SignerPubKey
 	}
 	return nil
 }
 
-func (m *MsgValidatorJoin) GetTxHash() types.TxHash {
+func (m *MsgValidatorJoin) GetTxHash() types1.TxHash {
 	if m != nil {
 		return m.TxHash
 	}
-	return types.TxHash{}
+	return types1.TxHash{}
 }
 
 func (m *MsgValidatorJoin) GetLogIndex() uint64 {
@@ -176,10 +176,10 @@ var xxx_messageInfo_MsgValidatorJoinResponse proto.InternalMessageInfo
 // MsgDelegate defines a SDK message for performing a delegation of coins
 // from a delegator to a validator.
 type MsgStakeUpdate struct {
-	From        types.HeimdallAddress `protobuf:"bytes,1,opt,name=from,proto3" json:"from"`
-	ID          types.ValidatorID     `protobuf:"bytes,2,opt,name=i_d,json=iD,proto3" json:"i_d"`
+	From        string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId       uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
 	NewAmount   cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3,customtype=cosmossdk.io/math.Int" json:"new_amount"`
-	TxHash      types.TxHash          `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
+	TxHash      types1.TxHash         `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
 	LogIndex    uint64                `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 	BlockNumber uint64                `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
 	Nonce       uint64                `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
@@ -218,25 +218,25 @@ func (m *MsgStakeUpdate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgStakeUpdate proto.InternalMessageInfo
 
-func (m *MsgStakeUpdate) GetFrom() types.HeimdallAddress {
+func (m *MsgStakeUpdate) GetFrom() string {
 	if m != nil {
 		return m.From
 	}
-	return types.HeimdallAddress{}
+	return ""
 }
 
-func (m *MsgStakeUpdate) GetID() types.ValidatorID {
+func (m *MsgStakeUpdate) GetValId() uint64 {
 	if m != nil {
-		return m.ID
+		return m.ValId
 	}
-	return types.ValidatorID{}
+	return 0
 }
 
-func (m *MsgStakeUpdate) GetTxHash() types.TxHash {
+func (m *MsgStakeUpdate) GetTxHash() types1.TxHash {
 	if m != nil {
 		return m.TxHash
 	}
-	return types.TxHash{}
+	return types1.TxHash{}
 }
 
 func (m *MsgStakeUpdate) GetLogIndex() uint64 {
@@ -300,13 +300,13 @@ var xxx_messageInfo_MsgStakeUpdateResponse proto.InternalMessageInfo
 // MsgSignerUpdate defines a SDK message for updating signer of the existing
 // validator
 type MsgSignerUpdate struct {
-	From            types.HeimdallAddress `protobuf:"bytes,1,opt,name=from,proto3" json:"from"`
-	ID              types.ValidatorID     `protobuf:"bytes,2,opt,name=i_d,json=iD,proto3" json:"i_d"`
-	NewSignerPubKey *types1.Any           `protobuf:"bytes,3,opt,name=new_signer_pub_key,json=newSignerPubKey,proto3" json:"new_signer_pub_key,omitempty"`
-	TxHash          types.TxHash          `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
-	LogIndex        uint64                `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber     uint64                `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	Nonce           uint64                `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	From            string        `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId           uint64        `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
+	NewSignerPubKey *types.Any    `protobuf:"bytes,3,opt,name=new_signer_pub_key,json=newSignerPubKey,proto3" json:"new_signer_pub_key,omitempty"`
+	TxHash          types1.TxHash `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
+	LogIndex        uint64        `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	BlockNumber     uint64        `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	Nonce           uint64        `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
 }
 
 func (m *MsgSignerUpdate) Reset()         { *m = MsgSignerUpdate{} }
@@ -342,32 +342,32 @@ func (m *MsgSignerUpdate) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSignerUpdate proto.InternalMessageInfo
 
-func (m *MsgSignerUpdate) GetFrom() types.HeimdallAddress {
+func (m *MsgSignerUpdate) GetFrom() string {
 	if m != nil {
 		return m.From
 	}
-	return types.HeimdallAddress{}
+	return ""
 }
 
-func (m *MsgSignerUpdate) GetID() types.ValidatorID {
+func (m *MsgSignerUpdate) GetValId() uint64 {
 	if m != nil {
-		return m.ID
+		return m.ValId
 	}
-	return types.ValidatorID{}
+	return 0
 }
 
-func (m *MsgSignerUpdate) GetNewSignerPubKey() *types1.Any {
+func (m *MsgSignerUpdate) GetNewSignerPubKey() *types.Any {
 	if m != nil {
 		return m.NewSignerPubKey
 	}
 	return nil
 }
 
-func (m *MsgSignerUpdate) GetTxHash() types.TxHash {
+func (m *MsgSignerUpdate) GetTxHash() types1.TxHash {
 	if m != nil {
 		return m.TxHash
 	}
-	return types.TxHash{}
+	return types1.TxHash{}
 }
 
 func (m *MsgSignerUpdate) GetLogIndex() uint64 {
@@ -430,13 +430,13 @@ var xxx_messageInfo_MsgSignerUpdateResponse proto.InternalMessageInfo
 
 // MsgValidatorExit defines a SDK message for exiting the validator
 type MsgValidatorExit struct {
-	From              types.HeimdallAddress `protobuf:"bytes,1,opt,name=from,proto3" json:"from"`
-	ID                types.ValidatorID     `protobuf:"bytes,2,opt,name=i_d,json=iD,proto3" json:"i_d"`
-	DeactivationEpoch uint64                `protobuf:"varint,3,opt,name=deactivation_epoch,json=deactivationEpoch,proto3" json:"deactivation_epoch,omitempty"`
-	TxHash            types.TxHash          `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
-	LogIndex          uint64                `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber       uint64                `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	Nonce             uint64                `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	From              string        `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId             uint64        `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
+	DeactivationEpoch uint64        `protobuf:"varint,3,opt,name=deactivation_epoch,json=deactivationEpoch,proto3" json:"deactivation_epoch,omitempty"`
+	TxHash            types1.TxHash `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
+	LogIndex          uint64        `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	BlockNumber       uint64        `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	Nonce             uint64        `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
 }
 
 func (m *MsgValidatorExit) Reset()         { *m = MsgValidatorExit{} }
@@ -472,18 +472,18 @@ func (m *MsgValidatorExit) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgValidatorExit proto.InternalMessageInfo
 
-func (m *MsgValidatorExit) GetFrom() types.HeimdallAddress {
+func (m *MsgValidatorExit) GetFrom() string {
 	if m != nil {
 		return m.From
 	}
-	return types.HeimdallAddress{}
+	return ""
 }
 
-func (m *MsgValidatorExit) GetID() types.ValidatorID {
+func (m *MsgValidatorExit) GetValId() uint64 {
 	if m != nil {
-		return m.ID
+		return m.ValId
 	}
-	return types.ValidatorID{}
+	return 0
 }
 
 func (m *MsgValidatorExit) GetDeactivationEpoch() uint64 {
@@ -493,11 +493,11 @@ func (m *MsgValidatorExit) GetDeactivationEpoch() uint64 {
 	return 0
 }
 
-func (m *MsgValidatorExit) GetTxHash() types.TxHash {
+func (m *MsgValidatorExit) GetTxHash() types1.TxHash {
 	if m != nil {
 		return m.TxHash
 	}
-	return types.TxHash{}
+	return types1.TxHash{}
 }
 
 func (m *MsgValidatorExit) GetLogIndex() uint64 {
@@ -572,57 +572,57 @@ func init() {
 func init() { proto.RegisterFile("cosmos/staking/v1beta1/tx.proto", fileDescriptor_0926ef28816b35ab) }
 
 var fileDescriptor_0926ef28816b35ab = []byte{
-	// 800 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x96, 0xcf, 0x4f, 0xdb, 0x48,
-	0x14, 0xc7, 0x63, 0x9c, 0x04, 0x32, 0xfc, 0x08, 0x58, 0x2c, 0x38, 0x46, 0x9b, 0xa0, 0x48, 0x0b,
-	0x59, 0x24, 0x6c, 0x60, 0x77, 0xa5, 0x15, 0xda, 0x4b, 0x22, 0x90, 0x60, 0x2b, 0xaa, 0x0a, 0x68,
-	0x0f, 0xed, 0xc1, 0x9a, 0xc4, 0x83, 0x63, 0x39, 0x9e, 0xb1, 0x32, 0x13, 0x48, 0x6e, 0x3d, 0x56,
-	0x55, 0x0f, 0xbd, 0x54, 0xbd, 0x72, 0xec, 0x91, 0x4a, 0x95, 0xfa, 0x2f, 0xa0, 0x9e, 0x38, 0x56,
-	0x3d, 0xa0, 0x0a, 0x0e, 0xf4, 0xcf, 0xa8, 0xfc, 0x23, 0xee, 0xd8, 0xa2, 0x34, 0x6a, 0x0f, 0xb4,
-	0x97, 0xc4, 0x7e, 0xef, 0xfb, 0xe6, 0xcd, 0x9b, 0xcf, 0x9b, 0x27, 0x83, 0x52, 0x83, 0x50, 0x87,
-	0x50, 0x8d, 0x32, 0x68, 0x5b, 0xd8, 0xd4, 0x0e, 0x57, 0xeb, 0x88, 0xc1, 0x55, 0x8d, 0x75, 0x55,
-	0xb7, 0x4d, 0x18, 0x91, 0x66, 0x02, 0x81, 0x1a, 0x0a, 0xd4, 0x50, 0xa0, 0x14, 0x4c, 0x42, 0xcc,
-	0x16, 0xd2, 0x7c, 0x55, 0xbd, 0x73, 0xa0, 0x41, 0xdc, 0x0b, 0x42, 0x94, 0x52, 0xd2, 0xc5, 0x2c,
-	0x07, 0x51, 0x06, 0x1d, 0x37, 0x14, 0x4c, 0x9b, 0xc4, 0x24, 0xfe, 0xa3, 0xe6, 0x3d, 0x85, 0xd6,
-	0x42, 0x90, 0x49, 0x0f, 0x1c, 0x61, 0xda, 0xc0, 0x35, 0x1b, 0xee, 0xd2, 0xa1, 0xde, 0x0e, 0xbd,
-	0xbf, 0xd0, 0x31, 0x05, 0x1d, 0x0b, 0x13, 0xcd, 0xff, 0x0d, 0x4d, 0x4a, 0xa8, 0x65, 0x3d, 0x17,
-	0x45, 0x75, 0x05, 0xbe, 0xf2, 0xcb, 0x34, 0x98, 0xdc, 0xa1, 0xe6, 0x03, 0xd8, 0xb2, 0x0c, 0xc8,
-	0x48, 0xfb, 0x7f, 0x62, 0x61, 0xe9, 0x3f, 0x90, 0x3e, 0x68, 0x13, 0x47, 0x16, 0xe6, 0x85, 0xca,
-	0xe8, 0xda, 0xef, 0x6a, 0x98, 0xd9, 0x8f, 0x57, 0xb7, 0x90, 0xe5, 0x18, 0xb0, 0xd5, 0xaa, 0x1a,
-	0x46, 0x1b, 0x51, 0x5a, 0xcb, 0x9d, 0x9e, 0x97, 0x52, 0xaf, 0xae, 0x4e, 0x96, 0x84, 0x5d, 0x3f,
-	0x4a, 0xfa, 0x07, 0x88, 0x96, 0x6e, 0xc8, 0x43, 0x7e, 0x70, 0x21, 0x1e, 0x1c, 0xe5, 0xd9, 0xde,
-	0xe0, 0x03, 0x87, 0xac, 0x0d, 0x69, 0x05, 0x4c, 0xc2, 0x06, 0xb3, 0x0e, 0x21, 0xb3, 0x08, 0xd6,
-	0x91, 0x4b, 0x1a, 0x4d, 0x59, 0x9c, 0x17, 0x2a, 0xe9, 0x5a, 0x26, 0x10, 0xe5, 0xbf, 0xb8, 0x37,
-	0x3d, 0xaf, 0xb4, 0x0e, 0xb2, 0xd0, 0x21, 0x1d, 0xcc, 0xe4, 0xf4, 0xbc, 0x50, 0xc9, 0xd5, 0xca,
-	0xde, 0x82, 0x1f, 0xce, 0x4b, 0xbf, 0x05, 0x29, 0xa9, 0x61, 0xab, 0x16, 0xd1, 0x1c, 0xc8, 0x9a,
-	0xea, 0x36, 0x66, 0xc1, 0x22, 0x61, 0x84, 0xb4, 0x0f, 0x26, 0xa8, 0x65, 0x62, 0xd4, 0xd6, 0xdd,
-	0x4e, 0x5d, 0xb7, 0x51, 0x4f, 0xce, 0xf8, 0xfb, 0x9d, 0x56, 0x03, 0x54, 0x6a, 0x1f, 0x95, 0x5a,
-	0xc5, 0xbd, 0x9a, 0xfc, 0xee, 0xcd, 0xf2, 0x74, 0x58, 0x48, 0xa3, 0xdd, 0x73, 0x19, 0x51, 0xef,
-	0x75, 0xea, 0x77, 0x50, 0x6f, 0x77, 0x2c, 0x58, 0x25, 0x78, 0x93, 0xfe, 0x05, 0xc3, 0xac, 0xab,
-	0x37, 0x21, 0x6d, 0xca, 0xd9, 0x70, 0xb9, 0x58, 0xf9, 0xfb, 0xdd, 0x2d, 0x48, 0x9b, 0x7c, 0xe5,
-	0x59, 0xe6, 0x9b, 0xa4, 0x32, 0xc8, 0xb5, 0x88, 0xa9, 0x5b, 0xd8, 0x40, 0x5d, 0x79, 0x98, 0x2f,
-	0x7b, 0xa4, 0x45, 0xcc, 0x6d, 0xcf, 0x2c, 0x55, 0xc0, 0x58, 0xbd, 0x45, 0x1a, 0xb6, 0x8e, 0x3b,
-	0x4e, 0x1d, 0xb5, 0xe5, 0x11, 0x5e, 0x36, 0xea, 0xbb, 0xee, 0xfa, 0x1e, 0x69, 0x0e, 0x64, 0x30,
-	0xc1, 0x0d, 0x24, 0xe7, 0x78, 0x49, 0x60, 0x5b, 0xff, 0xe3, 0xc9, 0x71, 0x49, 0xf8, 0x74, 0x5c,
-	0x4a, 0x3d, 0xbd, 0x3a, 0x59, 0x92, 0xfb, 0x6d, 0x9e, 0x6c, 0x82, 0xb2, 0x02, 0xe4, 0xa4, 0x6d,
-	0x17, 0x51, 0x97, 0x60, 0x8a, 0xca, 0x2f, 0x44, 0x30, 0xb1, 0x43, 0xcd, 0x3d, 0x06, 0x6d, 0x74,
-	0xdf, 0x35, 0x20, 0x43, 0xb7, 0xd3, 0x33, 0x55, 0x00, 0x30, 0x3a, 0xd2, 0xc3, 0x2e, 0x10, 0x07,
-	0xee, 0x82, 0x1c, 0x46, 0x47, 0xd5, 0xa0, 0x11, 0x38, 0x64, 0xe9, 0x1f, 0x40, 0x96, 0x19, 0x0c,
-	0x59, 0xf6, 0xdb, 0xc8, 0x86, 0xaf, 0x41, 0xb6, 0xc0, 0x23, 0x0b, 0xa7, 0xc2, 0x32, 0x35, 0x6c,
-	0x2d, 0x0e, 0xa1, 0x2c, 0x83, 0x99, 0xb8, 0x25, 0x22, 0xf6, 0x5a, 0x04, 0x79, 0xcf, 0xe5, 0x77,
-	0xeb, 0x6d, 0x22, 0x7b, 0x04, 0x24, 0x0f, 0x59, 0xe2, 0xf2, 0x89, 0xdf, 0x75, 0xf9, 0xf2, 0x18,
-	0x1d, 0xed, 0x7d, 0xe5, 0xfe, 0xfd, 0xbc, 0x30, 0x17, 0x79, 0x98, 0x4a, 0x02, 0x26, 0xc7, 0xa7,
-	0x5c, 0x00, 0xb3, 0x09, 0x53, 0x84, 0xf3, 0x99, 0x18, 0x1f, 0xdb, 0x9b, 0x5d, 0x8b, 0xdd, 0x0e,
-	0xcf, 0xbf, 0x81, 0x64, 0xa0, 0x9b, 0x07, 0xf7, 0x14, 0x2f, 0x08, 0x46, 0xf7, 0x2f, 0x01, 0xaa,
-	0xc2, 0x83, 0x9a, 0x8b, 0x83, 0x8a, 0x9d, 0x7c, 0x72, 0x56, 0x7a, 0xb6, 0x3e, 0xaa, 0xb5, 0xb7,
-	0x22, 0x10, 0x77, 0xa8, 0x29, 0xd9, 0x60, 0xdc, 0x9b, 0xa1, 0x91, 0x48, 0xaa, 0xa8, 0xd7, 0x7f,
-	0x48, 0xa8, 0xc9, 0xb1, 0xab, 0xac, 0x0c, 0xaa, 0xec, 0x27, 0x95, 0x10, 0x18, 0xe5, 0x87, 0xf3,
-	0xc2, 0x0d, 0x0b, 0x70, 0x3a, 0x45, 0x1d, 0x4c, 0x17, 0xa5, 0x69, 0x82, 0xb1, 0xd8, 0x44, 0x59,
-	0xbc, 0x29, 0x9e, 0x13, 0x2a, 0xda, 0x80, 0xc2, 0x28, 0x93, 0x0d, 0xc6, 0xe3, 0xcd, 0x3e, 0xd0,
-	0xe9, 0x79, 0xca, 0xc1, 0x4e, 0x8f, 0x47, 0xa6, 0x64, 0x1e, 0x7b, 0x6d, 0x50, 0xfb, 0xf3, 0xf4,
-	0xa2, 0x28, 0x9c, 0x5d, 0x14, 0x85, 0x8f, 0x17, 0x45, 0xe1, 0xf9, 0x65, 0x31, 0x75, 0x76, 0x59,
-	0x4c, 0xbd, 0xbf, 0x2c, 0xa6, 0x1e, 0xe6, 0xbb, 0xd1, 0xe7, 0xa1, 0xdf, 0xaf, 0xf5, 0xac, 0x3f,
-	0xb1, 0xfe, 0xfa, 0x1c, 0x00, 0x00, 0xff, 0xff, 0x84, 0x98, 0x2b, 0xbe, 0x3d, 0x0a, 0x00, 0x00,
+	// 791 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x96, 0xcf, 0x4f, 0x13, 0x41,
+	0x14, 0xc7, 0xbb, 0xf4, 0x07, 0x74, 0xf8, 0x51, 0xd8, 0x20, 0x2c, 0x8b, 0xb6, 0xa4, 0x89, 0x50,
+	0x49, 0xd8, 0x05, 0xf4, 0x60, 0xb8, 0xb5, 0x09, 0x89, 0x68, 0x30, 0x06, 0xd0, 0x83, 0x1e, 0x36,
+	0xd3, 0xee, 0xb0, 0xdd, 0x6c, 0x77, 0x66, 0xb3, 0x33, 0x2d, 0xed, 0xcd, 0xa3, 0x31, 0x31, 0xf1,
+	0x4f, 0xe0, 0xe8, 0x91, 0x83, 0x89, 0xff, 0x02, 0xf1, 0x44, 0x3c, 0x19, 0x0f, 0xc4, 0xc0, 0x01,
+	0xae, 0xc6, 0x7f, 0xc0, 0xec, 0xee, 0xb4, 0xec, 0x6e, 0x10, 0x1b, 0xc5, 0x44, 0x2f, 0xed, 0xf6,
+	0xbd, 0xef, 0xcc, 0x7b, 0xf3, 0x3e, 0x6f, 0x5e, 0x17, 0x14, 0x6a, 0x84, 0xda, 0x84, 0xaa, 0x94,
+	0x41, 0xcb, 0xc4, 0x86, 0xda, 0x5a, 0xa9, 0x22, 0x06, 0x57, 0x54, 0xd6, 0x56, 0x1c, 0x97, 0x30,
+	0x22, 0x4e, 0x05, 0x02, 0x85, 0x0b, 0x14, 0x2e, 0x90, 0x67, 0x0c, 0x42, 0x8c, 0x06, 0x52, 0x7d,
+	0x55, 0xb5, 0xb9, 0xab, 0x42, 0xdc, 0x09, 0x96, 0xc8, 0x85, 0xb8, 0x8b, 0x99, 0x36, 0xa2, 0x0c,
+	0xda, 0x0e, 0x17, 0x4c, 0x1a, 0xc4, 0x20, 0xfe, 0xa3, 0xea, 0x3d, 0x71, 0xeb, 0x4c, 0x10, 0x49,
+	0x0b, 0x1c, 0x3c, 0x6c, 0xe0, 0x9a, 0xe6, 0x59, 0xda, 0xd4, 0xcb, 0xd0, 0xfb, 0xe2, 0x8e, 0x09,
+	0x68, 0x9b, 0x98, 0xa8, 0xfe, 0x27, 0x37, 0xc9, 0x5c, 0xcb, 0x3a, 0x0e, 0xea, 0x9d, 0x2b, 0xf0,
+	0x15, 0xbf, 0x27, 0xc1, 0xf8, 0x26, 0x35, 0x9e, 0xc1, 0x86, 0xa9, 0x43, 0x46, 0xdc, 0x87, 0xc4,
+	0xc4, 0xe2, 0x0a, 0x48, 0xed, 0xba, 0xc4, 0x96, 0x84, 0x39, 0xa1, 0x94, 0xad, 0xdc, 0xfa, 0xf4,
+	0x7e, 0x69, 0x92, 0x07, 0x2f, 0xeb, 0xba, 0x8b, 0x28, 0xdd, 0x66, 0xae, 0x89, 0x8d, 0x77, 0x67,
+	0x07, 0x8b, 0xc2, 0x96, 0x2f, 0x15, 0x6f, 0x82, 0x4c, 0x0b, 0x36, 0x34, 0x53, 0x97, 0x06, 0xe6,
+	0x84, 0x52, 0xaa, 0x92, 0x0e, 0x9c, 0xe9, 0x16, 0x6c, 0x6c, 0xe8, 0xe2, 0x32, 0x18, 0x87, 0x35,
+	0x66, 0xb6, 0x20, 0x33, 0x09, 0xd6, 0x90, 0x43, 0x6a, 0x75, 0x29, 0x19, 0xd6, 0xe5, 0x2e, 0xdc,
+	0xeb, 0x9e, 0x57, 0x5c, 0x03, 0x19, 0x68, 0x93, 0x26, 0x66, 0x52, 0xca, 0x4f, 0xa2, 0x78, 0x78,
+	0x5c, 0x48, 0x7c, 0x39, 0x2e, 0xdc, 0x08, 0x12, 0xa1, 0xba, 0xa5, 0x98, 0x44, 0xb5, 0x21, 0xab,
+	0x2b, 0x1b, 0x98, 0x05, 0x9b, 0xf0, 0x15, 0xe2, 0x0e, 0x18, 0xa3, 0xa6, 0x81, 0x91, 0xab, 0x39,
+	0xcd, 0xaa, 0x66, 0xa1, 0x8e, 0x94, 0x9e, 0x13, 0x4a, 0xc3, 0xab, 0x93, 0x4a, 0x80, 0x41, 0xe9,
+	0x62, 0x50, 0xca, 0xb8, 0x53, 0x91, 0x3e, 0x5e, 0x1c, 0xaf, 0xe6, 0x76, 0x1c, 0x46, 0x94, 0x27,
+	0xcd, 0xea, 0x23, 0xd4, 0xd9, 0x1a, 0x09, 0x76, 0x09, 0x7e, 0x89, 0xf7, 0xc1, 0x20, 0x6b, 0x6b,
+	0x75, 0x48, 0xeb, 0x52, 0x86, 0x6f, 0xc7, 0x57, 0xf9, 0x75, 0x55, 0x76, 0xda, 0x0f, 0x20, 0xad,
+	0x57, 0xb2, 0x5e, 0xa2, 0x3c, 0x1f, 0xe6, 0x9b, 0xc4, 0x22, 0xc8, 0x36, 0x88, 0xa1, 0x99, 0x58,
+	0x47, 0x6d, 0x69, 0x30, 0x7c, 0xec, 0xa1, 0x06, 0x31, 0x36, 0x3c, 0xb3, 0x58, 0x02, 0x23, 0xd5,
+	0x06, 0xa9, 0x59, 0x1a, 0x6e, 0xda, 0x55, 0xe4, 0x4a, 0x43, 0x61, 0xd9, 0xb0, 0xef, 0x7a, 0xec,
+	0x7b, 0xc4, 0x59, 0x90, 0xc6, 0x04, 0xd7, 0x90, 0x94, 0x8d, 0x14, 0xda, 0xb7, 0xad, 0xdd, 0x7e,
+	0xb5, 0x5f, 0x10, 0xce, 0xf7, 0x0b, 0x89, 0xd7, 0x67, 0x07, 0x8b, 0x52, 0xb7, 0x85, 0xe3, 0x80,
+	0x8b, 0x32, 0x90, 0xe2, 0xb6, 0x2d, 0x44, 0x1d, 0x82, 0x29, 0x2a, 0x7e, 0x1b, 0x00, 0x63, 0x9b,
+	0xd4, 0xd8, 0x66, 0xd0, 0x42, 0x4f, 0x1d, 0x1d, 0x32, 0x74, 0xfd, 0xfd, 0x50, 0x06, 0x00, 0xa3,
+	0x3d, 0x8d, 0x13, 0x4e, 0xf6, 0x4d, 0x38, 0x8b, 0xd1, 0x5e, 0x39, 0x80, 0x1c, 0xc2, 0x91, 0xfa,
+	0x03, 0x1c, 0xe9, 0xfe, 0x70, 0x64, 0x7e, 0x8d, 0x63, 0xf0, 0x12, 0x1c, 0xf3, 0x61, 0x1c, 0xfc,
+	0x36, 0x2f, 0x51, 0xdd, 0x52, 0xa3, 0x05, 0x2e, 0x4a, 0x60, 0x2a, 0x6a, 0xe9, 0xd1, 0x78, 0x93,
+	0x04, 0x39, 0xcf, 0xe5, 0x77, 0xe2, 0xdf, 0xc2, 0xf1, 0x02, 0x88, 0x1e, 0x8e, 0xd8, 0xa5, 0x49,
+	0xfe, 0xd6, 0xa5, 0xc9, 0x61, 0xb4, 0xb7, 0xfd, 0x93, 0x7b, 0xf3, 0xef, 0x82, 0x5a, 0x08, 0x83,
+	0x92, 0x63, 0xa0, 0x42, 0xb5, 0x2f, 0xce, 0x80, 0xe9, 0x98, 0xa9, 0x87, 0xea, 0x7c, 0x20, 0x3a,
+	0x4a, 0xd7, 0xdb, 0x26, 0xbb, 0x7e, 0x56, 0xf7, 0x80, 0xa8, 0xa3, 0xab, 0x87, 0xe9, 0x44, 0x58,
+	0x10, 0x8c, 0xd3, 0xff, 0x02, 0x42, 0x29, 0x0c, 0x61, 0x36, 0x0a, 0x21, 0x52, 0xd5, 0xf8, 0xfc,
+	0xf2, 0x6c, 0x5d, 0x0c, 0xab, 0x1f, 0x92, 0x20, 0xb9, 0x49, 0x0d, 0xd1, 0x02, 0xa3, 0xde, 0x5c,
+	0xeb, 0x89, 0xc4, 0x92, 0x72, 0xf9, 0x1f, 0xb7, 0x12, 0x1f, 0x85, 0xf2, 0x72, 0xbf, 0xca, 0x6e,
+	0x50, 0x11, 0x81, 0xe1, 0xf0, 0xc0, 0x9c, 0xbf, 0x62, 0x83, 0x90, 0x4e, 0x56, 0xfa, 0xd3, 0xf5,
+	0xc2, 0xd4, 0xc1, 0x48, 0x64, 0x12, 0x2c, 0x5c, 0xb5, 0x3e, 0x24, 0x94, 0xd5, 0x3e, 0x85, 0xbd,
+	0x48, 0x16, 0x18, 0x8d, 0x36, 0x72, 0x5f, 0xd5, 0xf3, 0x94, 0xfd, 0x55, 0x2f, 0x8c, 0x4c, 0x4e,
+	0xbf, 0xf4, 0xda, 0xa0, 0x72, 0xe7, 0xf0, 0x24, 0x2f, 0x1c, 0x9d, 0xe4, 0x85, 0xaf, 0x27, 0x79,
+	0xe1, 0xed, 0x69, 0x3e, 0x71, 0x74, 0x9a, 0x4f, 0x7c, 0x3e, 0xcd, 0x27, 0x9e, 0xe7, 0xda, 0xbd,
+	0xd7, 0x31, 0xbf, 0x5f, 0xab, 0x19, 0x7f, 0x1a, 0xdd, 0xfd, 0x11, 0x00, 0x00, 0xff, 0xff, 0x77,
+	0xa1, 0xb5, 0xd6, 0xad, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -893,26 +893,18 @@ func (m *MsgValidatorJoin) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	{
-		size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if m.ValId != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.ValId))
+		i--
+		dAtA[i] = 0x10
 	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.From.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if len(m.From) > 0 {
+		i -= len(m.From)
+		copy(dAtA[i:], m.From)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.From)))
+		i--
+		dAtA[i] = 0xa
 	}
-	i--
-	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -994,26 +986,18 @@ func (m *MsgStakeUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	}
 	i--
 	dAtA[i] = 0x1a
-	{
-		size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if m.ValId != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.ValId))
+		i--
+		dAtA[i] = 0x10
 	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.From.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if len(m.From) > 0 {
+		i -= len(m.From)
+		copy(dAtA[i:], m.From)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.From)))
+		i--
+		dAtA[i] = 0xa
 	}
-	i--
-	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -1097,26 +1081,18 @@ func (m *MsgSignerUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x1a
 	}
-	{
-		size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if m.ValId != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.ValId))
+		i--
+		dAtA[i] = 0x10
 	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.From.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if len(m.From) > 0 {
+		i -= len(m.From)
+		copy(dAtA[i:], m.From)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.From)))
+		i--
+		dAtA[i] = 0xa
 	}
-	i--
-	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -1193,26 +1169,18 @@ func (m *MsgValidatorExit) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x18
 	}
-	{
-		size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if m.ValId != 0 {
+		i = encodeVarintTx(dAtA, i, uint64(m.ValId))
+		i--
+		dAtA[i] = 0x10
 	}
-	i--
-	dAtA[i] = 0x12
-	{
-		size, err := m.From.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
+	if len(m.From) > 0 {
+		i -= len(m.From)
+		copy(dAtA[i:], m.From)
+		i = encodeVarintTx(dAtA, i, uint64(len(m.From)))
+		i--
+		dAtA[i] = 0xa
 	}
-	i--
-	dAtA[i] = 0xa
 	return len(dAtA) - i, nil
 }
 
@@ -1256,10 +1224,13 @@ func (m *MsgValidatorJoin) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.From.Size()
-	n += 1 + l + sovTx(uint64(l))
-	l = m.ID.Size()
-	n += 1 + l + sovTx(uint64(l))
+	l = len(m.From)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.ValId != 0 {
+		n += 1 + sovTx(uint64(m.ValId))
+	}
 	if m.ActivationEpoch != 0 {
 		n += 1 + sovTx(uint64(m.ActivationEpoch))
 	}
@@ -1298,10 +1269,13 @@ func (m *MsgStakeUpdate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.From.Size()
-	n += 1 + l + sovTx(uint64(l))
-	l = m.ID.Size()
-	n += 1 + l + sovTx(uint64(l))
+	l = len(m.From)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.ValId != 0 {
+		n += 1 + sovTx(uint64(m.ValId))
+	}
 	l = m.NewAmount.Size()
 	n += 1 + l + sovTx(uint64(l))
 	l = m.TxHash.Size()
@@ -1333,10 +1307,13 @@ func (m *MsgSignerUpdate) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.From.Size()
-	n += 1 + l + sovTx(uint64(l))
-	l = m.ID.Size()
-	n += 1 + l + sovTx(uint64(l))
+	l = len(m.From)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.ValId != 0 {
+		n += 1 + sovTx(uint64(m.ValId))
+	}
 	if m.NewSignerPubKey != nil {
 		l = m.NewSignerPubKey.Size()
 		n += 1 + l + sovTx(uint64(l))
@@ -1370,10 +1347,13 @@ func (m *MsgValidatorExit) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = m.From.Size()
-	n += 1 + l + sovTx(uint64(l))
-	l = m.ID.Size()
-	n += 1 + l + sovTx(uint64(l))
+	l = len(m.From)
+	if l > 0 {
+		n += 1 + l + sovTx(uint64(l))
+	}
+	if m.ValId != 0 {
+		n += 1 + sovTx(uint64(m.ValId))
+	}
 	if m.DeactivationEpoch != 0 {
 		n += 1 + sovTx(uint64(m.DeactivationEpoch))
 	}
@@ -1439,7 +1419,7 @@ func (m *MsgValidatorJoin) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -1449,30 +1429,29 @@ func (m *MsgValidatorJoin) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthTx
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthTx
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.From.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.From = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValId", wireType)
 			}
-			var msglen int
+			m.ValId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -1482,25 +1461,11 @@ func (m *MsgValidatorJoin) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.ValId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ActivationEpoch", wireType)
@@ -1584,7 +1549,7 @@ func (m *MsgValidatorJoin) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.SignerPubKey == nil {
-				m.SignerPubKey = &types1.Any{}
+				m.SignerPubKey = &types.Any{}
 			}
 			if err := m.SignerPubKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -1784,7 +1749,7 @@ func (m *MsgStakeUpdate) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -1794,30 +1759,29 @@ func (m *MsgStakeUpdate) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthTx
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthTx
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.From.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.From = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValId", wireType)
 			}
-			var msglen int
+			m.ValId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -1827,25 +1791,11 @@ func (m *MsgStakeUpdate) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.ValId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field NewAmount", wireType)
@@ -2074,7 +2024,7 @@ func (m *MsgSignerUpdate) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -2084,30 +2034,29 @@ func (m *MsgSignerUpdate) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthTx
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthTx
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.From.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.From = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValId", wireType)
 			}
-			var msglen int
+			m.ValId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -2117,25 +2066,11 @@ func (m *MsgSignerUpdate) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.ValId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field NewSignerPubKey", wireType)
@@ -2166,7 +2101,7 @@ func (m *MsgSignerUpdate) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.NewSignerPubKey == nil {
-				m.NewSignerPubKey = &types1.Any{}
+				m.NewSignerPubKey = &types.Any{}
 			}
 			if err := m.NewSignerPubKey.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -2366,7 +2301,7 @@ func (m *MsgValidatorExit) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -2376,30 +2311,29 @@ func (m *MsgValidatorExit) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthTx
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthTx
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if err := m.From.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.From = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValId", wireType)
 			}
-			var msglen int
+			m.ValId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowTx
@@ -2409,25 +2343,11 @@ func (m *MsgValidatorExit) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.ValId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field DeactivationEpoch", wireType)

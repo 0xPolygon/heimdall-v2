@@ -3,10 +3,12 @@ package keeper
 import (
 	"context"
 
+	addresscodec "cosmossdk.io/core/address"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,12 +20,14 @@ var _ types.ValidatorSet = Keeper{}
 
 // Keeper of the x/staking store
 type Keeper struct {
-	storeService       storetypes.KVStoreService
-	cdc                codec.BinaryCodec
-	hooks              types.StakingHooks
-	authority          string
-	moduleCommunicator types.ModuleCommunicator
-	IContractCaller    helper.IContractCaller
+	storeService          storetypes.KVStoreService
+	cdc                   codec.BinaryCodec
+	hooks                 types.StakingHooks
+	authority             string
+	moduleCommunicator    types.ModuleCommunicator
+	chainManagerKeeper    *cmKeeper.Keeper
+	validatorAddressCodec addresscodec.Codec
+	IContractCaller       helper.IContractCaller
 }
 
 // NewKeeper creates a new staking Keeper instance
@@ -32,15 +36,17 @@ func NewKeeper(
 	storeService storetypes.KVStoreService,
 	authority string,
 	moduleCommunicator types.ModuleCommunicator,
+	validatorAddressCodec addresscodec.Codec,
 	contractCaller helper.IContractCaller,
 ) *Keeper {
 	return &Keeper{
-		storeService:       storeService,
-		cdc:                cdc,
-		hooks:              nil,
-		authority:          authority,
-		moduleCommunicator: moduleCommunicator,
-		IContractCaller:    contractCaller,
+		storeService:          storeService,
+		cdc:                   cdc,
+		hooks:                 nil,
+		authority:             authority,
+		moduleCommunicator:    moduleCommunicator,
+		validatorAddressCodec: validatorAddressCodec,
+		IContractCaller:       contractCaller,
 	}
 }
 

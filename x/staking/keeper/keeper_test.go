@@ -1,8 +1,8 @@
 package keeper_test
 
 import (
-	"bytes"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,6 +19,7 @@ import (
 	stakingtypes "github.com/0xPolygon/heimdall-v2/x/staking/types"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
@@ -55,6 +56,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		testUtil.ModuleCommunicatorMock{AckCount: uint64(0)},
+		addrCodec.NewHexCodec(),
 		helper.ContractCaller{},
 	)
 
@@ -87,13 +89,13 @@ func (s *KeeperTestSuite) TestValidator() {
 	for i := range validators {
 		// validator
 		validators[i] = hmTypes.NewValidator(
-			hmTypes.NewValidatorID(uint64(int64(i))),
+			uint64(i),
 			0,
 			0,
 			1,
 			int64(simulation.RandIntBetween(r1, 10, 100)), // power
 			pk1,
-			hmTypes.HeimdallAddress{accounts[i].Address},
+			accounts[i].Address.String(),
 		)
 
 		err := keeper.AddValidator(ctx, *validators[i])
@@ -104,16 +106,16 @@ func (s *KeeperTestSuite) TestValidator() {
 	valId := simulation.RandIntBetween(r1, 0, n)
 
 	// Get Validator Info from state
-	valInfo, err := keeper.GetValidatorInfo(ctx, validators[valId].Signer.Bytes())
+	valInfo, err := keeper.GetValidatorInfo(ctx, validators[valId].Signer)
 	require.NoErrorf(err, "Error while fetching Validator")
 
 	// Get Signer Address mapped with ValidatorId
-	mappedSignerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ID)
+	mappedSignerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
 	require.Truef(isMapped, "Signer Address not mapped to Validator Id")
 
 	// Check if Validator matches in state
 	require.Equal(valInfo, *validators[valId], "Validators in state doesn't match")
-	require.Equal(hmTypes.HexToHeimdallAddress(mappedSignerAddress.Hex()), validators[0].Signer, "Signer address doesn't match")
+	require.Equal(strings.ToLower(mappedSignerAddress.String()), validators[0].Signer, "Signer address doesn't match")
 }
 
 // tests VotingPower change, validator creation, validator set update when signer changes
@@ -131,48 +133,47 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	for i := range validators {
 		// validator
 		validators[i] = hmTypes.NewValidator(
-			hmTypes.NewValidatorID(uint64(int64(i))),
+			uint64(int64(i)),
 			0,
 			0,
 			1,
 			int64(simulation.RandIntBetween(r1, 10, 100)), // power
 			pk1,
-			hmTypes.HeimdallAddress{accounts[i].Address},
+			accounts[i].Address.String(),
 		)
 
 		err := keeper.AddValidator(ctx, *validators[i])
 		require.NoErrorf(err, "Error while adding validator to store")
-
 	}
 
 	// Fetch Validator Info from Store
-	valInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer.Bytes())
+	valInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	require.NoErrorf(err, "Error while fetching Validator Info from store")
 
 	pkAny2, err := codectypes.NewAnyWithValue(pk2)
 	require.NoError(err)
 
-	addr2 := hmTypes.HeimdallAddress{valAddr2}
+	addr2 := strings.ToLower(valAddr2.String())
 
 	err = keeper.UpdateSigner(ctx, addr2, pkAny2, valInfo.Signer)
 	require.NoErrorf(err, "Error while updating Signer Address ")
 
 	// Check Validator Info of Prev Signer
-	prevSginerValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer.Bytes())
+	prevSginerValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	require.NoErrorf(err, "Error while fetching Validator Info for Prev Signer")
 
 	require.Equal(int64(0), prevSginerValInfo.VotingPower, "VotingPower of Prev Signer should be zero")
 
 	// Check Validator Info of Updated Signer
-	updatedSignerValInfo, err := keeper.GetValidatorInfo(ctx, addr2.GetAddress())
+	updatedSignerValInfo, err := keeper.GetValidatorInfo(ctx, addr2)
 	require.NoError(err, "Error while fetching Validator Info for Updater Signer")
 
 	require.Equal(validators[0].VotingPower, updatedSignerValInfo.VotingPower, "VotingPower of updated signer should match with prev signer VotingPower")
 
 	// Check If ValidatorId is mapped To Updated Signer
-	signerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ID)
+	signerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
 	require.Truef(isMapped, "Signer Address not mapped to Validator Id")
-	require.Equal(addr2, hmTypes.HexToHeimdallAddress(signerAddress.Hex()), "Validator ID should be mapped to Updated Signer Address")
+	require.Equal(addr2, strings.ToLower(signerAddress.String()), "Validator ID should be mapped to Updated Signer Address")
 
 	// Check total Validators
 	totalValidators := keeper.GetAllValidators(ctx)
@@ -266,10 +267,10 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 
 	require.Equal(len(prevValidatorSet.Validators)-1, len(updatedValSet.Validators), "Validator set should be reduced by one ")
 
-	removedVal := prevValidatorSet.Validators[0].Signer.GetAddress()
+	removedVal := prevValidatorSet.Validators[0].Signer
 
 	for _, val := range updatedValSet.Validators {
-		if bytes.Equal(val.Signer.GetAddress(), removedVal) {
+		if strings.ToLower(val.Signer) == strings.ToLower(removedVal) {
 			require.Fail("Validator is not removed from updatedvalidator set")
 		}
 	}
@@ -293,14 +294,14 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	err := keeper.AddValidator(ctx, valToBeAdded)
 	require.NoError(err)
 
-	_, err = keeper.GetValidatorInfo(ctx, valToBeAdded.GetSigner().Address)
+	_, err = keeper.GetValidatorInfo(ctx, valToBeAdded.GetSigner())
 	require.NoError(err)
 
 	setUpdates := types.GetUpdatedValidators(currentValSet, keeper.GetAllValidators(ctx), 5)
 	err = currentValSet.UpdateWithChangeSet(setUpdates)
 	require.NoError(err)
 	require.Equal(len(prevValSet.Validators)+1, len(currentValSet.Validators), "Number of validators should be increased by 1")
-	require.Equal(true, currentValSet.HasAddress(valToBeAdded.Signer.Bytes()), "New Validator should be added")
+	require.Equal(true, currentValSet.HasAddress(valToBeAdded.Signer), "New Validator should be added")
 	require.Equal(prevValSet.GetTotalVotingPower()+valToBeAdded.VotingPower, currentValSet.GetTotalVotingPower(), "Total VotingPower should be increased")
 }
 
@@ -340,10 +341,10 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 
 	require.Equal(len(prevValSet.Validators), len(currentValSet.Validators), "Number of validators should remain same")
 
-	index, _ := currentValSet.GetByAddress(valToUpdate.Signer.Bytes())
+	index, _ := currentValSet.GetByAddress(valToUpdate.Signer)
 	require.Equal(-1, index, "Prev Validator should not be present in CurrentValSet")
 
-	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer.Bytes())
+	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer)
 	require.Equal(newSigner[0].Signer, newVal.Signer, "Signer address should change")
 	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubkey should change")
 
@@ -355,7 +356,7 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 	require := s.Require()
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
-	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, validators[0].Signer.Bytes())
+	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, validators[0].Signer)
 	require.NoError(err)
 	require.Equal(validators[0], activeValidatorInfo)
 }
@@ -385,7 +386,7 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
 
-	valInfo, ok := keeper.GetValidatorFromValID(ctx, validators[0].ID)
+	valInfo, ok := keeper.GetValidatorFromValID(ctx, validators[0].ValId)
 	require.Equal(ok, true)
 	require.Equal(validators[0], valInfo)
 }
@@ -396,7 +397,7 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
 
-	lastUpdated, ok := keeper.GetLastUpdated(ctx, validators[0].ID)
+	lastUpdated, ok := keeper.GetLastUpdated(ctx, validators[0].ValId)
 	require.Equal(ok, true)
 	require.Equal(validators[0].LastUpdated, lastUpdated)
 }
@@ -493,10 +494,10 @@ func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
 
 	require.Equal(len(prevValSet.Validators), len(currentValSet.Validators), "Number of validators should remain same")
 
-	index, _ := currentValSet.GetByAddress(valToUpdate.Signer.Bytes())
+	index, _ := currentValSet.GetByAddress(valToUpdate.Signer)
 	require.Equal(-1, index, "Prev Validator should not be present in CurrentValSet")
 
-	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer.Bytes())
+	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer)
 	require.Equal(newSigner[0].Signer, newVal.Signer, "Signer address should change")
 	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubkey should change")
 

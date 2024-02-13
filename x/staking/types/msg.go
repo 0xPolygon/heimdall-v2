@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 
+	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	heimdallError "github.com/0xPolygon/heimdall-v2/x/types/error"
@@ -23,7 +24,7 @@ var (
 // NewMsgValidatorJoin creates a new MsgCreateValidator instance.
 // Delegator address and validator address are the same.
 func NewMsgValidatorJoin(
-	from hmTypes.HeimdallAddress, id hmTypes.ValidatorID, activationEpoch uint64,
+	from string, id uint64, activationEpoch uint64,
 	amount math.Int, pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorJoin, error) {
@@ -36,7 +37,7 @@ func NewMsgValidatorJoin(
 	}
 	return &MsgValidatorJoin{
 		From:            from,
-		ID:              id,
+		ValId:           id,
 		ActivationEpoch: activationEpoch,
 		Amount:          amount,
 		SignerPubKey:    pkAny,
@@ -48,13 +49,20 @@ func NewMsgValidatorJoin(
 }
 
 // Validate validates the MsgValidatorJoin sdk msg.
-func (msg MsgValidatorJoin) Validate() error {
-	if msg.ID.GetID() == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ID.GetID())
+func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
+	if msg.ValId == uint64(0) {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
-	if msg.From.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From.String())
+	addrBytes, err := ac.StringToBytes(msg.From)
+	if err != nil {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+	}
+
+	accAddr := sdk.AccAddress(addrBytes)
+
+	if accAddr.Empty() {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	if msg.SignerPubKey == nil {
@@ -81,12 +89,12 @@ func (msg MsgValidatorJoin) UnpackInterfaces(unpacker codectypes.AnyUnpacker) er
 }
 
 // NewMsgStakeUpdate creates a new MsgStakeUpdate instance
-func NewMsgStakeUpdate(from hmTypes.HeimdallAddress, id hmTypes.ValidatorID,
+func NewMsgStakeUpdate(from string, id uint64,
 	newAmount math.Int, txHash hmTypes.TxHash, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgStakeUpdate, error) {
 	return &MsgStakeUpdate{
 		From:        from,
-		ID:          id,
+		ValId:       id,
 		NewAmount:   newAmount,
 		TxHash:      txHash,
 		LogIndex:    logIndex,
@@ -95,20 +103,27 @@ func NewMsgStakeUpdate(from hmTypes.HeimdallAddress, id hmTypes.ValidatorID,
 	}, nil
 }
 
-func (msg MsgStakeUpdate) Validate() error {
-	if msg.ID.GetID() == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ID.GetID())
+func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
+	if msg.ValId == uint64(0) {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
-	if msg.From.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From.String())
+	addrBytes, err := ac.StringToBytes(msg.From)
+	if err != nil {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+	}
+
+	accAddr := sdk.AccAddress(addrBytes)
+
+	if accAddr.Empty() {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	return nil
 }
 
 // NewMsgDelegate creates a new MsgDelegate instance.
-func NewMsgSignerUpdate(from hmTypes.HeimdallAddress, id hmTypes.ValidatorID,
+func NewMsgSignerUpdate(from string, id uint64,
 	pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgSignerUpdate, error) {
 	var pkAny *codectypes.Any
@@ -121,7 +136,7 @@ func NewMsgSignerUpdate(from hmTypes.HeimdallAddress, id hmTypes.ValidatorID,
 
 	return &MsgSignerUpdate{
 		From:            from,
-		ID:              id,
+		ValId:           id,
 		NewSignerPubKey: pkAny,
 		TxHash:          txHash,
 		LogIndex:        logIndex,
@@ -130,13 +145,20 @@ func NewMsgSignerUpdate(from hmTypes.HeimdallAddress, id hmTypes.ValidatorID,
 	}, nil
 }
 
-func (msg MsgSignerUpdate) Validate() error {
-	if msg.ID.GetID() == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ID.GetID())
+func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
+	if msg.ValId == uint64(0) {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
-	if msg.From.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From.String())
+	addrBytes, err := ac.StringToBytes(msg.From)
+	if err != nil {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+	}
+
+	accAddr := sdk.AccAddress(addrBytes)
+
+	if accAddr.Empty() {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	if msg.NewSignerPubKey == nil {
@@ -158,13 +180,13 @@ func (msg MsgSignerUpdate) Validate() error {
 
 // NewMsgBeginRedelegate creates a new MsgBeginRedelegate instance.
 func NewMsgValidatorExit(
-	from hmTypes.HeimdallAddress, id hmTypes.ValidatorID, deactivationEpoch uint64,
+	from string, id uint64, deactivationEpoch uint64,
 	pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorExit, error) {
 	return &MsgValidatorExit{
 		From:              from,
-		ID:                id,
+		ValId:             id,
 		DeactivationEpoch: deactivationEpoch,
 		TxHash:            txHash,
 		LogIndex:          logIndex,
@@ -173,13 +195,20 @@ func NewMsgValidatorExit(
 	}, nil
 }
 
-func (msg MsgValidatorExit) Validate() error {
-	if msg.ID.GetID() == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ID.GetID())
+func (msg MsgValidatorExit) Validate(ac address.Codec) error {
+	if msg.ValId == uint64(0) {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
-	if msg.From.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From.String())
+	addrBytes, err := ac.StringToBytes(msg.From)
+	if err != nil {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+	}
+
+	accAddr := sdk.AccAddress(addrBytes)
+
+	if accAddr.Empty() {
+		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	return nil
