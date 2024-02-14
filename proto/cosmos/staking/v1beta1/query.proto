@@ -91,7 +91,7 @@ message QueryCurrentValidatorSetResponse {
 // QuerySignerRequest is response type for the Query/Signer RPC method
 message QuerySignerRequest {
   // val_address defines the validator val_address to query for.
-  string val_address = 1 [ (amino.dont_omitempty) = true ];
+  bytes val_address = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QuerySignerResponse is response type for the Query/Signer RPC method
@@ -140,7 +140,7 @@ message QueryCurrentProposerResponse {
 // RPC method
 message QueryValidatorStatusRequest {
   // val_address defines the validator val_address to query for.
-  string val_address = 1 [ (amino.dont_omitempty) = true ];
+  bytes val_address = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryValidatorStatusResponse is response type for the Query/ValidatorStatus
