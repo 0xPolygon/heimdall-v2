@@ -1,60 +1,56 @@
 package keeper_test
 
-// import (
-// 	"math/rand"
-// 	"testing"
-// 	"time"
+import (
+	"fmt"
+	"math/rand"
+	"strconv"
+	"time"
 
-// 	"github.com/stretchr/testify/assert"
+	"github.com/0xPolygon/heimdall-v2/x/staking/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
+)
 
-// 	"cosmossdk.io/math"
+func (s *KeeperTestSuite) TestInitExportGenesis() {
+	ctx, keeper := s.ctx, s.stakingKeeper
+	require := s.Require()
 
-// 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-// 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	"github.com/cosmos/cosmos-sdk/x/staking"
-// 	"github.com/cosmos/cosmos-sdk/x/staking/testutil"
-// 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-// )
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	n := 5
 
-// func (s *KeeperTestSuite) TestInitExportGenesis() {
-// 	// create sub test to check if validator remove
-// 	ctx, keeper := s.ctx, s.stakingKeeper
-// 	require := s.Require()
+	stakingSequence := make([]string, n)
+	accounts := simulation.RandomAccounts(r1, n)
 
-// 	s1 := rand.NewSource(time.Now().UnixNano())
-// 	r1 := rand.New(s1)
-// 	n := 5
+	for i := range stakingSequence {
+		stakingSequence[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+	}
 
-// 	stakingSequence := make([]string, n)
-// 	accounts := simulation.RandomAccounts(r1, n)
+	validators := make([]*hmTypes.Validator, n)
+	for i := 0; i < len(validators); i++ {
+		// validator
+		pk1 := secp256k1.GenPrivKey().PubKey()
+		validators[i] = hmTypes.NewValidator(
+			uint64(i),
+			0,
+			0,
+			uint64(i),
+			int64(simulation.RandIntBetween(r1, 10, 100)), // power
+			pk1,
+			accounts[i].Address.String(),
+		)
+	}
 
-// 	for i := range stakingSequence {
-// 		stakingSequence[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
-// 	}
+	// validator set
+	validatorSet := hmTypes.NewValidatorSet(validators)
 
-// 	validators := make([]*hmTypes.Validator, n)
-// 	for i := 0; i < len(validators); i++ {
-// 		// validator
-// 		validators[i] = hmTypes.NewValidator(
-// 			hmTypes.NewValidatorID(uint64(int64(i))),
-// 			0,
-// 			0,
-// 			uint64(i),
-// 			int64(simulation.RandIntBetween(r1, 10, 100)), // power
-// 			hmTypes.NewPubKey(accounts[i].PubKey.Bytes()),
-// 			accounts[i].Address,
-// 		)
-// 	}
+	fmt.Print("valSet Proposer", validatorSet.Proposer)
 
-// 	// validator set
-// 	validatorSet := hmTypes.NewValidatorSet(validators)
+	genesisState := types.NewGenesisState(validators, *validatorSet, stakingSequence)
+	keeper.InitGenesis(ctx, genesisState)
 
-// 	fmt.Print("valSet Proposer", validatorSet.Proposer)
-
-// 	genesisState := types.NewGenesisState(validators, *validatorSet, stakingSequence)
-// 	staking.InitGenesis(ctx, app.StakingKeeper, genesisState)
-
-// 	actualParams := staking.ExportGenesis(ctx, app.StakingKeeper)
-// 	require.NotNil(t, actualParams)
-// 	require.LessOrEqual(t, 5, len(actualParams.Validators))
-// }
+	actualParams := keeper.ExportGenesis(ctx)
+	require.NotNil(actualParams)
+	require.LessOrEqual(5, len(actualParams.Validators))
+}
