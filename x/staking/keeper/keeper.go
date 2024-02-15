@@ -8,6 +8,7 @@ import (
 	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/staking/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+	_ "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 // Implements ValidatorSet interface

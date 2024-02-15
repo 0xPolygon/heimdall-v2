@@ -22,6 +22,7 @@ import (
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	_ "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 var (
@@ -49,7 +50,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		testUtil.ModuleCommunicatorMock{AckCount: uint64(0)},
-		addrCodec.NewHexCodec(),
+		addrCodec.NewBech32Codec(""),
 		helper.ContractCaller{},
 	)
 
@@ -68,7 +69,8 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 // tests setter/getters for validatorSignerMaps , validator set/get
-// func (s *KeeperTestSuite) TestValidator() {
+func (s *KeeperTestSuite) TestValidator04() {}
+
 // 	ctx, keeper := s.ctx, s.stakingKeeper
 // 	require := s.Require()
 

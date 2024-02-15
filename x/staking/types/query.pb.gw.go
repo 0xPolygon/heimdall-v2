@@ -67,7 +67,7 @@ func request_Query_Signer_0(ctx context.Context, marshaler runtime.Marshaler, cl
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "val_address")
 	}
 
-	protoReq.ValAddress, err = runtime.Bytes(val)
+	protoReq.ValAddress, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "val_address", err)
@@ -94,7 +94,7 @@ func local_request_Query_Signer_0(ctx context.Context, marshaler runtime.Marshal
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "val_address")
 	}
 
-	protoReq.ValAddress, err = runtime.Bytes(val)
+	protoReq.ValAddress, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "val_address", err)
@@ -175,7 +175,7 @@ func request_Query_ValidatorStatus_0(ctx context.Context, marshaler runtime.Mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "val_address")
 	}
 
-	protoReq.ValAddress, err = runtime.Bytes(val)
+	protoReq.ValAddress, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "val_address", err)
@@ -202,7 +202,7 @@ func local_request_Query_ValidatorStatus_0(ctx context.Context, marshaler runtim
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "val_address")
 	}
 
-	protoReq.ValAddress, err = runtime.Bytes(val)
+	protoReq.ValAddress, err = runtime.String(val)
 
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "val_address", err)
