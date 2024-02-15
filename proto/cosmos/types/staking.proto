@@ -17,32 +17,20 @@ message Validator {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 
-  ValidatorID i_d = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  uint64 val_id = 1 [ (amino.dont_omitempty) = true ];
   uint64 start_epoch = 2 [ (amino.dont_omitempty) = true ];
   uint64 end_epoch = 3 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 4 [ (amino.dont_omitempty) = true ];
   int64 voting_power = 5 [ (amino.dont_omitempty) = true ];
   google.protobuf.Any pub_key = 6
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
-  string signer = 7 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string signer = 7 [
+    (cosmos_proto.scalar) = "cosmos.AddressString",
+    (amino.dont_omitempty) = true
+  ];
   string last_updated = 8 [ (amino.dont_omitempty) = true ];
   bool jailed = 9 [ (amino.dont_omitempty) = true ];
   int64 proposer_priority = 10 [ (amino.dont_omitempty) = true ];
-}
-
-// ValidatorID this following defines the
-// ID of the validator
-message ValidatorID {
-  option (gogoproto.equal) = true;
-  uint64 i_d = 1 [ (amino.dont_omitempty) = true ];
-}
-
-// HeimdallAddress this following defines the
-// address of the validator
-message HeimdallAddress {
-  option (gogoproto.equal) = true;
-  bytes address = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // HeimdallHash this following defines the

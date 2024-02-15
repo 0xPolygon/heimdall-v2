@@ -19,7 +19,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
-	"github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 // smart contracts' events names

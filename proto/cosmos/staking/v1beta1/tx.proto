@@ -35,10 +35,11 @@ message MsgValidatorJoin {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  cosmos.types.HeimdallAddress from = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-  cosmos.types.ValidatorID i_d = 2
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
   uint64 activation_epoch = 3 [ (amino.dont_omitempty) = true ];
   string amount = 4 [
     (gogoproto.nullable) = false,
@@ -65,10 +66,11 @@ message MsgStakeUpdate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  cosmos.types.HeimdallAddress from = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-  cosmos.types.ValidatorID i_d = 2
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
   string new_amount = 3 [
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true,
@@ -92,10 +94,11 @@ message MsgSignerUpdate {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  cosmos.types.HeimdallAddress from = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-  cosmos.types.ValidatorID i_d = 2
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
   google.protobuf.Any new_signer_pub_key = 3
       [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
   cosmos.types.TxHash tx_hash = 4
@@ -115,10 +118,11 @@ message MsgValidatorExit {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
 
-  cosmos.types.HeimdallAddress from = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-  cosmos.types.ValidatorID i_d = 2
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
   uint64 deactivation_epoch = 3 [ (amino.dont_omitempty) = true ];
   cosmos.types.TxHash tx_hash = 4
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
