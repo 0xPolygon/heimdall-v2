@@ -1,17 +1,17 @@
 package types
 
 import (
-	"bytes"
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 
 	"github.com/cbergoon/merkletree"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-func NewDividendAccount(user HeimdallAddress, fee string) DividendAccount {
+func NewDividendAccount(user string, fee string) DividendAccount {
 	return DividendAccount{
 		User:      user,
 		FeeAmount: fee,
@@ -24,7 +24,7 @@ func (da *DividendAccount) String() string {
 	}
 
 	return fmt.Sprintf("DividendAccount{%s %v}",
-		da.User.EthAddress(),
+		da.User,
 		da.FeeAmount)
 }
 
@@ -51,7 +51,7 @@ func UnMarshallDividendAccount(cdc codec.BinaryCodec, value []byte) (DividendAcc
 // SortDividendAccountByAddress - Sorts DividendAccounts  By  Address
 func SortDividendAccountByAddress(dividendAccounts []DividendAccount) []DividendAccount {
 	sort.Slice(dividendAccounts, func(i, j int) bool {
-		return bytes.Compare(dividendAccounts[i].User.Bytes(), dividendAccounts[j].User.Bytes()) < 0
+		return strings.Compare(strings.ToLower(dividendAccounts[i].User), strings.ToLower(dividendAccounts[j].User)) < 0
 	})
 
 	return dividendAccounts

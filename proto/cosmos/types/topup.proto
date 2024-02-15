@@ -18,8 +18,10 @@ message DividendAccount {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 
-  string user = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true,(cosmos_proto.scalar) = "cosmos.AddressString"];
+  string user = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
 
   string fee_amount = 2 [ (amino.dont_omitempty) = true ];
 }

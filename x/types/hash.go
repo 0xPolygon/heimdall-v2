@@ -14,7 +14,7 @@ import (
 var _ yaml.Marshaler = HeimdallHash{}
 
 // ZeroHeimdallHash represents zero address
-var ZeroHeimdallHash = HeimdallAddress{(common.Address{}).Bytes()}
+var ZeroHeimdallHash = (common.Address{}).Bytes()
 
 // EthHash get eth hash
 func (aa HeimdallHash) EthHash() common.Hash {
@@ -32,7 +32,7 @@ func (aa HeimdallHash) Equals(aa2 HeimdallHash) bool {
 
 // Empty returns boolean for whether an AccAddress is empty
 func (aa HeimdallHash) Empty() bool {
-	return bytes.Equal(aa.Bytes(), ZeroHeimdallHash.Bytes())
+	return bytes.Equal(aa.Bytes(), ZeroHeimdallHash)
 }
 
 // MarshalJSON marshals to JSON using Bech32.
