@@ -8,7 +8,7 @@ import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/msg/v1/msg.proto";
 import "amino/amino.proto";
-import "cosmos/types/staking.proto";
+import "cosmos/types/stake.proto";
 
 option go_package = "x/staking/types";
 

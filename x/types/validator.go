@@ -13,7 +13,8 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 
-	_ "github.com/cosmos/cosmos-sdk/x/staking/types"
+	_ "cosmossdk.io/x/nft"
+	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -27,12 +28,13 @@ func NewValidator(
 	power int64,
 	pubKey cryptotypes.PubKey,
 	signer string,
-) *Validator {
+) *HeimdallValidator {
 	pkAny, err := codectypes.NewAnyWithValue(pubKey)
 	if err != nil {
 		return nil
 	}
-	return &Validator{
+
+	return &HeimdallValidator{
 		ValId:       id,
 		StartEpoch:  startEpoch,
 		EndEpoch:    endEpoch,
@@ -45,7 +47,7 @@ func NewValidator(
 
 // SortValidatorByAddress sorts a slice of validators by address
 // to sort it we compare the values of the Signer(HeimdallAddress i.e. [20]byte)
-func SortValidatorByAddress(a []Validator) []Validator {
+func SortValidatorByAddress(a []HeimdallValidator) []HeimdallValidator {
 	sort.Slice(a, func(i, j int) bool {
 		return strings.Compare(strings.ToLower(a[i].Signer), strings.ToLower(a[j].Signer)) < 0
 	})
@@ -54,7 +56,7 @@ func SortValidatorByAddress(a []Validator) []Validator {
 }
 
 // IsCurrentValidator checks if validator is in current validator set
-func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
+func (v *HeimdallValidator) IsCurrentValidator(ackCount uint64) bool {
 	// current epoch will be ack count + 1
 	currentEpoch := ackCount + 1
 
@@ -67,7 +69,7 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 }
 
 // Validates validator
-func (v *Validator) ValidateBasic() bool {
+func (v *HeimdallValidator) ValidateBasic() bool {
 	pk, ok := v.PubKey.GetCachedValue().(cryptotypes.PubKey)
 
 	if !ok {
@@ -87,7 +89,7 @@ func (v *Validator) ValidateBasic() bool {
 }
 
 // amino marshall validator
-func MarshallValidator(cdc codec.BinaryCodec, validator Validator) (bz []byte, err error) {
+func MarshallValidator(cdc codec.BinaryCodec, validator HeimdallValidator) (bz []byte, err error) {
 	bz, err = cdc.Marshal(&validator)
 	if err != nil {
 		return bz, err
@@ -97,8 +99,8 @@ func MarshallValidator(cdc codec.BinaryCodec, validator Validator) (bz []byte, e
 }
 
 // amono unmarshall validator
-func UnmarshallValidator(cdc codec.BinaryCodec, value []byte) (Validator, error) {
-	var validator Validator
+func UnmarshallValidator(cdc codec.BinaryCodec, value []byte) (HeimdallValidator, error) {
+	var validator HeimdallValidator
 
 	if err := cdc.Unmarshal(value, &validator); err != nil {
 		return validator, err
@@ -109,13 +111,13 @@ func UnmarshallValidator(cdc codec.BinaryCodec, value []byte) (Validator, error)
 
 // Copy creates a new copy of the validator so we can mutate accum.
 // Panics if the validator is nil.
-func (v *Validator) Copy() *Validator {
+func (v *HeimdallValidator) Copy() *HeimdallValidator {
 	vCopy := *v
 	return &vCopy
 }
 
 // CompareProposerPriority returns the one with higher ProposerPriority.
-func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
+func (v *HeimdallValidator) CompareProposerPriority(other *HeimdallValidator) *HeimdallValidator {
 	if v == nil {
 		return other
 	}
@@ -143,7 +145,7 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 // These are the bytes that gets hashed in consensus. It excludes address
 // as its redundant with the pubkey. This also excludes ProposerPriority
 // which changes every round.
-func (v *Validator) Bytes() []byte {
+func (v *HeimdallValidator) Bytes() []byte {
 	result := make([]byte, 64)
 
 	copy(result[12:], []byte(v.Signer))
@@ -153,12 +155,12 @@ func (v *Validator) Bytes() []byte {
 }
 
 // UpdatedAt returns block number of last validator update
-func (v *Validator) UpdatedAt() string {
+func (v *HeimdallValidator) UpdatedAt() string {
 	return v.LastUpdated
 }
 
 // MinimalVal returns block number of last validator update
-func (v *Validator) MinimalVal() MinimalVal {
+func (v *HeimdallValidator) MinimalVal() MinimalVal {
 	return MinimalVal{
 		ID:          v.ValId,
 		VotingPower: uint64(v.VotingPower),
@@ -167,12 +169,12 @@ func (v *Validator) MinimalVal() MinimalVal {
 }
 
 // GetBondedTokens implements types.ValidatorI.
-func (v *Validator) GetBondedTokens() math.Int {
+func (v *HeimdallValidator) GetBondedTokens() math.Int {
 	return math.NewInt(v.VotingPower)
 }
 
 // GetOperator implements types.ValidatorI.
-func (v *Validator) GetOperator() string {
+func (v *HeimdallValidator) GetOperator() string {
 	return v.Signer
 }
 
@@ -193,7 +195,7 @@ type MinimalVal struct {
 	Signer      string `json:"signer"`
 }
 
-func (v Validator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
+func (v HeimdallValidator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	var pk cryptotypes.PubKey
 	return unpacker.UnpackAny(v.PubKey, &pk)
 }
@@ -201,95 +203,95 @@ func (v Validator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 ///////Following functions are implemented to support cosmos validator interface/////////
 
 // ConsPubKey implements types.ValidatorI.
-func (v *Validator) ConsPubKey() (cryptotypes.PubKey, error) {
+func (v *HeimdallValidator) ConsPubKey() (cryptotypes.PubKey, error) {
 	panic("unimplemented")
 }
 
 // GetCommission implements types.ValidatorI.
-func (v *Validator) GetCommission() math.LegacyDec {
+func (v *HeimdallValidator) GetCommission() math.LegacyDec {
 	panic("unimplemented")
 }
 
 // GetConsAddr implements types.ValidatorI.
-func (v *Validator) GetConsAddr() ([]byte, error) {
+func (v *HeimdallValidator) GetConsAddr() ([]byte, error) {
 	panic("unimplemented")
 }
 
 // GetConsensusPower implements types.ValidatorI.
-func (v *Validator) GetConsensusPower(math.Int) int64 {
+func (v *HeimdallValidator) GetConsensusPower(math.Int) int64 {
 	panic("unimplemented")
 }
 
 // GetDelegatorShares implements types.ValidatorI.
-func (v *Validator) GetDelegatorShares() math.LegacyDec {
+func (v *HeimdallValidator) GetDelegatorShares() math.LegacyDec {
 	panic("unimplemented")
 }
 
 // GetMinSelfDelegation implements types.ValidatorI.
-func (v *Validator) GetMinSelfDelegation() math.Int {
+func (v *HeimdallValidator) GetMinSelfDelegation() math.Int {
 	panic("unimplemented")
 }
 
 // GetMoniker implements types.ValidatorI.
-func (v *Validator) GetMoniker() string {
+func (v *HeimdallValidator) GetMoniker() string {
 	panic("unimplemented")
 }
 
-// // GetStatus implements types.ValidatorI.
-// func (v *Validator) GetStatus() cosmosTypes.BondStatus {
-// 	panic("unimplemented")
-// }
+// GetStatus implements types.ValidatorI.
+func (v *HeimdallValidator) GetStatus() cosmosTypes.BondStatus {
+	panic("unimplemented")
+}
 
 // GetTokens implements types.ValidatorI.
-func (v *Validator) GetTokens() math.Int {
+func (v *HeimdallValidator) GetTokens() math.Int {
 	panic("unimplemented")
 }
 
 // IsBonded implements types.ValidatorI.
-func (v *Validator) IsBonded() bool {
+func (v *HeimdallValidator) IsBonded() bool {
 	panic("unimplemented")
 }
 
 // IsJailed implements types.ValidatorI.
-func (v *Validator) IsJailed() bool {
+func (v *HeimdallValidator) IsJailed() bool {
 	panic("unimplemented")
 }
 
 // IsUnbonded implements types.ValidatorI.
-func (v *Validator) IsUnbonded() bool {
+func (v *HeimdallValidator) IsUnbonded() bool {
 	panic("unimplemented")
 }
 
 // IsUnbonding implements types.ValidatorI.
-func (v *Validator) IsUnbonding() bool {
+func (v *HeimdallValidator) IsUnbonding() bool {
 	panic("unimplemented")
 }
 
 // SharesFromTokens implements types.ValidatorI.
-func (v *Validator) SharesFromTokens(amt math.Int) (math.LegacyDec, error) {
+func (v *HeimdallValidator) SharesFromTokens(amt math.Int) (math.LegacyDec, error) {
 	panic("unimplemented")
 }
 
 // SharesFromTokensTruncated implements types.ValidatorI.
-func (v *Validator) SharesFromTokensTruncated(amt math.Int) (math.LegacyDec, error) {
+func (v *HeimdallValidator) SharesFromTokensTruncated(amt math.Int) (math.LegacyDec, error) {
 	panic("unimplemented")
 }
 
 // TmConsPublicKey implements types.ValidatorI.
-func (v *Validator) TmConsPublicKey() (cosmosCryto.PublicKey, error) {
+func (v *HeimdallValidator) TmConsPublicKey() (cosmosCryto.PublicKey, error) {
 	panic("unimplemented")
 }
 
 // TokensFromShares implements types.ValidatorI.
-func (v *Validator) TokensFromShares(math.LegacyDec) math.LegacyDec {
+func (v *HeimdallValidator) TokensFromShares(math.LegacyDec) math.LegacyDec {
 	panic("unimplemented")
 }
 
 // TokensFromSharesRoundUp implements types.ValidatorI.
-func (v *Validator) TokensFromSharesRoundUp(math.LegacyDec) math.LegacyDec {
+func (v *HeimdallValidator) TokensFromSharesRoundUp(math.LegacyDec) math.LegacyDec {
 	panic("unimplemented")
 }
 
-func (v *Validator) TokensFromSharesTruncated(math.LegacyDec) math.LegacyDec {
+func (v *HeimdallValidator) TokensFromSharesTruncated(math.LegacyDec) math.LegacyDec {
 	panic("unimplemented")
 }

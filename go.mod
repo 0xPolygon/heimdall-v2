@@ -9,6 +9,7 @@ require (
 	cosmossdk.io/log v1.2.1
 	cosmossdk.io/math v1.2.0
 	cosmossdk.io/store v1.0.1
+	cosmossdk.io/x/nft v0.1.0
 	cosmossdk.io/x/tx v0.12.0
 	cosmossdk.io/x/upgrade v0.1.0
 	github.com/cometbft/cometbft v0.38.2
@@ -27,13 +28,13 @@ require (
 
 require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/JekaMas/workerpool v1.1.8 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
 	github.com/btcsuite/btcd v0.22.3 // indirect
 	github.com/cbergoon/merkletree v0.2.0 // indirect
-	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
@@ -215,4 +216,6 @@ replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.2021
 //replace ethereum to follow Bor client
 replace github.com/ethereum/go-ethereum => github.com/maticnetwork/bor v1.0.4
 
-//replace github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240202164726-b6079b50a7c2
+replace github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240202164726-b6079b50a7c2
+
+replace cosmossdk.io => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240202164726-b6079b50a7c2

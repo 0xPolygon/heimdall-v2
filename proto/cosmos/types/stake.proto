@@ -13,7 +13,7 @@ import "tendermint/abci/types.proto";
 
 option go_package = "x/types";
 
-message Validator {
+message HeimdallValidator {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 
@@ -53,10 +53,10 @@ message ValidatorSet {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = false;
 
-  repeated Validator validators = 1
+  repeated HeimdallValidator validators = 1
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
 
-  Validator proposer = 2
+  HeimdallValidator proposer = 2
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
 
   // total voting power

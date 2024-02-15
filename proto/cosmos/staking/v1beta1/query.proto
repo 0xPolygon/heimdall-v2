@@ -7,7 +7,7 @@ import "google/api/annotations.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
-import "cosmos/types/staking.proto";
+import "cosmos/types/stake.proto";
 
 option go_package = "x/staking/types";
 
@@ -97,7 +97,7 @@ message QuerySignerRequest {
 // QuerySignerResponse is response type for the Query/Signer RPC method
 message QuerySignerResponse {
   // validator defines the validator info.
-  cosmos.types.Validator validator = 1
+  cosmos.types.HeimdallValidator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -110,7 +110,7 @@ message QueryValidatorRequest {
 // QueryValidatorResponse is response type for the Query/Validator RPC method
 message QueryValidatorResponse {
   // validator defines the validator info.
-  cosmos.types.Validator validator = 1
+  cosmos.types.HeimdallValidator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -132,7 +132,7 @@ message QueryCurrentProposerRequest {}
 // RPC method
 message QueryCurrentProposerResponse {
   // validator defines the validator info.
-  cosmos.types.Validator validator = 1
+  cosmos.types.HeimdallValidator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -157,7 +157,7 @@ message QueryProposerRequest {
 
 // QuerySignerResponse is response type for the Query/Proposer RPC method
 message QueryProposerResponse {
-  repeated cosmos.types.Validator proposers = 1
+  repeated cosmos.types.HeimdallValidator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -171,7 +171,7 @@ message QueryMilestoneProposerRequest {
 // Query/MilestoneProposer RPC method
 message QueryMilestoneProposerResponse {
   // validator defines the validator info.
-  repeated cosmos.types.Validator proposers = 1
+  repeated cosmos.types.HeimdallValidator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 

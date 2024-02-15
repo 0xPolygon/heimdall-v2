@@ -50,7 +50,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		testUtil.ModuleCommunicatorMock{AckCount: uint64(0)},
-		addrCodec.NewBech32Codec(""),
+		addrCodec.NewHexCodec(),
 		helper.ContractCaller{},
 	)
 
@@ -69,7 +69,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 // tests setter/getters for validatorSignerMaps , validator set/get
-func (s *KeeperTestSuite) TestValidator04() {}
+func (s *KeeperTestSuite) TestValidator114() {}
 
 // 	ctx, keeper := s.ctx, s.stakingKeeper
 // 	require := s.Require()

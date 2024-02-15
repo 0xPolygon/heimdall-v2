@@ -6,12 +6,12 @@ option go_package = "x/staking/types";
 import "gogoproto/gogo.proto";
 import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
-import "cosmos/types/staking.proto";
+import "cosmos/types/stake.proto";
 
 // GenesisState defines the staking module's genesis state.
 message GenesisState {
   // validators defines the validator set at genesis.
-  repeated cosmos.types.Validator validators = 1
+  repeated cosmos.types.HeimdallValidator validators = 1
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
 
   // currentValidatorSet defines the active current validator set at genesis.
