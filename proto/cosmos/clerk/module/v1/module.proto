@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package cosmos.clerk.module.v1;
+
+import "cosmos/app/v1alpha1/module.proto";
+
+// Module is the config object for the clerk module.
+message Module {
+  // TODO HV2 - sould we change cosmos to heimdall?
+  option (cosmos.app.v1alpha1.module) = {
+    go_import : "github.com/0xPolygon/heimdallv2/x/clerk"
+  };
+
+  // module_account_permissions are module account permissions.
+  repeated ModuleAccountPermission module_account_permissions = 2;
+}
+
+// ModuleAccountPermission represents permissions for a module account.
+message ModuleAccountPermission {
+  // account is the name of the module.
+  string account = 1;
+
+  // permissions are the permissions this module has. Currently recognized
+  // values are minter, burner and staking.
+  repeated string permissions = 2;
+}
