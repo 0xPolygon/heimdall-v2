@@ -1,0 +1,10 @@
+syntax = "proto3";
+package heimdallv2.chainmanager;
+
+import "gogoproto/gogo.proto";
+import "heimdallv2/chainmanager/chainmanager.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
+
+// GenesisState is the chainmanager state that must be provided at genesis
+message GenesisState { Params params = 1 [ (gogoproto.nullable) = false ]; }
