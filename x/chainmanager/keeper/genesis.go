@@ -12,10 +12,13 @@ func InitGenesis(ctx context.Context, keeper Keeper, data types.GenesisState) {
 }
 
 // ExportGenesis returns a GenesisState for chainmanager.
-func ExportGenesis(ctx context.Context, keeper Keeper) types.GenesisState {
-	params := keeper.GetParams(ctx)
+func ExportGenesis(ctx context.Context, keeper Keeper) (types.GenesisState, error) {
+	params, err := keeper.GetParams(ctx)
+	if err != nil {
+		return types.GenesisState{}, err
+	}
 
 	return types.NewGenesisState(
 		params,
-	)
+	), nil
 }

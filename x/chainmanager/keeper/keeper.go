@@ -18,7 +18,7 @@ type Keeper struct {
 	// TODO HV2: clarify whether using KVStoreService instead of StoreKey is fine
 	// storeKey storetypes.StoreKey
 	storeService store.KVStoreService
-	Params       collections.Item[types.Params]
+	params       collections.Item[types.Params]
 }
 
 // NewKeeper create new keeper
@@ -32,7 +32,7 @@ func NewKeeper(
 		cdc: cdc,
 		// storeKey: storeKey,
 		storeService: storeService,
-		Params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
 }
 
@@ -47,11 +47,10 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 
 // SetParams sets the chainmanager module's parameters.
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
-	return k.Params.Set(ctx, params)
+	return k.params.Set(ctx, params)
 }
 
 // GetParams gets the chainmanager module's parameters.
-func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
-	p, _ := k.Params.Get(ctx)
-	return p
+func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
+	return k.params.Get(ctx)
 }
