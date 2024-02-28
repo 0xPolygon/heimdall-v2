@@ -62,6 +62,7 @@ func BenchmarkFullAppSimulation(b *testing.B) {
 	app := NewHeimdallApp(logger, db, nil, true, appOptions, interBlockCacheOpt(), baseapp.SetChainID(HeimdallAppChainID))
 
 	// run randomized simulation
+
 	_, simParams, simErr := simulation.SimulateFromSeed(
 		b,
 		os.Stdout,

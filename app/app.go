@@ -18,6 +18,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
@@ -77,6 +78,7 @@ var (
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
+		distrtypes.ModuleName:      nil,
 		govtypes.ModuleName:        {authtypes.Burner},
 	}
 )
@@ -385,6 +387,13 @@ func NewHeimdallApp(
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
 	testdata.RegisterQueryServer(app.GRPCQueryRouter(), testdata.QueryImpl{})
+
+	overrideModules := map[string]module.AppModuleSimulation{
+		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, nil),
+	}
+	app.simulationManager = module.NewSimulationManagerFromAppModules(app.mm.Modules, overrideModules)
+
+	app.simulationManager.RegisterStoreDecoders()
 
 	// initialize stores
 	app.MountKVStores(keys)
