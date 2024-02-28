@@ -2,6 +2,8 @@ package chainmanager
 
 import (
 	"cosmossdk.io/core/appmodule"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/simulation"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 )
 
@@ -161,9 +163,9 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // TODO HV2: uncomment when simulation is implemented
 // GenerateGenesisState creates a randomized GenState of the chainmanager module.
-// func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-// 	simulation.RandomizedGenState(simState)
-// }
+func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
+	simulation.RandomizedGenState(simState)
+}
 
 // TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
 // looks equivalent to https://github.com/maticnetwork/heimdall/blob/249aa798c2f23c533d2421f2101127c11684c76e/chainmanager/module.go#L161C18-L161C34
