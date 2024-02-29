@@ -71,7 +71,6 @@ proto-check-breaking: check-proto-deps
 # 	@go run github.com/bufbuild/buf/cmd/buf breaking --against $(HTTPS_GIT)#branch=v0.34.x
 # .PHONY: proto-check-breaking-ci
 
-
 .PHONY: help
 help:
 	@echo "Available targets:"

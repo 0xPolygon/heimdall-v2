@@ -25,6 +25,7 @@ func MakeEncodingConfig() EncodingConfig {
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
+			// TODO HV2: replace with address.HexCodec once https://github.com/0xPolygon/cosmos-sdk/pull/3 is merged
 			AddressCodec: address.Bech32Codec{
 				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
 			},

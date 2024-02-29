@@ -29,15 +29,19 @@ type VoteExtensionProcessor struct {
 }
 
 func NewVoteExtensionProcessor(app *HeimdallApp) *VoteExtensionProcessor {
-	return &VoteExtensionProcessor{app: app}
+	return &VoteExtensionProcessor{
+		app:               app,
+		modVoteExtHandler: make(map[string]ModVoteExtHandler),
+		modPostHandler:    make(map[string]ModPostHandler),
+	}
 }
 
-func (v *VoteExtensionProcessor) SetModVoteExtHandler(modVoteExtHandler ModVoteExtHandler) {
-	v.modVoteExtHandler = make(map[string]ModVoteExtHandler, 0)
+func (v *VoteExtensionProcessor) SetModVoteExtHandler(modVoteExtHandler map[string]ModVoteExtHandler) {
+	v.modVoteExtHandler = modVoteExtHandler
 }
 
-func (v *VoteExtensionProcessor) SetModPostHandler(modPostHandler ModPostHandler) {
-	v.modPostHandler = make(map[string]ModPostHandler, 0)
+func (v *VoteExtensionProcessor) SetModPostHandler(modPostHandler map[string]ModPostHandler) {
+	v.modPostHandler = modPostHandler
 }
 
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
@@ -61,7 +65,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// Only include VE if there's majority
 		if !hasTwoThirdsSigs {
-			return nil, errors.New("Can't prepare the block without more than 2/3 majority")
+			return nil, errors.New("can't prepare the block without more than 2/3 majority")
 		}
 
 		bz, err := jsoniter.ConfigFastest.Marshal(req.LocalLastCommit.Votes)
@@ -136,7 +140,6 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		logger := v.app.Logger()
-
 
 		sideTxRes := make([]*types.SideTxResponse, 0)
 
