@@ -9,7 +9,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	"github.com/cosmos/cosmos-sdk/x/consensus"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cast"
 
@@ -21,7 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
 	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
@@ -66,6 +65,7 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -103,6 +103,7 @@ type HeimdallApp struct {
 	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper    bankkeeper.Keeper
 	// StakingKeeper *stakingkeeper.Keeper
+	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	DistrKeeper           distrkeeper.Keeper
 	GovKeeper             govkeeper.Keeper
 	UpgradeKeeper         *upgradekeeper.Keeper
@@ -110,7 +111,7 @@ type HeimdallApp struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	// Custom Keepers
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 	// StakeKeeper stakekeeper.Keeper
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
@@ -137,52 +138,6 @@ func init() {
 
 	DefaultNodeHome = filepath.Join(userHomeDir, ".heimdalld")
 }
-
-//
-// Module communicator
-//
-
-// ModuleCommunicator retriever
-type ModuleCommunicator struct {
-	App *HeimdallApp
-}
-
-// TODO CHECK HEIMDALL-V2: uncomment when implemented
-
-// // GetACKCount returns ack count
-// func (d ModuleCommunicator) GetACKCount(ctx sdk.Context) uint64 {
-// 	return d.App.CheckpointKeeper.GetACKCount(ctx)
-// }
-
-// // IsCurrentValidatorByAddress check if validator is current validator
-// func (d ModuleCommunicator) IsCurrentValidatorByAddress(ctx sdk.Context, address []byte) bool {
-// 	return d.App.StakingKeeper.IsCurrentValidatorByAddress(ctx, address)
-// }
-
-// // GetAllDividendAccounts fetches all dividend accounts from topup module
-// func (d ModuleCommunicator) GetAllDividendAccounts(ctx sdk.Context) []types.DividendAccount {
-// 	return d.App.TopupKeeper.GetAllDividendAccounts(ctx)
-// }
-
-// // SetCoins sets coins
-// func (d ModuleCommunicator) SetCoins(ctx sdk.Context, addr types.HeimdallAddress, amt sdk.Coins) sdk.Error {
-// 	return d.App.BankKeeper.SetCoins(ctx, addr, amt)
-// }
-
-// // GetCoins gets coins
-// func (d ModuleCommunicator) GetCoins(ctx sdk.Context, addr types.HeimdallAddress) sdk.Coins {
-// 	return d.App.BankKeeper.GetCoins(ctx, addr)
-// }
-
-// // SendCoins transfers coins
-// func (d ModuleCommunicator) SendCoins(ctx sdk.Context, fromAddr types.HeimdallAddress, toAddr types.HeimdallAddress, amt sdk.Coins) sdk.Error {
-// 	return d.App.BankKeeper.SendCoins(ctx, fromAddr, toAddr, amt)
-// }
-
-// // CreateValidatorSigningInfo used by slashing module
-// func (d ModuleCommunicator) CreateValidatorSigningInfo(ctx sdk.Context, valID types.ValidatorID, valSigningInfo types.ValidatorSigningInfo) {
-// 	d.App.SlashingKeeper.SetValidatorSigningInfo(ctx, valID, valSigningInfo)
-// }
 
 func NewHeimdallApp(
 	logger log.Logger,
@@ -215,8 +170,7 @@ func NewHeimdallApp(
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
 		upgradetypes.StoreKey,
-
-		// TODO CHECK HEIMDALL-V2: uncomment when implemented
+		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
 		// bortypes.StoreKey,
 		// clerktypes.StoreKey,
@@ -245,7 +199,7 @@ func NewHeimdallApp(
 	}
 
 	// Contract caller
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 
 	// contractCallerObj, err := helper.NewContractCaller()
 	// if err != nil {
@@ -253,11 +207,6 @@ func NewHeimdallApp(
 	// }
 
 	// app.caller = contractCallerObj
-
-	// module communicator
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
-
-	// moduleCommunicator := ModuleCommunicator{App: app}
 
 	// proposalHandler := abci.NewProposalHandler(logger, txConfig)
 	// voteExtHandler := abci.NewVoteExtensionHandler(logger, randProvider)
@@ -298,12 +247,13 @@ func NewHeimdallApp(
 		logger,
 	)
 
+	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		nil, // should the param here be our modified stake keeper ?
+		nil, // TODO HV2: should the param here be our modified stake keeper ?
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -319,7 +269,7 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		nil, // TODO CHECK HEIMDALL-V2: add our modified stake keeper as the param
+		nil, // TODO HV2: add our modified stake keeper as the param
 		app.DistrKeeper,
 		app.MsgServiceRouter(),
 		govConfig,
@@ -336,7 +286,7 @@ func NewHeimdallApp(
 	)
 
 	// custom keepers
-	// TODO CHECK HEIMDALL-V2: initialize custom module keepers
+	// TODO HV2: initialize custom module keepers
 
 	skipUpgradeHeights := map[int64]bool{}
 	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
@@ -356,13 +306,14 @@ func NewHeimdallApp(
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
+		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
-		// TODO CHECK HEIMDALL-V2: replace with our stake module
+		// TODO HV2: replace with our stake module
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		// TODO CHECK HEIMDALL-V2: add custom modules
+		// TODO HV2: add custom modules
 	)
 
 	// Basic manager
@@ -381,8 +332,9 @@ func NewHeimdallApp(
 
 	app.mm.SetOrderBeginBlockers(
 		upgradetypes.ModuleName,
+		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distrtypes.ModuleName,
-		// stakingtypes.ModuleName, replace with our stake module
+		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
 	)
 
 	// NOTE: upgrade module is required to be prioritized
@@ -398,11 +350,11 @@ func NewHeimdallApp(
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		distrtypes.ModuleName,
+		distrtypes.ModuleName, // TODO HV2: consider removing distribution module since rewards are distributed on L1
 		govtypes.ModuleName,
 		upgradetypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		// TODO CHECK HEIMDALL-V2: uncomment when implemented
+		// TODO HV2: uncomment when implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
@@ -473,7 +425,7 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
-	// TODO CHECK HEIMDALL-V2: pass contract caller and keepers for chainmanager and distribution
+	// TODO HV2: pass contract caller and keepers for chainmanager and distribution
 	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
 	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
@@ -519,7 +471,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 	// stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
 	// checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
 
@@ -549,14 +501,14 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	// TODO CHECK HEIMDALL-V2: Implement VE processing logic here
+	// TODO HV2: Implement VE processing logic here
 
 	return app.mm.PreBlock(ctx)
 }
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	// TODO CHECK HEIMDALL-V2: implement
+	// TODO HV2: implement
 	// app.AccountKeeper.SetBlockProposer(
 	// 	ctx,
 	// 	types.BytesToHeimdallAddress(req.Header.GetProposerAddress()),
@@ -566,7 +518,7 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
-	// TODO CHECK HEIMDALL-V2: consider moving the validator set update logic to staking module's EndBlock
+	// TODO HV2: consider moving the validator set update logic to staking module's EndBlock
 	// under x/staking/module.go
 
 	// transfer fees to current proposer
@@ -630,7 +582,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// 	}
 	// }
 
-	// TODO CHECK HEIMDALL-V2: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
+	// TODO HV2: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
 	// under x/chainmanager/module.go
 
 	// // Change root chain contract addresses if required
@@ -699,8 +651,9 @@ func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
 	}
 
 	return autocli.AppOptions{
-		Modules:               modules,
-		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.mm.Modules),
+		Modules:       modules,
+		ModuleOptions: runtimeservices.ExtractAutoCLIOptions(app.mm.Modules),
+		// TODO HV2: replace with authcodec.hexCodec once https://github.com/0xPolygon/cosmos-sdk/pull/3 is merged
 		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
 		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),

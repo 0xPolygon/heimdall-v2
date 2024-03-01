@@ -28,11 +28,11 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	// TODO CHECK HEIMDALL-V2: uncomment when implemented
+	// TODO HV2: uncomment when implemented
 	// validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
 	return servertypes.ExportedApp{
 		AppState: appState,
-		// TODO CHECK HEIMDALL-V2: uncomment when implemented
+		// TODO HV2: uncomment when implemented
 		// Validators:      validators,
 		Height:          height,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
