@@ -1,283 +1,461 @@
 package keeper_test
 
 import (
-	"math/rand"
 	"time"
 
-	"cosmossdk.io/math"
+	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
+	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/0xPolygon/heimdall-v2/x/staking/testutil"
-	stakingtypes "github.com/0xPolygon/heimdall-v2/x/staking/types"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
+	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
 
-	"github.com/0xPolygon/heimdall-v2/x/staking/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-var (
-	PKS     = simtestutil.CreateTestPubKeys(3)
-	Addr    = sdk.AccAddress(PKS[0].Address())
-	ValAddr = sdk.ValAddress(Addr)
-)
-
-func (s *KeeperTestSuite) TestMsgValidatorJoin() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
 	require := s.Require()
 
-	pk1 := secp256k1.GenPrivKey().PubKey()
-	require.NotNil(pk1)
+	stakingKeeper := s.stakeKeeper
 
-	pubkey, err := codectypes.NewAnyWithValue(pk1)
-	require.NoError(err)
+	start := uint64(0)
+	maxSize := uint64(256)
+	borChainId := "1234"
+	params, _ := keeper.GetParams(ctx)
+	dividendAccounts := s.moduleCommunicator.GetAllDividendAccounts(ctx)
 
-	msgValJoin := stakingtypes.MsgValidatorJoin{
-		From:            hmTypes.HeimdallAddress{Address: pk1.Address().Bytes()},
-		ID:              hmTypes.ValidatorID{ID: uint64(1)},
-		ActivationEpoch: uint64(1),
-		Amount:          math.NewInt(int64(1000000000000000000)),
-		SignerPubKey:    pubkey,
-		TxHash:          hmTypes.TxHash{},
-		LogIndex:        uint64(1),
-		BlockNumber:     uint64(0),
-		Nonce:           uint64(1),
+	// check valid checkpoint
+	// generate proposer for validator set
+	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
+	stakingKeeper.IncrementAccum(ctx, 1)
+
+	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
+	if err == nil {
+		start = start + lastCheckpoint.EndBlock + 1
 	}
 
-	_, err = msgServer.JoinValidator(ctx, &msgValJoin)
+	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
 	require.NoError(err)
 
-	_, ok := keeper.GetValidatorFromValID(ctx, hmTypes.ValidatorID{uint64(1)})
-	require.False(false, ok, "Should not add validator")
-}
+	// add current proposer to header
+	header.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
 
-func (s *KeeperTestSuite) TestHandleMsgValidatorUpdate() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
-	require := s.Require()
-	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
-	oldValSet := keeper.GetValidatorSet(ctx)
-
-	// vals := oldValSet.(*Validators)
-	oldSigner := oldValSet.Validators[0]
-	newSigner := testutil.GenRandomVal(1, 0, 10, 10, false, 1)
-	newSigner[0].ID = oldSigner.ID
-	newSigner[0].VotingPower = oldSigner.VotingPower
-
-	// gen msg
-	msgSignerUpdate := stakingtypes.MsgSignerUpdate{
-		From:            hmTypes.HeimdallAddress{Address: newSigner[0].Signer.Address},
-		ID:              hmTypes.ValidatorID{ID: uint64(1)},
-		NewSignerPubKey: newSigner[0].GetPubKey(),
-		TxHash:          hmTypes.TxHash{},
-		LogIndex:        uint64(0),
-		BlockNumber:     uint64(0),
-		Nonce:           uint64(1),
-	}
-
-	result, err := msgServer.SignerUpdate(ctx, &msgSignerUpdate)
-
-	require.NoError(err, "expected validator update to be ok, got %v", result)
-
-	newValidators := keeper.GetCurrentValidators(ctx)
-	require.Equal(len(oldValSet.Validators), len(newValidators), "Number of current validators should be equal")
-
-	setUpdates := types.GetUpdatedValidators(&oldValSet, keeper.GetAllValidators(ctx), 5)
-
-	err = oldValSet.UpdateWithChangeSet(setUpdates)
+	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	_ = keeper.UpdateValidatorSetInStore(ctx, oldValSet)
+	accountRoot := hmTypes.BytesToHeimdallHash(accRootHash)
 
-	ValFrmID, ok := keeper.GetValidatorFromValID(ctx, oldSigner.ID)
-	require.True(ok, "signer should be found, got %v", ok)
-	require.NotEqual(oldSigner.Signer.Bytes(), newSigner[0].Signer.Bytes(), "Should not update state")
-	require.Equal(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
+	s.Run("Success", func() {
+		msgCheckpoint := types.NewMsgCheckpointBlock(
+			header.Proposer,
+			header.StartBlock,
+			header.EndBlock,
+			header.RootHash,
+			accountRoot,
+			borChainId,
+		)
 
-	removedVal, err := keeper.GetValidatorInfo(ctx, oldSigner.Signer.Bytes())
-	require.Empty(err)
-	require.NotEqual(removedVal.VotingPower, int64(0), "should not update state")
+		// send checkpoint to handler
+		_, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
+		require.NoError(err)
+
+		bufferedHeader, _ := keeper.GetCheckpointFromBuffer(ctx)
+		require.Empty(bufferedHeader, "Should not store state")
+	})
+
+	s.Run("Invalid Proposer", func() {
+		//ZeroAddresss
+		header.Proposer = common.Address{}.String()
+
+		msgCheckpoint := types.NewMsgCheckpointBlock(
+			header.Proposer,
+			header.StartBlock,
+			header.EndBlock,
+			header.RootHash,
+			accountRoot,
+			borChainId,
+		)
+
+		msgCheckpoint.Type()
+
+		// send checkpoint to handler
+		_, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
+		require.Error(err)
+		require.ErrorContains(err, hmerrors.ErrInvalidMsg.Error())
+	})
+
+	s.Run("Checkpoint not in continuity", func() {
+		headerId := uint64(1)
+
+		err = keeper.AddCheckpoint(ctx, headerId, header)
+		require.NoError(err)
+
+		_, err = keeper.GetCheckpointByNumber(ctx, headerId)
+		require.NoError(err)
+
+		keeper.UpdateACKCount(ctx)
+		lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
+		require.NoError(err)
+
+		if err == nil {
+			// pass wrong start
+			start = start + lastCheckpoint.EndBlock + 2
+		}
+
+		msgCheckpoint := types.NewMsgCheckpointBlock(
+			header.Proposer,
+			start,
+			start+256,
+			header.RootHash,
+			accountRoot,
+			borChainId,
+		)
+
+		// send checkpoint to handler
+		_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+		require.Error(err)
+		require.ErrorContains(err, hmerrors.ErrDisCountinuousCheckpoint.Error())
+	})
 }
 
-func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustCheckpointBuffer() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
 	require := s.Require()
-	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
-	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := hmTypes.HexToHeimdallHash("123")
 
-	validators[0].EndEpoch = 10
-	msgValidatorExit := stakingtypes.MsgValidatorExit{
-		From:              hmTypes.HeimdallAddress{Address: validators[0].Signer.Address},
-		ID:                hmTypes.ValidatorID{ID: uint64(1)},
-		DeactivationEpoch: validators[0].EndEpoch,
-		TxHash:            hmTypes.TxHash(msgTxHash),
-		LogIndex:          uint64(0),
-		BlockNumber:       uint64(0),
-		Nonce:             uint64(1),
+	checkpoint := types.Checkpoint{
+		Proposer:   common.Address{}.String(),
+		StartBlock: 0,
+		EndBlock:   256,
+		RootHash:   hmTypes.HexToHeimdallHash("123"),
+		BorChainID: "testchainid",
+		TimeStamp:  1,
 	}
 
-	_, err := msgServer.ValidatorExit(ctx, &msgValidatorExit)
-
-	require.NoError(err, "expected validator exit to be ok")
-
-	updatedValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer.Bytes())
-	// updatedValInfo.EndEpoch = 10
-	require.NoError(err, "Unable to get validator info from val address,ValAddr:%v Error:%v ", validators[0].Signer.String(), err)
-	require.NotEqual(updatedValInfo.EndEpoch, validators[0].EndEpoch, "should not update deactivation epoch")
-
-	_, found := keeper.GetValidatorFromValID(ctx, validators[0].ID)
-	require.True(found, "Validator should be present even after deactivation")
-
-	_, err = msgServer.ValidatorExit(ctx, &msgValidatorExit)
-	require.NoError(err, "should not fail, as state is not updated for validatorExit")
-}
-
-func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
-	require := s.Require()
-
-	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
-	oldValSet := keeper.GetValidatorSet(ctx)
-	oldVal := oldValSet.Validators[0]
-
-	msgTxHash := hmTypes.HexToHeimdallHash("123")
-	newAmount := math.NewInt(2000000000000000000)
-
-	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
-		From:        hmTypes.HeimdallAddress{Address: oldVal.Signer.Address},
-		ID:          hmTypes.ValidatorID{ID: oldVal.ID.GetID()},
-		NewAmount:   newAmount,
-		TxHash:      hmTypes.TxHash(msgTxHash),
-		LogIndex:    uint64(0),
-		BlockNumber: uint64(0),
-		Nonce:       uint64(1),
-	}
-
-	_, err := msgServer.StakeUpdate(ctx, &msgStakeUpdate)
-	require.NoError(err, "expected validator stake update to be ok")
-
-	updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer.Bytes())
-	require.NoError(err, "unable to fetch validator info %v-", err)
-	require.NotEqual(newAmount.Int64(), updatedVal.VotingPower, "Validator VotingPower should not be updated to %v", newAmount.Int64())
-}
-
-func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
-	require := s.Require()
-
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-
-	pk1 := secp256k1.GenPrivKey().PubKey()
-	require.NotNil(pk1)
-
-	pubkey, err := codectypes.NewAnyWithValue(pk1)
+	err := keeper.SetCheckpointBuffer(ctx, checkpoint)
 	require.NoError(err)
 
-	addr := pk1.Address().Bytes()
+	checkpointAdjust := types.MsgCheckpointAdjust{
+		HeaderIndex: 1,
+		Proposer:    common.Address([]byte("DifferentProposer123")).String(),
+		StartBlock:  0,
+		EndBlock:    512,
+		RootHash:    hmTypes.HexToHeimdallHash("456"),
+	}
 
-	index := simulation.RandIntBetween(r1, 0, 100)
-	logIndex := uint64(index)
+	_, err = msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
+	require.Error(err)
+}
 
-	validatorId := hmTypes.NewValidatorID(uint64(1))
-	validator := hmTypes.NewValidator(
-		validatorId,
-		10,
-		15,
-		1,
-		int64(0), // power
-		pk1,
-		hmTypes.HeimdallAddress{addr},
+func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsMsg() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	require := s.Require()
+
+	checkpoint := types.Checkpoint{
+		Proposer:   common.Address{}.String(),
+		StartBlock: 0,
+		EndBlock:   256,
+		RootHash:   hmTypes.HexToHeimdallHash("123"),
+		BorChainID: "testchainid",
+		TimeStamp:  1,
+	}
+
+	err := keeper.AddCheckpoint(ctx, 1, checkpoint)
+	require.NoError(err)
+
+	checkpointAdjust := types.MsgCheckpointAdjust{
+		HeaderIndex: 1,
+		Proposer:    common.Address{}.String(),
+		StartBlock:  0,
+		EndBlock:    256,
+		RootHash:    hmTypes.HexToHeimdallHash("123"),
+	}
+
+	_, err = msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
+	require.Error(err)
+}
+
+func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	require := s.Require()
+	stakeKeeper := s.stakeKeeper
+	start := uint64(0)
+	maxSize := uint64(256)
+	borChainId := "1234"
+	params, err := keeper.GetParams(ctx)
+	require.NoError(err)
+	checkpointBufferTime := params.CheckpointBufferTime
+	dividendAccounts := s.moduleCommunicator.GetAllDividendAccounts(ctx)
+
+	// generate proposer for validator set
+	stakeSim.LoadValidatorSet(require, 2, stakeKeeper, ctx, false, 10)
+	stakeKeeper.IncrementAccum(ctx, 1)
+
+	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
+	if err == nil {
+		start = start + lastCheckpoint.EndBlock + 1
+	}
+
+	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
+	require.NoError(err)
+
+	// add current proposer to header
+	header.Proposer = stakeKeeper.GetValidatorSet(ctx).Proposer.Signer
+
+	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
+	require.NoError(err)
+
+	accountRoot := hmTypes.BytesToHeimdallHash(accRootHash)
+
+	msgCheckpoint := types.NewMsgCheckpointBlock(
+		header.Proposer,
+		header.StartBlock,
+		header.EndBlock,
+		header.RootHash,
+		accountRoot,
+		borChainId,
 	)
 
-	err = keeper.AddValidator(ctx, *validator)
-
+	// send checkpoint to handler
+	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
 	require.NoError(err)
 
-	isCurrentValidator := validator.IsCurrentValidator(14)
-	require.False(isCurrentValidator)
+	keeper.SetCheckpointBuffer(ctx, header)
 
-	totalValidators := keeper.GetAllValidators(ctx)
-	require.Equal(totalValidators[0].Signer.Bytes(), addr)
-	msgValJoin := stakingtypes.MsgValidatorJoin{
-		From:            hmTypes.HeimdallAddress{Address: addr},
-		ID:              hmTypes.ValidatorID{ID: validatorId.Uint64()},
-		ActivationEpoch: uint64(1),
-		Amount:          math.NewInt(int64(100000)),
-		SignerPubKey:    pubkey,
-		TxHash:          hmTypes.TxHash{},
-		LogIndex:        logIndex,
-		BlockNumber:     uint64(0),
-		Nonce:           uint64(1),
-	}
+	checkpointBuffer, err := keeper.GetCheckpointFromBuffer(ctx)
+	require.NoError(err)
 
-	_, err = msgServer.JoinValidator(ctx, &msgValJoin)
-	require.NotNil(err)
+	// set time buffered checkpoint timestamp + checkpointBufferTime
+	newTime := checkpointBuffer.TimeStamp + uint64(checkpointBufferTime)
+	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
+
+	// send new checkpoint which should replace old one
+	// send checkpoint to handler
+	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+	require.NoError(err)
 }
 
-//TODO H2 Please implement the following test after writing topUp module
+func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	require := s.Require()
+	stakeKeeper := s.stakeKeeper
 
-// func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
-// 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
-// 	require := s.Require()
+	start := uint64(0)
+	maxSize := uint64(256)
+	params, err := keeper.GetParams(ctx)
+	borChainId := "1234"
 
-// 	pubKey := hmTypes.NewPubKey([]byte{123})
-// 	signerAddress := hmTypes.HexToHeimdallAddress(pubKey.Address().Hex())
+	require.NoError(err)
+	dividendAccounts := s.moduleCommunicator.GetAllDividendAccounts(ctx)
 
-// 	txHash := hmTypes.HexToHeimdallHash("123")
-// 	logIndex := uint64(2)
-// 	amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
+	stakeSim.LoadValidatorSet(require, 2, stakeKeeper, ctx, false, 10)
+	stakeKeeper.IncrementAccum(ctx, 1)
 
-// 	validatorId := hmTypes.NewValidatorID(uint64(1))
+	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
+	if err == nil {
+		start = start + lastCheckpoint.EndBlock + 1
+	}
 
-// 	chainParams := app.ChainKeeper.GetParams(ctx)
+	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
+	require.NoError(err)
 
-// 	msgTopup := topupTypes.NewMsgTopup(signerAddress, signerAddress, sdk.NewInt(2000000000000000000), txHash, logIndex, uint64(2))
+	// add current proposer to header
+	header.Proposer = stakeKeeper.GetValidatorSet(ctx).Proposer.Signer
 
-// 	stakinginfoTopUpFee := &stakinginfo.StakinginfoTopUpFee{
-// 		User: signerAddress.EthAddress(),
-// 		Fee:  big.NewInt(100000000000000000),
-// 	}
+	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
+	require.NoError(err)
 
-// 	txreceipt := &ethTypes.Receipt{
-// 		BlockNumber: big.NewInt(10),
-// 	}
+	accountRoot := hmTypes.BytesToHeimdallHash(accRootHash)
 
-// 	stakinginfoStaked := &stakinginfo.StakinginfoStaked{
-// 		Signer:          signerAddress.EthAddress(),
-// 		ValidatorId:     new(big.Int).SetUint64(validatorId.Uint64()),
-// 		ActivationEpoch: big.NewInt(1),
-// 		Amount:          amount,
-// 		Total:           big.NewInt(10),
-// 		SignerPubkey:    pubKey.Bytes()[1:],
-// 	}
+	msgCheckpoint := types.NewMsgCheckpointBlock(
+		header.Proposer,
+		header.StartBlock,
+		header.EndBlock,
+		header.RootHash,
+		accountRoot,
+		borChainId,
+	)
 
-// 	msgValJoin := types.NewMsgValidatorJoin(
-// 		signerAddress,
-// 		validatorId.Uint64(),
-// 		uint64(1),
-// 		sdk.NewInt(2000000000000000000),
-// 		pubKey,
-// 		txHash,
-// 		logIndex,
-// 		0,
-// 		1,
-// 	)
+	// send checkpoint to handler
+	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+	require.NoError(err)
 
-// 	suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txreceipt, nil)
+	keeper.SetCheckpointBuffer(ctx, header)
 
-// 	suite.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress.EthAddress(), txreceipt, msgValJoin.LogIndex).Return(stakinginfoStaked, nil)
+	// send checkpoint to handler
+	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+	require.ErrorContains(err, hmerrors.ErrNoACK.Error())
+}
 
-// 	suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StakingInfoAddress.EthAddress(), mock.Anything, msgTopup.LogIndex).Return(stakinginfoTopUpFee, nil)
+func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	require := s.Require()
+	stakingKeeper := s.stakeKeeper
+	start := uint64(0)
+	maxSize := uint64(256)
+	params, err := keeper.GetParams(ctx)
+	require.NoError(err)
 
-// 	topupResult := suite.topupHandler(ctx, msgTopup)
-// 	require.True(t, topupResult.IsOK(), "expected topup to be done, got %v", topupResult)
+	// check valid checkpoint
+	// generate proposer for validator set
+	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
+	stakingKeeper.IncrementAccum(ctx, 1)
 
-// 	result := suite.handler(ctx, msgValJoin)
-// 	require.True(t, result.IsOK(), "expected validator stake update to be ok, got %v", result)
-// }
+	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
+	if err == nil {
+		start = start + lastCheckpoint.EndBlock + 1
+	}
+
+	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
+	require.NoError(err)
+
+	// add current proposer to header
+	header.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
+
+	headerId := uint64(1)
+
+	s.Run("No checkpoint in buffer", func() {
+		msgCheckpointAck := types.NewMsgCheckpointAck(
+			common.Address{}.String(),
+			headerId,
+			header.Proposer,
+			header.StartBlock,
+			header.EndBlock,
+			header.RootHash,
+			hmTypes.HexToHeimdallHash("123123"),
+			uint64(1),
+		)
+
+		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		require.ErrorContains(err, hmerrors.ErrBadAck.Error())
+
+	})
+
+	err = keeper.SetCheckpointBuffer(ctx, header)
+	require.NoError(err)
+
+	s.Run("success", func() {
+		msgCheckpointAck := types.NewMsgCheckpointAck(
+			common.Address{}.String(),
+			headerId,
+			header.Proposer,
+			header.StartBlock,
+			header.EndBlock,
+			header.RootHash,
+			hmTypes.HexToHeimdallHash("123123"),
+			uint64(1),
+		)
+
+		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		require.NoError(err)
+
+		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
+		require.NotNil(afterAckBufferedCheckpoint, "should not remove from buffer")
+	})
+
+	s.Run("Invalid start", func() {
+		msgCheckpointAck := types.NewMsgCheckpointAck(
+			common.Address{}.String(),
+			headerId,
+			header.Proposer,
+			uint64(123),
+			header.EndBlock,
+			header.RootHash,
+			hmTypes.HexToHeimdallHash("123123"),
+			uint64(1),
+		)
+
+		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		require.ErrorContains(err, hmerrors.ErrBadAck.Error())
+	})
+
+	s.Run("Invalid Roothash", func() {
+		msgCheckpointAck := types.NewMsgCheckpointAck(
+			common.Address{}.String(),
+			headerId,
+			header.Proposer,
+			header.StartBlock,
+			header.EndBlock,
+			hmTypes.HexToHeimdallHash("9887"),
+			hmTypes.HexToHeimdallHash("123123"),
+			uint64(1),
+		)
+
+		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		require.ErrorContains(err, hmerrors.ErrBadAck.Error())
+	})
+}
+
+func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	require := s.Require()
+	stakeKeeper := s.stakeKeeper
+	start := uint64(0)
+	maxSize := uint64(256)
+	params, err := keeper.GetParams(ctx)
+	require.NoError(err)
+	checkpointBufferTime := params.CheckpointBufferTime
+
+	// check valid checkpoint
+	// generate proposer for validator set
+	stakeSim.LoadValidatorSet(require, 4, stakeKeeper, ctx, false, 10)
+	stakeKeeper.IncrementAccum(ctx, 1)
+
+	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
+	if err == nil {
+		start = start + lastCheckpoint.EndBlock + 1
+	}
+
+	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
+	require.NoError(err)
+
+	// add current proposer to header
+	header.Proposer = stakeKeeper.GetValidatorSet(ctx).Proposer.Signer
+
+	keeper.AddCheckpoint(ctx, uint64(1), header)
+	ackCount := keeper.GetACKCount(ctx)
+
+	// set time lastCheckpoint timestamp + checkpointBufferTime-10
+	newTime := lastCheckpoint.TimeStamp + uint64(checkpointBufferTime.Seconds()) - uint64(5)
+	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
+
+	validatorSet := stakeKeeper.GetValidatorSet(ctx)
+
+	//Rotate the list to get the next proposer in line
+	validatorSet.IncrementProposerPriority(1)
+	noAckProposer := validatorSet.Proposer.Signer
+
+	msgNoAck := types.MsgCheckpointNoAck{
+		From: noAckProposer,
+	}
+
+	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
+	require.ErrorContains(err, hmerrors.ErrInvalidNoACK.Error())
+
+	updatedAckCount := keeper.GetACKCount(ctx)
+	require.Equal(ackCount, updatedAckCount, "Should not update state")
+
+	// set time lastCheckpoint timestamp + noAckWaitTime
+	newTime = lastCheckpoint.TimeStamp + uint64(checkpointBufferTime.Seconds())
+	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
+
+	msgNoAck = types.MsgCheckpointNoAck{
+		From: header.Proposer,
+	}
+
+	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
+	require.ErrorContains(err, hmerrors.ErrInvalidNoACK.Error())
+
+	updatedAckCount = keeper.GetACKCount(ctx)
+	require.Equal(ackCount, updatedAckCount, "Should not update state")
+
+	msgNoAck = types.MsgCheckpointNoAck{
+		From: noAckProposer,
+	}
+
+	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
+	require.NoError(err)
+
+	updatedAckCount = keeper.GetACKCount(ctx)
+	require.Equal(ackCount, updatedAckCount, "Should not update state")
+}

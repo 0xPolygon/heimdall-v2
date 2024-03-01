@@ -4,25 +4,24 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"math/big"
+	"math"
 	"strconv"
+	"strings"
+	"time"
 
 	errorsmod "cosmossdk.io/errors"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/x/staking/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type msgServer struct {
 	*Keeper
 }
 
-// NewMsgServerImpl returns an implementation of the staking MsgServer interface
+// NewMsgServerImpl returns an implementation of the checkpoint MsgServer interface
 // for the provided Keeper.
 func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
@@ -31,243 +30,308 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // CreateValidator defines a method for creating a new validator
-func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
-	k.Logger(ctx).Debug("✅ Validating validator join msg",
-		"validatorId", msg.ID,
-		"activationEpoch", msg.ActivationEpoch,
-		"amount", msg.Amount,
-		"SignerPubkey", msg.SignerPubKey.String(),
-		"txHash", msg.TxHash,
-		"logIndex", msg.LogIndex,
-		"blockNumber", msg.BlockNumber,
-	)
+func (k msgServer) CheckpointAdjust(ctx context.Context, msg *types.MsgCheckpointAdjust) (*types.MsgCheckpointAdjustResponse, error) {
+	logger := k.Logger(ctx)
 
-	// Generate PubKey from Pubkey in message and signer
-	pubkey := msg.SignerPubKey
-	pk, ok := pubkey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
+	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
+	if checkpointBuffer != nil {
+		logger.Error("checkpoint buffer exists", "error", err)
+		return nil, errorsmod.Wrap(hmerrors.ErrCheckpointBufferFound, "Checkpoint buffer not found")
 	}
 
-	addBytes := pk.Address().Bytes()
-	signer := hmTypes.HeimdallAddress{addBytes}
-
-	// Check if validator has been validator before
-	if _, ok := k.GetSignerFromValidatorID(ctx, msg.ID); ok {
-		k.Logger(ctx).Error("validator has been validator beforeV, cannot join with same ID", "validatorId", msg.ID)
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator has been validator before")
-	}
-
-	// get validator by signer
-	checkVal, err := k.GetValidatorInfo(ctx, signer.Bytes())
-	if err == nil || bytes.Equal(checkVal.Signer.Bytes(), signer.Bytes()) {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator already exist")
-	}
-
-	// validate voting power
-	_, err = helper.GetPowerFromAmount(msg.Amount.BigInt())
+	checkpointObj, err := k.GetCheckpointByNumber(ctx, msg.HeaderIndex)
 	if err != nil {
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.Amount, msg.ID))
+		logger.Error("Unable to get checkpoint from db", "header index", msg.HeaderIndex, "error", err)
+		return nil, errorsmod.Wrap(hmerrors.ErrNoCheckpointFound, "Checkpoint not found in db")
 	}
 
-	// sequence id
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-
-	// check if incoming tx is older
-	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
-		return nil, errorsmod.Wrap(hmerrors.ErrOldTx, "Older invalid tx found")
+	if checkpointObj.EndBlock == msg.EndBlock && checkpointObj.StartBlock == msg.StartBlock && bytes.Equal(checkpointObj.RootHash.Bytes(), msg.RootHash.Bytes()) && strings.ToLower(checkpointObj.Proposer) == strings.ToLower(msg.Proposer) {
+		logger.Error("Same Checkpoint in DB")
+		return nil, errorsmod.Wrap(hmerrors.ErrCheckpointAlreadyExists, "Checkpoint already exist in db")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	// Emit event join
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			types.EventTypeValidatorJoin,
+			types.EventTypeCheckpointAdjust,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(msg.ID.Uint64(), 10)),
-			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
+			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.HeaderIndex, 10)),
+			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
+			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
+			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
+			sdk.NewAttribute(types.AttributeKeyRootHash, msg.RootHash.String()),
 		),
 	})
 
-	return &types.MsgValidatorJoinResponse{}, nil
+	return &types.MsgCheckpointAdjustResponse{}, nil
 }
 
 // EditValidator defines a method for editing an existing validator
-func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (*types.MsgStakeUpdateResponse, error) {
-	k.Logger(ctx).Debug("✅ Validating stake update msg",
-		"validatorID", msg.ID,
-		"newAmount", msg.NewAmount,
-		"txHash", msg.TxHash,
-		"logIndex", msg.LogIndex,
-		"blockNumber", msg.BlockNumber,
-	)
-
-	// pull validator from store
-	_, ok := k.GetValidatorFromValID(ctx, msg.ID)
-	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ID)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
-	}
-
-	// sequence id
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-
-	// check if incoming tx is older
-	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
-	}
-
-	// pull validator from store
-	validator, ok := k.GetValidatorFromValID(ctx, msg.ID)
-	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ID)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
-	}
-
-	if msg.Nonce != validator.Nonce+1 {
-		k.Logger(ctx).Error("Incorrect validator nonce")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNonce, "Incorrect validator nonce")
-	}
-
-	// set validator amount
-	_, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
-	if err != nil {
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.NewAmount, msg.ID))
-	}
+func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
+	logger := k.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	timeStamp := uint64(sdkCtx.BlockTime().Unix())
+
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		logger.Error("Error in fetching checkpoint parameter")
+		return nil, errorsmod.Wrap(hmerrors.ErrCheckpointParams, "Error in fetching checkpoint parameter")
+	}
+
+	//
+	// Check checkpoint buffer
+	//
+
+	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
+	if err == nil {
+		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())
+
+		if checkpointBuffer.TimeStamp == 0 || ((timeStamp > checkpointBuffer.TimeStamp) && (timeStamp-checkpointBuffer.TimeStamp) >= checkpointBufferTime) {
+			logger.Debug("Checkpoint has been timed out. Flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.TimeStamp)
+			k.FlushCheckpointBuffer(ctx)
+		} else {
+			expiryTime := checkpointBuffer.TimeStamp + checkpointBufferTime
+			logger.Error("Checkpoint already exits in buffer", "Checkpoint", checkpointBuffer.String(), "Expires", expiryTime)
+			return nil, errorsmod.Wrap(hmerrors.ErrNoACK, fmt.Sprint("Checkpoint already exits in buffer", "Checkpoint", checkpointBuffer.String(), "Expires", expiryTime))
+		}
+	}
+
+	//
+	// Validate last checkpoint
+	//
+
+	// fetch last checkpoint from store
+	if lastCheckpoint, err := k.GetLastCheckpoint(ctx); err == nil {
+		// make sure new checkpoint is after tip
+		if lastCheckpoint.EndBlock > msg.StartBlock {
+			logger.Error("Checkpoint already exists",
+				"currentTip", lastCheckpoint.EndBlock,
+				"startBlock", msg.StartBlock,
+			)
+
+			return nil, errorsmod.Wrap(hmerrors.ErrOldCheckpoint, "Checkpoint already exist for start and end block")
+		}
+
+		// check if new checkpoint's start block start from current tip
+		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
+			logger.Error("Checkpoint not in continuity",
+				"currentTip", lastCheckpoint.EndBlock,
+				"startBlock", msg.StartBlock)
+
+			return nil, errorsmod.Wrap(hmerrors.ErrDisCountinuousCheckpoint, fmt.Sprint("Checkpoint not in continuity", "currentTip", lastCheckpoint.EndBlock, "startBlock", msg.StartBlock))
+		}
+	} else if err.Error() == hmerrors.ErrNoCheckpointFound.Error() && msg.StartBlock != 0 {
+		logger.Error("First checkpoint to start from block 0", "checkpoint start block", msg.StartBlock, "error", err)
+		return nil, errorsmod.Wrap(hmerrors.ErrBadBlockDetails, fmt.Sprint("First checkpoint to start from block 0", "checkpoint start block", msg.StartBlock))
+	}
+
+	//
+	// Validate account hash
+	//
+
+	// Make sure latest AccountRootHash matches
+	// Calculate new account root hash
+	dividendAccounts := k.moduleCommunicator.GetAllDividendAccounts(ctx)
+	logger.Debug("DividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
+
+	// Get account root hash from dividend accounts
+	accountRoot, err := types.GetAccountRootHash(dividendAccounts)
+	if err != nil {
+		logger.Error("Error while fetching account root hash", "error", err)
+		return nil, errorsmod.Wrap(hmerrors.ErrBadBlockDetails, fmt.Sprint("Error while fetching account root hash"))
+	}
+
+	logger.Debug("Validator account root hash generated", "accountRootHash", hmTypes.BytesToHeimdallHash(accountRoot).HexString())
+
+	// Compare stored root hash to msg root hash
+	if !bytes.Equal(accountRoot, msg.AccountRootHash.Bytes()) {
+		logger.Error(
+			"AccountRootHash of current state doesn't match from msg",
+			"hash", hmTypes.BytesToHeimdallHash(accountRoot).HexString(),
+			"msgHash", msg.AccountRootHash,
+		)
+		return nil, errorsmod.Wrap(hmerrors.ErrBadBlockDetails, fmt.Sprint("AccountRootHash of current state doesn't match from msg",
+			"hash", hmTypes.BytesToHeimdallHash(accountRoot).HexString(),
+			"msgHash", msg.AccountRootHash))
+	}
+
+	//
+	// Validate proposer
+	//
+
+	// Check proposer in message
+	validatorSet := k.sk.GetValidatorSet(ctx)
+	if validatorSet.Proposer == nil {
+		logger.Error("No proposer in validator set", "msgProposer", msg.Proposer)
+		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprint("No proposer in stored validator set"))
+	}
+
+	if msg.Proposer != validatorSet.Proposer.Signer {
+		logger.Error(
+			"Invalid proposer in msg",
+			"proposer", validatorSet.Proposer.Signer,
+			"msgProposer", msg.Proposer,
+		)
+
+		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprint("Invalid proposer in msg"))
+	}
+
+	// Emit event for checkpoint
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			types.EventTypeStakeUpdate,
+			types.EventTypeCheckpoint,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ID.Uint64(), 10)),
-			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
+			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
+			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
+			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
+			sdk.NewAttribute(types.AttributeKeyRootHash, msg.RootHash.String()),
+			sdk.NewAttribute(types.AttributeKeyAccountHash, msg.AccountRootHash.String()),
 		),
 	})
 
-	return &types.MsgStakeUpdateResponse{}, nil
+	return &types.MsgCheckpointResponse{}, nil
 }
 
 // Delegate defines a method for performing a delegation of coins from a delegator to a validator
-func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
-	k.Logger(ctx).Debug("✅ Validating signer update msg",
-		"validatorID", msg.ID,
-		"NewSignerPubkey", msg.NewSignerPubKey.String(),
-		"txHash", msg.TxHash,
-		"logIndex", msg.LogIndex,
-		"blockNumber", msg.BlockNumber,
-	)
+func (k msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAck) (*types.MsgCheckpointAckResponse, error) {
+	logger := k.Logger(ctx)
 
-	// Generate PubKey from Pubkey in message and signer
-	pubkey := msg.NewSignerPubKey
-	pk, ok := pubkey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
+	// Get last checkpoint from buffer
+	headerBlock, err := k.GetCheckpointFromBuffer(ctx)
+	if err != nil {
+		logger.Error("Unable to get checkpoint", "error", err)
+		return nil, errorsmod.Wrap(hmerrors.ErrBadAck, fmt.Sprint("Unable to get checkpoint"))
 	}
 
-	addBytes := pk.Address().Bytes()
-	newSigner := hmTypes.HeimdallAddress{addBytes}
-
-	// pull validator from store
-	validator, ok := k.GetValidatorFromValID(ctx, msg.ID)
-	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ID)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
+	if msg.StartBlock != headerBlock.StartBlock {
+		logger.Error("Invalid start block", "startExpected", headerBlock.StartBlock, "startReceived", msg.StartBlock)
+		return nil, errorsmod.Wrap(hmerrors.ErrBadAck, fmt.Sprint("Invalid start block", "startExpected", headerBlock.StartBlock, "startReceived", msg.StartBlock))
 	}
 
-	// sequence id
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-
-	// check if incoming tx is older
-	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
-	}
-
-	// check if new signer address is same as existing signer
-	if bytes.Equal(newSigner.Bytes(), validator.Signer.Bytes()) {
-		// No signer change
-		k.Logger(ctx).Error("NewSigner same as OldSigner.")
-		return nil, errorsmod.Wrap(hmerrors.ErrNoSignerChange, "NewSigner same as OldSigner")
-
-	}
-
-	// check nonce validity
-	if msg.Nonce != validator.Nonce+1 {
-		k.Logger(ctx).Error("Incorrect validator nonce")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNonce, "Incorrect validator nonce")
+	// Return err if start and end matches but contract root hash doesn't match
+	if msg.StartBlock == headerBlock.StartBlock && msg.EndBlock == headerBlock.EndBlock && !msg.RootHash.Equals(headerBlock.RootHash) {
+		logger.Error("Invalid ACK",
+			"startExpected", headerBlock.StartBlock,
+			"startReceived", msg.StartBlock,
+			"endExpected", headerBlock.EndBlock,
+			"endReceived", msg.StartBlock,
+			"rootExpected", headerBlock.RootHash.String(),
+			"rootRecieved", msg.RootHash.String(),
+		)
+		return nil, errorsmod.Wrap(hmerrors.ErrBadAck, fmt.Sprint("Invalid Ack"))
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			types.EventTypeSignerUpdate,
+			types.EventTypeCheckpointAck,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ID.Uint64(), 10)),
-			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
+			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.Number, 10)),
 		),
 	})
 
-	return &types.MsgSignerUpdateResponse{}, nil
+	return &types.MsgCheckpointAckResponse{}, nil
 }
 
-// BeginRedelegate defines a method for performing a redelegation of coins from a source validator to a destination validator of given delegator
-func (k msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExit) (*types.MsgValidatorExitResponse, error) {
-	k.Logger(ctx).Debug("✅ Validating validator exit msg",
-		"validatorID", msg.ID,
-		"deactivatonEpoch", msg.DeactivationEpoch,
-		"txHash", msg.TxHash,
-		"logIndex", msg.LogIndex,
-		"blockNumber", msg.BlockNumber,
-	)
-
-	validator, ok := k.GetValidatorFromValID(ctx, msg.ID)
-	if !ok {
-		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorID", msg.ID)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
-	}
-
-	k.Logger(ctx).Debug("validator in store", "validator", validator)
-	// check if validator deactivation period is set
-	if validator.EndEpoch != 0 {
-		k.Logger(ctx).Error("Validator already unbonded")
-		return nil, errorsmod.Wrap(hmerrors.ErrValUnbonded, "Validator already unbonded")
-	}
-
-	// sequence id
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-
-	// check if incoming tx is older
-	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
-	}
-
-	// check nonce validity
-	if msg.Nonce != validator.Nonce+1 {
-		k.Logger(ctx).Error("Incorrect validator nonce")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNonce, "Incorrect validator nonce")
-	}
+// CheckpointNoAck handles checkpoint no-ack transaction
+func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpointNoAck) (*types.MsgCheckpointNoAckResponse, error) {
+	logger := k.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	// Get current block time
+	currentTime := sdkCtx.BlockTime()
+
+	// Get buffer time from params
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		logger.Error("Error in fetching checkpoint parameter")
+		return nil, errorsmod.Wrap(hmerrors.ErrCheckpointParams, "Error in fetching checkpoint parameter")
+
+	}
+
+	bufferTime := params.CheckpointBufferTime
+
+	// Fetch last checkpoint from store
+	// TODO figure out how to handle this error
+	lastCheckpoint, _ := k.GetLastCheckpoint(ctx)
+	lastCheckpointTime := time.Unix(int64(lastCheckpoint.TimeStamp), 0)
+
+	// If last checkpoint is not present or last checkpoint happens before checkpoint buffer time -- thrown an error
+	if lastCheckpointTime.After(currentTime) || (currentTime.Sub(lastCheckpointTime) < bufferTime) {
+		logger.Debug("Invalid No ACK -- Waiting for last checkpoint ACK", "lastCheckpointTime", lastCheckpointTime, "current time", currentTime,
+			"buffer Time", bufferTime.String(),
+		)
+
+		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNoACK, "Time as not expired till now")
+	}
+
+	timeDiff := currentTime.Sub(lastCheckpointTime)
+
+	//count value is calculated based on the time passed since the last checkpoint
+	count := math.Floor(timeDiff.Seconds() / bufferTime.Seconds())
+
+	var isProposer bool = false
+
+	currentValidatorSet := k.sk.GetValidatorSet(ctx)
+	currentValidatorSet.IncrementProposerPriority(1)
+
+	for i := 0; i < int(count); i++ {
+		if strings.ToLower(currentValidatorSet.Proposer.Signer) == strings.ToLower(msg.From) {
+			isProposer = true
+			break
+		}
+
+		currentValidatorSet.IncrementProposerPriority(1)
+	}
+
+	//If NoAck sender is not the valid proposer, return error
+	if !isProposer {
+		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNoACK, "Ack proposer is not correct")
+	}
+
+	// Check last no ack - prevents repetitive no-ack
+	lastNoAck := k.GetLastNoAck(ctx)
+	lastNoAckTime := time.Unix(int64(lastNoAck), 0)
+
+	if lastNoAckTime.After(currentTime) || (currentTime.Sub(lastNoAckTime) < bufferTime) {
+		logger.Debug("Too many no-ack", "lastNoAckTime", lastNoAckTime, "current time", currentTime,
+			"buffer Time", bufferTime.String())
+
+		return nil, errorsmod.Wrap(hmerrors.ErrTooManyNoACK, "Too many no acks")
+	}
+
+	// Set new last no-ack
+	newLastNoAck := uint64(currentTime.Unix())
+	k.SetLastNoAck(ctx, newLastNoAck)
+	logger.Debug("Last No-ACK time set", "lastNoAck", newLastNoAck)
+
+	//
+	// Update to new proposer
+	//
+
+	// Increment accum (selects new proposer)
+	k.sk.IncrementAccum(ctx, 1)
+
+	// Get new proposer
+	vs := k.sk.GetValidatorSet(ctx)
+	newProposer := vs.GetProposer()
+	logger.Debug(
+		"New proposer selected",
+		"validator", newProposer.Signer,
+		"signer", newProposer.Signer,
+		"power", newProposer.VotingPower,
+	)
+
+	// add events
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			types.EventTypeValidatorExit,
+			types.EventTypeCheckpointNoAck,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ID.Uint64(), 10)),
-			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
+			sdk.NewAttribute(types.AttributeKeyNewProposer, newProposer.Signer),
 		),
 	})
 
-	return &types.MsgValidatorExitResponse{}, nil
+	return &types.MsgCheckpointNoAckResponse{}, nil
 }
