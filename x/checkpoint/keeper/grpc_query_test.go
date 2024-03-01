@@ -1,275 +1,222 @@
 package keeper_test
 
 import (
-	"github.com/0xPolygon/heimdall-v2/x/staking/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/staking/types"
+	"time"
+
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
-// func (s *KeeperTestSuite) TestGRPCQueryValidator() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
-// 	require := s.Require()
-
-// 	validator := testutil.GenRandomVal(1, 0, 100, 10, false, 0)
-// 	require.NoError(keeper.SetValidator(ctx, validator))
-// 	var req *types.QueryValidatorRequest
-// 	testCases := []struct {
-// 		msg      string
-// 		malleate func()
-// 		expPass  bool
-// 	}{
-// 		{
-// 			"empty request",
-// 			func() {
-// 				req = &types.QueryValidatorRequest{}
-// 			},
-// 			false,
-// 		},
-// 		{
-// 			"with valid and not existing address",
-// 			func() {
-// 				req = &types.QueryValidatorRequest{
-// 					ValidatorAddr: "cosmosvaloper15jkng8hytwt22lllv6mw4k89qkqehtahd84ptu",
-// 				}
-// 			},
-// 			false,
-// 		},
-// 		{
-// 			"valid request",
-// 			func() {
-// 				req = &types.QueryValidatorRequest{ValidatorAddr: validator.OperatorAddress}
-// 			},
-// 			true,
-// 		},
-// 	}
-
-//		for _, tc := range testCases {
-//			s.Run(fmt.Sprintf("Case %s", tc.msg), func() {
-//				tc.malleate()
-//				res, err := queryClient.Validator(gocontext.Background(), req)
-//				if tc.expPass {
-//					require.NoError(err)
-//					require.True(validator.Equal(&res.Validator))
-//				} else {
-//					require.Error(err)
-//					require.Nil(res)
-//				}
-//			})
-//		}
-//	}
-func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+func (s *KeeperTestSuite) TestQueryParams() {
+	ctx, _, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
 	require := s.Require()
 
-	req := &types.QueryCurrentValidatorSetRequest{}
-	res, err := queryClient.CurrentValidatorSet(ctx, req)
-	// check no error found
+	req := &types.QueryParamsRequest{}
+
+	defaultParams := types.DefaultParams()
+
+	res, err := queryClient.Params(ctx, req)
 	require.NoError(err)
-	require.Equal(len(res.ValidatorSet.Validators), 0)
-
-	//Set the validator set
-	validatorSet := testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-
-	req = &types.QueryCurrentValidatorSetRequest{}
-	res, err = queryClient.CurrentValidatorSet(ctx, req)
-	// check no error found
-	require.NoError(err)
-
-	// check response is not nil
 	require.NotNil(res)
-	require.Equal(res.ValidatorSet.Proposer.GetSigner(), validatorSet.Proposer.GetSigner())
-	require.Equal(len(res.ValidatorSet.Validators), len(validatorSet.Validators))
-	require.Equal(res.ValidatorSet.TotalVotingPower, validatorSet.TotalVotingPower)
+
+	require.Equal(defaultParams.AvgCheckpointLength, res.Params.AvgCheckpointLength)
+	require.Equal(defaultParams.MaxCheckpointLength, res.Params.MaxCheckpointLength)
 }
 
-func (s *KeeperTestSuite) TesthandleQuerySigner() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+func (s *KeeperTestSuite) TestQueryAckCount() {
+	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
 	require := s.Require()
 
-	req := &types.QuerySignerRequest{
-		ValAddress: make([]byte, 20),
-	}
+	req := &types.QueryAckCountRequest{}
 
-	res, err := queryClient.Signer(ctx, req)
-	// check no error found
-	require.NotNil(err)
+	ackCount := uint64(1)
+	keeper.UpdateACKCountWithValue(ctx, ackCount)
 
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-
-	validators := keeper.GetAllValidators(ctx)
-
-	req = &types.QuerySignerRequest{
-		ValAddress: validators[0].Signer.Address,
-	}
-
-	res, err = queryClient.Signer(ctx, req)
-	// check no error found
+	res, err := queryClient.AckCount(ctx, req)
 	require.NoError(err)
+	require.NotNil(res)
 
-	// check response is not nil
-	require.Equal(res.Validator.Signer, validators[0].Signer)
-	require.Equal(res.Validator.StartEpoch, validators[0].StartEpoch)
-	require.Equal(res.Validator.EndEpoch, validators[0].EndEpoch)
-	require.Equal(res.Validator.PubKey.Compare(validators[0].PubKey), 0)
-	require.Equal(res.Validator.ProposerPriority, validators[0].ProposerPriority)
+	actualAckcount := res.GetCount()
+	require.Equal(actualAckcount, ackCount)
 }
 
-func (s *KeeperTestSuite) TesthandleQueryValidator() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+func (s *KeeperTestSuite) TestQueryCheckpoint() {
+	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
 	require := s.Require()
-	req := &types.QueryValidatorRequest{
-		Id: uint64(0),
-	}
 
-	res, err := queryClient.Validator(ctx, req)
-	// check no error found
+	req := &types.QueryCheckpointRequest{Number: uint64(1)}
+
+	res, err := queryClient.Checkpoint(ctx, req)
 	require.NotNil(err)
 	require.Nil(res)
 
-	req = &types.QueryValidatorRequest{
-		Id: uint64(1),
-	}
+	headerNumber := uint64(1)
+	startBlock := uint64(0)
+	endBlock := uint64(255)
+	rootHash := hmTypes.HexToHeimdallHash("123")
+	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
+	timestamp := uint64(time.Now().Unix())
+	borChainId := "1234"
 
-	res, err = queryClient.Validator(ctx, req)
-	// check no error found
+	checkpointBlock := types.CreateBlock(
+		startBlock,
+		endBlock,
+		rootHash,
+		proposerAddress,
+		borChainId,
+		timestamp,
+	)
+
+	keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+
+	res, err = queryClient.Checkpoint(ctx, req)
+	require.NoError(err)
+
+	require.NotNil(res)
+	require.Equal(res.Checkpoint, checkpointBlock)
+}
+
+func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
+	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
+	require := s.Require()
+
+	req := &types.QueryCheckpointBufferRequest{}
+
+	res, err := queryClient.CheckpointBuffer(ctx, req)
 	require.NotNil(err)
 	require.Nil(res)
 
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
+	startBlock := uint64(0)
+	endBlock := uint64(255)
+	rootHash := hmTypes.HexToHeimdallHash("123")
+	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
+	timestamp := uint64(time.Now().Unix())
+	borChainId := "1234"
 
-	validators := keeper.GetAllValidators(ctx)
-
-	req = &types.QueryValidatorRequest{
-		Id: validators[0].GetID().ID,
-	}
-
-	res, err = queryClient.Validator(ctx, req)
-	// check no error found
+	checkpointBlock := types.CreateBlock(
+		startBlock,
+		endBlock,
+		rootHash,
+		proposerAddress,
+		borChainId,
+		timestamp,
+	)
+	err = keeper.SetCheckpointBuffer(ctx, checkpointBlock)
 	require.NoError(err)
 
-	// check response is not nil
-	require.Equal(res.Validator.Signer, validators[0].Signer)
-	require.Equal(res.Validator.StartEpoch, validators[0].StartEpoch)
-	require.Equal(res.Validator.EndEpoch, validators[0].EndEpoch)
-	require.Equal(res.Validator.PubKey.Compare(validators[0].PubKey), 0)
-	require.Equal(res.Validator.ProposerPriority, validators[0].ProposerPriority)
-}
+	res, err = queryClient.CheckpointBuffer(ctx, req)
 
-func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
-	require := s.Require()
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	validators := keeper.GetAllValidators(ctx)
-
-	req := &types.QueryValidatorStatusRequest{
-		ValAddress: validators[0].Signer.Address,
-	}
-	res, err := queryClient.ValidatorStatus(ctx, req)
-	// check no error found
-	require.NoError(err)
-
-	// check response is not nil
-	require.NotNil(res)
-	require.True(res.Status)
-
-	req = &types.QueryValidatorStatusRequest{
-		ValAddress: make([]byte, 20),
-	}
-	res, err = queryClient.ValidatorStatus(ctx, req)
-	// check no error found
-	require.Nil(err)
-	require.False(res.Status)
-
-}
-
-// TODO H2 Recheck it
-func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
-	require := s.Require()
-	validatorSet := testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	require.NotNil(validatorSet)
-
-	req := &types.QueryCurrentProposerRequest{}
-
-	res, err := queryClient.CurrentProposer(ctx, req)
-	// check no error found
 	require.NoError(err)
 	require.NotNil(res)
+
+	require.Equal(res.Checkpoint, checkpointBlock)
 }
 
-// func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+func (s *KeeperTestSuite) TestQueryLastNoAck() {
+	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
+	require := s.Require()
+
+	noAck := uint64(time.Now().Unix())
+	keeper.SetLastNoAck(ctx, noAck)
+
+	req := &types.QueryLastNoAckRequest{}
+
+	res, err := queryClient.LastNoAck(ctx, req)
+	require.NoError(err)
+	require.NotNil(res)
+
+	require.Equal(res.Result, noAck)
+}
+
+// func (s *KeeperTestSuite) TestQueryCheckpointList() {
+// 	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
 // 	require := s.Require()
-// 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 
-// 	path := []string{types.QueryMilestoneProposer}
+// 	keeper := keeper
 
-// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryMilestoneProposer)
+// 	count := 5
 
-// 	req := abci.RequestQuery{
-// 		Path: route,
-// 		Data: app.Codec().MustMarshalJSON(types.NewQueryProposerParams(uint64(2))),
-// 	}
-// 	res, err := querier(ctx, path, req)
-// 	// check no error found
-// 	require.NoError(t, err)
+// 	startBlock := uint64(0)
+// 	endBlock := uint64(0)
+// 	checkpoints := make([]hmTypes.Checkpoint, count)
 
-// 	// check response is not nil
-// 	require.NotNil(t, res)
-// }
+// 	for i := 0; i < count; i++ {
+// 		headerBlockNumber := uint64(i) + 1
 
-// func (s *KeeperTestSuite) TestHandleQueryCurrentProposer() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
-// 	require := s.Require()
-// 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
+// 		startBlock = startBlock + endBlock
+// 		endBlock = endBlock + uint64(255)
+// 		rootHash := hmTypes.HexToHeimdallHash("123")
+// 		proposerAddress := common.HexToAddress("0xdummyAddress123").String()
+// 		timestamp := uint64(time.Now().Unix()) + uint64(i)
+// 		borChainId := "1234"
 
-// 	path := []string{types.QueryCurrentProposer}
-
-// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryCurrentProposer)
-
-// 	req := abci.RequestQuery{
-// 		Path: route,
-// 		Data: []byte{},
-// 	}
-// 	res, err := querier(ctx, path, req)
-// 	// check no error found
-// 	require.NoError(t, err)
-
-// 	// check response is not nil
-// 	require.NotNil(t, res)
-// }
-
-// func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
-// 	s1 := rand.NewSource(time.Now().UnixNano())
-// 	r1 := rand.New(s1)
-
-// 	txHash := hmTypes.TxHash{make([]byte, 20)}
-
-// 	txreceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-
-// 	logIndex := uint64(simulation.RandIntBetween(r1, 0, 100))
-
-// 	msg := types.NewQueryStakingSequenceParams(txHash.String(), logIndex)
-
-// 	sequence := new(big.Int).Mul(txreceipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-// 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-
-// 	keeper.SetStakingSequence(ctx, sequence.String())
-
-// 	path := []string{types.QueryStakingSequence}
-
-// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryStakingSequence)
-
-// 	req := abci.RequestQuery{
-// 		Path: route,
-// 		Data: app.Codec().MustMarshalJSON(msg),
+// 		checkpoint := hmTypes.CreateBlock(
+// 			startBlock,
+// 			endBlock,
+// 			rootHash,
+// 			proposerAddress,
+// 			borChainId,
+// 			timestamp,
+// 		)
+// 		checkpoints[i] = checkpoint
+// 		err := keeper.AddCheckpoint(ctx, headerBlockNumber, checkpoint)
+// 		require.NoError(t, err)
+// 		keeper.UpdateACKCount(ctx)
 // 	}
 
-// 	res, err := querier(ctx, path, req)
-// 	// check no error found
-// 	require.NoError(t, err)
+// 	path := []string{types.QueryCheckpointList}
 
-// 	// check response is not nil
+// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryCheckpointList)
+// 	req := abci.RequestQuery{
+// 		Path: route,
+// 		Data: app.Codec().MustMarshalJSON(hmTypes.NewQueryPaginationParams(uint64(1), uint64(10))),
+// 	}
+// 	res, sdkErr := querier(ctx, path, req)
+// 	require.NoError(t, sdkErr)
 // 	require.NotNil(t, res)
-// 	require.Equal(t, sequence.String(), string(res))
+
+// 	var actualRes []hmTypes.Checkpoint
+
+// 	err := jsoniter.ConfigFastest.Unmarshal(res, &actualRes)
+// 	require.NoError(t, err)
+// 	require.Equal(t, checkpoints, actualRes)
 // }
+
+func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
+	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
+	require := s.Require()
+
+	stakeSim.LoadValidatorSet(require, 2, s.stakeKeeper, ctx, false, 10)
+
+	headerNumber := uint64(1)
+	startBlock := uint64(0)
+	endBlock := uint64(256)
+	rootHash := hmTypes.HexToHeimdallHash("123")
+	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
+	timestamp := uint64(time.Now().Unix())
+	borChainId := "1234"
+
+	checkpointBlock := types.CreateBlock(
+		startBlock,
+		endBlock,
+		rootHash,
+		proposerAddress,
+		borChainId,
+		timestamp,
+	)
+
+	s.contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash.Bytes(), nil)
+	keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+
+	req := types.QueryNextCheckpointRequest{BorChainId: borChainId}
+
+	res, err := queryClient.NextCheckpoint(ctx, &req)
+	require.NoError(err)
+
+	require.Equal(checkpointBlock.StartBlock, res.Checkpoint.StartBlock)
+	require.Equal(checkpointBlock.EndBlock, res.Checkpoint.EndBlock)
+	require.Equal(checkpointBlock.RootHash, res.Checkpoint.RootHash)
+	require.Equal(checkpointBlock.BorChainID, res.Checkpoint.BorChainID)
+}

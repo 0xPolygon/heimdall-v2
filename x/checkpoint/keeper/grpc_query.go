@@ -2,13 +2,13 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/0xPolygon/heimdall-v2/x/staking/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 // Querier is used as Keeper will have duplicate methods if used directly, and gRPC names take precedence over keeper
@@ -16,156 +16,121 @@ type Querier struct {
 	*Keeper
 }
 
-var _ types.QueryServer = Querier{}
+//var _ types.QueryServer = Querier{}
 
 func NewQuerier(keeper *Keeper) Querier {
 	return Querier{Keeper: keeper}
 }
 
-// Validators queries all validators that match the given status
-func (k Querier) CurrentValidatorSet(ctx context.Context, req *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
+// Params gives the params
+func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return &types.QueryCurrentValidatorSetResponse{
-		ValidatorSet: validatorSet,
+	return &types.QueryParamsResponse{
+		Params: params,
 	}, nil
 }
 
-// Signer queries validator info for given validator val_address.
-func (k Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
+// AckCount gives the checkpoint count
+func (k Querier) AckCount(ctx context.Context, req *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
+	count := k.GetACKCount(ctx)
 
-	validator, err := k.GetValidatorInfo(ctx, req.ValAddress)
-
-	if err != nil {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("Error in getting validator corresposing to the given address Err:%s", err))
-	}
-
-	return &types.QuerySignerResponse{Validator: validator}, nil
+	return &types.QueryAckCountResponse{Count: count}, nil
 }
 
-// Validator queries validator info for given validator id.
-func (k Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+// Checkpoint gives the checkpoint based on number
+func (k Querier) Checkpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
+	checkpoint, err := k.GetCheckpointByNumber(ctx, req.Number)
+	if err != nil {
+		return nil, err
 	}
 
-	fmt.Print("-------IN VALIDATOR", req.Id)
-	validator, ok := k.GetValidatorFromValID(ctx, hmTypes.ValidatorID{req.Id})
-	fmt.Print("-------OUT VALIDATOR", ok)
-
-	if !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("Error in getting validator corresposing to the given id "))
-	}
-
-	return &types.QueryValidatorResponse{Validator: validator}, nil
+	return &types.QueryCheckpointResponse{Checkpoint: checkpoint}, nil
 }
 
 // ValidatorStatus queries validator status for given validator val_address.
-func (k Querier) ValidatorStatus(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+func (k Querier) CheckpointLatest(ctx context.Context, req *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
+	checkpoint, err := k.GetLastCheckpoint(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// get validator status by signer address
-	status := k.IsCurrentValidatorByAddress(ctx, req.ValAddress)
-
-	return &types.QueryValidatorStatusResponse{Status: status}, nil
+	return &types.QueryCheckpointLatestResponse{Checkpoint: checkpoint}, nil
 }
 
-// TotalPower queries total power of a validator set
-func (k Querier) TotalPower(ctx context.Context, req *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
-	totalPower := k.GetTotalPower(ctx)
-
-	return &types.QueryTotalPowerResponse{TotalPower: totalPower}, nil
-}
-
-// CurrentProposer queries validator info for the current proposer
-func (k Querier) CurrentProposer(ctx context.Context, req *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
-	proposer := k.GetCurrentProposer(ctx)
-
-	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
-}
-
-// Proposer queries for the proposer
-func (k Querier) Proposer(ctx context.Context, req *types.QueryProposerRequest) (*types.QueryProposerResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+// CheckpointBuffer gives checkpoint from buffer
+func (k Querier) CheckpointBuffer(ctx context.Context, req *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
+	checkpoint, err := k.GetCheckpointFromBuffer(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
-
-	times := int(req.Times)
-	if times > len(validatorSet.Validators) {
-		times = len(validatorSet.Validators)
-	}
-
-	// init proposers
-	proposers := make([]hmTypes.Validator, times)
-
-	// get proposers
-	for index := 0; index < times; index++ {
-		proposers[index] = *(validatorSet.GetProposer())
-		validatorSet.IncrementProposerPriority(1)
-	}
-
-	return &types.QueryProposerResponse{Proposers: proposers}, nil
+	return &types.QueryCheckpointBufferResponse{Checkpoint: *checkpoint}, nil
 }
 
-// MilestoneProposer queries for the milestone proposer
-func (k Querier) MilestoneProposer(ctx context.Context, req *types.QueryMilestoneProposerRequest) (*types.QueryMilestoneProposerResponse, error) {
+// LastNoAck gives the last no ack
+func (k Querier) LastNoAck(ctx context.Context, req *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
+	noAck := k.GetLastNoAck(ctx)
+
+	return &types.QueryLastNoAckResponse{Result: noAck}, nil
+}
+
+// NextCheckpoint gives next expected checkpoint
+func (k Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpointRequest) (*types.QueryNextCheckpointResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
-
-	times := int(req.Times)
-	if times > len(validatorSet.Validators) {
-		times = len(validatorSet.Validators)
+	validatorSet := k.sk.GetValidatorSet(ctx)
+	proposer := validatorSet.GetProposer()
+	ackCount := k.GetACKCount(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	// init proposers
-	proposers := make([]hmTypes.Validator, times)
+	var start uint64
 
-	// get proposers
-	for index := 0; index < times; index++ {
-		proposers[index] = *(validatorSet.GetProposer())
-		validatorSet.IncrementProposerPriority(1)
+	if ackCount != 0 {
+		checkpointNumber := ackCount
+
+		lastCheckpoint, err := k.GetCheckpointByNumber(ctx, checkpointNumber)
+		if err != nil {
+			return nil, err
+		}
+
+		start = lastCheckpoint.EndBlock + 1
 	}
 
-	return &types.QueryMilestoneProposerResponse{Proposers: proposers}, nil
-}
+	end := start + params.AvgCheckpointLength
 
-// StakingSequence queries for the staking sequence
-func (k Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSequenceRequest) (*types.QueryStakingSequenceResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+	contractCaller := k.IContractCaller
+
+	rootHash, err := contractCaller.GetRootHash(start, end, params.MaxCheckpointLength)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("could not fetch roothash for start:%v end:%v error:%v", start, end, err.Error()))
 	}
 
-	// //TODO H2 Please implement this
-	// //chainParams := keeper.chainKeeper.GetParams(ctx
+	accs := k.moduleCommunicator.GetAllDividendAccounts(ctx)
 
-	// // get main tx receipt
-	// receipt, err := k.IContractCaller.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(req.TxHash).EthHash(),)
-	// if err != nil || receipt == nil {
-	// 	return nil, status.Error(codes.InvalidArgument, "empty request")
-	// }
+	accRootHash, err := types.GetAccountRootHash(accs)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("could not get generate account root hash. Error:%v", err.Error()))
+	}
 
-	// // sequence id
+	checkpointMsg := types.MsgCheckpoint{
+		Proposer:        proposer.Signer,
+		StartBlock:      start,
+		EndBlock:        start + params.AvgCheckpointLength,
+		RootHash:        hmTypes.BytesToHeimdallHash(rootHash),
+		AccountRootHash: hmTypes.BytesToHeimdallHash(accRootHash),
+		BorChainID:      req.GetBorChainId(),
+	}
 
-	// sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	// sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
-
-	// // check if incoming tx already exists
-	// if !k.HasStakingSequence(ctx, sequence.String()) {
-	// 	return &types.QueryStakingSequenceResponse{Status: true}, nil
-	// }
-
-	return &types.QueryStakingSequenceResponse{Status: true}, nil
+	return &types.QueryNextCheckpointResponse{Checkpoint: checkpointMsg}, nil
 }
