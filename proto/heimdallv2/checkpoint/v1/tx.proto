@@ -1,0 +1,140 @@
+syntax = "proto3";
+package heimdallv2.checkpoint.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+import "heimdallv2/types/validator.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
+
+// Msg defines the staking Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // CheckpointAdjust defines a method for checkpointAdjust
+  rpc CheckpointAdjust(MsgCheckpointAdjust)
+      returns (MsgCheckpointAdjustResponse);
+
+  // Checkpoint defines a method for checkpoint
+  rpc Checkpoint(MsgCheckpoint) returns (MsgCheckpointResponse);
+
+  // CheckpointAck defines a method for checkpoint ack
+  rpc CheckpointAck(MsgCheckpointAck) returns (MsgCheckpointAckResponse);
+
+  // CheckpointNoAck defines a method for checkpoint no ack
+  rpc CheckpointNoAck(MsgCheckpointNoAck) returns (MsgCheckpointNoAckResponse);
+}
+
+// MsgCheckpointAdjust defines a SDK message for adjusting the checkpoint
+message MsgCheckpointAdjust {
+  option (amino.name) = "checkpoint/MsgCheckpointAdjust";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  uint64 header_index = 1 [ (amino.dont_omitempty) = true ];
+
+  string proposer = 2 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+
+  string from = 3 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+
+  uint64 start_block = 4 [ (amino.dont_omitempty) = true ];
+
+  uint64 end_block = 5 [ (amino.dont_omitempty) = true ];
+
+  heimdallv2.types.HeimdallHash root_hash = 6
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// MsgCheckpointAdjustResponse defines the Msg/CheckpointAdjust response type.
+message MsgCheckpointAdjustResponse {}
+
+// MsgCheckpoint defines a SDK message for creating the checkpoint
+message MsgCheckpoint {
+  option (amino.name) = "checkpoint/MsgCheckpoint";
+
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+
+  string proposer = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+
+  uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+
+  uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+
+  heimdallv2.types.HeimdallHash root_hash = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  heimdallv2.types.HeimdallHash account_root_hash = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  string bor_chain_i_d = 6 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgCheckpointResponse defines the Msg/Checkpoint response type.
+message MsgCheckpointResponse {}
+
+// MsgCheckpointAck defines a SDK message for creating the ack of checkpoint
+message MsgCheckpointAck {
+  option (amino.name) = "checkpoint/MsgCheckpointAck";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+
+  uint64 number = 2 [ (amino.dont_omitempty) = true ];
+
+  string proposer = 3 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+
+  uint64 start_block = 4 [ (amino.dont_omitempty) = true ];
+
+  uint64 end_block = 5 [ (amino.dont_omitempty) = true ];
+
+  heimdallv2.types.HeimdallHash root_hash = 6
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  heimdallv2.types.HeimdallHash tx_hash = 7
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  uint64 log_index = 8 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgCheckpointAck defines the Msg/CheckpointAck response type.
+message MsgCheckpointAckResponse {}
+
+// MsgCheckpointNoAck defines a SDK message for creating the no-ack
+message MsgCheckpointNoAck {
+  option (amino.name) = "checkpoint/MsgCheckpointNoAck";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+}
+
+// MsgCheckpointNoAck defines the Msg/CheckpointNoAck response type.
+message MsgCheckpointNoAckResponse {}
