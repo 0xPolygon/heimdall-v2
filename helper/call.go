@@ -88,14 +88,14 @@ type IContractCaller interface {
 	CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int)
 	CheckIfBlocksExist(end uint64) bool
 
-	GetRootChainInstance(rootChainAddress common.Address) (*rootchain.Rootchain, error)
-	GetStakingInfoInstance(stakingInfoAddress common.Address) (*stakinginfo.Stakinginfo, error)
-	GetValidatorSetInstance(validatorSetAddress common.Address) (*validatorset.Validatorset, error)
-	GetStakeManagerInstance(stakingManagerAddress common.Address) (*stakemanager.Stakemanager, error)
-	GetSlashManagerInstance(slashManagerAddress common.Address) (*slashmanager.Slashmanager, error)
-	GetStateSenderInstance(stateSenderAddress common.Address) (*statesender.Statesender, error)
-	GetStateReceiverInstance(stateReceiverAddress common.Address) (*statereceiver.Statereceiver, error)
-	GetMaticTokenInstance(maticTokenAddress common.Address) (*erc20.Erc20, error)
+	GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error)
+	GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error)
+	GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error)
+	GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error)
+	GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error)
+	GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error)
+	GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error)
+	GetMaticTokenInstance(maticTokenAddress string) (*erc20.Erc20, error)
 }
 
 // ContractCaller contract caller
@@ -157,11 +157,13 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 }
 
 // GetRootChainInstance returns RootChain contract instance for selected base chain
-func (c *ContractCaller) GetRootChainInstance(rootChainAddress common.Address) (*rootchain.Rootchain, error) {
-	contractInstance, ok := c.ContractInstanceCache[rootChainAddress]
+func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error) {
+	address := common.HexToAddress(rootChainAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := rootchain.NewRootchain(rootChainAddress, mainChainClient)
-		c.ContractInstanceCache[rootChainAddress] = ci
+		ci, err := rootchain.NewRootchain(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -170,11 +172,13 @@ func (c *ContractCaller) GetRootChainInstance(rootChainAddress common.Address) (
 }
 
 // GetStakingInfoInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress common.Address) (*stakinginfo.Stakinginfo, error) {
-	contractInstance, ok := c.ContractInstanceCache[stakingInfoAddress]
+func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error) {
+	address := common.HexToAddress(stakingInfoAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := stakinginfo.NewStakinginfo(stakingInfoAddress, mainChainClient)
-		c.ContractInstanceCache[stakingInfoAddress] = ci
+		ci, err := stakinginfo.NewStakinginfo(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -183,11 +187,13 @@ func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress common.Addres
 }
 
 // GetValidatorSetInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress common.Address) (*validatorset.Validatorset, error) {
-	contractInstance, ok := c.ContractInstanceCache[validatorSetAddress]
+func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error) {
+	address := common.HexToAddress(validatorSetAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := validatorset.NewValidatorset(validatorSetAddress, mainChainClient)
-		c.ContractInstanceCache[validatorSetAddress] = ci
+		ci, err := validatorset.NewValidatorset(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -196,11 +202,13 @@ func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress common.Addr
 }
 
 // GetStakeManagerInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress common.Address) (*stakemanager.Stakemanager, error) {
-	contractInstance, ok := c.ContractInstanceCache[stakingManagerAddress]
+func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error) {
+	address := common.HexToAddress(stakingManagerAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := stakemanager.NewStakemanager(stakingManagerAddress, mainChainClient)
-		c.ContractInstanceCache[stakingManagerAddress] = ci
+		ci, err := stakemanager.NewStakemanager(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -209,11 +217,13 @@ func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress common.Ad
 }
 
 // GetSlashManagerInstance returns slashManager contract instance for selected base chain
-func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress common.Address) (*slashmanager.Slashmanager, error) {
-	contractInstance, ok := c.ContractInstanceCache[slashManagerAddress]
+func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error) {
+	address := common.HexToAddress(slashManagerAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := slashmanager.NewSlashmanager(slashManagerAddress, mainChainClient)
-		c.ContractInstanceCache[slashManagerAddress] = ci
+		ci, err := slashmanager.NewSlashmanager(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -222,11 +232,13 @@ func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress common.Addr
 }
 
 // GetStateSenderInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress common.Address) (*statesender.Statesender, error) {
-	contractInstance, ok := c.ContractInstanceCache[stateSenderAddress]
+func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error) {
+	address := common.HexToAddress(stateSenderAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := statesender.NewStatesender(stateSenderAddress, mainChainClient)
-		c.ContractInstanceCache[stateSenderAddress] = ci
+		ci, err := statesender.NewStatesender(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -235,11 +247,13 @@ func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress common.Addres
 }
 
 // GetStateReceiverInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress common.Address) (*statereceiver.Statereceiver, error) {
-	contractInstance, ok := c.ContractInstanceCache[stateReceiverAddress]
+func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error) {
+	address := common.HexToAddress(stateReceiverAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := statereceiver.NewStatereceiver(stateReceiverAddress, maticClient)
-		c.ContractInstanceCache[stateReceiverAddress] = ci
+		ci, err := statereceiver.NewStatereceiver(address, maticClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -248,11 +262,13 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress common.Ad
 }
 
 // GetMaticTokenInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetMaticTokenInstance(maticTokenAddress common.Address) (*erc20.Erc20, error) {
-	contractInstance, ok := c.ContractInstanceCache[maticTokenAddress]
+func (c *ContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc20.Erc20, error) {
+	address := common.HexToAddress(maticTokenAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := erc20.NewErc20(maticTokenAddress, mainChainClient)
-		c.ContractInstanceCache[maticTokenAddress] = ci
+		ci, err := erc20.NewErc20(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}

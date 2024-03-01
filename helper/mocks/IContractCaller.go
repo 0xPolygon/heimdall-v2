@@ -645,11 +645,11 @@ func (_m *IContractCaller) GetMaticTxReceipt(_a0 common.Hash) (*types.Receipt, e
 }
 
 // GetRootChainInstance provides a mock function with given fields: rootchainAddress
-func (_m *IContractCaller) GetRootChainInstance(rootchainAddress common.Address) (*rootchain.Rootchain, error) {
+func (_m *IContractCaller) GetRootChainInstance(rootchainAddress string) (*rootchain.Rootchain, error) {
 	ret := _m.Called(rootchainAddress)
 
 	var r0 *rootchain.Rootchain
-	if rf, ok := ret.Get(0).(func(common.Address) *rootchain.Rootchain); ok {
+	if rf, ok := ret.Get(0).(func(string) *rootchain.Rootchain); ok {
 		r0 = rf(rootchainAddress)
 	} else {
 		if ret.Get(0) != nil {
@@ -658,7 +658,7 @@ func (_m *IContractCaller) GetRootChainInstance(rootchainAddress common.Address)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(rootchainAddress)
 	} else {
 		r1 = ret.Error(1)
@@ -714,11 +714,11 @@ func (_m *IContractCaller) GetVoteOnHash(start uint64, end uint64, milestoneLeng
 }
 
 // GetSlashManagerInstance provides a mock function with given fields: slashManagerAddress
-func (_m *IContractCaller) GetSlashManagerInstance(slashManagerAddress common.Address) (*slashmanager.Slashmanager, error) {
+func (_m *IContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error) {
 	ret := _m.Called(slashManagerAddress)
 
 	var r0 *slashmanager.Slashmanager
-	if rf, ok := ret.Get(0).(func(common.Address) *slashmanager.Slashmanager); ok {
+	if rf, ok := ret.Get(0).(func(string) *slashmanager.Slashmanager); ok {
 		r0 = rf(slashManagerAddress)
 	} else {
 		if ret.Get(0) != nil {
@@ -727,7 +727,7 @@ func (_m *IContractCaller) GetSlashManagerInstance(slashManagerAddress common.Ad
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(slashManagerAddress)
 	} else {
 		r1 = ret.Error(1)
@@ -778,11 +778,11 @@ func (_m *IContractCaller) GetSpanDetails(id *big.Int, _a1 *validatorset.Validat
 }
 
 // GetStakeManagerInstance provides a mock function with given fields: stakingManagerAddress
-func (_m *IContractCaller) GetStakeManagerInstance(stakingManagerAddress common.Address) (*stakemanager.Stakemanager, error) {
+func (_m *IContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error) {
 	ret := _m.Called(stakingManagerAddress)
 
 	var r0 *stakemanager.Stakemanager
-	if rf, ok := ret.Get(0).(func(common.Address) *stakemanager.Stakemanager); ok {
+	if rf, ok := ret.Get(0).(func(string) *stakemanager.Stakemanager); ok {
 		r0 = rf(stakingManagerAddress)
 	} else {
 		if ret.Get(0) != nil {
@@ -791,7 +791,7 @@ func (_m *IContractCaller) GetStakeManagerInstance(stakingManagerAddress common.
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(stakingManagerAddress)
 	} else {
 		r1 = ret.Error(1)
@@ -801,11 +801,11 @@ func (_m *IContractCaller) GetStakeManagerInstance(stakingManagerAddress common.
 }
 
 // GetStakingInfoInstance provides a mock function with given fields: stakingInfoAddress
-func (_m *IContractCaller) GetStakingInfoInstance(stakingInfoAddress common.Address) (*stakinginfo.Stakinginfo, error) {
+func (_m *IContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error) {
 	ret := _m.Called(stakingInfoAddress)
 
 	var r0 *stakinginfo.Stakinginfo
-	if rf, ok := ret.Get(0).(func(common.Address) *stakinginfo.Stakinginfo); ok {
+	if rf, ok := ret.Get(0).(func(string) *stakinginfo.Stakinginfo); ok {
 		r0 = rf(stakingInfoAddress)
 	} else {
 		if ret.Get(0) != nil {
@@ -814,7 +814,7 @@ func (_m *IContractCaller) GetStakingInfoInstance(stakingInfoAddress common.Addr
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(stakingInfoAddress)
 	} else {
 		r1 = ret.Error(1)
@@ -824,11 +824,11 @@ func (_m *IContractCaller) GetStakingInfoInstance(stakingInfoAddress common.Addr
 }
 
 // GetStateReceiverInstance provides a mock function with given fields: stateReceiverAddress
-func (_m *IContractCaller) GetStateReceiverInstance(stateReceiverAddress common.Address) (*statereceiver.Statereceiver, error) {
+func (_m *IContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error) {
 	ret := _m.Called(stateReceiverAddress)
 
 	var r0 *statereceiver.Statereceiver
-	if rf, ok := ret.Get(0).(func(common.Address) *statereceiver.Statereceiver); ok {
+	if rf, ok := ret.Get(0).(func(string) *statereceiver.Statereceiver); ok {
 		r0 = rf(stateReceiverAddress)
 	} else {
 		if ret.Get(0) != nil {
@@ -837,7 +837,7 @@ func (_m *IContractCaller) GetStateReceiverInstance(stateReceiverAddress common.
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(stateReceiverAddress)
 	} else {
 		r1 = ret.Error(1)
@@ -847,11 +847,11 @@ func (_m *IContractCaller) GetStateReceiverInstance(stateReceiverAddress common.
 }
 
 // GetStateSenderInstance provides a mock function with given fields: stateSenderAddress
-func (_m *IContractCaller) GetStateSenderInstance(stateSenderAddress common.Address) (*statesender.Statesender, error) {
+func (_m *IContractCaller) GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error) {
 	ret := _m.Called(stateSenderAddress)
 
 	var r0 *statesender.Statesender
-	if rf, ok := ret.Get(0).(func(common.Address) *statesender.Statesender); ok {
+	if rf, ok := ret.Get(0).(func(string) *statesender.Statesender); ok {
 		r0 = rf(stateSenderAddress)
 	} else {
 		if ret.Get(0) != nil {
@@ -860,7 +860,7 @@ func (_m *IContractCaller) GetStateSenderInstance(stateSenderAddress common.Addr
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(stateSenderAddress)
 	} else {
 		r1 = ret.Error(1)
@@ -891,11 +891,11 @@ func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *s
 }
 
 // GetValidatorSetInstance provides a mock function with given fields: validatorSetAddress
-func (_m *IContractCaller) GetValidatorSetInstance(validatorSetAddress common.Address) (*validatorset.Validatorset, error) {
+func (_m *IContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error) {
 	ret := _m.Called(validatorSetAddress)
 
 	var r0 *validatorset.Validatorset
-	if rf, ok := ret.Get(0).(func(common.Address) *validatorset.Validatorset); ok {
+	if rf, ok := ret.Get(0).(func(string) *validatorset.Validatorset); ok {
 		r0 = rf(validatorSetAddress)
 	} else {
 		if ret.Get(0) != nil {
@@ -904,7 +904,7 @@ func (_m *IContractCaller) GetValidatorSetInstance(validatorSetAddress common.Ad
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(common.Address) error); ok {
+	if rf, ok := ret.Get(1).(func(string) error); ok {
 		r1 = rf(validatorSetAddress)
 	} else {
 		r1 = ret.Error(1)
