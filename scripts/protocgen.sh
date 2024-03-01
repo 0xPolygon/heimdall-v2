@@ -1,9 +1,5 @@
 #!/usr/bin/env bash
 
-# How to run manually:
-# docker build --pull --rm -f "contrib/devtools/Dockerfile" -t cosmossdk-proto:latest "contrib/devtools"
-# docker run --rm -v $(pwd):/workspace --workdir /workspace cosmossdk-proto sh ./scripts/protocgen.sh
-
 echo "Formatting protobuf files"
 find ./ -name "*.proto" -exec clang-format -i {} \;
 
