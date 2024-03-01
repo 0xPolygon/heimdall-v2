@@ -4,11 +4,10 @@ import (
 	"sort"
 
 	"cosmossdk.io/log"
+	sm "github.com/0xPolygon/heimdall-v2/x/module"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	jsoniter "github.com/json-iterator/go"
-
-	"github.com/0xPolygon/heimdall-v2/proto/types"
 )
 
 // TODO HV2: uncomment when implemented
@@ -147,13 +146,13 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 
 	for _, txHash := range txHashList {
 		voteMap := voteByTxHash[txHash]
-		if voteMap[types.Vote_VOTE_YES] >= (totalVP*2/3 + 1) {
+		if voteMap[sm.Vote_VOTE_YES] >= (totalVP*2/3 + 1) {
 			// approved
 			logger.Debug("Approved side-tx", "txHash", txHash)
 
 			// append to approved tx slice
 			approvedTxs = append(approvedTxs, []byte(txHash))
-		} else if voteMap[types.Vote_VOTE_NO] >= (totalVP*2/3 + 1) {
+		} else if voteMap[sm.Vote_VOTE_NO] >= (totalVP*2/3 + 1) {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
 
@@ -174,11 +173,11 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 // aggregateVotes collates votes received for a side tx
 //
 //nolint:unused
-func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[types.Vote]int64, error) {
-	voteByTxHash := make(map[string]map[types.Vote]int64, 0)    // track votes for a side tx
+func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sm.Vote]int64, error) {
+	voteByTxHash := make(map[string]map[sm.Vote]int64, 0)       // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}, 0) // ensure a validator doesn't procure conflicting votes for a side tx
 
-	var ve types.CanonicalSideTxResponse
+	var ve sm.CanonicalSideTxResponse
 
 	for _, vote := range extVoteInfo {
 		if err := jsoniter.ConfigFastest.Unmarshal(vote.VoteExtension, &ve); err != nil {
@@ -208,7 +207,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[types.V
 }
 
 // checkDuplicateVotes detects duplicate votes by a validator for a side tx
-func checkDuplicateVotes(sideTxResponses []*types.SideTxResponse) (bool, []byte) {
+func checkDuplicateVotes(sideTxResponses []*sm.SideTxResponse) (bool, []byte) {
 	// track votes of the validator
 	txVoteMap := make(map[string]struct{}, 0)
 

@@ -32,6 +32,7 @@ import (
 
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
+	sm "github.com/0xPolygon/heimdall-v2/x/module"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
@@ -210,15 +211,11 @@ func NewHeimdallApp(
 
 	// app.caller = contractCallerObj
 
-	voteExtProcessor := NewVoteExtensionProcessor(app)
-	app.VoteExtensionProcessor = voteExtProcessor
-
 	// TODO HV2: Set vote extension and post handlers for each module (use SetModVoteExtHandler and SetModPostHandler)
 
 	// Set ABCI++ Handlers
 	bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
 	bApp.SetProcessProposal(app.NewProcessProposalHandler())
-	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
@@ -380,6 +377,16 @@ func NewHeimdallApp(
 	if err != nil {
 		panic(err)
 	}
+
+	sideTxCfg := sm.NewConfigurator()
+	app.RegisterSideMsgServices(sideTxCfg)
+
+	//Create th voteExtProcessor using sideTxCfg
+	voteExtProcessor := NewVoteExtensionProcessor(app, sideTxCfg)
+	app.VoteExtensionProcessor = voteExtProcessor
+
+	//Set the voteExtension methods to baseapp
+	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
 
@@ -740,6 +747,15 @@ func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
+func (app *HeimdallApp) RegisterSideMsgServices(cfg sm.SideTxConfigurator) {
+
+	for _, module := range app.mm.Modules {
+		if module, ok := module.(sm.HasSideMsgServices); ok {
+			module.RegisterSideMsgServices(cfg)
+		}
+	}
+}
+
 type EmptyAppOptions struct{}
 
 func (ao EmptyAppOptions) Get(_ string) interface{} {
@@ -783,3 +799,5 @@ func GetMaccPerms() map[string][]string {
 
 	return dupMaccPerms
 }
+
+func RegisterSideTxServices()
