@@ -88,7 +88,7 @@ type IContractCaller interface {
 	CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int)
 	CheckIfBlocksExist(end uint64) bool
 
-	GetRootChainInstance(rootChainAddress common.Address) (*rootchain.Rootchain, error)
+	GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error)
 	GetStakingInfoInstance(stakingInfoAddress common.Address) (*stakinginfo.Stakinginfo, error)
 	GetValidatorSetInstance(validatorSetAddress common.Address) (*validatorset.Validatorset, error)
 	GetStakeManagerInstance(stakingManagerAddress common.Address) (*stakemanager.Stakemanager, error)
@@ -157,11 +157,13 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 }
 
 // GetRootChainInstance returns RootChain contract instance for selected base chain
-func (c *ContractCaller) GetRootChainInstance(rootChainAddress common.Address) (*rootchain.Rootchain, error) {
-	contractInstance, ok := c.ContractInstanceCache[rootChainAddress]
+func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error) {
+	address := common.HexToAddress(rootChainAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := rootchain.NewRootchain(rootChainAddress, mainChainClient)
-		c.ContractInstanceCache[rootChainAddress] = ci
+		ci, err := rootchain.NewRootchain(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}

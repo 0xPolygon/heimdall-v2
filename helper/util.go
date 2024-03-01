@@ -27,6 +27,7 @@ import (
 	"bytes"
 	"errors"
 	"math/big"
+	"net/http"
 	"sort"
 
 	tmTypes "github.com/cometbft/cometbft/types"
@@ -47,14 +48,14 @@ import (
 	// "github.com/maticnetwork/heimdall/types/rest"
 )
 
-// //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
-// type HTTPClient interface {
-// 	Get(string) (resp *http.Response, err error)
-//}
+//go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
+type HTTPClient interface {
+	Get(string) (resp *http.Response, err error)
+}
 
-// var (
-// 	Client HTTPClient
-// )
+var (
+	Client HTTPClient
+)
 
 // // ZeroHash represents empty hash
 // var ZeroHash = common.Hash{}
@@ -780,8 +781,8 @@ func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
 // 	return u.String()
 // }
 
-// // FetchFromAPI fetches data from any URL
-// func FetchFromAPI(cliCtx cliContext.CLIContext, URL string) (result rest.ResponseWithHeight, err error) {
+// FetchFromAPI fetches data from any URL
+// func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHeight, err error) {
 // 	resp, err := Client.Get(URL)
 // 	if err != nil {
 // 		return result, err
