@@ -30,6 +30,31 @@ var (
 
 	// ErrInvalidNonce is returned when the nonce is wrong
 	ErrInvalidNonce = errorsmod.Register(RootCodespace, 106, "invalid nonce")
+
+	// ErrCheckpointBufferFound is returned when checkpoint is not found in buffer
+	ErrCheckpointBufferFound = errorsmod.Register(RootCodespace, 107, "Checkpoint not found in buffer")
+
+	ErrNoCheckpointFound = errorsmod.Register(RootCodespace, 108, "Checkpoint not found in database")
+
+	ErrCheckpointAlreadyExists = errorsmod.Register(RootCodespace, 109, "Checkpoint already exists")
+
+	ErrOldCheckpoint = errorsmod.Register(RootCodespace, 110, "Checkpoint already received for given start and end block")
+
+	ErrDisCountinuousCheckpoint = errorsmod.Register(RootCodespace, 111, "Checkpoint not in continuity")
+
+	ErrBadBlockDetails = errorsmod.Register(RootCodespace, 112, "Checkpoint not found in buffer")
+
+	ErrNoACK = errorsmod.Register(RootCodespace, 113, "No ack invalid")
+
+	ErrBadAck = errorsmod.Register(RootCodespace, 114, "Ack not valid")
+
+	ErrInvalidNoACK = errorsmod.Register(RootCodespace, 115, "Invalid no aCK -- Waiting for last checkpoint ACK")
+
+	ErrInvalidNoACKProposer = errorsmod.Register(RootCodespace, 116, "Invalid No ACK Proposer")
+
+	ErrTooManyNoACK = errorsmod.Register(RootCodespace, 117, "Too many no-acks")
+
+	ErrCheckpointParams = errorsmod.Register(RootCodespace, 118, "checkpoint params not found")
 )
 
 type InvalidPermissionsError struct {
