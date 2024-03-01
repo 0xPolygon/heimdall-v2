@@ -1,60 +1,63 @@
 package keeper_test
 
-// import (
-// 	"math/rand"
-// 	"testing"
-// 	"time"
+import (
+	"math/rand"
+	"time"
 
-// 	"github.com/stretchr/testify/assert"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/ethereum/go-ethereum/common"
+)
 
-// 	"cosmossdk.io/math"
+func (s *KeeperTestSuite) TestInitExportGenesis() {
+	ctx, _, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	require := s.Require()
 
-// 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-// 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	"github.com/cosmos/cosmos-sdk/x/staking"
-// 	"github.com/cosmos/cosmos-sdk/x/staking/testutil"
-// 	"github.com/cosmos/cosmos-sdk/x/staking/types"
-// )
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
 
-// func (s *KeeperTestSuite) TestInitExportGenesis() {
-// 	// create sub test to check if validator remove
-// 	ctx, keeper := s.ctx, s.stakingKeeper
-// 	require := s.Require()
+	lastNoACK := simulation.RandIntBetween(r1, 1, 5)
+	ackCount := simulation.RandIntBetween(r1, 1, 5)
+	startBlock := uint64(0)
+	endBlock := uint64(256)
+	rootHash := hmTypes.HexToHeimdallHash("123")
 
-// 	s1 := rand.NewSource(time.Now().UnixNano())
-// 	r1 := rand.New(s1)
-// 	n := 5
+	proposerAddress := common.Address{}.String()
+	timestamp := uint64(time.Now().Unix())
+	borChainId := "1234"
 
-// 	stakingSequence := make([]string, n)
-// 	accounts := simulation.RandomAccounts(r1, n)
+	bufferedCheckpoint := types.CreateBlock(
+		startBlock,
+		endBlock,
+		rootHash,
+		proposerAddress,
+		borChainId,
+		timestamp,
+	)
 
-// 	for i := range stakingSequence {
-// 		stakingSequence[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
-// 	}
+	checkpoints := make([]types.Checkpoint, ackCount)
 
-// 	validators := make([]*hmTypes.Validator, n)
-// 	for i := 0; i < len(validators); i++ {
-// 		// validator
-// 		validators[i] = hmTypes.NewValidator(
-// 			hmTypes.NewValidatorID(uint64(int64(i))),
-// 			0,
-// 			0,
-// 			uint64(i),
-// 			int64(simulation.RandIntBetween(r1, 10, 100)), // power
-// 			hmTypes.NewPubKey(accounts[i].PubKey.Bytes()),
-// 			accounts[i].Address,
-// 		)
-// 	}
+	for i := range checkpoints {
+		checkpoints[i] = bufferedCheckpoint
+	}
 
-// 	// validator set
-// 	validatorSet := hmTypes.NewValidatorSet(validators)
+	params := types.Params{}
+	genesisState := types.NewGenesisState(
+		params,
+		&bufferedCheckpoint,
+		uint64(lastNoACK),
+		uint64(ackCount),
+		checkpoints,
+	)
 
-// 	fmt.Print("valSet Proposer", validatorSet.Proposer)
+	keeper.InitGenesis(ctx, &genesisState)
 
-// 	genesisState := types.NewGenesisState(validators, *validatorSet, stakingSequence)
-// 	staking.InitGenesis(ctx, app.StakingKeeper, genesisState)
+	actualParams := keeper.ExportGenesis(ctx)
 
-// 	actualParams := staking.ExportGenesis(ctx, app.StakingKeeper)
-// 	require.NotNil(t, actualParams)
-// 	require.LessOrEqual(t, 5, len(actualParams.Validators))
-// }
+	require.Equal(genesisState.AckCount, actualParams.AckCount)
+	require.Equal(genesisState.BufferedCheckpoint, actualParams.BufferedCheckpoint)
+	require.Equal(genesisState.LastNoACK, actualParams.LastNoACK)
+	require.Equal(genesisState.Params, actualParams.Params)
+	require.LessOrEqual(len(actualParams.Checkpoints), len(genesisState.Checkpoints))
+}

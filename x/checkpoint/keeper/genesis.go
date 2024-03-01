@@ -2,11 +2,9 @@ package keeper
 
 import (
 	"context"
+	"errors"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-
-	"github.com/0xPolygon/heimdall-v2/x/staking/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -15,59 +13,64 @@ import (
 // setting the indexes. In addition, it also sets any delegations found in
 // data. Finally, it updates the bonded validators.
 // Returns final validator set after applying all declaration and delegations
-func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res []abci.ValidatorUpdate) {
+func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
+	k.SetParams(ctx, data.Params)
 
-	// We need to pretend to be "n blocks before genesis", where "n" is the
-	// validator update delay, so that e.g. slashing periods are correctly
-	// initialized for the validator set e.g. with a one-block offset - the
-	// first TM block is at height 1, so state updates applied from
-	// genesis.json are in block 0.
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ctx = sdkCtx
-
-	// get current val set
-	var vals []*hmTypes.Validator
-	if len(data.CurrentValidatorSet.Validators) == 0 {
-		vals = data.Validators
-	} else {
-		vals = data.CurrentValidatorSet.Validators
+	// Set last no-ack
+	if data.LastNoACK > 0 {
+		k.SetLastNoAck(ctx, data.LastNoACK)
 	}
 
-	if len(vals) != 0 {
-		resultValSet := hmTypes.NewValidatorSet(vals)
-
-		// add validators in store
-		for _, validator := range resultValSet.Validators {
-			// Add individual validator to state
-			if err := k.AddValidator(ctx, *validator); err != nil {
-				k.Logger(ctx).Error("Error InitGenesis", "error", err)
-			}
-
-			// update validator set in store
-			if err := k.UpdateValidatorSetInStore(ctx, *resultValSet); err != nil {
-				panic(err)
-			}
-
-			// increment accum if init validator set
-			if len(data.CurrentValidatorSet.Validators) == 0 {
-				k.IncrementAccum(ctx, 1)
+	// Add finalised checkpoints to state
+	if len(data.Checkpoints) != 0 {
+		// check if we are provided all the headers
+		if int(data.AckCount) != len(data.Checkpoints) {
+			panic(errors.New("Incorrect state in state-dump , Please Check "))
+		}
+		// sort headers before loading to state
+		data.Checkpoints = types.SortHeaders(data.Checkpoints)
+		// load checkpoints to state
+		for i, checkpoint := range data.Checkpoints {
+			checkpointIndex := uint64(i) + 1
+			if err := k.AddCheckpoint(ctx, checkpointIndex, checkpoint); err != nil {
+				k.Logger(ctx).Error("InitGenesis | AddCheckpoint",
+					"checkpointIndex", checkpointIndex,
+					"checkpoint", checkpoint.String(),
+					"error", err)
 			}
 		}
 	}
 
-	for _, sequence := range data.StakingSequences {
-		k.SetStakingSequence(ctx, sequence)
+	// Add checkpoint in buffer
+	if data.BufferedCheckpoint != nil {
+		if err := k.SetCheckpointBuffer(ctx, *data.BufferedCheckpoint); err != nil {
+			k.Logger(ctx).Error("InitGenesis | SetCheckpointBuffer", "error", err)
+		}
 	}
-	return res
+
+	// Set initial ack count
+	k.UpdateACKCountWithValue(ctx, data.AckCount)
+
+	return
 }
 
 // ExportGenesis returns a GenesisState for a given context and keeper. The
 // GenesisState will contain the pool, params, validators, and bonds found in
 // the keeper.
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("Error in getting checkpoint params in export genesis call", "error", err)
+
+		return nil
+	}
+
+	bufferedCheckpoint, _ := k.GetCheckpointFromBuffer(ctx)
 	return &types.GenesisState{
-		k.GetAllValidators(ctx),
-		k.GetValidatorSet(ctx),
-		k.GetStakingSequences(ctx),
+		Params:             params,
+		BufferedCheckpoint: bufferedCheckpoint,
+		LastNoACK:          k.GetLastNoAck(ctx),
+		AckCount:           k.GetACKCount(ctx),
+		Checkpoints:        types.SortHeaders(k.GetCheckpoints(ctx)),
 	}
 }
