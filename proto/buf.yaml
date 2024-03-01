@@ -3,6 +3,7 @@ version: v1
 name: buf.build/0xPolygon/heimdall-v2;
 deps:
   - buf.build/cosmos/cosmos-proto
+  - buf.build/cosmos/cosmos-sdk
   - buf.build/cosmos/gogo-proto
   - buf.build/googleapis/googleapis
   - buf.build/protocolbuffers/wellknowntypes:v23.4
