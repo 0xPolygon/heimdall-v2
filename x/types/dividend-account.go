@@ -18,7 +18,7 @@ func NewDividendAccount(user string, fee string) DividendAccount {
 	}
 }
 
-func (da *DividendAccount) String() string {
+func (da *DividendAccount) Strigified() string {
 	if da == nil {
 		return "nil-DividendAccount"
 	}
@@ -57,11 +57,12 @@ func SortDividendAccountByAddress(dividendAccounts []DividendAccount) []Dividend
 	return dividendAccounts
 }
 
+// TODO H2 Need to check it as []bytes(da.user) might give different result
 // CalculateHash hashes the values of a DividendAccount
 func (da DividendAccount) CalculateHash() ([]byte, error) {
 	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
 	divAccountHash := crypto.Keccak256(appendBytes32(
-		da.User.Bytes(),
+		[]byte(da.User),
 		fee.Bytes(),
 	))
 
@@ -95,5 +96,5 @@ func convertTo32(input []byte) (output [32]byte, err error) {
 
 // Equals tests for equality of two Contents
 func (da DividendAccount) Equals(other merkletree.Content) (bool, error) {
-	return da.User.Equals(other.(DividendAccount).User), nil
+	return da.User == other.(DividendAccount).User, nil
 }
