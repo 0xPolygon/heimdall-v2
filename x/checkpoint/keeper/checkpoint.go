@@ -2,37 +2,17 @@ package keeper
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"strconv"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-
+	storetypes "cosmossdk.io/store/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
+	"github.com/cosmos/cosmos-sdk/runtime"
 )
 
-// AddValidator adds validator indexed with address
-func (k *Keeper) AddValidator(ctx context.Context, validator hmTypes.Validator) error {
-	store := k.storeService.OpenKVStore(ctx)
-
-	bz, err := hmTypes.MarshallValidator(k.cdc, validator)
-	if err != nil {
-		return err
-	}
-
-	// store validator with address prefixed with validator key as index
-	store.Set(types.GetValidatorKey(validator.Signer.Bytes()), bz)
-
-	k.Logger(ctx).Debug("Validator stored", "key", hex.EncodeToString(types.GetValidatorKey(validator.Signer.Bytes())), "validator", validator.String())
-
-	// add validator to validator ID => SignerAddress map
-	k.SetValidatorIDToSignerAddr(ctx, validator.ID, validator.Signer)
-
-	return nil
-}
-
 // AddCheckpoint adds checkpoint into final blocks
-func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint hmTypes.Checkpoint) error {
+func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
 	key := types.GetCheckpointKey(checkpointNumber)
 	if err := k.addCheckpoint(ctx, key, checkpoint); err != nil {
 		return err
@@ -44,7 +24,7 @@ func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, che
 }
 
 // SetCheckpointBuffer flushes Checkpoint Buffer
-func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint hmTypes.Checkpoint) error {
+func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
 	err := k.addCheckpoint(ctx, types.BufferCheckpointKey, checkpoint)
 	if err != nil {
 		return err
@@ -54,11 +34,11 @@ func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint hmTypes.Che
 }
 
 // addCheckpoint adds checkpoint to store
-func (k *Keeper) addCheckpoint(ctx context.Context, key []byte, checkpoint hmTypes.Checkpoint) error {
+func (k *Keeper) addCheckpoint(ctx context.Context, key []byte, checkpoint types.Checkpoint) error {
 	store := k.storeService.OpenKVStore(ctx)
 
 	// create Checkpoint block and marshall
-	out, err := k.cdc.MarshalBinaryBare(checkpoint)
+	out, err := k.cdc.Marshal(&checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("Error marshalling checkpoint", "error", err)
 		return err
@@ -71,11 +51,11 @@ func (k *Keeper) addCheckpoint(ctx context.Context, key []byte, checkpoint hmTyp
 }
 
 // GetCheckpointByNumber to get checkpoint by checkpoint number
-func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (hmTypes.Checkpoint, error) {
+func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (types.Checkpoint, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	checkpointKey := types.GetCheckpointKey(number)
 
-	var _checkpoint hmTypes.Checkpoint
+	var _checkpoint types.Checkpoint
 
 	chBytes, err := store.Get(checkpointKey)
 
@@ -88,21 +68,21 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (hmTy
 	}
 
 	// unmarshall validator and return
-	_checkpoint, err = hmTypes.UnMarshallCheckpoint(k.cdc, chBytes)
+	_checkpoint, err = types.UnMarshallCheckpoint(k.cdc, chBytes)
 	if err != nil {
 		return _checkpoint, err
 	}
 
-	return _checkpoint, errors.New("Invalid checkpoint Index")
+	return _checkpoint, nil
 }
 
 //TODO H2 This function is not requierd
 // // GetCheckpointList returns all checkpoints with params like page and limit
-// func (k *Keeper) GetCheckpointList(ctx context.Context, page uint64, limit uint64) ([]hmTypes.Checkpoint, error) {
+// func (k *Keeper) GetCheckpointList(ctx context.Context, page uint64, limit uint64) ([]types.Checkpoint, error) {
 // 	store := k.storeService.OpenKVStore(ctx)
 
 // 	// create headers
-// 	var checkpoints []hmTypes.Checkpoint
+// 	var checkpoints []types.Checkpoint
 
 // 	// have max limit
 // 	if limit > 20 {
@@ -118,7 +98,7 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (hmTy
 
 // 	// loop through validators to get valid validators
 // 	for ; iterator.Valid(); iterator.Next() {
-// 		var checkpoint hmTypes.Checkpoint
+// 		var checkpoint types.Checkpoint
 // 		if err := hmTypes.UnMarshallCheckpoint(iterator.Value(), &checkpoint); err == nil {
 // 			checkpoints = append(checkpoints, checkpoint)
 // 		}
@@ -128,14 +108,14 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (hmTy
 // }
 
 // GetLastCheckpoint gets last checkpoint, checkpoint number = TotalACKs
-func (k *Keeper) GetLastCheckpoint(ctx context.Context) (hmTypes.Checkpoint, error) {
+func (k *Keeper) GetLastCheckpoint(ctx context.Context) (types.Checkpoint, error) {
 	store := k.storeService.OpenKVStore(ctx)
 	acksCount := k.GetACKCount(ctx)
 
 	lastCheckpointKey := acksCount
 
 	// fetch checkpoint and unmarshall
-	var _checkpoint hmTypes.Checkpoint
+	var _checkpoint types.Checkpoint
 
 	// no checkpoint received
 	// header key
@@ -148,18 +128,16 @@ func (k *Keeper) GetLastCheckpoint(ctx context.Context) (hmTypes.Checkpoint, err
 	}
 
 	if chBytes == nil {
-		return _checkpoint, errors.New("Checkpoint Not Found")
+		return _checkpoint, hmerrors.ErrNoCheckpointFound
 	}
 
 	// unmarshall validator and return
-	_checkpoint, err = hmTypes.UnMarshallCheckpoint(k.cdc, chBytes)
+	_checkpoint, err = types.UnMarshallCheckpoint(k.cdc, chBytes)
 	if err != nil {
 		return _checkpoint, err
 	}
 
 	return _checkpoint, nil
-
-	return _checkpoint, cmn.ErrNoCheckpointFound(k.Codespace())
 }
 
 // HasStoreValue check if value exists in store or not
@@ -179,11 +157,11 @@ func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) {
 }
 
 // GetCheckpointFromBuffer gets checkpoint in buffer
-func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (*hmTypes.Checkpoint, error) {
+func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (*types.Checkpoint, error) {
 	store := k.storeService.OpenKVStore(ctx)
 
 	// checkpoint block header
-	var checkpoint hmTypes.Checkpoint
+	var checkpoint types.Checkpoint
 
 	chBytes, err := store.Get(types.BufferCheckpointKey)
 
@@ -196,7 +174,7 @@ func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (*hmTypes.Checkpoi
 	}
 
 	// unmarshall validator and return
-	checkpoint, err = hmTypes.UnMarshallCheckpoint(k.cdc, chBytes)
+	checkpoint, err = types.UnMarshallCheckpoint(k.cdc, chBytes)
 	if err != nil {
 		return &checkpoint, err
 	}
@@ -237,24 +215,19 @@ func (k *Keeper) GetLastNoAck(ctx context.Context) uint64 {
 }
 
 // GetCheckpoints get checkpoint all checkpoints
-func (k *Keeper) GetCheckpoints(ctx context.Context) []hmTypes.Checkpoint {
+func (k *Keeper) GetCheckpoints(ctx context.Context) []types.Checkpoint {
 	store := k.storeService.OpenKVStore(ctx)
 	// get checkpoint header iterator
-	iterator := sdk.KVStorePrefixIterator(store, CheckpointKey)
+	iterator := storetypes.KVStorePrefixIterator(runtime.KVStoreAdapter(store), types.CheckpointKey)
 	defer iterator.Close()
 
 	// create headers
-	var headers []hmTypes.Checkpoint
-
-	// get validator iterator
-	iterator, err := store.Iterator(types.ValidatorsKey, storetypes.PrefixEndBytes(types.ValidatorsKey))
-	nklcrfgfkfcklbvbkblvdi
-	bhljnhhvirnlefherkfltuerfettblvgdefer iterator.Close()
+	var headers []types.Checkpoint
 
 	// loop through validators to get valid validators
 	for ; iterator.Valid(); iterator.Next() {
-		var checkpoint hmTypes.Checkpoint
-		if err := k.cdc.UnmarshalBinaryBare(iterator.Value(), &checkpoint); err == nil {
+		var checkpoint types.Checkpoint
+		if err := k.cdc.Unmarshal(iterator.Value(), &checkpoint); err == nil {
 			headers = append(headers, checkpoint)
 		}
 	}
@@ -312,18 +285,4 @@ func (k Keeper) UpdateACKCount(ctx context.Context) {
 
 	// update
 	store.Set(types.ACKCountKey, ACKs)
-}
-
-// -----------------------------------------------------------------------------
-// Params
-
-// SetParams sets the auth module's parameters.
-func (k Keeper) SetParams(ctx context.Context, params types.Params) {
-	k.paramSpace.SetParamSet(ctx, &params)
-}
-
-// GetParams gets the auth module's parameters.
-func (k Keeper) GetParams(ctx context.Context) (params types.Params) {
-	k.paramSpace.GetParamSet(ctx, &params)
-	return
 }
