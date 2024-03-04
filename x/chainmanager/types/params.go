@@ -19,16 +19,6 @@ const (
 	// DefaultValidatorSetAddress  sdk.AccAddress = sdk.AccAddressFromHex(("0x0000000000000000000000000000000000001000")
 )
 
-// TODO HV2: probably not be needed since the individual modules store their own params
-// Parameter keys
-// var (
-// 	KeyMainchainTxConfirmations  = []byte("MainchainTxConfirmations")
-// 	KeyMaticchainTxConfirmations = []byte("MaticchainTxConfirmations")
-// 	KeyChainParams               = []byte("ChainParams")
-// )
-
-// var _ subspace.ParamSet = &Params{}
-
 // DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
 	return Params{
@@ -51,18 +41,6 @@ func NewParams(mainChainTxConfirmations uint64, borChainTxConfirmations uint64, 
 		ChainParams:              chainParams,
 	}
 }
-
-// TODO HV2: probably not be needed since the individual modules store their own params
-// ParamSetPairs implements the ParamSet interface and returns all the key/value pairs
-// pairs of auth module's parameters.
-// nolint
-// func (p *Params) ParamSetPairs() subspace.ParamSetPairs {
-// 	return subspace.ParamSetPairs{
-// 		{KeyMainchainTxConfirmations, &p.MainchainTxConfirmations},
-// 		{KeyMaticchainTxConfirmations, &p.MaticchainTxConfirmations},
-// 		{KeyChainParams, &p.ChainParams},
-// 	}
-// }
 
 // Validate checks that the parameters have valid values.
 func (p Params) Validate() error {
@@ -103,10 +81,10 @@ func (p Params) Validate() error {
 
 func validateHeimdallAddress(key string, value string) error {
 	if !common.IsHexAddress(value) {
-		return fmt.Errorf("Invalid address for value %s for %s in chain_params", value, key)
+		return fmt.Errorf("invalid address for value %s for %s in chain_params", value, key)
 	}
 	if value == "" {
-		return fmt.Errorf("Invalid value for key %s in chain_params", key)
+		return fmt.Errorf("invalid value for key %s in chain_params", key)
 	}
 
 	return nil

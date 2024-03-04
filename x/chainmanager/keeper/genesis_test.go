@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
@@ -11,12 +10,11 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	require := s.Require()
 	params := types.DefaultParams()
 
-	genesisState := types.GenesisState{
+	genesisState := &types.GenesisState{
 		Params: params,
 	}
-	keeper.InitGenesis(ctx, chainmanagerKeeper, genesisState)
+	chainmanagerKeeper.InitGenesis(ctx, genesisState)
 
-	actualParams, err := keeper.ExportGenesis(ctx, chainmanagerKeeper)
-	require.NoError(err)
+	actualParams := chainmanagerKeeper.ExportGenesis(ctx)
 	require.Equal(genesisState, actualParams)
 }
