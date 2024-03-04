@@ -5,7 +5,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/ethereum/go-ethereum/common"
-	// types "github.com/0xPolygon/heimdall-v2/proto/heimdallv2/chainmanager"
 )
 
 // Default parameter values
