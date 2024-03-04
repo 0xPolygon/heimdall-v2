@@ -13,7 +13,11 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 // ExportGenesis returns a GenesisState for chainmanager.
 func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
-	params := k.GetParams(ctx)
+	params, err := k.GetParams(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("failed to get params", "error", err)
+		return nil
+	}
 
 	return types.NewGenesisState(
 		params,
