@@ -1,7 +1,19 @@
 package chainmanager
 
 import (
+	"encoding/json"
+	"fmt"
+	"time"
+
 	"cosmossdk.io/core/appmodule"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/telemetry"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 )
 
@@ -9,8 +21,8 @@ var (
 	// TODO HV2: uncomment when implemented
 	// _ module.AppModuleBasic = AppModule{}
 	// _ module.AppModuleSimulation = AppModule{}
-	// _ module.HasGenesis    = AppModule{}
-	// _ module.HasServices   = AppModule{}
+	_ module.HasGenesis  = AppModule{}
+	_ module.HasServices = AppModule{}
 	// _ module.HasInvariants = AppModule{}
 
 	_ appmodule.AppModule = AppModule{}
@@ -23,35 +35,31 @@ const ConsensusVersion = 1
 // AppModuleBasic defines the basic application module used by the chainmananer module.
 type AppModuleBasic struct{}
 
-// TODO HV2: uncomment when chainmanager types is implemented
 // Name returns the chainmanager module's name.
-// func (AppModuleBasic) Name() string { return types.ModuleName }
+func (AppModuleBasic) Name() string { return types.ModuleName }
 
-// TODO HV2: uncomment when chainmanager types is implemented
 // RegisterLegacyAminoCodec registers the chainmanager module's types on the LegacyAmino codec.
-// func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-// 	types.RegisterLegacyAminoCodec(cdc)
-// }
+func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+	types.RegisterLegacyAminoCodec(cdc)
+}
 
-// TODO HV2: uncomment when chainmanager types is implemented
 // DefaultGenesis returns default genesis state as raw bytes for the chainmanager
 // module.
-// func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
-// 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
-// }
+func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+	return cdc.MustMarshalJSON(types.DefaultGenesisState())
+}
 
-// TODO HV2: uncomment when chainmanager types is implemented
 // ValidateGenesis performs genesis state validation for the chainmanager module.
-// func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
-// 	var data types.GenesisState
-// 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-// 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
-// 	}
+func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+	var data types.GenesisState
+	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
+		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
+	}
 
-// 	return data.Validate()
-// }
+	return data.Validate()
+}
 
-// TODO HV2: uncomment when chainmanager types is implemented
+// TODO HV2: uncomment when this PR is merged: https://github.com/0xPolygon/heimdall-v2/pull/20
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the chainmanager module.
 // func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 // 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
@@ -59,18 +67,16 @@ type AppModuleBasic struct{}
 // 	}
 // }
 
-// TODO HV2: uncomment when chainmanager types is implemented
 // RegisterInterfaces registers interfaces and implementations of the chainmanager module.
-// func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
-// 	types.RegisterInterfaces(registry)
-// }
+func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+	types.RegisterInterfaces(registry)
+}
 
 // AppModule implements an application module for the chainmanager module.
 type AppModule struct {
 	AppModuleBasic
 
-	// TODO HV2: uncomment when implemented
-	// keeper        keeper.Keeper
+	keeper keeper.Keeper
 	// contractCaller helper.IContractCaller
 
 	// TODO HV2: do we need legacySubspace?
@@ -84,35 +90,34 @@ func (am AppModule) IsOnePerModuleType() {}
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
-// TODO HV2: uncomment when keeper and types are implemented
 // RegisterServices registers module services.
-// func (am AppModule) RegisterServices(cfg module.Configurator) {
-// 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
-// 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
 
-// 	m := keeper.NewMigrator(am.keeper.(keeper.BaseKeeper), am.legacySubspace)
-// 	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
-// 		panic(fmt.Sprintf("failed to migrate x/chainmanager from version 1 to 2: %v", err))
-// 	}
+	// TODO HV2: probably don't need migration
+	// m := keeper.NewMigrator(am.keeper, am.legacySubspace)
+	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/chainmanager from version 1 to 2: %v", err))
+	// }
 
-// 	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
-// 		panic(fmt.Sprintf("failed to migrate x/chainmanager from version 2 to 3: %v", err))
-// 	}
+	// if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/chainmanager from version 2 to 3: %v", err))
+	// }
 
-// 	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
-// 		panic(fmt.Sprintf("failed to migrate x/chainmanager from version 3 to 4: %v", err))
-// 	}
-// }
+	// if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
+	// 	panic(fmt.Sprintf("failed to migrate x/chainmanager from version 3 to 4: %v", err))
+	// }
+}
 
 // NewAppModule creates a new AppModule object
 func NewAppModule(
-	// keeper keeper.Keeper,
+	keeper keeper.Keeper,
 	// contractCaller helper.IContractCaller,
 	ss exported.Subspace,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{},
-		// keeper:         keeper,
+		keeper:         keeper,
 		// contractCaller: contractCaller,
 		legacySubspace: ss,
 	}
@@ -126,7 +131,7 @@ func NewAppModule(
 
 // TODO HV2: uncomment when types is implemented
 // QuerierRoute returns the chainmanager module's querier route name.
-// func (AppModule) QuerierRoute() string { return types.RouterKey }
+func (AppModule) QuerierRoute() string { return types.RouterKey }
 
 // TODO HV2: might not be needed since Route() was previously used in side handler routing
 // Route returns the message routing key for the chainmanager module.
@@ -134,25 +139,23 @@ func NewAppModule(
 // 	return types.RouterKey
 // }
 
-// TODO HV2: uncomment when keeper is implemented
 // InitGenesis performs genesis initialization for the chainmanager module. It returns
 // no validator updates.
-// func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
-// 	start := time.Now()
-// 	var genesisState types.GenesisState
-// 	cdc.MustUnmarshalJSON(data, &genesisState)
-// 	telemetry.MeasureSince(start, "InitGenesis", "chainmanager", "unmarshal")
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
+	start := time.Now()
+	var genesisState types.GenesisState
+	cdc.MustUnmarshalJSON(data, &genesisState)
+	telemetry.MeasureSince(start, "InitGenesis", "chainmanager", "unmarshal")
 
-// 	am.keeper.InitGenesis(ctx, &genesisState)
-// }
+	am.keeper.InitGenesis(ctx, &genesisState)
+}
 
-// TODO HV2: uncomment when keeper is implemented
 // ExportGenesis returns the exported genesis state as raw bytes for the chainmanager
 // module.
-// func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-// 	gs := am.keeper.ExportGenesis(ctx)
-// 	return cdc.MustMarshalJSON(gs)
-// }
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+	gs := am.keeper.ExportGenesis(ctx)
+	return cdc.MustMarshalJSON(gs)
+}
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
 func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }

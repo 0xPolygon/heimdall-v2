@@ -52,5 +52,9 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 
 // GetParams gets the chainmanager module's parameters.
 func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
-	return k.params.Get(ctx)
+	p, err := k.params.Get(ctx)
+	if err != nil {
+		return types.Params{}, err
+	}
+	return p, nil
 }
