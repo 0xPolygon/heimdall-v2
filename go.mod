@@ -20,6 +20,8 @@ require (
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/spf13/cast v1.5.1
 	github.com/stretchr/testify v1.8.4
+	google.golang.org/genproto/googleapis/api v0.0.0-20240116215550-a9fa1716bcac
+	google.golang.org/grpc v1.60.1
 )
 
 require (
@@ -222,9 +224,7 @@ require (
 	google.golang.org/api v0.149.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto v0.0.0-20240102182953-50ed04b92917 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240116215550-a9fa1716bcac // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240116215550-a9fa1716bcac // indirect
-	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

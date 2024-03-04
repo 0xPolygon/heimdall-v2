@@ -132,5 +132,5 @@ func RandomizedGenState(simState *module.SimulationState) {
 		panic(err)
 	}
 	fmt.Printf("Selected randomly generated chainmanager parameters:\n%s\n", bz)
-	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(&chainManagerGenesis)
+	simState.GenState[types.ModuleName] = simState.Cdc.MustMarshalJSON(chainManagerGenesis)
 }
