@@ -1,6 +1,8 @@
 package error
 
 import (
+	"os"
+
 	errorsmod "cosmossdk.io/errors"
 )
 
@@ -28,4 +30,56 @@ var (
 
 	// ErrInvalidNonce is returned when the nonce is wrong
 	ErrInvalidNonce = errorsmod.Register(RootCodespace, 106, "invalid nonce")
+
+	// ErrCheckpointBufferFound is returned when checkpoint is not found in buffer
+	ErrCheckpointBufferFound = errorsmod.Register(RootCodespace, 107, "Checkpoint not found in buffer")
+
+	ErrNoCheckpointFound = errorsmod.Register(RootCodespace, 108, "Checkpoint not found in database")
+
+	ErrCheckpointAlreadyExists = errorsmod.Register(RootCodespace, 109, "Checkpoint already exists")
+
+	ErrOldCheckpoint = errorsmod.Register(RootCodespace, 110, "Checkpoint already received for given start and end block")
+
+	ErrDisCountinuousCheckpoint = errorsmod.Register(RootCodespace, 111, "Checkpoint not in continuity")
+
+	ErrBadBlockDetails = errorsmod.Register(RootCodespace, 112, "Checkpoint not found in buffer")
+
+	ErrNoACK = errorsmod.Register(RootCodespace, 113, "No ack invalid")
+
+	ErrBadAck = errorsmod.Register(RootCodespace, 114, "Ack not valid")
+
+	ErrInvalidNoACK = errorsmod.Register(RootCodespace, 115, "Invalid no aCK -- Waiting for last checkpoint ACK")
+
+	ErrInvalidNoACKProposer = errorsmod.Register(RootCodespace, 116, "Invalid No ACK Proposer")
+
+	ErrTooManyNoACK = errorsmod.Register(RootCodespace, 117, "Too many no-acks")
+
+	ErrCheckpointParams = errorsmod.Register(RootCodespace, 118, "checkpoint params not found")
 )
+
+type InvalidPermissionsError struct {
+	File string
+	Perm os.FileMode
+	Err  error
+}
+
+func (e InvalidPermissionsError) detailed() (valid bool) {
+	if e.File != "" && e.Perm != 0 {
+		valid = true
+	}
+
+	return
+}
+
+func (e InvalidPermissionsError) Error() string {
+	errMsg := "Invalid file permission"
+	if e.detailed() {
+		errMsg += " for file " + e.File + " should be " + e.Perm.String()
+	}
+
+	if e.Err != nil {
+		errMsg += " \nerr: " + e.Err.Error()
+	}
+
+	return errMsg
+}
