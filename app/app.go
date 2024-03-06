@@ -628,6 +628,8 @@ func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 
 func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	// TODO HV2: add topup module to enable it to receive/send tokens.
+	// See https://github.com/0xPolygon/cosmos-sdk/pull/5#discussion_r1513037980
 	return modAccAddrs
 }
 
