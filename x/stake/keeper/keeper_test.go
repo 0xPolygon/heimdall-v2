@@ -13,11 +13,14 @@ import (
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	stakingkeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	testUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -38,10 +41,14 @@ var (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx           sdk.Context
-	stakingKeeper *stakingkeeper.Keeper
-	queryClient   stakingtypes.QueryClient
-	msgServer     stakingtypes.MsgServer
+	ctx                sdk.Context
+	contractCaller     *mocks.IContractCaller
+	moduleCommunicator *testUtil.ModuleCommunicatorMock
+	cmKeeper           *cmKeeper.Keeper
+	stakeKeeper        *stakeKeeper.Keeper
+	queryClient        stakingtypes.QueryClient
+	msgServer          stakingtypes.MsgServer
+	sideMsgCfg         hmModule.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) SetupTest() {
@@ -51,23 +58,30 @@ func (s *KeeperTestSuite) SetupTest() {
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	keeper := stakingkeeper.NewKeeper(
+	cmKeeper := cmKeeper.NewKeeper()
+
+	keeper := stakeKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		testUtil.ModuleCommunicatorMock{AckCount: uint64(0)},
+		cmKeeper,
 		addrCodec.NewHexCodec(),
-		helper.ContractCaller{},
+		&helper.ContractCaller{},
 	)
 
 	s.ctx = ctx
-	s.stakingKeeper = keeper
+	s.stakeKeeper = keeper
 
 	stakingtypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	stakingtypes.RegisterQueryServer(queryHelper, stakingkeeper.Querier{Keeper: keeper})
+	stakingtypes.RegisterQueryServer(queryHelper, stakeKeeper.Querier{Keeper: keeper})
 	s.queryClient = stakingtypes.NewQueryClient(queryHelper)
-	s.msgServer = stakingkeeper.NewMsgServerImpl(keeper)
+	s.msgServer = stakeKeeper.NewMsgServerImpl(keeper)
+
+	s.sideMsgCfg = hmModule.NewConfigurator()
+	types.RegisterSideMsgServer(s.sideMsgCfg, stakeKeeper.NewSideMsgServerImpl(keeper))
+
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -76,7 +90,7 @@ func TestKeeperTestSuite(t *testing.T) {
 
 // tests setter/getters for validatorSignerMaps , validator set/get
 func (s *KeeperTestSuite) TestValidator() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -120,7 +134,7 @@ func (s *KeeperTestSuite) TestValidator() {
 
 // tests VotingPower change, validator creation, validator set update when signer changes
 func (s *KeeperTestSuite) TestUpdateSigner() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -212,9 +226,9 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 // 			resultmsg:   "should not be current validator as start epoch greater than ackcount.",
 // 		},
 // 	}
-// 	ctx, keeper := s.ctx, s.stakingKeeper
+// 	ctx, keeper := s.ctx, s.stakeKeeper
 
-// 	stakingKeeper, checkpointKeeper := s.StakingKeeper, app.CheckpointKeeper
+// 	stakeKeeper, checkpointKeeper := s.stakeKeeper, app.CheckpointKeeper
 
 // 	for i, item := range dataItems {
 // 		suite.Run(item.name, func() {
@@ -232,7 +246,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 // 				ProposerPriority: 0,
 // 			}
 // 			// check current validator
-// 			err := stakingKeeper.AddValidator(ctx, newVal)
+// 			err := stakeKeeper.AddValidator(ctx, newVal)
 // 			require.NoError(t, err)
 // 			checkpointKeeper.UpdateACKCountWithValue(ctx, item.ackcount)
 
@@ -244,7 +258,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 
 func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 	// create sub test to check if validator remove
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	// load 4 validators to state
@@ -278,7 +292,7 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 
 func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	// create sub test to check if validator remove
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	// load 4 validators to state
@@ -317,7 +331,7 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 */
 func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 	// create sub test to check if validator remove
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	// load 4 validators to state
@@ -352,7 +366,7 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 }
 
 func (s *KeeperTestSuite) TestGetCurrentValidators() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
@@ -362,7 +376,7 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 }
 
 func (s *KeeperTestSuite) TestGetCurrentProposer() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
@@ -372,7 +386,7 @@ func (s *KeeperTestSuite) TestGetCurrentProposer() {
 }
 
 func (s *KeeperTestSuite) TestGetNextProposer() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 
@@ -381,7 +395,7 @@ func (s *KeeperTestSuite) TestGetNextProposer() {
 }
 
 func (s *KeeperTestSuite) TestGetValidatorFromValID() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
@@ -392,7 +406,7 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 }
 
 func (s *KeeperTestSuite) TestGetLastUpdated() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
@@ -403,7 +417,7 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 }
 
 // func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
-// 	ctx, keeper := s.ctx, s.stakingKeeper
+// 	ctx, keeper := s.ctx, s.stakeKeeper
 // 	require := s.Require()
 // 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 
@@ -420,7 +434,7 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 // }
 
 func (s *KeeperTestSuite) TestGetMilestoneProposer() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	currentValSet1 := keeper.GetMilestoneValidatorSet(ctx)
@@ -437,7 +451,7 @@ func (s *KeeperTestSuite) TestGetMilestoneProposer() {
 
 func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 	// create sub test to check if validator remove
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	// load 4 validators to state
@@ -470,7 +484,7 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 
 func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
 	// create sub test to check if validator remove
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	// load 4 validators to state

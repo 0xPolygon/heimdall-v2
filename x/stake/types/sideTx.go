@@ -19,7 +19,6 @@ type SideMsgServer interface {
 }
 
 func RegisterSideMsgServer(sideCfg hmModule.SideTxConfigurator, srv SideMsgServer) {
-
 	serviceDesc := _Msg_serviceDesc
 
 	for _, service := range serviceDesc.Methods {

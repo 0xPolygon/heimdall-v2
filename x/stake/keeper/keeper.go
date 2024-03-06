@@ -8,7 +8,7 @@ import (
 	"cosmossdk.io/log"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	//cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -20,12 +20,12 @@ var _ types.ValidatorSet = Keeper{}
 
 // Keeper of the x/staking store
 type Keeper struct {
-	storeService       storetypes.KVStoreService
-	cdc                codec.BinaryCodec
-	hooks              types.StakingHooks
-	authority          string
-	moduleCommunicator types.ModuleCommunicator
-	//chainManagerKeeper    *cmKeeper.Keeper
+	storeService          storetypes.KVStoreService
+	cdc                   codec.BinaryCodec
+	hooks                 types.StakingHooks
+	authority             string
+	moduleCommunicator    types.ModuleCommunicator
+	cmKeeper              *cmKeeper.Keeper
 	validatorAddressCodec addresscodec.Codec
 	IContractCaller       helper.IContractCaller
 }
@@ -36,6 +36,7 @@ func NewKeeper(
 	storeService storetypes.KVStoreService,
 	authority string,
 	moduleCommunicator types.ModuleCommunicator,
+	cmKeeper *cmKeeper.Keeper,
 	validatorAddressCodec addresscodec.Codec,
 	contractCaller helper.IContractCaller,
 ) *Keeper {
@@ -45,6 +46,7 @@ func NewKeeper(
 		hooks:                 nil,
 		authority:             authority,
 		moduleCommunicator:    moduleCommunicator,
+		cmKeeper:              cmKeeper,
 		validatorAddressCodec: validatorAddressCodec,
 		IContractCaller:       contractCaller,
 	}

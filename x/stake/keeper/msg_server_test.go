@@ -25,7 +25,7 @@ var (
 )
 
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
 	require := s.Require()
 
 	pk1 := secp256k1.GenPrivKey().PubKey()
@@ -54,7 +54,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgValidatorUpdate() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
 	require := s.Require()
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
@@ -102,7 +102,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorUpdate() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
 	require := s.Require()
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
@@ -137,7 +137,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
 	require := s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
@@ -167,7 +167,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 }
 
 func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
 	require := s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -223,7 +223,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 //TODO H2 Please implement the following test after writing topUp module
 
 // func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
-// 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakingKeeper
+// 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
 // 	require := s.Require()
 
 // 	pubKey := hmTypes.NewPubKey([]byte{123})

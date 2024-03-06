@@ -7,7 +7,7 @@ import (
 )
 
 func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 	require := s.Require()
 
 	req := &types.QueryCurrentValidatorSetRequest{}
@@ -32,7 +32,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 }
 
 func (s *KeeperTestSuite) TesthandleQuerySigner() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 	require := s.Require()
 
 	req := &types.QuerySignerRequest{
@@ -64,7 +64,7 @@ func (s *KeeperTestSuite) TesthandleQuerySigner() {
 }
 
 func (s *KeeperTestSuite) TesthandleQueryValidator() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 	require := s.Require()
 	req := &types.QueryValidatorRequest{
 		Id: uint64(0),
@@ -105,7 +105,7 @@ func (s *KeeperTestSuite) TesthandleQueryValidator() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 	require := s.Require()
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetAllValidators(ctx)
@@ -133,7 +133,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 
 // TODO H2 Recheck it
 func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
-	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 	require := s.Require()
 	validatorSet := testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	require.NotNil(validatorSet)
@@ -147,7 +147,7 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 }
 
 // func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+// 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 // 	require := s.Require()
 // 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 
@@ -168,7 +168,7 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 // }
 
 // func (s *KeeperTestSuite) TestHandleQueryCurrentProposer() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+// 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 // 	require := s.Require()
 // 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 
@@ -189,7 +189,7 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 // }
 
 // func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakingKeeper, s.queryClient
+// 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 // 	s1 := rand.NewSource(time.Now().UnixNano())
 // 	r1 := rand.New(s1)
 
