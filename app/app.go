@@ -28,7 +28,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
@@ -36,6 +35,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
@@ -246,13 +247,15 @@ func NewHeimdallApp(
 		logger,
 	)
 
+	// TODO HV2: initialise stake keeper here
+
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		nil, // TODO HV2: should the param here be our modified stake keeper ?
+		nil, // TODO HV2: pass stake keeper here once implemented
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -302,6 +305,8 @@ func NewHeimdallApp(
 	)
 
 	app.mm = module.NewManager(
+		// TODO HV2: add stake keeper once implemented
+		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -319,6 +324,7 @@ func NewHeimdallApp(
 	app.BasicManager = module.NewBasicManagerFromManager(
 		app.mm,
 		map[string]module.AppModuleBasic{
+			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 			govtypes.ModuleName: gov.NewAppModuleBasic(
 				[]govclient.ProposalHandler{
 					paramsclient.ProposalHandler,
@@ -334,6 +340,7 @@ func NewHeimdallApp(
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distrtypes.ModuleName,
 		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
+		genutiltypes.ModuleName,
 	)
 
 	// NOTE: upgrade module is required to be prioritized
@@ -343,7 +350,9 @@ func NewHeimdallApp(
 
 	app.mm.SetOrderEndBlockers(
 		govtypes.ModuleName,
-		stakingtypes.ModuleName,
+		// TODO HV2: replace with our stake module
+		// stakingtypes.ModuleName,
+		genutiltypes.ModuleName,
 	)
 
 	genesisModuleOrder := []string{
@@ -351,6 +360,7 @@ func NewHeimdallApp(
 		banktypes.ModuleName,
 		distrtypes.ModuleName, // TODO HV2: consider removing distribution module since rewards are distributed on L1
 		govtypes.ModuleName,
+		genutiltypes.ModuleName,
 		upgradetypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		// TODO HV2: uncomment when implemented
@@ -470,7 +480,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
-	// TODO HV2: uncomment when implemented
+	// TODO HV2: consider moving the validator set update logic to staking module's InitGenesis
 	// stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
 	// checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
 
