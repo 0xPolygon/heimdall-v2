@@ -1,42 +1,36 @@
 package helper
 
-// import (
-// 	"bytes"
-// 	"context"
-// 	"encoding/hex"
-// 	"fmt"
-// 	"math/big"
-// 	"strings"
-// 	"time"
+import (
+	"context"
+	"fmt"
+	"time"
 
-// 	cosmosContext "github.com/cosmos/cosmos-sdk/client/context"
-// 	"github.com/cosmos/cosmos-sdk/codec"
-// 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	"github.com/pkg/errors"
-// 	abci "github.com/tendermint/tendermint/abci/types"
-// 	httpClient "github.com/tendermint/tendermint/rpc/client"
-// 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-// 	tmTypes "github.com/tendermint/tendermint/types"
-// )
+	abci "github.com/cometbft/cometbft/abci/types"
+	httpClient "github.com/cometbft/cometbft/rpc/client/http"
+	ctypes "github.com/cometbft/cometbft/rpc/core/types"
+	tmTypes "github.com/cometbft/cometbft/types"
+	cosmosContext "github.com/cosmos/cosmos-sdk/client"
+	"github.com/pkg/errors"
+)
 
-// const (
-// 	// CommitTimeout commit timeout
-// 	CommitTimeout = 2 * time.Minute
-// )
+const (
+	// CommitTimeout commit timeout
+	CommitTimeout = 2 * time.Minute
+)
 
-// // GetNodeStatus returns node status
-// func GetNodeStatus(cliCtx cosmosContext.CLIContext) (*ctypes.ResultStatus, error) {
-// 	node, err := cliCtx.GetNode()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+// GetNodeStatus returns node status
+func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
+	node, err := cliCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
 
-// 	return node.Status()
-// }
+	return node.Status(cliCtx.CmdContext)
+}
 
-// // QueryTxsByEvents performs a search for transactions for a given set of tags via
-// // Tendermint RPC. It returns a slice of Info object containing txs and metadata.
-// // An error is returned if the query fails.
+// QueryTxsByEvents performs a search for transactions for a given set of tags via
+// Tendermint RPC. It returns a slice of Info object containing txs and metadata.
+// An error is returned if the query fails.
 // func QueryTxsByEvents(cliCtx cosmosContext.CLIContext, tags []string, page, limit int) (*sdk.SearchTxsResult, error) {
 // 	if len(tags) == 0 {
 // 		return nil, errors.New("must declare at least one tag to search")
@@ -89,7 +83,7 @@ package helper
 // 	return &result, nil
 // }
 
-// // formatTxResults parses the indexed txs into a slice of TxResponse objects.
+// formatTxResults parses the indexed txs into a slice of TxResponse objects.
 // func formatTxResults(cdc *codec.Codec, resTxs []*ctypes.ResultTx, resBlocks map[int64]*ctypes.ResultBlock) ([]sdk.TxResponse, error) {
 // 	var err error
 
@@ -104,9 +98,10 @@ package helper
 // 	return out, nil
 // }
 
-// // ValidateTxResult performs transaction verification.
-// func ValidateTxResult(cliCtx cosmosContext.CLIContext, resTx *ctypes.ResultTx) error {
-// 	if !cliCtx.TrustNode {
+//TODO H2 Verify function is not available, discuss this with
+// ValidateTxResult performs transaction verification.
+// func ValidateTxResult(cliCtx cosmosContext.Context, resTx *ctypes.ResultTx) error {
+
 // 		check, err := cliCtx.Verify(resTx.Height)
 // 		if err != nil {
 // 			return err
@@ -126,32 +121,31 @@ package helper
 // 		if err != nil {
 // 			return err
 // 		}
-// 	}
 
 // 	return nil
 // }
 
-// func getBlocksForTxResults(cliCtx cosmosContext.CLIContext, resTxs []*ctypes.ResultTx) (map[int64]*ctypes.ResultBlock, error) {
-// 	node, err := cliCtx.GetNode()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func getBlocksForTxResults(cliCtx cosmosContext.Context, resTxs []*ctypes.ResultTx) (map[int64]*ctypes.ResultBlock, error) {
+	node, err := cliCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
 
-// 	resBlocks := make(map[int64]*ctypes.ResultBlock)
+	resBlocks := make(map[int64]*ctypes.ResultBlock)
 
-// 	for _, resTx := range resTxs {
-// 		if _, ok := resBlocks[resTx.Height]; !ok {
-// 			resBlock, err := node.Block(&resTx.Height)
-// 			if err != nil {
-// 				return nil, err
-// 			}
+	for _, resTx := range resTxs {
+		if _, ok := resBlocks[resTx.Height]; !ok {
+			resBlock, err := node.Block(cliCtx.CmdContext, &resTx.Height)
+			if err != nil {
+				return nil, err
+			}
 
-// 			resBlocks[resTx.Height] = resBlock
-// 		}
-// 	}
+			resBlocks[resTx.Height] = resBlock
+		}
+	}
 
-// 	return resBlocks, nil
-// }
+	return resBlocks, nil
+}
 
 // func formatTxResult(cdc *codec.Codec, resTx *ctypes.ResultTx, resBlock *ctypes.ResultBlock) (sdk.TxResponse, error) {
 // 	tx, err := parseTx(cdc, resTx.Tx)
@@ -167,7 +161,7 @@ package helper
 // 	return decoder(txBytes)
 // }
 
-// // QueryTx query tx from node
+// QueryTx query tx from node
 // func QueryTx(cliCtx cosmosContext.CLIContext, hashHexStr string) (sdk.TxResponse, error) {
 // 	hash, err := hex.DecodeString(hashHexStr)
 // 	if err != nil {
@@ -203,146 +197,149 @@ package helper
 // 	return out, nil
 // }
 
-// // QueryTxWithProof query tx with proof from node
-// func QueryTxWithProof(cliCtx cosmosContext.CLIContext, hash []byte) (*ctypes.ResultTx, error) {
-// 	node, err := cliCtx.GetNode()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+// QueryTxWithProof query tx with proof from node
+func QueryTxWithProof(cliCtx cosmosContext.Context, hash []byte) (*ctypes.ResultTx, error) {
+	node, err := cliCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
 
-// 	return node.Tx(hash, true)
-// }
+	return node.Tx(cliCtx.CmdContext, hash, true)
+}
 
-// // GetBlock returns a block
-// func GetBlock(cliCtx cosmosContext.CLIContext, height int64) (*ctypes.ResultBlock, error) {
-// 	node, err := cliCtx.GetNode()
-// 	if err != nil {
-// 		return nil, err
-// 	}
+// GetBlock returns a block
+func GetBlock(cliCtx cosmosContext.Context, height int64) (*ctypes.ResultBlock, error) {
+	node, err := cliCtx.GetNode()
+	if err != nil {
+		return nil, err
+	}
 
-// 	return node.Block(&height)
-// }
+	return node.Block(cliCtx.CmdContext, &height)
+}
 
-// // GetBlockWithClient get block through per height
-// func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, error) {
-// 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
-// 	defer cancel()
+// GetBlockWithClient get block through per height
+func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, error) {
+	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
+	defer cancel()
 
-// 	// get block using client
-// 	block, err := client.Block(&height)
-// 	if err == nil && block != nil {
-// 		return block.Block, nil
-// 	}
+	// get block using client
+	block, err := client.Block(c, &height)
+	if err == nil && block != nil {
+		return block.Block, nil
+	}
 
-// 	// subscriber
-// 	subscriber := fmt.Sprintf("new-block-%v", height)
+	// subscriber
+	subscriber := fmt.Sprintf("new-block-%v", height)
 
-// 	// query for event
-// 	query := tmTypes.QueryForEvent(tmTypes.EventNewBlock).String()
+	// query for event
+	query := tmTypes.QueryForEvent(tmTypes.EventNewBlock).String()
 
-// 	// register for the next event of this type
-// 	eventCh, err := client.Subscribe(c, subscriber, query)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "failed to subscribe")
-// 	}
+	// register for the next event of this type
+	eventCh, err := client.Subscribe(c, subscriber, query)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to subscribe")
+	}
 
-// 	// unsubscribe query
-// 	defer func() {
-// 		if err := client.Unsubscribe(c, subscriber, query); err != nil {
-// 			Logger.Error("GetBlockWithClient | Unsubscribe", "Error", err)
-// 		}
-// 	}()
+	// unsubscribe query
+	defer func() {
+		if err := client.Unsubscribe(c, subscriber, query); err != nil {
+			Logger.Error("GetBlockWithClient | Unsubscribe", "Error", err)
+		}
+	}()
 
-// 	for {
-// 		select {
-// 		case event := <-eventCh:
-// 			eventData := event.Data
-// 			switch t := eventData.(type) {
-// 			case tmTypes.EventDataNewBlock:
-// 				if t.Block.Height == height {
-// 					return t.Block, nil
-// 				}
-// 			default:
-// 				return nil, errors.New("timed out waiting for event")
-// 			}
-// 		case <-c.Done():
-// 			return nil, errors.New("timed out waiting for event")
-// 		}
-// 	}
-// }
+	for {
+		select {
+		case event := <-eventCh:
+			eventData := event.Data
+			switch t := eventData.(type) {
+			case tmTypes.EventDataNewBlock:
+				if t.Block.Height == height {
+					return t.Block, nil
+				}
+			default:
+				return nil, errors.New("timed out waiting for event")
+			}
+		case <-c.Done():
+			return nil, errors.New("timed out waiting for event")
+		}
+	}
+}
 
-// // GetBeginBlockEvents get block through per height
-// func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
-// 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
-// 	defer cancel()
+// GetBeginBlockEvents get block through per height
+func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
+	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
+	defer cancel()
 
-// 	// get block using client
-// 	blockResults, err := client.BlockResults(&height)
-// 	if err == nil && blockResults != nil {
-// 		return blockResults.Results.BeginBlock.GetEvents(), nil
-// 	}
+	//TODO H2 It give all the events, not only begin blocks
+	// get block using client
+	blockResults, err := client.BlockResults(c, &height)
+	if err == nil && blockResults != nil {
+		return blockResults.FinalizeBlockEvents, nil
+	}
 
-// 	// subscriber
-// 	subscriber := fmt.Sprintf("new-block-%v", height)
+	// subscriber
+	subscriber := fmt.Sprintf("new-block-%v", height)
 
-// 	// query for event
-// 	query := tmTypes.QueryForEvent(tmTypes.EventNewBlock).String()
+	// query for event
+	query := tmTypes.QueryForEvent(tmTypes.EventNewBlock).String()
 
-// 	// register for the next event of this type
-// 	eventCh, err := client.Subscribe(c, subscriber, query)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "failed to subscribe")
-// 	}
+	// register for the next event of this type
+	eventCh, err := client.Subscribe(c, subscriber, query)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to subscribe")
+	}
 
-// 	// unsubscribe query
-// 	defer func() {
-// 		_ = client.Unsubscribe(c, subscriber, query)
-// 	}()
+	// unsubscribe query
+	defer func() {
+		_ = client.Unsubscribe(c, subscriber, query)
+	}()
 
-// 	for {
-// 		select {
-// 		case event := <-eventCh:
-// 			eventData := event.Data
-// 			switch t := eventData.(type) {
-// 			case tmTypes.EventDataNewBlock:
-// 				if t.Block.Height == height {
-// 					return t.ResultBeginBlock.GetEvents(), nil
-// 				}
-// 			default:
-// 				return nil, errors.New("timed out waiting for event")
-// 			}
-// 		case <-c.Done():
-// 			return nil, errors.New("timed out waiting for event")
-// 		}
-// 	}
-// }
+	for {
+		select {
+		case event := <-eventCh:
+			eventData := event.Data
+			switch t := eventData.(type) {
+			case tmTypes.EventDataNewBlock:
+				if t.Block.Height == height {
+					//TODO H2 Fetching all the events ,not the begin block one
+					return t.ResultFinalizeBlock.GetEvents(), nil
+				}
+			default:
+				return nil, errors.New("timed out waiting for event")
+			}
+		case <-c.Done():
+			return nil, errors.New("timed out waiting for event")
+		}
+	}
+}
 
-// // FetchVotes fetches votes and extracts sigs from it
-// func FetchVotes(
-// 	client *httpClient.HTTP,
-// 	height int64,
-// ) (votes []*tmTypes.CommitSig, sigs []byte, chainID string, err error) {
-// 	// get block client
-// 	blockDetails, err := GetBlockWithClient(client, height+1)
+// FetchVotes fetches votes and extracts sigs from it
+func FetchVotes(
+	client *httpClient.HTTP,
+	height int64,
+) (votes []tmTypes.CommitSig, sigs []byte, chainID string, err error) {
+	// get block client
+	blockDetails, err := GetBlockWithClient(client, height+1)
 
-// 	if err != nil {
-// 		return nil, nil, "", err
-// 	}
+	if err != nil {
+		return nil, nil, "", err
+	}
 
-// 	// extract votes from response
-// 	preCommits := blockDetails.LastCommit.Precommits
+	// extract votes from response
+	preCommits := blockDetails.LastCommit.Signatures
 
-// 	// extract signs from votes
-// 	valSigs := GetVoteSigs(preCommits)
+	// extract signs from votes
+	valSigs := GetVoteSigs(preCommits)
 
-// 	// extract chainID
-// 	chainID = blockDetails.ChainID
+	// extract chainID
+	chainID = blockDetails.ChainID
 
-// 	// return
-// 	return preCommits, valSigs, chainID, nil
-// }
+	// return
+	return preCommits, valSigs, chainID, nil
+}
 
-// // FetchSideTxSigs fetches side tx sigs from it
+//TODO H2 Can use this logic if need
+// FetchSideTxSigs fetches side tx sigs from it
 // func FetchSideTxSigs(
 // 	client *httpClient.HTTP,
 // 	height int64,
@@ -357,7 +354,7 @@ package helper
 // 	}
 
 // 	// extract votes from response
-// 	preCommits := blockDetails.LastCommit.Precommits
+// 	preCommits := blockDetails.LastCommit.Signatures
 
 // 	// extract side-tx signs from votes
 // 	return GetSideTxSigs(txHash, sideTxData, preCommits)

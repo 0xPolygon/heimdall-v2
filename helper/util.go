@@ -1,55 +1,56 @@
 package helper
 
+//TODO H2 Please implement it once Authtype is completed as it depends lot on it
 import (
+	// 	"bufio"
+	// 	"bytes"
+	// 	"encoding/base64"
+	// 	"encoding/hex"
+	// 	"errors"
+	// 	"fmt"
+	// 	"io"
+	// 	"math/big"
+	// 	"math/bits"
+	// 	"net/http"
+	// 	"net/url"
+	// 	"os"
+	// 	"path"
+	// 	"sort"
+
+	// 	"github.com/cosmos/cosmos-sdk/client"
+	// 	"github.com/cosmos/cosmos-sdk/client/context"
+	// 	cliContext "github.com/cosmos/cosmos-sdk/client/context"
+	// 	"github.com/cosmos/cosmos-sdk/client/input"
+	// 	"github.com/cosmos/cosmos-sdk/client/keys"
+	// 	"github.com/cosmos/cosmos-sdk/codec"
+	// 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"bytes"
 	"errors"
 	"math/big"
+	"sort"
+
+	tmTypes "github.com/cometbft/cometbft/types"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	// 	"github.com/ethereum/go-ethereum/common"
+	// 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	// 	"github.com/spf13/viper"
+	// 	"github.com/tendermint/go-amino"
+	// 	abci "github.com/tendermint/tendermint/abci/types"
+	// 	"github.com/tendermint/tendermint/crypto"
+	// 	"github.com/tendermint/tendermint/crypto/merkle"
+	// 	"github.com/tendermint/tendermint/crypto/secp256k1"
+	// 	"github.com/tendermint/tendermint/crypto/tmhash"
+	// 	tmTypes "github.com/tendermint/tendermint/types"
+	// authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	// "github.com/maticnetwork/heimdall/types"
+	// hmTypes "github.com/maticnetwork/heimdall/types"
+	// "github.com/maticnetwork/heimdall/types/rest"
 )
-
-// import (
-// 	"bufio"
-// 	"bytes"
-// 	"encoding/base64"
-// 	"encoding/hex"
-// 	"errors"
-// 	"fmt"
-// 	"io"
-// 	"math/big"
-// 	"math/bits"
-// 	"net/http"
-// 	"net/url"
-// 	"os"
-// 	"path"
-// 	"sort"
-
-// 	"github.com/cosmos/cosmos-sdk/client"
-// 	"github.com/cosmos/cosmos-sdk/client/context"
-// 	cliContext "github.com/cosmos/cosmos-sdk/client/context"
-// 	"github.com/cosmos/cosmos-sdk/client/input"
-// 	"github.com/cosmos/cosmos-sdk/client/keys"
-// 	"github.com/cosmos/cosmos-sdk/codec"
-// 	sdk "github.com/cosmos/cosmos-sdk/types"
-// 	"github.com/ethereum/go-ethereum/accounts/abi"
-// 	"github.com/ethereum/go-ethereum/common"
-// 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-// 	"github.com/spf13/viper"
-// 	"github.com/tendermint/go-amino"
-// 	abci "github.com/tendermint/tendermint/abci/types"
-// 	"github.com/tendermint/tendermint/crypto"
-// 	"github.com/tendermint/tendermint/crypto/merkle"
-// 	"github.com/tendermint/tendermint/crypto/secp256k1"
-// 	"github.com/tendermint/tendermint/crypto/tmhash"
-// 	tmTypes "github.com/tendermint/tendermint/types"
-
-// 	authTypes "github.com/maticnetwork/heimdall/auth/types"
-// 	"github.com/maticnetwork/heimdall/types"
-// 	hmTypes "github.com/maticnetwork/heimdall/types"
-// 	"github.com/maticnetwork/heimdall/types/rest"
-// )
 
 // //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 // type HTTPClient interface {
 // 	Get(string) (resp *http.Response, err error)
-// }
+//}
 
 // var (
 // 	Client HTTPClient
@@ -146,27 +147,21 @@ import (
 // 	return pubObject
 // }
 
-// // GetVoteSigs returns sigs bytes from vote
-// func GetVoteSigs(unFilteredVotes []*tmTypes.CommitSig) (sigs []byte) {
-// 	votes := make([]*tmTypes.CommitSig, 0)
+// GetVoteSigs returns sigs bytes from vote
+func GetVoteSigs(unFilteredVotes []tmTypes.CommitSig) (sigs []byte) {
+	votes := make([]*tmTypes.CommitSig, 0)
 
-// 	for _, item := range unFilteredVotes {
-// 		if item != nil {
-// 			votes = append(votes, item)
-// 		}
-// 	}
+	sort.Slice(votes, func(i, j int) bool {
+		return bytes.Compare(votes[i].ValidatorAddress.Bytes(), votes[j].ValidatorAddress.Bytes()) < 0
+	})
 
-// 	sort.Slice(votes, func(i, j int) bool {
-// 		return bytes.Compare(votes[i].ValidatorAddress.Bytes(), votes[j].ValidatorAddress.Bytes()) < 0
-// 	})
+	// loop votes and append to sig to sigs
+	for _, vote := range votes {
+		sigs = append(sigs, vote.Signature...)
+	}
 
-// 	// loop votes and append to sig to sigs
-// 	for _, vote := range votes {
-// 		sigs = append(sigs, vote.Signature...)
-// 	}
-
-// 	return
-// }
+	return
+}
 
 // type sideTxSig struct {
 // 	Address []byte
@@ -747,35 +742,35 @@ func GetPowerFromAmount(amount *big.Int) (*big.Int, error) {
 // 	return pow.Mul(pow, decimals18), nil
 // }
 
-// // UnpackSigAndVotes Unpacks Sig and Votes from Tx Payload
-// func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, checkpointData []byte, err error) {
-// 	// recover Method from signature and ABI
-// 	method := abi.Methods["submitHeaderBlock"]
-// 	decodedPayload := payload[4:]
-// 	inputDataMap := make(map[string]interface{})
-// 	// unpack method inputs
-// 	err = method.Inputs.UnpackIntoMap(inputDataMap, decodedPayload)
-// 	if err != nil {
-// 		return
-// 	}
+// UnpackSigAndVotes Unpacks Sig and Votes from Tx Payload
+func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, checkpointData []byte, err error) {
+	// recover Method from signature and ABI
+	method := abi.Methods["submitHeaderBlock"]
+	decodedPayload := payload[4:]
+	inputDataMap := make(map[string]interface{})
+	// unpack method inputs
+	err = method.Inputs.UnpackIntoMap(inputDataMap, decodedPayload)
+	if err != nil {
+		return
+	}
 
-// 	sigs = inputDataMap["sigs"].([]byte)
-// 	checkpointData = inputDataMap["txData"].([]byte)
-// 	votes = inputDataMap["vote"].([]byte)
+	sigs = inputDataMap["sigs"].([]byte)
+	checkpointData = inputDataMap["txData"].([]byte)
+	votes = inputDataMap["vote"].([]byte)
 
-// 	return
-// }
+	return
+}
 
-// // EventByID looks up a event by the topic id
-// func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
-// 	for _, event := range abiObject.Events {
-// 		if bytes.Equal(event.ID.Bytes(), sigdata) {
-// 			return &event
-// 		}
-// 	}
+// EventByID looks up a event by the topic id
+func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
+	for _, event := range abiObject.Events {
+		if bytes.Equal(event.ID.Bytes(), sigdata) {
+			return &event
+		}
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 // // GetHeimdallServerEndpoint returns heimdall server endpoint
 // func GetHeimdallServerEndpoint(endpoint string) string {

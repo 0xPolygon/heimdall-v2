@@ -1,5 +1,6 @@
 package helper
 
+//H2 TODO Please implement it once authtype is finalised and recoverFromPubkey fn is made
 // import (
 // 	"encoding/hex"
 // 	"math/big"
@@ -7,7 +8,7 @@ package helper
 
 // 	"github.com/stretchr/testify/require"
 
-// 	authTypes "github.com/maticnetwork/heimdall/auth/types"
+// 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 // 	"github.com/maticnetwork/heimdall/contracts/rootchain"
 // 	"github.com/maticnetwork/heimdall/types"
 // )
