@@ -16,42 +16,42 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
 var (
-	// TODO HV2: uncomment when implemented
-	// _ module.AppModuleBasic = AppModule{}
 	_ module.AppModuleSimulation = AppModule{}
 	_ module.HasGenesis          = AppModule{}
 	_ module.HasServices         = AppModule{}
-	// _ module.HasInvariants = AppModule{}
+	_ module.AppModuleBasic      = AppModule{}
 
 	_ appmodule.AppModule = AppModule{}
 )
 
 // TODO HV2: what should this value be ?
+
 // ConsensusVersion defines the current x/bank module consensus version.
 const ConsensusVersion = 1
 
 // AppModuleBasic defines the basic application module used by the chainmananer module.
-type AppModuleBasic struct{}
+// type AppModuleBasic struct{}
 
 // Name returns the chainmanager module's name.
-func (AppModuleBasic) Name() string { return types.ModuleName }
+func (AppModule) Name() string { return types.ModuleName }
 
 // RegisterLegacyAminoCodec registers the chainmanager module's types on the LegacyAmino codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the chainmanager
 // module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the chainmanager module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
+func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -60,23 +60,18 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingCo
 	return data.Validate()
 }
 
-// TODO HV2: uncomment when this PR is merged: https://github.com/0xPolygon/heimdall-v2/pull/20
+// TODO HV2: implement when this PR is merged: https://github.com/0xPolygon/heimdall-v2/pull/20
+
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the chainmanager module.
-// func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
-// 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
-// 		panic(err)
-// 	}
-// }
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {}
 
 // RegisterInterfaces registers interfaces and implementations of the chainmanager module.
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
 // AppModule implements an application module for the chainmanager module.
 type AppModule struct {
-	AppModuleBasic
-
 	keeper keeper.Keeper
 	// contractCaller helper.IContractCaller
 
@@ -87,6 +82,8 @@ func (am AppModule) IsOnePerModuleType() {}
 
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
+
+// TODO HV2: uncomment when keeper and types are implemented
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
@@ -113,27 +110,17 @@ func NewAppModule(
 	// contractCaller helper.IContractCaller,
 ) AppModule {
 	return AppModule{
-		AppModuleBasic: AppModuleBasic{},
-		keeper:         keeper,
+		keeper: keeper,
 		// contractCaller: contractCaller,
 	}
 }
 
-// TODO HV2: uncomment when keeper is implemented. We probably don't need invariants
-// RegisterInvariants registers the chainmanager module invariants.
-// func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-// 	keeper.RegisterInvariants(ir, am.keeper)
-// }
-
 // TODO HV2: uncomment when types is implemented
+
 // QuerierRoute returns the chainmanager module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
 
-// TODO HV2: might not be needed since Route() was previously used in side handler routing
-// Route returns the message routing key for the chainmanager module.
-// func (AppModule) Route() string {
-// 	return types.RouterKey
-// }
+// TODO HV2: uncomment when keeper is implemented
 
 // InitGenesis performs genesis initialization for the chainmanager module. It returns
 // no validator updates.
@@ -145,6 +132,8 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 	am.keeper.InitGenesis(ctx, &genesisState)
 }
+
+// TODO HV2: uncomment when keeper is implemented
 
 // ExportGenesis returns the exported genesis state as raw bytes for the chainmanager
 // module.
@@ -158,6 +147,8 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // AppModuleSimulation functions
 
+// TODO HV2: uncomment when simulation is implemented
+
 // GenerateGenesisState creates a randomized GenState of the chainmanager module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	simulation.RandomizedGenState(simState)
@@ -165,22 +156,26 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
 // looks equivalent to https://github.com/maticnetwork/heimdall/blob/249aa798c2f23c533d2421f2101127c11684c76e/chainmanager/module.go#L161C18-L161C34
+
 // ProposalMsgs returns msgs used for governance proposals for simulations.
 func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedProposalMsg {
 	return nil
 }
 
 // TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
+
 // RegisterStoreDecoder registers a decoder for chainmanager module's types
 func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {}
 
-// TODO HV2: this is probably not needed since params are handled by the respective modules
+// TODO HV2: uncomment when simulation is implemented
+
 // RandomizedParams creates randomized param changes for the simulator.
 // func (AppModule) RandomizedParams(r *rand.Rand) []simTypes.ParamChange {
 // 	return simulation.ParamChanges(r)
 // }
 
 // TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
+
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
 	return nil
