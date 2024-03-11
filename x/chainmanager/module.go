@@ -120,12 +120,6 @@ func NewAppModule(
 	}
 }
 
-// TODO HV2: uncomment when keeper is implemented. We probably don't need invariants
-// RegisterInvariants registers the chainmanager module invariants.
-// func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-// 	keeper.RegisterInvariants(ir, am.keeper)
-// }
-
 // TODO HV2: uncomment when types is implemented
 // QuerierRoute returns the chainmanager module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
