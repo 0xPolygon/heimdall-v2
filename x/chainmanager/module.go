@@ -130,12 +130,6 @@ func NewAppModule(
 // QuerierRoute returns the chainmanager module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
 
-// TODO HV2: might not be needed since Route() was previously used in side handler routing
-// Route returns the message routing key for the chainmanager module.
-// func (AppModule) Route() string {
-// 	return types.RouterKey
-// }
-
 // TODO HV2: uncomment when keeper is implemented
 // InitGenesis performs genesis initialization for the chainmanager module. It returns
 // no validator updates.
