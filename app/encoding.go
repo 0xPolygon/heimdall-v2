@@ -25,23 +25,22 @@ func MakeEncodingConfig() EncodingConfig {
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
+			// TODO HV2: replace with address.HexCodec once https://github.com/0xPolygon/cosmos-sdk/pull/3 is merged
 			AddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.Bech32MainPrefix,
+				Bech32Prefix: sdk.GetConfig().GetBech32AccountAddrPrefix(),
 			},
 			ValidatorAddressCodec: address.Bech32Codec{
-				Bech32Prefix: sdk.Bech32MainPrefix,
+				Bech32Prefix: sdk.GetConfig().GetBech32ValidatorAddrPrefix(),
 			},
 		},
 	})
 
+	// TODO HV2: register proto format of secp256k1 keys
+	// interfaceRegistry.RegisterImplementations((*crypto.PubKey)(nil), &secp256k1.PubKey{})
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
 	legacyAmino := codec.NewLegacyAmino()
 	txConfig := tx.NewTxConfig(appCodec, tx.DefaultSignModes)
 
-	// amino := codec.NewLegacyAmino()
-	// interfaceRegistry := codectypes.NewInterfaceRegistry()
-	// cdc := codec.NewProtoCodec(interfaceRegistry)
-	// txCfg := tx.NewTxConfig(cdc, tx.DefaultSignModes)
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
 		Marshaler:         appCodec,
@@ -52,11 +51,6 @@ func MakeEncodingConfig() EncodingConfig {
 
 func RegisterEncodingConfig() EncodingConfig {
 	encConfig := MakeEncodingConfig()
-
-	// std.RegisterLegacyAminoCodec(encConfig.Amino)
-	// std.RegisterInterfaces(encConfig.InterfaceRegistry)
-	// ModuleBasics.RegisterLegacyAminoCodec(encConfig.Amino)
-	// ModuleBasics.RegisterInterfaces(encConfig.InterfaceRegistry)
 
 	return encConfig
 }
