@@ -1,423 +1,264 @@
 package keeper_test
 
-import (
-	authtypes "cosmossdk.io/x/auth/types"
-	banktypes "cosmossdk.io/x/bank/types"
+// TODO HV2 - uncomment and fix unit tests
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-)
+// Test cases
 
-var govAcc = authtypes.NewEmptyModuleAccount(banktypes.GovModuleName, authtypes.Minter)
+// func (suite *KeeperTestSuite) TestSideHandler() {
+// 	t, ctx := suite.T(), suite.ctx
 
-func (suite *KeeperTestSuite) TestMsgUpdateParams() {
-	// default params
-	params := banktypes.DefaultParams()
+// 	// side handler
+// 	result := suite.sideHandler(ctx, nil)
+// 	require.Equal(t, uint32(sdk.CodeUnknownRequest), result.Code)
+// 	require.Equal(t, abci.SideTxResultType_Skip, result.Result)
+// }
 
-	testCases := []struct {
-		name      string
-		input     *banktypes.MsgUpdateParams
-		expErr    bool
-		expErrMsg string
-	}{
-		{
-			name: "invalid authority",
-			input: &banktypes.MsgUpdateParams{
-				Authority: "invalid",
-				Params:    params,
-			},
-			expErr:    true,
-			expErrMsg: "invalid authority",
-		},
-		{
-			name: "send enabled param",
-			input: &banktypes.MsgUpdateParams{
-				Authority: suite.bankKeeper.GetAuthority(),
-				Params: banktypes.Params{
-					SendEnabled: []*banktypes.SendEnabled{
-						{Denom: "foo", Enabled: true},
-					},
-				},
-			},
-			expErr:    true,
-			expErrMsg: "use of send_enabled in params is no longer supported",
-		},
-		{
-			name: "all good",
-			input: &banktypes.MsgUpdateParams{
-				Authority: suite.bankKeeper.GetAuthority(),
-				Params:    params,
-			},
-			expErr: false,
-		},
-	}
+// func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
+// 	// TODO HV2 - uncomment when heimdall app PR is merged
+// 	// t, app, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+// 	t, _, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+// 	chainParams := app.ChainKeeper.GetParams(suite.ctx)
 
-	for _, tc := range testCases {
-		tc := tc
-		suite.Run(tc.name, func() {
-			_, err := suite.msgServer.UpdateParams(suite.ctx, tc.input)
+// 	_, _, addr1 := sdkAuth.KeyTestPubAddr()
 
-			if tc.expErr {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
-			} else {
-				suite.Require().NoError(err)
-			}
-		})
-	}
-}
+// 	id := r.Uint64()
 
-func (suite *KeeperTestSuite) TestMsgSend() {
-	origCoins := sdk.NewCoins(sdk.NewInt64Coin("sendableCoin", 100))
-	suite.bankKeeper.SetSendEnabled(suite.ctx, origCoins.Denoms()[0], true)
-	atom0 := sdk.NewCoins(sdk.NewInt64Coin("atom", 0))
-	atom123eth0 := sdk.Coins{sdk.NewInt64Coin("atom", 123), sdk.NewInt64Coin("eth", 0)}
+// 	t.Run("Success", func(t *testing.T) {
+// 		suite.contractCaller = mocks.IContractCaller{}
 
-	testCases := []struct {
-		name      string
-		input     *banktypes.MsgSend
-		expErr    bool
-		expErrMsg string
-	}{
-		{
-			name: "invalid send to blocked address",
-			input: &banktypes.MsgSend{
-				FromAddress: minterAcc.GetAddress().String(),
-				ToAddress:   accAddrs[4].String(),
-				Amount:      origCoins,
-			},
-			expErr:    true,
-			expErrMsg: "is not allowed to receive funds",
-		},
-		{
-			name: "invalid coins",
-			input: &banktypes.MsgSend{
-				FromAddress: minterAcc.GetAddress().String(),
-				ToAddress:   baseAcc.Address,
-				Amount:      atom0,
-			},
-			expErr:    true,
-			expErrMsg: "invalid coins",
-		},
-		{
-			name: "123atom,0eth: invalid coins",
-			input: &banktypes.MsgSend{
-				FromAddress: minterAcc.GetAddress().String(),
-				ToAddress:   baseAcc.Address,
-				Amount:      atom123eth0,
-			},
-			expErr:    true,
-			expErrMsg: "123atom,0eth: invalid coins",
-		},
-		{
-			name: "invalid from address: empty address string is not allowed: invalid address",
-			input: &banktypes.MsgSend{
-				FromAddress: "",
-				ToAddress:   baseAcc.Address,
-				Amount:      origCoins,
-			},
-			expErr:    true,
-			expErrMsg: "empty address string is not allowed",
-		},
-		{
-			name: "invalid to address: empty address string is not allowed: invalid address",
-			input: &banktypes.MsgSend{
-				FromAddress: minterAcc.GetAddress().String(),
-				ToAddress:   "",
-				Amount:      origCoins,
-			},
-			expErr:    true,
-			expErrMsg: "empty address string is not allowed",
-		},
-		{
-			name: "all good",
-			input: &banktypes.MsgSend{
-				FromAddress: minterAcc.GetAddress().String(),
-				ToAddress:   baseAcc.Address,
-				Amount:      origCoins,
-			},
-			expErr: false,
-		},
-	}
+// 		logIndex := uint64(10)
+// 		blockNumber := uint64(599)
+// 		txReceipt := &ethTypes.Receipt{
+// 			BlockNumber: new(big.Int).SetUint64(blockNumber),
+// 		}
+// 		txHash := hmTypes.HexToHeimdallHash("success hash")
 
-	for _, tc := range testCases {
-		tc := tc
-		suite.Run(tc.name, func() {
-			suite.mockMintCoins(minterAcc)
-			err := suite.bankKeeper.MintCoins(suite.ctx, minterAcc.Name, origCoins)
-			suite.Require().NoError(err)
-			if !tc.expErr {
-				suite.mockSendCoins(suite.ctx, minterAcc, baseAcc.GetAddress())
-			}
-			_, err = suite.msgServer.Send(suite.ctx, tc.input)
-			if tc.expErr {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
-			} else {
-				suite.Require().NoError(err)
-			}
-		})
-	}
-}
+// 		msg := types.NewMsgEventRecord(
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			txHash,
+// 			logIndex,
+// 			blockNumber,
+// 			id,
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			make([]byte, 0),
+// 			suite.chainID,
+// 		)
 
-func (suite *KeeperTestSuite) TestMsgMultiSend() {
-	origDenom := "sendableCoin"
-	origCoins := sdk.NewCoins(sdk.NewInt64Coin(origDenom, 100))
-	sendCoins := sdk.NewCoins(sdk.NewInt64Coin(origDenom, 50))
-	suite.bankKeeper.SetSendEnabled(suite.ctx, origDenom, true)
+// 		// mock external calls
+// 		suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+// 		event := &statesender.StatesenderStateSynced{
+// 			Id:              new(big.Int).SetUint64(msg.ID),
+// 			ContractAddress: msg.ContractAddress.EthAddress(),
+// 			Data:            msg.Data,
+// 		}
+// 		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
-	testCases := []struct {
-		name      string
-		input     *banktypes.MsgMultiSend
-		expErr    bool
-		expErrMsg string
-	}{
-		{
-			name:      "no inputs to send transaction",
-			input:     &banktypes.MsgMultiSend{},
-			expErr:    true,
-			expErrMsg: "no inputs to send transaction",
-		},
-		{
-			name: "no inputs to send transaction",
-			input: &banktypes.MsgMultiSend{
-				Outputs: []banktypes.Output{
-					{Address: accAddrs[4].String(), Coins: sendCoins},
-				},
-			},
-			expErr:    true,
-			expErrMsg: "no inputs to send transaction",
-		},
-		{
-			name: "more than one inputs to send transaction",
-			input: &banktypes.MsgMultiSend{
-				Inputs: []banktypes.Input{
-					{Address: minterAcc.GetAddress().String(), Coins: origCoins},
-					{Address: minterAcc.GetAddress().String(), Coins: origCoins},
-				},
-			},
-			expErr:    true,
-			expErrMsg: "multiple senders not allowed",
-		},
-		{
-			name: "no outputs to send transaction",
-			input: &banktypes.MsgMultiSend{
-				Inputs: []banktypes.Input{
-					{Address: minterAcc.GetAddress().String(), Coins: origCoins},
-				},
-			},
-			expErr:    true,
-			expErrMsg: "no outputs to send transaction",
-		},
-		{
-			name: "invalid send to blocked address",
-			input: &banktypes.MsgMultiSend{
-				Inputs: []banktypes.Input{
-					{Address: minterAcc.GetAddress().String(), Coins: origCoins},
-				},
-				Outputs: []banktypes.Output{
-					{Address: accAddrs[0].String(), Coins: sendCoins},
-					{Address: accAddrs[4].String(), Coins: sendCoins},
-				},
-			},
-			expErr:    true,
-			expErrMsg: "is not allowed to receive funds",
-		},
-		{
-			name: "invalid send to blocked address",
-			input: &banktypes.MsgMultiSend{
-				Inputs: []banktypes.Input{
-					{Address: minterAcc.GetAddress().String(), Coins: origCoins},
-				},
-				Outputs: []banktypes.Output{
-					{Address: accAddrs[0].String(), Coins: sendCoins},
-					{Address: accAddrs[1].String(), Coins: sendCoins},
-				},
-			},
-			expErr: false,
-		},
-	}
+// 		// execute handler
+// 		result := suite.sideHandler(ctx, msg)
+// 		require.Equal(t, uint32(sdk.CodeOK), result.Code, "Side tx handler should be success")
+// 		require.Equal(t, abci.SideTxResultType_Yes, result.Result, "Result should be `yes`")
 
-	for _, tc := range testCases {
-		tc := tc
-		suite.Run(tc.name, func() {
-			suite.mockMintCoins(minterAcc)
-			err := suite.bankKeeper.MintCoins(suite.ctx, minterAcc.Name, origCoins)
-			suite.Require().NoError(err)
-			if !tc.expErr {
-				suite.mockInputOutputCoins([]sdk.AccountI{minterAcc}, accAddrs[:2])
-			}
-			_, err = suite.msgServer.MultiSend(suite.ctx, tc.input)
-			if tc.expErr {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
-			} else {
-				suite.Require().NoError(err)
-			}
-		})
-	}
-}
+// 		// there should be no stored event record
+// 		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+// 		require.Nil(t, storedEventRecord)
+// 		require.Error(t, err)
+// 	})
 
-func (suite *KeeperTestSuite) TestMsgSetSendEnabled() {
-	testCases := []struct {
-		name     string
-		req      *banktypes.MsgSetSendEnabled
-		isExpErr bool
-		errMsg   string
-	}{
-		{
-			name: "all good",
-			req: banktypes.NewMsgSetSendEnabled(
-				govAcc.GetAddress().String(),
-				[]*banktypes.SendEnabled{
-					banktypes.NewSendEnabled("atom1", true),
-				},
-				[]string{},
-			),
-		},
-		{
-			name: "all good with two denoms",
-			req: banktypes.NewMsgSetSendEnabled(
-				govAcc.GetAddress().String(),
-				[]*banktypes.SendEnabled{
-					banktypes.NewSendEnabled("atom1", true),
-					banktypes.NewSendEnabled("atom2", true),
-				},
-				[]string{"defcoinc", "defcoind"},
-			),
-		},
-		{
-			name: "duplicate denoms",
-			req: banktypes.NewMsgSetSendEnabled(
-				govAcc.GetAddress().String(),
-				[]*banktypes.SendEnabled{
-					banktypes.NewSendEnabled("atom", true),
-					banktypes.NewSendEnabled("atom", true),
-				},
-				[]string{},
-			),
-			isExpErr: true,
-			errMsg:   `duplicate denom entries found for "atom": invalid request`,
-		},
-		{
-			name: "bad first denom name, (invalid send enabled denom present in list)",
-			req: banktypes.NewMsgSetSendEnabled(
-				govAcc.GetAddress().String(),
-				[]*banktypes.SendEnabled{
-					banktypes.NewSendEnabled("not a denom", true),
-					banktypes.NewSendEnabled("somecoin", true),
-				},
-				[]string{},
-			),
-			isExpErr: true,
-			errMsg:   `invalid SendEnabled denom "not a denom": invalid denom: not a denom: invalid request`,
-		},
-		{
-			name: "bad second denom name, (invalid send enabled denom present in list)",
-			req: banktypes.NewMsgSetSendEnabled(
-				govAcc.GetAddress().String(),
-				[]*banktypes.SendEnabled{
-					banktypes.NewSendEnabled("somecoin", true),
-					banktypes.NewSendEnabled("not a denom", true),
-				},
-				[]string{},
-			),
-			isExpErr: true,
-			errMsg:   `invalid SendEnabled denom "not a denom": invalid denom: not a denom: invalid request`,
-		},
-		{
-			name: "invalid UseDefaultFor denom",
-			req: banktypes.NewMsgSetSendEnabled(
-				govAcc.GetAddress().String(),
-				[]*banktypes.SendEnabled{
-					banktypes.NewSendEnabled("atom", true),
-				},
-				[]string{"not a denom"},
-			),
-			isExpErr: true,
-			errMsg:   `invalid UseDefaultFor denom "not a denom": invalid denom: not a denom: invalid request`,
-		},
-		{
-			name: "invalid authority",
-			req: banktypes.NewMsgSetSendEnabled(
-				"invalid",
-				[]*banktypes.SendEnabled{
-					banktypes.NewSendEnabled("atom", true),
-				},
-				[]string{},
-			),
-			isExpErr: true,
-		},
-	}
+// 	t.Run("NoReceipt", func(t *testing.T) {
+// 		suite.contractCaller = mocks.IContractCaller{}
 
-	for _, tc := range testCases {
-		suite.Run(tc.name, func() {
-			_, err := suite.msgServer.SetSendEnabled(suite.ctx, tc.req)
+// 		logIndex := uint64(200)
+// 		blockNumber := uint64(51)
+// 		txHash := hmTypes.HexToHeimdallHash("no receipt hash")
 
-			if tc.isExpErr {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.errMsg)
-			} else {
-				suite.Require().NoError(err)
-			}
-		})
-	}
-}
+// 		msg := types.NewMsgEventRecord(
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			txHash,
+// 			logIndex,
+// 			blockNumber,
+// 			id,
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			make([]byte, 0),
+// 			suite.chainID,
+// 		)
 
-func (suite *KeeperTestSuite) TestMsgBurn() {
-	origCoins := sdk.NewInt64Coin("eth", 100)
-	atom0 := sdk.NewInt64Coin("atom", 0)
+// 		// mock external calls -- no receipt
+// 		suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
+// 		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
 
-	testCases := []struct {
-		name      string
-		input     *banktypes.MsgBurn
-		expErr    bool
-		expErrMsg string
-	}{
-		{
-			name: "invalid coins",
-			input: &banktypes.MsgBurn{
-				FromAddress: multiPermAcc.GetAddress().String(),
-				Amount:      []*sdk.Coin{&atom0},
-			},
-			expErr:    true,
-			expErrMsg: "invalid coins",
-		},
+// 		// execute handler
+// 		result := suite.sideHandler(ctx, msg)
+// 		require.NotEqual(t, uint32(sdk.CodeOK), result.Code, "Side tx handler should fail")
+// 		require.Equal(t, abci.SideTxResultType_Skip, result.Result, "Result should be `skip`")
+// 	})
 
-		{
-			name: "invalid from address: empty address string is not allowed: invalid address",
-			input: &banktypes.MsgBurn{
-				FromAddress: "",
-				Amount:      []*sdk.Coin{&origCoins},
-			},
-			expErr:    true,
-			expErrMsg: "empty address string is not allowed",
-		},
-		{
-			name: "all good",
-			input: &banktypes.MsgBurn{
-				FromAddress: multiPermAcc.GetAddress().String(),
-				Amount:      []*sdk.Coin{&origCoins},
-			},
-			expErr: false,
-		},
-	}
+// 	t.Run("NoLog", func(t *testing.T) {
+// 		suite.contractCaller = mocks.IContractCaller{}
 
-	for _, tc := range testCases {
-		tc := tc
-		suite.Run(tc.name, func() {
-			suite.mockMintCoins(multiPermAcc)
-			err := suite.bankKeeper.MintCoins(suite.ctx, multiPermAcc.Name, sdk.Coins{}.Add(origCoins))
-			suite.Require().NoError(err)
-			if !tc.expErr {
-				suite.mockBurnCoins(multiPermAcc)
-			}
-			_, err = suite.msgServer.Burn(suite.ctx, tc.input)
-			if tc.expErr {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
-			} else {
-				suite.Require().NoError(err)
-			}
-		})
-	}
-}
+// 		logIndex := uint64(100)
+// 		blockNumber := uint64(510)
+// 		txReceipt := &ethTypes.Receipt{
+// 			BlockNumber: new(big.Int).SetUint64(blockNumber),
+// 		}
+// 		txHash := hmTypes.HexToHeimdallHash("no log hash")
+
+// 		msg := types.NewMsgEventRecord(
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			txHash,
+// 			logIndex,
+// 			blockNumber,
+// 			id,
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			make([]byte, 0),
+// 			suite.chainID,
+// 		)
+
+// 		// mock external calls -- no receipt
+// 		suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+// 		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
+
+// 		// execute handler
+// 		result := suite.sideHandler(ctx, msg)
+// 		require.NotEqual(t, uint32(sdk.CodeOK), result.Code, "Side tx handler should fail")
+// 		require.Equal(t, abci.SideTxResultType_Skip, result.Result, "Result should be `skip`")
+// 	})
+
+// 	t.Run("EventDataExceed", func(t *testing.T) {
+// 		suite.contractCaller = mocks.IContractCaller{}
+// 		id := uint64(111)
+// 		logIndex := uint64(1)
+// 		blockNumber := uint64(1000)
+// 		txReceipt := &ethTypes.Receipt{
+// 			BlockNumber: new(big.Int).SetUint64(blockNumber),
+// 		}
+// 		txHash := hmTypes.HexToHeimdallHash("success hash")
+
+// 		const letterBytes = "abcdefABCDEF"
+// 		b := make([]byte, helper.LegacyMaxStateSyncSize+3)
+// 		for i := range b {
+// 			b[i] = letterBytes[rand.Intn(len(letterBytes))]
+// 		}
+
+// 		// data created after trimming
+// 		msg := types.NewMsgEventRecord(
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			txHash,
+// 			logIndex,
+// 			blockNumber,
+// 			id,
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			hmTypes.HexToHexBytes(""),
+// 			suite.chainID,
+// 		)
+
+// 		// mock external calls
+// 		suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+// 		event := &statesender.StatesenderStateSynced{
+// 			Id:              new(big.Int).SetUint64(msg.ID),
+// 			ContractAddress: msg.ContractAddress.EthAddress(),
+// 			Data:            b,
+// 		}
+// 		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+
+// 		// execute handler
+// 		result := suite.sideHandler(ctx, msg)
+// 		require.Equal(t, uint32(sdk.CodeOK), result.Code, "Side tx handler should pass")
+
+// 		// there should be no stored event record
+// 		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+// 		require.Nil(t, storedEventRecord)
+// 		require.Error(t, err)
+// 	})
+// }
+
+// TODO HV2
+// func (suite *KeeperTestSuite) TestPostHandler() {
+// 	t, ctx := suite.T(), suite.ctx
+
+// 	// post tx handler
+// 	result := suite.postHandler(ctx, nil, abci.SideTxResultType_Yes)
+// 	require.False(t, result.IsOK(), "Post handler should fail")
+// 	require.Equal(t, sdk.CodeUnknownRequest, result.Code)
+// }
+
+// func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
+// 	// TODO HV2 - uncomment when heimdall app PR is merged
+// 	// t, app, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+// 	t, _, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+
+// 	_, _, addr1 := sdkAuth.KeyTestPubAddr()
+
+// 	id := r.Uint64()
+// 	logIndex := r.Uint64()
+// 	blockNumber := r.Uint64()
+// 	txHash := hmTypes.HexToHeimdallHash("no log hash")
+
+// 	msg := types.NewMsgEventRecord(
+// 		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 		txHash,
+// 		logIndex,
+// 		blockNumber,
+// 		id,
+// 		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 		make([]byte, 0),
+// 		suite.chainID,
+// 	)
+
+// 	t.Run("NoResult", func(t *testing.T) {
+// 		result := suite.postHandler(ctx, msg, abci.SideTxResultType_No)
+// 		require.False(t, result.IsOK(), "Post handler should fail")
+// 		require.Equal(t, common.CodeSideTxValidationFailed, result.Code)
+// 		require.Equal(t, 0, len(result.Events), "No error should be emitted for failed post-tx")
+
+// 		// there should be no stored event record
+// 		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+// 		require.Nil(t, storedEventRecord)
+// 		require.Error(t, err)
+// 	})
+
+// 	t.Run("YesResult", func(t *testing.T) {
+// 		result := suite.postHandler(ctx, msg, abci.SideTxResultType_Yes)
+// 		require.True(t, result.IsOK(), "Post handler should succeed")
+// 		require.Greater(t, len(result.Events), 0, "Events should be emitted for successful post-tx")
+
+// 		// sequence id
+// 		blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
+// 		sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+// 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+
+// 		// check sequence
+// 		hasSequence := app.ClerkKeeper.HasRecordSequence(ctx, sequence.String())
+// 		require.True(t, hasSequence, "Sequence should be stored correctly")
+
+// 		// there should be no stored event record
+// 		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+// 		require.NotNil(t, storedEventRecord)
+// 		require.NoError(t, err)
+// 	})
+
+// 	t.Run("Replay", func(t *testing.T) {
+// 		id := r.Uint64()
+// 		logIndex := r.Uint64()
+// 		blockNumber := r.Uint64()
+// 		txHash := hmTypes.HexToHeimdallHash("Replay hash")
+// 		_, _, addr2 := sdkAuth.KeyTestPubAddr()
+
+// 		msg := types.NewMsgEventRecord(
+// 			hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
+// 			txHash,
+// 			logIndex,
+// 			blockNumber,
+// 			id,
+// 			hmTypes.BytesToHeimdallAddress(addr2.Bytes()),
+// 			make([]byte, 0),
+// 			suite.chainID,
+// 		)
+
+// 		result := suite.postHandler(ctx, msg, abci.SideTxResultType_Yes)
+// 		require.True(t, result.IsOK(), "Post handler should succeed")
+
+// 		result = suite.postHandler(ctx, msg, abci.SideTxResultType_Yes)
+// 		require.False(t, result.IsOK(), "Post handler should prevent replay attack")
+// 		require.Equal(t, common.CodeOldTx, result.Code)
+// 	})
+// }

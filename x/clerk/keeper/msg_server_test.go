@@ -1,182 +1,140 @@
 package keeper_test
 
-import (
-	"math/big"
-	"math/rand"
-	"testing"
-	"time"
+// TODO HV2 - uncomment and fix unit tests
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkAuth "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
+// func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
+// 	// TODO HV2 - uncomment when heimdall app PR is merged
+// 	// t, app, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
+// 	t, _, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
 
-	"github.com/0xPolygon/heimdall-v2/app"
-	"github.com/0xPolygon/heimdall-v2/common"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/clerk"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-)
+// 	addr1 := sdk.AccAddress([]byte("addr1"))
 
-//
-// Test suite
-//
+// 	id := r.Uint64()
+// 	logIndex := r.Uint64()
+// 	blockNumber := r.Uint64()
 
-type HandlerTestSuite struct {
-	suite.Suite
+// 	// successful message
+// 	msg := types.NewMsgEventRecord(
+// 		addr1,
+// 		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
+// 		// hexCodec.StringToBytes("123"),
+// 		hmTypes.HeimdallHash{},
+// 		logIndex,
+// 		blockNumber,
+// 		id,
+// 		addr1,
+// 		hmTypes.HexBytes{},
+// 		chainID,
+// 	)
 
-	app            *app.HeimdallApp
-	ctx            sdk.Context
-	chainID        string
-	handler        sdk.Handler
-	contractCaller mocks.IContractCaller
-	r              *rand.Rand
-}
+// 	t.Run("Success", func(t *testing.T) {
+// 		result := suite.handler(ctx, msg)
+// 		require.True(t, result.IsOK(), "expected msg record to be ok, got %v", result)
 
-func (suite *HandlerTestSuite) SetupTest() {
-	suite.app, suite.ctx = createTestApp(false)
-	suite.contractCaller = mocks.IContractCaller{}
-	suite.handler = clerk.NewHandler(suite.app.ClerkKeeper, &suite.contractCaller)
+// 		// there should be no stored event record
+// 		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+// 		require.Nil(t, storedEventRecord)
+// 		require.Error(t, err)
+// 	})
 
-	// fetch chain id
-	suite.chainID = suite.app.ChainKeeper.GetParams(suite.ctx).ChainParams.BorChainID
+// 	t.Run("ExistingRecord", func(t *testing.T) {
+// 		// TODO HV2 - uncomment when heimdall app PR is merged
+// 		// // store event record in keeper
+// 		// tempTime := time.Now()
+// 		// err := app.ClerkKeeper.SetEventRecord(ctx,
+// 		// 	types.NewEventRecord(
+// 		// 		msg.TxHash,
+// 		// 		msg.LogIndex,
+// 		// 		msg.ID,
+// 		// 		msg.ContractAddress,
+// 		// 		msg.Data,
+// 		// 		msg.ChainID,
+// 		// 		tempTime,
+// 		// 	),
+// 		// )
+// 		// require.NoError(t, err)
 
-	// random generator
-	s1 := rand.NewSource(time.Now().UnixNano())
-	suite.r = rand.New(s1)
-}
+// 		result, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+// 		require.False(t, result.IsOK(), "should fail due to existent event record but succeeded")
+// 		require.Equal(t, types.CodeEventRecordAlreadySynced, result.Code)
+// 	})
 
-func TestHandlerTestSuite(t *testing.T) {
-	t.Parallel()
-	suite.Run(t, new(HandlerTestSuite))
-}
+// 	t.Run("EventSizeExceed", func(t *testing.T) {
+// 		suite.contractCaller = mocks.IContractCaller{}
 
-//
-// Test cases
-//
+// 		const letterBytes = "abcdefABCDEF"
+// 		b := make([]byte, helper.LegacyMaxStateSyncSize+3)
+// 		for i := range b {
+// 			b[i] = letterBytes[rand.Intn(len(letterBytes))]
+// 		}
 
-func (suite *HandlerTestSuite) TestHandleMsgEventRecord() {
-	t, app, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
+// 		msg.Data = b
 
-	// keys and addresses
-	_, _, addr1 := sdkAuth.KeyTestPubAddr()
+// 		err := msg.ValidateBasic()
+// 		require.Error(t, err)
+// 	})
+// }
 
-	id := r.Uint64()
-	logIndex := r.Uint64()
-	blockNumber := r.Uint64()
+// func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
+// 	// TODO HV2 - uncomment when heimdall app PR is merged
+// 	// t, app, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
+// 	t, _, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
 
-	// successful message
-	msg := types.NewMsgEventRecord(
-		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
-		hmTypes.HexToHeimdallHash("123"),
-		logIndex,
-		blockNumber,
-		id,
-		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
-		make([]byte, 0),
-		chainID,
-	)
+// 	addr1 := sdk.AccAddress([]byte("addr1"))
 
-	t.Run("Success", func(t *testing.T) {
-		result := suite.handler(ctx, msg)
-		require.True(t, result.IsOK(), "expected msg record to be ok, got %v", result)
+// 	msg := types.NewMsgEventRecord(
+// 		addr1,
+// 		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
+// 		// hexCodec.StringToBytes("123"),
+// 		hmTypes.HeimdallHash{},
+// 		r.Uint64(),
+// 		r.Uint64(),
+// 		r.Uint64(),
+// 		addr1,
+// 		hmTypes.HexBytes{},
+// 		chainID,
+// 	)
 
-		// there should be no stored event record
-		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
-		require.Nil(t, storedEventRecord)
-		require.Error(t, err)
-	})
+// 	// sequence id
+// 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
+// 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+// 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+// 	app.ClerkKeeper.SetRecordSequence(ctx, sequence.String())
 
-	t.Run("ExistingRecord", func(t *testing.T) {
-		// store event record in keeper
-		tempTime := time.Now()
-		err := app.ClerkKeeper.SetEventRecord(ctx,
-			types.NewEventRecord(
-				&msg.TxHash,
-				msg.LogIndex,
-				msg.ID,
-				msg.ContractAddress,
-				&msg.Data,
-				msg.ChainID,
-				&tempTime,
-			),
-		)
-		require.NoError(t, err)
+// 	result, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+// 	require.False(t, result.IsOK(), "should fail due to existent sequence but succeeded")
+// 	require.Equal(t, common.CodeOldTx, result.Code)
+// }
 
-		result := suite.handler(ctx, msg)
-		require.False(t, result.IsOK(), "should fail due to existent event record but succeeded")
-		require.Equal(t, types.CodeEventRecordAlreadySynced, result.Code)
-	})
+// func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
+// 	// TODO HV2 - uncomment when heimdall app PR is merged
+// 	// t, app, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+// 	t, _, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
 
-	t.Run("EventSizeExceed", func(t *testing.T) {
-		suite.contractCaller = mocks.IContractCaller{}
+// 	addr1 := sdk.AccAddress([]byte("addr1"))
 
-		const letterBytes = "abcdefABCDEF"
-		b := make([]byte, helper.LegacyMaxStateSyncSize+3)
-		for i := range b {
-			b[i] = letterBytes[rand.Intn(len(letterBytes))]
-		}
+// 	id := r.Uint64()
 
-		msg.Data = b
+// 	// wrong chain id
+// 	msg := types.NewMsgEventRecord(
+// 		addr1,
+// 		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
+// 		// hexCodec.StringToBytes("123"),
+// 		hmTypes.HeimdallHash{},
+// 		r.Uint64(),
+// 		r.Uint64(),
+// 		id,
+// 		addr1,
+// 		hmTypes.HexBytes{},
+// 		"random chain id",
+// 	)
+// 	result, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+// 	require.False(t, result.IsOK(), "error invalid bor chain id %v", result.Code)
+// 	require.Equal(t, common.CodeInvalidBorChainID, result.Code)
 
-		err := msg.ValidateBasic()
-		require.Error(t, err)
-	})
-}
-
-func (suite *HandlerTestSuite) TestHandleMsgEventRecordSequence() {
-	t, app, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
-
-	_, _, addr1 := sdkAuth.KeyTestPubAddr()
-
-	msg := types.NewMsgEventRecord(
-		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
-		hmTypes.HexToHeimdallHash("123"),
-		r.Uint64(),
-		r.Uint64(),
-		r.Uint64(),
-		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
-		make([]byte, 0),
-		chainID,
-	)
-
-	// sequence id
-	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-	app.ClerkKeeper.SetRecordSequence(ctx, sequence.String())
-
-	result := suite.handler(ctx, msg)
-	require.False(t, result.IsOK(), "should fail due to existent sequence but succeeded")
-	require.Equal(t, common.CodeOldTx, result.Code)
-}
-
-func (suite *HandlerTestSuite) TestHandleMsgEventRecordChainID() {
-	t, app, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
-
-	_, _, addr1 := sdkAuth.KeyTestPubAddr()
-
-	id := r.Uint64()
-
-	// wrong chain id
-	msg := types.NewMsgEventRecord(
-		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
-		hmTypes.HexToHeimdallHash("123"),
-		r.Uint64(),
-		r.Uint64(),
-		id,
-		hmTypes.BytesToHeimdallAddress(addr1.Bytes()),
-		make([]byte, 0),
-		"random chain id",
-	)
-	result := suite.handler(ctx, msg)
-	require.False(t, result.IsOK(), "error invalid bor chain id %v", result.Code)
-	require.Equal(t, common.CodeInvalidBorChainID, result.Code)
-
-	// there should be no stored event record
-	storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
-	require.Nil(t, storedEventRecord)
-	require.Error(t, err)
-}
+// 	// TODO HV2 - uncomment when heimdall app PR is merged
+// 	// // there should be no stored event record
+// 	// storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+// 	// require.Nil(t, storedEventRecord)
+// 	// require.Error(t, err)
+// }
