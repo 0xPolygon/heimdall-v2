@@ -1,0 +1,13 @@
+syntax = "proto3";
+package heimdallv2.bor;
+
+import "gogoproto/gogo.proto";
+import "heimdallv2/bor/bor.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
+
+// GenesisState defines the bor module's genesis state.
+message GenesisState {
+    Params params = 1 [(gogoproto.nullable) = false];
+    repeated Span spans = 2;
+}
