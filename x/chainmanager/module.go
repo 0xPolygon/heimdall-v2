@@ -147,22 +147,10 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // AppModuleSimulation functions
 
-// TODO HV2: uncomment when simulation is implemented
-
 // GenerateGenesisState creates a randomized GenState of the chainmanager module.
 func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	simulation.RandomizedGenState(simState)
 }
-
-// TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
-// looks equivalent to https://github.com/maticnetwork/heimdall/blob/249aa798c2f23c533d2421f2101127c11684c76e/chainmanager/module.go#L161C18-L161C34
-
-// ProposalMsgs returns msgs used for governance proposals for simulations.
-func (AppModule) ProposalMsgs(_ module.SimulationState) []simtypes.WeightedProposalMsg {
-	return nil
-}
-
-// TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
 
 // RegisterStoreDecoder registers a decoder for chainmanager module's types
 func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {}
@@ -173,8 +161,6 @@ func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {}
 // func (AppModule) RandomizedParams(r *rand.Rand) []simTypes.ParamChange {
 // 	return simulation.ParamChanges(r)
 // }
-
-// TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
 
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
