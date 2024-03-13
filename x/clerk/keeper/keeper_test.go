@@ -18,11 +18,10 @@ import (
 	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
 )
 
-// TODO HV2 - update  &app.App{} in this file to heimdall app
 // returns context and app on clerk keeper
 // nolint: unparam
-func createTestApp(isCheckTx bool) (*app.App, sdk.Context) {
-	app := &app.App{}
+func createTestApp(isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
+	app := &app.HeimdallApp{}
 	ctx := app.BaseApp.NewContext(isCheckTx)
 
 	return app, ctx
@@ -36,10 +35,8 @@ func createTestApp(isCheckTx bool) (*app.App, sdk.Context) {
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx sdk.Context
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// app *app.HeimdallApp
-	app        *app.App
+	ctx        sdk.Context
+	app        *app.HeimdallApp
 	chainID    string
 	msgServer  types.MsgServer
 	sideMsgCfg hmModule.SideTxConfigurator
@@ -52,12 +49,10 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.app, suite.ctx = createTestApp(false)
 	// TODO HV2 - uncomment when contract caller is implemented
 	// suite.contractCaller = mocks.IContractCaller{}
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// suite.handler = keeper.NewMsgServerImpl(suite.app.ClerkKeeper)
-	suite.msgServer = keeper.NewMsgServerImpl(keeper.Keeper{})
+	suite.msgServer = keeper.NewMsgServerImpl(suite.app.ClerkKeeper)
 
 	// fetch chain id
-	// TODO HV2 - uncomment when heimdall app PR is merged
+	// TODO HV2 - uncomment when ChainKeeper is implemented
 	// suite.chainID = suite.app.ChainKeeper.GetParams(suite.ctx).ChainParams.BorChainID
 
 	// random generator
@@ -75,20 +70,16 @@ func TestKeeperTestSuite(t *testing.T) {
 //
 
 func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// t, app, ctx := suite.T(), suite.app, suite.ctx
-	t, _, ctx := suite.T(), suite.app, suite.ctx
+	t, app, ctx := suite.T(), suite.app, suite.ctx
 
 	hAddr := "some-address"
 	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
 	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
 	hHash := hmTypes.HeimdallHash{}
-	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{}, "1", time.Now())
+	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 
 	// SetEventRecord
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// ck := app.ClerkKeeper
-	ck := keeper.Keeper{}
+	ck := app.ClerkKeeper
 	err := ck.SetEventRecord(ctx, testRecord1)
 	require.Nil(t, err)
 
@@ -115,9 +106,7 @@ func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 }
 
 func (suite *KeeperTestSuite) TestGetEventRecordList() {
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// t, app, ctx := suite.T(), suite.app, suite.ctx
-	t, _, ctx := suite.T(), suite.app, suite.ctx
+	t, app, ctx := suite.T(), suite.app, suite.ctx
 
 	var i uint64
 
@@ -125,12 +114,10 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
 	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
 	hHash := hmTypes.HeimdallHash{}
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// ck := app.ClerkKeeper
-	ck := keeper.Keeper{}
+	ck := app.ClerkKeeper
 
 	for i = 0; i < 60; i++ {
-		testRecord := types.NewEventRecord(hHash, i, i, hAddr, hmTypes.HexBytes{}, "1", time.Now())
+		testRecord := types.NewEventRecord(hHash, i, i, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
 	}
@@ -152,9 +139,7 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 }
 
 func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// t, app, ctx := suite.T(), suite.app, suite.ctx
-	t, _, ctx := suite.T(), suite.app, suite.ctx
+	t, app, ctx := suite.T(), suite.app, suite.ctx
 
 	var i uint64
 
@@ -162,12 +147,10 @@ func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
 	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
 	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
 	hHash := hmTypes.HeimdallHash{}
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// ck := app.ClerkKeeper
-	ck := keeper.Keeper{}
+	ck := app.ClerkKeeper
 
 	for i = 0; i < 30; i++ {
-		testRecord := types.NewEventRecord(hHash, i, i, hAddr, hmTypes.HexBytes{}, "1", time.Unix(int64(i), 0))
+		testRecord := types.NewEventRecord(hHash, i, i, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Unix(int64(i), 0))
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
 	}
@@ -195,21 +178,17 @@ func (suite *KeeperTestSuite) TestGetEventRecordKey() {
 	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
 	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
 	hHash := hmTypes.HeimdallHash{}
-	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{}, "1", time.Now())
+	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 
 	respKey := keeper.GetEventRecordKey(testRecord1.ID)
 	require.Equal(t, respKey, []byte{17, 49})
 }
 
 func (suite *KeeperTestSuite) TestSetHasGetRecordSequence() {
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// t, app, ctx := suite.T(), suite.app, suite.ctx
-	t, _, ctx := suite.T(), suite.app, suite.ctx
+	t, app, ctx := suite.T(), suite.app, suite.ctx
 
 	testSeq := "testseq"
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// ck := app.ClerkKeeper
-	ck := keeper.Keeper{}
+	ck := app.ClerkKeeper
 	ck.SetRecordSequence(ctx, testSeq)
 	found := ck.HasRecordSequence(ctx, testSeq)
 	require.True(t, found)

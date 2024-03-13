@@ -13,20 +13,18 @@ import (
 // Create test app
 //
 
-// TODO HV2 - update  &app.App{} in this file to heimdall app
-
 // returns context and app on clerk keeper
 // nolint: unparam
-func createTestApp(isCheckTx bool) (*app.App, sdk.Context) {
-	app := &app.App{}
+func createTestApp(isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
+	app := &app.HeimdallApp{}
 	ctx := app.BaseApp.NewContext(isCheckTx)
 
 	return app, ctx
 }
 
 // setupClerkGenesis initializes a new Heimdall with the default genesis data.
-func setupClerkGenesis() *app.App {
-	happ := &app.App{}
+func setupClerkGenesis() *app.HeimdallApp {
+	happ := &app.HeimdallApp{}
 
 	ctx := happ.BaseApp.NewContext(false)
 

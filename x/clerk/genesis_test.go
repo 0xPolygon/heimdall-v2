@@ -20,7 +20,7 @@ import (
 type GenesisTestSuite struct {
 	suite.Suite
 
-	app *app.App
+	app *app.HeimdallApp
 	ctx sdk.Context
 }
 
@@ -38,9 +38,7 @@ func TestGenesisTestSuite(t *testing.T) {
 
 // TestInitExportGenesis test import and export genesis state
 func (suite *GenesisTestSuite) TestInitExportGenesis() {
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// t, app, ctx := suite.T(), suite.app, suite.ctx
-	t, _, ctx := suite.T(), suite.app, suite.ctx
+	t, app, ctx := suite.T(), suite.app, suite.ctx
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
@@ -56,7 +54,7 @@ func (suite *GenesisTestSuite) TestInitExportGenesis() {
 		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
 		// hHash := hexCodec.StringToBytes(strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)))
 		hHash := hmTypes.HeimdallHash{}
-		testEventRecord := types.NewEventRecord(hHash, uint64(i), uint64(i), hAddr, hmTypes.HexBytes{}, strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)), time.Now())
+		testEventRecord := types.NewEventRecord(hHash, uint64(i), uint64(i), hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)), time.Now())
 		eventRecords[i] = &testEventRecord
 	}
 
@@ -64,13 +62,9 @@ func (suite *GenesisTestSuite) TestInitExportGenesis() {
 		EventRecords:    eventRecords,
 		RecordSequences: recordSequences,
 	}
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// clerk.InitGenesis(ctx, app.ClerkKeeper, &genesisState)
-	clerk.InitGenesis(ctx, nil, &genesisState)
+	clerk.InitGenesis(ctx, &app.ClerkKeeper, &genesisState)
 
-	// TODO HV2 - uncomment when heimdall app PR is merged
-	// actualParams := clerk.ExportGenesis(ctx, app.ClerkKeeper)
-	actualParams := clerk.ExportGenesis(ctx, nil)
+	actualParams := clerk.ExportGenesis(ctx, &app.ClerkKeeper)
 
 	require.Equal(t, len(recordSequences), len(actualParams.RecordSequences))
 	require.Equal(t, len(eventRecords), len(actualParams.EventRecords))

@@ -46,6 +46,7 @@ import (
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
 	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
+	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -114,7 +115,7 @@ type HeimdallApp struct {
 	// TODO HV2: uncomment when implemented
 	// StakeKeeper stakekeeper.Keeper
 	// BorKeeper borkeeper.Keeper
-	// ClerkKeeper clerkkeeper.Keeper
+	ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
 	// TopupKeeper topupkeeper.Keeper
 	// ChainKeeper chainmanagerkeeper.Keeper
@@ -435,8 +436,8 @@ func NewHeimdallApp(
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
 	// TODO HV2: pass contract caller and keepers for chainmanager and distribution
-	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
-	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
+	// see https://github.com/0xPolygon/heimdall-v2/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
+	// https://github.com/0xPolygon/heimdall-v2/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			ante.HandlerOptions{
