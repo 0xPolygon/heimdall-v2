@@ -26,7 +26,7 @@ func (k Keeper) Params(ctx context.Context, req *types.QueryParamsRequest) (*typ
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	params, err := k.GetParams(sdkCtx)
+	params, err := k.GetParams(sdkCtx) //nolint:contextcheck
 	if err != nil {
 		return nil, err
 	}
