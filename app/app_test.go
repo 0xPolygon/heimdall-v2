@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"cosmossdk.io/core/appmodule"
-	"cosmossdk.io/x/upgrade"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/distribution"
@@ -162,7 +161,6 @@ func TestRunMigrations(t *testing.T) {
 					"auth":         auth.AppModule{}.ConsensusVersion(),
 					"distribution": distribution.AppModule{}.ConsensusVersion(),
 					"gov":          gov.AppModule{}.ConsensusVersion(),
-					"upgrade":      upgrade.AppModule{}.ConsensusVersion(),
 					// TODO HV2: uncomment when implemented
 					// "stake":      stake.AppModule{}.ConsensusVersion(),
 					// "bor": bor.AppModule{}.ConsensusVersion(),
@@ -210,7 +208,6 @@ func TestInitGenesisOnMigration(t *testing.T) {
 			"auth":         auth.AppModule{}.ConsensusVersion(),
 			"distribution": distribution.AppModule{}.ConsensusVersion(),
 			"gov":          gov.AppModule{}.ConsensusVersion(),
-			"upgrade":      upgrade.AppModule{}.ConsensusVersion(),
 			// TODO HV2: uncomment when implemented
 			// "stake":      stake.AppModule{}.ConsensusVersion(),
 			// "bor": bor.AppModule{}.ConsensusVersion(),
@@ -221,21 +218,6 @@ func TestInitGenesisOnMigration(t *testing.T) {
 		},
 	)
 	require.NoError(t, err)
-}
-
-func TestUpgradeStateOnGenesis(t *testing.T) {
-	t.Parallel()
-	app, _, _ := SetupApp(t, 1)
-
-	// make sure the upgrade keeper has version map in state
-	ctx := app.NewContext(false)
-	vm, err := app.UpgradeKeeper.GetModuleVersionMap(ctx)
-	require.NoError(t, err)
-	for v, i := range app.mm.Modules {
-		if i, ok := i.(module.HasConsensusVersion); ok {
-			require.Equal(t, vm[v], i.ConsensusVersion())
-		}
-	}
 }
 
 func TestValidateGenesis(t *testing.T) {

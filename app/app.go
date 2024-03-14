@@ -7,14 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/spf13/cast"
 
 	storetypes "cosmossdk.io/store/types"
-	"cosmossdk.io/x/upgrade"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -28,7 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
@@ -36,6 +30,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
@@ -44,7 +40,6 @@ import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -106,7 +101,6 @@ type HeimdallApp struct {
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	DistrKeeper           distrkeeper.Keeper
 	GovKeeper             govkeeper.Keeper
-	UpgradeKeeper         *upgradekeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
@@ -169,7 +163,7 @@ func NewHeimdallApp(
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
-		upgradetypes.StoreKey,
+		consensusparamtypes.StoreKey,
 		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
 		// bortypes.StoreKey,
@@ -247,13 +241,15 @@ func NewHeimdallApp(
 		logger,
 	)
 
+	// TODO HV2: initialise stake keeper here
+
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		nil, // TODO HV2: should the param here be our modified stake keeper ?
+		nil, // TODO HV2: pass stake keeper here once implemented
 		authtypes.FeeCollectorName,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
@@ -288,21 +284,9 @@ func NewHeimdallApp(
 	// custom keepers
 	// TODO HV2: initialize custom module keepers
 
-	skipUpgradeHeights := map[int64]bool{}
-	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
-		skipUpgradeHeights[int64(h)] = true
-	}
-	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
-	app.UpgradeKeeper = upgradekeeper.NewKeeper(
-		skipUpgradeHeights,
-		runtime.NewKVStoreService(keys[upgradetypes.StoreKey]),
-		appCodec,
-		homePath,
-		app.BaseApp,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
 	app.mm = module.NewManager(
+		// TODO HV2: add stake keeper once implemented
+		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -310,7 +294,6 @@ func NewHeimdallApp(
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
 		// TODO HV2: replace with our stake module
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
@@ -320,6 +303,7 @@ func NewHeimdallApp(
 	app.BasicManager = module.NewBasicManagerFromManager(
 		app.mm,
 		map[string]module.AppModuleBasic{
+			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 			govtypes.ModuleName: gov.NewAppModuleBasic(
 				[]govclient.ProposalHandler{
 					paramsclient.ProposalHandler,
@@ -331,20 +315,17 @@ func NewHeimdallApp(
 	app.BasicManager.RegisterInterfaces(interfaceRegistry)
 
 	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName,
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distrtypes.ModuleName,
 		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
-	)
-
-	// NOTE: upgrade module is required to be prioritized
-	app.mm.SetOrderPreBlockers(
-		upgradetypes.ModuleName,
+		genutiltypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
 		govtypes.ModuleName,
-		stakingtypes.ModuleName,
+		// TODO HV2: replace with our stake module
+		// stakingtypes.ModuleName,
+		genutiltypes.ModuleName,
 	)
 
 	genesisModuleOrder := []string{
@@ -352,7 +333,7 @@ func NewHeimdallApp(
 		banktypes.ModuleName,
 		distrtypes.ModuleName, // TODO HV2: consider removing distribution module since rewards are distributed on L1
 		govtypes.ModuleName,
-		upgradetypes.ModuleName,
+		genutiltypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		// TODO HV2: uncomment when implemented
 		// staketypes.ModuleName,
@@ -391,7 +372,6 @@ func NewHeimdallApp(
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
 	// app.MountMemoryStores(memKeys)
-	// <Upgrade handler setup here>
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetPreBlocker(app.PreBlocker)
@@ -451,10 +431,9 @@ func (app *HeimdallApp) Name() string { return app.BaseApp.Name() }
 // InitChainer application update at chain initialization
 func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var genesisState GenesisState
-	if err := jsoniter.ConfigFastest.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()) //nolint:errcheck
 
 	// get validator updates
 	if err := app.BasicManager.ValidateGenesis(app.AppCodec(), app.txConfig, genesisState); err != nil {
@@ -471,7 +450,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
-	// TODO HV2: uncomment when implemented
+	// TODO HV2: consider moving the validator set update logic to staking module's InitGenesis
 	// stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
 	// checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
 
@@ -619,6 +598,8 @@ func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 
 func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	// TODO HV2: add topup module to enable it to receive/send tokens.
+	// See https://github.com/0xPolygon/cosmos-sdk/pull/5#discussion_r1513037980
 	return modAccAddrs
 }
 
