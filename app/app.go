@@ -7,14 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/spf13/cast"
 
 	storetypes "cosmossdk.io/store/types"
-	"cosmossdk.io/x/upgrade"
-	upgradetypes "cosmossdk.io/x/upgrade/types"
 
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth"
@@ -45,7 +41,6 @@ import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
-	upgradekeeper "cosmossdk.io/x/upgrade/keeper"
 	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
@@ -107,7 +102,6 @@ type HeimdallApp struct {
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	DistrKeeper           distrkeeper.Keeper
 	GovKeeper             govkeeper.Keeper
-	UpgradeKeeper         *upgradekeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
@@ -169,7 +163,6 @@ func NewHeimdallApp(
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
-		upgradetypes.StoreKey,
 		consensusparamtypes.StoreKey,
 		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
@@ -290,20 +283,6 @@ func NewHeimdallApp(
 	// custom keepers
 	// TODO HV2: initialize custom module keepers
 
-	skipUpgradeHeights := map[int64]bool{}
-	for _, h := range cast.ToIntSlice(appOpts.Get(server.FlagUnsafeSkipUpgrades)) {
-		skipUpgradeHeights[int64(h)] = true
-	}
-	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
-	app.UpgradeKeeper = upgradekeeper.NewKeeper(
-		skipUpgradeHeights,
-		runtime.NewKVStoreService(keys[upgradetypes.StoreKey]),
-		appCodec,
-		homePath,
-		app.BaseApp,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
 	app.mm = module.NewManager(
 		// TODO HV2: add stake keeper once implemented
 		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
@@ -314,7 +293,6 @@ func NewHeimdallApp(
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
 		// TODO HV2: replace with our stake module
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
-		upgrade.NewAppModule(app.UpgradeKeeper, app.AccountKeeper.AddressCodec()),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
@@ -336,16 +314,10 @@ func NewHeimdallApp(
 	app.BasicManager.RegisterInterfaces(interfaceRegistry)
 
 	app.mm.SetOrderBeginBlockers(
-		upgradetypes.ModuleName,
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distrtypes.ModuleName,
 		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
 		genutiltypes.ModuleName,
-	)
-
-	// NOTE: upgrade module is required to be prioritized
-	app.mm.SetOrderPreBlockers(
-		upgradetypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -361,7 +333,6 @@ func NewHeimdallApp(
 		distrtypes.ModuleName, // TODO HV2: consider removing distribution module since rewards are distributed on L1
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
-		upgradetypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		// TODO HV2: uncomment when implemented
 		// staketypes.ModuleName,
@@ -400,7 +371,6 @@ func NewHeimdallApp(
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
 	// app.MountMemoryStores(memKeys)
-	// <Upgrade handler setup here>
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetPreBlocker(app.PreBlocker)
@@ -463,7 +433,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	if err := jsoniter.ConfigFastest.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
-	app.UpgradeKeeper.SetModuleVersionMap(ctx, app.mm.GetVersionMap()) //nolint:errcheck
 
 	// get validator updates
 	if err := app.BasicManager.ValidateGenesis(app.AppCodec(), app.txConfig, genesisState); err != nil {
