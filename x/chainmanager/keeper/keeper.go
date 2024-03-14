@@ -14,9 +14,7 @@ import (
 
 // Keeper stores all chainmanager related data
 type Keeper struct {
-	cdc codec.BinaryCodec
-	// TODO HV2: clarify whether using KVStoreService instead of StoreKey is fine
-	// storeKey storetypes.StoreKey
+	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
 	params       collections.Item[types.Params]
 }
@@ -25,12 +23,10 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
-	// storeKey storetypes.StoreKey,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 	return Keeper{
-		cdc: cdc,
-		// storeKey: storeKey,
+		cdc:          cdc,
 		storeService: storeService,
 		params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}

@@ -88,20 +88,6 @@ func (am AppModule) IsAppModule() {}
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
-
-	// TODO HV2: probably don't need migration
-	// m := keeper.NewMigrator(am.keeper, am.legacySubspace)
-	// if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
-	// 	panic(fmt.Sprintf("failed to migrate x/chainmanager from version 1 to 2: %v", err))
-	// }
-
-	// if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
-	// 	panic(fmt.Sprintf("failed to migrate x/chainmanager from version 2 to 3: %v", err))
-	// }
-
-	// if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
-	// 	panic(fmt.Sprintf("failed to migrate x/chainmanager from version 3 to 4: %v", err))
-	// }
 }
 
 // NewAppModule creates a new AppModule object
@@ -138,8 +124,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // ExportGenesis returns the exported genesis state as raw bytes for the chainmanager
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	gs := am.keeper.ExportGenesis(ctx)
-	return cdc.MustMarshalJSON(gs)
+	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
 
 // ConsensusVersion implements AppModule/ConsensusVersion.
