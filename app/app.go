@@ -724,8 +724,8 @@ func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
-func (a *HeimdallApp) Configurator() module.Configurator {
-	return a.configurator
+func (app *HeimdallApp) Configurator() module.Configurator {
+	return app.configurator
 }
 
 type EmptyAppOptions struct{}
