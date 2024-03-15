@@ -166,8 +166,8 @@ func TestAppImportExport(t *testing.T) {
 	err = jsoniter.ConfigFastest.Unmarshal(exported.AppState, &genesisState)
 	require.NoError(t, err)
 
-	ctxA := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
-	ctxB := newApp.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
+	ctxA := app.BaseApp.NewContextLegacy(true, cmtproto.Header{Height: app.BaseApp.LastBlockHeight()})
+	ctxB := newApp.BaseApp.NewContextLegacy(true, cmtproto.Header{Height: app.BaseApp.LastBlockHeight()})
 	_, err = newApp.mm.InitGenesis(ctxB, app.AppCodec(), genesisState)
 
 	if err != nil {
@@ -179,7 +179,7 @@ func TestAppImportExport(t *testing.T) {
 	}
 
 	require.NoError(t, err)
-	err = newApp.StoreConsensusParams(ctxB, exported.ConsensusParams)
+	err = newApp.BaseApp.StoreConsensusParams(ctxB, exported.ConsensusParams)
 	require.NoError(t, err)
 	fmt.Printf("comparing stores...\n")
 
@@ -276,7 +276,7 @@ func TestAppSimulationAfterImport(t *testing.T) {
 	newApp := NewHeimdallApp(log.NewNopLogger(), newDB, nil, true, appOptions, fauxMerkleModeOpt, baseapp.SetChainID(HeimdallAppChainID))
 	require.Equal(t, "HeimdallApp", newApp.Name())
 
-	_, err = newApp.InitChain(&abci.RequestInitChain{
+	_, err = newApp.BaseApp.InitChain(&abci.RequestInitChain{
 		AppStateBytes: exported.AppState,
 		ChainId:       HeimdallAppChainID,
 	})
@@ -377,7 +377,7 @@ func TestAppStateDeterminism(t *testing.T) {
 				simtestutil.PrintStats(db)
 			}
 
-			appHash := app.LastCommitID().Hash
+			appHash := app.BaseApp.LastCommitID().Hash
 			appHashList[j] = appHash
 
 			if j != 0 {
