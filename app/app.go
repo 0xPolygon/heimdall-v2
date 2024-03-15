@@ -129,7 +129,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, ".heimdalld")
+	DefaultNodeHome = filepath.Join(userHomeDir, "/var/lib/heimdall")
 }
 
 func NewHeimdallApp(
