@@ -72,7 +72,7 @@ var (
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
-		govtypes.ModuleName:        {authtypes.Burner},
+		govtypes.ModuleName:        nil,
 	}
 )
 
