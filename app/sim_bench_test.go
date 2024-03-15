@@ -24,6 +24,9 @@ func init() {
 	flag.BoolVar(&FlagEnableBenchStreamingValue, "EnableStreaming", false, "Enable streaming service")
 }
 
+// TODO HV2: test this once https://github.com/0xPolygon/cosmos-sdk/pull/3 is merged
+// see https://github.com/0xPolygon/heimdall-v2/pull/10#discussion_r1482779246
+
 // Profile with:
 // /usr/local/go/bin/go test -benchmem -run=^$ github.com/0xPolygon/heimdall-v2/app -bench ^BenchmarkFullAppSimulation$ -Commit=true -cpuprofile cpu.out
 func BenchmarkFullAppSimulation(b *testing.B) {
