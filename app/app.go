@@ -72,8 +72,7 @@ var (
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
-		distrtypes.ModuleName:      nil,
-		govtypes.ModuleName:        {authtypes.Burner},
+		govtypes.ModuleName:        nil,
 	}
 )
 
@@ -130,7 +129,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, ".heimdalld")
+	DefaultNodeHome = filepath.Join(userHomeDir, "/var/lib/heimdall")
 }
 
 func NewHeimdallApp(
