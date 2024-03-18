@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cometbft/cometbft/abci/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -27,7 +28,7 @@ func TestHeimdallAppExport(t *testing.T) {
 	app, db, logger := SetupApp(t, 1)
 
 	// finalize block so we have CheckTx state set
-	_, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
+	_, err := app.FinalizeBlock(&types.RequestFinalizeBlock{
 		Height: 1,
 	})
 
