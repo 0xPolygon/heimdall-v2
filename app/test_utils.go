@@ -74,7 +74,12 @@ func setupAppWithValidatorSet(t *testing.T, validators []*cmttypes.Validator, ac
 	// initialize validator set
 	valSet := cmttypes.NewValidatorSet(validators)
 
-	genesisState, err := simtestutil.GenesisStateWithValSet(app.AppCodec(), genesisState, valSet, accounts, balances...)
+	t.Log("accAddrStr!!", accounts[0].GetAddress().String())                 // RMV!
+	accAddr, err := sdk.AccAddressFromHex(accounts[0].GetAddress().String()) // RMV!
+	t.Log("ERROR!!", err)                                                    // RMV!
+	t.Log("accounts!!", accAddr, accounts[0].GetPubKey().Address())          // RMV!
+
+	genesisState, err = simtestutil.GenesisStateWithValSet(app.AppCodec(), genesisState, valSet, accounts, balances...)
 	require.NoError(t, err)
 
 	stateBytes, err := jsoniter.ConfigFastest.Marshal(genesisState)

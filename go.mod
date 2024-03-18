@@ -8,7 +8,7 @@ require (
 	cosmossdk.io/core v0.11.0
 	cosmossdk.io/log v1.2.1
 	cosmossdk.io/math v1.2.0
-	cosmossdk.io/store v1.0.0
+	cosmossdk.io/store v1.0.1
 	cosmossdk.io/x/tx v0.12.0
 	github.com/bufbuild/buf v1.29.0
 	github.com/cometbft/cometbft v0.38.2
@@ -32,6 +32,7 @@ require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
+	github.com/DataDog/datadog-go v3.2.0+incompatible // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
@@ -56,7 +57,6 @@ require (
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.15.1 // indirect
-	github.com/cosmos/btcutil v1.0.5 // indirect
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
@@ -235,5 +235,6 @@ require (
 // following versions might cause unexpected behavior
 replace (
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.0-beta
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240315104706-d86dab8157c4
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
