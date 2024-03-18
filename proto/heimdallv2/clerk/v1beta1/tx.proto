@@ -4,12 +4,15 @@ package heimdallv2.clerk.v1beta1;
 import "gogoproto/gogo.proto";
 import "amino/amino.proto";
 import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
 import "heimdallv2/types/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
 // Msg defines the x/clerk Msg service.
 service Msg {
+  option (cosmos.msg.v1.service) = true;
+
   rpc HandleMsgEventRecord(MsgEventRecord) returns (MsgEventRecordResponse);
 }
 
