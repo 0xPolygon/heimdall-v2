@@ -1,6 +1,8 @@
 package clerk_test
 
 import (
+	"testing"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,18 +17,16 @@ import (
 
 // returns context and app on clerk keeper
 // nolint: unparam
-func createTestApp(isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
-	app := &app.HeimdallApp{}
+func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
+	app := app.Setup(t, isCheckTx)
 	ctx := app.BaseApp.NewContext(isCheckTx)
 
 	return app, ctx
 }
 
 // setupClerkGenesis initializes a new Heimdall with the default genesis data.
-func setupClerkGenesis() *app.HeimdallApp {
-	happ := &app.HeimdallApp{}
-
-	ctx := happ.BaseApp.NewContext(false)
+func setupClerkGenesis(t *testing.T) *app.HeimdallApp {
+	happ, ctx := createTestApp(t, false)
 
 	// initialize the chain with the default genesis state
 	genesisState := happ.BasicManager.DefaultGenesis(happ.AppCodec())
@@ -35,8 +35,7 @@ func setupClerkGenesis() *app.HeimdallApp {
 	genesisState[types.ModuleName] = happ.AppCodec().MustMarshalJSON(&clerkGenesis)
 
 	// TODO HV2 - what marshiling are we using here? Update after the heimdall app PR is merged
-	// stateBytes, err := codec.MarshalJSONIndent(happ.AppCodec(), genesisState)
-	stateBytes, err := codec.MarshalJSONIndent(nil, genesisState)
+	stateBytes, err := codec.MarshalJSONIndent(happ.LegacyAmino(), genesisState)
 	if err != nil {
 		panic(err)
 	}

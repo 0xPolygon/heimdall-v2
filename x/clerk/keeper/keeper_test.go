@@ -20,8 +20,8 @@ import (
 
 // returns context and app on clerk keeper
 // nolint: unparam
-func createTestApp(isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
-	app := &app.HeimdallApp{}
+func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
+	app := app.Setup(t, isCheckTx)
 	ctx := app.BaseApp.NewContext(isCheckTx)
 
 	return app, ctx
@@ -45,8 +45,8 @@ type KeeperTestSuite struct {
 	r *rand.Rand
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
-	suite.app, suite.ctx = createTestApp(false)
+func (suite *KeeperTestSuite) SetupTest(t *testing.T) {
+	suite.app, suite.ctx = createTestApp(t, false)
 	// TODO HV2 - uncomment when contract caller is implemented
 	// suite.contractCaller = mocks.IContractCaller{}
 	suite.msgServer = keeper.NewMsgServerImpl(suite.app.ClerkKeeper)

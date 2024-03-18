@@ -75,6 +75,7 @@ var (
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
 		govtypes.ModuleName:        {authtypes.Burner},
+		distrtypes.ModuleName:      nil,
 	}
 )
 
