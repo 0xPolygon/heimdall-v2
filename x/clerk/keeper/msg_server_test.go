@@ -9,6 +9,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
@@ -22,12 +23,12 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
 
+	txHashBytes, err := hexCodec.NewHexCodec().StringToBytes("123")
+	require.NoError(t, err)
 	// successful message
 	msg := types.NewMsgEventRecord(
 		addr1,
-		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-		// hexCodec.StringToBytes("123"),
-		hmTypes.HeimdallHash{},
+		hmTypes.HeimdallHash{Hash: txHashBytes},
 		logIndex,
 		blockNumber,
 		id,
@@ -97,11 +98,12 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 
 	addr1 := sdk.AccAddress([]byte("addr1"))
 
+	txHashBytes, err := hexCodec.NewHexCodec().StringToBytes("123")
+	require.NoError(t, err)
+
 	msg := types.NewMsgEventRecord(
 		addr1,
-		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-		// hexCodec.StringToBytes("123"),
-		hmTypes.HeimdallHash{},
+		hmTypes.HeimdallHash{Hash: txHashBytes},
 		r.Uint64(),
 		r.Uint64(),
 		r.Uint64(),
@@ -118,7 +120,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 	app.ClerkKeeper.SetRecordSequence(ctx, sequence.String())
 
-	_, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
 	// TODO HV2 - the above check seems enough, we can remove the below commented lines
 	// require.False(t, result.IsOK(), "should fail due to existent sequence but succeeded")
@@ -132,12 +134,13 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 
 	id := r.Uint64()
 
+	txHashBytes, err := hexCodec.NewHexCodec().StringToBytes("123")
+	require.NoError(t, err)
+
 	// wrong chain id
 	msg := types.NewMsgEventRecord(
 		addr1,
-		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-		// hexCodec.StringToBytes("123"),
-		hmTypes.HeimdallHash{},
+		hmTypes.HeimdallHash{Hash: txHashBytes},
 		r.Uint64(),
 		r.Uint64(),
 		id,
@@ -147,7 +150,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 		},
 		"random chain id",
 	)
-	_, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
 	// TODO HV2 - the above check seems enough, we can remove the below commented lines
 	// require.False(t, result.IsOK(), "error invalid bor chain id %v", result.Code)

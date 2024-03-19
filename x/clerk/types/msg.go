@@ -2,7 +2,7 @@ package types
 
 import (
 	// TODO HV2 - this is implemented in auth PR
-	// hexCodec "github.com/0xPolygon/cosmos-sdk/codec/address/"
+	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
@@ -23,17 +23,25 @@ func NewMsgEventRecord(
 	chainID string,
 
 ) MsgEventRecord {
+	contractAddressBytes, err := hexCodec.NewHexCodec().BytesToString(contractAddress)
+	if err != nil {
+		contractAddressBytes = ""
+	}
+
+	fromBytes, err := hexCodec.NewHexCodec().BytesToString(from)
+	if err != nil {
+		fromBytes = ""
+	}
+
 	return MsgEventRecord{
-		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-		// From:            hexCodec.BytesToString(from),
-		TxHash:      txHash,
-		LogIndex:    logIndex,
-		BlockNumber: blockNumber,
-		ID:          id,
-		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-		// ContractAddress: hexCodec.BytesToString(contractAddress),
-		Data:    data,
-		ChainID: chainID,
+		From:            fromBytes,
+		TxHash:          txHash,
+		LogIndex:        logIndex,
+		BlockNumber:     blockNumber,
+		ID:              id,
+		ContractAddress: contractAddressBytes,
+		Data:            data,
+		ChainID:         chainID,
 	}
 }
 
@@ -43,16 +51,14 @@ func (msg MsgEventRecord) Route() string { return RouterKey }
 // Type Implements Msg.
 func (msg MsgEventRecord) Type() string { return "event-record" }
 
-// TODO HV2 - fix errors
 // ValidateBasic Implements Msg.
 func (msg MsgEventRecord) ValidateBasic() error {
-	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-	// tempFrom := hexCodec.StringToBytes(msg.From)
-	// if tempFrom.Empty() {
-	// 	return sdkerrors.ErrInvalidAddress
-	// }
+	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
+	tempFrom := sdk.AccAddress(bytes)
+	if tempFrom.Empty() || err != nil {
+		return sdkerrors.ErrInvalidAddress
+	}
 
-	// TODO HV2 -
 	if msg.TxHash.Empty() {
 		return sdkerrors.ErrInvalidAddress
 	}
@@ -71,12 +77,14 @@ func (msg MsgEventRecord) ValidateBasic() error {
 // 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
 // }
 
-// TODO HV2 - fix errors
 // GetSigners Implements Msg.
 func (msg MsgEventRecord) GetSigners() []sdk.AccAddress {
-	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-	// return []sdk.AccAddress{hexCodec.StringToBytes(msg.From)}
-	return []sdk.AccAddress{}
+	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
+	if err != nil {
+		return nil
+	}
+
+	return []sdk.AccAddress{bytes}
 }
 
 // GetTxHash Returns tx hash

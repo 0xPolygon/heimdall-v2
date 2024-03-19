@@ -10,8 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	// TODO HV2 - this is implemented in auth PR
-	// hexCodec "github.com/0xPolygon/cosmos-sdk/codec/address/"
+	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 
 	"github.com/0xPolygon/heimdall-v2/types"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -60,12 +59,18 @@ func CreateNewStateRecord(cdc *codec.Codec) *cobra.Command {
 			}
 
 			// get proposer
-			// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-			// proposer := hexCodec.StringToBytes(viper.GetString(FlagProposerAddress))
+			proposer, err := hexCodec.NewHexCodec().StringToBytes(viper.GetString(FlagProposerAddress))
+			if err != nil {
+				return fmt.Errorf("error in parsing proposer address")
+			}
+			// TODO HV2 - check if this satisfies the condition (commented))
 			// if proposer.Empty() {
-			// 	// TODO HV2 - uncomment when we have GetFromAddress updated and implemented in helper
-			// 	// proposer = helper.GetFromAddress(cliCtx)
-			// }
+			if proposer == nil {
+				// TODO HV2 - uncomment when we have GetFromAddress updated and implemented in helper
+				// proposer = helper.GetFromAddress(cliCtx)
+				proposer = nil
+				// `proposer = nil` is a placeholder
+			}
 
 			// tx hash
 			txHashStr := viper.GetString(FlagTxHash)
@@ -84,12 +89,16 @@ func CreateNewStateRecord(cdc *codec.Codec) *cobra.Command {
 				return fmt.Errorf("record id cannot be empty")
 			}
 
-			// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-			// // get contract Addr
-			// contractAddr := hexCodec.StringToBytes(viper.GetString(FlagContractAddress))
+			// get contract Addr
+			contractAddr, err := hexCodec.NewHexCodec().StringToBytes(viper.GetString(FlagContractAddress))
+			if err != nil {
+				return fmt.Errorf("error in parsing contract address")
+			}
+			// TODO HV2 - check if this satisfies the condition (commented))
 			// if contractAddr.Empty() {
-			// 	return fmt.Errorf("contract Address cannot be empty")
-			// }
+			if contractAddr == nil {
+				return fmt.Errorf("contract Address cannot be empty")
+			}
 
 			// log index
 			logIndexStr := viper.GetString(FlagLogIndex)
@@ -108,10 +117,9 @@ func CreateNewStateRecord(cdc *codec.Codec) *cobra.Command {
 				return fmt.Errorf("data cannot be empty")
 			}
 
-			// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-			// data := hexCodec.StringToBytes(dataStr)
-			// if dataStr == "" {
-			// 	return fmt.Errorf("data should be hex string")
+			// data, err := hexCodec.NewHexCodec().StringToBytes(dataStr)
+			// if err != nil {
+			// 	return fmt.Errorf("error in parsing data")
 			// }
 
 			// TODO HV2 - uncomment when we have setu and helper implemented
@@ -123,22 +131,20 @@ func CreateNewStateRecord(cdc *codec.Codec) *cobra.Command {
 			// 	data = hmTypes.HexToHexBytes("")
 			// }
 
+			txHashBytes, err := hexCodec.NewHexCodec().StringToBytes(txHashStr)
+			if err != nil {
+				return fmt.Errorf("error in parsing tx hash")
+			}
 			// create new state record
 			// TODO HV2 - uncomment when we use this msg in the return statement
 			// msg := clerkTypes.NewMsgEventRecord(
 			_ = clerkTypes.NewMsgEventRecord(
-				// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-				// proposer,
-				nil,
-				// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-				// hexCodec.StringToBytes(txHashStr),
-				types.HeimdallHash{},
+				proposer,
+				types.HeimdallHash{Hash: txHashBytes},
 				logIndex,
 				viper.GetUint64(FlagBlockNumber),
 				recordID,
-				// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-				// contractAddr,
-				nil,
+				contractAddr,
 				// TODO HV2 - uncomment when we have setu and helper implemented
 				// data,
 				types.HexBytes{},

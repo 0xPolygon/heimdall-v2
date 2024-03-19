@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/app"
+	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
+
 	// TODO HV2 - uncomment when contractCaller is implemented
 	// "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -73,14 +75,14 @@ func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	t, app, ctx := suite.T(), suite.app, suite.ctx
 
 	hAddr := "some-address"
-	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
-	hHash := hmTypes.HeimdallHash{}
+	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
+	require.NoError(t, err)
+	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
 	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 
 	// SetEventRecord
 	ck := app.ClerkKeeper
-	err := ck.SetEventRecord(ctx, testRecord1)
+	err = ck.SetEventRecord(ctx, testRecord1)
 	require.Nil(t, err)
 
 	err = ck.SetEventRecord(ctx, testRecord1)
@@ -111,9 +113,9 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 	var i uint64
 
 	hAddr := "some-address"
-	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
-	hHash := hmTypes.HeimdallHash{}
+	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
+	require.NoError(t, err)
+	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
 	ck := app.ClerkKeeper
 
 	for i = 0; i < 60; i++ {
@@ -144,9 +146,9 @@ func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
 	var i uint64
 
 	hAddr := "some-address"
-	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
-	hHash := hmTypes.HeimdallHash{}
+	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
+	require.NoError(t, err)
+	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
 	ck := app.ClerkKeeper
 
 	for i = 0; i < 30; i++ {
@@ -175,9 +177,9 @@ func (suite *KeeperTestSuite) TestGetEventRecordKey() {
 	t, _, _ := suite.T(), suite.app, suite.ctx
 
 	hAddr := "some-address"
-	// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-	// hHash := hmTypes.BytesToHeimdallHash([]byte("some-address"))
-	hHash := hmTypes.HeimdallHash{}
+	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
+	require.NoError(t, err)
+	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
 	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 
 	respKey := keeper.GetEventRecordKey(testRecord1.ID)

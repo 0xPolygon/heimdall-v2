@@ -5,9 +5,9 @@ import (
 )
 
 type SideMsgServer interface {
-	//SideHandler to register specific sideHandler based on methodName
+	// SideTxHandler to register specific sideHandler based on methodName
 	SideTxHandler(methodName string) hmTypes.SideTxHandler
 
-	//PostHandler to register specific postHandler based on methodName
+	// PostTxHandler to register specific postHandler based on methodName
 	PostTxHandler(methodName string) hmTypes.PostTxHandler
 }

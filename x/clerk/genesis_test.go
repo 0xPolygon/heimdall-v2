@@ -10,6 +10,7 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/stretchr/testify/require"
@@ -51,10 +52,8 @@ func (suite *GenesisTestSuite) TestInitExportGenesis() {
 
 	for i := range eventRecords {
 		hAddr := strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
-		// TODO HV2 - uncomment when auth PR is merged and hexCodec is implemented
-		// hHash := hexCodec.StringToBytes(strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)))
-		hHash := hmTypes.HeimdallHash{}
-		testEventRecord := types.NewEventRecord(hHash, uint64(i), uint64(i), hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)), time.Now())
+		hHash, _ := hexCodec.NewHexCodec().StringToBytes(strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)))
+		testEventRecord := types.NewEventRecord(hmTypes.HeimdallHash{Hash: hHash}, uint64(i), uint64(i), hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)), time.Now())
 		eventRecords[i] = &testEventRecord
 	}
 
