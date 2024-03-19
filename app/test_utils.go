@@ -46,7 +46,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*cmttypes.Validator, 
 		validators = append(validators, val)
 
 		senderPubKey := secp256k1.GenPrivKey().PubKey()
-		acc := authtypes.NewBaseAccount(pubKey.Address().Bytes(), senderPubKey, i, 0)
+		acc := authtypes.NewBaseAccount(senderPubKey.Address().Bytes(), senderPubKey, i+1, 0) // fee_collector is the first initialized (module) account (AccountNumber = 0)
 		balance := banktypes.Balance{
 			Address: acc.GetAddress().String(),
 			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(100000000000000))),
