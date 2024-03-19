@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	jsoniter "github.com/json-iterator/go"
 
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	authsims "github.com/cosmos/cosmos-sdk/x/auth/simulation"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/consensus"
@@ -74,7 +74,7 @@ var (
 	// module account permissions
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
-		govtypes.ModuleName:        {authtypes.Burner},
+		govtypes.ModuleName:        nil,
 		distrtypes.ModuleName:      nil,
 	}
 )
@@ -132,7 +132,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, ".heimdalld")
+	DefaultNodeHome = filepath.Join(userHomeDir, "/var/lib/heimdall")
 }
 
 func NewHeimdallApp(
@@ -368,6 +368,13 @@ func NewHeimdallApp(
 
 	testdata.RegisterQueryServer(app.GRPCQueryRouter(), testdata.QueryImpl{})
 
+	overrideModules := map[string]module.AppModuleSimulation{
+		authtypes.ModuleName: auth.NewAppModule(app.appCodec, app.AccountKeeper, authsims.RandomGenesisAccounts, nil),
+	}
+	app.simulationManager = module.NewSimulationManagerFromAppModules(app.mm.Modules, overrideModules)
+
+	app.simulationManager.RegisterStoreDecoders()
+
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tkeys)
@@ -406,8 +413,8 @@ func NewHeimdallApp(
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
 	// TODO HV2: pass contract caller and keepers for chainmanager and distribution
-	// see https://github.com/0xPolygon/heimdall-v2/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
-	// https://github.com/0xPolygon/heimdall-v2/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
+	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
+	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			ante.HandlerOptions{
@@ -431,7 +438,7 @@ func (app *HeimdallApp) Name() string { return app.BaseApp.Name() }
 // InitChainer application update at chain initialization
 func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	var genesisState GenesisState
-	if err := jsoniter.ConfigFastest.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
+	if err := json.Unmarshal(req.AppStateBytes, &genesisState); err != nil {
 		panic(err)
 	}
 
