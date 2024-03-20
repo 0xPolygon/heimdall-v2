@@ -7,6 +7,7 @@ import (
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -14,17 +15,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/auth/exported"
+	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 )
 
 var (
-	// TODO HV2: uncomment when implemented
-	_ module.AppModuleBasic = AppModule{}
-	// _ module.AppModuleSimulation = AppModule{}
-	_ module.HasGenesis  = AppModule{}
-	_ module.HasServices = AppModule{}
-	// _ module.HasInvariants = AppModule{}
+	_ module.AppModuleSimulation = AppModule{}
+	_ module.HasGenesis          = AppModule{}
+	_ module.HasServices         = AppModule{}
+	_ module.AppModuleBasic      = AppModule{}
 
 	_ appmodule.AppModule = AppModule{}
 )
@@ -76,9 +75,6 @@ type AppModule struct {
 	keeper keeper.Keeper
 	// contractCaller helper.IContractCaller
 
-	// TODO HV2: do we need legacySubspace?
-	// legacySubspace is used solely for migration of x/params managed parameters
-	legacySubspace exported.Subspace
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
@@ -98,12 +94,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 func NewAppModule(
 	keeper keeper.Keeper,
 	// contractCaller helper.IContractCaller,
-	ss exported.Subspace,
 ) AppModule {
 	return AppModule{
 		keeper: keeper,
 		// contractCaller: contractCaller,
-		legacySubspace: ss,
 	}
 }
 
@@ -138,27 +132,13 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 
 // AppModuleSimulation functions
 
-// TODO HV2: uncomment when simulation is implemented
-
 // GenerateGenesisState creates a randomized GenState of the chainmanager module.
-// func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-// 	simulation.RandomizedGenState(simState)
-// }
-
-// TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
-// looks equivalent to https://github.com/maticnetwork/heimdall/blob/249aa798c2f23c533d2421f2101127c11684c76e/chainmanager/module.go#L161C18-L161C34
-
-// ProposalMsgs returns msgs used for governance proposals for simulations.
-// func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.WeightedProposalMsg {
-// 	return simulation.ProposalMsgs()
-// }
-
-// TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
+func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
+	simulation.RandomizedGenState(simState)
+}
 
 // RegisterStoreDecoder registers a decoder for chainmanager module's types
-// func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
-// 	sdr[types.StoreKey] = simtypes.NewStoreDecoderFuncFromCollectionsSchema(am.keeper.(keeper.BaseKeeper).Schema)
-// }
+func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {}
 
 // TODO HV2: uncomment when simulation is implemented
 
@@ -167,11 +147,7 @@ func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
 // 	return simulation.ParamChanges(r)
 // }
 
-// TODO HV2: this is a no-op in current heimdall. Probably no need to implement this
-
 // WeightedOperations returns the all the gov module operations with their respective weights.
-// func (am AppModule) WeightedOperations(simState module.SimulationState) []simtypes.WeightedOperation {
-// 	return simulation.WeightedOperations(
-// 		simState.AppParams, simState.Cdc, simState.TxConfig, am.accountKeeper, am.keeper,
-// 	)
-// }
+func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
+	return nil
+}

@@ -8,6 +8,7 @@ require (
 	cosmossdk.io/collections v0.4.0
 	cosmossdk.io/core v0.11.0
 	cosmossdk.io/log v1.2.1
+	cosmossdk.io/math v1.2.0
 	cosmossdk.io/store v1.0.0
 	cosmossdk.io/x/tx v0.12.0
 	cosmossdk.io/x/upgrade v0.1.0
@@ -16,7 +17,7 @@ require (
 	github.com/cosmos/cosmos-db v1.0.0
 	github.com/cosmos/cosmos-sdk v0.50.1
 	github.com/cosmos/gogoproto v1.4.11
-	github.com/ethereum/go-ethereum v1.13.12
+	github.com/ethereum/go-ethereum v1.13.14
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/spf13/cast v1.5.1
 	github.com/stretchr/testify v1.8.4
@@ -35,7 +36,6 @@ require (
 	connectrpc.com/otelconnect v0.7.0 // indirect
 	cosmossdk.io/depinject v1.0.0-alpha.4 // indirect
 	cosmossdk.io/errors v1.0.0 // indirect
-	cosmossdk.io/math v1.2.0 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
@@ -51,7 +51,7 @@ require (
 	github.com/bufbuild/protocompile v0.8.0 // indirect
 	github.com/bufbuild/protovalidate-go v0.5.0 // indirect
 	github.com/bufbuild/protoyaml-go v0.1.7 // indirect
-	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
@@ -135,7 +135,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
-	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/huandu/skiplist v1.2.0 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
@@ -236,4 +235,7 @@ require (
 )
 
 // following versions might cause unexpected behavior
-replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+replace (
+	github.com/ethereum/go-ethereum => github.com/maticnetwork/bor v1.2.3
+	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+)
