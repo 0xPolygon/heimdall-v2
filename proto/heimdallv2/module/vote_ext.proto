@@ -1,7 +1,7 @@
 syntax = "proto3";
-package proto.module;
+package proto.heimdallv2.module;
 
-option go_package = "github.com/0xPolygon/heimdall-v2/x/module";
+option go_package = "github.com/0xPolygon/heimdall-v2/module";
 
 message CanonicalSideTxResponse {
   repeated SideTxResponse SideTxResponses = 1;

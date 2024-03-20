@@ -32,7 +32,7 @@ import (
 
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
-	sm "github.com/0xPolygon/heimdall-v2/x/module"
+	sm "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
@@ -378,14 +378,14 @@ func NewHeimdallApp(
 		panic(err)
 	}
 
-	sideTxCfg := sm.NewConfigurator()
+	sideTxCfg := sm.NewSideTxConfigurator()
 	app.RegisterSideMsgServices(sideTxCfg)
 
-	//Create th voteExtProcessor using sideTxCfg
-	voteExtProcessor := NewVoteExtensionProcessor(app, sideTxCfg)
+	// Create the voteExtProcessor using sideTxCfg
+	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
 	app.VoteExtensionProcessor = voteExtProcessor
 
-	//Set the voteExtension methods to baseapp
+	// Set the voteExtension methods to HeimdallApp
 	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
@@ -749,9 +749,9 @@ func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 
 func (app *HeimdallApp) RegisterSideMsgServices(cfg sm.SideTxConfigurator) {
 
-	for _, module := range app.mm.Modules {
-		if module, ok := module.(sm.HasSideMsgServices); ok {
-			module.RegisterSideMsgServices(cfg)
+	for _, md := range app.mm.Modules {
+		if sideMsgModule, ok := md.(sm.HasSideMsgServices); ok {
+			sideMsgModule.RegisterSideMsgServices(cfg)
 		}
 	}
 }
@@ -799,5 +799,3 @@ func GetMaccPerms() map[string][]string {
 
 	return dupMaccPerms
 }
-
-func RegisterSideTxServices()

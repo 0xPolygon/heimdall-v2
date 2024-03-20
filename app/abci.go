@@ -6,22 +6,21 @@ import (
 	"errors"
 	"fmt"
 
-	sm "github.com/0xPolygon/heimdall-v2/x/module"
+	sm "github.com/0xPolygon/heimdall-v2/module"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	jsoniter "github.com/json-iterator/go"
 )
 
-// VoteExtensionHandler handles Vote Extension processing for Heimdall app
+// VoteExtensionProcessor handles Vote Extension processing for Heimdall app
 type VoteExtensionProcessor struct {
 	app       *HeimdallApp
 	sideTxCfg sm.SideTxConfigurator
 }
 
-func NewVoteExtensionProcessor(app *HeimdallApp, cfg sm.SideTxConfigurator) *VoteExtensionProcessor {
+func NewVoteExtensionProcessor(cfg sm.SideTxConfigurator) *VoteExtensionProcessor {
 	return &VoteExtensionProcessor{
-		app:       app,
 		sideTxCfg: cfg,
 	}
 }
@@ -30,6 +29,7 @@ func (v *VoteExtensionProcessor) SetSideTxConfigurator(cfg sm.SideTxConfigurator
 	v.sideTxCfg = cfg
 }
 
+// NewPrepareProposalHandler fn prepare the block proposal
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()

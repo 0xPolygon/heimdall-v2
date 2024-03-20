@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"cosmossdk.io/log"
-	sm "github.com/0xPolygon/heimdall-v2/x/module"
+	sm "github.com/0xPolygon/heimdall-v2/module"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	jsoniter "github.com/json-iterator/go"
@@ -119,7 +119,7 @@ import (
 // tallyVotes is a helper function to tally votes received for the side txs
 // It returns lists of txs which got >2/3+ YES, NO and SKIP votes
 //
-//nolint:unused
+// nolint:unused
 func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validators []abci.Validator) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
 
@@ -171,8 +171,6 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 }
 
 // aggregateVotes collates votes received for a side tx
-//
-//nolint:unused
 func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sm.Vote]int64, error) {
 	voteByTxHash := make(map[string]map[sm.Vote]int64, 0)       // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}, 0) // ensure a validator doesn't procure conflicting votes for a side tx
