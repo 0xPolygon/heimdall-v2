@@ -16,7 +16,7 @@ import (
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
-	Params       collections.Item[types.Params]
+	params       collections.Item[types.Params]
 }
 
 // NewKeeper create new keeper
@@ -28,7 +28,7 @@ func NewKeeper(
 	return Keeper{
 		cdc:          cdc,
 		storeService: storeService,
-		Params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
 }
 
@@ -43,12 +43,12 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 
 // SetParams sets the chainmanager module's parameters.
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
-	return k.Params.Set(ctx, params)
+	return k.params.Set(ctx, params)
 }
 
 // GetParams gets the chainmanager module's parameters.
 func (k Keeper) GetParams(ctx context.Context) (types.Params, error) {
-	p, err := k.Params.Get(ctx)
+	p, err := k.params.Get(ctx)
 	if err != nil {
 		return types.Params{}, err
 	}

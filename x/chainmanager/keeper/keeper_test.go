@@ -1,23 +1,46 @@
-package keeper
+package keeper_test
 
 import (
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/app"
+	storetypes "cosmossdk.io/store/types"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/stretchr/testify/suite"
 )
 
 type KeeperTestSuite struct {
 	suite.Suite
 
-	app *app.App
-	ctx sdk.Context
+	ctx                sdk.Context
+	chainmanagerKeeper keeper.Keeper
+	queryClient        types.QueryClient
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
-	// TODO HV2: uncomment when the app test utils are implemented:https://github.com/0xPolygon/heimdall-v2/pull/12
-	// suite.app, suite.ctx = createTestApp(false)
+func (s *KeeperTestSuite) SetupTest() {
+	require := s.Require()
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	storeService := runtime.NewKVStoreService(key)
+	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
+	encCfg := moduletestutil.MakeTestEncodingConfig()
+
+	chainmanagerKeeper := keeper.NewKeeper(encCfg.Codec, storeService)
+	require.NoError(chainmanagerKeeper.SetParams(ctx, types.DefaultParams()))
+
+	s.ctx = ctx
+	s.chainmanagerKeeper = chainmanagerKeeper
+
+	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
+	types.RegisterQueryServer(queryHelper, keeper.Querier{Keeper: chainmanagerKeeper})
+	s.queryClient = types.NewQueryClient(queryHelper)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -25,14 +48,21 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-// TODO HV2: uncomment when the heimdall app is implemented:https://github.com/0xPolygon/heimdall-v2/pull/9
-// func (suite *KeeperTestSuite) TestParamsGetterSetter() {
-// 	t, app, ctx := suite.T(), suite.app, suite.ctx
-// 	params := types.DefaultParams()
+func (s *KeeperTestSuite) TestParamsGetterSetter() {
+	ctx, keeper := s.ctx, s.chainmanagerKeeper
+	require := s.Require()
 
-// 	app.ChainKeeper.SetParams(ctx, params)
+	expParams := types.DefaultParams()
+	// check that the empty keeper loads the default
+	resParams, err := keeper.GetParams(ctx)
+	require.NoError(err)
+	require.Equal(expParams, resParams)
 
-// 	actualParams := app.ChainKeeper.GetParams(ctx)
-
-// 	require.Equal(t, params, actualParams)
-// }
+	expParams.BorChainTxConfirmations = 256
+	expParams.MainChainTxConfirmations = 512
+	expParams.ChainParams.BorChainId = "1337"
+	require.NoError(keeper.SetParams(ctx, expParams))
+	resParams, err = keeper.GetParams(ctx)
+	require.NoError(err)
+	require.True(expParams.Equal(resParams))
+}
