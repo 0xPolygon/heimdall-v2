@@ -55,7 +55,7 @@ func (a PubKey) Address() common.Address {
 	return common.BytesToAddress(a.CryptoPubKey().Address().Bytes())
 }
 
-// TODO H2 please check it
+// TODO HV2 please check it
 // CryptoPubKey returns crypto pub key for tendermint
 func (a PubKey) CryptoPubKey() crypto.PubKey {
 	var pubkeyBytes secp256k1.PubKey
@@ -65,7 +65,7 @@ func (a PubKey) CryptoPubKey() crypto.PubKey {
 	return pubkeyBytes
 }
 
-// TODO H2 please check it
+// TODO HV2 please check it
 // // ABCIPubKey returns abci pubkey for cosmos
 // func (a PubKey) ABCIPubKey() abci.PubKey {
 // 	return tmTypes.TM2PB //PubKey(a.CryptoPubKey())

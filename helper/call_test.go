@@ -26,7 +26,7 @@ const (
 	testTendermintNode = "tcp://localhost:26657"
 )
 
-// TODO H2 Please write this test once authtypes is finalised and RecoverPubKey is implemented inside
+// TODO HV2 Please write this test once authtypes is finalised and RecoverPubKey is implemented inside
 // TestCheckpointSigs decodes signers from checkpoint sigs data
 // func TestCheckpointSigs(t *testing.T) {
 // 	t.Parallel()

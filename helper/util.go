@@ -1,6 +1,6 @@
 package helper
 
-//TODO H2 Please implement it once Authtype is completed as it depends lot on it
+//TODO HV2 Please implement it once Authtype is completed as it depends lot on it
 import (
 	// 	"bufio"
 	// 	"bytes"

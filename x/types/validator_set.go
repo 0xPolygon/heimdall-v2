@@ -505,7 +505,7 @@ func verifyRemovals(deletes []*Validator, vals *ValidatorSet) error {
 	return nil
 }
 
-// TODO H2 PLEASE WRITE THE TESTCASE FOR IT
+// TODO HV2 PLEASE WRITE THE TESTCASE FOR IT
 // Removes the validators specified in 'deletes' from validator set 'vals'.
 // Should not fail as verification has been done before.
 func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
@@ -535,7 +535,7 @@ func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 	vals.Validators = merged[:i]
 }
 
-// Main function used by UpdateWithChangeSet() and NewValidatorSet().
+// updateWithChangeSet is a main function used by UpdateWithChangeSet() and NewValidatorSet().
 // If 'allowDeletes' is false then delete operations (identified by validators with voting power 0)
 // are not allowed and will trigger an error if present in 'changes'.
 // The 'allowDeletes' flag is set to false by NewValidatorSet() and to true by UpdateWithChangeSet().
@@ -622,11 +622,7 @@ func (vals *ValidatorSet) StringIndented(indent string) string {
 		return false
 	})
 
-	return fmt.Sprintf(`ValidatorSet{
-%s  Proposer: %v
-%s  Validators:
-%s    %v
-%s}`,
+	return fmt.Sprintf("ValidatorSet{\n\t\t\t\t\t\t\t%s  Proposer: %v\n\t\t\t\t\t\t\t%s  Validators:\n\t\t\t\t\t\t\t%s    %v\n\t\t\t\t\t\t\t%s}",
 		indent, vals.GetProposer().String(),
 		indent,
 		indent, strings.Join(valStrings, "\n"+indent+"    "),

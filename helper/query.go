@@ -98,7 +98,7 @@ func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
 // 	return out, nil
 // }
 
-//TODO H2 Verify function is not available, discuss this with
+//TODO HV2 Verify function is not available, discuss this with
 // ValidateTxResult performs transaction verification.
 // func ValidateTxResult(cliCtx cosmosContext.Context, resTx *ctypes.ResultTx) error {
 
@@ -270,7 +270,7 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
 
-	//TODO H2 It give all the events, not only begin blocks
+	//TODO HV2 It give all the events, not only begin blocks
 	// get block using client
 	blockResults, err := client.BlockResults(c, &height)
 	if err == nil && blockResults != nil {
@@ -301,7 +301,7 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 			switch t := eventData.(type) {
 			case tmTypes.EventDataNewBlock:
 				if t.Block.Height == height {
-					//TODO H2 Fetching all the events ,not the begin block one
+					//TODO HV2 Fetching all the events ,not the begin block one
 					return t.ResultFinalizeBlock.GetEvents(), nil
 				}
 			default:
@@ -338,7 +338,7 @@ func FetchVotes(
 	return preCommits, valSigs, chainID, nil
 }
 
-//TODO H2 Can use this logic if need
+//TODO HV2 Can use this logic if need
 // FetchSideTxSigs fetches side tx sigs from it
 // func FetchSideTxSigs(
 // 	client *httpClient.HTTP,
