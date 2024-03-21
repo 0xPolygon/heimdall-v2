@@ -8,44 +8,45 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 
 // Span represents a range of block numbers in bor
 message Span {
-    uint64 id = 1;
-    uint64 start_block = 2;
-    uint64 end_block = 3;
-    ValidatorSet validator_set = 4 [(gogoproto.nullable) = false];
-    repeated Validator selected_producers = 5 [(gogoproto.nullable) = false];
-    string chain_id = 6;
+  uint64 id = 1;
+  uint64 start_block = 2;
+  uint64 end_block = 3;
+  ValidatorSet validator_set = 4 [ (gogoproto.nullable) = false ];
+  repeated Validator selected_producers = 5 [ (gogoproto.nullable) = false ];
+  string chain_id = 6;
 }
 
-// TODO HV2: we can probably import stake module's proto definitions
+// TODO HV2: import stake module's proto definitions for
+// validators/validatorsets
 
 // Validator represents volatile state of a bor validator
 message Validator {
-    uint64 id = 1;
-    uint64 start_epoch = 2;
-    uint64 end_epoch = 3;
-    uint64 nonce = 4;
-    int64 voting_power = 5;
-    bytes pub_key = 6;
-    string signer = 7 [(cosmos_proto.scalar) = "cosmos.AddressString"];
-    string last_updated = 8;
-    bool jailed = 9;
-    int64 proposer_priority = 10;
+  uint64 id = 1;
+  uint64 start_epoch = 2;
+  uint64 end_epoch = 3;
+  uint64 nonce = 4;
+  int64 voting_power = 5;
+  bytes pub_key = 6;
+  string signer = 7 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string last_updated = 8;
+  bool jailed = 9;
+  int64 proposer_priority = 10;
 }
 
 // Validator represents a bor validator set
 message ValidatorSet {
-    repeated Validator validators = 1;
-    Validator proposer = 2;
-    
-    // TODO HV2: do we even need these ?
-    int64 total_voting_power = 3;
-    map<string, int64> validators_map = 4;
+  repeated Validator validators = 1;
+  Validator proposer = 2;
+
+  // TODO HV2: do we even need these ?
+  int64 total_voting_power = 3;
+  map<string, int64> validators_map = 4;
 }
 
 // Params represents the parameters for the bor module
 message Params {
-    option (gogoproto.equal) = true;
-    uint64 sprint_duration = 1;
-    uint64 span_duration = 2;
-    uint64 producer_count = 3;
+  option (gogoproto.equal) = true;
+  uint64 sprint_duration = 1;
+  uint64 span_duration = 2;
+  uint64 producer_count = 3;
 }

@@ -246,7 +246,7 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) (val
 	}
 
 	// sort by address
-	vals = hmTypes.SortValidatorByAddress(vals)
+	vals = helper.SortValidatorByAddress(vals)
 
 	return vals, nil
 }
