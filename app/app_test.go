@@ -42,6 +42,7 @@ func TestHeimdallAppExport(t *testing.T) {
 	require.NoError(t, err)
 }
 
+//nolint:tparallel
 func TestRunMigrations(t *testing.T) {
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
