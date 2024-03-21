@@ -73,6 +73,7 @@ var (
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
 		govtypes.ModuleName:        nil,
+		distrtypes.ModuleName:      nil,
 	}
 )
 
@@ -158,10 +159,10 @@ func NewHeimdallApp(
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey,
 		banktypes.StoreKey,
+		consensusparamtypes.StoreKey,
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
-		consensusparamtypes.StoreKey,
 		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
 		// bortypes.StoreKey,
@@ -225,8 +226,7 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		authcodec.NewBech32Codec(sdk.Bech32MainPrefix),
-		sdk.Bech32MainPrefix,
+		authcodec.NewHexCodec(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
@@ -633,9 +633,9 @@ func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
 		Modules:       modules,
 		ModuleOptions: runtimeservices.ExtractAutoCLIOptions(app.mm.Modules),
 		// TODO HV2: replace with authcodec.hexCodec once https://github.com/0xPolygon/cosmos-sdk/pull/3 is merged
-		AddressCodec:          authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
-		ValidatorAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ValidatorAddrPrefix()),
-		ConsensusAddressCodec: authcodec.NewBech32Codec(sdk.GetConfig().GetBech32ConsensusAddrPrefix()),
+		AddressCodec:          authcodec.NewHexCodec(),
+		ValidatorAddressCodec: authcodec.NewHexCodec(),
+		ConsensusAddressCodec: authcodec.NewHexCodec(),
 	}
 }
 
@@ -720,6 +720,10 @@ func (app *HeimdallApp) OnTxFailed(_ sdk.Context, _, _ string, _ []byte, _ []byt
 
 func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
+}
+
+func (app *HeimdallApp) Configurator() module.Configurator {
+	return app.configurator
 }
 
 type EmptyAppOptions struct{}
