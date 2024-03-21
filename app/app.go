@@ -728,6 +728,8 @@ func (ao EmptyAppOptions) Get(_ string) interface{} {
 	return nil
 }
 
+// TODO HV2: params will be soon deprecated, remove paramskeeper once it's done
+
 // initParamsKeeper init params keeper and its subspaces
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey storetypes.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, tkey)
