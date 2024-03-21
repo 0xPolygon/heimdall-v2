@@ -4,7 +4,7 @@ package heimdallv2.clerk.module.v1;
 
 // Module is the config object for the clerk module.
 message Module {
-  // module_account_permissions are module account permissions.
+  // module_account_permissions are the permissions for the module accounts.
   repeated ModuleAccountPermission module_account_permissions = 1;
 }
 

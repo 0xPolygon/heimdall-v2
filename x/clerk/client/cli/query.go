@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/viper"
 
 	keeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
@@ -40,8 +39,8 @@ func GetQueryCmd(cdc *codec.Codec) *cobra.Command {
 	return queryCmds
 }
 
-// GetStateRecord get state record
-func GetStateRecord(cdc *codec.Codec) *cobra.Command {
+// GetStateRecord shows the state record
+func GetStateRecord() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "record",
 		Short: "show state record",
@@ -62,12 +61,12 @@ func GetStateRecord(cdc *codec.Codec) *cobra.Command {
 			}
 
 			// get query params
-			queryParams, err := cliCtx.Codec.MarshalJSON(&types.QueryRecordParams{RecordID: recordID})
+			queryParams, err := cliCtx.Codec.MarshalJSON(&clerkTypes.QueryRecordParams{RecordID: recordID})
 			if err != nil {
 				return err
 			}
 
-			// fetch state reocrd
+			// fetch state record
 			res, _, err := cliCtx.QueryWithData(
 				fmt.Sprintf("custom/%s/%s", clerkTypes.QuerierRoute, keeper.QueryRecord),
 				queryParams,
@@ -78,7 +77,7 @@ func GetStateRecord(cdc *codec.Codec) *cobra.Command {
 			}
 
 			if len(res) == 0 {
-				return errors.New("Record not found")
+				return errors.New("record not found")
 			}
 
 			fmt.Println(string(res))
@@ -89,14 +88,14 @@ func GetStateRecord(cdc *codec.Codec) *cobra.Command {
 	cmd.Flags().Uint64(FlagRecordID, 0, "--id=<record ID here>")
 
 	if err := cmd.MarkFlagRequired(FlagRecordID); err != nil {
-		fmt.Errorf("GetStateRecord | MarkFlagRequired | FlagRecordID", "Error", err)
+		_ = fmt.Errorf("GetStateRecord | MarkFlagRequired | FlagRecordID Error: %w", err)
 	}
 
 	return cmd
 }
 
-// GetStateRecord get state record
-func IsOldTx(cdc *codec.Codec) *cobra.Command {
+// IsOldTx Check whether the transaction is old
+func IsOldTx() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "is-old-tx",
 		Short: "Check whether the transaction is old",
@@ -124,12 +123,12 @@ func IsOldTx(cdc *codec.Codec) *cobra.Command {
 			}
 
 			// get query params
-			queryParams, err := cliCtx.Codec.MarshalJSON(&types.QueryRecordSequenceParams{TxHash: txHash, LogIndex: logIndex})
+			queryParams, err := cliCtx.Codec.MarshalJSON(&clerkTypes.QueryRecordSequenceParams{TxHash: txHash, LogIndex: logIndex})
 			if err != nil {
 				return err
 			}
 
-			seqNo, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/%s", types.QuerierRoute, keeper.QueryRecordSequence), queryParams)
+			seqNo, _, err := cliCtx.QueryWithData(fmt.Sprintf("custom/%s/%s", clerkTypes.QuerierRoute, keeper.QueryRecordSequence), queryParams)
 			if err != nil {
 				return err
 			}
@@ -140,9 +139,6 @@ func IsOldTx(cdc *codec.Codec) *cobra.Command {
 				return nil
 			}
 
-			res := true
-
-			fmt.Println(res)
 			return nil
 		},
 	}
@@ -151,11 +147,11 @@ func IsOldTx(cdc *codec.Codec) *cobra.Command {
 	cmd.Flags().Uint64(FlagTxHash, 0, "--tx-hash=<tx hash here>")
 
 	if err := cmd.MarkFlagRequired(FlagLogIndex); err != nil {
-		fmt.Errorf("IsOldTx | MarkFlagRequired | FlagLogIndex", "Error", err)
+		_ = fmt.Errorf("IsOldTx | MarkFlagRequired | FlagLogIndex Error: %w", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagTxHash); err != nil {
-		fmt.Errorf("IsOldTx | MarkFlagRequired | FlagTxHash", "Error", err)
+		_ = fmt.Errorf("IsOldTx | MarkFlagRequired | FlagTxHash Error: %w", err)
 	}
 
 	return cmd

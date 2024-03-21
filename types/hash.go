@@ -7,7 +7,7 @@ import (
 // ZeroHeimdallHash represents zero address
 var ZeroHeimdallHash = HeimdallHash{}
 
-// Empty returns boolean for whether an AccAddress is empty
-func (aa HeimdallHash) Empty() bool {
-	return bytes.Equal(aa.GetHash(), ZeroHeimdallHash.GetHash())
+// Empty returns boolean for whether an HeimdallHash is empty
+func (hh HeimdallHash) Empty() bool {
+	return bytes.Equal(hh.GetHash(), ZeroHeimdallHash.GetHash())
 }

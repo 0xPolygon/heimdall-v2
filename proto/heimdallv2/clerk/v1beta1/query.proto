@@ -16,10 +16,6 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/event-record/list";
   }
-  // // NewQueryRecordParams creates a new instance of QueryRecordParams.
-  // func NewQueryRecordParams(recordID uint64) QueryRecordParams {
-  //     return QueryRecordParams{RecordID: recordID}
-  // }
 
   // TODO HV2 - check url
   rpc NewQueryRecordSequenceParams(NewQueryRecordSequenceParamsRequest)
@@ -27,11 +23,6 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/event-record/recordId";
   }
-  // // NewQueryRecordSequenceParams creates a new instance of
-  // QuerySequenceParams. func NewQueryRecordSequenceParams(txHash string,
-  // logIndex uint64) QueryRecordSequenceParams {
-  //     return QueryRecordSequenceParams{TxHash: txHash, LogIndex: logIndex}
-  // }
 
   // TODO HV2 - check url
   rpc NewQueryTimeRangePaginationParams(
@@ -40,13 +31,6 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/isoldtx";
   }
-  // // NewQueryTimeRangePaginationParams creates a new instance of
-  // NewQueryTimeRangePaginationParams. func
-  // NewQueryTimeRangePaginationParams(fromTime, toTime time.Time, page, limit
-  // uint64) QueryRecordTimePaginationParams {
-  //     return QueryRecordTimePaginationParams{FromTime: fromTime, ToTime:
-  //     toTime, Page: page, Limit: limit}
-  // }
 }
 
 message NewQueryRecordParamsRequest {

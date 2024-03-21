@@ -15,13 +15,13 @@ type sideMsgServer struct {
 	Keeper
 }
 
-// NewMsgServerImpl returns an implementation of the clerk MsgServer interface
+// NewSideMsgServerImpl returns an implementation of the clerk MsgServer interface
 // for the provided Keeper.
 func NewSideMsgServerImpl(keeper Keeper) types.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
-// NewSideTxHandler returns a side handler for "topup" type messages.
+// SideTxHandler returns a side handler for "topup" type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler {
 	switch methodName {
 	case types.MsgEventRecordMethod:
@@ -31,7 +31,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler
 	}
 }
 
-// NewPostTxHandler returns a side handler for "bank" type messages.
+// PostTxHandler returns a side handler for "bank" type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) hmTypes.PostTxHandler {
 	switch methodName {
 	case types.MsgEventRecordMethod:
@@ -41,14 +41,14 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmTypes.PostTxHandler
 	}
 }
 
-func (k *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result hmTypes.Vote) {
+func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result hmTypes.Vote) {
 	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		srv.Logger(ctx).Error("msg type mismatched")
 		return hmTypes.Vote_VOTE_NO
 	}
 
-	k.Logger(ctx).Debug("✅ Validating External call for clerk msg",
+	srv.Logger(ctx).Debug("✅ Validating External call for clerk msg",
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -56,95 +56,102 @@ func (k *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) 
 
 	// TODO HV2: uncomment when chainmanager is implemented and added into the Keeper
 	// chainManager params
-	// params := k.chainKeeper.GetParams(ctx)
-	// TODO HV2 - uncomment when contractCaller is implemented
-	// chainParams := params.ChainParams
-	// _ = params.ChainParams
+	/*
+		params := srv.chainKeeper.GetParams(ctx)
+		TODO HV2 - uncomment when contractCaller is implemented
+		chainParams := params.ChainParams
+		_ = params.ChainParams
+	*/
 
 	// TODO HV2 - uncomment when contractCaller is implemented
-	// // get confirmed tx receipt
-	// receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash, params.MainchainTxConfirmations)
-	// if receipt == nil || err != nil {
-	// 	return hmTypes.Vote_VOTE_NO
-	// }
+	// get confirmed tx receipt
+	/*
+		receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash, params.MainchainTxConfirmations)
+		if receipt == nil || err != nil {
+			return hmTypes.Vote_VOTE_NO
+		}
+	*/
 
 	// TODO HV2 - uncomment when contractCaller is implemented
-	// // get event log for topup
-	// eventLog, err := contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress.EthAddress(), receipt, msg.LogIndex)
-	// if err != nil || eventLog == nil {
-	// 	k.Logger(ctx).Error("Error fetching log from txhash")
-	// 	return hmTypes.Vote_VOTE_NO
-	// }
+	// get event log for topup
+	/*
+		eventLog, err := contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress.EthAddress(), receipt, msg.LogIndex)
+		if err != nil || eventLog == nil {
+			srv.Logger(ctx).Error("Error fetching log from txhash")
+			return hmTypes.Vote_VOTE_NO
+		}
+	*/
 
 	// TODO HV2 - the following commented code depends on the results of the above code, uncomment when contractCaller is implemented
-	// if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-	// 	k.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
-	// 	return hmTypes.Vote_VOTE_NO
-	// }
+	/*
+		if receipt.BlockNumber.Uint64() != msg.BlockNumber {
+			srv.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
+			return hmTypes.Vote_VOTE_NO
+		}
 
-	// // check if message and event log matches
-	// if eventLog.Id.Uint64() != msg.ID {
-	// 	k.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ID, "stateIdFromTx", eventLog.Id)
-	// 	return hmTypes.Vote_VOTE_NO
-	// }
+		// check if message and event log matches
+		if eventLog.Id.Uint64() != msg.ID {
+			srv.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ID, "stateIdFromTx", eventLog.Id)
+			return hmTypes.Vote_VOTE_NO
+		}
 
-	// if !bytes.Equal(eventLog.ContractAddress.Bytes(), msg.ContractAddress.Bytes()) {
-	// 	k.Logger(ctx).Error(
-	// 		"ContractAddress from event does not match with Msg ContractAddress",
-	// 		"EventContractAddress", eventLog.ContractAddress.String(),
-	// 		"MsgContractAddress", msg.ContractAddress,
-	// 	)
+		if !bytes.Equal(eventLog.ContractAddress.Bytes(), msg.ContractAddress.Bytes()) {
+			srv.Logger(ctx).Error(
+				"ContractAddress from event does not match with Msg ContractAddress",
+				"EventContractAddress", eventLog.ContractAddress.String(),
+				"MsgContractAddress", msg.ContractAddress,
+			)
 
-	// 	return hmTypes.Vote_VOTE_NO
-	// }
+			return hmTypes.Vote_VOTE_NO
+		}
 
-	// if !bytes.Equal(eventLog.Data, msg.Data.GetHexBytes()) {
-	// 	if ctx.BlockHeight() > helper.GetSpanOverrideHeight() {
-	// 		if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.GetHexBytes(), hmTypes.HexToHexBytes(""))) {
-	// 			k.Logger(ctx).Error(
-	// 				"Data from event does not match with Msg Data",
-	// 				"EventData", hmTypes.BytesToHexBytes(eventLog.Data),
-	// 				"MsgData", hmTypes.BytesToHexBytes(msg.Data),
-	// 			)
+		if !bytes.Equal(eventLog.Data, msg.Data.GetHexBytes()) {
+			if ctx.BlockHeight() > helper.GetSpanOverrideHeight() {
+				if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.GetHexBytes(), hmTypes.HexToHexBytes(""))) {
+					srv.Logger(ctx).Error(
+						"Data from event does not match with Msg Data",
+						"EventData", hmTypes.BytesToHexBytes(eventLog.Data),
+						"MsgData", hmTypes.BytesToHexBytes(msg.Data),
+					)
 
-	// 			return hmTypes.Vote_VOTE_NO
-	// 		}
-	// 	} else {
-	// 		if !(len(eventLog.Data) > helper.LegacyMaxStateSyncSize && bytes.Equal(msg.Data, hmTypes.HexToHexBytes(""))) {
-	// 			k.Logger(ctx).Error(
-	// 				"Data from event does not match with Msg Data",
-	// 				"EventData", hmTypes.BytesToHexBytes(eventLog.Data),
-	// 				"MsgData", hmTypes.BytesToHexBytes(msg.Data),
-	// 			)
+					return hmTypes.Vote_VOTE_NO
+				}
+			} else {
+				if !(len(eventLog.Data) > helper.LegacyMaxStateSyncSize && bytes.Equal(msg.Data, hmTypes.HexToHexBytes(""))) {
+					srv.Logger(ctx).Error(
+						"Data from event does not match with Msg Data",
+						"EventData", hmTypes.BytesToHexBytes(eventLog.Data),
+						"MsgData", hmTypes.BytesToHexBytes(msg.Data),
+					)
 
-	// 			return hmTypes.Vote_VOTE_NO
-	// 		}
-	// 	}
-	// }
+					return hmTypes.Vote_VOTE_NO
+				}
+			}
+		}
+	*/
 
 	return hmTypes.Vote_VOTE_YES
 }
 
-// TODO HV2 - check contractCaller
-func (k *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmTypes.Vote) {
+func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmTypes.Vote) {
 	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		srv.Logger(ctx).Error("msg type mismatched")
 	}
 
 	// Skip handler if clerk is not approved
 	if sideTxResult != hmTypes.Vote_VOTE_YES {
-		k.Logger(ctx).Debug("Skipping new clerk since side-tx didn't get yes votes")
+		srv.Logger(ctx).Debug("Skipping new clerk since side-tx didn't get yes votes")
 		return
 	}
 
 	// check for replay
-	if k.HasEventRecord(ctx, msg.ID) {
-		k.Logger(ctx).Debug("Skipping new clerk record as it's already processed")
+	if srv.HasEventRecord(ctx, msg.ID) {
+		srv.Logger(ctx).Debug("Skipping new clerk record as it's already processed")
 		return
 	}
 
-	k.Logger(ctx).Debug("Persisting clerk state", "sideTxResult", sideTxResult)
+	srv.Logger(ctx).Debug("Persisting clerk state", "sideTxResult", sideTxResult)
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -163,13 +170,13 @@ func (k *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, 
 	)
 
 	// save event into state
-	if err := k.SetEventRecord(ctx, record); err != nil {
-		k.Logger(ctx).Error("Unable to update event record", "id", msg.ID, "error", err)
+	if err := srv.SetEventRecord(ctx, record); err != nil {
+		srv.Logger(ctx).Error("Unable to update event record", "id", msg.ID, "error", err)
 		return
 	}
 
 	// save record sequence
-	k.SetRecordSequence(ctx, sequence.String())
+	srv.SetRecordSequence(ctx, sequence.String())
 
 	// TX bytes
 	txBytes := ctx.TxBytes()

@@ -40,7 +40,7 @@ func GetTxCmd(cdc *codec.Codec) *cobra.Command {
 }
 
 // CreateNewStateRecord send checkpoint transaction
-func CreateNewStateRecord(cdc *codec.Codec) *cobra.Command {
+func CreateNewStateRecord() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "record",
 		Short: "new state record",
@@ -166,31 +166,31 @@ func CreateNewStateRecord(cdc *codec.Codec) *cobra.Command {
 	cmd.Flags().String(FlagData, "", "--data=<data>")
 
 	if err := cmd.MarkFlagRequired(FlagRecordID); err != nil {
-		fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagRecordID", "Error", err)
+		_ = fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagRecordID Error: %w", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagTxHash); err != nil {
-		fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagTxHash", "Error", err)
+		_ = fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagTxHash Error: %w", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagLogIndex); err != nil {
-		fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagLogIndex", "Error", err)
+		_ = fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagLogIndex Error: %w", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagBorChainId); err != nil {
-		fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagBorChainId", "Error", err)
+		_ = fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagBorChainId Error: %w", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagBlockNumber); err != nil {
-		fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagBlockNumber", "Error", err)
+		_ = fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagBlockNumber Error: %w", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagContractAddress); err != nil {
-		fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagContractAddress", "Error", err)
+		_ = fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagContractAddress Error: %w", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagData); err != nil {
-		fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagData", "Error", err)
+		_ = fmt.Errorf("CreateNewStateRecord | MarkFlagRequired | FlagData Error: %w", err)
 	}
 
 	return cmd

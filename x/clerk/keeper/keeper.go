@@ -94,13 +94,22 @@ func (k *Keeper) SetEventRecordWithID(ctx sdk.Context, record types.EventRecord)
 func (k *Keeper) setEventRecordStore(ctx sdk.Context, key, value []byte) error {
 	kvStore := k.storeService.OpenKVStore(ctx)
 	// check if already set
-	isPresent, _ := kvStore.Has(key)
+	isPresent, err := kvStore.Has(key)
 	if isPresent {
-		return errors.New("Key already exists")
+		return errors.New("key already exists")
+	}
+
+	if err != nil {
+		k.Logger(ctx).Error("Error checking record", "error", err)
+		return err
 	}
 
 	// store value in provided key
-	kvStore.Set(key, value)
+	err = kvStore.Set(key, value)
+	if err != nil {
+		k.Logger(ctx).Error("Error setting record", "error", err)
+		return err
+	}
 
 	// return
 	return nil
@@ -132,8 +141,8 @@ func (k *Keeper) GetEventRecord(ctx sdk.Context, stateID uint64) (*types.EventRe
 		return &_record, nil
 	}
 
-	// return no error error
-	return nil, errors.New("No record found")
+	// return no error found
+	return nil, errors.New("no record found")
 }
 
 // HasEventRecord check if state record
@@ -216,10 +225,6 @@ func (k *Keeper) GetEventRecordListWithTime(ctx sdk.Context, fromTime, toTime ti
 	return records, nil
 }
 
-//
-// GetEventRecordKey returns key for state record
-//
-
 // GetEventRecordKey appends prefix to state id
 func GetEventRecordKey(stateID uint64) []byte {
 	stateIDBytes := []byte(strconv.FormatUint(stateID, 10))
@@ -242,10 +247,6 @@ func GetEventRecordKeyWithTimePrefix(recordTime time.Time) []byte {
 func GetRecordSequenceKey(sequence string) []byte {
 	return append(RecordSequencePrefixKey, []byte(sequence)...)
 }
-
-//
-// Utils
-//
 
 // IterateRecordsAndApplyFn iterate records and apply the given function.
 func (k *Keeper) IterateRecordsAndApplyFn(ctx sdk.Context, f func(record types.EventRecord) error) {
@@ -306,7 +307,10 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx sdk.Context, f func(sequen
 // SetRecordSequence sets mapping for sequence id to bool
 func (k *Keeper) SetRecordSequence(ctx sdk.Context, sequence string) {
 	kvStore := k.storeService.OpenKVStore(ctx)
-	kvStore.Set(GetRecordSequenceKey(sequence), DefaultValue)
+	key := GetRecordSequenceKey(sequence)
+	if key != nil {
+		kvStore.Set(GetRecordSequenceKey(sequence), DefaultValue)
+	}
 }
 
 // HasRecordSequence checks if record already exists

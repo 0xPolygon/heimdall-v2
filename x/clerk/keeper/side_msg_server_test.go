@@ -70,14 +70,16 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// TODO HV2 - uncomment when mock contract caller is implemented
-		// // mock external calls
-		// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-		// event := &statesender.StatesenderStateSynced{
-		// 	Id:              new(big.Int).SetUint64(msg.ID),
-		// 	ContractAddress: msg.ContractAddress.EthAddress(),
-		// 	Data:            msg.Data,
-		// }
-		// suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+		// mock external calls
+		/*
+			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+			event := &statesender.StatesenderStateSynced{
+				Id:              new(big.Int).SetUint64(msg.ID),
+				ContractAddress: msg.ContractAddress.EthAddress(),
+				Data:            msg.Data,
+			}
+			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+		*/
 
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
@@ -113,9 +115,11 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// TODO HV2 - uncomment when mock contract caller is implemented
-		// // mock external calls -- no receipt
-		// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
-		// suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
+		// mock external calls -- no receipt
+		/*
+			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
+			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
+		*/
 
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
@@ -149,11 +153,13 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// TODO HV2 - uncomment when mock contract caller is implemented
-		// // mock external calls -- no receipt
-		// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-		// suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
+		// mock external calls -- no receipt
+		/*
+			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
+		*/
 
-		// // execute handler
+		// execute handler
 		result := suite.sideHandler(ctx, &msg)
 		require.Equal(t, voteTypes.Vote_VOTE_SKIP, result)
 	})
@@ -192,20 +198,21 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// TODO HV2 - uncomment when mock contract caller is implemented
-		// // mock external calls
-		// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-		// event := &statesender.StatesenderStateSynced{
-		// 	Id:              new(big.Int).SetUint64(msg.ID),
-		// 	ContractAddress: msg.ContractAddress.EthAddress(),
-		// 	Data:            b,
-		// }
-		// suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+		// mock external calls
 
-		// // execute handler
-		_ = suite.sideHandler(ctx, &msg)
-		// TODO HV2 - figure this out
-		// require.Equal(t, uint32(sdk.CodeOK), result.Code, "Side tx handler should pass")
-		// require.Equal(t, voteTypes.Vote_VOTE_YES, result)
+		/*
+			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+			event := &statesender.StatesenderStateSynced{
+				Id:              new(big.Int).SetUint64(msg.ID),
+				ContractAddress: msg.ContractAddress.EthAddress(),
+				Data:            b,
+			}
+			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+		*/
+
+		// execute handler
+		result := suite.sideHandler(ctx, &msg)
+		require.Equal(t, voteTypes.Vote_VOTE_YES, result)
 
 		// there should be no stored event record
 		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)

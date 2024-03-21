@@ -39,7 +39,7 @@ func TestGenesisTestSuite(t *testing.T) {
 
 // TestInitExportGenesis test import and export genesis state
 func (suite *GenesisTestSuite) TestInitExportGenesis() {
-	t, app, ctx := suite.T(), suite.app, suite.ctx
+	t, happ, ctx := suite.T(), suite.app, suite.ctx
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
@@ -51,6 +51,7 @@ func (suite *GenesisTestSuite) TestInitExportGenesis() {
 	}
 
 	for i := range eventRecords {
+		// TODO HV2 - use real and meaningful data
 		hAddr := strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 		hHash, _ := hexCodec.NewHexCodec().StringToBytes(strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)))
 		testEventRecord := types.NewEventRecord(hmTypes.HeimdallHash{Hash: hHash}, uint64(i), uint64(i), hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)), time.Now())
@@ -61,9 +62,9 @@ func (suite *GenesisTestSuite) TestInitExportGenesis() {
 		EventRecords:    eventRecords,
 		RecordSequences: recordSequences,
 	}
-	clerk.InitGenesis(ctx, &app.ClerkKeeper, &genesisState)
+	clerk.InitGenesis(ctx, &happ.ClerkKeeper, &genesisState)
 
-	actualParams := clerk.ExportGenesis(ctx, &app.ClerkKeeper)
+	actualParams := clerk.ExportGenesis(ctx, &happ.ClerkKeeper)
 
 	require.Equal(t, len(recordSequences), len(actualParams.RecordSequences))
 	require.Equal(t, len(eventRecords), len(actualParams.EventRecords))

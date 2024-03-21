@@ -6,7 +6,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-// query endpoints supported by the auth Querier
+// query endpoints supported by the auth querier
 const (
 	QueryRecord             = "record"
 	QueryRecordList         = "record-list"

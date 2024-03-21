@@ -20,7 +20,7 @@ import (
 	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
 )
 
-// returns context and app on clerk keeper
+// createTestApp returns context and app on clerk keeper
 // nolint: unparam
 func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
 	app := app.Setup(t, isCheckTx)
@@ -28,10 +28,6 @@ func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context)
 
 	return app, ctx
 }
-
-//
-// Test suite
-//
 
 // KeeperTestSuite integrate test suite context object
 type KeeperTestSuite struct {
@@ -66,10 +62,6 @@ func TestKeeperTestSuite(t *testing.T) {
 	t.Parallel()
 	suite.Run(t, new(KeeperTestSuite))
 }
-
-//
-// Tests
-//
 
 func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	t, app, ctx := suite.T(), suite.app, suite.ctx

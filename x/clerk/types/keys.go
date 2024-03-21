@@ -13,6 +13,6 @@ const (
 	// QuerierRoute is the querier route for bor
 	QuerierRoute = ModuleName
 
-	// DefaultParamspace default name for parameter store
-	DefaultParamspace = ModuleName
+	// DefaultParamSpace default name for parameter store
+	DefaultParamSpace = ModuleName
 )

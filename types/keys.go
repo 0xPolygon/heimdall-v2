@@ -1,6 +1,6 @@
 package types
 
 const (
-	// DefaultLogIndexUnit default tx hash + log index unit
+	// DefaultLogIndexUnit is the default tx hash + log index unit (used to calculate sequence ID)
 	DefaultLogIndexUnit = 100000
 )

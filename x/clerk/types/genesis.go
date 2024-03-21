@@ -23,7 +23,7 @@ func DefaultGenesisState() *GenesisState {
 func ValidateGenesis(data GenesisState) error {
 	for _, sq := range data.RecordSequences {
 		if sq == "" {
-			return errors.New("Invalid Sequence")
+			return errors.New("invalid sequence")
 		}
 	}
 

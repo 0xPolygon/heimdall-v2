@@ -1,7 +1,6 @@
 package types
 
 import (
-	// TODO HV2 - this is implemented in auth PR
 	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"

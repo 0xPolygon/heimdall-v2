@@ -17,6 +17,7 @@ import (
 func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	t, app, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
 
+	// TODO HV2 - let's use real data (in this whole file)
 	addr1 := sdk.AccAddress([]byte("addr1"))
 
 	id := r.Uint64()

@@ -11,11 +11,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-//
-// Create test app
-//
-
-// returns context and app on clerk keeper
+// createTestApp returns context and app on clerk keeper
 // nolint: unparam
 func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
 	app := app.Setup(t, isCheckTx)
@@ -40,15 +36,25 @@ func setupClerkGenesis(t *testing.T) *app.HeimdallApp {
 		panic(err)
 	}
 
-	happ.InitChain(
+	_, err = happ.InitChain(
 		&abci.RequestInitChain{
 			Validators:    []abci.ValidatorUpdate{},
 			AppStateBytes: stateBytes,
 		},
 	)
+	if err != nil {
+		panic(err)
+	}
 
-	happ.Commit()
-	happ.BeginBlocker(ctx)
+	_, err = happ.Commit()
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = happ.BeginBlocker(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	return happ
 }
