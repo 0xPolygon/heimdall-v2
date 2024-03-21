@@ -119,8 +119,10 @@ const (
 
 	DefaultTendermintNode = "tcp://localhost:26657"
 
+	// TODO HV2 Please update their value with correct one
 	DefaultMainnetSeeds = "1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656"
 
+	// TODO HV2 Please update their value with correct one and also add the support for amoy
 	DefaultTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
 
 	secretFilePerm = 0600
@@ -132,17 +134,20 @@ const (
 	// New max state sync size after hardfork
 	MaxStateSyncSize = 30000
 
-	//Milestone Length
+	//MilestoneLength is minimun supported length of milestone
 	MilestoneLength = uint64(12)
 
 	MilestonePruneNumber = uint64(100)
 
 	MaticChainMilestoneConfirmation = uint64(16)
 
-	//Milestone buffer Length
+	//MilestoneBufferLength defines the condition to propose the
+	//milestoneTimeout if this many bor blocks have passed since
+	//the last milestone
 	MilestoneBufferLength = MilestoneLength * 5
 	MilestoneBufferTime   = 256 * time.Second
-	// Default Open Collector Endpoint
+
+	//DefaultOpenCollectorEndpoint is the default port of Heimdall rest server
 	DefaultOpenCollectorEndpoint = "localhost:4317"
 )
 
@@ -212,9 +217,9 @@ var maticClient *ethclient.Client
 var maticRPCClient *rpc.Client
 
 // private key object
-var privObject secp256k1.PrivKey
+var privKeyObject secp256k1.PrivKey
 
-var pubObject secp256k1.PubKey
+var pubKeyObject secp256k1.PubKey
 
 // Logger stores global logger object
 var Logger logger.Logger
@@ -247,10 +252,6 @@ var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigr
 	AmoyChain:   {},
 	"default":   {},
 }
-
-// Contracts
-// var RootChain types.Contract
-// var DepositManager types.Contract
 
 // InitHeimdallConfig initializes with viper config (from heimdall configuration)
 func InitHeimdallConfig(homeDir string) {
@@ -389,8 +390,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFLag string) {
 	}
 
 	privVal := privval.LoadFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
-	cdc.MustUnmarshalBinaryBare(privVal.Key.PrivKey.Bytes(), &privObject)
-	cdc.MustUnmarshalBinaryBare(privObject.PubKey().Bytes(), &pubObject)
+	cdc.MustUnmarshalBinaryBare(privVal.Key.PrivKey.Bytes(), &privKeyObject)
+	cdc.MustUnmarshalBinaryBare(privKeyObject.PubKey().Bytes(), &pubKeyObject)
 
 	switch conf.Chain {
 	case MainChain:
@@ -462,6 +463,7 @@ func GetGenesisDoc() cmTypes.GenesisDoc {
 }
 
 // TEST PURPOSE ONLY
+
 // SetTestConfig sets test configuration
 func SetTestConfig(_conf Configuration) {
 	conf = _conf
@@ -493,7 +495,7 @@ func GetMaticRPCClient() *rpc.Client {
 
 // GetPrivKey returns priv key object
 func GetPrivKey() secp256k1.PrivKey {
-	return privObject
+	return privKeyObject
 }
 
 // GetECDSAPrivKey return ecdsa private key
@@ -509,7 +511,7 @@ func GetECDSAPrivKey() *ecdsa.PrivateKey {
 
 // GetPubKey returns pub key object
 func GetPubKey() secp256k1.PubKey {
-	return pubObject
+	return pubKeyObject
 }
 
 // GetAddress returns address object
@@ -953,7 +955,7 @@ func DecorateWithTendermintFlags(cmd *cobra.Command, v *viper.Viper, loggerInsta
 	}
 }
 
-// TODO : 0xSharma : add amoy Seeds
+// TODO HV2 Please update the switch case with Amoy also
 // UpdateTendermintConfig updates tenedermint config with flags and default values if needed
 func UpdateTendermintConfig(tendermintConfig *cfg.Config, v *viper.Viper) {
 	// update tendermintConfig.P2P.Seeds
