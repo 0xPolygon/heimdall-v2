@@ -10,7 +10,7 @@ import (
 // ExportAppStateAndValidators exports the state of the application for a genesis
 // file.
 func (app *HeimdallApp) ExportAppStateAndValidators(
-	_ bool,
+	forZeroHeight bool,
 	jailAllowedAddrs []string,
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
