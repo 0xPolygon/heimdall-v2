@@ -29,7 +29,7 @@ func (v *VoteExtensionProcessor) SetSideTxConfigurator(cfg sm.SideTxConfigurator
 	v.sideTxCfg = cfg
 }
 
-// NewPrepareProposalHandler fn prepare the block proposal
+// NewProcessProposalHandler check for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
