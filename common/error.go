@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DefaultModuleName string = "1"
+	DefaultCodespace = 1
 
 	CodeInvalidMsg = 1400
 	CodeOldTx      = 1401
@@ -81,185 +81,186 @@ const (
 	CodePrevMilestoneInVoting    = 7508
 )
 
-// -------- Invalid msg
+// -------- invalid msg
 
 func ErrInvalidMsg(ModuleName string, format string) error {
 	return errors.Register(ModuleName, CodeInvalidMsg, format)
 }
 
-// -------- Checkpoint Errors
+// -------- checkpoint Errors
 
 func ErrBadProposerDetails(ModuleName string, proposer sdk.AccAddress) error {
-	return errors.Register(ModuleName, CodeInvalidProposerInput, fmt.Sprintf("Proposer is not valid, current proposer is %v", proposer.String()))
+	return errors.Register(ModuleName, CodeInvalidProposerInput, fmt.Sprintf("proposer is not valid, current proposer is %v", proposer.String()))
 }
 
 func ErrBadBlockDetails(ModuleName string) error {
-	return errors.Register(ModuleName, CodeInvalidBlockInput, "Wrong roothash for given start and end block numbers")
+	return errors.Register(ModuleName, CodeInvalidBlockInput, "wrong root hash for given start and end block numbers")
 }
 
 func ErrSetCheckpointBuffer(ModuleName string) error {
-	return errors.Register(ModuleName, CodeErrSetCheckpointBuffer, "Account Root Hash not added to Checkpoint Buffer")
+	return errors.Register(ModuleName, CodeErrSetCheckpointBuffer, "account root hash not added to checkpoint buffer")
 }
 
 func ErrAddCheckpoint(ModuleName string) error {
-	return errors.Register(ModuleName, CodeErrAddCheckpoint, "Err in adding checkpoint to header blocks")
+	return errors.Register(ModuleName, CodeErrAddCheckpoint, "err in adding checkpoint to header blocks")
 }
 
 func ErrBadAccountRootHash(ModuleName string) error {
-	return errors.Register(ModuleName, CodeErrAccountRootHash, "Wrong roothash for given dividend accounts")
+	return errors.Register(ModuleName, CodeErrAccountRootHash, "wrong root hash for given dividend accounts")
 }
 
 func ErrBadAck(ModuleName string) error {
-	return errors.Register(ModuleName, CodeInvalidACK, "Ack Not Valid")
+	return errors.Register(ModuleName, CodeInvalidACK, "ack not valid")
 }
 
 func ErrOldCheckpoint(ModuleName string) error {
-	return errors.Register(ModuleName, CodeOldCheckpoint, "Checkpoint already received for given start and end block")
+	return errors.Register(ModuleName, CodeOldCheckpoint, "checkpoint already received for given start and end block")
 }
 
 func ErrDisContinuousCheckpoint(ModuleName string) error {
-	return errors.Register(ModuleName, CodeDisContinuousCheckpoint, "Checkpoint not in continuity")
+	return errors.Register(ModuleName, CodeDisContinuousCheckpoint, "checkpoint not in continuity")
 }
 
 func ErrNoACK(ModuleName string, expiresAt uint64) error {
-	return errors.Register(ModuleName, CodeNoACK, fmt.Sprintf("Checkpoint Already Exists In Buffer, ACK expected, expires at %s", strconv.FormatUint(expiresAt, 10)))
+	return errors.Register(ModuleName, CodeNoACK, fmt.Sprintf("checkpoint already exists in buffer, ack expected, expires at %s", strconv.FormatUint(expiresAt, 10)))
 }
 
 func ErrNoConn(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNoConn, "Unable to connect to chain")
+	return errors.Register(ModuleName, CodeNoConn, "unable to connect to chain")
 }
 
 func ErrNoCheckpointFound(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNoCheckpoint, "Checkpoint Not Found")
+	return errors.Register(ModuleName, CodeNoCheckpoint, "checkpoint not found")
 }
 
 func ErrCheckpointAlreadyExists(ModuleName string) error {
-	return errors.Register(ModuleName, CodeCheckpointAlreadyExists, "Checkpoint Already Exists")
+	return errors.Register(ModuleName, CodeCheckpointAlreadyExists, "checkpoint already exists")
 }
 
 func ErrNoCheckpointBufferFound(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNoCheckpointBuffer, "Checkpoint buffer not found")
+	return errors.Register(ModuleName, CodeNoCheckpointBuffer, "checkpoint buffer not found")
 }
 
 func ErrCheckpointBufferFound(ModuleName string) error {
-	return errors.Register(ModuleName, CodeCheckpointBuffer, "Checkpoint buffer found")
+	return errors.Register(ModuleName, CodeCheckpointBuffer, "checkpoint buffer found")
 }
 
 func ErrInvalidNoACK(ModuleName string) error {
-	return errors.Register(ModuleName, CodeInvalidNoACK, "Invalid No ACK -- Waiting for last checkpoint ACK")
+	return errors.Register(ModuleName, CodeInvalidNoACK, "invalid no ack -- waiting for last checkpoint ack")
 }
 
 func ErrInvalidNoACKProposer(ModuleName string) error {
-	return errors.Register(ModuleName, CodeInvalidNoAckProposer, "Invalid No ACK Proposer")
+	return errors.Register(ModuleName, CodeInvalidNoAckProposer, "invalid no ack proposer")
 }
 
 func ErrTooManyNoACK(ModuleName string) error {
-	return errors.Register(ModuleName, CodeTooManyNoAck, "Too many no-acks")
+	return errors.Register(ModuleName, CodeTooManyNoAck, "too many no-acks")
 }
 
 func ErrBadTimeStamp(ModuleName string) error {
-	return errors.Register(ModuleName, CodeBadTimeStamp, "Invalid time stamp. It must be in near past.")
+	return errors.Register(ModuleName, CodeBadTimeStamp, "invalid time stamp. It must be in near past.")
 }
 
 // -----------Milestone Errors
+
 func ErrNoMilestoneFound(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNoMilestone, "Milestone Not Found")
+	return errors.Register(ModuleName, CodeNoMilestone, "milestone not found")
 }
 
 func ErrMilestoneNotInContinuity(ModuleName string) error {
-	return errors.Register(ModuleName, CodeMilestoneNotInContinuity, "Milestone not in continuity")
+	return errors.Register(ModuleName, CodeMilestoneNotInContinuity, "milestone not in continuity")
 }
 
 func ErrMilestoneInvalid(ModuleName string) error {
-	return errors.Register(ModuleName, CodeMilestoneInvalid, "Milestone Msg Invalid")
+	return errors.Register(ModuleName, CodeMilestoneInvalid, "milestone msg invalid")
 }
 
 func ErrOldMilestone(ModuleName string) error {
-	return errors.Register(ModuleName, CodeOldMilestone, "Milestone already exists")
+	return errors.Register(ModuleName, CodeOldMilestone, "milestone already exists")
 }
 
 func ErrInvalidMilestoneTimeout(ModuleName string) error {
-	return errors.Register(ModuleName, CodeInvalidMilestoneTimeout, "Invalid Milestone Timeout msg ")
+	return errors.Register(ModuleName, CodeInvalidMilestoneTimeout, "invalid milestone Timeout msg ")
 }
 
 func ErrTooManyMilestoneTimeout(ModuleName string) error {
-	return errors.Register(ModuleName, CodeTooManyNoAck, "Too many milestone timeout msg")
+	return errors.Register(ModuleName, CodeTooManyNoAck, "too many milestone timeout msg")
 }
 
 func ErrInvalidMilestoneIndex(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNoMilestone, "Invalid milestone index")
+	return errors.Register(ModuleName, CodeNoMilestone, "invalid milestone index")
 }
 
 func ErrPrevMilestoneInVoting(ModuleName string) error {
-	return errors.Register(ModuleName, CodePrevMilestoneInVoting, "Previous milestone still in voting phase")
+	return errors.Register(ModuleName, CodePrevMilestoneInVoting, "previous milestone still in voting phase")
 }
 
 // ----------- Staking Errors
 
 func ErrOldValidator(ModuleName string) error {
-	return errors.Register(ModuleName, CodeOldValidator, "Start Epoch behind Current Epoch")
+	return errors.Register(ModuleName, CodeOldValidator, "start epoch behind current epoch")
 }
 
 func ErrNoValidator(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNoValidator, "Validator information not found")
+	return errors.Register(ModuleName, CodeNoValidator, "validator information not found")
 }
 
 func ErrNonce(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNonce, "Incorrect validator nonce")
+	return errors.Register(ModuleName, CodeNonce, "incorrect validator nonce")
 }
 
 func ErrValSignerPubKeyMismatch(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValPubkeyMismatch, "Signer Pubkey mismatch between event and msg")
+	return errors.Register(ModuleName, CodeValPubkeyMismatch, "signer pubkey mismatch between event and msg")
 }
 
 func ErrValSignerMismatch(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSignerMismatch, "Signer Address doesnt match pubkey address")
+	return errors.Register(ModuleName, CodeValSignerMismatch, "signer address doesnt match pubkey address")
 }
 
 func ErrValIsNotCurrentVal(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValidatorExitDeny, "Validator is not in validator set, exit not possible")
+	return errors.Register(ModuleName, CodeValidatorExitDeny, "validator is not in validator set, exit not possible")
 }
 
 func ErrValUnbonded(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValAlreadyUnbonded, "Validator already unbonded , cannot exit")
+	return errors.Register(ModuleName, CodeValAlreadyUnbonded, "validator already unbonded , cannot exit")
 }
 
 func ErrSignerUpdateError(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSignerUpdateError, "Signer update error")
+	return errors.Register(ModuleName, CodeSignerUpdateError, "signer update error")
 }
 
 func ErrNoSignerChange(ModuleName string) error {
-	return errors.Register(ModuleName, CodeNoSignerChangeError, "New signer same as old signer")
+	return errors.Register(ModuleName, CodeNoSignerChangeError, "new signer same as old signer")
 }
 
 func ErrOldTx(ModuleName string) error {
-	return errors.Register(ModuleName, CodeOldTx, "Old txhash not allowed")
+	return errors.Register(ModuleName, CodeOldTx, "old txhash not allowed")
 }
 
 func ErrValidatorAlreadySynced(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSignerSynced, "No signer update found, invalid message")
+	return errors.Register(ModuleName, CodeSignerSynced, "no signer update found, invalid message")
 }
 
 func ErrValidatorSave(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSave, "Cannot save validator")
+	return errors.Register(ModuleName, CodeValSave, "cannot save validator")
 }
 
 func ErrValidatorNotDeactivated(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSave, "Validator Not Deactivated")
+	return errors.Register(ModuleName, CodeValSave, "validator not deactivated")
 }
 
 func ErrValidatorAlreadyJoined(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValAlreadyJoined, "Validator already joined")
+	return errors.Register(ModuleName, CodeValAlreadyJoined, "validator already joined")
 }
 
-// Bor Errors --------------------------------
+// bor Errors --------------------------------
 
 func ErrInvalidBorChainID(ModuleName string) error {
-	return errors.Register(ModuleName, CodeInvalidBorChainID, "Invalid Bor chain id")
+	return errors.Register(ModuleName, CodeInvalidBorChainID, "invalid bor chain id")
 }
 
 func ErrSpanNotInContinuity(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSpanNotContinuous, "Span not continuous")
+	return errors.Register(ModuleName, CodeSpanNotContinuous, "span not continuous")
 }
 
 func ErrInvalidSpanDuration(ModuleName string) error {
@@ -267,131 +268,108 @@ func ErrInvalidSpanDuration(ModuleName string) error {
 }
 
 func ErrSpanNotFound(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSpanNotFound, "Span not found")
+	return errors.Register(ModuleName, CodeSpanNotFound, "span not found")
 }
 
 func ErrUnableToFreezeValSet(ModuleName string) error {
-	return errors.Register(ModuleName, CodeUnableToFreezeSet, "Unable to freeze validator set for next span")
+	return errors.Register(ModuleName, CodeUnableToFreezeSet, "unable to freeze validator set for next span")
 }
 
 func ErrValSetMisMatch(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSetMisMatch, "Validator set mismatch")
+	return errors.Register(ModuleName, CodeValSetMisMatch, "validator set mismatch")
 }
 
 func ErrProducerMisMatch(ModuleName string) error {
-	return errors.Register(ModuleName, CodeProducerMisMatch, "Producer set mismatch")
+	return errors.Register(ModuleName, CodeProducerMisMatch, "producer set mismatch")
 }
-
-// TODO HV2 - These are not needed as we don't return any error from side tx
-// //
-// // Side-tx errors
-// //
-
-// // ErrorSideTx represents side-tx error
-// func ErrorSideTx(ModuleName string, code uint32) (res abci.ResponseDeliverSideTx) {
-// 	res.Code = uint32(code)
-// 	res.Codespace = string(codespace)
-// 	res.Result = voteTypes.Vote_VOTE_SKIP // skip side-tx vote in-case of error
-
-// 	return
-// }
-
-// func ErrSideTxValidation(ModuleName string) error {
-// 	return errors.Register(ModuleName, CodeSideTxValidationFailed, "External call majority validation failed. ")
-// }
-
-//
-// Private methods
-//
 
 func CodeToDefaultMsg(code uint32) string {
 	switch code {
-	// case CodeInvalidBlockInput:
-	// 	return "Invalid Block Input"
 	case CodeInvalidMsg:
-		return "Invalid Message"
+		return "invalid message"
 	case CodeInvalidProposerInput:
-		return "Proposer is not valid"
+		return "proposer is not valid"
 	case CodeInvalidBlockInput:
-		return "Wrong roothash for given start and end block numbers"
+		return "wrong root hash for given start and end block numbers"
 	case CodeInvalidACK:
-		return "Ack Not Valid"
+		return "ack not valid"
 	case CodeNoACK:
-		return "Checkpoint Already Exists In Buffer, ACK expected"
+		return "checkpoint already exists in buffer, ack expected"
 	case CodeBadTimeStamp:
-		return "Invalid time stamp. It must be in near past."
+		return "invalid time stamp. It must be in near past."
 	case CodeInvalidNoACK:
-		return "Invalid No ACK -- Waiting for last checkpoint ACK"
+		return "invalid no ack -- waiting for last checkpoint ack"
 	case CodeTooManyNoAck:
-		return "Too many no-acks"
+		return "too many no-acks"
 	case CodeLowBal:
-		return "Insufficient balance"
+		return "insufficient balance"
 	case CodeNoCheckpoint:
-		return "Checkpoint Not Found"
+		return "checkpoint not found"
 	case CodeOldCheckpoint:
-		return "Checkpoint already received for given start and end block"
+		return "checkpoint already received for given start and end block"
 	case CodeDisContinuousCheckpoint:
-		return "Checkpoint not in continuity"
+		return "checkpoint not in continuity"
 	case CodeNoCheckpointBuffer:
-		return "Checkpoint buffer Not Found"
+		return "checkpoint buffer not found"
 	case CodeOldValidator:
-		return "Start Epoch behind Current Epoch"
+		return "start epoch behind current epoch"
 	case CodeNoValidator:
-		return "Validator information not found"
+		return "validator information not found"
 	case CodeValSignerMismatch:
-		return "Signer Address doesnt match pubkey address"
+		return "signer address doesnt match pubkey address"
 	case CodeValidatorExitDeny:
-		return "Validator is not in validator set, exit not possible"
+		return "validator is not in validator set, exit not possible"
 	case CodeValAlreadyUnbonded:
-		return "Validator already unbonded , cannot exit"
+		return "validator already unbonded , cannot exit"
 	case CodeSignerSynced:
-		return "No signer update found, invalid message"
+		return "no signer update found, invalid message"
 	case CodeValSave:
-		return "Cannot save validator"
+		return "cannot save validator"
 	case CodeValAlreadyJoined:
-		return "Validator already joined"
+		return "validator already joined"
 	case CodeSignerUpdateError:
-		return "Signer update error"
+		return "signer update error"
 	case CodeNoConn:
-		return "Unable to connect to chain"
+		return "unable to connect to chain"
 	case CodeWaitFrConfirmation:
 		return "wait for confirmation time before sending transaction"
 	case CodeValPubkeyMismatch:
-		return "Signer Pubkey mismatch between event and msg"
+		return "signer pubkey mismatch between event and msg"
 	case CodeSpanNotContinuous:
-		return "Span not continuous"
+		return "span not continuous"
 	case CodeUnableToFreezeSet:
-		return "Unable to freeze validator set for next span"
+		return "unable to freeze validator set for next span"
 	case CodeSpanNotFound:
-		return "Span not found"
+		return "span not found"
 	case CodeValSetMisMatch:
-		return "Validator set mismatch"
+		return "validator set mismatch"
 	case CodeProducerMisMatch:
-		return "Producer set mismatch"
+		return "producer set mismatch"
 	case CodeInvalidBorChainID:
-		return "Invalid Bor chain id"
+		return "invalid bor chain id"
 	default:
-		return "Default error"
+		return "default error"
 	}
 }
 
 // Slashing errors
+
 func ErrValidatorSigningInfoSave(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSigningInfoSave, "Cannot save validator signing info")
+	return errors.Register(ModuleName, CodeValSigningInfoSave, "cannot save validator signing info")
 }
 
 func ErrUnjailValidator(ModuleName string) error {
-	return errors.Register(ModuleName, CodeErrValUnjail, "Error while unJail validator")
+	return errors.Register(ModuleName, CodeErrValUnjail, "error while unjail validator")
 }
 
 func ErrSlashInfoDetails(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSlashInfoDetails, "Wrong slash info details")
+	return errors.Register(ModuleName, CodeSlashInfoDetails, "wrong slash info details")
 }
 
 func ErrTickNotInContinuity(ModuleName string) error {
-	return errors.Register(ModuleName, CodeTickNotInContinuity, "Tick not in continuity")
+	return errors.Register(ModuleName, CodeTickNotInContinuity, "tick not in continuity")
 }
 
 func ErrTickAckNotInContinuity(ModuleName string) error {
-	return errors.Register(ModuleName, CodeTickAckNotInContinuity, "Tick-ack not in continuity")
+	return errors.Register(ModuleName, CodeTickAckNotInContinuity, "tick-ack not in continuity")
 }
