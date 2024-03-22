@@ -161,10 +161,10 @@ func NewHeimdallApp(
 	keys := storetypes.NewKVStoreKeys(
 		authtypes.StoreKey,
 		banktypes.StoreKey,
+		consensusparamtypes.StoreKey,
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
-		consensusparamtypes.StoreKey,
 		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
 		// bortypes.StoreKey,
@@ -730,11 +730,17 @@ func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
+func (app *HeimdallApp) Configurator() module.Configurator {
+	return app.configurator
+}
+
 type EmptyAppOptions struct{}
 
 func (ao EmptyAppOptions) Get(_ string) interface{} {
 	return nil
 }
+
+// TODO HV2: params will be soon deprecated, remove paramskeeper once it's done
 
 // initParamsKeeper init params keeper and its subspaces
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, tkey storetypes.StoreKey) paramskeeper.Keeper {
