@@ -63,7 +63,7 @@ const (
 	ChainFlag         = "chain"
 
 	// ---
-	// TODO Move these to common client flags
+	// TODO HV2 Move these to common client flags
 	// BroadcastBlock defines a tx broadcasting mode where the client waits for
 	// the tx to be committed in a block.
 	BroadcastBlock = "block"
