@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	types "github.com/0xPolygon/heimdall-v2/x/types/error"
+	types "github.com/0xPolygon/heimdall-v2/types/error"
 )
 
 // PermCheck checks the secret key and the keystore files.
