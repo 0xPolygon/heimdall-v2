@@ -4,7 +4,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// EthHash get eth hash
+// EthHash returns eth hash
 func (aa TxHash) EthHash() common.Hash {
 	return common.Hash(aa.Bytes())
 }

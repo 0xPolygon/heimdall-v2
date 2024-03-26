@@ -16,7 +16,7 @@ var _ yaml.Marshaler = HeimdallHash{}
 // ZeroHeimdallHash represents zero address
 var ZeroHeimdallHash = (common.Address{}).Bytes()
 
-// EthHash get eth hash
+// EthHash returns eth hash
 func (aa HeimdallHash) EthHash() common.Hash {
 	return common.Hash(aa.Bytes())
 }

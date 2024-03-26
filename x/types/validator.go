@@ -16,8 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// NewValidator func creates a new validator,
-// the HeimdallAddress field is generated using Address i.e. [20]byte
+// NewValidator func creates a new validator
 func NewValidator(
 	id uint64,
 	startEpoch uint64,
@@ -43,7 +42,7 @@ func NewValidator(
 }
 
 // SortValidatorByAddress sorts a slice of validators by address
-// to sort it we compare the values of the Signer(HeimdallAddress i.e. [20]byte)
+// to sort it we compare the values of the Signer(string)
 func SortValidatorByAddress(a []Validator) []Validator {
 	sort.Slice(a, func(i, j int) bool {
 		return strings.Compare(strings.ToLower(a[i].Signer), strings.ToLower(a[j].Signer)) < 0
@@ -65,7 +64,7 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 	return false
 }
 
-// Validates validator
+// ValidateBasic Validates validator
 func (v *Validator) ValidateBasic() bool {
 	pk, ok := v.PubKey.GetCachedValue().(cryptotypes.PubKey)
 
@@ -85,7 +84,7 @@ func (v *Validator) ValidateBasic() bool {
 	return true
 }
 
-// amino marshall validator
+// MarshalValidator marshall validator
 func MarshallValidator(cdc codec.BinaryCodec, validator Validator) (bz []byte, err error) {
 	bz, err = cdc.Marshal(&validator)
 	if err != nil {
@@ -177,7 +176,7 @@ func (v *Validator) GetOperator() string {
 
 // --------
 
-// Bytes get bytes of validatorID
+// ValIDToBytes gives bytes of validatorID
 func ValIDToBytes(valID uint64) []byte {
 	return []byte(strconv.FormatUint(valID, 10))
 }
@@ -188,7 +187,7 @@ func ValIDToBytes(valID uint64) []byte {
 // Used to send validator information to bor validator contract
 type MinimalVal struct {
 	ID          uint64 `json:"ID"`
-	VotingPower uint64 `json:"power"` // TODO add 10^-18 here so that we dont overflow easily
+	VotingPower uint64 `json:"power"` // TODO HV2 add 10^-18 here so that we dont overflow easily
 	Signer      string `json:"signer"`
 }
 
@@ -197,7 +196,7 @@ func (v Validator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	return unpacker.UnpackAny(v.PubKey, &pk)
 }
 
-///////Following functions are implemented to support cosmos validator interface/////////
+// Following functions are implemented to support cosmos validator interface
 
 // ConsPubKey implements types.ValidatorI.
 func (v *Validator) ConsPubKey() (cryptotypes.PubKey, error) {

@@ -25,8 +25,8 @@ var (
 	// ErrNoSignerChange returned when the new signer address is same as old one
 	ErrNoSignerChange = errorsmod.Register(RootCodespace, 104, "new singer is same as old one")
 
-	// ErrUnknownRequest is returned when the respective validator is already unbonded
-	ErrValUnbonded = errorsmod.Register(RootCodespace, 105, "validator already unbonded")
+	// ErrUnknownRequest is returned when the request is unknown
+	ErrUnknownRequest = errorsmod.Register(RootCodespace, 105, "unknown request")
 
 	// ErrInvalidNonce is returned when the nonce is wrong
 	ErrInvalidNonce = errorsmod.Register(RootCodespace, 106, "invalid nonce")
