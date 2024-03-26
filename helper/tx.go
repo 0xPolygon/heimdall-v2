@@ -87,7 +87,6 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 }
 
 // SendCheckpoint sends checkpoint to rootchain contract
-// todo return err
 func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error) {
 	data, err := c.RootChainABI.Pack("submitCheckpoint", signedData, sigs)
 	if err != nil {

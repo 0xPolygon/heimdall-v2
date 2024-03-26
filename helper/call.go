@@ -921,9 +921,9 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 
 	var err error
 
-	contractsABIs := [8]string{rootchain.RootchainABI, stakinginfo.StakinginfoABI, validatorset.ValidatorsetABI,
-		statereceiver.StatereceiverABI, statesender.StatesenderABI, stakemanager.StakemanagerABI,
-		slashmanager.SlashmanagerABI, erc20.Erc20ABI}
+	contractsABIs := [8]string{rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
+		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
+		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI}
 
 	// iterate over supported ABIs
 	for _, contractABI := range contractsABIs {
@@ -954,21 +954,21 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 // chooseContractCallerABI extracts and returns the abo.ABI object from the contractCallerObj based on its abi string
 func chooseContractCallerABI(contractCallerObj *ContractCaller, abi string) (*abi.ABI, error) {
 	switch abi {
-	case rootchain.RootchainABI:
+	case rootchain.RootchainMetaData.ABI:
 		return &contractCallerObj.RootChainABI, nil
-	case stakinginfo.StakinginfoABI:
+	case stakinginfo.StakinginfoMetaData.ABI:
 		return &contractCallerObj.StakingInfoABI, nil
-	case validatorset.ValidatorsetABI:
+	case validatorset.ValidatorsetMetaData.ABI:
 		return &contractCallerObj.ValidatorSetABI, nil
-	case statereceiver.StatereceiverABI:
+	case statereceiver.StatereceiverMetaData.ABI:
 		return &contractCallerObj.StateReceiverABI, nil
-	case statesender.StatesenderABI:
+	case statesender.StatesenderMetaData.ABI:
 		return &contractCallerObj.StateSenderABI, nil
-	case stakemanager.StakemanagerABI:
+	case stakemanager.StakemanagerMetaData.ABI:
 		return &contractCallerObj.StakeManagerABI, nil
-	case slashmanager.SlashmanagerABI:
+	case slashmanager.SlashmanagerMetaData.ABI:
 		return &contractCallerObj.SlashManagerABI, nil
-	case erc20.Erc20ABI:
+	case erc20.Erc20MetaData.ABI:
 		return &contractCallerObj.MaticTokenABI, nil
 	}
 
