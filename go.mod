@@ -1,6 +1,8 @@
 module github.com/0xPolygon/heimdall-v2
 
-go 1.21.4
+go 1.22
+
+toolchain go1.22.1
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -15,7 +17,6 @@ require (
 	github.com/cosmos/cosmos-sdk v0.50.1
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/json-iterator/go v1.1.12
-	github.com/maticnetwork/heimdall v0.3.1-0.20230227104835-81bd1055b0bc
 	github.com/spf13/cast v1.6.0
 )
 
@@ -40,6 +41,7 @@ require (
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 )
 
@@ -188,7 +190,7 @@ require (
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
