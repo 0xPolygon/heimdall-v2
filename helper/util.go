@@ -27,6 +27,7 @@ import (
 	"bytes"
 	"errors"
 	"math/big"
+	"net/http"
 	"sort"
 
 	tmTypes "github.com/cometbft/cometbft/types"
@@ -47,12 +48,12 @@ import (
 	// "github.com/maticnetwork/heimdall/types/rest"
 )
 
-/*
-
 //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
+
+/*
 
 var (
 	Client HTTPClient
