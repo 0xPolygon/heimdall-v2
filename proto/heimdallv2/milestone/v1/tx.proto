@@ -1,0 +1,68 @@
+syntax = "proto3";
+package heimdallv2.milestone.v1;
+
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "gogoproto/gogo.proto";
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+import "heimdallv2/types/hash.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
+
+// Msg defines the staking Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // Milestone defines a method for milestone
+  rpc Milestone(MsgMilestone) returns (MsgMilestoneResponse);
+
+  // MilestoneTimeout defines a method for MilestoneTimeout
+  rpc MilestoneTimeout(MsgMilestoneTimeout)
+      returns (MsgMilestoneTimeoutResponse);
+}
+
+// MsgMilestone defines a SDK message for the milestone
+message MsgMilestone {
+  option (amino.name) = "heimdall-v2/MsgMilestone";
+
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+
+  string proposer = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+
+  uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+
+  uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+
+  heimdallv2.types.HeimdallHash hash = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  string bor_chain_i_d = 5 [ (amino.dont_omitempty) = true ];
+
+  string milestone_i_d = 6 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgMilestoneResponse defines the Msg/Milestone response type.
+message MsgMilestoneResponse {}
+
+// MsgMilestoneTimeout defines a SDK message for creating a milestone
+message MsgMilestoneTimeout {
+  option (amino.name) = "heimdall-v2/MsgMilestoneTimeout";
+
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+}
+
+// MsgMilestoneTimeoutResponse defines the Msg/MilestoneTimeout response type.
+message MsgMilestoneTimeoutResponse {}
