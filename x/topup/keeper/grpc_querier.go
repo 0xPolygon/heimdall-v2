@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"math/big"
 )
 
 var _ types.QueryServer = queryServer{}
@@ -28,6 +27,7 @@ func (q queryServer) TopupTxStatus(ctx context.Context, req *types.QuerySequence
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
+	/* TODO HV2: enable this when chainManager  and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	chainParams := q.k.chainKeeper.GetParams(sdkCtx)
@@ -53,6 +53,10 @@ func (q queryServer) TopupTxStatus(ctx context.Context, req *types.QuerySequence
 	}
 
 	return &types.QuerySequenceParamsResponse{Sequence: sequence.String()}, nil
+	*/
+
+	// TODO HV2: remove the "return nil, nil" when the above method is enabled
+	return nil, nil
 }
 
 // DividendAccountByAddress implements the gRPC service handler to query a dividend account by its address
