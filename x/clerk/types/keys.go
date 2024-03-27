@@ -1,5 +1,7 @@
 package types
 
+import "cosmossdk.io/collections"
+
 const (
 	// ModuleName is the name of the module
 	ModuleName = "clerk"
@@ -15,4 +17,10 @@ const (
 
 	// DefaultParamSpace default name for parameter store
 	DefaultParamSpace = ModuleName
+)
+
+var (
+	// RecordKeyPrefix is the prefix for the record key
+	RecordsWithIDKeyPrefix   = collections.NewPrefix(0)
+	RecordsWithTimeKeyPrefix = collections.NewPrefix(1)
 )

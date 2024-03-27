@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	storetypes2 "cosmossdk.io/store/types"
@@ -38,20 +39,28 @@ type Keeper struct {
 	// chain param keeper
 	// TODO HV2: uncomment when chainmanager is implemented
 	// chainKeeper chainmanager.Keeper
+
+	RecordsWithID collections.Map[uint64, types.EventRecord]
+	// TODO HV2 - is this needed? We can regenerate this from RecordsWithID
+	RecordsWithTime collections.Map[collections.Pair[time.Time, uint64], uint64]
 }
 
 // NewKeeper create new keeper
 func NewKeeper(
 	cdc codec.BinaryCodec,
+	// TODO HV2: As we are not using the migrator, I believe we do not need this
 	storeService storetypes.KVStoreService,
 	// TODO HV2: uncomment when chainmanager is implemented
 	// chainKeeper chainmanager.Keeper,
 ) Keeper {
+	sb := collections.NewSchemaBuilder(storeService)
 	keeper := Keeper{
 		storeService: storeService,
 		cdc:          cdc,
 		// TODO HV2: uncomment when chainmanager is implemented
 		// chainKeeper: chainKeeper,
+		RecordsWithID:   collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
+		RecordsWithTime: collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
 	}
 
 	return keeper
@@ -64,54 +73,25 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 
 // SetEventRecordWithTime sets event record id with time
 func (k *Keeper) SetEventRecordWithTime(ctx sdk.Context, record types.EventRecord) error {
-	key := GetEventRecordKeyWithTime(record.ID, record.RecordTime)
-
-	// TODO HV2: why is `record.ID` not accepted in the function?
-	// value, err := k.cdc.MarshalInterface(record.ID)
-	value, err := k.cdc.MarshalInterface(nil)
-	if err != nil {
-		k.Logger(ctx).Error("Error marshalling record", "error", err)
-		return err
+	_, err := k.RecordsWithTime.Get(ctx, collections.Join(record.RecordTime, record.ID))
+	if err == collections.ErrNotFound {
+		return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.ID), record.ID)
+	} else if err == collections.ErrEncoding {
+		return collections.ErrEncoding
 	}
 
-	return k.setEventRecordStore(ctx, key, value)
+	return nil
 }
 
 // SetEventRecordWithID adds record to store with ID
 func (k *Keeper) SetEventRecordWithID(ctx sdk.Context, record types.EventRecord) error {
-	key := GetEventRecordKey(record.ID)
-
-	value, err := k.cdc.MarshalInterface(&record)
-	if err != nil {
-		k.Logger(ctx).Error("Error marshalling record", "error", err)
-		return err
+	_, err := k.RecordsWithID.Get(ctx, record.ID)
+	if err == collections.ErrNotFound {
+		return k.RecordsWithID.Set(ctx, record.ID, record)
+	} else if err == collections.ErrEncoding {
+		return collections.ErrEncoding
 	}
 
-	return k.setEventRecordStore(ctx, key, value)
-}
-
-// setEventRecordStore adds value to store by key
-func (k *Keeper) setEventRecordStore(ctx sdk.Context, key, value []byte) error {
-	kvStore := k.storeService.OpenKVStore(ctx)
-	// check if already set
-	isPresent, err := kvStore.Has(key)
-	if isPresent {
-		return errors.New("key already exists")
-	}
-
-	if err != nil {
-		k.Logger(ctx).Error("Error checking record", "error", err)
-		return err
-	}
-
-	// store value in provided key
-	err = kvStore.Set(key, value)
-	if err != nil {
-		k.Logger(ctx).Error("Error setting record", "error", err)
-		return err
-	}
-
-	// return
 	return nil
 }
 
