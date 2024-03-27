@@ -11,7 +11,7 @@ import (
 )
 
 // SelectNextProducers selects producers for next span
-func SelectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Validator, producerCount uint64) ([]uint64, error) {
+func selectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Validator, producerCount uint64) ([]uint64, error) {
 	selectedProducers := make([]uint64, 0)
 
 	if len(spanEligibleValidators) <= int(producerCount) {
@@ -26,7 +26,7 @@ func SelectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Val
 	seedBytes := helper.ToBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
 	// nolint: staticcheck
-	rand.Seed(seed)
+	rand := rand.New(rand.NewSource(seed))
 
 	// weighted range from validators' voting power
 	votingPower := make([]uint64, len(spanEligibleValidators))
@@ -43,7 +43,7 @@ func SelectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Val
 			Weighted range will look like (1, 2)
 			Rolling inclusive will have a range of 0 - 2, making validator with staking power 1 chance of selection = 66%
 		*/
-		targetWeight := randomRangeInclusive(1, totalVotingPower)
+		targetWeight := randomRangeInclusive(1, totalVotingPower, rand)
 		index := binarySearch(weightedRanges, targetWeight)
 		selectedProducers = append(selectedProducers, spanEligibleValidators[index].Id)
 	}
@@ -72,7 +72,7 @@ func binarySearch(array []uint64, search uint64) int {
 }
 
 // randomRangeInclusive produces unbiased pseudo random in the range [min, max]. Uses rand.Uint64() and can be seeded beforehand.
-func randomRangeInclusive(min uint64, max uint64) uint64 {
+func randomRangeInclusive(min uint64, max uint64, rand *rand.Rand) uint64 {
 	if max <= min {
 		return max
 	}

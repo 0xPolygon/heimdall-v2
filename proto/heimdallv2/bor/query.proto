@@ -1,6 +1,7 @@
 syntax = "proto3";
 package heimdallv2.bor;
 
+import "gogoproto/gogo.proto";
 import "cosmos/query/v1/query.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/bor/bor.proto";
@@ -10,7 +11,7 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 // Query defines the gRPC querier service.
 service Query {
 
-  rpc Span(QuerySpanRequest) returns (QuerySpanResponse) {
+  rpc SpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/heimdallv2/bor/span/{span_id}";
   }
@@ -42,13 +43,13 @@ service Query {
   }
 }
 
-// QuerySpanRequest defines the gRPC request structure for querying
+// QuerySpanByIdRequest defines the gRPC request structure for querying
 // a bor span by span id.
-message QuerySpanRequest { string span_id = 1; }
+message QuerySpanByIdRequest { string span_id = 1; }
 
-// QuerySpanResponse defines the gRPC response structure for querying
+// QuerySpanByIdResponse defines the gRPC response structure for querying
 // a bor span by span id.
-message QuerySpanResponse {
+message QuerySpanByIdResponse {
   string height = 1;
   Span span = 2;
 }
@@ -64,7 +65,7 @@ message QuerySpanListRequest {
 // a list of bor spans.
 message QuerySpanListResponse {
   string height = 1;
-  repeated Span span_list = 2;
+  repeated Span span_list = 2 [ (gogoproto.nullable) = false ];
 }
 
 // QueryLatestSpanResponse defines the gRPC response structure for querying
