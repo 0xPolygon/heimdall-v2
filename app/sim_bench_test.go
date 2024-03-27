@@ -17,8 +17,6 @@ import (
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 )
 
-var FlagEnableBenchStreamingValue bool
-
 // Get flags every time the simulator is run
 func init() {
 	flag.BoolVar(&FlagEnableBenchStreamingValue, "EnableStreaming", false, "Enable streaming service")

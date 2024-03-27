@@ -29,11 +29,6 @@ import (
 	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 )
 
-// HeimdallAppChainID hardcoded chainID for simulation
-const HeimdallAppChainID = "simulation-app"
-
-var FlagEnableStreamingValue bool
-
 // Get flags every time the simulator is run
 func init() {
 	simcli.GetSimulatorFlags()
