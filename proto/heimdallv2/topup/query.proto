@@ -11,8 +11,8 @@ import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
-// TODO HV2: check usage of return types and their json representations
-// (compared to heimdall-v1)
+// TODO HV2: compared to heimdall-v1, some return types and their json
+// representations changed. Is this ok?
 
 // Query defines the gRPC querier service.
 service Query {
@@ -63,7 +63,7 @@ message QuerySequenceParams {
 // QuerySequenceParamsResponse the is response type for the TopupTxStatus RPC
 // method
 message QuerySequenceParamsResponse {
-  bool status = 1 [ (amino.dont_omitempty) = true ];
+  string sequence = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryDividendAccountParams is the request type for the
@@ -79,7 +79,6 @@ message QueryDividendAccountParams {
 // QueryDividendAccountParamsResponse the is response type for the
 // DividendAccountByAddress RPC method
 message QueryDividendAccountParamsResponse {
-  string height = 1 [ (amino.dont_omitempty) = true ];
   heimdallv2.types.DividendAccount dividend_account = 2
       [ (gogoproto.nullable) = false, (gogoproto.jsontag) = "result" ];
 }
@@ -91,7 +90,6 @@ message QueryDividendAccountRootParams {}
 // QueryDividendAccountRootResponse the is response type for the
 // DividendAccountRoot RPC method
 message QueryDividendAccountRootResponse {
-  string height = 1 [ (amino.dont_omitempty) = true ];
   heimdallv2.types.HeimdallHash account_root_hash = 2
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "result" ];
 }
@@ -109,8 +107,7 @@ message QueryVerifyAccountProofParams {
 // VerifyAccountProof RPC method
 message QueryVerifyAccountProofResponse {
   // TODO HV2: check VerifyAccountProofHandlerFn where result can also be
-  // embedded in a map. In case, implement it.
-  string height = 1 [ (amino.dont_omitempty) = true ];
+  // embedded in a map.
   bool result = 2 [ (amino.dont_omitempty) = true ];
 }
 
@@ -124,7 +121,6 @@ message QueryDividendAccountProofParams {
 // QueryDividendAccountProofResponse the is response type for the
 // DividendAccountProof RPC method
 message QueryDividendAccountProofResponse {
-  string height = 1 [ (amino.dont_omitempty) = true ];
   DividendAccountProof result = 2 [ (amino.dont_omitempty) = true ];
 }
 
