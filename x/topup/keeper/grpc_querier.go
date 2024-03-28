@@ -22,7 +22,8 @@ func NewQueryServer(k *Keeper /*, contractCaller helper.IContractCaller */) type
 	}
 }
 
-func (q queryServer) TopupTxStatus(ctx context.Context, req *types.QuerySequenceParams) (*types.QuerySequenceParamsResponse, error) {
+// GetTopupTxSequence implements the gRPC service handler to query the status of a topup tx and returns its sequence
+func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryTopupSequenceResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -52,15 +53,15 @@ func (q queryServer) TopupTxStatus(ctx context.Context, req *types.QuerySequence
 		return nil, status.Errorf(codes.NotFound, "sequence with hash %s not found", req.TxHash)
 	}
 
-	return &types.QuerySequenceParamsResponse{Sequence: sequence.String()}, nil
+	return &types.QueryTopupSequenceResponse{Sequence: sequence.String()}, nil
 	*/
 
 	// TODO HV2: remove the "return nil, nil" when the above method is enabled
 	return nil, nil
 }
 
-// DividendAccountByAddress implements the gRPC service handler to query a dividend account by its address
-func (q queryServer) DividendAccountByAddress(ctx context.Context, req *types.QueryDividendAccountParams) (*types.QueryDividendAccountParamsResponse, error) {
+// GetDividendAccountByAddress implements the gRPC service handler to query a dividend account by its address
+func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types.QueryDividendAccountRequest) (*types.QueryDividendAccountResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -70,10 +71,10 @@ func (q queryServer) DividendAccountByAddress(ctx context.Context, req *types.Qu
 	if err != nil {
 		return nil, err
 	}
-	return &types.QueryDividendAccountParamsResponse{DividendAccount: dividendAccount}, nil
+	return &types.QueryDividendAccountResponse{DividendAccount: dividendAccount}, nil
 }
 
-func (q queryServer) DividendAccountRoot(ctx context.Context, req *types.QueryDividendAccountRootParams) (*types.QueryDividendAccountRootResponse, error) {
+func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -93,10 +94,10 @@ func (q queryServer) DividendAccountRoot(ctx context.Context, req *types.QueryDi
 	*/
 
 	// TODO HV2: return accountRoot instead of nil
-	return &types.QueryDividendAccountRootResponse{AccountRootHash: nil}, nil
+	return &types.QueryDividendAccountRootHashResponse{AccountRootHash: nil}, nil
 }
 
-func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVerifyAccountProofParams) (*types.QueryVerifyAccountProofResponse, error) {
+func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVerifyAccountProofRequest) (*types.QueryVerifyAccountProofResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -117,11 +118,11 @@ func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVer
 	}
 
 	// TODO HV2: replace false with accountProofStatus
-	return &types.QueryVerifyAccountProofResponse{Result: false}, nil
+	return &types.QueryVerifyAccountProofResponse{IsVerified: false}, nil
 
 }
 
-func (q queryServer) DividendAccountProof(ctx context.Context, req *types.QueryDividendAccountProofParams) (*types.QueryDividendAccountProofResponse, error) {
+func (q queryServer) GetDividendAccountProof(ctx context.Context, req *types.QueryDividendAccountProofRequest) (*types.QueryDividendAccountProofResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -152,12 +153,12 @@ func (q queryServer) DividendAccountProof(ctx context.Context, req *types.QueryD
 		}
 		// build response and return
 		dividendAccountProof := &types.DividendAccountProof{
-			User:         req.Address,
+			Address:      req.Address,
 			AccountProof: merkleProof,
 			Index:        index,
 		}
 
-		return &types.QueryDividendAccountProofResponse{Result: dividendAccountProof}, nil
+		return &types.QueryDividendAccountProofResponse{dividendAccountProof}, nil
 	}
 	*/
 

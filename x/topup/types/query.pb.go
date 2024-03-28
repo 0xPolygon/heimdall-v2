@@ -33,24 +33,25 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QuerySequenceParams is the request type for the TopupTxStatus RPC method
-type QuerySequenceParams struct {
+// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence RPC
+// method
+type QueryTopupSequenceRequest struct {
 	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
-func (m *QuerySequenceParams) Reset()         { *m = QuerySequenceParams{} }
-func (m *QuerySequenceParams) String() string { return proto.CompactTextString(m) }
-func (*QuerySequenceParams) ProtoMessage()    {}
-func (*QuerySequenceParams) Descriptor() ([]byte, []int) {
+func (m *QueryTopupSequenceRequest) Reset()         { *m = QueryTopupSequenceRequest{} }
+func (m *QueryTopupSequenceRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryTopupSequenceRequest) ProtoMessage()    {}
+func (*QueryTopupSequenceRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{0}
 }
-func (m *QuerySequenceParams) XXX_Unmarshal(b []byte) error {
+func (m *QueryTopupSequenceRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QuerySequenceParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryTopupSequenceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QuerySequenceParams.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryTopupSequenceRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -60,50 +61,50 @@ func (m *QuerySequenceParams) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (m *QuerySequenceParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QuerySequenceParams.Merge(m, src)
+func (m *QueryTopupSequenceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTopupSequenceRequest.Merge(m, src)
 }
-func (m *QuerySequenceParams) XXX_Size() int {
+func (m *QueryTopupSequenceRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QuerySequenceParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QuerySequenceParams.DiscardUnknown(m)
+func (m *QueryTopupSequenceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTopupSequenceRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QuerySequenceParams proto.InternalMessageInfo
+var xxx_messageInfo_QueryTopupSequenceRequest proto.InternalMessageInfo
 
-func (m *QuerySequenceParams) GetTxHash() string {
+func (m *QueryTopupSequenceRequest) GetTxHash() string {
 	if m != nil {
 		return m.TxHash
 	}
 	return ""
 }
 
-func (m *QuerySequenceParams) GetLogIndex() uint64 {
+func (m *QueryTopupSequenceRequest) GetLogIndex() uint64 {
 	if m != nil {
 		return m.LogIndex
 	}
 	return 0
 }
 
-// QuerySequenceParamsResponse the is response type for the TopupTxStatus RPC
+// QueryTopupSequenceResponse is response type for the GetTopupTxSequence RPC
 // method
-type QuerySequenceParamsResponse struct {
+type QueryTopupSequenceResponse struct {
 	Sequence string `protobuf:"bytes,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
 
-func (m *QuerySequenceParamsResponse) Reset()         { *m = QuerySequenceParamsResponse{} }
-func (m *QuerySequenceParamsResponse) String() string { return proto.CompactTextString(m) }
-func (*QuerySequenceParamsResponse) ProtoMessage()    {}
-func (*QuerySequenceParamsResponse) Descriptor() ([]byte, []int) {
+func (m *QueryTopupSequenceResponse) Reset()         { *m = QueryTopupSequenceResponse{} }
+func (m *QueryTopupSequenceResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryTopupSequenceResponse) ProtoMessage()    {}
+func (*QueryTopupSequenceResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{1}
 }
-func (m *QuerySequenceParamsResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryTopupSequenceResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QuerySequenceParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryTopupSequenceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QuerySequenceParamsResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryTopupSequenceResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -113,43 +114,43 @@ func (m *QuerySequenceParamsResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *QuerySequenceParamsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QuerySequenceParamsResponse.Merge(m, src)
+func (m *QueryTopupSequenceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTopupSequenceResponse.Merge(m, src)
 }
-func (m *QuerySequenceParamsResponse) XXX_Size() int {
+func (m *QueryTopupSequenceResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QuerySequenceParamsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QuerySequenceParamsResponse.DiscardUnknown(m)
+func (m *QueryTopupSequenceResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTopupSequenceResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QuerySequenceParamsResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryTopupSequenceResponse proto.InternalMessageInfo
 
-func (m *QuerySequenceParamsResponse) GetSequence() string {
+func (m *QueryTopupSequenceResponse) GetSequence() string {
 	if m != nil {
 		return m.Sequence
 	}
 	return ""
 }
 
-// QueryDividendAccountParams is the request type for the
-// DividendAccountByAddress RPC method
-type QueryDividendAccountParams struct {
-	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"user_addr"`
+// QueryDividendAccountRequest is the request type for the
+// GetDividendAccountByAddress RPC method
+type QueryDividendAccountRequest struct {
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address"`
 }
 
-func (m *QueryDividendAccountParams) Reset()         { *m = QueryDividendAccountParams{} }
-func (m *QueryDividendAccountParams) String() string { return proto.CompactTextString(m) }
-func (*QueryDividendAccountParams) ProtoMessage()    {}
-func (*QueryDividendAccountParams) Descriptor() ([]byte, []int) {
+func (m *QueryDividendAccountRequest) Reset()         { *m = QueryDividendAccountRequest{} }
+func (m *QueryDividendAccountRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryDividendAccountRequest) ProtoMessage()    {}
+func (*QueryDividendAccountRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{2}
 }
-func (m *QueryDividendAccountParams) XXX_Unmarshal(b []byte) error {
+func (m *QueryDividendAccountRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryDividendAccountParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryDividendAccountRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryDividendAccountParams.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryDividendAccountRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -159,43 +160,43 @@ func (m *QueryDividendAccountParams) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *QueryDividendAccountParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryDividendAccountParams.Merge(m, src)
+func (m *QueryDividendAccountRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDividendAccountRequest.Merge(m, src)
 }
-func (m *QueryDividendAccountParams) XXX_Size() int {
+func (m *QueryDividendAccountRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryDividendAccountParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryDividendAccountParams.DiscardUnknown(m)
+func (m *QueryDividendAccountRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDividendAccountRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryDividendAccountParams proto.InternalMessageInfo
+var xxx_messageInfo_QueryDividendAccountRequest proto.InternalMessageInfo
 
-func (m *QueryDividendAccountParams) GetAddress() string {
+func (m *QueryDividendAccountRequest) GetAddress() string {
 	if m != nil {
 		return m.Address
 	}
 	return ""
 }
 
-// QueryDividendAccountParamsResponse the is response type for the
-// DividendAccountByAddress RPC method
-type QueryDividendAccountParamsResponse struct {
-	DividendAccount types.DividendAccount `protobuf:"bytes,2,opt,name=dividend_account,json=dividendAccount,proto3" json:"result"`
+// QueryDividendAccountResponse the is response type for the
+// GetDividendAccountByAddress RPC method
+type QueryDividendAccountResponse struct {
+	DividendAccount types.DividendAccount `protobuf:"bytes,2,opt,name=dividend_account,json=dividendAccount,proto3" json:"dividendAccount"`
 }
 
-func (m *QueryDividendAccountParamsResponse) Reset()         { *m = QueryDividendAccountParamsResponse{} }
-func (m *QueryDividendAccountParamsResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryDividendAccountParamsResponse) ProtoMessage()    {}
-func (*QueryDividendAccountParamsResponse) Descriptor() ([]byte, []int) {
+func (m *QueryDividendAccountResponse) Reset()         { *m = QueryDividendAccountResponse{} }
+func (m *QueryDividendAccountResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryDividendAccountResponse) ProtoMessage()    {}
+func (*QueryDividendAccountResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{3}
 }
-func (m *QueryDividendAccountParamsResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryDividendAccountResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryDividendAccountParamsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryDividendAccountResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryDividendAccountParamsResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryDividendAccountResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -205,42 +206,42 @@ func (m *QueryDividendAccountParamsResponse) XXX_Marshal(b []byte, deterministic
 		return b[:n], nil
 	}
 }
-func (m *QueryDividendAccountParamsResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryDividendAccountParamsResponse.Merge(m, src)
+func (m *QueryDividendAccountResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDividendAccountResponse.Merge(m, src)
 }
-func (m *QueryDividendAccountParamsResponse) XXX_Size() int {
+func (m *QueryDividendAccountResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryDividendAccountParamsResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryDividendAccountParamsResponse.DiscardUnknown(m)
+func (m *QueryDividendAccountResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDividendAccountResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryDividendAccountParamsResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryDividendAccountResponse proto.InternalMessageInfo
 
-func (m *QueryDividendAccountParamsResponse) GetDividendAccount() types.DividendAccount {
+func (m *QueryDividendAccountResponse) GetDividendAccount() types.DividendAccount {
 	if m != nil {
 		return m.DividendAccount
 	}
 	return types.DividendAccount{}
 }
 
-// QueryDividendAccountRootParams is the request type for the
-// DividendAccountRoot RPC method
-type QueryDividendAccountRootParams struct {
+// QueryDividendAccountRootHashRequest is the request type for the
+// GetDividendAccountRootHash RPC method
+type QueryDividendAccountRootHashRequest struct {
 }
 
-func (m *QueryDividendAccountRootParams) Reset()         { *m = QueryDividendAccountRootParams{} }
-func (m *QueryDividendAccountRootParams) String() string { return proto.CompactTextString(m) }
-func (*QueryDividendAccountRootParams) ProtoMessage()    {}
-func (*QueryDividendAccountRootParams) Descriptor() ([]byte, []int) {
+func (m *QueryDividendAccountRootHashRequest) Reset()         { *m = QueryDividendAccountRootHashRequest{} }
+func (m *QueryDividendAccountRootHashRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryDividendAccountRootHashRequest) ProtoMessage()    {}
+func (*QueryDividendAccountRootHashRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{4}
 }
-func (m *QueryDividendAccountRootParams) XXX_Unmarshal(b []byte) error {
+func (m *QueryDividendAccountRootHashRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryDividendAccountRootParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryDividendAccountRootHashRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryDividendAccountRootParams.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryDividendAccountRootHashRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -250,36 +251,36 @@ func (m *QueryDividendAccountRootParams) XXX_Marshal(b []byte, deterministic boo
 		return b[:n], nil
 	}
 }
-func (m *QueryDividendAccountRootParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryDividendAccountRootParams.Merge(m, src)
+func (m *QueryDividendAccountRootHashRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDividendAccountRootHashRequest.Merge(m, src)
 }
-func (m *QueryDividendAccountRootParams) XXX_Size() int {
+func (m *QueryDividendAccountRootHashRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryDividendAccountRootParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryDividendAccountRootParams.DiscardUnknown(m)
+func (m *QueryDividendAccountRootHashRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDividendAccountRootHashRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryDividendAccountRootParams proto.InternalMessageInfo
+var xxx_messageInfo_QueryDividendAccountRootHashRequest proto.InternalMessageInfo
 
 // QueryDividendAccountRootResponse the is response type for the
-// DividendAccountRoot RPC method
-type QueryDividendAccountRootResponse struct {
-	AccountRootHash *types.HeimdallHash `protobuf:"bytes,2,opt,name=account_root_hash,json=accountRootHash,proto3" json:"result"`
+// GetDividendAccountRootHash RPC method
+type QueryDividendAccountRootHashResponse struct {
+	AccountRootHash *types.HeimdallHash `protobuf:"bytes,2,opt,name=account_root_hash,json=accountRootHash,proto3" json:"accountRootHash"`
 }
 
-func (m *QueryDividendAccountRootResponse) Reset()         { *m = QueryDividendAccountRootResponse{} }
-func (m *QueryDividendAccountRootResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryDividendAccountRootResponse) ProtoMessage()    {}
-func (*QueryDividendAccountRootResponse) Descriptor() ([]byte, []int) {
+func (m *QueryDividendAccountRootHashResponse) Reset()         { *m = QueryDividendAccountRootHashResponse{} }
+func (m *QueryDividendAccountRootHashResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryDividendAccountRootHashResponse) ProtoMessage()    {}
+func (*QueryDividendAccountRootHashResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{5}
 }
-func (m *QueryDividendAccountRootResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryDividendAccountRootHashResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryDividendAccountRootResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryDividendAccountRootHashResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryDividendAccountRootResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryDividendAccountRootHashResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -289,19 +290,19 @@ func (m *QueryDividendAccountRootResponse) XXX_Marshal(b []byte, deterministic b
 		return b[:n], nil
 	}
 }
-func (m *QueryDividendAccountRootResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryDividendAccountRootResponse.Merge(m, src)
+func (m *QueryDividendAccountRootHashResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDividendAccountRootHashResponse.Merge(m, src)
 }
-func (m *QueryDividendAccountRootResponse) XXX_Size() int {
+func (m *QueryDividendAccountRootHashResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryDividendAccountRootResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryDividendAccountRootResponse.DiscardUnknown(m)
+func (m *QueryDividendAccountRootHashResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDividendAccountRootHashResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryDividendAccountRootResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryDividendAccountRootHashResponse proto.InternalMessageInfo
 
-func (m *QueryDividendAccountRootResponse) GetAccountRootHash() *types.HeimdallHash {
+func (m *QueryDividendAccountRootHashResponse) GetAccountRootHash() *types.HeimdallHash {
 	if m != nil {
 		return m.AccountRootHash
 	}
@@ -310,23 +311,23 @@ func (m *QueryDividendAccountRootResponse) GetAccountRootHash() *types.HeimdallH
 
 // QueryVerifyAccountProofParams is the request type for the VerifyAccountProof
 // RPC method
-type QueryVerifyAccountProofParams struct {
-	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"user_addr"`
-	Proof   string `protobuf:"bytes,2,opt,name=proof,proto3" json:"account_proof"`
+type QueryVerifyAccountProofRequest struct {
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address"`
+	Proof   string `protobuf:"bytes,2,opt,name=proof,proto3" json:"accountProof"`
 }
 
-func (m *QueryVerifyAccountProofParams) Reset()         { *m = QueryVerifyAccountProofParams{} }
-func (m *QueryVerifyAccountProofParams) String() string { return proto.CompactTextString(m) }
-func (*QueryVerifyAccountProofParams) ProtoMessage()    {}
-func (*QueryVerifyAccountProofParams) Descriptor() ([]byte, []int) {
+func (m *QueryVerifyAccountProofRequest) Reset()         { *m = QueryVerifyAccountProofRequest{} }
+func (m *QueryVerifyAccountProofRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryVerifyAccountProofRequest) ProtoMessage()    {}
+func (*QueryVerifyAccountProofRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{6}
 }
-func (m *QueryVerifyAccountProofParams) XXX_Unmarshal(b []byte) error {
+func (m *QueryVerifyAccountProofRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryVerifyAccountProofParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryVerifyAccountProofRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryVerifyAccountProofParams.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryVerifyAccountProofRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -336,26 +337,26 @@ func (m *QueryVerifyAccountProofParams) XXX_Marshal(b []byte, deterministic bool
 		return b[:n], nil
 	}
 }
-func (m *QueryVerifyAccountProofParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryVerifyAccountProofParams.Merge(m, src)
+func (m *QueryVerifyAccountProofRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryVerifyAccountProofRequest.Merge(m, src)
 }
-func (m *QueryVerifyAccountProofParams) XXX_Size() int {
+func (m *QueryVerifyAccountProofRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryVerifyAccountProofParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryVerifyAccountProofParams.DiscardUnknown(m)
+func (m *QueryVerifyAccountProofRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryVerifyAccountProofRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryVerifyAccountProofParams proto.InternalMessageInfo
+var xxx_messageInfo_QueryVerifyAccountProofRequest proto.InternalMessageInfo
 
-func (m *QueryVerifyAccountProofParams) GetAddress() string {
+func (m *QueryVerifyAccountProofRequest) GetAddress() string {
 	if m != nil {
 		return m.Address
 	}
 	return ""
 }
 
-func (m *QueryVerifyAccountProofParams) GetProof() string {
+func (m *QueryVerifyAccountProofRequest) GetProof() string {
 	if m != nil {
 		return m.Proof
 	}
@@ -367,7 +368,7 @@ func (m *QueryVerifyAccountProofParams) GetProof() string {
 type QueryVerifyAccountProofResponse struct {
 	// TODO HV2: check VerifyAccountProofHandlerFn where result can also be
 	// embedded in a map.
-	Result bool `protobuf:"varint,2,opt,name=result,proto3" json:"result,omitempty"`
+	IsVerified bool `protobuf:"varint,2,opt,name=is_verified,json=isVerified,proto3" json:"isVerified"`
 }
 
 func (m *QueryVerifyAccountProofResponse) Reset()         { *m = QueryVerifyAccountProofResponse{} }
@@ -403,31 +404,31 @@ func (m *QueryVerifyAccountProofResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryVerifyAccountProofResponse proto.InternalMessageInfo
 
-func (m *QueryVerifyAccountProofResponse) GetResult() bool {
+func (m *QueryVerifyAccountProofResponse) GetIsVerified() bool {
 	if m != nil {
-		return m.Result
+		return m.IsVerified
 	}
 	return false
 }
 
 // QueryDividendAccountProofParams is the request type for the
-// DividendAccountProof RPC method
-type QueryDividendAccountProofParams struct {
-	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"user_addr"`
+// GetDividendAccountProof RPC method
+type QueryDividendAccountProofRequest struct {
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address"`
 }
 
-func (m *QueryDividendAccountProofParams) Reset()         { *m = QueryDividendAccountProofParams{} }
-func (m *QueryDividendAccountProofParams) String() string { return proto.CompactTextString(m) }
-func (*QueryDividendAccountProofParams) ProtoMessage()    {}
-func (*QueryDividendAccountProofParams) Descriptor() ([]byte, []int) {
+func (m *QueryDividendAccountProofRequest) Reset()         { *m = QueryDividendAccountProofRequest{} }
+func (m *QueryDividendAccountProofRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryDividendAccountProofRequest) ProtoMessage()    {}
+func (*QueryDividendAccountProofRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_6fb53cd446974424, []int{8}
 }
-func (m *QueryDividendAccountProofParams) XXX_Unmarshal(b []byte) error {
+func (m *QueryDividendAccountProofRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryDividendAccountProofParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryDividendAccountProofRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryDividendAccountProofParams.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryDividendAccountProofRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -437,19 +438,19 @@ func (m *QueryDividendAccountProofParams) XXX_Marshal(b []byte, deterministic bo
 		return b[:n], nil
 	}
 }
-func (m *QueryDividendAccountProofParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryDividendAccountProofParams.Merge(m, src)
+func (m *QueryDividendAccountProofRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryDividendAccountProofRequest.Merge(m, src)
 }
-func (m *QueryDividendAccountProofParams) XXX_Size() int {
+func (m *QueryDividendAccountProofRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryDividendAccountProofParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryDividendAccountProofParams.DiscardUnknown(m)
+func (m *QueryDividendAccountProofRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryDividendAccountProofRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryDividendAccountProofParams proto.InternalMessageInfo
+var xxx_messageInfo_QueryDividendAccountProofRequest proto.InternalMessageInfo
 
-func (m *QueryDividendAccountProofParams) GetAddress() string {
+func (m *QueryDividendAccountProofRequest) GetAddress() string {
 	if m != nil {
 		return m.Address
 	}
@@ -457,9 +458,9 @@ func (m *QueryDividendAccountProofParams) GetAddress() string {
 }
 
 // QueryDividendAccountProofResponse the is response type for the
-// DividendAccountProof RPC method
+// GetDividendAccountProof RPC method
 type QueryDividendAccountProofResponse struct {
-	Result *DividendAccountProof `protobuf:"bytes,2,opt,name=result,proto3" json:"result,omitempty"`
+	Proof *DividendAccountProof `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof"`
 }
 
 func (m *QueryDividendAccountProofResponse) Reset()         { *m = QueryDividendAccountProofResponse{} }
@@ -495,9 +496,9 @@ func (m *QueryDividendAccountProofResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryDividendAccountProofResponse proto.InternalMessageInfo
 
-func (m *QueryDividendAccountProofResponse) GetResult() *DividendAccountProof {
+func (m *QueryDividendAccountProofResponse) GetProof() *DividendAccountProof {
 	if m != nil {
-		return m.Result
+		return m.Proof
 	}
 	return nil
 }
@@ -505,9 +506,9 @@ func (m *QueryDividendAccountProofResponse) GetResult() *DividendAccountProof {
 // DividendAccountProof embeds user and account info for the the
 // QueryDividendAccountProofResponse
 type DividendAccountProof struct {
-	User         string `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
-	AccountProof string `protobuf:"bytes,2,opt,name=account_proof,json=accountProof,proto3" json:"account_proof,omitempty"`
-	Index        uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
+	Address      string `protobuf:"bytes,1,opt,name=address,proto3" json:"address"`
+	AccountProof string `protobuf:"bytes,2,opt,name=account_proof,json=accountProof,proto3" json:"accountProof"`
+	Index        uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index"`
 }
 
 func (m *DividendAccountProof) Reset()         { *m = DividendAccountProof{} }
@@ -543,9 +544,9 @@ func (m *DividendAccountProof) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_DividendAccountProof proto.InternalMessageInfo
 
-func (m *DividendAccountProof) GetUser() string {
+func (m *DividendAccountProof) GetAddress() string {
 	if m != nil {
-		return m.User
+		return m.Address
 	}
 	return ""
 }
@@ -565,15 +566,15 @@ func (m *DividendAccountProof) GetIndex() uint64 {
 }
 
 func init() {
-	proto.RegisterType((*QuerySequenceParams)(nil), "heimdallv2.topup.QuerySequenceParams")
-	proto.RegisterType((*QuerySequenceParamsResponse)(nil), "heimdallv2.topup.QuerySequenceParamsResponse")
-	proto.RegisterType((*QueryDividendAccountParams)(nil), "heimdallv2.topup.QueryDividendAccountParams")
-	proto.RegisterType((*QueryDividendAccountParamsResponse)(nil), "heimdallv2.topup.QueryDividendAccountParamsResponse")
-	proto.RegisterType((*QueryDividendAccountRootParams)(nil), "heimdallv2.topup.QueryDividendAccountRootParams")
-	proto.RegisterType((*QueryDividendAccountRootResponse)(nil), "heimdallv2.topup.QueryDividendAccountRootResponse")
-	proto.RegisterType((*QueryVerifyAccountProofParams)(nil), "heimdallv2.topup.QueryVerifyAccountProofParams")
+	proto.RegisterType((*QueryTopupSequenceRequest)(nil), "heimdallv2.topup.QueryTopupSequenceRequest")
+	proto.RegisterType((*QueryTopupSequenceResponse)(nil), "heimdallv2.topup.QueryTopupSequenceResponse")
+	proto.RegisterType((*QueryDividendAccountRequest)(nil), "heimdallv2.topup.QueryDividendAccountRequest")
+	proto.RegisterType((*QueryDividendAccountResponse)(nil), "heimdallv2.topup.QueryDividendAccountResponse")
+	proto.RegisterType((*QueryDividendAccountRootHashRequest)(nil), "heimdallv2.topup.QueryDividendAccountRootHashRequest")
+	proto.RegisterType((*QueryDividendAccountRootHashResponse)(nil), "heimdallv2.topup.QueryDividendAccountRootHashResponse")
+	proto.RegisterType((*QueryVerifyAccountProofRequest)(nil), "heimdallv2.topup.QueryVerifyAccountProofRequest")
 	proto.RegisterType((*QueryVerifyAccountProofResponse)(nil), "heimdallv2.topup.QueryVerifyAccountProofResponse")
-	proto.RegisterType((*QueryDividendAccountProofParams)(nil), "heimdallv2.topup.QueryDividendAccountProofParams")
+	proto.RegisterType((*QueryDividendAccountProofRequest)(nil), "heimdallv2.topup.QueryDividendAccountProofRequest")
 	proto.RegisterType((*QueryDividendAccountProofResponse)(nil), "heimdallv2.topup.QueryDividendAccountProofResponse")
 	proto.RegisterType((*DividendAccountProof)(nil), "heimdallv2.topup.DividendAccountProof")
 }
@@ -581,59 +582,61 @@ func init() {
 func init() { proto.RegisterFile("heimdallv2/topup/query.proto", fileDescriptor_6fb53cd446974424) }
 
 var fileDescriptor_6fb53cd446974424 = []byte{
-	// 829 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x95, 0xcf, 0x4b, 0x1b, 0x5b,
-	0x14, 0xc7, 0x33, 0x3e, 0x13, 0xcd, 0xf5, 0xf9, 0xd4, 0xab, 0x3c, 0x74, 0xa2, 0x93, 0x38, 0xf0,
-	0xfc, 0xf5, 0xcc, 0x8c, 0x46, 0x29, 0x74, 0x51, 0xd0, 0x60, 0xc1, 0xae, 0x6a, 0xa3, 0x14, 0xfa,
-	0x03, 0xc2, 0x98, 0x19, 0x27, 0x53, 0x26, 0x73, 0xe3, 0xdc, 0x99, 0x90, 0x54, 0x4a, 0xc1, 0x55,
-	0x37, 0x85, 0x42, 0xff, 0x89, 0x2e, 0x5b, 0x28, 0x2d, 0xfd, 0x0f, 0x5c, 0x4a, 0xbb, 0xe9, 0x2a,
-	0x14, 0x2d, 0x14, 0xfc, 0x13, 0xba, 0x2a, 0x73, 0xef, 0x9d, 0x99, 0xfc, 0x1a, 0x1a, 0xbb, 0x11,
-	0xe7, 0xdc, 0xef, 0x39, 0xe7, 0x73, 0xce, 0xb9, 0xe7, 0x06, 0xcc, 0x96, 0x35, 0xa3, 0xa2, 0x2a,
-	0xa6, 0x59, 0xcb, 0xc9, 0x0e, 0xaa, 0xba, 0x55, 0xf9, 0xd8, 0xd5, 0xec, 0x86, 0x54, 0xb5, 0x91,
-	0x83, 0xe0, 0x78, 0x78, 0x2a, 0x91, 0x53, 0x7e, 0xa6, 0x84, 0x70, 0x05, 0xe1, 0x22, 0x39, 0x97,
-	0xe9, 0x07, 0x15, 0xf3, 0x29, 0xfa, 0x45, 0x03, 0xc8, 0xb5, 0xf5, 0xd6, 0x48, 0xfc, 0x84, 0x52,
-	0x31, 0x2c, 0x24, 0x93, 0xbf, 0xcc, 0x34, 0xa5, 0x23, 0x1d, 0xd1, 0x38, 0xde, 0x7f, 0xcc, 0x3a,
-	0xab, 0x23, 0xa4, 0x9b, 0x9a, 0xac, 0x54, 0x0d, 0x59, 0xb1, 0x2c, 0xe4, 0x28, 0x8e, 0x81, 0x2c,
-	0x3f, 0xc7, 0x62, 0x2b, 0x6e, 0xa3, 0xaa, 0x61, 0x59, 0x35, 0x6a, 0x86, 0xaa, 0x59, 0x6a, 0x51,
-	0x29, 0x95, 0x90, 0x6b, 0x39, 0x3e, 0x4c, 0x97, 0xb0, 0xac, 0xe0, 0x32, 0x3d, 0x14, 0x1f, 0x80,
-	0xc9, 0x7b, 0x1e, 0xdb, 0xbe, 0x76, 0xec, 0x6a, 0x56, 0x49, 0xdb, 0x53, 0x6c, 0xa5, 0x82, 0xa1,
-	0x00, 0x86, 0x9c, 0x7a, 0xd1, 0xd3, 0x4d, 0x73, 0x19, 0x6e, 0x29, 0x99, 0x8f, 0xbf, 0xf9, 0xf1,
-	0x76, 0x85, 0x2b, 0x24, 0x9c, 0xfa, 0xae, 0x82, 0xcb, 0x50, 0x04, 0x49, 0x13, 0xe9, 0x45, 0xc3,
-	0x52, 0xb5, 0xfa, 0xf4, 0x40, 0x86, 0x5b, 0x1a, 0xf4, 0x15, 0xc3, 0x26, 0xd2, 0xef, 0x78, 0x66,
-	0x71, 0x0b, 0xa4, 0x7a, 0x84, 0x2e, 0x68, 0xb8, 0x8a, 0x2c, 0xac, 0xc1, 0x79, 0x30, 0x8c, 0xd9,
-	0x49, 0x7b, 0x8e, 0xc0, 0x2c, 0x1e, 0x02, 0x9e, 0x44, 0xd8, 0x61, 0x85, 0x6d, 0xd3, 0xba, 0x18,
-	0xe3, 0x0e, 0x18, 0x52, 0x54, 0xd5, 0xd6, 0x30, 0x66, 0xfe, 0x2b, 0x57, 0xcd, 0x74, 0xd2, 0xc5,
-	0x9a, 0x5d, 0xf4, 0xec, 0x9f, 0xdf, 0x67, 0xa7, 0xd8, 0x50, 0xb6, 0xa9, 0x6c, 0xdf, 0xb1, 0x0d,
-	0x4b, 0xa7, 0x49, 0x7c, 0x57, 0xf1, 0x94, 0x03, 0x62, 0x74, 0x92, 0x80, 0xf6, 0x31, 0x18, 0xef,
-	0x6c, 0x2f, 0xa9, 0x7b, 0x24, 0x37, 0x2f, 0xb5, 0xde, 0x0c, 0xaf, 0xbf, 0x52, 0x47, 0xa8, 0xfc,
-	0x3f, 0x67, 0xcd, 0x74, 0xec, 0xaa, 0x99, 0x4e, 0xd8, 0x1a, 0x76, 0x4d, 0xa7, 0x30, 0xa6, 0xb6,
-	0x0b, 0xc4, 0x0c, 0x10, 0x7a, 0x31, 0x14, 0x10, 0x62, 0x1c, 0xe2, 0x73, 0x90, 0x89, 0x52, 0x04,
-	0x8c, 0x8f, 0xc0, 0x04, 0x43, 0x2b, 0xda, 0x08, 0x39, 0x74, 0x7c, 0x14, 0x52, 0xe8, 0x86, 0xdc,
-	0x65, 0x06, 0x6f, 0x9e, 0xf9, 0xb1, 0x90, 0x8e, 0xf6, 0x67, 0x4c, 0x09, 0x13, 0x78, 0x0a, 0xf1,
-	0x04, 0xcc, 0x11, 0x80, 0xfb, 0x9a, 0x6d, 0x1c, 0x35, 0xfc, 0x26, 0xd9, 0x08, 0x1d, 0xb1, 0x71,
-	0xac, 0x76, 0x8e, 0x03, 0xb6, 0x8d, 0xa3, 0xbd, 0xed, 0x70, 0x15, 0xc4, 0xab, 0x9e, 0x33, 0xe1,
-	0x4b, 0xe6, 0xff, 0xbd, 0x6a, 0xa6, 0x47, 0x7d, 0x78, 0x72, 0x40, 0xf5, 0x54, 0x24, 0x6e, 0x81,
-	0x74, 0x44, 0xf2, 0xa0, 0xf8, 0x39, 0xc0, 0xf8, 0x49, 0xc4, 0xe1, 0xe0, 0xc2, 0x52, 0xa3, 0x78,
-	0x97, 0x45, 0xe8, 0x9c, 0xf2, 0x9f, 0x16, 0x20, 0x3e, 0x01, 0xf3, 0x91, 0x01, 0x03, 0xa8, 0xdb,
-	0x6d, 0x50, 0x23, 0xb9, 0x05, 0xa9, 0xf3, 0x15, 0x91, 0x7a, 0xf9, 0x77, 0xc2, 0x3f, 0x05, 0x53,
-	0xbd, 0x64, 0x70, 0x06, 0x0c, 0x7a, 0x78, 0xed, 0xeb, 0x43, 0x4c, 0x70, 0x05, 0xb4, 0xb7, 0x93,
-	0xf5, 0x99, 0x69, 0xfe, 0x56, 0x5a, 0xc3, 0xa4, 0x40, 0x9c, 0x2e, 0xf2, 0x5f, 0xad, 0x8b, 0x4c,
-	0x6d, 0xb9, 0x9f, 0x09, 0x10, 0x27, 0x85, 0xc2, 0x97, 0x1c, 0x18, 0x3d, 0xf0, 0x98, 0x0f, 0xea,
-	0xfb, 0x8e, 0xe2, 0xb8, 0x18, 0xfe, 0xd7, 0x5d, 0x4e, 0x8f, 0x8d, 0xe7, 0xb3, 0x7d, 0xc9, 0xfc,
-	0xa6, 0x89, 0x0b, 0x2f, 0xbc, 0xfc, 0xa7, 0x5f, 0xbe, 0xbf, 0x1e, 0x48, 0xc1, 0x19, 0xb9, 0xeb,
-	0x55, 0x36, 0x30, 0x32, 0x55, 0xa7, 0x0e, 0x3f, 0x71, 0x60, 0xba, 0x73, 0xd3, 0x1a, 0xdb, 0xfe,
-	0xfd, 0x8a, 0xc8, 0xd9, 0x73, 0xcb, 0xf9, 0xcd, 0xeb, 0xa8, 0x03, 0xd0, 0x9b, 0x21, 0xa8, 0x04,
-	0x57, 0xbb, 0x41, 0xfd, 0x2d, 0xcf, 0xb2, 0x6e, 0xcb, 0x27, 0xec, 0xf2, 0x3c, 0x83, 0xef, 0x38,
-	0x30, 0xd9, 0x63, 0x95, 0xe1, 0x5a, 0x7f, 0x20, 0xe1, 0xc3, 0xc0, 0xe7, 0xfa, 0xf7, 0x08, 0xc0,
-	0x37, 0x43, 0xf0, 0x65, 0xb8, 0xf8, 0x7b, 0xf0, 0xac, 0xf7, 0x9c, 0xc0, 0x8f, 0x1c, 0x80, 0xdd,
-	0x0b, 0x08, 0xe5, 0x08, 0x80, 0xa8, 0x87, 0x82, 0x5f, 0xef, 0xdb, 0x21, 0x00, 0xbe, 0x15, 0x02,
-	0xe7, 0xe0, 0x5a, 0x37, 0xb0, 0xcf, 0x49, 0xae, 0x7a, 0xd8, 0x66, 0xb9, 0x46, 0x42, 0xc2, 0x0f,
-	0x5c, 0xc4, 0x02, 0xad, 0xf7, 0x39, 0xf7, 0x16, 0xfa, 0x8d, 0x6b, 0xb8, 0x04, 0xfc, 0x37, 0x42,
-	0xfe, 0xff, 0xe1, 0x72, 0xdf, 0xfc, 0xf9, 0xdd, 0xb3, 0x0b, 0x81, 0x3b, 0xbf, 0x10, 0xb8, 0x6f,
-	0x17, 0x02, 0xf7, 0xea, 0x52, 0x88, 0x9d, 0x5f, 0x0a, 0xb1, 0xaf, 0x97, 0x42, 0xec, 0xa1, 0xa4,
-	0x1b, 0x4e, 0xd9, 0x3d, 0x94, 0x4a, 0xa8, 0x22, 0xaf, 0xd5, 0xf7, 0x90, 0xd9, 0xd0, 0x91, 0x15,
-	0x04, 0xce, 0xd6, 0x72, 0x72, 0x9d, 0xc5, 0x26, 0xaf, 0xfd, 0x61, 0x82, 0xfc, 0xdc, 0x6f, 0xfc,
-	0x0a, 0x00, 0x00, 0xff, 0xff, 0xea, 0xf8, 0xeb, 0x1d, 0xe5, 0x08, 0x00, 0x00,
+	// 851 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x96, 0xcf, 0x6b, 0x13, 0x4d,
+	0x18, 0xc7, 0x33, 0x7d, 0xdf, 0xf4, 0xc7, 0xf4, 0x7d, 0xb5, 0x1d, 0x2b, 0x6d, 0x37, 0x65, 0xd3,
+	0xae, 0xb5, 0xbf, 0xb3, 0xdb, 0xa6, 0xb5, 0xa0, 0x20, 0xd2, 0x45, 0x68, 0x05, 0x91, 0xda, 0x96,
+	0x0a, 0x5e, 0xc2, 0x36, 0x3b, 0xdd, 0x2c, 0x24, 0x3b, 0x69, 0x76, 0x12, 0x12, 0xc4, 0x8b, 0x20,
+	0x78, 0xf0, 0x20, 0x78, 0xe8, 0x3f, 0xe0, 0xc1, 0xa3, 0x07, 0x41, 0xf1, 0xe6, 0xad, 0xc7, 0xa2,
+	0x17, 0x4f, 0x41, 0x5a, 0x41, 0xc8, 0x5f, 0x21, 0x3b, 0x33, 0xdb, 0x24, 0xbb, 0x49, 0x49, 0xbc,
+	0xb4, 0xbb, 0xcf, 0x3c, 0xf3, 0x9d, 0xcf, 0xf3, 0x3c, 0x3b, 0xdf, 0x16, 0x4e, 0x64, 0xb0, 0x9d,
+	0x33, 0x8d, 0x6c, 0xb6, 0x94, 0xd4, 0x28, 0xc9, 0x17, 0xf3, 0xda, 0x51, 0x11, 0x17, 0x2a, 0x6a,
+	0xbe, 0x40, 0x28, 0x41, 0x43, 0xf5, 0x55, 0x95, 0xad, 0x4a, 0xe3, 0x69, 0xe2, 0xe6, 0x88, 0x9b,
+	0x62, 0xeb, 0x1a, 0x7f, 0xe1, 0xc9, 0x52, 0x8c, 0xbf, 0x71, 0x01, 0xad, 0xb4, 0xd2, 0xa8, 0x24,
+	0x0d, 0x1b, 0x39, 0xdb, 0x21, 0x1a, 0xfb, 0x29, 0x42, 0x23, 0x16, 0xb1, 0x08, 0xd7, 0xf1, 0x9e,
+	0x44, 0x74, 0xc2, 0x22, 0xc4, 0xca, 0x62, 0xcd, 0xc8, 0xdb, 0x9a, 0xe1, 0x38, 0x84, 0x1a, 0xd4,
+	0x26, 0x8e, 0x7f, 0xc6, 0x6c, 0x23, 0x6e, 0x25, 0x8f, 0x5d, 0xcd, 0xb4, 0x4b, 0xb6, 0x89, 0x1d,
+	0x33, 0x65, 0xa4, 0xd3, 0xa4, 0xe8, 0x50, 0x1f, 0x26, 0x94, 0x98, 0x31, 0xdc, 0x0c, 0x5f, 0x54,
+	0x52, 0x70, 0xfc, 0xb1, 0xc7, 0xb6, 0xe7, 0x95, 0xb4, 0x8b, 0x8f, 0x8a, 0xd8, 0x49, 0xe3, 0x1d,
+	0xef, 0xb7, 0x4b, 0x91, 0x0c, 0xfb, 0x68, 0x39, 0xe5, 0x65, 0x8f, 0x81, 0x49, 0x30, 0x37, 0xa0,
+	0x47, 0xdf, 0xff, 0xfe, 0xb0, 0x00, 0x76, 0x7a, 0x69, 0x79, 0xcb, 0x70, 0x33, 0x48, 0x81, 0x03,
+	0x59, 0x62, 0xa5, 0x6c, 0xc7, 0xc4, 0xe5, 0xb1, 0x9e, 0x49, 0x30, 0xf7, 0xaf, 0x9f, 0xd1, 0x9f,
+	0x25, 0xd6, 0x03, 0x2f, 0xac, 0xdc, 0x83, 0x52, 0xab, 0x03, 0xdc, 0x3c, 0x71, 0x5c, 0x8c, 0xa6,
+	0x60, 0xbf, 0x2b, 0x62, 0xcd, 0x47, 0x5c, 0x84, 0x15, 0x03, 0xc6, 0x98, 0xc0, 0x7d, 0x51, 0xdd,
+	0x06, 0x2f, 0xce, 0x67, 0xd4, 0x61, 0x9f, 0x61, 0x9a, 0x05, 0xec, 0xba, 0x42, 0x60, 0xae, 0x56,
+	0x8d, 0xfb, 0xa1, 0x6f, 0x1f, 0x13, 0x23, 0x62, 0x30, 0x1b, 0x3c, 0xb2, 0x4b, 0x0b, 0xb6, 0x63,
+	0xf1, 0x33, 0xfc, 0x2c, 0xe5, 0x25, 0x80, 0x13, 0xad, 0xcf, 0x10, 0x98, 0x18, 0x0e, 0x05, 0x9b,
+	0xcb, 0xea, 0x1d, 0x4c, 0x4e, 0xa9, 0x8d, 0xdf, 0x85, 0xd7, 0x5d, 0x35, 0x20, 0xa2, 0x8f, 0x9e,
+	0x54, 0xe3, 0x91, 0x5a, 0x35, 0x7e, 0xd5, 0x0c, 0xa8, 0x07, 0x03, 0xca, 0x4d, 0x78, 0xa3, 0x25,
+	0x06, 0x21, 0xd4, 0xeb, 0xb7, 0x28, 0x59, 0x79, 0x0d, 0xe0, 0xf4, 0xe5, 0x79, 0x02, 0xdb, 0x84,
+	0xc3, 0x82, 0x36, 0x55, 0x20, 0x84, 0xf2, 0x49, 0x72, 0x6e, 0x39, 0xcc, 0xbd, 0x25, 0x02, 0x9e,
+	0x84, 0x3e, 0xe6, 0x01, 0x1b, 0xcd, 0xba, 0xbc, 0x6b, 0xc1, 0xa8, 0x52, 0x81, 0x32, 0xa3, 0xd9,
+	0xc7, 0x05, 0xfb, 0xb0, 0x22, 0x58, 0xb6, 0x0b, 0x84, 0x1c, 0xfa, 0x33, 0x5a, 0x08, 0xce, 0x68,
+	0xa8, 0x61, 0x46, 0xcd, 0xb3, 0x40, 0x8b, 0x30, 0x9a, 0xf7, 0xf6, 0x32, 0xce, 0x01, 0xfd, 0x7a,
+	0xad, 0x1a, 0xff, 0xcf, 0x68, 0xd0, 0xe4, 0xe9, 0x3c, 0x47, 0x79, 0x02, 0xe3, 0x6d, 0x8f, 0x16,
+	0x3d, 0x58, 0x83, 0x83, 0xb6, 0x9b, 0x2a, 0x79, 0x09, 0x36, 0x36, 0x99, 0x6a, 0xbf, 0x7e, 0xad,
+	0x56, 0x8d, 0x43, 0xdb, 0xdd, 0x17, 0x51, 0xae, 0xd9, 0x10, 0x50, 0x1e, 0xc1, 0xc9, 0x56, 0x1d,
+	0xfe, 0xdb, 0xaa, 0x94, 0x23, 0x38, 0x75, 0x89, 0x9e, 0x40, 0x7d, 0xd8, 0x58, 0xfa, 0x60, 0x72,
+	0x46, 0x0d, 0x5a, 0x8e, 0xda, 0x6a, 0xbb, 0x7e, 0xa5, 0x56, 0x8d, 0xf3, 0x8d, 0x4d, 0xbd, 0x79,
+	0x07, 0xe0, 0x48, 0xab, 0xfc, 0xae, 0xa6, 0x71, 0x07, 0xfe, 0xef, 0x7f, 0x41, 0x1d, 0x4c, 0xa5,
+	0x29, 0x84, 0xa6, 0x61, 0x94, 0x3b, 0xc3, 0x3f, 0xcc, 0x19, 0x18, 0x26, 0x0b, 0x08, 0x4c, 0xf6,
+	0x9c, 0x3c, 0xee, 0x83, 0x51, 0xd6, 0x1a, 0x74, 0x0c, 0x20, 0xda, 0xc4, 0x94, 0x19, 0xc5, 0x5e,
+	0xd9, 0xb7, 0x0a, 0xb4, 0x18, 0x6e, 0x43, 0x5b, 0xc7, 0x92, 0x96, 0x3a, 0x4b, 0xe6, 0x0d, 0x57,
+	0x66, 0x5e, 0x79, 0x24, 0x2f, 0xbe, 0xff, 0x7a, 0xdb, 0x13, 0x43, 0xe3, 0x5a, 0xc8, 0xff, 0x6d,
+	0x97, 0x64, 0x4d, 0x5a, 0x46, 0x9f, 0x00, 0x8c, 0x6d, 0x62, 0x1a, 0xbc, 0xd8, 0x15, 0xe1, 0x29,
+	0x28, 0xd1, 0xe6, 0xd4, 0xd6, 0x96, 0x25, 0xa9, 0x9d, 0xa6, 0x0b, 0xcc, 0xdb, 0x75, 0x4c, 0x15,
+	0x2d, 0x85, 0x31, 0x7d, 0x1b, 0x49, 0x88, 0xf6, 0x6b, 0xcf, 0xc4, 0xf8, 0x9e, 0xa3, 0xaf, 0x00,
+	0x4a, 0x61, 0x72, 0xff, 0xea, 0xa2, 0x5b, 0x1d, 0x92, 0x34, 0x1b, 0x90, 0xb4, 0xde, 0xed, 0x36,
+	0x51, 0xc8, 0x5a, 0xbd, 0x90, 0x79, 0x34, 0xdb, 0x41, 0x21, 0x9e, 0x6b, 0xa1, 0xcf, 0x00, 0xa2,
+	0xf0, 0x05, 0x47, 0xcb, 0x6d, 0x20, 0xda, 0xda, 0x90, 0xb4, 0xd2, 0xc5, 0x0e, 0x41, 0x7c, 0xb7,
+	0x4e, 0x9c, 0x44, 0xcb, 0x61, 0x62, 0x01, 0x9a, 0x60, 0x97, 0xa3, 0xde, 0x77, 0x8d, 0xf9, 0x4d,
+	0x05, 0x7d, 0x01, 0x70, 0x34, 0xdc, 0x7e, 0xce, 0x9f, 0xec, 0xac, 0x89, 0x4d, 0x15, 0xac, 0x76,
+	0xb5, 0x47, 0xd4, 0xb0, 0x5e, 0xaf, 0x61, 0x11, 0xcd, 0x77, 0x5c, 0x83, 0xbe, 0x75, 0x72, 0x26,
+	0x83, 0xd3, 0x33, 0x19, 0xfc, 0x3c, 0x93, 0xc1, 0x9b, 0x73, 0x39, 0x72, 0x7a, 0x2e, 0x47, 0x7e,
+	0x9c, 0xcb, 0x91, 0xa7, 0xaa, 0x65, 0xd3, 0x4c, 0xf1, 0x40, 0x4d, 0x93, 0x9c, 0xb6, 0x5c, 0xde,
+	0x26, 0xd9, 0x8a, 0x45, 0x9c, 0x0b, 0xe1, 0x44, 0x29, 0xa9, 0x95, 0x85, 0x36, 0xfb, 0xcb, 0x72,
+	0xd0, 0xcb, 0xfe, 0xd7, 0x58, 0xfd, 0x13, 0x00, 0x00, 0xff, 0xff, 0x88, 0x80, 0xeb, 0xb1, 0x62,
+	0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -648,21 +651,20 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// TopupTxStatus queries for a specific topup tx to check its status (old
-	// means already submitted)
-	TopupTxStatus(ctx context.Context, in *QuerySequenceParams, opts ...grpc.CallOption) (*QuerySequenceParamsResponse, error)
-	// DividendAccountByAddress queries for a specific DividendAccount by its
+	// GetTopupTxSequence queries for a specific topup tx to check its status (old
+	// means already submitted) and returns the sequence of the tx
+	GetTopupTxSequence(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryTopupSequenceResponse, error)
+	// GetDividendAccountByAddress queries for a specific DividendAccount by its
 	// address
-	DividendAccountByAddress(ctx context.Context, in *QueryDividendAccountParams, opts ...grpc.CallOption) (*QueryDividendAccountParamsResponse, error)
-	// DividendAccountRoot queries for the dividend account of the genesis root
-	// hash
-	DividendAccountRoot(ctx context.Context, in *QueryDividendAccountRootParams, opts ...grpc.CallOption) (*QueryDividendAccountRootResponse, error)
-	// VerifyAccountProof queries for the dividend account of the genesis root
-	// hash
-	VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofParams, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
-	// DividendAccountProof queries for the dividend account proof of a given
+	GetDividendAccountByAddress(ctx context.Context, in *QueryDividendAccountRequest, opts ...grpc.CallOption) (*QueryDividendAccountResponse, error)
+	// GetDividendAccountRootHash queries for the dividend account of the genesis
+	// root hash
+	GetDividendAccountRootHash(ctx context.Context, in *QueryDividendAccountRootHashRequest, opts ...grpc.CallOption) (*QueryDividendAccountRootHashResponse, error)
+	// VerifyAccountProof queries for the proof of an account given its address
+	VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
+	// GetDividendAccountProof queries for the dividend account proof of a given
 	// address
-	DividendAccountProof(ctx context.Context, in *QueryDividendAccountProofParams, opts ...grpc.CallOption) (*QueryDividendAccountProofResponse, error)
+	GetDividendAccountProof(ctx context.Context, in *QueryDividendAccountProofRequest, opts ...grpc.CallOption) (*QueryDividendAccountProofResponse, error)
 }
 
 type queryClient struct {
@@ -673,34 +675,34 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) TopupTxStatus(ctx context.Context, in *QuerySequenceParams, opts ...grpc.CallOption) (*QuerySequenceParamsResponse, error) {
-	out := new(QuerySequenceParamsResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/TopupTxStatus", in, out, opts...)
+func (c *queryClient) GetTopupTxSequence(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryTopupSequenceResponse, error) {
+	out := new(QueryTopupSequenceResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/GetTopupTxSequence", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) DividendAccountByAddress(ctx context.Context, in *QueryDividendAccountParams, opts ...grpc.CallOption) (*QueryDividendAccountParamsResponse, error) {
-	out := new(QueryDividendAccountParamsResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/DividendAccountByAddress", in, out, opts...)
+func (c *queryClient) GetDividendAccountByAddress(ctx context.Context, in *QueryDividendAccountRequest, opts ...grpc.CallOption) (*QueryDividendAccountResponse, error) {
+	out := new(QueryDividendAccountResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/GetDividendAccountByAddress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) DividendAccountRoot(ctx context.Context, in *QueryDividendAccountRootParams, opts ...grpc.CallOption) (*QueryDividendAccountRootResponse, error) {
-	out := new(QueryDividendAccountRootResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/DividendAccountRoot", in, out, opts...)
+func (c *queryClient) GetDividendAccountRootHash(ctx context.Context, in *QueryDividendAccountRootHashRequest, opts ...grpc.CallOption) (*QueryDividendAccountRootHashResponse, error) {
+	out := new(QueryDividendAccountRootHashResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/GetDividendAccountRootHash", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofParams, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error) {
+func (c *queryClient) VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error) {
 	out := new(QueryVerifyAccountProofResponse)
 	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/VerifyAccountProof", in, out, opts...)
 	if err != nil {
@@ -709,9 +711,9 @@ func (c *queryClient) VerifyAccountProof(ctx context.Context, in *QueryVerifyAcc
 	return out, nil
 }
 
-func (c *queryClient) DividendAccountProof(ctx context.Context, in *QueryDividendAccountProofParams, opts ...grpc.CallOption) (*QueryDividendAccountProofResponse, error) {
+func (c *queryClient) GetDividendAccountProof(ctx context.Context, in *QueryDividendAccountProofRequest, opts ...grpc.CallOption) (*QueryDividendAccountProofResponse, error) {
 	out := new(QueryDividendAccountProofResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/DividendAccountProof", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.topup.Query/GetDividendAccountProof", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -720,103 +722,102 @@ func (c *queryClient) DividendAccountProof(ctx context.Context, in *QueryDividen
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// TopupTxStatus queries for a specific topup tx to check its status (old
-	// means already submitted)
-	TopupTxStatus(context.Context, *QuerySequenceParams) (*QuerySequenceParamsResponse, error)
-	// DividendAccountByAddress queries for a specific DividendAccount by its
+	// GetTopupTxSequence queries for a specific topup tx to check its status (old
+	// means already submitted) and returns the sequence of the tx
+	GetTopupTxSequence(context.Context, *QueryTopupSequenceRequest) (*QueryTopupSequenceResponse, error)
+	// GetDividendAccountByAddress queries for a specific DividendAccount by its
 	// address
-	DividendAccountByAddress(context.Context, *QueryDividendAccountParams) (*QueryDividendAccountParamsResponse, error)
-	// DividendAccountRoot queries for the dividend account of the genesis root
-	// hash
-	DividendAccountRoot(context.Context, *QueryDividendAccountRootParams) (*QueryDividendAccountRootResponse, error)
-	// VerifyAccountProof queries for the dividend account of the genesis root
-	// hash
-	VerifyAccountProof(context.Context, *QueryVerifyAccountProofParams) (*QueryVerifyAccountProofResponse, error)
-	// DividendAccountProof queries for the dividend account proof of a given
+	GetDividendAccountByAddress(context.Context, *QueryDividendAccountRequest) (*QueryDividendAccountResponse, error)
+	// GetDividendAccountRootHash queries for the dividend account of the genesis
+	// root hash
+	GetDividendAccountRootHash(context.Context, *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error)
+	// VerifyAccountProof queries for the proof of an account given its address
+	VerifyAccountProof(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error)
+	// GetDividendAccountProof queries for the dividend account proof of a given
 	// address
-	DividendAccountProof(context.Context, *QueryDividendAccountProofParams) (*QueryDividendAccountProofResponse, error)
+	GetDividendAccountProof(context.Context, *QueryDividendAccountProofRequest) (*QueryDividendAccountProofResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
-func (*UnimplementedQueryServer) TopupTxStatus(ctx context.Context, req *QuerySequenceParams) (*QuerySequenceParamsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TopupTxStatus not implemented")
+func (*UnimplementedQueryServer) GetTopupTxSequence(ctx context.Context, req *QueryTopupSequenceRequest) (*QueryTopupSequenceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTopupTxSequence not implemented")
 }
-func (*UnimplementedQueryServer) DividendAccountByAddress(ctx context.Context, req *QueryDividendAccountParams) (*QueryDividendAccountParamsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DividendAccountByAddress not implemented")
+func (*UnimplementedQueryServer) GetDividendAccountByAddress(ctx context.Context, req *QueryDividendAccountRequest) (*QueryDividendAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDividendAccountByAddress not implemented")
 }
-func (*UnimplementedQueryServer) DividendAccountRoot(ctx context.Context, req *QueryDividendAccountRootParams) (*QueryDividendAccountRootResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DividendAccountRoot not implemented")
+func (*UnimplementedQueryServer) GetDividendAccountRootHash(ctx context.Context, req *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDividendAccountRootHash not implemented")
 }
-func (*UnimplementedQueryServer) VerifyAccountProof(ctx context.Context, req *QueryVerifyAccountProofParams) (*QueryVerifyAccountProofResponse, error) {
+func (*UnimplementedQueryServer) VerifyAccountProof(ctx context.Context, req *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyAccountProof not implemented")
 }
-func (*UnimplementedQueryServer) DividendAccountProof(ctx context.Context, req *QueryDividendAccountProofParams) (*QueryDividendAccountProofResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DividendAccountProof not implemented")
+func (*UnimplementedQueryServer) GetDividendAccountProof(ctx context.Context, req *QueryDividendAccountProofRequest) (*QueryDividendAccountProofResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDividendAccountProof not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
 }
 
-func _Query_TopupTxStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QuerySequenceParams)
+func _Query_GetTopupTxSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryTopupSequenceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).TopupTxStatus(ctx, in)
+		return srv.(QueryServer).GetTopupTxSequence(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.topup.Query/TopupTxStatus",
+		FullMethod: "/heimdallv2.topup.Query/GetTopupTxSequence",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).TopupTxStatus(ctx, req.(*QuerySequenceParams))
+		return srv.(QueryServer).GetTopupTxSequence(ctx, req.(*QueryTopupSequenceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_DividendAccountByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryDividendAccountParams)
+func _Query_GetDividendAccountByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDividendAccountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).DividendAccountByAddress(ctx, in)
+		return srv.(QueryServer).GetDividendAccountByAddress(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.topup.Query/DividendAccountByAddress",
+		FullMethod: "/heimdallv2.topup.Query/GetDividendAccountByAddress",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).DividendAccountByAddress(ctx, req.(*QueryDividendAccountParams))
+		return srv.(QueryServer).GetDividendAccountByAddress(ctx, req.(*QueryDividendAccountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_DividendAccountRoot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryDividendAccountRootParams)
+func _Query_GetDividendAccountRootHash_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDividendAccountRootHashRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).DividendAccountRoot(ctx, in)
+		return srv.(QueryServer).GetDividendAccountRootHash(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.topup.Query/DividendAccountRoot",
+		FullMethod: "/heimdallv2.topup.Query/GetDividendAccountRootHash",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).DividendAccountRoot(ctx, req.(*QueryDividendAccountRootParams))
+		return srv.(QueryServer).GetDividendAccountRootHash(ctx, req.(*QueryDividendAccountRootHashRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_VerifyAccountProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryVerifyAccountProofParams)
+	in := new(QueryVerifyAccountProofRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -828,25 +829,25 @@ func _Query_VerifyAccountProof_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: "/heimdallv2.topup.Query/VerifyAccountProof",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).VerifyAccountProof(ctx, req.(*QueryVerifyAccountProofParams))
+		return srv.(QueryServer).VerifyAccountProof(ctx, req.(*QueryVerifyAccountProofRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_DividendAccountProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryDividendAccountProofParams)
+func _Query_GetDividendAccountProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDividendAccountProofRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).DividendAccountProof(ctx, in)
+		return srv.(QueryServer).GetDividendAccountProof(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.topup.Query/DividendAccountProof",
+		FullMethod: "/heimdallv2.topup.Query/GetDividendAccountProof",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).DividendAccountProof(ctx, req.(*QueryDividendAccountProofParams))
+		return srv.(QueryServer).GetDividendAccountProof(ctx, req.(*QueryDividendAccountProofRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -856,31 +857,31 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "TopupTxStatus",
-			Handler:    _Query_TopupTxStatus_Handler,
+			MethodName: "GetTopupTxSequence",
+			Handler:    _Query_GetTopupTxSequence_Handler,
 		},
 		{
-			MethodName: "DividendAccountByAddress",
-			Handler:    _Query_DividendAccountByAddress_Handler,
+			MethodName: "GetDividendAccountByAddress",
+			Handler:    _Query_GetDividendAccountByAddress_Handler,
 		},
 		{
-			MethodName: "DividendAccountRoot",
-			Handler:    _Query_DividendAccountRoot_Handler,
+			MethodName: "GetDividendAccountRootHash",
+			Handler:    _Query_GetDividendAccountRootHash_Handler,
 		},
 		{
 			MethodName: "VerifyAccountProof",
 			Handler:    _Query_VerifyAccountProof_Handler,
 		},
 		{
-			MethodName: "DividendAccountProof",
-			Handler:    _Query_DividendAccountProof_Handler,
+			MethodName: "GetDividendAccountProof",
+			Handler:    _Query_GetDividendAccountProof_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "heimdallv2/topup/query.proto",
 }
 
-func (m *QuerySequenceParams) Marshal() (dAtA []byte, err error) {
+func (m *QueryTopupSequenceRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -890,12 +891,12 @@ func (m *QuerySequenceParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QuerySequenceParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryTopupSequenceRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QuerySequenceParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryTopupSequenceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -915,7 +916,7 @@ func (m *QuerySequenceParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *QuerySequenceParamsResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryTopupSequenceResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -925,12 +926,12 @@ func (m *QuerySequenceParamsResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QuerySequenceParamsResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryTopupSequenceResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QuerySequenceParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryTopupSequenceResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -945,7 +946,7 @@ func (m *QuerySequenceParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryDividendAccountParams) Marshal() (dAtA []byte, err error) {
+func (m *QueryDividendAccountRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -955,12 +956,12 @@ func (m *QueryDividendAccountParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryDividendAccountParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryDividendAccountParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -975,7 +976,7 @@ func (m *QueryDividendAccountParams) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryDividendAccountParamsResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryDividendAccountResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -985,12 +986,12 @@ func (m *QueryDividendAccountParamsResponse) Marshal() (dAtA []byte, err error) 
 	return dAtA[:n], nil
 }
 
-func (m *QueryDividendAccountParamsResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryDividendAccountParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1008,7 +1009,7 @@ func (m *QueryDividendAccountParamsResponse) MarshalToSizedBuffer(dAtA []byte) (
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryDividendAccountRootParams) Marshal() (dAtA []byte, err error) {
+func (m *QueryDividendAccountRootHashRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1018,12 +1019,12 @@ func (m *QueryDividendAccountRootParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryDividendAccountRootParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountRootHashRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryDividendAccountRootParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountRootHashRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1031,7 +1032,7 @@ func (m *QueryDividendAccountRootParams) MarshalToSizedBuffer(dAtA []byte) (int,
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryDividendAccountRootResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryDividendAccountRootHashResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1041,12 +1042,12 @@ func (m *QueryDividendAccountRootResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryDividendAccountRootResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountRootHashResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryDividendAccountRootResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountRootHashResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1066,7 +1067,7 @@ func (m *QueryDividendAccountRootResponse) MarshalToSizedBuffer(dAtA []byte) (in
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryVerifyAccountProofParams) Marshal() (dAtA []byte, err error) {
+func (m *QueryVerifyAccountProofRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1076,12 +1077,12 @@ func (m *QueryVerifyAccountProofParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryVerifyAccountProofParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryVerifyAccountProofRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryVerifyAccountProofParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryVerifyAccountProofRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1123,9 +1124,9 @@ func (m *QueryVerifyAccountProofResponse) MarshalToSizedBuffer(dAtA []byte) (int
 	_ = i
 	var l int
 	_ = l
-	if m.Result {
+	if m.IsVerified {
 		i--
-		if m.Result {
+		if m.IsVerified {
 			dAtA[i] = 1
 		} else {
 			dAtA[i] = 0
@@ -1136,7 +1137,7 @@ func (m *QueryVerifyAccountProofResponse) MarshalToSizedBuffer(dAtA []byte) (int
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryDividendAccountProofParams) Marshal() (dAtA []byte, err error) {
+func (m *QueryDividendAccountProofRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1146,12 +1147,12 @@ func (m *QueryDividendAccountProofParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryDividendAccountProofParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountProofRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryDividendAccountProofParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryDividendAccountProofRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1186,9 +1187,9 @@ func (m *QueryDividendAccountProofResponse) MarshalToSizedBuffer(dAtA []byte) (i
 	_ = i
 	var l int
 	_ = l
-	if m.Result != nil {
+	if m.Proof != nil {
 		{
-			size, err := m.Result.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.Proof.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -1233,10 +1234,10 @@ func (m *DividendAccountProof) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.User) > 0 {
-		i -= len(m.User)
-		copy(dAtA[i:], m.User)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.User)))
+	if len(m.Address) > 0 {
+		i -= len(m.Address)
+		copy(dAtA[i:], m.Address)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Address)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1254,7 +1255,7 @@ func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *QuerySequenceParams) Size() (n int) {
+func (m *QueryTopupSequenceRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1270,7 +1271,7 @@ func (m *QuerySequenceParams) Size() (n int) {
 	return n
 }
 
-func (m *QuerySequenceParamsResponse) Size() (n int) {
+func (m *QueryTopupSequenceResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1283,7 +1284,7 @@ func (m *QuerySequenceParamsResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryDividendAccountParams) Size() (n int) {
+func (m *QueryDividendAccountRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1296,7 +1297,7 @@ func (m *QueryDividendAccountParams) Size() (n int) {
 	return n
 }
 
-func (m *QueryDividendAccountParamsResponse) Size() (n int) {
+func (m *QueryDividendAccountResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1307,7 +1308,7 @@ func (m *QueryDividendAccountParamsResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryDividendAccountRootParams) Size() (n int) {
+func (m *QueryDividendAccountRootHashRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1316,7 +1317,7 @@ func (m *QueryDividendAccountRootParams) Size() (n int) {
 	return n
 }
 
-func (m *QueryDividendAccountRootResponse) Size() (n int) {
+func (m *QueryDividendAccountRootHashResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1329,7 +1330,7 @@ func (m *QueryDividendAccountRootResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryVerifyAccountProofParams) Size() (n int) {
+func (m *QueryVerifyAccountProofRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1352,13 +1353,13 @@ func (m *QueryVerifyAccountProofResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Result {
+	if m.IsVerified {
 		n += 2
 	}
 	return n
 }
 
-func (m *QueryDividendAccountProofParams) Size() (n int) {
+func (m *QueryDividendAccountProofRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1377,8 +1378,8 @@ func (m *QueryDividendAccountProofResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Result != nil {
-		l = m.Result.Size()
+	if m.Proof != nil {
+		l = m.Proof.Size()
 		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
@@ -1390,7 +1391,7 @@ func (m *DividendAccountProof) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.User)
+	l = len(m.Address)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -1410,7 +1411,7 @@ func sovQuery(x uint64) (n int) {
 func sozQuery(x uint64) (n int) {
 	return sovQuery(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *QuerySequenceParams) Unmarshal(dAtA []byte) error {
+func (m *QueryTopupSequenceRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1433,10 +1434,10 @@ func (m *QuerySequenceParams) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QuerySequenceParams: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryTopupSequenceRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QuerySequenceParams: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryTopupSequenceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1511,7 +1512,7 @@ func (m *QuerySequenceParams) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QuerySequenceParamsResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryTopupSequenceResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1534,10 +1535,10 @@ func (m *QuerySequenceParamsResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QuerySequenceParamsResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryTopupSequenceResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QuerySequenceParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryTopupSequenceResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1593,7 +1594,7 @@ func (m *QuerySequenceParamsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryDividendAccountParams) Unmarshal(dAtA []byte) error {
+func (m *QueryDividendAccountRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1616,10 +1617,10 @@ func (m *QueryDividendAccountParams) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryDividendAccountParams: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryDividendAccountRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryDividendAccountParams: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryDividendAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1675,7 +1676,7 @@ func (m *QueryDividendAccountParams) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryDividendAccountParamsResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryDividendAccountResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1698,10 +1699,10 @@ func (m *QueryDividendAccountParamsResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryDividendAccountParamsResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryDividendAccountResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryDividendAccountParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryDividendAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 2:
@@ -1758,7 +1759,7 @@ func (m *QueryDividendAccountParamsResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryDividendAccountRootParams) Unmarshal(dAtA []byte) error {
+func (m *QueryDividendAccountRootHashRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1781,10 +1782,10 @@ func (m *QueryDividendAccountRootParams) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryDividendAccountRootParams: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryDividendAccountRootHashRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryDividendAccountRootParams: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryDividendAccountRootHashRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -1808,7 +1809,7 @@ func (m *QueryDividendAccountRootParams) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryDividendAccountRootResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryDividendAccountRootHashResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1831,10 +1832,10 @@ func (m *QueryDividendAccountRootResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryDividendAccountRootResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryDividendAccountRootHashResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryDividendAccountRootResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryDividendAccountRootHashResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 2:
@@ -1894,7 +1895,7 @@ func (m *QueryDividendAccountRootResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryVerifyAccountProofParams) Unmarshal(dAtA []byte) error {
+func (m *QueryVerifyAccountProofRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1917,10 +1918,10 @@ func (m *QueryVerifyAccountProofParams) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryVerifyAccountProofParams: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryVerifyAccountProofRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryVerifyAccountProofParams: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryVerifyAccountProofRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2039,7 +2040,7 @@ func (m *QueryVerifyAccountProofResponse) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field IsVerified", wireType)
 			}
 			var v int
 			for shift := uint(0); ; shift += 7 {
@@ -2056,7 +2057,7 @@ func (m *QueryVerifyAccountProofResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.Result = bool(v != 0)
+			m.IsVerified = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -2078,7 +2079,7 @@ func (m *QueryVerifyAccountProofResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryDividendAccountProofParams) Unmarshal(dAtA []byte) error {
+func (m *QueryDividendAccountProofRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2101,10 +2102,10 @@ func (m *QueryDividendAccountProofParams) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryDividendAccountProofParams: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryDividendAccountProofRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryDividendAccountProofParams: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryDividendAccountProofRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2191,7 +2192,7 @@ func (m *QueryDividendAccountProofResponse) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Proof", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -2218,10 +2219,10 @@ func (m *QueryDividendAccountProofResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Result == nil {
-				m.Result = &DividendAccountProof{}
+			if m.Proof == nil {
+				m.Proof = &DividendAccountProof{}
 			}
-			if err := m.Result.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.Proof.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2277,7 +2278,7 @@ func (m *DividendAccountProof) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field User", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -2305,7 +2306,7 @@ func (m *DividendAccountProof) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.User = string(dAtA[iNdEx:postIndex])
+			m.Address = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {

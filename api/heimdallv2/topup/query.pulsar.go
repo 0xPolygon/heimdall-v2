@@ -19,27 +19,27 @@ import (
 )
 
 var (
-	md_QuerySequenceParams           protoreflect.MessageDescriptor
-	fd_QuerySequenceParams_tx_hash   protoreflect.FieldDescriptor
-	fd_QuerySequenceParams_log_index protoreflect.FieldDescriptor
+	md_QueryTopupSequenceRequest           protoreflect.MessageDescriptor
+	fd_QueryTopupSequenceRequest_tx_hash   protoreflect.FieldDescriptor
+	fd_QueryTopupSequenceRequest_log_index protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QuerySequenceParams = File_heimdallv2_topup_query_proto.Messages().ByName("QuerySequenceParams")
-	fd_QuerySequenceParams_tx_hash = md_QuerySequenceParams.Fields().ByName("tx_hash")
-	fd_QuerySequenceParams_log_index = md_QuerySequenceParams.Fields().ByName("log_index")
+	md_QueryTopupSequenceRequest = File_heimdallv2_topup_query_proto.Messages().ByName("QueryTopupSequenceRequest")
+	fd_QueryTopupSequenceRequest_tx_hash = md_QueryTopupSequenceRequest.Fields().ByName("tx_hash")
+	fd_QueryTopupSequenceRequest_log_index = md_QueryTopupSequenceRequest.Fields().ByName("log_index")
 }
 
-var _ protoreflect.Message = (*fastReflection_QuerySequenceParams)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryTopupSequenceRequest)(nil)
 
-type fastReflection_QuerySequenceParams QuerySequenceParams
+type fastReflection_QueryTopupSequenceRequest QueryTopupSequenceRequest
 
-func (x *QuerySequenceParams) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QuerySequenceParams)(x)
+func (x *QueryTopupSequenceRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryTopupSequenceRequest)(x)
 }
 
-func (x *QuerySequenceParams) slowProtoReflect() protoreflect.Message {
+func (x *QueryTopupSequenceRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -51,43 +51,43 @@ func (x *QuerySequenceParams) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QuerySequenceParams_messageType fastReflection_QuerySequenceParams_messageType
-var _ protoreflect.MessageType = fastReflection_QuerySequenceParams_messageType{}
+var _fastReflection_QueryTopupSequenceRequest_messageType fastReflection_QueryTopupSequenceRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryTopupSequenceRequest_messageType{}
 
-type fastReflection_QuerySequenceParams_messageType struct{}
+type fastReflection_QueryTopupSequenceRequest_messageType struct{}
 
-func (x fastReflection_QuerySequenceParams_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QuerySequenceParams)(nil)
+func (x fastReflection_QueryTopupSequenceRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryTopupSequenceRequest)(nil)
 }
-func (x fastReflection_QuerySequenceParams_messageType) New() protoreflect.Message {
-	return new(fastReflection_QuerySequenceParams)
+func (x fastReflection_QueryTopupSequenceRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryTopupSequenceRequest)
 }
-func (x fastReflection_QuerySequenceParams_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QuerySequenceParams
+func (x fastReflection_QueryTopupSequenceRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryTopupSequenceRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QuerySequenceParams) Descriptor() protoreflect.MessageDescriptor {
-	return md_QuerySequenceParams
+func (x *fastReflection_QueryTopupSequenceRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryTopupSequenceRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QuerySequenceParams) Type() protoreflect.MessageType {
-	return _fastReflection_QuerySequenceParams_messageType
+func (x *fastReflection_QueryTopupSequenceRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryTopupSequenceRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QuerySequenceParams) New() protoreflect.Message {
-	return new(fastReflection_QuerySequenceParams)
+func (x *fastReflection_QueryTopupSequenceRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryTopupSequenceRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QuerySequenceParams) Interface() protoreflect.ProtoMessage {
-	return (*QuerySequenceParams)(x)
+func (x *fastReflection_QueryTopupSequenceRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryTopupSequenceRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -95,16 +95,16 @@ func (x *fastReflection_QuerySequenceParams) Interface() protoreflect.ProtoMessa
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QuerySequenceParams) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryTopupSequenceRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.TxHash != "" {
 		value := protoreflect.ValueOfString(x.TxHash)
-		if !f(fd_QuerySequenceParams_tx_hash, value) {
+		if !f(fd_QueryTopupSequenceRequest_tx_hash, value) {
 			return
 		}
 	}
 	if x.LogIndex != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.LogIndex)
-		if !f(fd_QuerySequenceParams_log_index, value) {
+		if !f(fd_QueryTopupSequenceRequest_log_index, value) {
 			return
 		}
 	}
@@ -121,17 +121,17 @@ func (x *fastReflection_QuerySequenceParams) Range(f func(protoreflect.FieldDesc
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QuerySequenceParams) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryTopupSequenceRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParams.tx_hash":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.tx_hash":
 		return x.TxHash != ""
-	case "heimdallv2.topup.QuerySequenceParams.log_index":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.log_index":
 		return x.LogIndex != uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -141,17 +141,17 @@ func (x *fastReflection_QuerySequenceParams) Has(fd protoreflect.FieldDescriptor
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParams) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryTopupSequenceRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParams.tx_hash":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.tx_hash":
 		x.TxHash = ""
-	case "heimdallv2.topup.QuerySequenceParams.log_index":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.log_index":
 		x.LogIndex = uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -161,19 +161,19 @@ func (x *fastReflection_QuerySequenceParams) Clear(fd protoreflect.FieldDescript
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QuerySequenceParams) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryTopupSequenceRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QuerySequenceParams.tx_hash":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.tx_hash":
 		value := x.TxHash
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.topup.QuerySequenceParams.log_index":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.log_index":
 		value := x.LogIndex
 		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParams does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -187,17 +187,17 @@ func (x *fastReflection_QuerySequenceParams) Get(descriptor protoreflect.FieldDe
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParams) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryTopupSequenceRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParams.tx_hash":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.tx_hash":
 		x.TxHash = value.Interface().(string)
-	case "heimdallv2.topup.QuerySequenceParams.log_index":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.log_index":
 		x.LogIndex = value.Uint()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -211,44 +211,44 @@ func (x *fastReflection_QuerySequenceParams) Set(fd protoreflect.FieldDescriptor
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParams) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryTopupSequenceRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParams.tx_hash":
-		panic(fmt.Errorf("field tx_hash of message heimdallv2.topup.QuerySequenceParams is not mutable"))
-	case "heimdallv2.topup.QuerySequenceParams.log_index":
-		panic(fmt.Errorf("field log_index of message heimdallv2.topup.QuerySequenceParams is not mutable"))
+	case "heimdallv2.topup.QueryTopupSequenceRequest.tx_hash":
+		panic(fmt.Errorf("field tx_hash of message heimdallv2.topup.QueryTopupSequenceRequest is not mutable"))
+	case "heimdallv2.topup.QueryTopupSequenceRequest.log_index":
+		panic(fmt.Errorf("field log_index of message heimdallv2.topup.QueryTopupSequenceRequest is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QuerySequenceParams) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryTopupSequenceRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParams.tx_hash":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.tx_hash":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.topup.QuerySequenceParams.log_index":
+	case "heimdallv2.topup.QueryTopupSequenceRequest.log_index":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QuerySequenceParams) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryTopupSequenceRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QuerySequenceParams", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryTopupSequenceRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -256,7 +256,7 @@ func (x *fastReflection_QuerySequenceParams) WhichOneof(d protoreflect.OneofDesc
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QuerySequenceParams) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryTopupSequenceRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -267,7 +267,7 @@ func (x *fastReflection_QuerySequenceParams) GetUnknown() protoreflect.RawFields
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParams) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryTopupSequenceRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -279,7 +279,7 @@ func (x *fastReflection_QuerySequenceParams) SetUnknown(fields protoreflect.RawF
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QuerySequenceParams) IsValid() bool {
+func (x *fastReflection_QueryTopupSequenceRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -289,9 +289,9 @@ func (x *fastReflection_QuerySequenceParams) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QuerySequenceParams) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryTopupSequenceRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QuerySequenceParams)
+		x := input.Message.Interface().(*QueryTopupSequenceRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -320,7 +320,7 @@ func (x *fastReflection_QuerySequenceParams) ProtoMethods() *protoiface.Methods 
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QuerySequenceParams)
+		x := input.Message.Interface().(*QueryTopupSequenceRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -362,7 +362,7 @@ func (x *fastReflection_QuerySequenceParams) ProtoMethods() *protoiface.Methods 
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QuerySequenceParams)
+		x := input.Message.Interface().(*QueryTopupSequenceRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -394,10 +394,10 @@ func (x *fastReflection_QuerySequenceParams) ProtoMethods() *protoiface.Methods 
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QuerySequenceParams: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryTopupSequenceRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QuerySequenceParams: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryTopupSequenceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -487,25 +487,25 @@ func (x *fastReflection_QuerySequenceParams) ProtoMethods() *protoiface.Methods 
 }
 
 var (
-	md_QuerySequenceParamsResponse          protoreflect.MessageDescriptor
-	fd_QuerySequenceParamsResponse_sequence protoreflect.FieldDescriptor
+	md_QueryTopupSequenceResponse          protoreflect.MessageDescriptor
+	fd_QueryTopupSequenceResponse_sequence protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QuerySequenceParamsResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QuerySequenceParamsResponse")
-	fd_QuerySequenceParamsResponse_sequence = md_QuerySequenceParamsResponse.Fields().ByName("sequence")
+	md_QueryTopupSequenceResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QueryTopupSequenceResponse")
+	fd_QueryTopupSequenceResponse_sequence = md_QueryTopupSequenceResponse.Fields().ByName("sequence")
 }
 
-var _ protoreflect.Message = (*fastReflection_QuerySequenceParamsResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryTopupSequenceResponse)(nil)
 
-type fastReflection_QuerySequenceParamsResponse QuerySequenceParamsResponse
+type fastReflection_QueryTopupSequenceResponse QueryTopupSequenceResponse
 
-func (x *QuerySequenceParamsResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QuerySequenceParamsResponse)(x)
+func (x *QueryTopupSequenceResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryTopupSequenceResponse)(x)
 }
 
-func (x *QuerySequenceParamsResponse) slowProtoReflect() protoreflect.Message {
+func (x *QueryTopupSequenceResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -517,43 +517,43 @@ func (x *QuerySequenceParamsResponse) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QuerySequenceParamsResponse_messageType fastReflection_QuerySequenceParamsResponse_messageType
-var _ protoreflect.MessageType = fastReflection_QuerySequenceParamsResponse_messageType{}
+var _fastReflection_QueryTopupSequenceResponse_messageType fastReflection_QueryTopupSequenceResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryTopupSequenceResponse_messageType{}
 
-type fastReflection_QuerySequenceParamsResponse_messageType struct{}
+type fastReflection_QueryTopupSequenceResponse_messageType struct{}
 
-func (x fastReflection_QuerySequenceParamsResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QuerySequenceParamsResponse)(nil)
+func (x fastReflection_QueryTopupSequenceResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryTopupSequenceResponse)(nil)
 }
-func (x fastReflection_QuerySequenceParamsResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_QuerySequenceParamsResponse)
+func (x fastReflection_QueryTopupSequenceResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryTopupSequenceResponse)
 }
-func (x fastReflection_QuerySequenceParamsResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QuerySequenceParamsResponse
+func (x fastReflection_QueryTopupSequenceResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryTopupSequenceResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QuerySequenceParamsResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_QuerySequenceParamsResponse
+func (x *fastReflection_QueryTopupSequenceResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryTopupSequenceResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QuerySequenceParamsResponse) Type() protoreflect.MessageType {
-	return _fastReflection_QuerySequenceParamsResponse_messageType
+func (x *fastReflection_QueryTopupSequenceResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryTopupSequenceResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QuerySequenceParamsResponse) New() protoreflect.Message {
-	return new(fastReflection_QuerySequenceParamsResponse)
+func (x *fastReflection_QueryTopupSequenceResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryTopupSequenceResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QuerySequenceParamsResponse) Interface() protoreflect.ProtoMessage {
-	return (*QuerySequenceParamsResponse)(x)
+func (x *fastReflection_QueryTopupSequenceResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryTopupSequenceResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -561,10 +561,10 @@ func (x *fastReflection_QuerySequenceParamsResponse) Interface() protoreflect.Pr
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QuerySequenceParamsResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryTopupSequenceResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.Sequence != "" {
 		value := protoreflect.ValueOfString(x.Sequence)
-		if !f(fd_QuerySequenceParamsResponse_sequence, value) {
+		if !f(fd_QueryTopupSequenceResponse_sequence, value) {
 			return
 		}
 	}
@@ -581,15 +581,15 @@ func (x *fastReflection_QuerySequenceParamsResponse) Range(f func(protoreflect.F
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QuerySequenceParamsResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryTopupSequenceResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParamsResponse.sequence":
+	case "heimdallv2.topup.QueryTopupSequenceResponse.sequence":
 		return x.Sequence != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -599,15 +599,15 @@ func (x *fastReflection_QuerySequenceParamsResponse) Has(fd protoreflect.FieldDe
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParamsResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryTopupSequenceResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParamsResponse.sequence":
+	case "heimdallv2.topup.QueryTopupSequenceResponse.sequence":
 		x.Sequence = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -617,16 +617,16 @@ func (x *fastReflection_QuerySequenceParamsResponse) Clear(fd protoreflect.Field
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QuerySequenceParamsResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryTopupSequenceResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QuerySequenceParamsResponse.sequence":
+	case "heimdallv2.topup.QueryTopupSequenceResponse.sequence":
 		value := x.Sequence
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParamsResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -640,15 +640,15 @@ func (x *fastReflection_QuerySequenceParamsResponse) Get(descriptor protoreflect
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParamsResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryTopupSequenceResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParamsResponse.sequence":
+	case "heimdallv2.topup.QueryTopupSequenceResponse.sequence":
 		x.Sequence = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -662,40 +662,40 @@ func (x *fastReflection_QuerySequenceParamsResponse) Set(fd protoreflect.FieldDe
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParamsResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryTopupSequenceResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParamsResponse.sequence":
-		panic(fmt.Errorf("field sequence of message heimdallv2.topup.QuerySequenceParamsResponse is not mutable"))
+	case "heimdallv2.topup.QueryTopupSequenceResponse.sequence":
+		panic(fmt.Errorf("field sequence of message heimdallv2.topup.QueryTopupSequenceResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QuerySequenceParamsResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryTopupSequenceResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QuerySequenceParamsResponse.sequence":
+	case "heimdallv2.topup.QueryTopupSequenceResponse.sequence":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QuerySequenceParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryTopupSequenceResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QuerySequenceParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryTopupSequenceResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QuerySequenceParamsResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryTopupSequenceResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QuerySequenceParamsResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryTopupSequenceResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -703,7 +703,7 @@ func (x *fastReflection_QuerySequenceParamsResponse) WhichOneof(d protoreflect.O
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QuerySequenceParamsResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryTopupSequenceResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -714,7 +714,7 @@ func (x *fastReflection_QuerySequenceParamsResponse) GetUnknown() protoreflect.R
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QuerySequenceParamsResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryTopupSequenceResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -726,7 +726,7 @@ func (x *fastReflection_QuerySequenceParamsResponse) SetUnknown(fields protorefl
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QuerySequenceParamsResponse) IsValid() bool {
+func (x *fastReflection_QueryTopupSequenceResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -736,9 +736,9 @@ func (x *fastReflection_QuerySequenceParamsResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QuerySequenceParamsResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryTopupSequenceResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QuerySequenceParamsResponse)
+		x := input.Message.Interface().(*QueryTopupSequenceResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -764,7 +764,7 @@ func (x *fastReflection_QuerySequenceParamsResponse) ProtoMethods() *protoiface.
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QuerySequenceParamsResponse)
+		x := input.Message.Interface().(*QueryTopupSequenceResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -801,7 +801,7 @@ func (x *fastReflection_QuerySequenceParamsResponse) ProtoMethods() *protoiface.
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QuerySequenceParamsResponse)
+		x := input.Message.Interface().(*QueryTopupSequenceResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -833,10 +833,10 @@ func (x *fastReflection_QuerySequenceParamsResponse) ProtoMethods() *protoiface.
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QuerySequenceParamsResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryTopupSequenceResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QuerySequenceParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryTopupSequenceResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -907,25 +907,25 @@ func (x *fastReflection_QuerySequenceParamsResponse) ProtoMethods() *protoiface.
 }
 
 var (
-	md_QueryDividendAccountParams         protoreflect.MessageDescriptor
-	fd_QueryDividendAccountParams_address protoreflect.FieldDescriptor
+	md_QueryDividendAccountRequest         protoreflect.MessageDescriptor
+	fd_QueryDividendAccountRequest_address protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QueryDividendAccountParams = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountParams")
-	fd_QueryDividendAccountParams_address = md_QueryDividendAccountParams.Fields().ByName("address")
+	md_QueryDividendAccountRequest = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountRequest")
+	fd_QueryDividendAccountRequest_address = md_QueryDividendAccountRequest.Fields().ByName("address")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryDividendAccountParams)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryDividendAccountRequest)(nil)
 
-type fastReflection_QueryDividendAccountParams QueryDividendAccountParams
+type fastReflection_QueryDividendAccountRequest QueryDividendAccountRequest
 
-func (x *QueryDividendAccountParams) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountParams)(x)
+func (x *QueryDividendAccountRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountRequest)(x)
 }
 
-func (x *QueryDividendAccountParams) slowProtoReflect() protoreflect.Message {
+func (x *QueryDividendAccountRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -937,43 +937,43 @@ func (x *QueryDividendAccountParams) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryDividendAccountParams_messageType fastReflection_QueryDividendAccountParams_messageType
-var _ protoreflect.MessageType = fastReflection_QueryDividendAccountParams_messageType{}
+var _fastReflection_QueryDividendAccountRequest_messageType fastReflection_QueryDividendAccountRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryDividendAccountRequest_messageType{}
 
-type fastReflection_QueryDividendAccountParams_messageType struct{}
+type fastReflection_QueryDividendAccountRequest_messageType struct{}
 
-func (x fastReflection_QueryDividendAccountParams_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountParams)(nil)
+func (x fastReflection_QueryDividendAccountRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountRequest)(nil)
 }
-func (x fastReflection_QueryDividendAccountParams_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountParams)
+func (x fastReflection_QueryDividendAccountRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountRequest)
 }
-func (x fastReflection_QueryDividendAccountParams_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountParams
+func (x fastReflection_QueryDividendAccountRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryDividendAccountParams) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountParams
+func (x *fastReflection_QueryDividendAccountRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryDividendAccountParams) Type() protoreflect.MessageType {
-	return _fastReflection_QueryDividendAccountParams_messageType
+func (x *fastReflection_QueryDividendAccountRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryDividendAccountRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryDividendAccountParams) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountParams)
+func (x *fastReflection_QueryDividendAccountRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryDividendAccountParams) Interface() protoreflect.ProtoMessage {
-	return (*QueryDividendAccountParams)(x)
+func (x *fastReflection_QueryDividendAccountRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryDividendAccountRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -981,10 +981,10 @@ func (x *fastReflection_QueryDividendAccountParams) Interface() protoreflect.Pro
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryDividendAccountParams) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryDividendAccountRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.Address != "" {
 		value := protoreflect.ValueOfString(x.Address)
-		if !f(fd_QueryDividendAccountParams_address, value) {
+		if !f(fd_QueryDividendAccountRequest_address, value) {
 			return
 		}
 	}
@@ -1001,15 +1001,15 @@ func (x *fastReflection_QueryDividendAccountParams) Range(f func(protoreflect.Fi
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryDividendAccountParams) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryDividendAccountRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParams.address":
+	case "heimdallv2.topup.QueryDividendAccountRequest.address":
 		return x.Address != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1019,15 +1019,15 @@ func (x *fastReflection_QueryDividendAccountParams) Has(fd protoreflect.FieldDes
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParams) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryDividendAccountRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParams.address":
+	case "heimdallv2.topup.QueryDividendAccountRequest.address":
 		x.Address = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1037,16 +1037,16 @@ func (x *fastReflection_QueryDividendAccountParams) Clear(fd protoreflect.FieldD
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryDividendAccountParams) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParams.address":
+	case "heimdallv2.topup.QueryDividendAccountRequest.address":
 		value := x.Address
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParams does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -1060,15 +1060,15 @@ func (x *fastReflection_QueryDividendAccountParams) Get(descriptor protoreflect.
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParams) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryDividendAccountRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParams.address":
+	case "heimdallv2.topup.QueryDividendAccountRequest.address":
 		x.Address = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1082,40 +1082,40 @@ func (x *fastReflection_QueryDividendAccountParams) Set(fd protoreflect.FieldDes
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParams) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParams.address":
-		panic(fmt.Errorf("field address of message heimdallv2.topup.QueryDividendAccountParams is not mutable"))
+	case "heimdallv2.topup.QueryDividendAccountRequest.address":
+		panic(fmt.Errorf("field address of message heimdallv2.topup.QueryDividendAccountRequest is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryDividendAccountParams) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParams.address":
+	case "heimdallv2.topup.QueryDividendAccountRequest.address":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryDividendAccountParams) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryDividendAccountRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountParams", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -1123,7 +1123,7 @@ func (x *fastReflection_QueryDividendAccountParams) WhichOneof(d protoreflect.On
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryDividendAccountParams) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryDividendAccountRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -1134,7 +1134,7 @@ func (x *fastReflection_QueryDividendAccountParams) GetUnknown() protoreflect.Ra
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParams) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryDividendAccountRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -1146,7 +1146,7 @@ func (x *fastReflection_QueryDividendAccountParams) SetUnknown(fields protorefle
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryDividendAccountParams) IsValid() bool {
+func (x *fastReflection_QueryDividendAccountRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -1156,9 +1156,9 @@ func (x *fastReflection_QueryDividendAccountParams) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryDividendAccountParams) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryDividendAccountRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryDividendAccountParams)
+		x := input.Message.Interface().(*QueryDividendAccountRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1184,7 +1184,7 @@ func (x *fastReflection_QueryDividendAccountParams) ProtoMethods() *protoiface.M
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountParams)
+		x := input.Message.Interface().(*QueryDividendAccountRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1221,7 +1221,7 @@ func (x *fastReflection_QueryDividendAccountParams) ProtoMethods() *protoiface.M
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountParams)
+		x := input.Message.Interface().(*QueryDividendAccountRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1253,10 +1253,10 @@ func (x *fastReflection_QueryDividendAccountParams) ProtoMethods() *protoiface.M
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountParams: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountParams: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -1327,25 +1327,25 @@ func (x *fastReflection_QueryDividendAccountParams) ProtoMethods() *protoiface.M
 }
 
 var (
-	md_QueryDividendAccountParamsResponse                  protoreflect.MessageDescriptor
-	fd_QueryDividendAccountParamsResponse_dividend_account protoreflect.FieldDescriptor
+	md_QueryDividendAccountResponse                  protoreflect.MessageDescriptor
+	fd_QueryDividendAccountResponse_dividend_account protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QueryDividendAccountParamsResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountParamsResponse")
-	fd_QueryDividendAccountParamsResponse_dividend_account = md_QueryDividendAccountParamsResponse.Fields().ByName("dividend_account")
+	md_QueryDividendAccountResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountResponse")
+	fd_QueryDividendAccountResponse_dividend_account = md_QueryDividendAccountResponse.Fields().ByName("dividend_account")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryDividendAccountParamsResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryDividendAccountResponse)(nil)
 
-type fastReflection_QueryDividendAccountParamsResponse QueryDividendAccountParamsResponse
+type fastReflection_QueryDividendAccountResponse QueryDividendAccountResponse
 
-func (x *QueryDividendAccountParamsResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountParamsResponse)(x)
+func (x *QueryDividendAccountResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountResponse)(x)
 }
 
-func (x *QueryDividendAccountParamsResponse) slowProtoReflect() protoreflect.Message {
+func (x *QueryDividendAccountResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1357,43 +1357,43 @@ func (x *QueryDividendAccountParamsResponse) slowProtoReflect() protoreflect.Mes
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryDividendAccountParamsResponse_messageType fastReflection_QueryDividendAccountParamsResponse_messageType
-var _ protoreflect.MessageType = fastReflection_QueryDividendAccountParamsResponse_messageType{}
+var _fastReflection_QueryDividendAccountResponse_messageType fastReflection_QueryDividendAccountResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryDividendAccountResponse_messageType{}
 
-type fastReflection_QueryDividendAccountParamsResponse_messageType struct{}
+type fastReflection_QueryDividendAccountResponse_messageType struct{}
 
-func (x fastReflection_QueryDividendAccountParamsResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountParamsResponse)(nil)
+func (x fastReflection_QueryDividendAccountResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountResponse)(nil)
 }
-func (x fastReflection_QueryDividendAccountParamsResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountParamsResponse)
+func (x fastReflection_QueryDividendAccountResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountResponse)
 }
-func (x fastReflection_QueryDividendAccountParamsResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountParamsResponse
+func (x fastReflection_QueryDividendAccountResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountParamsResponse
+func (x *fastReflection_QueryDividendAccountResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Type() protoreflect.MessageType {
-	return _fastReflection_QueryDividendAccountParamsResponse_messageType
+func (x *fastReflection_QueryDividendAccountResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryDividendAccountResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryDividendAccountParamsResponse) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountParamsResponse)
+func (x *fastReflection_QueryDividendAccountResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Interface() protoreflect.ProtoMessage {
-	return (*QueryDividendAccountParamsResponse)(x)
+func (x *fastReflection_QueryDividendAccountResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryDividendAccountResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -1401,10 +1401,10 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) Interface() protoref
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryDividendAccountResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.DividendAccount != nil {
 		value := protoreflect.ValueOfMessage(x.DividendAccount.ProtoReflect())
-		if !f(fd_QueryDividendAccountParamsResponse_dividend_account, value) {
+		if !f(fd_QueryDividendAccountResponse_dividend_account, value) {
 			return
 		}
 	}
@@ -1421,15 +1421,15 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) Range(f func(protore
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryDividendAccountResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParamsResponse.dividend_account":
+	case "heimdallv2.topup.QueryDividendAccountResponse.dividend_account":
 		return x.DividendAccount != nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1439,15 +1439,15 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) Has(fd protoreflect.
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryDividendAccountResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParamsResponse.dividend_account":
+	case "heimdallv2.topup.QueryDividendAccountResponse.dividend_account":
 		x.DividendAccount = nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1457,16 +1457,16 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) Clear(fd protoreflec
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParamsResponse.dividend_account":
+	case "heimdallv2.topup.QueryDividendAccountResponse.dividend_account":
 		value := x.DividendAccount
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParamsResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -1480,15 +1480,15 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) Get(descriptor proto
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryDividendAccountResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParamsResponse.dividend_account":
+	case "heimdallv2.topup.QueryDividendAccountResponse.dividend_account":
 		x.DividendAccount = value.Message().Interface().(*types.DividendAccount)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1502,44 +1502,44 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) Set(fd protoreflect.
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParamsResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParamsResponse.dividend_account":
+	case "heimdallv2.topup.QueryDividendAccountResponse.dividend_account":
 		if x.DividendAccount == nil {
 			x.DividendAccount = new(types.DividendAccount)
 		}
 		return protoreflect.ValueOfMessage(x.DividendAccount.ProtoReflect())
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryDividendAccountParamsResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountParamsResponse.dividend_account":
+	case "heimdallv2.topup.QueryDividendAccountResponse.dividend_account":
 		m := new(types.DividendAccount)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountParamsResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountParamsResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryDividendAccountParamsResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryDividendAccountResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountParamsResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -1547,7 +1547,7 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) WhichOneof(d protore
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryDividendAccountParamsResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryDividendAccountResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -1558,7 +1558,7 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) GetUnknown() protore
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountParamsResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryDividendAccountResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -1570,7 +1570,7 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) SetUnknown(fields pr
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryDividendAccountParamsResponse) IsValid() bool {
+func (x *fastReflection_QueryDividendAccountResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -1580,9 +1580,9 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryDividendAccountParamsResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryDividendAccountResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryDividendAccountParamsResponse)
+		x := input.Message.Interface().(*QueryDividendAccountResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1608,7 +1608,7 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) ProtoMethods() *prot
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountParamsResponse)
+		x := input.Message.Interface().(*QueryDividendAccountResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1652,7 +1652,7 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) ProtoMethods() *prot
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountParamsResponse)
+		x := input.Message.Interface().(*QueryDividendAccountResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1684,10 +1684,10 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) ProtoMethods() *prot
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountParamsResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountParamsResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 2:
@@ -1762,23 +1762,23 @@ func (x *fastReflection_QueryDividendAccountParamsResponse) ProtoMethods() *prot
 }
 
 var (
-	md_QueryDividendAccountRootParams protoreflect.MessageDescriptor
+	md_QueryDividendAccountRootHashRequest protoreflect.MessageDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QueryDividendAccountRootParams = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountRootParams")
+	md_QueryDividendAccountRootHashRequest = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountRootHashRequest")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryDividendAccountRootParams)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryDividendAccountRootHashRequest)(nil)
 
-type fastReflection_QueryDividendAccountRootParams QueryDividendAccountRootParams
+type fastReflection_QueryDividendAccountRootHashRequest QueryDividendAccountRootHashRequest
 
-func (x *QueryDividendAccountRootParams) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountRootParams)(x)
+func (x *QueryDividendAccountRootHashRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountRootHashRequest)(x)
 }
 
-func (x *QueryDividendAccountRootParams) slowProtoReflect() protoreflect.Message {
+func (x *QueryDividendAccountRootHashRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1790,43 +1790,43 @@ func (x *QueryDividendAccountRootParams) slowProtoReflect() protoreflect.Message
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryDividendAccountRootParams_messageType fastReflection_QueryDividendAccountRootParams_messageType
-var _ protoreflect.MessageType = fastReflection_QueryDividendAccountRootParams_messageType{}
+var _fastReflection_QueryDividendAccountRootHashRequest_messageType fastReflection_QueryDividendAccountRootHashRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryDividendAccountRootHashRequest_messageType{}
 
-type fastReflection_QueryDividendAccountRootParams_messageType struct{}
+type fastReflection_QueryDividendAccountRootHashRequest_messageType struct{}
 
-func (x fastReflection_QueryDividendAccountRootParams_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountRootParams)(nil)
+func (x fastReflection_QueryDividendAccountRootHashRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountRootHashRequest)(nil)
 }
-func (x fastReflection_QueryDividendAccountRootParams_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountRootParams)
+func (x fastReflection_QueryDividendAccountRootHashRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountRootHashRequest)
 }
-func (x fastReflection_QueryDividendAccountRootParams_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountRootParams
+func (x fastReflection_QueryDividendAccountRootHashRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountRootHashRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryDividendAccountRootParams) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountRootParams
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountRootHashRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryDividendAccountRootParams) Type() protoreflect.MessageType {
-	return _fastReflection_QueryDividendAccountRootParams_messageType
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryDividendAccountRootHashRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryDividendAccountRootParams) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountRootParams)
+func (x *fastReflection_QueryDividendAccountRootHashRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountRootHashRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryDividendAccountRootParams) Interface() protoreflect.ProtoMessage {
-	return (*QueryDividendAccountRootParams)(x)
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryDividendAccountRootHashRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -1834,7 +1834,7 @@ func (x *fastReflection_QueryDividendAccountRootParams) Interface() protoreflect
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryDividendAccountRootParams) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 }
 
 // Has reports whether a field is populated.
@@ -1848,13 +1848,13 @@ func (x *fastReflection_QueryDividendAccountRootParams) Range(f func(protoreflec
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryDividendAccountRootParams) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1864,13 +1864,13 @@ func (x *fastReflection_QueryDividendAccountRootParams) Has(fd protoreflect.Fiel
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootParams) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1880,13 +1880,13 @@ func (x *fastReflection_QueryDividendAccountRootParams) Clear(fd protoreflect.Fi
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryDividendAccountRootParams) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootParams does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -1900,13 +1900,13 @@ func (x *fastReflection_QueryDividendAccountRootParams) Get(descriptor protorefl
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootParams) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1920,36 +1920,36 @@ func (x *fastReflection_QueryDividendAccountRootParams) Set(fd protoreflect.Fiel
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootParams) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryDividendAccountRootParams) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryDividendAccountRootParams) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountRootParams", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountRootHashRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -1957,7 +1957,7 @@ func (x *fastReflection_QueryDividendAccountRootParams) WhichOneof(d protoreflec
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryDividendAccountRootParams) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -1968,7 +1968,7 @@ func (x *fastReflection_QueryDividendAccountRootParams) GetUnknown() protoreflec
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootParams) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -1980,7 +1980,7 @@ func (x *fastReflection_QueryDividendAccountRootParams) SetUnknown(fields protor
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryDividendAccountRootParams) IsValid() bool {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -1990,9 +1990,9 @@ func (x *fastReflection_QueryDividendAccountRootParams) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryDividendAccountRootParams) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryDividendAccountRootHashRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryDividendAccountRootParams)
+		x := input.Message.Interface().(*QueryDividendAccountRootHashRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2014,7 +2014,7 @@ func (x *fastReflection_QueryDividendAccountRootParams) ProtoMethods() *protoifa
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountRootParams)
+		x := input.Message.Interface().(*QueryDividendAccountRootHashRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2044,7 +2044,7 @@ func (x *fastReflection_QueryDividendAccountRootParams) ProtoMethods() *protoifa
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountRootParams)
+		x := input.Message.Interface().(*QueryDividendAccountRootHashRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2076,10 +2076,10 @@ func (x *fastReflection_QueryDividendAccountRootParams) ProtoMethods() *protoifa
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootParams: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootHashRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootParams: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootHashRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			default:
@@ -2118,25 +2118,25 @@ func (x *fastReflection_QueryDividendAccountRootParams) ProtoMethods() *protoifa
 }
 
 var (
-	md_QueryDividendAccountRootResponse                   protoreflect.MessageDescriptor
-	fd_QueryDividendAccountRootResponse_account_root_hash protoreflect.FieldDescriptor
+	md_QueryDividendAccountRootHashResponse                   protoreflect.MessageDescriptor
+	fd_QueryDividendAccountRootHashResponse_account_root_hash protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QueryDividendAccountRootResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountRootResponse")
-	fd_QueryDividendAccountRootResponse_account_root_hash = md_QueryDividendAccountRootResponse.Fields().ByName("account_root_hash")
+	md_QueryDividendAccountRootHashResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountRootHashResponse")
+	fd_QueryDividendAccountRootHashResponse_account_root_hash = md_QueryDividendAccountRootHashResponse.Fields().ByName("account_root_hash")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryDividendAccountRootResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryDividendAccountRootHashResponse)(nil)
 
-type fastReflection_QueryDividendAccountRootResponse QueryDividendAccountRootResponse
+type fastReflection_QueryDividendAccountRootHashResponse QueryDividendAccountRootHashResponse
 
-func (x *QueryDividendAccountRootResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountRootResponse)(x)
+func (x *QueryDividendAccountRootHashResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountRootHashResponse)(x)
 }
 
-func (x *QueryDividendAccountRootResponse) slowProtoReflect() protoreflect.Message {
+func (x *QueryDividendAccountRootHashResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2148,43 +2148,43 @@ func (x *QueryDividendAccountRootResponse) slowProtoReflect() protoreflect.Messa
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryDividendAccountRootResponse_messageType fastReflection_QueryDividendAccountRootResponse_messageType
-var _ protoreflect.MessageType = fastReflection_QueryDividendAccountRootResponse_messageType{}
+var _fastReflection_QueryDividendAccountRootHashResponse_messageType fastReflection_QueryDividendAccountRootHashResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryDividendAccountRootHashResponse_messageType{}
 
-type fastReflection_QueryDividendAccountRootResponse_messageType struct{}
+type fastReflection_QueryDividendAccountRootHashResponse_messageType struct{}
 
-func (x fastReflection_QueryDividendAccountRootResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountRootResponse)(nil)
+func (x fastReflection_QueryDividendAccountRootHashResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountRootHashResponse)(nil)
 }
-func (x fastReflection_QueryDividendAccountRootResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountRootResponse)
+func (x fastReflection_QueryDividendAccountRootHashResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountRootHashResponse)
 }
-func (x fastReflection_QueryDividendAccountRootResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountRootResponse
+func (x fastReflection_QueryDividendAccountRootHashResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountRootHashResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryDividendAccountRootResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountRootResponse
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountRootHashResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryDividendAccountRootResponse) Type() protoreflect.MessageType {
-	return _fastReflection_QueryDividendAccountRootResponse_messageType
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryDividendAccountRootHashResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryDividendAccountRootResponse) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountRootResponse)
+func (x *fastReflection_QueryDividendAccountRootHashResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountRootHashResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryDividendAccountRootResponse) Interface() protoreflect.ProtoMessage {
-	return (*QueryDividendAccountRootResponse)(x)
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryDividendAccountRootHashResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -2192,10 +2192,10 @@ func (x *fastReflection_QueryDividendAccountRootResponse) Interface() protorefle
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryDividendAccountRootResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.AccountRootHash != nil {
 		value := protoreflect.ValueOfMessage(x.AccountRootHash.ProtoReflect())
-		if !f(fd_QueryDividendAccountRootResponse_account_root_hash, value) {
+		if !f(fd_QueryDividendAccountRootHashResponse_account_root_hash, value) {
 			return
 		}
 	}
@@ -2212,15 +2212,15 @@ func (x *fastReflection_QueryDividendAccountRootResponse) Range(f func(protorefl
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryDividendAccountRootResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountRootResponse.account_root_hash":
+	case "heimdallv2.topup.QueryDividendAccountRootHashResponse.account_root_hash":
 		return x.AccountRootHash != nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2230,15 +2230,15 @@ func (x *fastReflection_QueryDividendAccountRootResponse) Has(fd protoreflect.Fi
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountRootResponse.account_root_hash":
+	case "heimdallv2.topup.QueryDividendAccountRootHashResponse.account_root_hash":
 		x.AccountRootHash = nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2248,16 +2248,16 @@ func (x *fastReflection_QueryDividendAccountRootResponse) Clear(fd protoreflect.
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryDividendAccountRootResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountRootResponse.account_root_hash":
+	case "heimdallv2.topup.QueryDividendAccountRootHashResponse.account_root_hash":
 		value := x.AccountRootHash
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -2271,15 +2271,15 @@ func (x *fastReflection_QueryDividendAccountRootResponse) Get(descriptor protore
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountRootResponse.account_root_hash":
+	case "heimdallv2.topup.QueryDividendAccountRootHashResponse.account_root_hash":
 		x.AccountRootHash = value.Message().Interface().(*types.HeimdallHash)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2293,44 +2293,44 @@ func (x *fastReflection_QueryDividendAccountRootResponse) Set(fd protoreflect.Fi
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountRootResponse.account_root_hash":
+	case "heimdallv2.topup.QueryDividendAccountRootHashResponse.account_root_hash":
 		if x.AccountRootHash == nil {
 			x.AccountRootHash = new(types.HeimdallHash)
 		}
 		return protoreflect.ValueOfMessage(x.AccountRootHash.ProtoReflect())
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryDividendAccountRootResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountRootResponse.account_root_hash":
+	case "heimdallv2.topup.QueryDividendAccountRootHashResponse.account_root_hash":
 		m := new(types.HeimdallHash)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountRootHashResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountRootHashResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryDividendAccountRootResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountRootResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountRootHashResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -2338,7 +2338,7 @@ func (x *fastReflection_QueryDividendAccountRootResponse) WhichOneof(d protorefl
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryDividendAccountRootResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -2349,7 +2349,7 @@ func (x *fastReflection_QueryDividendAccountRootResponse) GetUnknown() protorefl
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountRootResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -2361,7 +2361,7 @@ func (x *fastReflection_QueryDividendAccountRootResponse) SetUnknown(fields prot
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryDividendAccountRootResponse) IsValid() bool {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -2371,9 +2371,9 @@ func (x *fastReflection_QueryDividendAccountRootResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryDividendAccountRootResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryDividendAccountRootHashResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryDividendAccountRootResponse)
+		x := input.Message.Interface().(*QueryDividendAccountRootHashResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2399,7 +2399,7 @@ func (x *fastReflection_QueryDividendAccountRootResponse) ProtoMethods() *protoi
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountRootResponse)
+		x := input.Message.Interface().(*QueryDividendAccountRootHashResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2443,7 +2443,7 @@ func (x *fastReflection_QueryDividendAccountRootResponse) ProtoMethods() *protoi
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountRootResponse)
+		x := input.Message.Interface().(*QueryDividendAccountRootHashResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2475,10 +2475,10 @@ func (x *fastReflection_QueryDividendAccountRootResponse) ProtoMethods() *protoi
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootHashResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountRootHashResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 2:
@@ -2553,27 +2553,27 @@ func (x *fastReflection_QueryDividendAccountRootResponse) ProtoMethods() *protoi
 }
 
 var (
-	md_QueryVerifyAccountProofParams         protoreflect.MessageDescriptor
-	fd_QueryVerifyAccountProofParams_address protoreflect.FieldDescriptor
-	fd_QueryVerifyAccountProofParams_proof   protoreflect.FieldDescriptor
+	md_QueryVerifyAccountProofRequest         protoreflect.MessageDescriptor
+	fd_QueryVerifyAccountProofRequest_address protoreflect.FieldDescriptor
+	fd_QueryVerifyAccountProofRequest_proof   protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QueryVerifyAccountProofParams = File_heimdallv2_topup_query_proto.Messages().ByName("QueryVerifyAccountProofParams")
-	fd_QueryVerifyAccountProofParams_address = md_QueryVerifyAccountProofParams.Fields().ByName("address")
-	fd_QueryVerifyAccountProofParams_proof = md_QueryVerifyAccountProofParams.Fields().ByName("proof")
+	md_QueryVerifyAccountProofRequest = File_heimdallv2_topup_query_proto.Messages().ByName("QueryVerifyAccountProofRequest")
+	fd_QueryVerifyAccountProofRequest_address = md_QueryVerifyAccountProofRequest.Fields().ByName("address")
+	fd_QueryVerifyAccountProofRequest_proof = md_QueryVerifyAccountProofRequest.Fields().ByName("proof")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryVerifyAccountProofParams)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryVerifyAccountProofRequest)(nil)
 
-type fastReflection_QueryVerifyAccountProofParams QueryVerifyAccountProofParams
+type fastReflection_QueryVerifyAccountProofRequest QueryVerifyAccountProofRequest
 
-func (x *QueryVerifyAccountProofParams) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryVerifyAccountProofParams)(x)
+func (x *QueryVerifyAccountProofRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryVerifyAccountProofRequest)(x)
 }
 
-func (x *QueryVerifyAccountProofParams) slowProtoReflect() protoreflect.Message {
+func (x *QueryVerifyAccountProofRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2585,43 +2585,43 @@ func (x *QueryVerifyAccountProofParams) slowProtoReflect() protoreflect.Message 
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryVerifyAccountProofParams_messageType fastReflection_QueryVerifyAccountProofParams_messageType
-var _ protoreflect.MessageType = fastReflection_QueryVerifyAccountProofParams_messageType{}
+var _fastReflection_QueryVerifyAccountProofRequest_messageType fastReflection_QueryVerifyAccountProofRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryVerifyAccountProofRequest_messageType{}
 
-type fastReflection_QueryVerifyAccountProofParams_messageType struct{}
+type fastReflection_QueryVerifyAccountProofRequest_messageType struct{}
 
-func (x fastReflection_QueryVerifyAccountProofParams_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryVerifyAccountProofParams)(nil)
+func (x fastReflection_QueryVerifyAccountProofRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryVerifyAccountProofRequest)(nil)
 }
-func (x fastReflection_QueryVerifyAccountProofParams_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryVerifyAccountProofParams)
+func (x fastReflection_QueryVerifyAccountProofRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryVerifyAccountProofRequest)
 }
-func (x fastReflection_QueryVerifyAccountProofParams_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryVerifyAccountProofParams
+func (x fastReflection_QueryVerifyAccountProofRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryVerifyAccountProofRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryVerifyAccountProofParams) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryVerifyAccountProofParams
+func (x *fastReflection_QueryVerifyAccountProofRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryVerifyAccountProofRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryVerifyAccountProofParams) Type() protoreflect.MessageType {
-	return _fastReflection_QueryVerifyAccountProofParams_messageType
+func (x *fastReflection_QueryVerifyAccountProofRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryVerifyAccountProofRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryVerifyAccountProofParams) New() protoreflect.Message {
-	return new(fastReflection_QueryVerifyAccountProofParams)
+func (x *fastReflection_QueryVerifyAccountProofRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryVerifyAccountProofRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryVerifyAccountProofParams) Interface() protoreflect.ProtoMessage {
-	return (*QueryVerifyAccountProofParams)(x)
+func (x *fastReflection_QueryVerifyAccountProofRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryVerifyAccountProofRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -2629,16 +2629,16 @@ func (x *fastReflection_QueryVerifyAccountProofParams) Interface() protoreflect.
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryVerifyAccountProofParams) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryVerifyAccountProofRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.Address != "" {
 		value := protoreflect.ValueOfString(x.Address)
-		if !f(fd_QueryVerifyAccountProofParams_address, value) {
+		if !f(fd_QueryVerifyAccountProofRequest_address, value) {
 			return
 		}
 	}
 	if x.Proof != "" {
 		value := protoreflect.ValueOfString(x.Proof)
-		if !f(fd_QueryVerifyAccountProofParams_proof, value) {
+		if !f(fd_QueryVerifyAccountProofRequest_proof, value) {
 			return
 		}
 	}
@@ -2655,17 +2655,17 @@ func (x *fastReflection_QueryVerifyAccountProofParams) Range(f func(protoreflect
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryVerifyAccountProofParams) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryVerifyAccountProofRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.address":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.address":
 		return x.Address != ""
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.proof":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.proof":
 		return x.Proof != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2675,17 +2675,17 @@ func (x *fastReflection_QueryVerifyAccountProofParams) Has(fd protoreflect.Field
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryVerifyAccountProofParams) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryVerifyAccountProofRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.address":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.address":
 		x.Address = ""
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.proof":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.proof":
 		x.Proof = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2695,19 +2695,19 @@ func (x *fastReflection_QueryVerifyAccountProofParams) Clear(fd protoreflect.Fie
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryVerifyAccountProofParams) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryVerifyAccountProofRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.address":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.address":
 		value := x.Address
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.proof":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.proof":
 		value := x.Proof
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofParams does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -2721,17 +2721,17 @@ func (x *fastReflection_QueryVerifyAccountProofParams) Get(descriptor protorefle
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryVerifyAccountProofParams) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryVerifyAccountProofRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.address":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.address":
 		x.Address = value.Interface().(string)
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.proof":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.proof":
 		x.Proof = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2745,44 +2745,44 @@ func (x *fastReflection_QueryVerifyAccountProofParams) Set(fd protoreflect.Field
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryVerifyAccountProofParams) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryVerifyAccountProofRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.address":
-		panic(fmt.Errorf("field address of message heimdallv2.topup.QueryVerifyAccountProofParams is not mutable"))
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.proof":
-		panic(fmt.Errorf("field proof of message heimdallv2.topup.QueryVerifyAccountProofParams is not mutable"))
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.address":
+		panic(fmt.Errorf("field address of message heimdallv2.topup.QueryVerifyAccountProofRequest is not mutable"))
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.proof":
+		panic(fmt.Errorf("field proof of message heimdallv2.topup.QueryVerifyAccountProofRequest is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryVerifyAccountProofParams) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryVerifyAccountProofRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.address":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.address":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.topup.QueryVerifyAccountProofParams.proof":
+	case "heimdallv2.topup.QueryVerifyAccountProofRequest.proof":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryVerifyAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryVerifyAccountProofParams) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryVerifyAccountProofRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryVerifyAccountProofParams", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryVerifyAccountProofRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -2790,7 +2790,7 @@ func (x *fastReflection_QueryVerifyAccountProofParams) WhichOneof(d protoreflect
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryVerifyAccountProofParams) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryVerifyAccountProofRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -2801,7 +2801,7 @@ func (x *fastReflection_QueryVerifyAccountProofParams) GetUnknown() protoreflect
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryVerifyAccountProofParams) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryVerifyAccountProofRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -2813,7 +2813,7 @@ func (x *fastReflection_QueryVerifyAccountProofParams) SetUnknown(fields protore
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryVerifyAccountProofParams) IsValid() bool {
+func (x *fastReflection_QueryVerifyAccountProofRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -2823,9 +2823,9 @@ func (x *fastReflection_QueryVerifyAccountProofParams) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryVerifyAccountProofParams) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryVerifyAccountProofRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryVerifyAccountProofParams)
+		x := input.Message.Interface().(*QueryVerifyAccountProofRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2855,7 +2855,7 @@ func (x *fastReflection_QueryVerifyAccountProofParams) ProtoMethods() *protoifac
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryVerifyAccountProofParams)
+		x := input.Message.Interface().(*QueryVerifyAccountProofRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2899,7 +2899,7 @@ func (x *fastReflection_QueryVerifyAccountProofParams) ProtoMethods() *protoifac
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryVerifyAccountProofParams)
+		x := input.Message.Interface().(*QueryVerifyAccountProofRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2931,10 +2931,10 @@ func (x *fastReflection_QueryVerifyAccountProofParams) ProtoMethods() *protoifac
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryVerifyAccountProofParams: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryVerifyAccountProofRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryVerifyAccountProofParams: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryVerifyAccountProofRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -3037,14 +3037,14 @@ func (x *fastReflection_QueryVerifyAccountProofParams) ProtoMethods() *protoifac
 }
 
 var (
-	md_QueryVerifyAccountProofResponse        protoreflect.MessageDescriptor
-	fd_QueryVerifyAccountProofResponse_result protoreflect.FieldDescriptor
+	md_QueryVerifyAccountProofResponse             protoreflect.MessageDescriptor
+	fd_QueryVerifyAccountProofResponse_is_verified protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
 	md_QueryVerifyAccountProofResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QueryVerifyAccountProofResponse")
-	fd_QueryVerifyAccountProofResponse_result = md_QueryVerifyAccountProofResponse.Fields().ByName("result")
+	fd_QueryVerifyAccountProofResponse_is_verified = md_QueryVerifyAccountProofResponse.Fields().ByName("is_verified")
 }
 
 var _ protoreflect.Message = (*fastReflection_QueryVerifyAccountProofResponse)(nil)
@@ -3112,9 +3112,9 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) Interface() protoreflec
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QueryVerifyAccountProofResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Result != false {
-		value := protoreflect.ValueOfBool(x.Result)
-		if !f(fd_QueryVerifyAccountProofResponse_result, value) {
+	if x.IsVerified != false {
+		value := protoreflect.ValueOfBool(x.IsVerified)
+		if !f(fd_QueryVerifyAccountProofResponse_is_verified, value) {
 			return
 		}
 	}
@@ -3133,8 +3133,8 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) Range(f func(protorefle
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QueryVerifyAccountProofResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofResponse.result":
-		return x.Result != false
+	case "heimdallv2.topup.QueryVerifyAccountProofResponse.is_verified":
+		return x.IsVerified != false
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofResponse"))
@@ -3151,8 +3151,8 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) Has(fd protoreflect.Fie
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryVerifyAccountProofResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofResponse.result":
-		x.Result = false
+	case "heimdallv2.topup.QueryVerifyAccountProofResponse.is_verified":
+		x.IsVerified = false
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofResponse"))
@@ -3169,8 +3169,8 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) Clear(fd protoreflect.F
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QueryVerifyAccountProofResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofResponse.result":
-		value := x.Result
+	case "heimdallv2.topup.QueryVerifyAccountProofResponse.is_verified":
+		value := x.IsVerified
 		return protoreflect.ValueOfBool(value)
 	default:
 		if descriptor.IsExtension() {
@@ -3192,8 +3192,8 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) Get(descriptor protoref
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryVerifyAccountProofResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofResponse.result":
-		x.Result = value.Bool()
+	case "heimdallv2.topup.QueryVerifyAccountProofResponse.is_verified":
+		x.IsVerified = value.Bool()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofResponse"))
@@ -3214,8 +3214,8 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) Set(fd protoreflect.Fie
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryVerifyAccountProofResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofResponse.result":
-		panic(fmt.Errorf("field result of message heimdallv2.topup.QueryVerifyAccountProofResponse is not mutable"))
+	case "heimdallv2.topup.QueryVerifyAccountProofResponse.is_verified":
+		panic(fmt.Errorf("field is_verified of message heimdallv2.topup.QueryVerifyAccountProofResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryVerifyAccountProofResponse"))
@@ -3229,7 +3229,7 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) Mutable(fd protoreflect
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QueryVerifyAccountProofResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryVerifyAccountProofResponse.result":
+	case "heimdallv2.topup.QueryVerifyAccountProofResponse.is_verified":
 		return protoreflect.ValueOfBool(false)
 	default:
 		if fd.IsExtension() {
@@ -3300,7 +3300,7 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) ProtoMethods() *protoif
 		var n int
 		var l int
 		_ = l
-		if x.Result {
+		if x.IsVerified {
 			n += 2
 		}
 		if x.unknownFields != nil {
@@ -3332,9 +3332,9 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) ProtoMethods() *protoif
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.Result {
+		if x.IsVerified {
 			i--
-			if x.Result {
+			if x.IsVerified {
 				dAtA[i] = 1
 			} else {
 				dAtA[i] = 0
@@ -3393,7 +3393,7 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) ProtoMethods() *protoif
 			switch fieldNum {
 			case 2:
 				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field IsVerified", wireType)
 				}
 				var v int
 				for shift := uint(0); ; shift += 7 {
@@ -3410,7 +3410,7 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) ProtoMethods() *protoif
 						break
 					}
 				}
-				x.Result = bool(v != 0)
+				x.IsVerified = bool(v != 0)
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -3447,25 +3447,25 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) ProtoMethods() *protoif
 }
 
 var (
-	md_QueryDividendAccountProofParams         protoreflect.MessageDescriptor
-	fd_QueryDividendAccountProofParams_address protoreflect.FieldDescriptor
+	md_QueryDividendAccountProofRequest         protoreflect.MessageDescriptor
+	fd_QueryDividendAccountProofRequest_address protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
-	md_QueryDividendAccountProofParams = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountProofParams")
-	fd_QueryDividendAccountProofParams_address = md_QueryDividendAccountProofParams.Fields().ByName("address")
+	md_QueryDividendAccountProofRequest = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountProofRequest")
+	fd_QueryDividendAccountProofRequest_address = md_QueryDividendAccountProofRequest.Fields().ByName("address")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryDividendAccountProofParams)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryDividendAccountProofRequest)(nil)
 
-type fastReflection_QueryDividendAccountProofParams QueryDividendAccountProofParams
+type fastReflection_QueryDividendAccountProofRequest QueryDividendAccountProofRequest
 
-func (x *QueryDividendAccountProofParams) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountProofParams)(x)
+func (x *QueryDividendAccountProofRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountProofRequest)(x)
 }
 
-func (x *QueryDividendAccountProofParams) slowProtoReflect() protoreflect.Message {
+func (x *QueryDividendAccountProofRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_query_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -3477,43 +3477,43 @@ func (x *QueryDividendAccountProofParams) slowProtoReflect() protoreflect.Messag
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryDividendAccountProofParams_messageType fastReflection_QueryDividendAccountProofParams_messageType
-var _ protoreflect.MessageType = fastReflection_QueryDividendAccountProofParams_messageType{}
+var _fastReflection_QueryDividendAccountProofRequest_messageType fastReflection_QueryDividendAccountProofRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryDividendAccountProofRequest_messageType{}
 
-type fastReflection_QueryDividendAccountProofParams_messageType struct{}
+type fastReflection_QueryDividendAccountProofRequest_messageType struct{}
 
-func (x fastReflection_QueryDividendAccountProofParams_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountProofParams)(nil)
+func (x fastReflection_QueryDividendAccountProofRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryDividendAccountProofRequest)(nil)
 }
-func (x fastReflection_QueryDividendAccountProofParams_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountProofParams)
+func (x fastReflection_QueryDividendAccountProofRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountProofRequest)
 }
-func (x fastReflection_QueryDividendAccountProofParams_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountProofParams
+func (x fastReflection_QueryDividendAccountProofRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountProofRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryDividendAccountProofParams) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountProofParams
+func (x *fastReflection_QueryDividendAccountProofRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryDividendAccountProofRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryDividendAccountProofParams) Type() protoreflect.MessageType {
-	return _fastReflection_QueryDividendAccountProofParams_messageType
+func (x *fastReflection_QueryDividendAccountProofRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryDividendAccountProofRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryDividendAccountProofParams) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountProofParams)
+func (x *fastReflection_QueryDividendAccountProofRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryDividendAccountProofRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryDividendAccountProofParams) Interface() protoreflect.ProtoMessage {
-	return (*QueryDividendAccountProofParams)(x)
+func (x *fastReflection_QueryDividendAccountProofRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryDividendAccountProofRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -3521,10 +3521,10 @@ func (x *fastReflection_QueryDividendAccountProofParams) Interface() protoreflec
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryDividendAccountProofParams) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryDividendAccountProofRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.Address != "" {
 		value := protoreflect.ValueOfString(x.Address)
-		if !f(fd_QueryDividendAccountProofParams_address, value) {
+		if !f(fd_QueryDividendAccountProofRequest_address, value) {
 			return
 		}
 	}
@@ -3541,15 +3541,15 @@ func (x *fastReflection_QueryDividendAccountProofParams) Range(f func(protorefle
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryDividendAccountProofParams) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryDividendAccountProofRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofParams.address":
+	case "heimdallv2.topup.QueryDividendAccountProofRequest.address":
 		return x.Address != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -3559,15 +3559,15 @@ func (x *fastReflection_QueryDividendAccountProofParams) Has(fd protoreflect.Fie
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofParams) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryDividendAccountProofRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofParams.address":
+	case "heimdallv2.topup.QueryDividendAccountProofRequest.address":
 		x.Address = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -3577,16 +3577,16 @@ func (x *fastReflection_QueryDividendAccountProofParams) Clear(fd protoreflect.F
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryDividendAccountProofParams) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountProofRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofParams.address":
+	case "heimdallv2.topup.QueryDividendAccountProofRequest.address":
 		value := x.Address
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofParams does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -3600,15 +3600,15 @@ func (x *fastReflection_QueryDividendAccountProofParams) Get(descriptor protoref
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofParams) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryDividendAccountProofRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofParams.address":
+	case "heimdallv2.topup.QueryDividendAccountProofRequest.address":
 		x.Address = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -3622,40 +3622,40 @@ func (x *fastReflection_QueryDividendAccountProofParams) Set(fd protoreflect.Fie
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofParams) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountProofRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofParams.address":
-		panic(fmt.Errorf("field address of message heimdallv2.topup.QueryDividendAccountProofParams is not mutable"))
+	case "heimdallv2.topup.QueryDividendAccountProofRequest.address":
+		panic(fmt.Errorf("field address of message heimdallv2.topup.QueryDividendAccountProofRequest is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryDividendAccountProofParams) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryDividendAccountProofRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofParams.address":
+	case "heimdallv2.topup.QueryDividendAccountProofRequest.address":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofParams"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofParams does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryDividendAccountProofParams) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryDividendAccountProofRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountProofParams", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.QueryDividendAccountProofRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -3663,7 +3663,7 @@ func (x *fastReflection_QueryDividendAccountProofParams) WhichOneof(d protorefle
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryDividendAccountProofParams) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryDividendAccountProofRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -3674,7 +3674,7 @@ func (x *fastReflection_QueryDividendAccountProofParams) GetUnknown() protorefle
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofParams) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryDividendAccountProofRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -3686,7 +3686,7 @@ func (x *fastReflection_QueryDividendAccountProofParams) SetUnknown(fields proto
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryDividendAccountProofParams) IsValid() bool {
+func (x *fastReflection_QueryDividendAccountProofRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -3696,9 +3696,9 @@ func (x *fastReflection_QueryDividendAccountProofParams) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryDividendAccountProofParams) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryDividendAccountProofRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryDividendAccountProofParams)
+		x := input.Message.Interface().(*QueryDividendAccountProofRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -3724,7 +3724,7 @@ func (x *fastReflection_QueryDividendAccountProofParams) ProtoMethods() *protoif
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountProofParams)
+		x := input.Message.Interface().(*QueryDividendAccountProofRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -3761,7 +3761,7 @@ func (x *fastReflection_QueryDividendAccountProofParams) ProtoMethods() *protoif
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountProofParams)
+		x := input.Message.Interface().(*QueryDividendAccountProofRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -3793,10 +3793,10 @@ func (x *fastReflection_QueryDividendAccountProofParams) ProtoMethods() *protoif
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofParams: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofParams: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -3867,14 +3867,14 @@ func (x *fastReflection_QueryDividendAccountProofParams) ProtoMethods() *protoif
 }
 
 var (
-	md_QueryDividendAccountProofResponse        protoreflect.MessageDescriptor
-	fd_QueryDividendAccountProofResponse_result protoreflect.FieldDescriptor
+	md_QueryDividendAccountProofResponse       protoreflect.MessageDescriptor
+	fd_QueryDividendAccountProofResponse_proof protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_query_proto_init()
 	md_QueryDividendAccountProofResponse = File_heimdallv2_topup_query_proto.Messages().ByName("QueryDividendAccountProofResponse")
-	fd_QueryDividendAccountProofResponse_result = md_QueryDividendAccountProofResponse.Fields().ByName("result")
+	fd_QueryDividendAccountProofResponse_proof = md_QueryDividendAccountProofResponse.Fields().ByName("proof")
 }
 
 var _ protoreflect.Message = (*fastReflection_QueryDividendAccountProofResponse)(nil)
@@ -3942,9 +3942,9 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Interface() protorefl
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QueryDividendAccountProofResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Result != nil {
-		value := protoreflect.ValueOfMessage(x.Result.ProtoReflect())
-		if !f(fd_QueryDividendAccountProofResponse_result, value) {
+	if x.Proof != nil {
+		value := protoreflect.ValueOfMessage(x.Proof.ProtoReflect())
+		if !f(fd_QueryDividendAccountProofResponse_proof, value) {
 			return
 		}
 	}
@@ -3963,8 +3963,8 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Range(f func(protoref
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QueryDividendAccountProofResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofResponse.result":
-		return x.Result != nil
+	case "heimdallv2.topup.QueryDividendAccountProofResponse.proof":
+		return x.Proof != nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofResponse"))
@@ -3981,8 +3981,8 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Has(fd protoreflect.F
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryDividendAccountProofResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofResponse.result":
-		x.Result = nil
+	case "heimdallv2.topup.QueryDividendAccountProofResponse.proof":
+		x.Proof = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofResponse"))
@@ -3999,8 +3999,8 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Clear(fd protoreflect
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QueryDividendAccountProofResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofResponse.result":
-		value := x.Result
+	case "heimdallv2.topup.QueryDividendAccountProofResponse.proof":
+		value := x.Proof
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
@@ -4022,8 +4022,8 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Get(descriptor protor
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryDividendAccountProofResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofResponse.result":
-		x.Result = value.Message().Interface().(*DividendAccountProof)
+	case "heimdallv2.topup.QueryDividendAccountProofResponse.proof":
+		x.Proof = value.Message().Interface().(*DividendAccountProof)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofResponse"))
@@ -4044,11 +4044,11 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Set(fd protoreflect.F
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryDividendAccountProofResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofResponse.result":
-		if x.Result == nil {
-			x.Result = new(DividendAccountProof)
+	case "heimdallv2.topup.QueryDividendAccountProofResponse.proof":
+		if x.Proof == nil {
+			x.Proof = new(DividendAccountProof)
 		}
-		return protoreflect.ValueOfMessage(x.Result.ProtoReflect())
+		return protoreflect.ValueOfMessage(x.Proof.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.QueryDividendAccountProofResponse"))
@@ -4062,7 +4062,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Mutable(fd protorefle
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QueryDividendAccountProofResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.QueryDividendAccountProofResponse.result":
+	case "heimdallv2.topup.QueryDividendAccountProofResponse.proof":
 		m := new(DividendAccountProof)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
@@ -4134,8 +4134,8 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 		var n int
 		var l int
 		_ = l
-		if x.Result != nil {
-			l = options.Size(x.Result)
+		if x.Proof != nil {
+			l = options.Size(x.Proof)
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
 		if x.unknownFields != nil {
@@ -4167,8 +4167,8 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.Result != nil {
-			encoded, err := options.Marshal(x.Result)
+		if x.Proof != nil {
+			encoded, err := options.Marshal(x.Proof)
 			if err != nil {
 				return protoiface.MarshalOutput{
 					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4232,7 +4232,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 			switch fieldNum {
 			case 2:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Proof", wireType)
 				}
 				var msglen int
 				for shift := uint(0); ; shift += 7 {
@@ -4259,10 +4259,10 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				if x.Result == nil {
-					x.Result = &DividendAccountProof{}
+				if x.Proof == nil {
+					x.Proof = &DividendAccountProof{}
 				}
-				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Result); err != nil {
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Proof); err != nil {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
 				iNdEx = postIndex
@@ -4303,7 +4303,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 
 var (
 	md_DividendAccountProof               protoreflect.MessageDescriptor
-	fd_DividendAccountProof_user          protoreflect.FieldDescriptor
+	fd_DividendAccountProof_address       protoreflect.FieldDescriptor
 	fd_DividendAccountProof_account_proof protoreflect.FieldDescriptor
 	fd_DividendAccountProof_index         protoreflect.FieldDescriptor
 )
@@ -4311,7 +4311,7 @@ var (
 func init() {
 	file_heimdallv2_topup_query_proto_init()
 	md_DividendAccountProof = File_heimdallv2_topup_query_proto.Messages().ByName("DividendAccountProof")
-	fd_DividendAccountProof_user = md_DividendAccountProof.Fields().ByName("user")
+	fd_DividendAccountProof_address = md_DividendAccountProof.Fields().ByName("address")
 	fd_DividendAccountProof_account_proof = md_DividendAccountProof.Fields().ByName("account_proof")
 	fd_DividendAccountProof_index = md_DividendAccountProof.Fields().ByName("index")
 }
@@ -4381,9 +4381,9 @@ func (x *fastReflection_DividendAccountProof) Interface() protoreflect.ProtoMess
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_DividendAccountProof) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.User != "" {
-		value := protoreflect.ValueOfString(x.User)
-		if !f(fd_DividendAccountProof_user, value) {
+	if x.Address != "" {
+		value := protoreflect.ValueOfString(x.Address)
+		if !f(fd_DividendAccountProof_address, value) {
 			return
 		}
 	}
@@ -4414,8 +4414,8 @@ func (x *fastReflection_DividendAccountProof) Range(f func(protoreflect.FieldDes
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_DividendAccountProof) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.DividendAccountProof.user":
-		return x.User != ""
+	case "heimdallv2.topup.DividendAccountProof.address":
+		return x.Address != ""
 	case "heimdallv2.topup.DividendAccountProof.account_proof":
 		return x.AccountProof != ""
 	case "heimdallv2.topup.DividendAccountProof.index":
@@ -4436,8 +4436,8 @@ func (x *fastReflection_DividendAccountProof) Has(fd protoreflect.FieldDescripto
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_DividendAccountProof) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.DividendAccountProof.user":
-		x.User = ""
+	case "heimdallv2.topup.DividendAccountProof.address":
+		x.Address = ""
 	case "heimdallv2.topup.DividendAccountProof.account_proof":
 		x.AccountProof = ""
 	case "heimdallv2.topup.DividendAccountProof.index":
@@ -4458,8 +4458,8 @@ func (x *fastReflection_DividendAccountProof) Clear(fd protoreflect.FieldDescrip
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_DividendAccountProof) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.DividendAccountProof.user":
-		value := x.User
+	case "heimdallv2.topup.DividendAccountProof.address":
+		value := x.Address
 		return protoreflect.ValueOfString(value)
 	case "heimdallv2.topup.DividendAccountProof.account_proof":
 		value := x.AccountProof
@@ -4487,8 +4487,8 @@ func (x *fastReflection_DividendAccountProof) Get(descriptor protoreflect.FieldD
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_DividendAccountProof) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.DividendAccountProof.user":
-		x.User = value.Interface().(string)
+	case "heimdallv2.topup.DividendAccountProof.address":
+		x.Address = value.Interface().(string)
 	case "heimdallv2.topup.DividendAccountProof.account_proof":
 		x.AccountProof = value.Interface().(string)
 	case "heimdallv2.topup.DividendAccountProof.index":
@@ -4513,8 +4513,8 @@ func (x *fastReflection_DividendAccountProof) Set(fd protoreflect.FieldDescripto
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_DividendAccountProof) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.DividendAccountProof.user":
-		panic(fmt.Errorf("field user of message heimdallv2.topup.DividendAccountProof is not mutable"))
+	case "heimdallv2.topup.DividendAccountProof.address":
+		panic(fmt.Errorf("field address of message heimdallv2.topup.DividendAccountProof is not mutable"))
 	case "heimdallv2.topup.DividendAccountProof.account_proof":
 		panic(fmt.Errorf("field account_proof of message heimdallv2.topup.DividendAccountProof is not mutable"))
 	case "heimdallv2.topup.DividendAccountProof.index":
@@ -4532,7 +4532,7 @@ func (x *fastReflection_DividendAccountProof) Mutable(fd protoreflect.FieldDescr
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_DividendAccountProof) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.DividendAccountProof.user":
+	case "heimdallv2.topup.DividendAccountProof.address":
 		return protoreflect.ValueOfString("")
 	case "heimdallv2.topup.DividendAccountProof.account_proof":
 		return protoreflect.ValueOfString("")
@@ -4607,7 +4607,7 @@ func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods
 		var n int
 		var l int
 		_ = l
-		l = len(x.User)
+		l = len(x.Address)
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
@@ -4659,10 +4659,10 @@ func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods
 			i--
 			dAtA[i] = 0x12
 		}
-		if len(x.User) > 0 {
-			i -= len(x.User)
-			copy(dAtA[i:], x.User)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.User)))
+		if len(x.Address) > 0 {
+			i -= len(x.Address)
+			copy(dAtA[i:], x.Address)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Address)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -4717,7 +4717,7 @@ func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods
 			switch fieldNum {
 			case 1:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field User", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Address", wireType)
 				}
 				var stringLen uint64
 				for shift := uint(0); ; shift += 7 {
@@ -4745,7 +4745,7 @@ func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				x.User = string(dAtA[iNdEx:postIndex])
+				x.Address = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
 			case 2:
 				if wireType != 2 {
@@ -4846,8 +4846,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// QuerySequenceParams is the request type for the TopupTxStatus RPC method
-type QuerySequenceParams struct {
+// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence RPC
+// method
+type QueryTopupSequenceRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -4856,8 +4857,8 @@ type QuerySequenceParams struct {
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
-func (x *QuerySequenceParams) Reset() {
-	*x = QuerySequenceParams{}
+func (x *QueryTopupSequenceRequest) Reset() {
+	*x = QueryTopupSequenceRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4865,34 +4866,34 @@ func (x *QuerySequenceParams) Reset() {
 	}
 }
 
-func (x *QuerySequenceParams) String() string {
+func (x *QueryTopupSequenceRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QuerySequenceParams) ProtoMessage() {}
+func (*QueryTopupSequenceRequest) ProtoMessage() {}
 
-// Deprecated: Use QuerySequenceParams.ProtoReflect.Descriptor instead.
-func (*QuerySequenceParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryTopupSequenceRequest.ProtoReflect.Descriptor instead.
+func (*QueryTopupSequenceRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *QuerySequenceParams) GetTxHash() string {
+func (x *QueryTopupSequenceRequest) GetTxHash() string {
 	if x != nil {
 		return x.TxHash
 	}
 	return ""
 }
 
-func (x *QuerySequenceParams) GetLogIndex() uint64 {
+func (x *QueryTopupSequenceRequest) GetLogIndex() uint64 {
 	if x != nil {
 		return x.LogIndex
 	}
 	return 0
 }
 
-// QuerySequenceParamsResponse the is response type for the TopupTxStatus RPC
+// QueryTopupSequenceResponse is response type for the GetTopupTxSequence RPC
 // method
-type QuerySequenceParamsResponse struct {
+type QueryTopupSequenceResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -4900,8 +4901,8 @@ type QuerySequenceParamsResponse struct {
 	Sequence string `protobuf:"bytes,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
 
-func (x *QuerySequenceParamsResponse) Reset() {
-	*x = QuerySequenceParamsResponse{}
+func (x *QueryTopupSequenceResponse) Reset() {
+	*x = QueryTopupSequenceResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4909,27 +4910,27 @@ func (x *QuerySequenceParamsResponse) Reset() {
 	}
 }
 
-func (x *QuerySequenceParamsResponse) String() string {
+func (x *QueryTopupSequenceResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QuerySequenceParamsResponse) ProtoMessage() {}
+func (*QueryTopupSequenceResponse) ProtoMessage() {}
 
-// Deprecated: Use QuerySequenceParamsResponse.ProtoReflect.Descriptor instead.
-func (*QuerySequenceParamsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryTopupSequenceResponse.ProtoReflect.Descriptor instead.
+func (*QueryTopupSequenceResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *QuerySequenceParamsResponse) GetSequence() string {
+func (x *QueryTopupSequenceResponse) GetSequence() string {
 	if x != nil {
 		return x.Sequence
 	}
 	return ""
 }
 
-// QueryDividendAccountParams is the request type for the
-// DividendAccountByAddress RPC method
-type QueryDividendAccountParams struct {
+// QueryDividendAccountRequest is the request type for the
+// GetDividendAccountByAddress RPC method
+type QueryDividendAccountRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -4937,8 +4938,8 @@ type QueryDividendAccountParams struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
 
-func (x *QueryDividendAccountParams) Reset() {
-	*x = QueryDividendAccountParams{}
+func (x *QueryDividendAccountRequest) Reset() {
+	*x = QueryDividendAccountRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4946,27 +4947,27 @@ func (x *QueryDividendAccountParams) Reset() {
 	}
 }
 
-func (x *QueryDividendAccountParams) String() string {
+func (x *QueryDividendAccountRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDividendAccountParams) ProtoMessage() {}
+func (*QueryDividendAccountRequest) ProtoMessage() {}
 
-// Deprecated: Use QueryDividendAccountParams.ProtoReflect.Descriptor instead.
-func (*QueryDividendAccountParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryDividendAccountRequest.ProtoReflect.Descriptor instead.
+func (*QueryDividendAccountRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *QueryDividendAccountParams) GetAddress() string {
+func (x *QueryDividendAccountRequest) GetAddress() string {
 	if x != nil {
 		return x.Address
 	}
 	return ""
 }
 
-// QueryDividendAccountParamsResponse the is response type for the
-// DividendAccountByAddress RPC method
-type QueryDividendAccountParamsResponse struct {
+// QueryDividendAccountResponse the is response type for the
+// GetDividendAccountByAddress RPC method
+type QueryDividendAccountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -4974,8 +4975,8 @@ type QueryDividendAccountParamsResponse struct {
 	DividendAccount *types.DividendAccount `protobuf:"bytes,2,opt,name=dividend_account,json=dividendAccount,proto3" json:"dividend_account,omitempty"`
 }
 
-func (x *QueryDividendAccountParamsResponse) Reset() {
-	*x = QueryDividendAccountParamsResponse{}
+func (x *QueryDividendAccountResponse) Reset() {
+	*x = QueryDividendAccountResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4983,34 +4984,34 @@ func (x *QueryDividendAccountParamsResponse) Reset() {
 	}
 }
 
-func (x *QueryDividendAccountParamsResponse) String() string {
+func (x *QueryDividendAccountResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDividendAccountParamsResponse) ProtoMessage() {}
+func (*QueryDividendAccountResponse) ProtoMessage() {}
 
-// Deprecated: Use QueryDividendAccountParamsResponse.ProtoReflect.Descriptor instead.
-func (*QueryDividendAccountParamsResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryDividendAccountResponse.ProtoReflect.Descriptor instead.
+func (*QueryDividendAccountResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *QueryDividendAccountParamsResponse) GetDividendAccount() *types.DividendAccount {
+func (x *QueryDividendAccountResponse) GetDividendAccount() *types.DividendAccount {
 	if x != nil {
 		return x.DividendAccount
 	}
 	return nil
 }
 
-// QueryDividendAccountRootParams is the request type for the
-// DividendAccountRoot RPC method
-type QueryDividendAccountRootParams struct {
+// QueryDividendAccountRootHashRequest is the request type for the
+// GetDividendAccountRootHash RPC method
+type QueryDividendAccountRootHashRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *QueryDividendAccountRootParams) Reset() {
-	*x = QueryDividendAccountRootParams{}
+func (x *QueryDividendAccountRootHashRequest) Reset() {
+	*x = QueryDividendAccountRootHashRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5018,20 +5019,20 @@ func (x *QueryDividendAccountRootParams) Reset() {
 	}
 }
 
-func (x *QueryDividendAccountRootParams) String() string {
+func (x *QueryDividendAccountRootHashRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDividendAccountRootParams) ProtoMessage() {}
+func (*QueryDividendAccountRootHashRequest) ProtoMessage() {}
 
-// Deprecated: Use QueryDividendAccountRootParams.ProtoReflect.Descriptor instead.
-func (*QueryDividendAccountRootParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryDividendAccountRootHashRequest.ProtoReflect.Descriptor instead.
+func (*QueryDividendAccountRootHashRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{4}
 }
 
 // QueryDividendAccountRootResponse the is response type for the
-// DividendAccountRoot RPC method
-type QueryDividendAccountRootResponse struct {
+// GetDividendAccountRootHash RPC method
+type QueryDividendAccountRootHashResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -5039,8 +5040,8 @@ type QueryDividendAccountRootResponse struct {
 	AccountRootHash *types.HeimdallHash `protobuf:"bytes,2,opt,name=account_root_hash,json=accountRootHash,proto3" json:"account_root_hash,omitempty"`
 }
 
-func (x *QueryDividendAccountRootResponse) Reset() {
-	*x = QueryDividendAccountRootResponse{}
+func (x *QueryDividendAccountRootHashResponse) Reset() {
+	*x = QueryDividendAccountRootHashResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5048,18 +5049,18 @@ func (x *QueryDividendAccountRootResponse) Reset() {
 	}
 }
 
-func (x *QueryDividendAccountRootResponse) String() string {
+func (x *QueryDividendAccountRootHashResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDividendAccountRootResponse) ProtoMessage() {}
+func (*QueryDividendAccountRootHashResponse) ProtoMessage() {}
 
-// Deprecated: Use QueryDividendAccountRootResponse.ProtoReflect.Descriptor instead.
-func (*QueryDividendAccountRootResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryDividendAccountRootHashResponse.ProtoReflect.Descriptor instead.
+func (*QueryDividendAccountRootHashResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *QueryDividendAccountRootResponse) GetAccountRootHash() *types.HeimdallHash {
+func (x *QueryDividendAccountRootHashResponse) GetAccountRootHash() *types.HeimdallHash {
 	if x != nil {
 		return x.AccountRootHash
 	}
@@ -5068,7 +5069,7 @@ func (x *QueryDividendAccountRootResponse) GetAccountRootHash() *types.HeimdallH
 
 // QueryVerifyAccountProofParams is the request type for the VerifyAccountProof
 // RPC method
-type QueryVerifyAccountProofParams struct {
+type QueryVerifyAccountProofRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -5077,8 +5078,8 @@ type QueryVerifyAccountProofParams struct {
 	Proof   string `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
 }
 
-func (x *QueryVerifyAccountProofParams) Reset() {
-	*x = QueryVerifyAccountProofParams{}
+func (x *QueryVerifyAccountProofRequest) Reset() {
+	*x = QueryVerifyAccountProofRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5086,25 +5087,25 @@ func (x *QueryVerifyAccountProofParams) Reset() {
 	}
 }
 
-func (x *QueryVerifyAccountProofParams) String() string {
+func (x *QueryVerifyAccountProofRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryVerifyAccountProofParams) ProtoMessage() {}
+func (*QueryVerifyAccountProofRequest) ProtoMessage() {}
 
-// Deprecated: Use QueryVerifyAccountProofParams.ProtoReflect.Descriptor instead.
-func (*QueryVerifyAccountProofParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryVerifyAccountProofRequest.ProtoReflect.Descriptor instead.
+func (*QueryVerifyAccountProofRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *QueryVerifyAccountProofParams) GetAddress() string {
+func (x *QueryVerifyAccountProofRequest) GetAddress() string {
 	if x != nil {
 		return x.Address
 	}
 	return ""
 }
 
-func (x *QueryVerifyAccountProofParams) GetProof() string {
+func (x *QueryVerifyAccountProofRequest) GetProof() string {
 	if x != nil {
 		return x.Proof
 	}
@@ -5120,7 +5121,7 @@ type QueryVerifyAccountProofResponse struct {
 
 	// TODO HV2: check VerifyAccountProofHandlerFn where result can also be
 	// embedded in a map.
-	Result bool `protobuf:"varint,2,opt,name=result,proto3" json:"result,omitempty"`
+	IsVerified bool `protobuf:"varint,2,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
 }
 
 func (x *QueryVerifyAccountProofResponse) Reset() {
@@ -5143,16 +5144,16 @@ func (*QueryVerifyAccountProofResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *QueryVerifyAccountProofResponse) GetResult() bool {
+func (x *QueryVerifyAccountProofResponse) GetIsVerified() bool {
 	if x != nil {
-		return x.Result
+		return x.IsVerified
 	}
 	return false
 }
 
 // QueryDividendAccountProofParams is the request type for the
-// DividendAccountProof RPC method
-type QueryDividendAccountProofParams struct {
+// GetDividendAccountProof RPC method
+type QueryDividendAccountProofRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -5160,8 +5161,8 @@ type QueryDividendAccountProofParams struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
 
-func (x *QueryDividendAccountProofParams) Reset() {
-	*x = QueryDividendAccountProofParams{}
+func (x *QueryDividendAccountProofRequest) Reset() {
+	*x = QueryDividendAccountProofRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_query_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5169,18 +5170,18 @@ func (x *QueryDividendAccountProofParams) Reset() {
 	}
 }
 
-func (x *QueryDividendAccountProofParams) String() string {
+func (x *QueryDividendAccountProofRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDividendAccountProofParams) ProtoMessage() {}
+func (*QueryDividendAccountProofRequest) ProtoMessage() {}
 
-// Deprecated: Use QueryDividendAccountProofParams.ProtoReflect.Descriptor instead.
-func (*QueryDividendAccountProofParams) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryDividendAccountProofRequest.ProtoReflect.Descriptor instead.
+func (*QueryDividendAccountProofRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *QueryDividendAccountProofParams) GetAddress() string {
+func (x *QueryDividendAccountProofRequest) GetAddress() string {
 	if x != nil {
 		return x.Address
 	}
@@ -5188,13 +5189,13 @@ func (x *QueryDividendAccountProofParams) GetAddress() string {
 }
 
 // QueryDividendAccountProofResponse the is response type for the
-// DividendAccountProof RPC method
+// GetDividendAccountProof RPC method
 type QueryDividendAccountProofResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Result *DividendAccountProof `protobuf:"bytes,2,opt,name=result,proto3" json:"result,omitempty"`
+	Proof *DividendAccountProof `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
 }
 
 func (x *QueryDividendAccountProofResponse) Reset() {
@@ -5217,9 +5218,9 @@ func (*QueryDividendAccountProofResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *QueryDividendAccountProofResponse) GetResult() *DividendAccountProof {
+func (x *QueryDividendAccountProofResponse) GetProof() *DividendAccountProof {
 	if x != nil {
-		return x.Result
+		return x.Proof
 	}
 	return nil
 }
@@ -5231,7 +5232,7 @@ type DividendAccountProof struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	User         string `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	Address      string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	AccountProof string `protobuf:"bytes,2,opt,name=account_proof,json=accountProof,proto3" json:"account_proof,omitempty"`
 	Index        uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
 }
@@ -5256,9 +5257,9 @@ func (*DividendAccountProof) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *DividendAccountProof) GetUser() string {
+func (x *DividendAccountProof) GetAddress() string {
 	if x != nil {
-		return x.User
+		return x.Address
 	}
 	return ""
 }
@@ -5295,141 +5296,149 @@ var file_heimdallv2_topup_query_proto_rawDesc = []byte{
 	0x73, 0x2f, 0x64, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75,
 	0x6e, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
 	0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2f, 0x68, 0x61, 0x73, 0x68, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x59, 0x0a, 0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65,
-	0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x1e, 0x0a, 0x07,
-	0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8,
-	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x12, 0x22, 0x0a, 0x09,
-	0x6c, 0x6f, 0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42,
-	0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x6c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78,
-	0x22, 0x40, 0x0a, 0x1b, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63,
-	0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x21, 0x0a, 0x08, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e,
-	0x63, 0x65, 0x22, 0x62, 0x0a, 0x1a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64,
-	0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x12, 0x44, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x42, 0x2a, 0xea, 0xde, 0x1f, 0x09, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x61, 0x64, 0x64, 0x72,
-	0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61,
-	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x82, 0x01, 0x0a, 0x22, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50,
-	0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x5c, 0x0a,
-	0x10, 0x64, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e,
-	0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2e, 0x44, 0x69, 0x76, 0x69, 0x64,
-	0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x42, 0x0e, 0xc8, 0xde, 0x1f, 0x00,
-	0xea, 0xde, 0x1f, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x52, 0x0f, 0x64, 0x69, 0x76, 0x69,
-	0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x22, 0x20, 0x0a, 0x1e, 0x51,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x5f, 0x0a, 0x19, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x6f,
+	0x70, 0x75, 0x70, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61,
+	0x73, 0x68, 0x12, 0x22, 0x0a, 0x09, 0x6c, 0x6f, 0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x6c, 0x6f,
+	0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x22, 0x3f, 0x0a, 0x1a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54,
+	0x6f, 0x70, 0x75, 0x70, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x21, 0x0a, 0x08, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x73,
+	0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x22, 0x61, 0x0a, 0x1b, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x42, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73,
+	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x28, 0xea, 0xde, 0x1f, 0x07, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x85, 0x01, 0x0a, 0x1c, 0x51,
 	0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f,
-	0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x7f, 0x0a,
-	0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63,
-	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x5b, 0x0a, 0x11, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x72, 0x6f, 0x6f,
-	0x74, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2e,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x48, 0x61, 0x73, 0x68, 0x42, 0x0f, 0xea, 0xde,
-	0x1f, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0f, 0x61,
-	0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68, 0x22, 0x7b,
-	0x0a, 0x1d, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x41, 0x63, 0x63,
-	0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12,
-	0x2c, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x42, 0x12, 0xea, 0xde, 0x1f, 0x09, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x61, 0x64, 0x64, 0x72, 0xa8,
-	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x2c, 0x0a,
-	0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x16, 0xea, 0xde,
-	0x1f, 0x0d, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0xa8,
-	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x22, 0x40, 0x0a, 0x1f, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
-	0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d,
-	0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x42, 0x05,
-	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x4f, 0x0a,
-	0x1f, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63,
-	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x12, 0x2c, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x42, 0x12, 0xea, 0xde, 0x1f, 0x09, 0x75, 0x73, 0x65, 0x72, 0x5f, 0x61, 0x64, 0x64, 0x72,
-	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x6a,
-	0x0a, 0x21, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41,
-	0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x12, 0x45, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41,
-	0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
-	0x2a, 0x01, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x22, 0x7a, 0x0a, 0x14, 0x44, 0x69,
-	0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f,
-	0x6f, 0x66, 0x12, 0x19, 0x0a, 0x04, 0x75, 0x73, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04, 0x75, 0x73, 0x65, 0x72, 0x12, 0x2a, 0x0a,
-	0x0d, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0c, 0x61, 0x63, 0x63,
-	0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x1b, 0x0a, 0x05, 0x69, 0x6e, 0x64,
-	0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52,
-	0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x32, 0xfa, 0x06, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x12, 0x8d, 0x01, 0x0a, 0x0d, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x54, 0x78, 0x53, 0x74, 0x61, 0x74,
-	0x75, 0x73, 0x12, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x65, 0x71, 0x75, 0x65,
-	0x6e, 0x63, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x2d, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
-	0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x69, 0x73, 0x6f, 0x6c, 0x64, 0x74, 0x78,
-	0x12, 0xb9, 0x01, 0x0a, 0x18, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63,
-	0x6f, 0x75, 0x6e, 0x74, 0x42, 0x79, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x2c, 0x2e,
-	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63,
-	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x34, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f,
-	0x75, 0x6e, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x39, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12, 0x2c,
-	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75,
-	0x70, 0x2f, 0x64, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x2d, 0x61, 0x63, 0x63, 0x6f, 0x75,
-	0x6e, 0x74, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x12, 0xb1, 0x01, 0x0a,
-	0x13, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74,
-	0x52, 0x6f, 0x6f, 0x74, 0x12, 0x30, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76,
-	0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74,
-	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44,
-	0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f,
-	0x6f, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x34, 0x88, 0xe7, 0xb0, 0x2a,
-	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x29, 0x12, 0x27, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x64, 0x69, 0x76, 0x69, 0x64,
-	0x65, 0x6e, 0x64, 0x2d, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2d, 0x72, 0x6f, 0x6f, 0x74,
-	0x12, 0xb7, 0x01, 0x0a, 0x12, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75,
-	0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x2f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f,
-	0x6f, 0x66, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72,
+	0x75, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x65, 0x0a, 0x10, 0x64,
+	0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x5f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x73, 0x2e, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e,
+	0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x42, 0x17, 0xc8, 0xde, 0x1f, 0x00, 0xea, 0xde,
+	0x1f, 0x0f, 0x64, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x52, 0x0f, 0x64, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75,
+	0x6e, 0x74, 0x22, 0x25, 0x0a, 0x23, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64,
+	0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61,
+	0x73, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x8c, 0x01, 0x0a, 0x24, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75,
+	0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x64, 0x0a, 0x11, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x72, 0x6f,
+	0x6f, 0x74, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x79, 0x70, 0x65, 0x73,
+	0x2e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x48, 0x61, 0x73, 0x68, 0x42, 0x18, 0xea,
+	0xde, 0x1f, 0x0f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61,
+	0x73, 0x68, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74,
+	0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68, 0x22, 0x79, 0x0a, 0x1e, 0x51, 0x75, 0x65, 0x72,
 	0x79, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72,
-	0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3d, 0x88, 0xe7, 0xb0,
-	0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x32, 0x12, 0x30, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x61, 0x63, 0x63, 0x6f,
-	0x75, 0x6e, 0x74, 0x2d, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x7d, 0x2f, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x12, 0xb6, 0x01, 0x0a, 0x14, 0x44,
-	0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72,
-	0x6f, 0x6f, 0x66, 0x12, 0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x6f, 0x6f, 0x66, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2a, 0x0a, 0x07, 0x61, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x10, 0xea, 0xde, 0x1f,
+	0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x2b, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x15, 0xea, 0xde, 0x1f, 0x0c, 0x61, 0x63, 0x63, 0x6f, 0x75,
+	0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x70, 0x72,
+	0x6f, 0x6f, 0x66, 0x22, 0x57, 0x0a, 0x1f, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x65, 0x72, 0x69,
+	0x66, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x34, 0x0a, 0x0b, 0x69, 0x73, 0x5f, 0x76, 0x65, 0x72,
+	0x69, 0x66, 0x69, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x42, 0x13, 0xea, 0xde, 0x1f,
+	0x0a, 0x69, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x69, 0x65, 0x64, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
+	0x52, 0x0a, 0x69, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x69, 0x65, 0x64, 0x22, 0x4e, 0x0a, 0x20,
+	0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63,
+	0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x12, 0x2a, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x42, 0x10, 0xea, 0xde, 0x1f, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0xa8, 0xe7,
+	0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x71, 0x0a, 0x21,
+	0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63,
+	0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x4c, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f,
+	0x70, 0x75, 0x70, 0x2e, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f,
+	0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x42, 0x0e, 0xea, 0xde, 0x1f, 0x05, 0x70, 0x72,
+	0x6f, 0x6f, 0x66, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x22,
+	0xa4, 0x01, 0x0a, 0x14, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f,
+	0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x2a, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x10, 0xea, 0xde, 0x1f, 0x07, 0x61,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x12, 0x3a, 0x0a, 0x0d, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f,
+	0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x15, 0xea, 0xde, 0x1f,
+	0x0c, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0xa8, 0xe7, 0xb0,
+	0x2a, 0x01, 0x52, 0x0c, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66,
+	0x12, 0x24, 0x0a, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x42,
+	0x0e, 0xea, 0xde, 0x1f, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52,
+	0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x32, 0x97, 0x07, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x12, 0x97, 0x01, 0x0a, 0x12, 0x47, 0x65, 0x74, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x54, 0x78, 0x53,
+	0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x54, 0x6f, 0x70, 0x75, 0x70, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x6f, 0x70,
+	0x75, 0x70, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12,
+	0x19, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70,
+	0x75, 0x70, 0x2f, 0x69, 0x73, 0x6f, 0x6c, 0x64, 0x74, 0x78, 0x12, 0xb7, 0x01, 0x0a, 0x1b, 0x47,
+	0x65, 0x74, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x42, 0x79, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x2d, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75,
+	0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2e, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e,
+	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x39, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2e, 0x12, 0x2c, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x64, 0x69, 0x76, 0x69, 0x64, 0x65,
+	0x6e, 0x64, 0x2d, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x7d, 0x12, 0xc1, 0x01, 0x0a, 0x1a, 0x47, 0x65, 0x74, 0x44, 0x69, 0x76, 0x69,
+	0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48,
+	0x61, 0x73, 0x68, 0x12, 0x35, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69,
+	0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48,
+	0x61, 0x73, 0x68, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x36, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75,
+	0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x22, 0x34, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x29, 0x12,
+	0x27, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70,
+	0x75, 0x70, 0x2f, 0x64, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x2d, 0x61, 0x63, 0x63, 0x6f,
+	0x75, 0x6e, 0x74, 0x2f, 0x72, 0x6f, 0x6f, 0x74, 0x12, 0xb8, 0x01, 0x0a, 0x12, 0x56, 0x65, 0x72,
+	0x69, 0x66, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12,
+	0x30, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70,
+	0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79, 0x41, 0x63,
+	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74,
+	0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x65, 0x72, 0x69, 0x66, 0x79,
+	0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x3d, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x32, 0x12, 0x30, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74,
+	0x6f, 0x70, 0x75, 0x70, 0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2d, 0x70, 0x72, 0x6f,
+	0x6f, 0x66, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x2f, 0x76, 0x65, 0x72,
+	0x69, 0x66, 0x79, 0x12, 0xba, 0x01, 0x0a, 0x17, 0x47, 0x65, 0x74, 0x44, 0x69, 0x76, 0x69, 0x64,
+	0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12,
+	0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70,
+	0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64,
+	0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
 	0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69,
 	0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66,
-	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44,
-	0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72,
-	0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x36, 0x88, 0xe7, 0xb0,
-	0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x12, 0x29, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x61, 0x63, 0x63, 0x6f,
-	0x75, 0x6e, 0x74, 0x2d, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x7d, 0x42, 0xba, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x42, 0x0a, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e,
-	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69,
-	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75,
-	0x70, 0xa2, 0x02, 0x03, 0x48, 0x54, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x54, 0x6f, 0x70, 0x75, 0x70, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54, 0x6f, 0x70, 0x75, 0x70, 0xe2, 0x02, 0x1c,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54, 0x6f, 0x70, 0x75, 0x70,
-	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x54, 0x6f, 0x70, 0x75, 0x70,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x36, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x12, 0x29, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74,
+	0x2d, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d,
+	0x42, 0xba, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0xa2, 0x02,
+	0x03, 0x48, 0x54, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x54, 0x6f, 0x70, 0x75, 0x70, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54, 0x6f, 0x70, 0x75, 0x70, 0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x5c, 0x47, 0x50,
+	0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5446,34 +5455,34 @@ func file_heimdallv2_topup_query_proto_rawDescGZIP() []byte {
 
 var file_heimdallv2_topup_query_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_heimdallv2_topup_query_proto_goTypes = []interface{}{
-	(*QuerySequenceParams)(nil),                // 0: heimdallv2.topup.QuerySequenceParams
-	(*QuerySequenceParamsResponse)(nil),        // 1: heimdallv2.topup.QuerySequenceParamsResponse
-	(*QueryDividendAccountParams)(nil),         // 2: heimdallv2.topup.QueryDividendAccountParams
-	(*QueryDividendAccountParamsResponse)(nil), // 3: heimdallv2.topup.QueryDividendAccountParamsResponse
-	(*QueryDividendAccountRootParams)(nil),     // 4: heimdallv2.topup.QueryDividendAccountRootParams
-	(*QueryDividendAccountRootResponse)(nil),   // 5: heimdallv2.topup.QueryDividendAccountRootResponse
-	(*QueryVerifyAccountProofParams)(nil),      // 6: heimdallv2.topup.QueryVerifyAccountProofParams
-	(*QueryVerifyAccountProofResponse)(nil),    // 7: heimdallv2.topup.QueryVerifyAccountProofResponse
-	(*QueryDividendAccountProofParams)(nil),    // 8: heimdallv2.topup.QueryDividendAccountProofParams
-	(*QueryDividendAccountProofResponse)(nil),  // 9: heimdallv2.topup.QueryDividendAccountProofResponse
-	(*DividendAccountProof)(nil),               // 10: heimdallv2.topup.DividendAccountProof
-	(*types.DividendAccount)(nil),              // 11: heimdallv2.types.DividendAccount
-	(*types.HeimdallHash)(nil),                 // 12: heimdallv2.types.HeimdallHash
+	(*QueryTopupSequenceRequest)(nil),            // 0: heimdallv2.topup.QueryTopupSequenceRequest
+	(*QueryTopupSequenceResponse)(nil),           // 1: heimdallv2.topup.QueryTopupSequenceResponse
+	(*QueryDividendAccountRequest)(nil),          // 2: heimdallv2.topup.QueryDividendAccountRequest
+	(*QueryDividendAccountResponse)(nil),         // 3: heimdallv2.topup.QueryDividendAccountResponse
+	(*QueryDividendAccountRootHashRequest)(nil),  // 4: heimdallv2.topup.QueryDividendAccountRootHashRequest
+	(*QueryDividendAccountRootHashResponse)(nil), // 5: heimdallv2.topup.QueryDividendAccountRootHashResponse
+	(*QueryVerifyAccountProofRequest)(nil),       // 6: heimdallv2.topup.QueryVerifyAccountProofRequest
+	(*QueryVerifyAccountProofResponse)(nil),      // 7: heimdallv2.topup.QueryVerifyAccountProofResponse
+	(*QueryDividendAccountProofRequest)(nil),     // 8: heimdallv2.topup.QueryDividendAccountProofRequest
+	(*QueryDividendAccountProofResponse)(nil),    // 9: heimdallv2.topup.QueryDividendAccountProofResponse
+	(*DividendAccountProof)(nil),                 // 10: heimdallv2.topup.DividendAccountProof
+	(*types.DividendAccount)(nil),                // 11: heimdallv2.types.DividendAccount
+	(*types.HeimdallHash)(nil),                   // 12: heimdallv2.types.HeimdallHash
 }
 var file_heimdallv2_topup_query_proto_depIdxs = []int32{
-	11, // 0: heimdallv2.topup.QueryDividendAccountParamsResponse.dividend_account:type_name -> heimdallv2.types.DividendAccount
-	12, // 1: heimdallv2.topup.QueryDividendAccountRootResponse.account_root_hash:type_name -> heimdallv2.types.HeimdallHash
-	10, // 2: heimdallv2.topup.QueryDividendAccountProofResponse.result:type_name -> heimdallv2.topup.DividendAccountProof
-	0,  // 3: heimdallv2.topup.Query.TopupTxStatus:input_type -> heimdallv2.topup.QuerySequenceParams
-	2,  // 4: heimdallv2.topup.Query.DividendAccountByAddress:input_type -> heimdallv2.topup.QueryDividendAccountParams
-	4,  // 5: heimdallv2.topup.Query.DividendAccountRoot:input_type -> heimdallv2.topup.QueryDividendAccountRootParams
-	6,  // 6: heimdallv2.topup.Query.VerifyAccountProof:input_type -> heimdallv2.topup.QueryVerifyAccountProofParams
-	8,  // 7: heimdallv2.topup.Query.DividendAccountProof:input_type -> heimdallv2.topup.QueryDividendAccountProofParams
-	1,  // 8: heimdallv2.topup.Query.TopupTxStatus:output_type -> heimdallv2.topup.QuerySequenceParamsResponse
-	3,  // 9: heimdallv2.topup.Query.DividendAccountByAddress:output_type -> heimdallv2.topup.QueryDividendAccountParamsResponse
-	5,  // 10: heimdallv2.topup.Query.DividendAccountRoot:output_type -> heimdallv2.topup.QueryDividendAccountRootResponse
+	11, // 0: heimdallv2.topup.QueryDividendAccountResponse.dividend_account:type_name -> heimdallv2.types.DividendAccount
+	12, // 1: heimdallv2.topup.QueryDividendAccountRootHashResponse.account_root_hash:type_name -> heimdallv2.types.HeimdallHash
+	10, // 2: heimdallv2.topup.QueryDividendAccountProofResponse.proof:type_name -> heimdallv2.topup.DividendAccountProof
+	0,  // 3: heimdallv2.topup.Query.GetTopupTxSequence:input_type -> heimdallv2.topup.QueryTopupSequenceRequest
+	2,  // 4: heimdallv2.topup.Query.GetDividendAccountByAddress:input_type -> heimdallv2.topup.QueryDividendAccountRequest
+	4,  // 5: heimdallv2.topup.Query.GetDividendAccountRootHash:input_type -> heimdallv2.topup.QueryDividendAccountRootHashRequest
+	6,  // 6: heimdallv2.topup.Query.VerifyAccountProof:input_type -> heimdallv2.topup.QueryVerifyAccountProofRequest
+	8,  // 7: heimdallv2.topup.Query.GetDividendAccountProof:input_type -> heimdallv2.topup.QueryDividendAccountProofRequest
+	1,  // 8: heimdallv2.topup.Query.GetTopupTxSequence:output_type -> heimdallv2.topup.QueryTopupSequenceResponse
+	3,  // 9: heimdallv2.topup.Query.GetDividendAccountByAddress:output_type -> heimdallv2.topup.QueryDividendAccountResponse
+	5,  // 10: heimdallv2.topup.Query.GetDividendAccountRootHash:output_type -> heimdallv2.topup.QueryDividendAccountRootHashResponse
 	7,  // 11: heimdallv2.topup.Query.VerifyAccountProof:output_type -> heimdallv2.topup.QueryVerifyAccountProofResponse
-	9,  // 12: heimdallv2.topup.Query.DividendAccountProof:output_type -> heimdallv2.topup.QueryDividendAccountProofResponse
+	9,  // 12: heimdallv2.topup.Query.GetDividendAccountProof:output_type -> heimdallv2.topup.QueryDividendAccountProofResponse
 	8,  // [8:13] is the sub-list for method output_type
 	3,  // [3:8] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
@@ -5488,7 +5497,7 @@ func file_heimdallv2_topup_query_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_heimdallv2_topup_query_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QuerySequenceParams); i {
+			switch v := v.(*QueryTopupSequenceRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5500,7 +5509,7 @@ func file_heimdallv2_topup_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_query_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QuerySequenceParamsResponse); i {
+			switch v := v.(*QueryTopupSequenceResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5512,7 +5521,7 @@ func file_heimdallv2_topup_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_query_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDividendAccountParams); i {
+			switch v := v.(*QueryDividendAccountRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5524,7 +5533,7 @@ func file_heimdallv2_topup_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_query_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDividendAccountParamsResponse); i {
+			switch v := v.(*QueryDividendAccountResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5536,7 +5545,7 @@ func file_heimdallv2_topup_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_query_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDividendAccountRootParams); i {
+			switch v := v.(*QueryDividendAccountRootHashRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5548,7 +5557,7 @@ func file_heimdallv2_topup_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_query_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDividendAccountRootResponse); i {
+			switch v := v.(*QueryDividendAccountRootHashResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5560,7 +5569,7 @@ func file_heimdallv2_topup_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_query_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryVerifyAccountProofParams); i {
+			switch v := v.(*QueryVerifyAccountProofRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5584,7 +5593,7 @@ func file_heimdallv2_topup_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_query_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDividendAccountProofParams); i {
+			switch v := v.(*QueryDividendAccountProofRequest); i {
 			case 0:
 				return &v.state
 			case 1:
