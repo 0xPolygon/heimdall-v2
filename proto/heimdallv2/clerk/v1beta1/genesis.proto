@@ -5,7 +5,7 @@ import "gogoproto/gogo.proto";
 import "amino/amino.proto";
 import "cosmos_proto/cosmos.proto";
 import "google/protobuf/timestamp.proto";
-import "heimdallv2/types/validator.proto";
+import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
