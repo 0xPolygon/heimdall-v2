@@ -107,7 +107,8 @@ func (m AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawM
 
 // GenerateGenesisState creates a randomized GenState of the topup module.
 func (m AppModule) GenerateGenesisState(input *module.SimulationState) {
-	simulation.RandomizedGenState(simState)
+	// TODO HV2: enable when simulation is implemented
+	// simulation.RandomizedGenState(simState)
 }
 
 // RegisterStoreDecoder registers a decoder for topup module's types
