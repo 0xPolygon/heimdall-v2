@@ -1,0 +1,47 @@
+syntax = "proto3";
+package heimdallv2.topup.v1;
+
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "heimdallv2/types/hash.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
+
+// Msg defines the staking Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // CreateTopupTx defines a method for creating a topup tx for a validator
+  rpc CreateTopupTx(MsgTopupTx) returns (MsgTopupTxResponse);
+
+  // WithdrawFeeTx defines a method for withdrawing the fees for a validator
+  rpc WithdrawFeeTx(MsgWithdrawFeeTx) returns (MsgWithdrawFeeTxResponse);
+}
+
+message MsgTopupTx {
+  string proposer = 1 [ (amino.dont_omitempty) = true ];
+  string user = 2 [ (amino.dont_omitempty) = true ];
+  string fee = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (amino.dont_omitempty) = true,
+    (gogoproto.nullable) = false
+  ];
+  heimdallv2.types.TxHash tx_hash = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+}
+
+message MsgWithdrawFeeTx {
+  string proposer = 1 [ (amino.dont_omitempty) = true ];
+  string amount = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (amino.dont_omitempty) = true,
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgTopupTxResponse {}
+
+message MsgWithdrawFeeTxResponse {}

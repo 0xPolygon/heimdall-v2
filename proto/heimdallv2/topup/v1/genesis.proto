@@ -1,5 +1,5 @@
 syntax = "proto3";
-package heimdallv2.topup;
+package heimdallv2.topup.v1;
 
 import "gogoproto/gogo.proto";
 import "heimdallv2/types/dividend_account.proto";

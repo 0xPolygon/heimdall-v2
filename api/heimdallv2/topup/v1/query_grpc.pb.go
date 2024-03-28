@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: heimdallv2/topup/query.proto
+// source: heimdallv2/topup/v1/query.proto
 
-package topup
+package topupv1
 
 import (
 	context "context"
@@ -19,12 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_IsTopupTxOld_FullMethodName                = "/heimdallv2.topup.Query/IsTopupTxOld"
-	Query_GetTopupTxSequence_FullMethodName          = "/heimdallv2.topup.Query/GetTopupTxSequence"
-	Query_GetDividendAccountByAddress_FullMethodName = "/heimdallv2.topup.Query/GetDividendAccountByAddress"
-	Query_GetDividendAccountRootHash_FullMethodName  = "/heimdallv2.topup.Query/GetDividendAccountRootHash"
-	Query_VerifyAccountProof_FullMethodName          = "/heimdallv2.topup.Query/VerifyAccountProof"
-	Query_GetDividendAccountProof_FullMethodName     = "/heimdallv2.topup.Query/GetDividendAccountProof"
+	Query_IsTopupTxOld_FullMethodName                = "/heimdallv2.topup.v1.Query/IsTopupTxOld"
+	Query_GetTopupTxSequence_FullMethodName          = "/heimdallv2.topup.v1.Query/GetTopupTxSequence"
+	Query_GetDividendAccountByAddress_FullMethodName = "/heimdallv2.topup.v1.Query/GetDividendAccountByAddress"
+	Query_GetDividendAccountRootHash_FullMethodName  = "/heimdallv2.topup.v1.Query/GetDividendAccountRootHash"
+	Query_VerifyAccountProof_FullMethodName          = "/heimdallv2.topup.v1.Query/VerifyAccountProof"
+	Query_GetDividendAccountProof_FullMethodName     = "/heimdallv2.topup.v1.Query/GetDividendAccountProof"
 )
 
 // QueryClient is the client API for Query service.
@@ -283,7 +283,7 @@ func _Query_GetDividendAccountProof_Handler(srv interface{}, ctx context.Context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Query_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "heimdallv2.topup.Query",
+	ServiceName: "heimdallv2.topup.v1.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -312,5 +312,5 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "heimdallv2/topup/query.proto",
+	Metadata: "heimdallv2/topup/v1/query.proto",
 }

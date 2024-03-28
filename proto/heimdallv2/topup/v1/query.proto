@@ -1,5 +1,5 @@
 syntax = "proto3";
-package heimdallv2.topup;
+package heimdallv2.topup.v1;
 
 import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
@@ -12,8 +12,9 @@ import "heimdallv2/types/hash.proto";
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
 // TODO HV2: requests/responses and their json representations are changed.
-// TODO HV2: body params should be ok, check for query params
-// TODO HV2: API paths changed
+// TODO HV2: requests' bodies and path variables param should be ok, check for
+// query params
+// TODO HV2: API paths are changed
 
 // Query defines the gRPC querier service.
 service Query {
