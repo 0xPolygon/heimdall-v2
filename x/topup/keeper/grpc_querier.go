@@ -22,7 +22,7 @@ func NewQueryServer(k *Keeper /*, contractCaller helper.IContractCaller */) type
 	}
 }
 
-// GetTopupTxSequence implements the gRPC service handler to query the status of a topup tx and returns its sequence
+// GetTopupTxSequence implements the gRPC service handler to query the sequence of a topup tx
 func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryTopupSequenceResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
@@ -54,6 +54,44 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	}
 
 	return &types.QueryTopupSequenceResponse{Sequence: sequence.String()}, nil
+	*/
+
+	// TODO HV2: remove the "return nil, nil" when the above method is enabled
+	return nil, nil
+}
+
+// IsTopupTxOld implements the gRPC service handler to query the status of a topup tx
+func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryIsTopupTxOldResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	/* TODO HV2: enable this when chainManager  and contractCaller are implemented in heimdall-v2
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+	chainParams := q.k.chainKeeper.GetParams(sdkCtx)
+	// get main tx receipt
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(types.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainchainTxConfirmations)
+	if err != nil || receipt == nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	// get sequence id
+	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
+	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
+
+	// check if incoming tx already exists
+	exists, err := q.k.HasTopupSequence(sdkCtx, sequence.String())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if !exists {
+		q.k.Logger(ctx).Error("sequence does not exist", "txHash", req.TxHash, "index", req.LogIndex)
+		return nil, status.Errorf(codes.NotFound, "sequence with hash %s not found", req.TxHash)
+	}
+
+	return &types.QueryIsTopupTxOldResponse{IsOld: true}, nil
 	*/
 
 	// TODO HV2: remove the "return nil, nil" when the above method is enabled

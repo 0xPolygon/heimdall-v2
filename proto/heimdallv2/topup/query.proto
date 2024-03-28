@@ -17,12 +17,19 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
 // Query defines the gRPC querier service.
 service Query {
+  // IsTopupTxOld queries for a specific topup tx to check its status (old
+  // means already submitted)
+  rpc IsTopupTxOld(QueryTopupSequenceRequest)
+      returns (QueryIsTopupTxOldResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/heimdallv2/topup/isoldtx";
+  }
   // GetTopupTxSequence queries for a specific topup tx to check its status (old
   // means already submitted) and returns the sequence of the tx
   rpc GetTopupTxSequence(QueryTopupSequenceRequest)
       returns (QueryTopupSequenceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/topup/isoldtx";
+    option (google.api.http).get = "/heimdallv2/topup/sequence";
   }
   // GetDividendAccountByAddress queries for a specific DividendAccount by its
   // address
@@ -55,8 +62,8 @@ service Query {
   }
 }
 
-// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence RPC
-// method
+// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence and
+// IsTopupTxOld RPC methods
 message QueryTopupSequenceRequest {
   string tx_hash = 1 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
@@ -65,7 +72,15 @@ message QueryTopupSequenceRequest {
 // QueryTopupSequenceResponse is response type for the GetTopupTxSequence RPC
 // method
 message QueryTopupSequenceResponse {
-  string sequence = 1 [ (amino.dont_omitempty) = true ];
+  string sequence = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "sequence" ];
+}
+
+// QueryIsTopupTxOldResponse is response type for the IsTopupTxOld RPC
+// method
+message QueryIsTopupTxOldResponse {
+  bool is_old = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "isOld" ];
 }
 
 // QueryDividendAccountRequest is the request type for the
