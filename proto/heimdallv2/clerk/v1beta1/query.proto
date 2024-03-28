@@ -1,10 +1,10 @@
 syntax = "proto3";
 package heimdallv2.clerk.v1beta1;
 
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "cosmos/query/v1/query.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
@@ -33,32 +33,26 @@ service Query {
   }
 }
 
-message NewQueryRecordParamsRequest {
-  uint64 record_i_d = 1 [ (gogoproto.customname) = "RecordID" ];
-}
+message NewQueryRecordParamsRequest { uint64 record_i_d = 1; }
 
 // QueryRecordParams defines the params for querying accounts.
-message QueryRecordParams {
-  uint64 record_i_d = 1 [ (gogoproto.customname) = "RecordID" ];
-}
+message QueryRecordParams { uint64 record_i_d = 1; }
 
 message NewQueryRecordSequenceParamsRequest {
-  string tx_hash = 1 [ (gogoproto.customname) = "TxHash" ];
-  uint64 log_index = 2 [ (gogoproto.customname) = "LogIndex" ];
+  string tx_hash = 1;
+  uint64 log_index = 2;
 }
 
 // QueryRecordSequenceParams defines the params for querying an account
 // Sequence.
 message QueryRecordSequenceParams {
-  string tx_hash = 1 [ (gogoproto.customname) = "TxHash" ];
-  uint64 log_index = 2 [ (gogoproto.customname) = "LogIndex" ];
+  string tx_hash = 1;
+  uint64 log_index = 2;
 }
 
 message NewQueryTimeRangePaginationParamsRequest {
-  google.protobuf.Timestamp from_time = 1
-      [ (gogoproto.customname) = "FromTime", (gogoproto.stdtime) = true ];
-  google.protobuf.Timestamp to_time = 2
-      [ (gogoproto.customname) = "ToTime", (gogoproto.stdtime) = true ];
+  google.protobuf.Timestamp from_time = 1 [ (gogoproto.stdtime) = true ];
+  google.protobuf.Timestamp to_time = 2 [ (gogoproto.stdtime) = true ];
   uint64 page = 3;
   uint64 limit = 4;
 }
@@ -66,10 +60,8 @@ message NewQueryTimeRangePaginationParamsRequest {
 // QueryRecordTimePaginationParams defines the params for querying records with
 // time.
 message QueryRecordTimePaginationParams {
-  google.protobuf.Timestamp from_time = 1
-      [ (gogoproto.customname) = "FromTime", (gogoproto.stdtime) = true ];
-  google.protobuf.Timestamp to_time = 2
-      [ (gogoproto.customname) = "ToTime", (gogoproto.stdtime) = true ];
+  google.protobuf.Timestamp from_time = 1 [ (gogoproto.stdtime) = true ];
+  google.protobuf.Timestamp to_time = 2 [ (gogoproto.stdtime) = true ];
   uint64 page = 3;
   uint64 limit = 4;
 }
