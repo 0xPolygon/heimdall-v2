@@ -25,6 +25,7 @@ import (
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
+	schema       collections.Schema
 
 	bankKeeper    bk.Keeper
 	stakingKeeper sk.Keeper
@@ -49,7 +50,7 @@ func NewKeeper(
 	// contractCaller helper.IContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
-	return Keeper{
+	k := Keeper{
 		cdc:          cdc,
 		storeService: storeService,
 
@@ -66,6 +67,15 @@ func NewKeeper(
 		Sequences:        collections.NewMap(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey, collections.BoolValue),
 		DividendAccounts: collections.NewMap(sb, types.DividendAccountMapKey, "dividend_account", collections.StringKey, codec.CollValue[hTypes.DividendAccount](cdc)),
 	}
+
+	// build the schema and set it in the keeper
+	s, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	k.schema = s
+
+	return k
 }
 
 // Logger returns a module-specific logger.
