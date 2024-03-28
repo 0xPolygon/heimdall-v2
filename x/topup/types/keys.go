@@ -11,9 +11,14 @@ const (
 
 	// RouterKey is the message route for bor
 	RouterKey = ModuleName
+
+	// DefaultDenom represents the default denominator for Polygon PoS coin
+	DefaultDenom = "matic"
+
+	// DefaultLogIndexUnit represents the default unit for txHash + logIndex
+	DefaultLogIndexUnit = 100000
 )
 
-// TODO HV2: move these vars into types/keys.go ?
 var (
 	// DefaultTopupSequenceValue defines the default value of the topup sequence key
 	DefaultTopupSequenceValue = true
