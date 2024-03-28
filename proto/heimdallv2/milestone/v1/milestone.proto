@@ -1,10 +1,8 @@
 syntax = "proto3";
-package heimdallv2.types;
+package heimdallv2.milestone.v1;
 
 import "gogoproto/gogo.proto";
-import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
-import "google/protobuf/timestamp.proto";
 
 import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
@@ -12,6 +10,7 @@ import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
+// Milestone representes the milestone struct
 message Milestone {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
@@ -25,7 +24,7 @@ message Milestone {
 
   uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
 
-  HeimdallHash hash = 4
+  heimdallv2.types.HeimdallHash hash = 4
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
   string bor_chain_i_d = 5 [ (amino.dont_omitempty) = true ];
@@ -35,12 +34,17 @@ message Milestone {
   uint64 time_stamp = 7 [ (amino.dont_omitempty) = true ];
 }
 
+// Params represents the milestone paramters
 message Params {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 
   uint64 min_milestone_length = 1 [ (amino.dont_omitempty) = true ];
-  uint64 milestone_buffer_time = 2 [ (amino.dont_omitempty) = true ];
+  google.protobuf.Duration milestone_buffer_time = 2 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
   uint64 milestone_buffer_length = 3 [ (amino.dont_omitempty) = true ];
   uint64 milestone_tx_confirmations = 4 [ (amino.dont_omitempty) = true ];
 }

@@ -15,7 +15,7 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgMilestoneTimeout{}, "heimdall-v2/MsgMilestoneTimeout")
 }
 
-// RegisterInterfaces registers the x/staking interfaces types with the interface registry
+// RegisterInterfaces registers the x/milestone interfaces types with the interface registry
 func RegisterInterfaces(registry types.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
 		&MsgMilestone{},

@@ -1,23 +1,24 @@
 syntax = "proto3";
 package heimdallv2.milestone.v1;
 
-import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
-import "heimdallv2/types/milestone.proto";
+import "heimdallv2/milestone/v1/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
 // Query defines the gRPC querier service.
 service Query {
+
+  // Params queries for the milestone parameters
   rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/params";
   }
 
+  // Count queries for the mileston count
   rpc Count(QueryCountRequest) returns (QueryCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/count";
@@ -58,7 +59,7 @@ message QueryParamsRequest {}
 // QueryParamsResponse is response type for the Query/Params
 // RPC method
 message QueryParamsResponse {
-  heimdallv2.types.Params params = 1
+  Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -86,7 +87,7 @@ message QueryLatestMilestoneRequest {}
 // QueryLatestMilestoneResponse is response type for the Query/LatestMilestone
 // RPC method
 message QueryLatestMilestoneResponse {
-  heimdallv2.types.Milestone checkpoint = 1
+  Milestone milestone = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -99,7 +100,7 @@ message QueryMilestoneRequest {
 // QueryMilestoneResponse is response type for the Query/Milestone/{number}
 // RPC method
 message QueryMilestoneResponse {
-  heimdallv2.types.Milestone milestone = 1
+  Milestone milestone = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -110,8 +111,7 @@ message QueryLatestNoAckMilestoneRequest {}
 // QueryLatestNoAckMilestoneResponse is response type for the
 // Query/LatestNoAckMilestone RPC method
 message QueryLatestNoAckMilestoneResponse {
-  heimdallv2.types.Milestone milestone = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string result = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryNoAckMilestoneByIDRequest is response type for the

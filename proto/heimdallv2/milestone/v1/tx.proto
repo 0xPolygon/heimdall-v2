@@ -1,8 +1,6 @@
 syntax = "proto3";
 package heimdallv2.milestone.v1;
 
-import "google/protobuf/any.proto";
-import "google/protobuf/timestamp.proto";
 import "gogoproto/gogo.proto";
 
 import "cosmos_proto/cosmos.proto";

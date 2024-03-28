@@ -1,6 +1,6 @@
 package types
 
-// Checkpoint tags
+// Milestone tags
 var (
 	AttributeKeyProposer    = "proposer"
 	AttributeKeyStartBlock  = "start-block"

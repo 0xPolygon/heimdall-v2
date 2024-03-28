@@ -3,9 +3,5 @@ package heimdallv2.milestone.v1;
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
-import "gogoproto/gogo.proto";
-import "cosmos_proto/cosmos.proto";
-import "amino/amino.proto";
-
 // GenesisState defines the staking module's genesis state.
 message GenesisState {}
