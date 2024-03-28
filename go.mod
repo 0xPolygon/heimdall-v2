@@ -1,6 +1,6 @@
 module github.com/0xPolygon/heimdall-v2
 
-go 1.21
+go 1.22.1
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -13,12 +13,14 @@ require (
 	github.com/bufbuild/buf v1.29.0
 	github.com/cometbft/cometbft v0.38.2
 	github.com/cosmos/cosmos-db v1.0.0
+	github.com/cosmos/cosmos-proto v1.0.0-beta.3
 	github.com/cosmos/cosmos-sdk v0.50.1
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/golang/mock v1.6.0
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.8.4
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
@@ -57,7 +59,6 @@ require (
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.15.1 // indirect
-	github.com/cosmos/cosmos-proto v1.0.0-beta.3 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/iavl v1.0.0 // indirect
@@ -222,7 +223,6 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240116215550-a9fa1716bcac // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240116215550-a9fa1716bcac // indirect
 	google.golang.org/grpc v1.60.1 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
@@ -232,9 +232,10 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-// following versions might cause unexpected behavior
 replace (
+	// HV2
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.0-beta
 	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240315104706-d86dab8157c4
+	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
