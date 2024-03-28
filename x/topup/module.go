@@ -86,7 +86,7 @@ func (m AppModule) IsAppModule() {
 
 // RegisterServices registers module services.
 func (m AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(m.keeper))
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(&m.keeper))
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&m.keeper))
 }
 
