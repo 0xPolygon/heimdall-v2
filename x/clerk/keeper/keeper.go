@@ -72,7 +72,7 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 }
 
 // SetEventRecordWithTime sets event record id with time
-func (k *Keeper) SetEventRecordWithTime(ctx sdk.Context, record types.EventRecord) error {
+func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventRecord) error {
 	_, err := k.RecordsWithTime.Get(ctx, collections.Join(record.RecordTime, record.ID))
 	if err == collections.ErrNotFound {
 		return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.ID), record.ID)
@@ -84,7 +84,7 @@ func (k *Keeper) SetEventRecordWithTime(ctx sdk.Context, record types.EventRecor
 }
 
 // SetEventRecordWithID adds record to store with ID
-func (k *Keeper) SetEventRecordWithID(ctx sdk.Context, record types.EventRecord) error {
+func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRecord) error {
 	_, err := k.RecordsWithID.Get(ctx, record.ID)
 	if err == collections.ErrNotFound {
 		return k.RecordsWithID.Set(ctx, record.ID, record)
@@ -96,7 +96,7 @@ func (k *Keeper) SetEventRecordWithID(ctx sdk.Context, record types.EventRecord)
 }
 
 // SetEventRecord adds record to store
-func (k *Keeper) SetEventRecord(ctx sdk.Context, record types.EventRecord) error {
+func (k *Keeper) SetEventRecord(ctx context.Context, record types.EventRecord) error {
 	if err := k.SetEventRecordWithID(ctx, record); err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func (k *Keeper) SetEventRecord(ctx sdk.Context, record types.EventRecord) error
 }
 
 // GetEventRecord returns record from store
-func (k *Keeper) GetEventRecord(ctx sdk.Context, stateID uint64) (*types.EventRecord, error) {
+func (k *Keeper) GetEventRecord(ctx context.Context, stateID uint64) (*types.EventRecord, error) {
 	// check if record exists
 	record, err := k.RecordsWithID.Get(ctx, stateID)
 	if err != nil {
@@ -123,7 +123,7 @@ func (k *Keeper) HasEventRecord(ctx context.Context, stateID uint64) bool {
 }
 
 // GetAllEventRecords get all state records
-func (k *Keeper) GetAllEventRecords(ctx sdk.Context) (records []*types.EventRecord) {
+func (k *Keeper) GetAllEventRecords(ctx context.Context) (records []*types.EventRecord) {
 	// iterate through spans and create span update array
 	k.IterateRecordsAndApplyFn(ctx, func(record types.EventRecord) error {
 		// append to list of validatorUpdates
@@ -135,7 +135,7 @@ func (k *Keeper) GetAllEventRecords(ctx sdk.Context) (records []*types.EventReco
 }
 
 // GetEventRecordList returns all records with params like page and limit
-func (k *Keeper) GetEventRecordList(ctx sdk.Context, page uint64, limit uint64) ([]types.EventRecord, error) {
+func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint64) ([]types.EventRecord, error) {
 	// create records
 	var records []types.EventRecord
 
@@ -169,7 +169,7 @@ func (k *Keeper) GetEventRecordList(ctx sdk.Context, page uint64, limit uint64) 
 }
 
 // GetEventRecordListWithTime returns all records with params like fromTime and toTime
-func (k *Keeper) GetEventRecordListWithTime(ctx sdk.Context, fromTime, toTime time.Time, page, limit uint64) ([]types.EventRecord, error) {
+func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTime time.Time, page, limit uint64) ([]types.EventRecord, error) {
 	// create records
 	var records []types.EventRecord
 
@@ -224,7 +224,7 @@ func GetRecordSequenceKey(sequence string) []byte {
 }
 
 // IterateRecordsAndApplyFn iterate records and apply the given function.
-func (k *Keeper) IterateRecordsAndApplyFn(ctx sdk.Context, f func(record types.EventRecord) error) {
+func (k *Keeper) IterateRecordsAndApplyFn(ctx context.Context, f func(record types.EventRecord) error) {
 	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
 	if err != nil {
 		return
@@ -245,7 +245,7 @@ func (k *Keeper) IterateRecordsAndApplyFn(ctx sdk.Context, f func(record types.E
 }
 
 // GetRecordSequences checks if record already exists
-func (k *Keeper) GetRecordSequences(ctx sdk.Context) (sequences []string) {
+func (k *Keeper) GetRecordSequences(ctx context.Context) (sequences []string) {
 	k.IterateRecordSequencesAndApplyFn(ctx, func(sequence string) error {
 		sequences = append(sequences, sequence)
 		return nil
@@ -255,7 +255,7 @@ func (k *Keeper) GetRecordSequences(ctx sdk.Context) (sequences []string) {
 }
 
 // IterateRecordSequencesAndApplyFn iterate records and apply the given function.
-func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx sdk.Context, f func(sequence string) error) {
+func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx context.Context, f func(sequence string) error) {
 	iterator, err := k.RecordSequences.Iterate(ctx, nil)
 	if err != nil {
 		return
@@ -276,7 +276,7 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx sdk.Context, f func(sequen
 }
 
 // SetRecordSequence sets mapping for sequence id to bool
-func (k *Keeper) SetRecordSequence(ctx sdk.Context, sequence string) {
+func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	if sequence != "" {
 		_ = k.RecordSequences.Set(ctx, sequence, DefaultValue)
 	}

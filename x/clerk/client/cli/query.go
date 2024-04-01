@@ -61,7 +61,7 @@ func GetStateRecord() *cobra.Command {
 			}
 
 			// get query params
-			queryParams, err := cliCtx.Codec.MarshalJSON(&clerkTypes.QueryRecordParams{RecordID: recordID})
+			queryParams, err := cliCtx.Codec.MarshalJSON(&clerkTypes.RecordRequest{RecordID: recordID})
 			if err != nil {
 				return err
 			}
@@ -123,7 +123,7 @@ func IsOldTx() *cobra.Command {
 			}
 
 			// get query params
-			queryParams, err := cliCtx.Codec.MarshalJSON(&clerkTypes.QueryRecordSequenceParams{TxHash: txHash, LogIndex: logIndex})
+			queryParams, err := cliCtx.Codec.MarshalJSON(&clerkTypes.RecordSequenceRequest{TxHash: txHash, LogIndex: logIndex})
 			if err != nil {
 				return err
 			}

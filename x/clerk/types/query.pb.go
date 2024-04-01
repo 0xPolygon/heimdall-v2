@@ -34,22 +34,22 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type NewQueryRecordParamsRequest struct {
+type RecordRequest struct {
 	RecordID uint64 `protobuf:"varint,1,opt,name=record_i_d,json=recordID,proto3" json:"record_i_d,omitempty"`
 }
 
-func (m *NewQueryRecordParamsRequest) Reset()         { *m = NewQueryRecordParamsRequest{} }
-func (m *NewQueryRecordParamsRequest) String() string { return proto.CompactTextString(m) }
-func (*NewQueryRecordParamsRequest) ProtoMessage()    {}
-func (*NewQueryRecordParamsRequest) Descriptor() ([]byte, []int) {
+func (m *RecordRequest) Reset()         { *m = RecordRequest{} }
+func (m *RecordRequest) String() string { return proto.CompactTextString(m) }
+func (*RecordRequest) ProtoMessage()    {}
+func (*RecordRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f561213cfa77c154, []int{0}
 }
-func (m *NewQueryRecordParamsRequest) XXX_Unmarshal(b []byte) error {
+func (m *RecordRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *NewQueryRecordParamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RecordRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_NewQueryRecordParamsRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RecordRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -59,42 +59,42 @@ func (m *NewQueryRecordParamsRequest) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *NewQueryRecordParamsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NewQueryRecordParamsRequest.Merge(m, src)
+func (m *RecordRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordRequest.Merge(m, src)
 }
-func (m *NewQueryRecordParamsRequest) XXX_Size() int {
+func (m *RecordRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *NewQueryRecordParamsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_NewQueryRecordParamsRequest.DiscardUnknown(m)
+func (m *RecordRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_NewQueryRecordParamsRequest proto.InternalMessageInfo
+var xxx_messageInfo_RecordRequest proto.InternalMessageInfo
 
-func (m *NewQueryRecordParamsRequest) GetRecordID() uint64 {
+func (m *RecordRequest) GetRecordID() uint64 {
 	if m != nil {
 		return m.RecordID
 	}
 	return 0
 }
 
-// QueryRecordParams defines the params for querying accounts.
-type QueryRecordParams struct {
-	RecordID uint64 `protobuf:"varint,1,opt,name=record_i_d,json=recordID,proto3" json:"record_i_d,omitempty"`
+// RecordResponse defines the params for querying accounts.
+type RecordResponse struct {
+	Record *EventRecord `protobuf:"bytes,1,opt,name=record,proto3" json:"record,omitempty"`
 }
 
-func (m *QueryRecordParams) Reset()         { *m = QueryRecordParams{} }
-func (m *QueryRecordParams) String() string { return proto.CompactTextString(m) }
-func (*QueryRecordParams) ProtoMessage()    {}
-func (*QueryRecordParams) Descriptor() ([]byte, []int) {
+func (m *RecordResponse) Reset()         { *m = RecordResponse{} }
+func (m *RecordResponse) String() string { return proto.CompactTextString(m) }
+func (*RecordResponse) ProtoMessage()    {}
+func (*RecordResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f561213cfa77c154, []int{1}
 }
-func (m *QueryRecordParams) XXX_Unmarshal(b []byte) error {
+func (m *RecordResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryRecordParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RecordResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryRecordParams.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RecordResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -104,42 +104,42 @@ func (m *QueryRecordParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *QueryRecordParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryRecordParams.Merge(m, src)
+func (m *RecordResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordResponse.Merge(m, src)
 }
-func (m *QueryRecordParams) XXX_Size() int {
+func (m *RecordResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryRecordParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryRecordParams.DiscardUnknown(m)
+func (m *RecordResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryRecordParams proto.InternalMessageInfo
+var xxx_messageInfo_RecordResponse proto.InternalMessageInfo
 
-func (m *QueryRecordParams) GetRecordID() uint64 {
+func (m *RecordResponse) GetRecord() *EventRecord {
 	if m != nil {
-		return m.RecordID
+		return m.Record
 	}
-	return 0
+	return nil
 }
 
-type NewQueryRecordSequenceParamsRequest struct {
-	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+type RecordListRequest struct {
+	Page  uint64 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	Limit uint64 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 }
 
-func (m *NewQueryRecordSequenceParamsRequest) Reset()         { *m = NewQueryRecordSequenceParamsRequest{} }
-func (m *NewQueryRecordSequenceParamsRequest) String() string { return proto.CompactTextString(m) }
-func (*NewQueryRecordSequenceParamsRequest) ProtoMessage()    {}
-func (*NewQueryRecordSequenceParamsRequest) Descriptor() ([]byte, []int) {
+func (m *RecordListRequest) Reset()         { *m = RecordListRequest{} }
+func (m *RecordListRequest) String() string { return proto.CompactTextString(m) }
+func (*RecordListRequest) ProtoMessage()    {}
+func (*RecordListRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_f561213cfa77c154, []int{2}
 }
-func (m *NewQueryRecordSequenceParamsRequest) XXX_Unmarshal(b []byte) error {
+func (m *RecordListRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *NewQueryRecordSequenceParamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RecordListRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_NewQueryRecordSequenceParamsRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RecordListRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -149,51 +149,209 @@ func (m *NewQueryRecordSequenceParamsRequest) XXX_Marshal(b []byte, deterministi
 		return b[:n], nil
 	}
 }
-func (m *NewQueryRecordSequenceParamsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NewQueryRecordSequenceParamsRequest.Merge(m, src)
+func (m *RecordListRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordListRequest.Merge(m, src)
 }
-func (m *NewQueryRecordSequenceParamsRequest) XXX_Size() int {
+func (m *RecordListRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *NewQueryRecordSequenceParamsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_NewQueryRecordSequenceParamsRequest.DiscardUnknown(m)
+func (m *RecordListRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordListRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_NewQueryRecordSequenceParamsRequest proto.InternalMessageInfo
+var xxx_messageInfo_RecordListRequest proto.InternalMessageInfo
 
-func (m *NewQueryRecordSequenceParamsRequest) GetTxHash() string {
+func (m *RecordListRequest) GetPage() uint64 {
 	if m != nil {
-		return m.TxHash
-	}
-	return ""
-}
-
-func (m *NewQueryRecordSequenceParamsRequest) GetLogIndex() uint64 {
-	if m != nil {
-		return m.LogIndex
+		return m.Page
 	}
 	return 0
 }
 
-// QueryRecordSequenceParams defines the params for querying an account
+func (m *RecordListRequest) GetLimit() uint64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+// RecordListResponse defines the params for querying an account
 // Sequence.
-type QueryRecordSequenceParams struct {
+type RecordListResponse struct {
+	EventRecords []*EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records,omitempty"`
+}
+
+func (m *RecordListResponse) Reset()         { *m = RecordListResponse{} }
+func (m *RecordListResponse) String() string { return proto.CompactTextString(m) }
+func (*RecordListResponse) ProtoMessage()    {}
+func (*RecordListResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f561213cfa77c154, []int{3}
+}
+func (m *RecordListResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RecordListResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RecordListResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RecordListResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordListResponse.Merge(m, src)
+}
+func (m *RecordListResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RecordListResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordListResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RecordListResponse proto.InternalMessageInfo
+
+func (m *RecordListResponse) GetEventRecords() []*EventRecord {
+	if m != nil {
+		return m.EventRecords
+	}
+	return nil
+}
+
+type RecordListWithTimeRequest struct {
+	FromTime time.Time `protobuf:"bytes,1,opt,name=from_time,json=fromTime,proto3,stdtime" json:"from_time"`
+	ToTime   time.Time `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3,stdtime" json:"to_time"`
+	Page     uint64    `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	Limit    uint64    `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+}
+
+func (m *RecordListWithTimeRequest) Reset()         { *m = RecordListWithTimeRequest{} }
+func (m *RecordListWithTimeRequest) String() string { return proto.CompactTextString(m) }
+func (*RecordListWithTimeRequest) ProtoMessage()    {}
+func (*RecordListWithTimeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f561213cfa77c154, []int{4}
+}
+func (m *RecordListWithTimeRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RecordListWithTimeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RecordListWithTimeRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RecordListWithTimeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordListWithTimeRequest.Merge(m, src)
+}
+func (m *RecordListWithTimeRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RecordListWithTimeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordListWithTimeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RecordListWithTimeRequest proto.InternalMessageInfo
+
+func (m *RecordListWithTimeRequest) GetFromTime() time.Time {
+	if m != nil {
+		return m.FromTime
+	}
+	return time.Time{}
+}
+
+func (m *RecordListWithTimeRequest) GetToTime() time.Time {
+	if m != nil {
+		return m.ToTime
+	}
+	return time.Time{}
+}
+
+func (m *RecordListWithTimeRequest) GetPage() uint64 {
+	if m != nil {
+		return m.Page
+	}
+	return 0
+}
+
+func (m *RecordListWithTimeRequest) GetLimit() uint64 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+// RecordListWithTimeResponse defines the params for querying records with
+// time.
+type RecordListWithTimeResponse struct {
+	EventRecords []*EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records,omitempty"`
+}
+
+func (m *RecordListWithTimeResponse) Reset()         { *m = RecordListWithTimeResponse{} }
+func (m *RecordListWithTimeResponse) String() string { return proto.CompactTextString(m) }
+func (*RecordListWithTimeResponse) ProtoMessage()    {}
+func (*RecordListWithTimeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f561213cfa77c154, []int{5}
+}
+func (m *RecordListWithTimeResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RecordListWithTimeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RecordListWithTimeResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RecordListWithTimeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordListWithTimeResponse.Merge(m, src)
+}
+func (m *RecordListWithTimeResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RecordListWithTimeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordListWithTimeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RecordListWithTimeResponse proto.InternalMessageInfo
+
+func (m *RecordListWithTimeResponse) GetEventRecords() []*EventRecord {
+	if m != nil {
+		return m.EventRecords
+	}
+	return nil
+}
+
+type RecordSequenceRequest struct {
 	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
-func (m *QueryRecordSequenceParams) Reset()         { *m = QueryRecordSequenceParams{} }
-func (m *QueryRecordSequenceParams) String() string { return proto.CompactTextString(m) }
-func (*QueryRecordSequenceParams) ProtoMessage()    {}
-func (*QueryRecordSequenceParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f561213cfa77c154, []int{3}
+func (m *RecordSequenceRequest) Reset()         { *m = RecordSequenceRequest{} }
+func (m *RecordSequenceRequest) String() string { return proto.CompactTextString(m) }
+func (*RecordSequenceRequest) ProtoMessage()    {}
+func (*RecordSequenceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f561213cfa77c154, []int{6}
 }
-func (m *QueryRecordSequenceParams) XXX_Unmarshal(b []byte) error {
+func (m *RecordSequenceRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryRecordSequenceParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RecordSequenceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryRecordSequenceParams.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RecordSequenceRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -203,53 +361,48 @@ func (m *QueryRecordSequenceParams) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
-func (m *QueryRecordSequenceParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryRecordSequenceParams.Merge(m, src)
+func (m *RecordSequenceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordSequenceRequest.Merge(m, src)
 }
-func (m *QueryRecordSequenceParams) XXX_Size() int {
+func (m *RecordSequenceRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryRecordSequenceParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryRecordSequenceParams.DiscardUnknown(m)
+func (m *RecordSequenceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordSequenceRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryRecordSequenceParams proto.InternalMessageInfo
+var xxx_messageInfo_RecordSequenceRequest proto.InternalMessageInfo
 
-func (m *QueryRecordSequenceParams) GetTxHash() string {
+func (m *RecordSequenceRequest) GetTxHash() string {
 	if m != nil {
 		return m.TxHash
 	}
 	return ""
 }
 
-func (m *QueryRecordSequenceParams) GetLogIndex() uint64 {
+func (m *RecordSequenceRequest) GetLogIndex() uint64 {
 	if m != nil {
 		return m.LogIndex
 	}
 	return 0
 }
 
-type NewQueryTimeRangePaginationParamsRequest struct {
-	FromTime *time.Time `protobuf:"bytes,1,opt,name=from_time,json=fromTime,proto3,stdtime" json:"from_time,omitempty"`
-	ToTime   *time.Time `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3,stdtime" json:"to_time,omitempty"`
-	Page     uint64     `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
-	Limit    uint64     `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+type RecordSequenceResponse struct {
+	Sequence uint64 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
 
-func (m *NewQueryTimeRangePaginationParamsRequest) Reset() {
-	*m = NewQueryTimeRangePaginationParamsRequest{}
+func (m *RecordSequenceResponse) Reset()         { *m = RecordSequenceResponse{} }
+func (m *RecordSequenceResponse) String() string { return proto.CompactTextString(m) }
+func (*RecordSequenceResponse) ProtoMessage()    {}
+func (*RecordSequenceResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f561213cfa77c154, []int{7}
 }
-func (m *NewQueryTimeRangePaginationParamsRequest) String() string { return proto.CompactTextString(m) }
-func (*NewQueryTimeRangePaginationParamsRequest) ProtoMessage()    {}
-func (*NewQueryTimeRangePaginationParamsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f561213cfa77c154, []int{4}
-}
-func (m *NewQueryTimeRangePaginationParamsRequest) XXX_Unmarshal(b []byte) error {
+func (m *RecordSequenceResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *NewQueryTimeRangePaginationParamsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RecordSequenceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_NewQueryTimeRangePaginationParamsRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RecordSequenceResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -259,123 +412,34 @@ func (m *NewQueryTimeRangePaginationParamsRequest) XXX_Marshal(b []byte, determi
 		return b[:n], nil
 	}
 }
-func (m *NewQueryTimeRangePaginationParamsRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_NewQueryTimeRangePaginationParamsRequest.Merge(m, src)
+func (m *RecordSequenceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RecordSequenceResponse.Merge(m, src)
 }
-func (m *NewQueryTimeRangePaginationParamsRequest) XXX_Size() int {
+func (m *RecordSequenceResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *NewQueryTimeRangePaginationParamsRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_NewQueryTimeRangePaginationParamsRequest.DiscardUnknown(m)
+func (m *RecordSequenceResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RecordSequenceResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_NewQueryTimeRangePaginationParamsRequest proto.InternalMessageInfo
+var xxx_messageInfo_RecordSequenceResponse proto.InternalMessageInfo
 
-func (m *NewQueryTimeRangePaginationParamsRequest) GetFromTime() *time.Time {
+func (m *RecordSequenceResponse) GetSequence() uint64 {
 	if m != nil {
-		return m.FromTime
-	}
-	return nil
-}
-
-func (m *NewQueryTimeRangePaginationParamsRequest) GetToTime() *time.Time {
-	if m != nil {
-		return m.ToTime
-	}
-	return nil
-}
-
-func (m *NewQueryTimeRangePaginationParamsRequest) GetPage() uint64 {
-	if m != nil {
-		return m.Page
-	}
-	return 0
-}
-
-func (m *NewQueryTimeRangePaginationParamsRequest) GetLimit() uint64 {
-	if m != nil {
-		return m.Limit
-	}
-	return 0
-}
-
-// QueryRecordTimePaginationParams defines the params for querying records with
-// time.
-type QueryRecordTimePaginationParams struct {
-	FromTime *time.Time `protobuf:"bytes,1,opt,name=from_time,json=fromTime,proto3,stdtime" json:"from_time,omitempty"`
-	ToTime   *time.Time `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3,stdtime" json:"to_time,omitempty"`
-	Page     uint64     `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
-	Limit    uint64     `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
-}
-
-func (m *QueryRecordTimePaginationParams) Reset()         { *m = QueryRecordTimePaginationParams{} }
-func (m *QueryRecordTimePaginationParams) String() string { return proto.CompactTextString(m) }
-func (*QueryRecordTimePaginationParams) ProtoMessage()    {}
-func (*QueryRecordTimePaginationParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f561213cfa77c154, []int{5}
-}
-func (m *QueryRecordTimePaginationParams) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryRecordTimePaginationParams) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryRecordTimePaginationParams.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryRecordTimePaginationParams) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryRecordTimePaginationParams.Merge(m, src)
-}
-func (m *QueryRecordTimePaginationParams) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryRecordTimePaginationParams) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryRecordTimePaginationParams.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryRecordTimePaginationParams proto.InternalMessageInfo
-
-func (m *QueryRecordTimePaginationParams) GetFromTime() *time.Time {
-	if m != nil {
-		return m.FromTime
-	}
-	return nil
-}
-
-func (m *QueryRecordTimePaginationParams) GetToTime() *time.Time {
-	if m != nil {
-		return m.ToTime
-	}
-	return nil
-}
-
-func (m *QueryRecordTimePaginationParams) GetPage() uint64 {
-	if m != nil {
-		return m.Page
-	}
-	return 0
-}
-
-func (m *QueryRecordTimePaginationParams) GetLimit() uint64 {
-	if m != nil {
-		return m.Limit
+		return m.Sequence
 	}
 	return 0
 }
 
 func init() {
-	proto.RegisterType((*NewQueryRecordParamsRequest)(nil), "heimdallv2.clerk.v1beta1.NewQueryRecordParamsRequest")
-	proto.RegisterType((*QueryRecordParams)(nil), "heimdallv2.clerk.v1beta1.QueryRecordParams")
-	proto.RegisterType((*NewQueryRecordSequenceParamsRequest)(nil), "heimdallv2.clerk.v1beta1.NewQueryRecordSequenceParamsRequest")
-	proto.RegisterType((*QueryRecordSequenceParams)(nil), "heimdallv2.clerk.v1beta1.QueryRecordSequenceParams")
-	proto.RegisterType((*NewQueryTimeRangePaginationParamsRequest)(nil), "heimdallv2.clerk.v1beta1.NewQueryTimeRangePaginationParamsRequest")
-	proto.RegisterType((*QueryRecordTimePaginationParams)(nil), "heimdallv2.clerk.v1beta1.QueryRecordTimePaginationParams")
+	proto.RegisterType((*RecordRequest)(nil), "heimdallv2.clerk.v1beta1.RecordRequest")
+	proto.RegisterType((*RecordResponse)(nil), "heimdallv2.clerk.v1beta1.RecordResponse")
+	proto.RegisterType((*RecordListRequest)(nil), "heimdallv2.clerk.v1beta1.RecordListRequest")
+	proto.RegisterType((*RecordListResponse)(nil), "heimdallv2.clerk.v1beta1.RecordListResponse")
+	proto.RegisterType((*RecordListWithTimeRequest)(nil), "heimdallv2.clerk.v1beta1.RecordListWithTimeRequest")
+	proto.RegisterType((*RecordListWithTimeResponse)(nil), "heimdallv2.clerk.v1beta1.RecordListWithTimeResponse")
+	proto.RegisterType((*RecordSequenceRequest)(nil), "heimdallv2.clerk.v1beta1.RecordSequenceRequest")
+	proto.RegisterType((*RecordSequenceResponse)(nil), "heimdallv2.clerk.v1beta1.RecordSequenceResponse")
 }
 
 func init() {
@@ -383,44 +447,48 @@ func init() {
 }
 
 var fileDescriptor_f561213cfa77c154 = []byte{
-	// 582 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x53, 0x41, 0x6b, 0x13, 0x4f,
-	0x14, 0xef, 0xe4, 0x9f, 0xa6, 0xcd, 0xfc, 0x41, 0x74, 0x08, 0xb8, 0x6e, 0xc2, 0x46, 0x57, 0x85,
-	0xaa, 0x74, 0xc7, 0xa4, 0x78, 0x28, 0xd2, 0x4b, 0xf0, 0xd0, 0x5e, 0x24, 0x5d, 0x7b, 0xd2, 0x43,
-	0x98, 0x64, 0xa7, 0x93, 0xc1, 0xdd, 0x9d, 0x74, 0x67, 0x12, 0x37, 0x57, 0x4f, 0x1e, 0x0b, 0x7e,
-	0x02, 0x3f, 0x80, 0xe0, 0x17, 0x10, 0x4f, 0x82, 0x27, 0x29, 0x78, 0xf1, 0xa6, 0x24, 0x82, 0x5f,
-	0x43, 0x76, 0x76, 0x43, 0x8c, 0x4d, 0x9a, 0xe0, 0xcd, 0xdb, 0xcc, 0x9b, 0xf7, 0x7b, 0xef, 0xf7,
-	0x9b, 0xf7, 0x7e, 0xf0, 0x56, 0x97, 0xf2, 0xc0, 0x23, 0xbe, 0x3f, 0xa8, 0xe3, 0x8e, 0x4f, 0xa3,
-	0xe7, 0x78, 0x50, 0x6b, 0x53, 0x45, 0x6a, 0xf8, 0xa4, 0x4f, 0xa3, 0xa1, 0xd3, 0x8b, 0x84, 0x12,
-	0xc8, 0x98, 0x66, 0x39, 0x3a, 0xcb, 0xc9, 0xb2, 0xcc, 0x72, 0x47, 0xc8, 0x40, 0xc8, 0x34, 0x1b,
-	0x0f, 0x66, 0x60, 0x66, 0x89, 0x09, 0x26, 0xf4, 0x11, 0x27, 0xa7, 0x2c, 0x5a, 0x61, 0x42, 0x30,
-	0x9f, 0x62, 0xd2, 0xe3, 0x98, 0x84, 0xa1, 0x50, 0x44, 0x71, 0x11, 0xca, 0xec, 0xb5, 0x9a, 0xbd,
-	0xea, 0x5b, 0xbb, 0x7f, 0x8c, 0x15, 0x0f, 0xa8, 0x54, 0x24, 0xe8, 0xa5, 0x09, 0xf6, 0x43, 0x58,
-	0x7e, 0x4c, 0x5f, 0x1c, 0x26, 0x6d, 0x5c, 0xda, 0x11, 0x91, 0xd7, 0x24, 0x11, 0x09, 0xa4, 0x4b,
-	0x4f, 0xfa, 0x54, 0x2a, 0x54, 0x81, 0x30, 0xd2, 0xe1, 0x16, 0x6f, 0x79, 0x06, 0xb8, 0x0e, 0xb6,
-	0xf2, 0xee, 0x66, 0x1a, 0x39, 0x78, 0x64, 0xd7, 0xe0, 0x95, 0x73, 0xc8, 0x25, 0x90, 0x67, 0xf0,
-	0xe6, 0x6c, 0xbf, 0x27, 0x49, 0xa7, 0xb0, 0x43, 0x67, 0xfb, 0x5e, 0x85, 0x1b, 0x2a, 0x6e, 0x75,
-	0x89, 0xec, 0xea, 0x0a, 0x45, 0xb7, 0xa0, 0xe2, 0x7d, 0x22, 0xbb, 0xa8, 0x0c, 0x8b, 0xbe, 0x60,
-	0x2d, 0x1e, 0x7a, 0x34, 0x36, 0x72, 0x69, 0x71, 0x5f, 0xb0, 0x83, 0xe4, 0x6e, 0x1f, 0xc2, 0x6b,
-	0x0b, 0x2b, 0xff, 0x65, 0xc9, 0xcf, 0x00, 0x6e, 0x4d, 0x08, 0x1f, 0xf1, 0x80, 0xba, 0x24, 0x64,
-	0xb4, 0x49, 0x18, 0x0f, 0xf5, 0x3f, 0xcf, 0xb2, 0xde, 0x83, 0xc5, 0xe3, 0x48, 0x04, 0xad, 0xe4,
-	0x93, 0x75, 0x93, 0xff, 0xeb, 0xa6, 0x93, 0x4e, 0xc0, 0x99, 0x4c, 0xc0, 0x39, 0x9a, 0x4c, 0xa0,
-	0x91, 0x3f, 0xfd, 0x56, 0x05, 0xee, 0x66, 0x02, 0x49, 0x82, 0x68, 0x17, 0x6e, 0x28, 0x91, 0x82,
-	0x73, 0x2b, 0x82, 0x0b, 0x4a, 0x68, 0x28, 0x82, 0xf9, 0x1e, 0x61, 0xd4, 0xf8, 0x4f, 0xd3, 0xd7,
-	0x67, 0x54, 0x82, 0xeb, 0x3e, 0x0f, 0xb8, 0x32, 0xf2, 0x3a, 0x98, 0x5e, 0xec, 0x8f, 0x00, 0x56,
-	0x7f, 0xfb, 0xa4, 0x04, 0xfd, 0xa7, 0x9c, 0x7f, 0x41, 0x47, 0xfd, 0x6d, 0x1e, 0xae, 0x6b, 0x1d,
-	0xe8, 0x0d, 0x80, 0xa5, 0x79, 0x3b, 0x8c, 0x1e, 0x38, 0x8b, 0x8c, 0xe6, 0x5c, 0xb0, 0xf3, 0xe6,
-	0xbd, 0xc5, 0xb0, 0x73, 0x18, 0xfb, 0xf6, 0xab, 0x9f, 0xef, 0xee, 0x82, 0x97, 0x5f, 0x7e, 0xbc,
-	0xce, 0x99, 0xc8, 0xc8, 0x4c, 0x4f, 0x07, 0x34, 0x54, 0xdb, 0xe9, 0xce, 0x63, 0x9f, 0x4b, 0x85,
-	0xde, 0x03, 0x58, 0xb9, 0x68, 0xef, 0xd1, 0xde, 0xaa, 0x5c, 0xe7, 0xfa, 0xc5, 0xdc, 0x59, 0x89,
-	0xf3, 0x2c, 0xd6, 0xbe, 0x33, 0xe5, 0x6e, 0xa1, 0xca, 0x3c, 0xee, 0x99, 0x6d, 0x3d, 0xf4, 0x01,
-	0xc0, 0x1b, 0x4b, 0x6d, 0x80, 0x1a, 0xcb, 0x45, 0x2c, 0xf3, 0x90, 0xb9, 0xbb, 0x92, 0x92, 0x79,
-	0x6b, 0x6b, 0x97, 0xa7, 0x7a, 0x2e, 0xa3, 0x4b, 0x99, 0x1e, 0x2e, 0x85, 0xef, 0xa9, 0xb8, 0xb1,
-	0xff, 0x69, 0x64, 0x81, 0xb3, 0x91, 0x05, 0xbe, 0x8f, 0x2c, 0x70, 0x3a, 0xb6, 0xd6, 0xce, 0xc6,
-	0xd6, 0xda, 0xd7, 0xb1, 0xb5, 0xf6, 0xd4, 0x61, 0x5c, 0x75, 0xfb, 0x6d, 0xa7, 0x23, 0x02, 0x7c,
-	0x3f, 0x6e, 0x0a, 0x7f, 0xc8, 0x44, 0x88, 0x27, 0x2c, 0xb6, 0x07, 0x75, 0x1c, 0x67, 0xb5, 0xd4,
-	0xb0, 0x47, 0x65, 0xbb, 0xa0, 0xb7, 0x78, 0xe7, 0x57, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc3, 0x38,
-	0xaf, 0x1e, 0xed, 0x05, 0x00, 0x00,
+	// 655 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x94, 0x41, 0x4f, 0x13, 0x41,
+	0x14, 0xc7, 0x3b, 0x50, 0x4a, 0x79, 0x88, 0x86, 0x09, 0x6a, 0x5d, 0xb0, 0x25, 0x1b, 0x89, 0x04,
+	0xed, 0x0e, 0x14, 0xae, 0x1c, 0x24, 0x9a, 0x80, 0xd1, 0xa8, 0x95, 0xc4, 0xc4, 0x4b, 0xdd, 0xb6,
+	0xc3, 0xee, 0xc4, 0xdd, 0x9d, 0xd2, 0x99, 0x36, 0xe5, 0xea, 0x45, 0x4f, 0x06, 0xe3, 0xc9, 0x6f,
+	0xe1, 0xb7, 0x90, 0x23, 0xd1, 0x8b, 0x27, 0x35, 0x60, 0xe2, 0xd7, 0x30, 0xbb, 0x33, 0xe3, 0x16,
+	0x02, 0x69, 0x39, 0x78, 0xea, 0xcc, 0x9b, 0xff, 0x9b, 0xf7, 0xdb, 0xff, 0x9b, 0x57, 0xb8, 0xe5,
+	0x53, 0x16, 0x36, 0xdd, 0x20, 0xe8, 0x56, 0x48, 0x23, 0xa0, 0xed, 0xd7, 0xa4, 0xbb, 0x52, 0xa7,
+	0xd2, 0x5d, 0x21, 0xbb, 0x1d, 0xda, 0xde, 0x73, 0x5a, 0x6d, 0x2e, 0x39, 0x2e, 0xa4, 0x2a, 0x27,
+	0x51, 0x39, 0x5a, 0x65, 0xcd, 0x36, 0xb8, 0x08, 0xb9, 0x50, 0x6a, 0xd2, 0x3d, 0x91, 0x66, 0xcd,
+	0x78, 0xdc, 0xe3, 0xc9, 0x92, 0xc4, 0x2b, 0x1d, 0x9d, 0xf3, 0x38, 0xf7, 0x02, 0x4a, 0xdc, 0x16,
+	0x23, 0x6e, 0x14, 0x71, 0xe9, 0x4a, 0xc6, 0x23, 0xa1, 0x4f, 0x4b, 0xfa, 0x34, 0xd9, 0xd5, 0x3b,
+	0x3b, 0x44, 0xb2, 0x90, 0x0a, 0xe9, 0x86, 0x2d, 0x2d, 0x38, 0x9f, 0x58, 0x91, 0x25, 0x2a, 0xbb,
+	0x0c, 0x53, 0x55, 0xda, 0xe0, 0xed, 0x66, 0x95, 0xee, 0x76, 0xa8, 0x90, 0x78, 0x0e, 0xa0, 0x9d,
+	0x04, 0x6a, 0xac, 0xd6, 0x2c, 0xa0, 0x79, 0xb4, 0x98, 0xad, 0xe6, 0x55, 0x64, 0xeb, 0xbe, 0xfd,
+	0x04, 0x2e, 0x1b, 0xb9, 0x68, 0xf1, 0x48, 0x50, 0xbc, 0x0e, 0x39, 0x75, 0x9a, 0x68, 0x27, 0x2b,
+	0x0b, 0xce, 0x79, 0x1e, 0x38, 0x0f, 0xba, 0x34, 0x92, 0x3a, 0x5d, 0x27, 0xd9, 0xeb, 0x30, 0xad,
+	0x22, 0x8f, 0x98, 0x90, 0x86, 0x01, 0x43, 0xb6, 0xe5, 0x7a, 0x54, 0x57, 0x4f, 0xd6, 0x78, 0x06,
+	0xc6, 0x02, 0x16, 0x32, 0x59, 0x18, 0x49, 0x82, 0x6a, 0x63, 0xbf, 0x02, 0xdc, 0x9f, 0xae, 0x99,
+	0x1e, 0xc2, 0x14, 0x8d, 0x6b, 0xd5, 0x54, 0x11, 0x51, 0x40, 0xf3, 0xa3, 0xc3, 0xa3, 0x5d, 0xa2,
+	0xe9, 0x46, 0xd8, 0x5f, 0x10, 0xdc, 0x48, 0x4b, 0xbc, 0x60, 0xd2, 0xdf, 0x66, 0x21, 0x35, 0xa4,
+	0xf7, 0x60, 0x62, 0xa7, 0xcd, 0xc3, 0x5a, 0x6c, 0xbe, 0x36, 0xc0, 0x72, 0x54, 0x67, 0x1c, 0xd3,
+	0x19, 0x67, 0xdb, 0x74, 0x66, 0x23, 0x7f, 0xf0, 0xa3, 0x94, 0xd9, 0xff, 0x59, 0x42, 0xd5, 0x7c,
+	0x9c, 0x16, 0x1f, 0xe0, 0x75, 0x18, 0x97, 0x5c, 0x5d, 0x30, 0x72, 0x81, 0x0b, 0x72, 0x92, 0x27,
+	0xe9, 0xc6, 0xab, 0xd1, 0xb3, 0xbc, 0xca, 0xf6, 0x7b, 0xe5, 0x83, 0x75, 0xd6, 0x87, 0xfc, 0x07,
+	0xcf, 0x1e, 0xc3, 0x55, 0xb5, 0x7c, 0x1e, 0xdb, 0x14, 0x35, 0xfe, 0xd9, 0x75, 0x1d, 0xc6, 0x65,
+	0xaf, 0xe6, 0xbb, 0xc2, 0x4f, 0xcc, 0x9a, 0xa8, 0xe6, 0x64, 0x6f, 0xd3, 0x15, 0x3e, 0x9e, 0x85,
+	0x89, 0x80, 0x7b, 0x35, 0x16, 0x35, 0x69, 0x4f, 0x77, 0x38, 0x1f, 0x70, 0x6f, 0x2b, 0xde, 0xdb,
+	0x6b, 0x70, 0xed, 0xf4, 0x75, 0x1a, 0xda, 0x82, 0xbc, 0xd0, 0x31, 0xf3, 0x54, 0xcd, 0xbe, 0xf2,
+	0x35, 0x0b, 0x63, 0xcf, 0xe2, 0x21, 0xc3, 0x6f, 0x11, 0xe4, 0xd4, 0x05, 0xf8, 0xf6, 0xf9, 0x9f,
+	0x73, 0x62, 0x0c, 0xac, 0xc5, 0xc1, 0x42, 0xc5, 0x60, 0x2f, 0xbd, 0xfb, 0xf3, 0x79, 0x09, 0xbd,
+	0xf9, 0xf6, 0xfb, 0xe3, 0x48, 0x09, 0xdf, 0xd4, 0xa3, 0x96, 0xd8, 0x51, 0x56, 0x56, 0x12, 0xf5,
+	0x53, 0x66, 0x4d, 0xfc, 0x1e, 0x01, 0xa4, 0x3d, 0xc0, 0x77, 0x06, 0x15, 0xe9, 0x1b, 0x0a, 0xeb,
+	0xee, 0x70, 0x62, 0x4d, 0xb5, 0x90, 0x52, 0x59, 0xb8, 0x70, 0x16, 0x55, 0x10, 0x13, 0x7c, 0x42,
+	0xfd, 0x03, 0x64, 0x1e, 0x05, 0x5e, 0x1d, 0xa6, 0xd6, 0xa9, 0x59, 0xb0, 0xd6, 0x2e, 0x96, 0xa4,
+	0x41, 0x0b, 0x29, 0xe8, 0x14, 0x9e, 0xd4, 0xa0, 0xf1, 0x34, 0xe0, 0x0f, 0xc8, 0xfc, 0xd9, 0x98,
+	0xbe, 0x63, 0x32, 0xa8, 0xc4, 0xa9, 0x07, 0x67, 0x2d, 0x0f, 0x9f, 0xa0, 0x79, 0xe6, 0x52, 0x9e,
+	0x69, 0x7c, 0x45, 0xf3, 0x98, 0x47, 0xb5, 0xb1, 0x79, 0x70, 0x54, 0x44, 0x87, 0x47, 0x45, 0xf4,
+	0xeb, 0xa8, 0x88, 0xf6, 0x8f, 0x8b, 0x99, 0xc3, 0xe3, 0x62, 0xe6, 0xfb, 0x71, 0x31, 0xf3, 0xd2,
+	0xf1, 0x98, 0xf4, 0x3b, 0x75, 0xa7, 0xc1, 0x43, 0xb2, 0xdc, 0x7b, 0xca, 0x83, 0x3d, 0x8f, 0x47,
+	0xc4, 0x54, 0x2f, 0x77, 0x2b, 0xa4, 0x67, 0x3e, 0x6e, 0xaf, 0x45, 0x45, 0x3d, 0x97, 0x4c, 0xf7,
+	0xea, 0xdf, 0x00, 0x00, 0x00, 0xff, 0xff, 0xd6, 0x5f, 0x80, 0x22, 0x59, 0x06, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -436,11 +504,13 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
 	// TODO HV2 - check url
-	NewQueryRecordParams(ctx context.Context, in *NewQueryRecordParamsRequest, opts ...grpc.CallOption) (*QueryRecordParams, error)
+	Record(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
 	// TODO HV2 - check url
-	NewQueryRecordSequenceParams(ctx context.Context, in *NewQueryRecordSequenceParamsRequest, opts ...grpc.CallOption) (*QueryRecordSequenceParams, error)
+	RecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
 	// TODO HV2 - check url
-	NewQueryTimeRangePaginationParams(ctx context.Context, in *NewQueryTimeRangePaginationParamsRequest, opts ...grpc.CallOption) (*QueryRecordTimePaginationParams, error)
+	RecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
+	// TODO HV2 - check url
+	RecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
 }
 
 type queryClient struct {
@@ -451,27 +521,36 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) NewQueryRecordParams(ctx context.Context, in *NewQueryRecordParamsRequest, opts ...grpc.CallOption) (*QueryRecordParams, error) {
-	out := new(QueryRecordParams)
-	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.v1beta1.Query/NewQueryRecordParams", in, out, opts...)
+func (c *queryClient) Record(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
+	out := new(RecordResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.v1beta1.Query/Record", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) NewQueryRecordSequenceParams(ctx context.Context, in *NewQueryRecordSequenceParamsRequest, opts ...grpc.CallOption) (*QueryRecordSequenceParams, error) {
-	out := new(QueryRecordSequenceParams)
-	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.v1beta1.Query/NewQueryRecordSequenceParams", in, out, opts...)
+func (c *queryClient) RecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error) {
+	out := new(RecordListResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.v1beta1.Query/RecordList", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) NewQueryTimeRangePaginationParams(ctx context.Context, in *NewQueryTimeRangePaginationParamsRequest, opts ...grpc.CallOption) (*QueryRecordTimePaginationParams, error) {
-	out := new(QueryRecordTimePaginationParams)
-	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.v1beta1.Query/NewQueryTimeRangePaginationParams", in, out, opts...)
+func (c *queryClient) RecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error) {
+	out := new(RecordListWithTimeResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.v1beta1.Query/RecordListWithTime", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) RecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error) {
+	out := new(RecordSequenceResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.v1beta1.Query/RecordSequence", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -481,81 +560,104 @@ func (c *queryClient) NewQueryTimeRangePaginationParams(ctx context.Context, in 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// TODO HV2 - check url
-	NewQueryRecordParams(context.Context, *NewQueryRecordParamsRequest) (*QueryRecordParams, error)
+	Record(context.Context, *RecordRequest) (*RecordResponse, error)
 	// TODO HV2 - check url
-	NewQueryRecordSequenceParams(context.Context, *NewQueryRecordSequenceParamsRequest) (*QueryRecordSequenceParams, error)
+	RecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
 	// TODO HV2 - check url
-	NewQueryTimeRangePaginationParams(context.Context, *NewQueryTimeRangePaginationParamsRequest) (*QueryRecordTimePaginationParams, error)
+	RecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
+	// TODO HV2 - check url
+	RecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
-func (*UnimplementedQueryServer) NewQueryRecordParams(ctx context.Context, req *NewQueryRecordParamsRequest) (*QueryRecordParams, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NewQueryRecordParams not implemented")
+func (*UnimplementedQueryServer) Record(ctx context.Context, req *RecordRequest) (*RecordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Record not implemented")
 }
-func (*UnimplementedQueryServer) NewQueryRecordSequenceParams(ctx context.Context, req *NewQueryRecordSequenceParamsRequest) (*QueryRecordSequenceParams, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NewQueryRecordSequenceParams not implemented")
+func (*UnimplementedQueryServer) RecordList(ctx context.Context, req *RecordListRequest) (*RecordListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordList not implemented")
 }
-func (*UnimplementedQueryServer) NewQueryTimeRangePaginationParams(ctx context.Context, req *NewQueryTimeRangePaginationParamsRequest) (*QueryRecordTimePaginationParams, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NewQueryTimeRangePaginationParams not implemented")
+func (*UnimplementedQueryServer) RecordListWithTime(ctx context.Context, req *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordListWithTime not implemented")
+}
+func (*UnimplementedQueryServer) RecordSequence(ctx context.Context, req *RecordSequenceRequest) (*RecordSequenceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordSequence not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
 }
 
-func _Query_NewQueryRecordParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NewQueryRecordParamsRequest)
+func _Query_Record_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).NewQueryRecordParams(ctx, in)
+		return srv.(QueryServer).Record(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.clerk.v1beta1.Query/NewQueryRecordParams",
+		FullMethod: "/heimdallv2.clerk.v1beta1.Query/Record",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).NewQueryRecordParams(ctx, req.(*NewQueryRecordParamsRequest))
+		return srv.(QueryServer).Record(ctx, req.(*RecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_NewQueryRecordSequenceParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NewQueryRecordSequenceParamsRequest)
+func _Query_RecordList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).NewQueryRecordSequenceParams(ctx, in)
+		return srv.(QueryServer).RecordList(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.clerk.v1beta1.Query/NewQueryRecordSequenceParams",
+		FullMethod: "/heimdallv2.clerk.v1beta1.Query/RecordList",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).NewQueryRecordSequenceParams(ctx, req.(*NewQueryRecordSequenceParamsRequest))
+		return srv.(QueryServer).RecordList(ctx, req.(*RecordListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_NewQueryTimeRangePaginationParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NewQueryTimeRangePaginationParamsRequest)
+func _Query_RecordListWithTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordListWithTimeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).NewQueryTimeRangePaginationParams(ctx, in)
+		return srv.(QueryServer).RecordListWithTime(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.clerk.v1beta1.Query/NewQueryTimeRangePaginationParams",
+		FullMethod: "/heimdallv2.clerk.v1beta1.Query/RecordListWithTime",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).NewQueryTimeRangePaginationParams(ctx, req.(*NewQueryTimeRangePaginationParamsRequest))
+		return srv.(QueryServer).RecordListWithTime(ctx, req.(*RecordListWithTimeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_RecordSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordSequenceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).RecordSequence(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/heimdallv2.clerk.v1beta1.Query/RecordSequence",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).RecordSequence(ctx, req.(*RecordSequenceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -565,23 +667,27 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "NewQueryRecordParams",
-			Handler:    _Query_NewQueryRecordParams_Handler,
+			MethodName: "Record",
+			Handler:    _Query_Record_Handler,
 		},
 		{
-			MethodName: "NewQueryRecordSequenceParams",
-			Handler:    _Query_NewQueryRecordSequenceParams_Handler,
+			MethodName: "RecordList",
+			Handler:    _Query_RecordList_Handler,
 		},
 		{
-			MethodName: "NewQueryTimeRangePaginationParams",
-			Handler:    _Query_NewQueryTimeRangePaginationParams_Handler,
+			MethodName: "RecordListWithTime",
+			Handler:    _Query_RecordListWithTime_Handler,
+		},
+		{
+			MethodName: "RecordSequence",
+			Handler:    _Query_RecordSequence_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "heimdallv2/clerk/v1beta1/query.proto",
 }
 
-func (m *NewQueryRecordParamsRequest) Marshal() (dAtA []byte, err error) {
+func (m *RecordRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -591,12 +697,12 @@ func (m *NewQueryRecordParamsRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *NewQueryRecordParamsRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *RecordRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *NewQueryRecordParamsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *RecordRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -609,7 +715,7 @@ func (m *NewQueryRecordParamsRequest) MarshalToSizedBuffer(dAtA []byte) (int, er
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryRecordParams) Marshal() (dAtA []byte, err error) {
+func (m *RecordResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -619,25 +725,65 @@ func (m *QueryRecordParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryRecordParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *RecordResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryRecordParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *RecordResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.RecordID != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.RecordID))
+	if m.Record != nil {
+		{
+			size, err := m.Record.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RecordListRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RecordListRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RecordListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Limit != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Limit))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.Page != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Page))
 		i--
 		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *NewQueryRecordSequenceParamsRequest) Marshal() (dAtA []byte, err error) {
+func (m *RecordListResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -647,12 +793,135 @@ func (m *NewQueryRecordSequenceParamsRequest) Marshal() (dAtA []byte, err error)
 	return dAtA[:n], nil
 }
 
-func (m *NewQueryRecordSequenceParamsRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *RecordListResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *NewQueryRecordSequenceParamsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *RecordListResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.EventRecords) > 0 {
+		for iNdEx := len(m.EventRecords) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.EventRecords[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RecordListWithTimeRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RecordListWithTimeRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RecordListWithTimeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Limit != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Limit))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.Page != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Page))
+		i--
+		dAtA[i] = 0x18
+	}
+	n2, err2 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.ToTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ToTime):])
+	if err2 != nil {
+		return 0, err2
+	}
+	i -= n2
+	i = encodeVarintQuery(dAtA, i, uint64(n2))
+	i--
+	dAtA[i] = 0x12
+	n3, err3 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.FromTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.FromTime):])
+	if err3 != nil {
+		return 0, err3
+	}
+	i -= n3
+	i = encodeVarintQuery(dAtA, i, uint64(n3))
+	i--
+	dAtA[i] = 0xa
+	return len(dAtA) - i, nil
+}
+
+func (m *RecordListWithTimeResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RecordListWithTimeResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RecordListWithTimeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.EventRecords) > 0 {
+		for iNdEx := len(m.EventRecords) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.EventRecords[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQuery(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RecordSequenceRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RecordSequenceRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RecordSequenceRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -672,7 +941,7 @@ func (m *NewQueryRecordSequenceParamsRequest) MarshalToSizedBuffer(dAtA []byte) 
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryRecordSequenceParams) Marshal() (dAtA []byte, err error) {
+func (m *RecordSequenceResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -682,133 +951,20 @@ func (m *QueryRecordSequenceParams) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryRecordSequenceParams) MarshalTo(dAtA []byte) (int, error) {
+func (m *RecordSequenceResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryRecordSequenceParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *RecordSequenceResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.LogIndex != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.LogIndex))
+	if m.Sequence != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.Sequence))
 		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.TxHash) > 0 {
-		i -= len(m.TxHash)
-		copy(dAtA[i:], m.TxHash)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.TxHash)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *NewQueryTimeRangePaginationParamsRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *NewQueryTimeRangePaginationParamsRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *NewQueryTimeRangePaginationParamsRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Limit != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Page != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.ToTime != nil {
-		n1, err1 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.ToTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.ToTime):])
-		if err1 != nil {
-			return 0, err1
-		}
-		i -= n1
-		i = encodeVarintQuery(dAtA, i, uint64(n1))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.FromTime != nil {
-		n2, err2 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.FromTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.FromTime):])
-		if err2 != nil {
-			return 0, err2
-		}
-		i -= n2
-		i = encodeVarintQuery(dAtA, i, uint64(n2))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryRecordTimePaginationParams) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryRecordTimePaginationParams) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryRecordTimePaginationParams) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Limit != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.Page != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x18
-	}
-	if m.ToTime != nil {
-		n3, err3 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.ToTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.ToTime):])
-		if err3 != nil {
-			return 0, err3
-		}
-		i -= n3
-		i = encodeVarintQuery(dAtA, i, uint64(n3))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.FromTime != nil {
-		n4, err4 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(*m.FromTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.FromTime):])
-		if err4 != nil {
-			return 0, err4
-		}
-		i -= n4
-		i = encodeVarintQuery(dAtA, i, uint64(n4))
-		i--
-		dAtA[i] = 0xa
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -824,7 +980,7 @@ func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *NewQueryRecordParamsRequest) Size() (n int) {
+func (m *RecordRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -836,19 +992,84 @@ func (m *NewQueryRecordParamsRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryRecordParams) Size() (n int) {
+func (m *RecordResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.RecordID != 0 {
-		n += 1 + sovQuery(uint64(m.RecordID))
+	if m.Record != nil {
+		l = m.Record.Size()
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
 
-func (m *NewQueryRecordSequenceParamsRequest) Size() (n int) {
+func (m *RecordListRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Page != 0 {
+		n += 1 + sovQuery(uint64(m.Page))
+	}
+	if m.Limit != 0 {
+		n += 1 + sovQuery(uint64(m.Limit))
+	}
+	return n
+}
+
+func (m *RecordListResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.EventRecords) > 0 {
+		for _, e := range m.EventRecords {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *RecordListWithTimeRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.FromTime)
+	n += 1 + l + sovQuery(uint64(l))
+	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ToTime)
+	n += 1 + l + sovQuery(uint64(l))
+	if m.Page != 0 {
+		n += 1 + sovQuery(uint64(m.Page))
+	}
+	if m.Limit != 0 {
+		n += 1 + sovQuery(uint64(m.Limit))
+	}
+	return n
+}
+
+func (m *RecordListWithTimeResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.EventRecords) > 0 {
+		for _, e := range m.EventRecords {
+			l = e.Size()
+			n += 1 + l + sovQuery(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *RecordSequenceRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -864,64 +1085,14 @@ func (m *NewQueryRecordSequenceParamsRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryRecordSequenceParams) Size() (n int) {
+func (m *RecordSequenceResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.TxHash)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.LogIndex != 0 {
-		n += 1 + sovQuery(uint64(m.LogIndex))
-	}
-	return n
-}
-
-func (m *NewQueryTimeRangePaginationParamsRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.FromTime != nil {
-		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.FromTime)
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.ToTime != nil {
-		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.ToTime)
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.Page != 0 {
-		n += 1 + sovQuery(uint64(m.Page))
-	}
-	if m.Limit != 0 {
-		n += 1 + sovQuery(uint64(m.Limit))
-	}
-	return n
-}
-
-func (m *QueryRecordTimePaginationParams) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.FromTime != nil {
-		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.FromTime)
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.ToTime != nil {
-		l = github_com_cosmos_gogoproto_types.SizeOfStdTime(*m.ToTime)
-		n += 1 + l + sovQuery(uint64(l))
-	}
-	if m.Page != 0 {
-		n += 1 + sovQuery(uint64(m.Page))
-	}
-	if m.Limit != 0 {
-		n += 1 + sovQuery(uint64(m.Limit))
+	if m.Sequence != 0 {
+		n += 1 + sovQuery(uint64(m.Sequence))
 	}
 	return n
 }
@@ -932,7 +1103,7 @@ func sovQuery(x uint64) (n int) {
 func sozQuery(x uint64) (n int) {
 	return sovQuery(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (m *NewQueryRecordParamsRequest) Unmarshal(dAtA []byte) error {
+func (m *RecordRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -955,10 +1126,10 @@ func (m *NewQueryRecordParamsRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: NewQueryRecordParamsRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: RecordRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: NewQueryRecordParamsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RecordRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1001,7 +1172,7 @@ func (m *NewQueryRecordParamsRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryRecordParams) Unmarshal(dAtA []byte) error {
+func (m *RecordResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1024,17 +1195,17 @@ func (m *QueryRecordParams) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryRecordParams: wiretype end group for non-group")
+			return fmt.Errorf("proto: RecordResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryRecordParams: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RecordResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RecordID", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Record", wireType)
 			}
-			m.RecordID = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowQuery
@@ -1044,7 +1215,112 @@ func (m *QueryRecordParams) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.RecordID |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Record == nil {
+				m.Record = &EventRecord{}
+			}
+			if err := m.Record.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RecordListRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RecordListRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RecordListRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
+			}
+			m.Page = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Page |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+			}
+			m.Limit = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Limit |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1070,7 +1346,7 @@ func (m *QueryRecordParams) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *NewQueryRecordSequenceParamsRequest) Unmarshal(dAtA []byte) error {
+func (m *RecordListResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1093,10 +1369,332 @@ func (m *NewQueryRecordSequenceParamsRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: NewQueryRecordSequenceParamsRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: RecordListResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: NewQueryRecordSequenceParamsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RecordListResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EventRecords", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EventRecords = append(m.EventRecords, &EventRecord{})
+			if err := m.EventRecords[len(m.EventRecords)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RecordListWithTimeRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RecordListWithTimeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RecordListWithTimeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromTime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.FromTime, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ToTime", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.ToTime, dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
+			}
+			m.Page = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Page |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+			}
+			m.Limit = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Limit |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RecordListWithTimeResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RecordListWithTimeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RecordListWithTimeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field EventRecords", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.EventRecords = append(m.EventRecords, &EventRecord{})
+			if err := m.EventRecords[len(m.EventRecords)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RecordSequenceRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RecordSequenceRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RecordSequenceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1171,7 +1769,7 @@ func (m *NewQueryRecordSequenceParamsRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryRecordSequenceParams) Unmarshal(dAtA []byte) error {
+func (m *RecordSequenceResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1194,49 +1792,17 @@ func (m *QueryRecordSequenceParams) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryRecordSequenceParams: wiretype end group for non-group")
+			return fmt.Errorf("proto: RecordSequenceResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryRecordSequenceParams: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RecordSequenceResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TxHash", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.TxHash = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field LogIndex", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Sequence", wireType)
 			}
-			m.LogIndex = 0
+			m.Sequence = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowQuery
@@ -1246,327 +1812,7 @@ func (m *QueryRecordSequenceParams) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.LogIndex |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *NewQueryTimeRangePaginationParamsRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: NewQueryTimeRangePaginationParamsRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: NewQueryTimeRangePaginationParamsRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.FromTime == nil {
-				m.FromTime = new(time.Time)
-			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.FromTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ToTime == nil {
-				m.ToTime = new(time.Time)
-			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.ToTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryRecordTimePaginationParams) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryRecordTimePaginationParams: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryRecordTimePaginationParams: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.FromTime == nil {
-				m.FromTime = new(time.Time)
-			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.FromTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ToTime", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.ToTime == nil {
-				m.ToTime = new(time.Time)
-			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(m.ToTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
-			}
-			m.Page = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Page |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
-			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint64(b&0x7F) << shift
+				m.Sequence |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
