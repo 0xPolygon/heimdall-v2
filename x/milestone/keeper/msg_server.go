@@ -9,6 +9,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 type msgServer struct {
@@ -208,4 +209,22 @@ func (k msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 	})
 
 	return &types.MsgMilestoneTimeoutResponse{}, nil
+}
+
+// UpdateParams defines a method to perform updation of params in x/milestone module.
+func (k msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	if k.authority != msg.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.authority, msg.Authority)
+	}
+
+	if err := msg.Params.Validate(); err != nil {
+		return nil, err
+	}
+
+	// store params
+	if err := k.SetParams(ctx, msg.Params); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgUpdateParamsResponse{}, nil
 }

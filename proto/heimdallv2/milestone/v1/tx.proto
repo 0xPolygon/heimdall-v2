@@ -7,6 +7,7 @@ import "cosmos_proto/cosmos.proto";
 import "cosmos/msg/v1/msg.proto";
 import "amino/amino.proto";
 import "heimdallv2/types/hash.proto";
+import "heimdallv2/milestone/v1/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
@@ -20,6 +21,10 @@ service Msg {
   // MilestoneTimeout defines a method for MilestoneTimeout
   rpc MilestoneTimeout(MsgMilestoneTimeout)
       returns (MsgMilestoneTimeoutResponse);
+
+  // UpdateParams defines an operation for updating the x/milestone module
+  // parameters.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
 // MsgMilestone defines a SDK message for the milestone
@@ -64,3 +69,24 @@ message MsgMilestoneTimeout {
 
 // MsgMilestoneTimeoutResponse defines the Msg/MilestoneTimeout response type.
 message MsgMilestoneTimeoutResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "heimdall-v1/x/milestone/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless
+  // overwritten).
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // params defines the x/staking parameters to update.
+  //
+  // NOTE: All parameters must be supplied.
+  Params params = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+};
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {};
