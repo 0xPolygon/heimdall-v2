@@ -1,6 +1,6 @@
 module github.com/0xPolygon/heimdall-v2
 
-go 1.21
+go 1.22.1
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -232,9 +232,10 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-// following versions might cause unexpected behavior
 replace (
+	// HV2
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.0-beta
 	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240315104706-d86dab8157c4
+	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
