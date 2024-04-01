@@ -2,14 +2,12 @@ package keeper
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"time"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
-	storetypes2 "cosmossdk.io/store/types"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -43,6 +41,7 @@ type Keeper struct {
 	RecordsWithID collections.Map[uint64, types.EventRecord]
 	// TODO HV2 - is this needed? We can regenerate this from RecordsWithID
 	RecordsWithTime collections.Map[collections.Pair[time.Time, uint64], uint64]
+	RecordSequences collections.Map[string, []byte]
 }
 
 // NewKeeper create new keeper
@@ -61,6 +60,7 @@ func NewKeeper(
 		// chainKeeper: chainKeeper,
 		RecordsWithID:   collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
 		RecordsWithTime: collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
+		RecordSequences: collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
 	}
 
 	return keeper
@@ -106,31 +106,18 @@ func (k *Keeper) SetEventRecord(ctx sdk.Context, record types.EventRecord) error
 
 // GetEventRecord returns record from store
 func (k *Keeper) GetEventRecord(ctx sdk.Context, stateID uint64) (*types.EventRecord, error) {
-	kvStore := k.storeService.OpenKVStore(ctx)
-	key := GetEventRecordKey(stateID)
-
-	// check store has data
-	isPresent, _ := kvStore.Has(key)
-	if isPresent {
-		var _record types.EventRecord
-		value, _ := kvStore.Get(key)
-		if err := k.cdc.UnmarshalInterface(value, &_record); err != nil {
-			return nil, err
-		}
-
-		return &_record, nil
+	// check if record exists
+	record, err := k.RecordsWithID.Get(ctx, stateID)
+	if err != nil {
+		return nil, err
 	}
 
-	// return no error found
-	return nil, errors.New("no record found")
+	return &record, nil
 }
 
 // HasEventRecord check if state record
 func (k *Keeper) HasEventRecord(ctx context.Context, stateID uint64) bool {
-	kvStore := k.storeService.OpenKVStore(ctx)
-	key := GetEventRecordKey(stateID)
-
-	isPresent, _ := kvStore.Has(key)
+	isPresent, _ := k.RecordsWithID.Has(ctx, stateID)
 
 	return isPresent
 }
@@ -149,8 +136,6 @@ func (k *Keeper) GetAllEventRecords(ctx sdk.Context) (records []*types.EventReco
 
 // GetEventRecordList returns all records with params like page and limit
 func (k *Keeper) GetEventRecordList(ctx sdk.Context, page uint64, limit uint64) ([]types.EventRecord, error) {
-	// kvStore := k.storeService.OpenKVStore(ctx)
-
 	// create records
 	var records []types.EventRecord
 
@@ -159,47 +144,57 @@ func (k *Keeper) GetEventRecordList(ctx sdk.Context, page uint64, limit uint64) 
 		limit = 50
 	}
 
-	// get paginated iterator
-	// TODO HV2 - figure out why kvStore (defined in first line of this function) is not accepted in the function
-	// iterator := storetypes2.KVStorePrefixIteratorPaginated(kvStore, StateRecordPrefixKey, uint(page), uint(limit))
-	iterator := storetypes2.KVStorePrefixIteratorPaginated(nil, StateRecordPrefixKey, uint(page), uint(limit))
-
-	// loop through records to get valid records
-	for ; iterator.Valid(); iterator.Next() {
-		var record types.EventRecord
-		if err := k.cdc.UnmarshalInterface(iterator.Value(), &record); err == nil {
-			records = append(records, record)
-		}
+	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
+	if err != nil {
+		return records, err
 	}
+
+	allRecords, err := iterator.Values()
+	if err != nil {
+		return records, err
+	}
+
+	if len(allRecords) < int(page*limit) {
+		k.Logger(ctx).Error("GetEventRecordList", "error", "page out of bounds")
+		return records, nil
+	}
+
+	if len(allRecords) < int((page+1)*limit) {
+		limit = uint64(len(allRecords)) - page*limit
+	}
+
+	records = allRecords[page*limit : (page+1)*limit]
 
 	return records, nil
 }
 
 // GetEventRecordListWithTime returns all records with params like fromTime and toTime
 func (k *Keeper) GetEventRecordListWithTime(ctx sdk.Context, fromTime, toTime time.Time, page, limit uint64) ([]types.EventRecord, error) {
-	var iterator storetypes.Iterator
-
-	kvStore := k.storeService.OpenKVStore(ctx)
-
 	// create records
 	var records []types.EventRecord
 
-	iterator, _ = kvStore.Iterator(GetEventRecordKeyWithTimePrefix(fromTime), GetEventRecordKeyWithTimePrefix(toTime))
+	rng := new(collections.Range[collections.Pair[time.Time, uint64]]).
+		StartInclusive(collections.Join(fromTime, uint64(0))).
+		EndExclusive(collections.Join(toTime, uint64(0)))
 
-	// get range iterator
-	defer iterator.Close()
+	iterator, err := k.RecordsWithTime.Iterate(ctx, rng)
+	if err != nil {
+		return records, err
+	}
+
+	stateIDs, err := iterator.Values()
+	if err != nil {
+		return records, err
+	}
+
 	// loop through records to get valid records
-	for ; iterator.Valid(); iterator.Next() {
-		var stateID uint64
-		if err := k.cdc.UnmarshalInterface(iterator.Value(), &stateID); err == nil {
-			record, err := k.GetEventRecord(ctx, stateID)
-			if err != nil {
-				k.Logger(ctx).Error("GetEventRecordListWithTime | GetEventRecord", "error", err)
-				continue
-			}
-
-			records = append(records, *record)
+	for _, stateID := range stateIDs {
+		record, err := k.GetEventRecord(ctx, stateID)
+		if err != nil {
+			k.Logger(ctx).Error("GetEventRecordListWithTime | GetEventRecord", "error", err)
+			continue
 		}
+		records = append(records, *record)
 	}
 
 	return records, nil
@@ -230,24 +225,20 @@ func GetRecordSequenceKey(sequence string) []byte {
 
 // IterateRecordsAndApplyFn iterate records and apply the given function.
 func (k *Keeper) IterateRecordsAndApplyFn(ctx sdk.Context, f func(record types.EventRecord) error) {
-	// kvStore := k.storeService.OpenKVStore(ctx)
+	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
+	if err != nil {
+		return
+	}
 
-	// get span iterator
-	// TODO HV2 - figure out why kvStore (defined in first line of this function) is not accepted in the function
-	// iterator := storetypes2.KVStorePrefixIterator(kvStore, StateRecordPrefixKey)
-	iterator := storetypes2.KVStorePrefixIterator(nil, StateRecordPrefixKey)
-	defer iterator.Close()
+	records, err := iterator.Values()
+	if err != nil {
+		return
+	}
 
 	// loop through spans to get valid spans
-	for ; iterator.Valid(); iterator.Next() {
-		// unmarshall span
-		var result types.EventRecord
-		if err := k.cdc.UnmarshalInterface(iterator.Value(), &result); err != nil {
-			k.Logger(ctx).Error("IterateRecordsAndApplyFn | UnmarshalInterface", "error", err)
-			return
-		}
+	for _, record := range records {
 		// call function and return if required
-		if err := f(result); err != nil {
+		if err := f(record); err != nil {
 			return
 		}
 	}
@@ -265,17 +256,17 @@ func (k *Keeper) GetRecordSequences(ctx sdk.Context) (sequences []string) {
 
 // IterateRecordSequencesAndApplyFn iterate records and apply the given function.
 func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx sdk.Context, f func(sequence string) error) {
-	// kvStore = k.storeService.OpenKVStore(ctx)
-
-	// get sequence iterator
-	// TODO HV2 - figure out why kvStore (defined in first line of this function) is not accepted in the function
-	// iterator := storetypes2.KVStorePrefixIterator(kvStore, RecordSequencePrefixKey)
-	iterator := storetypes2.KVStorePrefixIterator(nil, RecordSequencePrefixKey)
-	defer iterator.Close()
+	iterator, err := k.RecordSequences.Iterate(ctx, nil)
+	if err != nil {
+		return
+	}
 
 	// loop through sequences
 	for ; iterator.Valid(); iterator.Next() {
-		sequence := string(iterator.Key()[len(RecordSequencePrefixKey):])
+		sequence, err := iterator.Key()
+		if err != nil {
+			return
+		}
 
 		// call function and return if required
 		if err := f(sequence); err != nil {
@@ -286,16 +277,14 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx sdk.Context, f func(sequen
 
 // SetRecordSequence sets mapping for sequence id to bool
 func (k *Keeper) SetRecordSequence(ctx sdk.Context, sequence string) {
-	kvStore := k.storeService.OpenKVStore(ctx)
-	key := GetRecordSequenceKey(sequence)
-	if key != nil {
-		kvStore.Set(GetRecordSequenceKey(sequence), DefaultValue)
+	if sequence != "" {
+		_ = k.RecordSequences.Set(ctx, sequence, DefaultValue)
 	}
 }
 
 // HasRecordSequence checks if record already exists
 func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
-	kvStore := k.storeService.OpenKVStore(ctx)
-	isPresent, _ := kvStore.Has(GetRecordSequenceKey(sequence))
+	isPresent, _ := k.RecordSequences.Has(ctx, sequence)
+
 	return isPresent
 }

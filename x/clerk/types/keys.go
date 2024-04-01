@@ -23,4 +23,5 @@ var (
 	// RecordKeyPrefix is the prefix for the record key
 	RecordsWithIDKeyPrefix   = collections.NewPrefix(0)
 	RecordsWithTimeKeyPrefix = collections.NewPrefix(1)
+	RecordSequencesKeyPrefix = collections.NewPrefix(2)
 )
