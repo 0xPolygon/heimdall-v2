@@ -15,6 +15,8 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
+// TODO HV2: these tests are failing as stake module (responsible to init the validators) is not implemented yet in heimdall-v2. Double check when done.
+
 // GenesisTestSuite integrate test suite context object
 type GenesisTestSuite struct {
 	suite.Suite
