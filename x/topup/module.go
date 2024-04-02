@@ -73,52 +73,52 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (m AppModule) IsOnePerModuleType() {
+func (am AppModule) IsOnePerModuleType() {
 	//TODO implement me
 	panic("implement me")
 }
 
 // IsAppModule implements the appmodule.AppModule interface.
-func (m AppModule) IsAppModule() {
+func (am AppModule) IsAppModule() {
 	//TODO implement me
 	panic("implement me")
 }
 
 // RegisterServices registers module services.
-func (m AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(&m.keeper))
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&m.keeper))
+func (am AppModule) RegisterServices(cfg module.Configurator) {
+	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(&am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&am.keeper))
 }
 
 // InitGenesis performs genesis initialization for the topup module.
-func (m AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	start := time.Now()
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	telemetry.MeasureSince(start, "InitGenesis", "topup", "unmarshal")
 
-	m.keeper.InitGenesis(ctx, &genesisState)
+	am.keeper.InitGenesis(ctx, &genesisState)
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the topup module.
-func (m AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
-	return cdc.MustMarshalJSON(m.keeper.ExportGenesis(ctx))
+func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
+	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
 
 // GenerateGenesisState creates a randomized GenState of the topup module.
-func (m AppModule) GenerateGenesisState(input *module.SimulationState) {
+func (am AppModule) GenerateGenesisState(input *module.SimulationState) {
 	// TODO HV2: enable when simulation is implemented
 	// simulation.RandomizedGenState(simState)
 }
 
 // RegisterStoreDecoder registers a decoder for topup module's types
-func (m AppModule) RegisterStoreDecoder(registry simulation.StoreDecoderRegistry) {
+func (am AppModule) RegisterStoreDecoder(registry simulation.StoreDecoderRegistry) {
 	//TODO implement me
 	panic("implement me")
 }
 
 // WeightedOperations returns the all the gov module operations with their respective weights.
-func (m AppModule) WeightedOperations(simState module.SimulationState) []simulation.WeightedOperation {
+func (am AppModule) WeightedOperations(simState module.SimulationState) []simulation.WeightedOperation {
 	//TODO implement me
 	panic("implement me")
 }
