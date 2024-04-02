@@ -14,11 +14,14 @@ type queryServer struct {
 	k *Keeper
 }
 
+// TODO HV2: enable contractCaller when implemented in heimdall-v2
+
 // NewQueryServer creates a new querier for topup clients.
 // Besides the keeper, it also takes in the contractCaller to interact with ethereum chain
 func NewQueryServer(k *Keeper /*, contractCaller helper.IContractCaller */) types.QueryServer {
 	return queryServer{
 		k: k,
+		// contractCaller: contractCaller,
 	}
 }
 
@@ -105,6 +108,13 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	exists, err := q.k.HasDividendAccount(sdkCtx, req.Address)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, status.Errorf(codes.NotFound, "dividend account with address %s not found", req.Address)
+	}
 	dividendAccount, err := q.k.GetDividendAccount(sdkCtx, req.Address)
 	if err != nil {
 		return nil, err
@@ -113,10 +123,6 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 }
 
 func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	// TODO HV2: replace _ with dividendAccounts
 	_, err := q.k.GetAllDividendAccounts(sdkCtx)
