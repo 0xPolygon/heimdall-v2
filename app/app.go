@@ -42,6 +42,7 @@ import (
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
 	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
+	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -168,7 +169,7 @@ func NewHeimdallApp(
 		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
 		// bortypes.StoreKey,
-		// clerktypes.StoreKey,
+		clerktypes.StoreKey,
 		// checkpointtypes.StoreKey,
 		// topuptypes.StoreKey,
 		// chainmanagertypes.StoreKey,

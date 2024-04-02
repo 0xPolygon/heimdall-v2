@@ -50,13 +50,11 @@ func (suite *GenesisTestSuite) TestInitExportGenesis() {
 		recordSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 
-	for i := range eventRecords {
-		// TODO HV2 - use real and meaningful data
-		hAddr := strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
-		hHash, _ := hexCodec.NewHexCodec().StringToBytes(strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)))
-		testEventRecord := types.NewEventRecord(hmTypes.HeimdallHash{Hash: hHash}, uint64(i), uint64(i), hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)), time.Now())
-		eventRecords[i] = &testEventRecord
-	}
+	// TODO HV2 - use real and meaningful data
+	hAddr := strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+	hHash, _ := hexCodec.NewHexCodec().StringToBytes(strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)))
+	testEventRecord := types.NewEventRecord(hmTypes.HeimdallHash{Hash: hHash}, uint64(0), uint64(0), hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000)), time.Now())
+	eventRecords[0] = &testEventRecord
 
 	genesisState := types.GenesisState{
 		EventRecords:    eventRecords,
