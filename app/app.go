@@ -7,64 +7,64 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-
-	storetypes "cosmossdk.io/store/types"
-
-	"github.com/cosmos/cosmos-sdk/std"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/consensus"
-	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/cosmos/cosmos-sdk/x/params"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-
-	"cosmossdk.io/client/v2/autocli"
-	"cosmossdk.io/core/appmodule"
-	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
-	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
-	"github.com/cosmos/gogoproto/proto"
-
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	"github.com/cosmos/cosmos-sdk/x/distribution"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/cosmos/cosmos-sdk/x/gov"
+	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	"github.com/cosmos/cosmos-sdk/x/params"
+	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/cosmos/gogoproto/proto"
+
+	"github.com/0xPolygon/heimdall-v2/x/topup"
+	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 var (
@@ -110,7 +110,7 @@ type HeimdallApp struct {
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
-	// TopupKeeper topupkeeper.Keeper
+	TopupKeeper topupKeeper.Keeper
 	// ChainKeeper chainmanagerkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
@@ -168,7 +168,7 @@ func NewHeimdallApp(
 		// bortypes.StoreKey,
 		// clerktypes.StoreKey,
 		// checkpointtypes.StoreKey,
-		// topuptypes.StoreKey,
+		topupTypes.StoreKey,
 		// chainmanagertypes.StoreKey,
 	)
 
@@ -282,6 +282,13 @@ func NewHeimdallApp(
 	// custom keepers
 	// TODO HV2: initialize custom module keepers
 
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		app.BankKeeper,
+		// TODO HV2: add required stakeKeeper, chainKeeper and contractCaller when implemented
+	)
+
 	app.mm = module.NewManager(
 		// TODO HV2: add stake keeper once implemented
 		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
@@ -294,6 +301,8 @@ func NewHeimdallApp(
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
+
+		topup.NewAppModule(app.TopupKeeper),
 		// TODO HV2: add custom modules
 	)
 
@@ -338,7 +347,7 @@ func NewHeimdallApp(
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
-		// topuptypes.ModuleName,
+		topupTypes.ModuleName,
 		// chainmanagertypes.ModuleName,
 
 	}
@@ -596,8 +605,8 @@ func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 
 func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	// TODO HV2: add topup module to enable it to receive/send tokens.
-	// See https://github.com/0xPolygon/cosmos-sdk/pull/5#discussion_r1513037980
+	delete(modAccAddrs, authtypes.NewModuleAddress(topupTypes.ModuleName).String())
+	// TODO HV2: remove more modules from the BlockedModuleAccountAddrs so that they can send/receive tokens?
 	return modAccAddrs
 }
 
@@ -630,9 +639,8 @@ func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
 	}
 
 	return autocli.AppOptions{
-		Modules:       modules,
-		ModuleOptions: runtimeservices.ExtractAutoCLIOptions(app.mm.Modules),
-		// TODO HV2: replace with authcodec.hexCodec once https://github.com/0xPolygon/cosmos-sdk/pull/3 is merged
+		Modules:               modules,
+		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.mm.Modules),
 		AddressCodec:          authcodec.NewHexCodec(),
 		ValidatorAddressCodec: authcodec.NewHexCodec(),
 		ConsensusAddressCodec: authcodec.NewHexCodec(),

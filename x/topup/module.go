@@ -36,6 +36,14 @@ type AppModule struct {
 	// contractCaller helper.IContractCaller
 }
 
+func NewAppModule(keeper keeper.Keeper) AppModule {
+	return AppModule{
+		keeper: keeper,
+		// TODO HV2: enable contractCaller when implemented in heimdall-v2
+		// contractCaller: contractCaller,
+	}
+}
+
 // Name returns the topup module's name.
 func (AppModule) Name() string {
 	return types.ModuleName

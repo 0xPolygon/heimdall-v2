@@ -10,13 +10,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bk "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	// TODO HV2: replace cosmos-sdk stakingKeeper with heimdall-v2 staking keeper
-	sk "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 
-	// TODO HV2: enable chainmanager keeper import when implemented in heimdall-v2
+	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
 	// "github.com/0xPolygon/heimdall-v2/chainmanager/keeper"
-	// TODO HV2: enable helper import when implemented in heimdall-v2
 	// "github.com/0xPolygon/heimdall-v2/helper"
+	// "github.com/0xPolygon/heimdall-v2/stake/keeper"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -27,12 +25,11 @@ type Keeper struct {
 	storeService store.KVStoreService
 	schema       collections.Schema
 
-	bankKeeper    bk.Keeper
-	stakingKeeper sk.Keeper
-	// TODO HV2: enable chainmanager keeper when implemented in heimdall-v2
-	// chainKeeper ck.Keeper
+	bankKeeper bk.Keeper
 
-	// TODO HV2: enable contractCaller when implemented in heimdall-v2
+	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
+	// stakingKeeper sk.Keeper
+	// chainKeeper ck.Keeper
 	// IContractCaller helper.IContractCaller
 
 	Sequences        collections.Map[string, bool]
@@ -44,8 +41,8 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	bankKeeper bk.Keeper,
-	stakingKeeper sk.Keeper,
-	// TODO HV2: enable chainmanager keeper when implemented in heimdall-v2
+	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
+	// stake sk.Keeper,
 	// chainKeeper ck.Keeper,
 	// contractCaller helper.IContractCaller,
 ) Keeper {
@@ -54,12 +51,10 @@ func NewKeeper(
 		cdc:          cdc,
 		storeService: storeService,
 
-		bankKeeper:    bankKeeper,
-		stakingKeeper: stakingKeeper,
-		// TODO HV2: enable chainmanager keeper when implemented in heimdall-v2
+		bankKeeper: bankKeeper,
+		// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
+		// stakingKeeper: stakingKeeper,
 		// chainKeeper:   chainKeeper,
-
-		// TODO HV2: enable contractCaller when implemented in heimdall-v2
 		// IContractCaller:       contractCaller,
 
 		// TODO HV2: in heimdall-v1, the keys are always prefixed with the key, then removed when getters are invoked
