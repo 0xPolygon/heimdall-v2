@@ -17,6 +17,7 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
+	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -106,19 +107,15 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 }
 
 // GenerateGenesisState creates a randomized GenState of the topup module.
-func (am AppModule) GenerateGenesisState(input *module.SimulationState) {
-	// TODO HV2: enable when simulation is implemented
-	// simulation.RandomizedGenState(simState)
+func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
+	topupSimulation.RandomizeGenState(simState)
 }
 
 // RegisterStoreDecoder registers a decoder for topup module's types
-func (am AppModule) RegisterStoreDecoder(registry simulation.StoreDecoderRegistry) {
-	//TODO implement me
-	panic("implement me")
+func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {
 }
 
 // WeightedOperations returns the all the gov module operations with their respective weights.
-func (am AppModule) WeightedOperations(simState module.SimulationState) []simulation.WeightedOperation {
-	//TODO implement me
-	panic("implement me")
+func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
+	return nil
 }

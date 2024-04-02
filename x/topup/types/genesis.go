@@ -33,7 +33,7 @@ func (gs GenesisState) Validate() error {
 	return nil
 }
 
-// GetGenesisStateFromAppState returns the topup GenesisState given a raw application genesis state
+// GetGenesisStateFromAppState returns the x/topup module GenesisState given a raw application genesis state
 func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) *GenesisState {
 	var genesisState GenesisState
 	if appState[ModuleName] != nil {
@@ -41,4 +41,14 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 	}
 
 	return &genesisState
+}
+
+// SetGenesisStateToAppState sets x/topup module GenesisState into the raw application genesis state.
+func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, dividendAccounts []types.DividendAccount) (map[string]json.RawMessage, error) {
+	topupState := GetGenesisStateFromAppState(cdc, appState)
+	topupState.DividendAccounts = dividendAccounts
+
+	appState[ModuleName] = cdc.MustMarshalJSON(topupState)
+
+	return appState, nil
 }
