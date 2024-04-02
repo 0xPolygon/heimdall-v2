@@ -4,9 +4,7 @@
 build
 logs
 *.log
-x/stake/
-x/chainmanager/
-helper/
+
 
 .idea
 .vscode

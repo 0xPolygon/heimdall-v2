@@ -3,7 +3,7 @@ package types
 import (
 	"context"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 type ModuleCommunicator interface {

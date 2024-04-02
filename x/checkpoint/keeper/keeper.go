@@ -15,7 +15,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// Keeper of the x/staking store
+// Keeper of the x/checkpoint store
 type Keeper struct {
 	storeService       storetypes.KVStoreService
 	cdc                codec.BinaryCodec
@@ -26,7 +26,7 @@ type Keeper struct {
 	IContractCaller    helper.IContractCaller
 }
 
-// NewKeeper creates a new staking Keeper instance
+// NewKeeper creates a new checkpoint Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,

@@ -24,7 +24,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
-	"github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 // smart contracts' events names
@@ -48,7 +47,7 @@ type IContractCaller interface {
 	GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (root common.Hash, start, end, createdAt uint64, proposer string, err error)
 	GetRootHash(start uint64, end uint64, checkpointLength uint64) ([]byte, error)
 	GetVoteOnHash(start uint64, end uint64, milestoneLength uint64, hash string, milestoneID string) (bool, error)
-	GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error)
+	//GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error)
 	GetLastChildBlock(rootChainInstance *rootchain.Rootchain) (uint64, error)
 	CurrentHeaderBlock(rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (uint64, error)
 	GetBalance(address common.Address) (*big.Int, error)
@@ -61,18 +60,16 @@ type IContractCaller interface {
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
 
-	// decode header event
 	DecodeNewHeaderBlockEvent(common.Address, *ethTypes.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)
-	// decode validator events
+
 	DecodeValidatorTopupFeesEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoTopUpFee, error)
 	DecodeValidatorJoinEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStaked, error)
 	DecodeValidatorStakeUpdateEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStakeUpdate, error)
 	DecodeValidatorExitEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnstakeInit, error)
 	DecodeSignerUpdateEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSignerChange, error)
-	// decode state events
+
 	DecodeStateSyncedEvent(common.Address, *ethTypes.Receipt, uint64) (*statesender.StatesenderStateSynced, error)
 
-	// decode slashing events
 	DecodeSlashedEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSlashed, error)
 	DecodeUnJailedEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)
 
@@ -82,20 +79,19 @@ type IContractCaller interface {
 	StakeFor(common.Address, *big.Int, *big.Int, bool, common.Address, *stakemanager.Stakemanager) error
 	CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error)
 
-	// bor related contracts
 	CurrentSpanNumber(validatorSet *validatorset.Validatorset) (Number *big.Int)
 	GetSpanDetails(id *big.Int, validatorSet *validatorset.Validatorset) (*big.Int, *big.Int, *big.Int, error)
 	CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int)
 	CheckIfBlocksExist(end uint64) bool
 
 	GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error)
-	GetStakingInfoInstance(stakingInfoAddress common.Address) (*stakinginfo.Stakinginfo, error)
-	GetValidatorSetInstance(validatorSetAddress common.Address) (*validatorset.Validatorset, error)
-	GetStakeManagerInstance(stakingManagerAddress common.Address) (*stakemanager.Stakemanager, error)
-	GetSlashManagerInstance(slashManagerAddress common.Address) (*slashmanager.Slashmanager, error)
-	GetStateSenderInstance(stateSenderAddress common.Address) (*statesender.Statesender, error)
-	GetStateReceiverInstance(stateReceiverAddress common.Address) (*statereceiver.Statereceiver, error)
-	GetMaticTokenInstance(maticTokenAddress common.Address) (*erc20.Erc20, error)
+	GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error)
+	GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error)
+	GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error)
+	GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error)
+	GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error)
+	GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error)
+	GetMaticTokenInstance(maticTokenAddress string) (*erc20.Erc20, error)
 }
 
 // ContractCaller contract caller
@@ -172,11 +168,13 @@ func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootcha
 }
 
 // GetStakingInfoInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress common.Address) (*stakinginfo.Stakinginfo, error) {
-	contractInstance, ok := c.ContractInstanceCache[stakingInfoAddress]
+func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error) {
+	address := common.HexToAddress(stakingInfoAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := stakinginfo.NewStakinginfo(stakingInfoAddress, mainChainClient)
-		c.ContractInstanceCache[stakingInfoAddress] = ci
+		ci, err := stakinginfo.NewStakinginfo(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -185,11 +183,13 @@ func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress common.Addres
 }
 
 // GetValidatorSetInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress common.Address) (*validatorset.Validatorset, error) {
-	contractInstance, ok := c.ContractInstanceCache[validatorSetAddress]
+func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error) {
+	address := common.HexToAddress(validatorSetAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := validatorset.NewValidatorset(validatorSetAddress, mainChainClient)
-		c.ContractInstanceCache[validatorSetAddress] = ci
+		ci, err := validatorset.NewValidatorset(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -198,11 +198,13 @@ func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress common.Addr
 }
 
 // GetStakeManagerInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress common.Address) (*stakemanager.Stakemanager, error) {
-	contractInstance, ok := c.ContractInstanceCache[stakingManagerAddress]
+func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error) {
+	address := common.HexToAddress(stakingManagerAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := stakemanager.NewStakemanager(stakingManagerAddress, mainChainClient)
-		c.ContractInstanceCache[stakingManagerAddress] = ci
+		ci, err := stakemanager.NewStakemanager(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -211,11 +213,13 @@ func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress common.Ad
 }
 
 // GetSlashManagerInstance returns slashManager contract instance for selected base chain
-func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress common.Address) (*slashmanager.Slashmanager, error) {
-	contractInstance, ok := c.ContractInstanceCache[slashManagerAddress]
+func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error) {
+	address := common.HexToAddress(slashManagerAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := slashmanager.NewSlashmanager(slashManagerAddress, mainChainClient)
-		c.ContractInstanceCache[slashManagerAddress] = ci
+		ci, err := slashmanager.NewSlashmanager(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -224,11 +228,13 @@ func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress common.Addr
 }
 
 // GetStateSenderInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress common.Address) (*statesender.Statesender, error) {
-	contractInstance, ok := c.ContractInstanceCache[stateSenderAddress]
+func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error) {
+	address := common.HexToAddress(stateSenderAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := statesender.NewStatesender(stateSenderAddress, mainChainClient)
-		c.ContractInstanceCache[stateSenderAddress] = ci
+		ci, err := statesender.NewStatesender(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -237,11 +243,13 @@ func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress common.Addres
 }
 
 // GetStateReceiverInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress common.Address) (*statereceiver.Statereceiver, error) {
-	contractInstance, ok := c.ContractInstanceCache[stateReceiverAddress]
+func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error) {
+	address := common.HexToAddress(stateReceiverAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := statereceiver.NewStatereceiver(stateReceiverAddress, maticClient)
-		c.ContractInstanceCache[stateReceiverAddress] = ci
+		ci, err := statereceiver.NewStatereceiver(address, maticClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -250,11 +258,13 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress common.Ad
 }
 
 // GetMaticTokenInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetMaticTokenInstance(maticTokenAddress common.Address) (*erc20.Erc20, error) {
-	contractInstance, ok := c.ContractInstanceCache[maticTokenAddress]
+func (c *ContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc20.Erc20, error) {
+	address := common.HexToAddress(maticTokenAddress)
+
+	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := erc20.NewErc20(maticTokenAddress, mainChainClient)
-		c.ContractInstanceCache[maticTokenAddress] = ci
+		ci, err := erc20.NewErc20(address, mainChainClient)
+		c.ContractInstanceCache[address] = ci
 
 		return ci, err
 	}
@@ -365,31 +375,31 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 	return balance, nil
 }
 
-// GetValidatorInfo get validator info
-func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-	// amount, startEpoch, endEpoch, signer, status, err := c.StakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-	if err != nil {
-		Logger.Error("Error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
-		return
-	}
+// // GetValidatorInfo get validator info
+// func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
+// 	// amount, startEpoch, endEpoch, signer, status, err := c.StakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+// 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+// 	if err != nil {
+// 		Logger.Error("Error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
+// 		return
+// 	}
 
-	newAmount, err := GetPowerFromAmount(stakerDetails.Amount)
-	if err != nil {
-		return
-	}
+// 	newAmount, err := GetPowerFromAmount(stakerDetails.Amount)
+// 	if err != nil {
+// 		return
+// 	}
 
-	// newAmount
-	validator = types.Validator{
-		ValId:       valID,
-		VotingPower: newAmount.Int64(),
-		StartEpoch:  stakerDetails.ActivationEpoch.Uint64(),
-		EndEpoch:    stakerDetails.DeactivationEpoch.Uint64(),
-		Signer:      stakerDetails.Signer.String(),
-	}
+// 	// newAmount
+// 	validator = types.Validator{
+// 		ValId:       valID,
+// 		VotingPower: newAmount.Int64(),
+// 		StartEpoch:  stakerDetails.ActivationEpoch.Uint64(),
+// 		EndEpoch:    stakerDetails.DeactivationEpoch.Uint64(),
+// 		Signer:      stakerDetails.Signer.String(),
+// 	}
 
-	return validator, nil
-}
+// 	return validator, nil
+// }
 
 // GetMainChainBlock returns main chain block header
 func (c *ContractCaller) GetMainChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
@@ -910,9 +920,9 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 
 	var err error
 
-	contractsABIs := [8]string{rootchain.RootchainABI, stakinginfo.StakinginfoABI, validatorset.ValidatorsetABI,
-		statereceiver.StatereceiverABI, statesender.StatesenderABI, stakemanager.StakemanagerABI,
-		slashmanager.SlashmanagerABI, erc20.Erc20ABI}
+	contractsABIs := [8]string{rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
+		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
+		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI}
 
 	// iterate over supported ABIs
 	for _, contractABI := range contractsABIs {
@@ -943,21 +953,21 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 // chooseContractCallerABI extracts and returns the abo.ABI object from the contractCallerObj based on its abi string
 func chooseContractCallerABI(contractCallerObj *ContractCaller, abi string) (*abi.ABI, error) {
 	switch abi {
-	case rootchain.RootchainABI:
+	case rootchain.RootchainMetaData.ABI:
 		return &contractCallerObj.RootChainABI, nil
-	case stakinginfo.StakinginfoABI:
+	case stakinginfo.StakinginfoMetaData.ABI:
 		return &contractCallerObj.StakingInfoABI, nil
-	case validatorset.ValidatorsetABI:
+	case validatorset.ValidatorsetMetaData.ABI:
 		return &contractCallerObj.ValidatorSetABI, nil
-	case statereceiver.StatereceiverABI:
+	case statereceiver.StatereceiverMetaData.ABI:
 		return &contractCallerObj.StateReceiverABI, nil
-	case statesender.StatesenderABI:
+	case statesender.StatesenderMetaData.ABI:
 		return &contractCallerObj.StateSenderABI, nil
-	case stakemanager.StakemanagerABI:
+	case stakemanager.StakemanagerMetaData.ABI:
 		return &contractCallerObj.StakeManagerABI, nil
-	case slashmanager.SlashmanagerABI:
+	case slashmanager.SlashmanagerMetaData.ABI:
 		return &contractCallerObj.SlashManagerABI, nil
-	case erc20.Erc20ABI:
+	case erc20.Erc20MetaData.ABI:
 		return &contractCallerObj.MaticTokenABI, nil
 	}
 

@@ -7,8 +7,7 @@ import (
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/ethereum/go-ethereum/common"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -82,7 +81,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		// send checkpoint to handler
 		_, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
 		require.Error(err)
-		require.ErrorContains(err, hmerrors.ErrInvalidMsg.Error())
+		require.ErrorContains(err, types.ErrInvalidMsg.Error())
 	})
 
 	s.Run("Checkpoint not in continuity", func() {
@@ -115,7 +114,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		// send checkpoint to handler
 		_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
 		require.Error(err)
-		require.ErrorContains(err, hmerrors.ErrDisCountinuousCheckpoint.Error())
+		require.ErrorContains(err, types.ErrDisCountinuousCheckpoint.Error())
 	})
 }
 
@@ -284,7 +283,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 
 	// send checkpoint to handler
 	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
-	require.ErrorContains(err, hmerrors.ErrNoACK.Error())
+	require.ErrorContains(err, types.ErrNoACK.Error())
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
@@ -327,7 +326,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
-		require.ErrorContains(err, hmerrors.ErrBadAck.Error())
+		require.ErrorContains(err, types.ErrBadAck.Error())
 
 	})
 
@@ -366,7 +365,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
-		require.ErrorContains(err, hmerrors.ErrBadAck.Error())
+		require.ErrorContains(err, types.ErrBadAck.Error())
 	})
 
 	s.Run("Invalid Roothash", func() {
@@ -382,7 +381,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
-		require.ErrorContains(err, hmerrors.ErrBadAck.Error())
+		require.ErrorContains(err, types.ErrBadAck.Error())
 	})
 }
 
@@ -430,7 +429,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	}
 
 	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
-	require.ErrorContains(err, hmerrors.ErrInvalidNoACK.Error())
+	require.ErrorContains(err, types.ErrInvalidNoACK.Error())
 
 	updatedAckCount := keeper.GetACKCount(ctx)
 	require.Equal(ackCount, updatedAckCount, "Should not update state")
@@ -444,7 +443,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	}
 
 	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
-	require.ErrorContains(err, hmerrors.ErrInvalidNoACK.Error())
+	require.ErrorContains(err, types.ErrInvalidNoACK.Error())
 
 	updatedAckCount = keeper.GetACKCount(ctx)
 	require.Equal(ackCount, updatedAckCount, "Should not update state")

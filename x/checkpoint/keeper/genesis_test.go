@@ -4,8 +4,8 @@ import (
 	"math/rand"
 	"time"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 )

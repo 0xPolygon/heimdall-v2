@@ -10,11 +10,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/appmodule"
-	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 
-	//"github.com/0xPolygon/heimdall-v2/x/stake/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -182,115 +181,3 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	return am.keeper.EndBlocker(ctx)
 }
-
-// func init() {
-// 	appmodule.Register(
-// 		&modulev1.Module{},
-// 		appmodule.Provide(ProvideModule),
-// 		//TODO H2 We don't have hooks usecase
-// 		//appmodule.Invoke(InvokeSetStakingHooks),
-// 		appmodule.Invoke(nil),
-// 	)
-// }
-
-// type ModuleInputs struct {
-// 	depinject.In
-
-// 	Config                *modulev1.Module
-// 	ValidatorAddressCodec runtime.ValidatorAddressCodec
-// 	Cdc                   codec.Codec
-// 	StoreService          store.KVStoreService
-// 	ModuleCommunicator    types.ModuleCommunicator
-// 	stakeKeeper           stakeKeeper.Keeper
-// 	cmKeeper              cmKeeper.Keeper
-// 	contractCaller        helper.IContractCaller
-
-// 	//TODO H2 Do we need this? Please look into this later
-// 	// LegacySubspace is used solely for migration of x/params managed parameters
-// 	//LegacySubspace exported.Subspace `optional:"true"`
-// }
-
-// // Dependency Injection Outputs
-// type ModuleOutputs struct {
-// 	depinject.Out
-
-// 	StakingKeeper *keeper.Keeper
-// 	Module        appmodule.AppModule
-// }
-
-// func ProvideModule(in ModuleInputs) ModuleOutputs {
-// 	// default to governance authority if not provided
-// 	authority := authtypes.NewModuleAddress(govtypes.ModuleName)
-// 	if in.Config.Authority != "" {
-// 		authority = authtypes.NewModuleAddressOrHexAddress(in.Config.Authority)
-// 	}
-
-// 	k := keeper.NewKeeper(
-// 		in.Cdc,
-// 		in.StoreService,
-// 		authority.String(),
-// 		in.stakeKeeper,
-// 		in.cmKeeper,
-// 		in.ModuleCommunicator,
-// 		in.contractCaller,
-// 	)
-// 	m := NewAppModule(in.Cdc, k)
-// 	return ModuleOutputs{StakingKeeper: k, Module: m}
-// }
-
-// TODO H2 Not required in our case, please check it
-// func InvokeSetStakingHooks(
-// 	config *modulev1.Module,
-// 	keeper *keeper.Keeper,
-// 	stakingHooks map[string]types.StakingHooksWrapper,
-// ) error {
-// 	// all arguments to invokers are optional
-// 	if keeper == nil || config == nil {
-// 		return nil
-// 	}
-
-// 	modNames := maps.Keys(stakingHooks)
-// 	order := config.HooksOrder
-// 	if len(order) == 0 {
-// 		order = modNames
-// 		sort.Strings(order)
-// 	}
-
-// 	if len(order) != len(modNames) {
-// 		return fmt.Errorf("len(hooks_order: %v) != len(hooks modules: %v)", order, modNames)
-// 	}
-
-// 	if len(modNames) == 0 {
-// 		return nil
-// 	}
-
-// 	var multiHooks types.MultiStakingHooks
-// 	for _, modName := range order {
-// 		hook, ok := stakingHooks[modName]
-// 		if !ok {
-// 			return fmt.Errorf("can't find staking hooks for module %s", modName)
-// 		}
-
-// 		multiHooks = append(multiHooks, hook)
-// 	}
-
-// 	keeper.SetHooks(multiHooks)
-// 	return nil
-// }
-
-// // AppModuleSimulation functions
-
-// // GenerateGenesisState creates a randomized GenState of the staking module.
-// func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
-// 	simulation.RandomizedGenState(simState)
-// }
-
-// // ProposalMsgs returns msgs used for governance proposals for simulations.
-// func (AppModule) ProposalMsgs(simState module.SimulationState) []simtypes.WeightedProposalMsg {
-// 	return simulation.ProposalMsgs()
-// }
-
-// // RegisterStoreDecoder registers a decoder for staking module's types
-// func (am AppModule) RegisterStoreDecoder(sdr simtypes.StoreDecoderRegistry) {
-// 	sdr[types.StoreKey] = simulation.NewDecodeStore(am.cdc)
-// }

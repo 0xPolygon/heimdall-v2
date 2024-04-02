@@ -6,13 +6,12 @@ import (
 	"strconv"
 	"strings"
 
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-	voteTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 type sideMsgServer struct {
@@ -25,14 +24,14 @@ var (
 	checkpointAck    = sdk.MsgTypeURL(&types.MsgCheckpointAck{})
 )
 
-// NewMsgServerImpl returns an implementation of the staking MsgServer interface
+// NewSideMsgServerImpl returns an implementation of the checkpoint sideMsgServer interface
 // for the provided Keeper.
 func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
 // NewSideTxHandler returns a side handler for "staking" type messages.
-func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler {
+func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 
 	switch methodName {
 	case checkpointAdjust:
@@ -46,8 +45,8 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler
 	}
 }
 
-// NewSideTxHandler returns a side handler for "staking" type messages.
-func (srv *sideMsgServer) PostTxHandler(methodName string) hmTypes.PostTxHandler {
+// PostTxHandler returns a side handler for "checkpoint" type messages.
+func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler {
 
 	switch methodName {
 	case checkpointAdjust:
@@ -62,21 +61,28 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmTypes.PostTxHandler
 }
 
 // SideHandleMsgValidatorJoin side msg validator join
-func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg) (result voteTypes.Vote) {
+func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	// logger
 	logger := k.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAdjust)
 	if !ok {
 		logger.Error("msg type mismatched")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
-	chainParams := k.ck.GetParams(ctx).ChainParams
+	chainParams, err := k.ck.GetParams(ctx)
+	if err != nil {
+		logger.Error("Error in getting chain manager params", "error", err)
+		return hmModule.Vote_VOTE_NO
+	}
+
+	rootChainAddress := chainParams.ChainParams.RootChainAddress
+
 	params, err := k.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting params", "error", err)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	contractCaller := k.IContractCaller
@@ -84,30 +90,30 @@ func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg
 	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
 	if checkpointBuffer != nil {
 		logger.Error("checkpoint buffer", "error", err)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	checkpointObj, err := k.GetCheckpointByNumber(ctx, msg.HeaderIndex)
 	if err != nil {
 		logger.Error("Unable to get checkpoint from db", "header index", msg.HeaderIndex, "error", err)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
-	rootChainInstance, err := contractCaller.GetRootChainInstance(chainParams.RootChainAddress)
+	rootChainInstance, err := contractCaller.GetRootChainInstance(rootChainAddress)
 	if err != nil {
-		logger.Error("Unable to fetch rootchain contract instance", "eth address", chainParams.RootChainAddress, "error", err)
-		return voteTypes.Vote_VOTE_NO
+		logger.Error("Unable to fetch rootchain contract instance", "eth address", rootChainAddress, "error", err)
+		return hmModule.Vote_VOTE_NO
 	}
 
 	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.HeaderIndex, rootChainInstance, params.ChildBlockInterval)
 	if err != nil {
 		logger.Error("Unable to fetch checkpoint from rootchain", "checkpointNumber", msg.HeaderIndex, "error", err)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if checkpointObj.EndBlock == end && checkpointObj.StartBlock == start && bytes.Equal(checkpointObj.RootHash.Bytes(), root.Bytes()) && strings.ToLower(checkpointObj.Proposer) == strings.ToLower(proposer) {
 		logger.Error("Same Checkpoint in DB")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if msg.EndBlock != end || msg.StartBlock != start || !bytes.Equal(msg.RootHash.Bytes(), root.Bytes()) || strings.ToLower(msg.Proposer) != strings.ToLower(proposer) {
@@ -122,33 +128,39 @@ func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg
 			"Rootchain Checkpoint root hash", root,
 		)
 
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
-	return voteTypes.Vote_VOTE_YES
+	return hmModule.Vote_VOTE_YES
 }
 
-// SideHandleMsgStakeUpdate handles stake update message
-func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (result voteTypes.Vote) {
+// SideHandleMsgStakeUpdate handles checkpoint message
+func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	// logger
 	logger := k.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpoint)
 	if !ok {
 		logger.Error("msg type mismatched")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	contractCaller := k.IContractCaller
+
+	chainParams, err := k.ck.GetParams(ctx)
+	if err != nil {
+		logger.Error("Error in getting chain manager params", "error", err)
+		return hmModule.Vote_VOTE_NO
+	}
+
+	maticTxConfirmations := chainParams.BorChainTxConfirmations
 
 	// get params
 	params, err := k.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting params", "error", err)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
-
-	maticTxConfirmations := k.ck.GetParams(ctx).MaticchainTxConfirmations
 
 	// validate checkpoint
 	validCheckpoint, err := types.ValidateCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, maticTxConfirmations)
@@ -161,7 +173,7 @@ func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (
 		)
 	} else if validCheckpoint {
 		// vote `yes` if checkpoint is valid
-		return voteTypes.Vote_VOTE_YES
+		return hmModule.Vote_VOTE_YES
 	}
 
 	logger.Error(
@@ -171,44 +183,51 @@ func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (
 		"rootHash", msg.RootHash,
 	)
 
-	return voteTypes.Vote_VOTE_NO
+	return hmModule.Vote_VOTE_NO
 }
 
-// SideHandleMsgSignerUpdate handles signer update message
-func (k *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg) (result voteTypes.Vote) {
+// SideHandleMsgCheckpointAck handles side checkpoint-ack message
+func (k *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg) hmModule.Vote {
 	// logger
 	logger := k.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAck)
 	if !ok {
 		logger.Error("msg type mismatched")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	contractCaller := k.IContractCaller
+
+	chainParams, err := k.ck.GetParams(ctx)
+	if err != nil {
+		logger.Error("Error in getting chain manager params", "error", err)
+		return hmModule.Vote_VOTE_NO
+	}
+
+	rootChainAddress := chainParams.ChainParams.RootChainAddress
 
 	// get params
 	params, err := k.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting params", "error", err)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
-	chainParams := k.ck.GetParams(ctx).ChainParams
 
-	rootChainInstance, err := contractCaller.GetRootChainInstance(chainParams.RootChainAddress)
+	rootChainInstance, err := contractCaller.GetRootChainInstance(rootChainAddress)
 	if err != nil {
 		logger.Error("Unable to fetch rootchain contract instance",
-			"eth address", chainParams.RootChainAddress,
+			"eth address", rootChainAddress,
 			"error", err,
 		)
 
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildBlockInterval)
 	if err != nil {
 		logger.Error("Unable to fetch checkpoint from rootchain", "checkpointNumber", msg.Number, "error", err)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check if message data matches with contract data
@@ -229,19 +248,19 @@ func (k *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 			"error", err,
 		)
 
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// say `yes`
-	return voteTypes.Vote_VOTE_YES
+	return hmModule.Vote_VOTE_YES
 }
 
 /*
 	Post Handlers - update the state of the tx
 **/
 
-// PostHandleMsgValidatorJoin msg validator join
-func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg, sideTxResult voteTypes.Vote) {
+// PostHandleMsgCheckpointAdjust msg for checkpointAdjust
+func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	logger := k.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAdjust)
@@ -251,7 +270,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.
 	}
 
 	// Skip handler if validator join is not approved
-	if sideTxResult != voteTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		logger.Debug("Skipping new validator-join since side-tx didn't get yes votes")
 		return
 	}
@@ -313,8 +332,8 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.
 	return
 }
 
-// PostHandleMsgStakeUpdate handles stake update message
-func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, sideTxResult voteTypes.Vote) {
+// PostHandleMsgCheckpoint handles the checkpoint msg
+func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	logger := k.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpoint)
@@ -324,7 +343,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, s
 	}
 
 	// Skip handler if stakeUpdate is not approved
-	if sideTxResult != voteTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		logger.Debug("Skipping stake update since side-tx didn't get yes votes")
 		return
 	}
@@ -353,7 +372,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, s
 
 			return
 		}
-	} else if err.Error() == hmerrors.ErrNoCheckpointFound.Error() && msg.StartBlock != 0 {
+	} else if err.Error() == types.ErrNoCheckpointFound.Error() && msg.StartBlock != 0 {
 		logger.Error("First checkpoint to start from block 0", "Error", err)
 		return
 	}
@@ -419,8 +438,8 @@ func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, s
 	})
 }
 
-// PostHandleMsgSignerUpdate handles signer update message
-func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg, sideTxResult voteTypes.Vote) {
+// PostHandleMsgCheckpointAck handles checkpoint-ack
+func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	logger := k.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAck)
@@ -430,7 +449,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	// Skip handler if stakeUpdate is not approved
-	if sideTxResult != voteTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		logger.Debug("Skipping stake update since side-tx didn't get yes votes")
 		return
 	}

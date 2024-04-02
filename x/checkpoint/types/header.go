@@ -3,7 +3,7 @@ package types
 import (
 	"sort"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 // CreateBlock generate new block

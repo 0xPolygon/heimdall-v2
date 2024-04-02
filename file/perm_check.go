@@ -4,10 +4,10 @@ import (
 	"errors"
 	"os"
 
-	types "github.com/0xPolygon/heimdall-v2/x/types/error"
+	types "github.com/0xPolygon/heimdall-v2/types/error"
 )
 
-// PermCheck check the secret key and the keystore files.
+// PermCheck checks the secret key and the keystore files.
 // it verifies whether they are stored with the correct permissions.
 func PermCheck(filePath string, validPerm os.FileMode) error {
 	// get path to keystore files

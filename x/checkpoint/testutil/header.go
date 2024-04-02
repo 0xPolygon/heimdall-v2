@@ -5,8 +5,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 // GenRandCheckpoint return headers

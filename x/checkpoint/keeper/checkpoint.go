@@ -7,7 +7,6 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
 	"github.com/cosmos/cosmos-sdk/runtime"
 )
 
@@ -128,7 +127,7 @@ func (k *Keeper) GetLastCheckpoint(ctx context.Context) (types.Checkpoint, error
 	}
 
 	if chBytes == nil {
-		return _checkpoint, hmerrors.ErrNoCheckpointFound
+		return _checkpoint, types.ErrNoCheckpointFound
 	}
 
 	// unmarshall validator and return

@@ -12,15 +12,17 @@ import (
 	storetypes "cosmossdk.io/store/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	testUtil "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakekeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
@@ -57,6 +59,13 @@ func (s *KeeperTestSuite) Run(testname string, fn func()) {
 func (s *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(checkpointTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
+
+	cmkey := storetypes.NewKVStoreKey(cmTypes.StoreKey)
+	cmStoreService := runtime.NewKVStoreService(cmkey)
+
+	stakekey := storetypes.NewKVStoreKey(stakeTypes.StoreKey)
+	stakeStoreService := runtime.NewKVStoreService(stakekey)
+
 	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
@@ -65,14 +74,14 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	moduleCommunicator := testUtil.ModuleCommunicatorMock{}
 
-	cmKeeper := cmKeeper.NewKeeper()
+	cmKeeper := cmKeeper.NewKeeper(encCfg.Codec, cmStoreService)
 
 	stakekeeper := stakekeeper.NewKeeper(
 		encCfg.Codec,
-		storeService,
+		stakeStoreService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		nil,
-		cmKeeper,
+		&cmKeeper,
 		addrCodec.NewHexCodec(),
 		s.contractCaller,
 	)
@@ -82,7 +91,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		*stakekeeper,
-		*cmKeeper,
+		cmKeeper,
 		moduleCommunicator,
 		s.contractCaller,
 	)
@@ -90,7 +99,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.ctx = ctx
 	s.checkpointKeeper = keeper
 	s.stakeKeeper = stakekeeper
-	s.cmKeeper = cmKeeper
+	s.cmKeeper = &cmKeeper
 	s.moduleCommunicator = &moduleCommunicator
 
 	checkpointGenesis := types.DefaultGenesisState()
@@ -103,7 +112,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.queryClient = checkpointTypes.NewQueryClient(queryHelper)
 	s.msgServer = checkpointKeeper.NewMsgServerImpl(keeper)
 
-	s.sideMsgCfg = hmModule.NewConfigurator()
+	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, checkpointKeeper.NewSideMsgServerImpl(keeper))
 }
 
@@ -143,44 +152,47 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	require.Equal(timestamp, result.TimeStamp)
 }
 
-// func (s *KeeperTestSuite) TestGetCheckpointList() {
-// 	ctx, keeper := s.ctx, s.checkpointKeeper
-// 	require := s.Require()
+/*
+func (s *KeeperTestSuite) TestGetCheckpointList() {
+	ctx, keeper := s.ctx, s.checkpointKeeper
+	require := s.Require()
 
-// 	count := 5
+	count := 5
 
-// 	startBlock := uint64(0)
-// 	endBlock := uint64(0)
+	startBlock := uint64(0)
+	endBlock := uint64(0)
 
-// 	for i := 0; i < count; i++ {
-// 		headerBlockNumber := uint64(i) + 1
+	for i := 0; i < count; i++ {
+		headerBlockNumber := uint64(i) + 1
 
-// 		startBlock = startBlock + endBlock
-// 		endBlock = endBlock + uint64(255)
-// 		rootHash := hmTypes.HexToHeimdallHash("123")
-// 		proposerAddress := common.Address{}.String()
-// 		timestamp := uint64(time.Now().Unix()) + uint64(i)
-// 		borChainId := "1234"
+		startBlock = startBlock + endBlock
+		endBlock = endBlock + uint64(255)
+		rootHash := hmTypes.HexToHeimdallHash("123")
+		proposerAddress := common.Address{}.String()
+		timestamp := uint64(time.Now().Unix()) + uint64(i)
+		borChainId := "1234"
 
-// 		Checkpoint := hmTypes.CreateBlock(
-// 			startBlock,
-// 			endBlock,
-// 			rootHash,
-// 			proposerAddress,
-// 			borChainId,
-// 			timestamp,
-// 		)
+		Checkpoint := hmTypes.CreateBlock(
+			startBlock,
+			endBlock,
+			rootHash,
+			proposerAddress,
+			borChainId,
+			timestamp,
+		)
 
-// 		err := keeper.AddCheckpoint(ctx, headerBlockNumber, Checkpoint)
-// 		require.NoError(err)
+		err := keeper.AddCheckpoint(ctx, headerBlockNumber, Checkpoint)
+		require.NoError(err)
 
-// 		keeper.UpdateACKCount(ctx)
-// 	}
+		keeper.UpdateACKCount(ctx)
+	}
 
-// 	result, err := keeper.GetCheckpointList(ctx, uint64(1), uint64(20))
-// 	require.NoError(err)
-// 	require.LessOrEqual(count, len(result))
-// }
+	result, err := keeper.GetCheckpointList(ctx, uint64(1), uint64(20))
+	require.NoError(err)
+	require.LessOrEqual(count, len(result))
+}
+
+*/
 
 func (s *KeeperTestSuite) TestHasStoreValue() {
 	ctx, keeper := s.ctx, s.checkpointKeeper

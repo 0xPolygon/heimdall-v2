@@ -1,14 +1,11 @@
 syntax = "proto3";
 package heimdallv2.checkpoint.v1;
 
-import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
-import "heimdallv2/types/validator.proto";
-import "heimdallv2/types/checkpoint.proto";
+import "heimdallv2/checkpoint/v1/checkpoint.proto";
 import "heimdallv2/checkpoint/v1/tx.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
@@ -71,7 +68,7 @@ message QueryParamsRequest {}
 // QueryParamsResponse is response type for the Query/Params
 // RPC method
 message QueryParamsResponse {
-  heimdallv2.types.Params params = 1
+  Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -98,7 +95,7 @@ message QueryCheckpointBufferRequest {}
 // QueryCheckpointBufferResponse is response type for the Query/Buffer RPC
 // method
 message QueryCheckpointBufferResponse {
-  heimdallv2.types.Checkpoint checkpoint = 1
+  Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -111,7 +108,7 @@ message QueryCheckpointRequest {
 // QueryCheckpointResponse is response type for the Query/Checkpoint/{number}
 // RPC method
 message QueryCheckpointResponse {
-  heimdallv2.types.Checkpoint checkpoint = 1
+  Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -122,7 +119,7 @@ message QueryCheckpointLatestRequest {}
 // QueryCheckpointLatestResponse is response type for the
 // Query/Checkpoints/latest RPC method
 message QueryCheckpointLatestResponse {
-  heimdallv2.types.Checkpoint checkpoint = 1
+  Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 

@@ -3,9 +3,9 @@ package keeper_test
 import (
 	"time"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 

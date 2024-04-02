@@ -6,9 +6,8 @@ import (
 	"strconv"
 
 	"cosmossdk.io/core/address"
-	"github.com/0xPolygon/heimdall-v2/x/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-	heimdallError "github.com/0xPolygon/heimdall-v2/x/types/error"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	types "github.com/0xPolygon/heimdall-v2/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -65,22 +64,22 @@ func (msg MsgCheckpointAdjust) Type() string {
 
 func (msg MsgCheckpointAdjust) ValidateBasic(ac address.Codec) error {
 	if bytes.Equal(msg.RootHash.Bytes(), hmTypes.ZeroHeimdallHash) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
+		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
 	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
-		return heimdallError.ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%s,end block=%s", msg.StartBlock, msg.EndBlock)
+		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%s,end block=%s", msg.StartBlock, msg.EndBlock)
 	}
 
 	return nil
@@ -96,8 +95,8 @@ func NewMsgCheckpointBlock(
 	proposer string,
 	startBlock uint64,
 	endBlock uint64,
-	roothash types.HeimdallHash,
-	accountRootHash types.HeimdallHash,
+	roothash hmTypes.HeimdallHash,
+	accountRootHash hmTypes.HeimdallHash,
 	borChainID string,
 ) MsgCheckpoint {
 	return MsgCheckpoint{
@@ -121,22 +120,22 @@ func (msg MsgCheckpoint) Route() string {
 
 func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
 	if bytes.Equal(msg.RootHash.Bytes(), hmTypes.ZeroHeimdallHash) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
+		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
 	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
-		return heimdallError.ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%s,end block=%s", msg.StartBlock, msg.EndBlock)
+		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%s,end block=%s", msg.StartBlock, msg.EndBlock)
 	}
 
 	return nil
@@ -148,7 +147,6 @@ func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 	borChainID, _ := strconv.ParseUint(msg.BorChainID, 10, 64)
 
 	return appendBytes32(
-		//TODO H2 is
 		[]byte(msg.Proposer),
 		new(big.Int).SetUint64(msg.StartBlock).Bytes(),
 		new(big.Int).SetUint64(msg.EndBlock).Bytes(),
@@ -194,28 +192,28 @@ func (msg MsgCheckpointAck) Type() string {
 func (msg MsgCheckpointAck) ValidateBasic(ac address.Codec) error {
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
 	addrBytes, err = ac.StringToBytes(msg.Proposer)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
 	accAddr = sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
 	if bytes.Equal(msg.RootHash.Bytes(), hmTypes.ZeroHeimdallHash) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
+		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
 	}
 
 	return nil
@@ -249,13 +247,13 @@ func (msg MsgCheckpointNoAck) Route() string {
 func (msg MsgCheckpointNoAck) ValidateBasic(ac address.Codec) error {
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
 	return nil

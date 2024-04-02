@@ -4,7 +4,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 )
 
-// MarshallDividendAccount - amino Marshall DividendAccount
+// MarshallCheckpoint - amino Marshall Checkpoint
 func MarshallCheckpoint(cdc codec.BinaryCodec, checkpoint Checkpoint) (bz []byte, err error) {
 	bz, err = cdc.Marshal(&checkpoint)
 	if err != nil {
@@ -14,7 +14,7 @@ func MarshallCheckpoint(cdc codec.BinaryCodec, checkpoint Checkpoint) (bz []byte
 	return bz, nil
 }
 
-// UnMarshallDividendAccount - amino Unmarshall DividendAccount
+// UnMarshallCheckpoint - amino Unmarshall Checkpoint
 func UnMarshallCheckpoint(cdc codec.BinaryCodec, value []byte) (Checkpoint, error) {
 	var checkpoint Checkpoint
 	if err := cdc.Unmarshal(value, &checkpoint); err != nil {

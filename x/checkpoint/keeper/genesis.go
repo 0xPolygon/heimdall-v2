@@ -8,11 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// InitGenesis sets the pool and parameters for the provided keeper.  For each
-// validator in data, it sets that validator in the keeper along with manually
-// setting the indexes. In addition, it also sets any delegations found in
-// data. Finally, it updates the bonded validators.
-// Returns final validator set after applying all declaration and delegations
+// InitGenesis sets initial state for checkpoint module
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	k.SetParams(ctx, data.Params)
 
@@ -54,9 +50,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	return
 }
 
-// ExportGenesis returns a GenesisState for a given context and keeper. The
-// GenesisState will contain the pool, params, validators, and bonds found in
-// the keeper.
+// ExportGenesis returns a GenesisState for a given context and keeper of
+// checkpoint module
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params, err := k.GetParams(ctx)
 	if err != nil {

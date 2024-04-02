@@ -1,0 +1,26 @@
+syntax = "proto3";
+package heimdallv2.types;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/types";
+
+// HeimdallHash this following defines the
+// hash
+message HeimdallHash {
+  option (gogoproto.equal) = true;
+  bytes hash = 1;
+}
+
+// TxHash this following defines the
+// hash of the transaction
+message TxHash {
+  option (gogoproto.equal) = true;
+  bytes hash = 1;
+}
+
+// HexByetes structure
+message HexBytes {
+  option (gogoproto.equal) = true;
+  bytes hex_bytes = 1;
+}

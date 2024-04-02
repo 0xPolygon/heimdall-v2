@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -52,7 +52,7 @@ func (k Querier) Checkpoint(ctx context.Context, req *types.QueryCheckpointReque
 	return &types.QueryCheckpointResponse{Checkpoint: checkpoint}, nil
 }
 
-// ValidatorStatus queries validator status for given validator val_address.
+// CheckpointLatest gives the latest checkpoint
 func (k Querier) CheckpointLatest(ctx context.Context, req *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
 	checkpoint, err := k.GetLastCheckpoint(ctx)
 	if err != nil {

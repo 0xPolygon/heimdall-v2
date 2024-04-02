@@ -4,24 +4,23 @@ package heimdallv2.checkpoint.v1;
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 
 import "gogoproto/gogo.proto";
-import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
-import "heimdallv2/types/checkpoint.proto";
+import "heimdallv2/checkpoint/v1/checkpoint.proto";
 
 // GenesisState defines the staking module's genesis state.
 message GenesisState {
   // It defines the params
-  heimdallv2.types.Params params = 1
+  Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
   // BufferedCheckpoint defines the buffered checkpoint
-  heimdallv2.types.Checkpoint buffered_checkpoint = 2
+  Checkpoint buffered_checkpoint = 2
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
 
   uint64 last_no_a_c_k = 3 [ (amino.dont_omitempty) = true ];
 
   uint64 ack_count = 4 [ (amino.dont_omitempty) = true ];
 
-  repeated heimdallv2.types.Checkpoint checkpoints = 5
+  repeated Checkpoint checkpoints = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

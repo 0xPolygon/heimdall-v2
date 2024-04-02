@@ -87,8 +87,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 }
 
 // SendCheckpoint sends checkpoint to rootchain contract
-// todo return err
-func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (er error) {
+func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error) {
 	data, err := c.RootChainABI.Pack("submitCheckpoint", signedData, sigs)
 	if err != nil {
 		Logger.Error("Unable to pack tx for submitCheckpoint", "error", err)
@@ -123,7 +122,7 @@ func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, r
 }
 
 // SendTick sends slash tick to rootchain contract
-func (c *ContractCaller) SendTick(signedData []byte, sigs []byte, slashManagerAddress common.Address, slashManagerInstance *slashmanager.Slashmanager) (er error) {
+func (c *ContractCaller) SendTick(signedData []byte, sigs []byte, slashManagerAddress common.Address, slashManagerInstance *slashmanager.Slashmanager) (err error) {
 	data, err := c.SlashManagerABI.Pack("updateSlashedAmounts", signedData, sigs)
 	if err != nil {
 		Logger.Error("Unable to pack tx for updateSlashedAmounts", "error", err)

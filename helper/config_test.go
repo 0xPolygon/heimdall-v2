@@ -10,7 +10,7 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 )
 
-// Test - to check heimdall config
+// TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
 	t.Parallel()
 
@@ -18,9 +18,6 @@ func TestHeimdallConfig(t *testing.T) {
 	tendermintNode := "tcp://localhost:26657"
 	viper.Set(TendermintNodeFlag, tendermintNode)
 	viper.Set("log_level", "info")
-	// cliCtx := cliContext.NewCLIContext().WithCodec(cdc)
-	// cliCtx.BroadcastMode = client.BroadcastSync
-	// cliCtx.TrustNode = true
 
 	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
 

@@ -11,7 +11,7 @@ import (
 	"github.com/tendermint/crypto/sha3"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 // ValidateCheckpoint - Validates if checkpoint rootHash matches or not
