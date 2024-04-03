@@ -1,12 +1,14 @@
 package types
 
 import (
+	"math/big"
+
 	"cosmossdk.io/math"
-	"github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
-	"math/big"
+
+	"github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 )
 
 // TODO HV2: this file has some extension methods for msg interfaces. Do we need it at all?

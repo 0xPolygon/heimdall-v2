@@ -1,15 +1,15 @@
-package test
+package keeper_test
 
 import (
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"math/rand"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/require"
 
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"

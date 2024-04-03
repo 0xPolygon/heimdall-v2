@@ -1,4 +1,4 @@
-package test
+package keeper_test
 
 import (
 	"math/big"
@@ -14,7 +14,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -108,7 +107,7 @@ func (suite *KeeperTestSuite) TestDividendAccountTree() {
 	require.NoError(t, err)
 	*/
 
-	leafHash, err := keeper.CalculateDividendAccountHash(divAccounts[0])
+	leafHash, err := CalculateDividendAccountHash(divAccounts[0])
 	require.NotNil(t, leafHash)
 	require.NoError(t, err)
 }

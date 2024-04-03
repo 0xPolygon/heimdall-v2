@@ -1,4 +1,4 @@
-package test
+package keeper_test
 
 import (
 	"math/rand"

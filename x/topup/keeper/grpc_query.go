@@ -2,10 +2,12 @@ package keeper
 
 import (
 	"context"
-	"github.com/0xPolygon/heimdall-v2/x/topup/types"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 var _ types.QueryServer = queryServer{}

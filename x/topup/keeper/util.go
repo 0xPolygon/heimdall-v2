@@ -1,9 +1,11 @@
 package keeper
 
 import (
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/crypto"
+
+	hTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 // CalculateDividendAccountHash hashes the values of a DividendAccount

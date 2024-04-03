@@ -1,18 +1,20 @@
-package test
+package keeper_test
 
 import (
-	"cosmossdk.io/math"
 	"fmt"
-	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/types"
+	"math/big"
+	"math/rand"
+
+	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"math/rand"
+
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	hTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {

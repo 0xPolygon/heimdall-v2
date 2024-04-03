@@ -2,12 +2,12 @@ package keeper
 
 import (
 	"context"
-	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-
 	"github.com/cosmos/cosmos-sdk/telemetry"
+
+	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // BeginBlocker in x/topup module only initiates the telemetry metrics and returns, returning no errors
