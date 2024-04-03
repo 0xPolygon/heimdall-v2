@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -73,26 +74,31 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 
 // SetEventRecordWithTime sets event record id with time
 func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventRecord) error {
+	isPresent, _ := k.RecordsWithTime.Has(ctx, collections.Join(record.RecordTime, record.ID))
+	if isPresent {
+		return fmt.Errorf("record with time %s and id %d already exists", record.RecordTime, record.ID)
+	}
+
 	_, err := k.RecordsWithTime.Get(ctx, collections.Join(record.RecordTime, record.ID))
-	if err == collections.ErrNotFound {
-		return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.ID), record.ID)
-	} else if err == collections.ErrEncoding {
+	if err == collections.ErrEncoding {
 		return collections.ErrEncoding
 	}
 
-	return nil
+	return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.ID), record.ID)
 }
 
 // SetEventRecordWithID adds record to store with ID
 func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRecord) error {
+	if k.HasEventRecord(ctx, record.ID) {
+		return fmt.Errorf("record with id %d already exists", record.ID)
+	}
+
 	_, err := k.RecordsWithID.Get(ctx, record.ID)
-	if err == collections.ErrNotFound {
-		return k.RecordsWithID.Set(ctx, record.ID, record)
-	} else if err == collections.ErrEncoding {
+	if err == collections.ErrEncoding {
 		return collections.ErrEncoding
 	}
 
-	return nil
+	return k.RecordsWithID.Set(ctx, record.ID, record)
 }
 
 // SetEventRecord adds record to store
