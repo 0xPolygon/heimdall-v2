@@ -160,16 +160,21 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 		return records, err
 	}
 
-	if len(allRecords) < int(page*limit) {
-		k.Logger(ctx).Error("GetEventRecordList", "error", "page out of bounds")
-		return records, nil
+	startIndex := int((page - 1) * limit)
+	endIndex := int(page * limit)
+
+	// Check if the startIndex is within bounds
+	if startIndex >= len(allRecords) {
+		return nil, fmt.Errorf("page %d does not exist", page)
 	}
 
-	if len(allRecords) < int((page+1)*limit) {
-		limit = uint64(len(allRecords)) - page*limit
+	// Check if the endIndex exceeds the length of eventRecords
+	if endIndex > len(allRecords) {
+		endIndex = len(allRecords)
 	}
 
-	records = allRecords[page*limit : (page+1)*limit]
+	// Retrieve the event records for the requested page
+	records = allRecords[startIndex:endIndex]
 
 	return records, nil
 }
