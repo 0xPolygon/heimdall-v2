@@ -20,14 +20,15 @@ import (
 
 type KeeperTestSuite struct {
 	suite.Suite
-	ctx         sdk.Context
-	app         *app.HeimdallApp
-	queryClient topupTypes.QueryClient
-	msgServer   topupTypes.MsgServer
+	ctx           sdk.Context
+	app           *app.HeimdallApp
+	queryClient   topupTypes.QueryClient
+	msgServer     topupTypes.MsgServer
+	sideMsgServer topupTypes.SideMsgServer
+	sideMsgCfg    hmModule.SideTxConfigurator
 	// TODO HV2: enable when contractCaller and chainManager are implemented
 	// contractCaller mocks.IContractCaller
 	// chainParams    chainTypes.Params
-
 }
 
 // createTestApp returns context and app on topup keeper

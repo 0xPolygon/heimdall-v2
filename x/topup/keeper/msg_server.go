@@ -15,7 +15,7 @@ type msgServer struct {
 	k *Keeper
 }
 
-// NewMsgServerImpl returns an implementation of the gov MsgServer interface for the provided Keeper.
+// NewMsgServerImpl returns an implementation of the x/topup MsgServer interface for the provided Keeper.
 func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 	return &msgServer{k: keeper}
 }
