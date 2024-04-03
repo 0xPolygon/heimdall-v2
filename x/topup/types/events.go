@@ -5,6 +5,7 @@ const (
 	AttributeValueCategory        = ModuleName
 	EventTypeTopup                = "topup"
 	EventTypeFeeWithdraw          = "fee-withdraw"
+	EventTypeWithdraw             = "withdraw"
 	EventTypeTransfer             = "transfer"
 	AttributeKeyRecipient         = "recipient"
 	AttributeKeySender            = "sender"

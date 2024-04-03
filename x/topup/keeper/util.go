@@ -9,7 +9,7 @@ import (
 // CalculateDividendAccountHash hashes the values of a DividendAccount
 func CalculateDividendAccountHash(da hTypes.DividendAccount) ([]byte, error) {
 	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
-	divAccountHash := crypto.Keccak256(appendBytes32(
+	divAccountHash := crypto.Keccak256(AppendBytes32(
 		[]byte(da.User),
 		fee.Bytes(),
 	))
@@ -17,7 +17,7 @@ func CalculateDividendAccountHash(da hTypes.DividendAccount) ([]byte, error) {
 	return divAccountHash, nil
 }
 
-func appendBytes32(data ...[]byte) []byte {
+func AppendBytes32(data ...[]byte) []byte {
 	var result []byte
 
 	for _, v := range data {

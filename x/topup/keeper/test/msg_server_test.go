@@ -43,14 +43,7 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 		{
 			"success",
 			func() {
-				msg = types.MsgTopupTx{
-					Proposer:    addr.String(),
-					User:        addr.String(),
-					Fee:         fee,
-					TxHash:      hash,
-					LogIndex:    logIndex,
-					BlockNumber: blockNumber,
-				}
+				msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
 			},
 			true,
 			"",
@@ -60,14 +53,7 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 		{
 			"old tx",
 			func() {
-				msg = types.MsgTopupTx{
-					Proposer:    addr.String(),
-					User:        addr.String(),
-					Fee:         fee,
-					TxHash:      hash,
-					LogIndex:    logIndex,
-					BlockNumber: blockNumber,
-				}
+				msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
 				blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 				sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
@@ -117,10 +103,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 		{
 			"fail with no fee coins",
 			func() {
-				msg = types.MsgWithdrawFeeTx{
-					Proposer: addr.String(),
-					Amount:   math.ZeroInt(),
-				}
+				msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 			},
 			false,
 			"no balance to withdraw",
@@ -171,10 +154,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 
 				amt, _ := math.NewIntFromString("2")
 				coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
-				msg = types.MsgWithdrawFeeTx{
-					Proposer: addr.String(),
-					Amount:   coins.AmountOf(authTypes.FeeToken),
-				}
+				msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
 			},
 			true,
 			"",
@@ -203,10 +183,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 
 				amt, _ := math.NewIntFromString("1")
 				coins = coins.Add(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
-				msg = types.MsgWithdrawFeeTx{
-					Proposer: addr.String(),
-					Amount:   coins.AmountOf(authTypes.FeeToken),
-				}
+				msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
 			},
 			false,
 			"insufficient funds",
