@@ -1,6 +1,6 @@
 module github.com/0xPolygon/heimdall-v2
 
-go 1.22.0
+go 1.22.1
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -24,6 +24,8 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/json-iterator/go v1.1.12
 	github.com/stretchr/testify v1.8.4
+	go.opentelemetry.io/otel v1.24.0
+	go.opentelemetry.io/otel/trace v1.24.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240116215550-a9fa1716bcac
 	google.golang.org/grpc v1.60.1
 	google.golang.org/protobuf v1.33.0
@@ -203,11 +205,9 @@ require (
 	github.com/zondax/ledger-go v0.14.3 // indirect
 	go.etcd.io/bbolt v1.3.8 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
-	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.24.0 // indirect
 	go.opentelemetry.io/otel/metric v1.24.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.24.0 // indirect
-	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.1.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -232,9 +232,10 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-// following versions might cause unexpected behavior
 replace (
+	// HV2
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.0-beta
 	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240315104706-d86dab8157c4
+	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
