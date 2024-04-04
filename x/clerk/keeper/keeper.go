@@ -183,6 +183,12 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTime time.Time, page, limit uint64) ([]types.EventRecord, error) {
 	// create records
 	var records []types.EventRecord
+	var allRecords []types.EventRecord
+
+	// have max limit
+	if limit > 50 {
+		limit = 50
+	}
 
 	rng := new(collections.Range[collections.Pair[time.Time, uint64]]).
 		StartInclusive(collections.Join(fromTime, uint64(0))).
@@ -205,8 +211,28 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 			k.Logger(ctx).Error("GetEventRecordListWithTime | GetEventRecord", "error", err)
 			continue
 		}
-		records = append(records, *record)
+		allRecords = append(allRecords, *record)
 	}
+
+	if page == 0 && limit == 0 {
+		return allRecords, nil
+	}
+
+	startIndex := int((page - 1) * limit)
+	endIndex := int(page * limit)
+
+	// Check if the startIndex is within bounds
+	if startIndex >= len(allRecords) {
+		return nil, fmt.Errorf("page %d does not exist", page)
+	}
+
+	// Check if the endIndex exceeds the length of eventRecords
+	if endIndex > len(allRecords) {
+		endIndex = len(allRecords)
+	}
+
+	// Retrieve the event records for the requested page
+	records = allRecords[startIndex:endIndex]
 
 	return records, nil
 }
