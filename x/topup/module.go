@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	hModule "github.com/0xPolygon/heimdall-v2/module"
 
 	"cosmossdk.io/core/appmodule"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -53,6 +54,11 @@ func (AppModule) Name() string {
 // RegisterLegacyAminoCodec registers the topup module's types on the LegacyAmino codec.
 func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
+}
+
+// RegisterSideMsgServices registers side handler module services.
+func (am AppModule) RegisterSideMsgServices(sideCfg hModule.SideTxConfigurator) {
+	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the topup module.

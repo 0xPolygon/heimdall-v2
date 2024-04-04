@@ -67,13 +67,13 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) hModule.
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
+	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
 	if err != nil || receipt == nil {
 		return hModule.Vote_VOTE_NO
 	}
 
 	// get event log for topup
-	eventLog, err := contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress.EthAddress(), receipt, msg.LogIndex)
+	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress.EthAddress(), receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		logger.Error("error fetching log from txhash for DecodeValidatorTopupFeesEvent")
 		return hModule.Vote_VOTE_NO
@@ -165,7 +165,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	txBytes := ctx.TxBytes()
-	hash := hTypes.TxHash{Hash: txBytes}.Bytes()
+	hash := hTypes.TxHash{Hash: txBytes}.Hash
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(

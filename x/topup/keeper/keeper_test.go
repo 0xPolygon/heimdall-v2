@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	hModule "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -25,8 +26,8 @@ type KeeperTestSuite struct {
 	queryClient   topupTypes.QueryClient
 	msgServer     topupTypes.MsgServer
 	sideMsgServer topupTypes.SideMsgServer
+	sideMsgCfg    hModule.SideTxConfigurator
 	/* TODO HV2: enable when SideTxConfigurator, helper, contractCaller and chainManager are implemented
-	sideMsgCfg    SideTxConfigurator
 	contractCaller mocks.IContractCaller
 	chainParams    chainTypes.Params
 	*/
