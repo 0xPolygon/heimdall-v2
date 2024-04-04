@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"fmt"
+	hModule "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 	"math/rand"
 
@@ -17,12 +18,12 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
+func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hModule.Vote {
 	cfg := suite.sideMsgCfg
 	return cfg.SideHandler(msg)(ctx, msg)
 }
 
-func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
+func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hModule.Vote) {
 	cfg := suite.sideMsgCfg
 
 	cfg.PostHandler(msg)(ctx, msg, vote)
@@ -94,7 +95,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				blockNumber := uint64(599)
 				bn := new(big.Int).SetUint64(blockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
-				suite.Require().Equal(res, hmModule.Vote_VOTE_YES, "side tx handler should succeed")
+				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "side tx handler should succeed")
 				// there should be no stored event record
 				ok, err := heimdallApp.TopupKeeper.HasTopupSequence(ctx, sequence.String())
 				suite.Require().NoError(err)
@@ -135,7 +136,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_NO, "side tx handler should fail")
+				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
@@ -175,7 +176,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_NO, "side tx handler should fail")
+				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
@@ -221,7 +222,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_NO, "side tx handler should fail")
+				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
@@ -267,7 +268,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_NO, "side tx handler should fail")
+				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
@@ -313,7 +314,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_NO, "side tx handler should fail")
+				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 	}
@@ -380,7 +381,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_NO, "post tx handler should fail")
+				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "post tx handler should fail")
 				// there should be no stored event record
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
@@ -416,7 +417,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_YES, "post tx handler should succeed")
+				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "post tx handler should succeed")
 				// there should be no stored event record
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
@@ -470,7 +471,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_YES, "side tx handler should succeed")
+				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "side tx handler should succeed")
 				// there should be stored sequence
 				// check if incoming tx is older
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
@@ -528,7 +529,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			true,
 			"",
 			func(res hModule.Vote) {
-				suite.Require().Equal(res, hmModule.Vote_VOTE_YES, "side tx handler should succeed")
+				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "side tx handler should succeed")
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 				sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
@@ -536,7 +537,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 				suite.Require().NoError(err)
 				suite.Require().True(ok)
 				replayRes := suite.sideHandler(ctx, &msg)
-				suite.Require().Equal(replayRes, hmModule.Vote_VOTE_NO, "side tx handler should fail")
+				suite.Require().Equal(replayRes, hModule.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 	}

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	hModule "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -26,7 +27,7 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 }
 
 // SideTxHandler redirects to the right sideMsgServer side_handler based on methodName
-func (s sideMsgServer) SideTxHandler(methodName string) interface{} {
+func (s sideMsgServer) SideTxHandler(methodName string) hModule.SideTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
 		return s.SideHandleTopupTx
@@ -36,7 +37,7 @@ func (s sideMsgServer) SideTxHandler(methodName string) interface{} {
 }
 
 // PostTxHandler redirects to the right sideMsgServer post_handler based on methodName
-func (s sideMsgServer) PostTxHandler(methodName string) interface{} {
+func (s sideMsgServer) PostTxHandler(methodName string) hModule.PostTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
 		return s.PostHandleTopupTx
@@ -52,7 +53,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) hModule.
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
 		logger.Error("MsgTopupTx type mismatch")
-		return hmModule.Vote_VOTE_NO
+		return hModule.Vote_VOTE_NO
 	}
 
 	logger.Debug("validating external call for topup msg",
@@ -68,19 +69,19 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) hModule.
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
 	if err != nil || receipt == nil {
-		return hmModule.Vote_VOTE_NO
+		return hModule.Vote_VOTE_NO
 	}
 
 	// get event log for topup
 	eventLog, err := contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress.EthAddress(), receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		logger.Error("error fetching log from txhash for DecodeValidatorTopupFeesEvent")
-		return hmModule.Vote_VOTE_NO
+		return hModule.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		logger.Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
-		return hmModule.Vote_VOTE_NO
+		return hModule.Vote_VOTE_NO
 	}
 
 	if !bytes.Equal(eventLog.User.Bytes(), []byte(msg.User)) {
@@ -90,21 +91,21 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) hModule.
 			"msgUser", msg.User,
 		)
 
-		return hmModule.Vote_VOTE_NO
+		return hModule.Vote_VOTE_NO
 	}
 
 	if eventLog.Fee.Cmp(msg.Fee.BigInt()) != 0 {
 		logger.Error("fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
-		return hmModule.Vote_VOTE_NO
+		return hModule.Vote_VOTE_NO
 	}
 
 	logger.Debug("Successfully validated external call for topup msg")
 
-	return hmModule.Vote_VOTE_YES
+	return hModule.Vote_VOTE_NO
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup
-func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult hmModule.Vote) {
+func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult hModule.Vote) {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
@@ -114,7 +115,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	// skip handler if topup is not approved
-	if sideTxResult != hmModule.Vote_VOTE_YES {
+	if sideTxResult != hModule.Vote_VOTE_YES {
 		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
 		return
 	}
