@@ -9,6 +9,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -24,10 +25,11 @@ type KeeperTestSuite struct {
 	queryClient   topupTypes.QueryClient
 	msgServer     topupTypes.MsgServer
 	sideMsgServer topupTypes.SideMsgServer
-	sideMsgCfg    hmModule.SideTxConfigurator
-	// TODO HV2: enable when contractCaller and chainManager are implemented
-	// contractCaller mocks.IContractCaller
-	// chainParams    chainTypes.Params
+	/* TODO HV2: enable when SideTxConfigurator, helper, contractCaller and chainManager are implemented
+	sideMsgCfg    SideTxConfigurator
+	contractCaller mocks.IContractCaller
+	chainParams    chainTypes.Params
+	*/
 }
 
 // createTestApp returns context and app on topup keeper
@@ -110,4 +112,15 @@ func (suite *KeeperTestSuite) TestDividendAccountTree() {
 	leafHash, err := CalculateDividendAccountHash(divAccounts[0])
 	require.NotNil(t, leafHash)
 	require.NoError(t, err)
+}
+
+// CalculateDividendAccountHash hashes the values of a DividendAccount
+func CalculateDividendAccountHash(da types.DividendAccount) ([]byte, error) {
+	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
+	divAccountHash := crypto.Keccak256(topupTypes.AppendBytes32(
+		[]byte(da.User),
+		fee.Bytes(),
+	))
+
+	return divAccountHash, nil
 }

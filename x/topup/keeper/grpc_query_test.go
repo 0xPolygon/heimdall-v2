@@ -17,10 +17,10 @@ import (
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence() {
 	queryClient := suite.queryClient
-	// TODO HV2: enable when contractCaller and chainManager are implemented
-	// suite.contractCaller = mocks.IContractCaller{}
-	// suite.chainParams = suite.app.ChainKeeper.GetParams(suite.ctx)
-
+	/* TODO HV2: enable when helper, contractCaller and chainManager are implemented
+	suite.contractCaller = mocks.IContractCaller{}
+	suite.chainParams = suite.app.ChainKeeper.GetParams(suite.ctx)
+	*/
 	var req *types.QueryTopupSequenceRequest
 
 	testCases := []struct {
@@ -468,9 +468,10 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof() {
 				accRoot := []byte("accRoot")
 				copy(accountRoot[:], accRoot)
 
-				// TODO HV2: enable this when contractCaller is implemented in heimdall-v2
-				// suite.contractCaller.On("GetStakingInfoInstance", mock.Anything).Return(stakingInfo, nil)
-				// suite.contractCaller.On("CurrentAccountStateRoot", stakingInfo).Return(accountRoot, nil)
+				/* TODO HV2: enable this when helper and contractCaller are implemented in heimdall-v2
+				suite.contractCaller.On("GetStakingInfoInstance", mock.Anything).Return(stakingInfo, nil)
+				suite.contractCaller.On("CurrentAccountStateRoot", stakingInfo).Return(accountRoot, nil)
+				*/
 
 				req = &types.QueryDividendAccountProofRequest{
 					Address: hash.String(),

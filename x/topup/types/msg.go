@@ -8,7 +8,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 )
 
 // TODO HV2: this file has some extension methods for msg interfaces. Do we need it at all?
@@ -54,7 +53,7 @@ func (msg MsgTopupTx) GetSigners() []sdk.AccAddress {
 // GetSignBytes returns the message bytes to sign over.
 func (msg MsgTopupTx) GetSignBytes() []byte {
 	// TODO HV2: double check this function
-	return keeper.AppendBytes32(
+	return AppendBytes32(
 		[]byte(msg.Proposer),
 		[]byte(msg.User),
 		msg.Fee.BigInt().Bytes(),
@@ -103,8 +102,32 @@ func (msg MsgWithdrawFeeTx) GetSigners() []sdk.AccAddress {
 // GetSignBytes returns the message bytes to sign over.
 func (msg MsgWithdrawFeeTx) GetSignBytes() []byte {
 	// TODO HV2: double check this function
-	return keeper.AppendBytes32(
+	return AppendBytes32(
 		[]byte(msg.Proposer),
 		msg.Amount.BigInt().Bytes(),
 	)
+}
+
+func AppendBytes32(data ...[]byte) []byte {
+	var result []byte
+
+	for _, v := range data {
+		paddedV, err := convertTo32(v)
+		if err == nil {
+			result = append(result, paddedV[:]...)
+		}
+	}
+
+	return result
+}
+
+func convertTo32(input []byte) (output [32]byte, err error) {
+	l := len(input)
+	if l > 32 || l == 0 {
+		return
+	}
+
+	copy(output[32-l:], input[:])
+
+	return
 }

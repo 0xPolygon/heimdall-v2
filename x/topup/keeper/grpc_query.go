@@ -16,14 +16,11 @@ type queryServer struct {
 	k *Keeper
 }
 
-// TODO HV2: enable contractCaller when implemented in heimdall-v2
-
 // NewQueryServer creates a new querier for topup clients.
 // Besides the keeper, it also takes in the contractCaller to interact with ethereum chain
-func NewQueryServer(k *Keeper /*, contractCaller helper.IContractCaller */) types.QueryServer {
+func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
-		// contractCaller: contractCaller,
 	}
 }
 
