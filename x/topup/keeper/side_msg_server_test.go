@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"fmt"
-	hModule "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 	"math/rand"
 
@@ -14,6 +13,7 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	hModule "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )

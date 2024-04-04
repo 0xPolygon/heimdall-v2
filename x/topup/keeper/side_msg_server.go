@@ -2,13 +2,13 @@ package keeper
 
 import (
 	"bytes"
-	hModule "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
+	hModule "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
