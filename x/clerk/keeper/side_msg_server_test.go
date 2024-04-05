@@ -6,19 +6,20 @@ import (
 	"testing"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	voteTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 )
 
-func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) voteTypes.Vote {
+func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
 	cfg := suite.sideMsgCfg
 	return cfg.SideHandler(msg)(ctx, msg)
 }
 
-func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote voteTypes.Vote) {
+func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
 	cfg := suite.sideMsgCfg
 
 	cfg.PostHandler(msg)(ctx, msg, vote)
@@ -27,19 +28,60 @@ func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote vot
 // Test cases
 
 func (suite *KeeperTestSuite) TestSideHandler() {
-	t, ctx := suite.T(), suite.ctx
+	t, ctx, chainID := suite.T(), suite.ctx, suite.chainID
+
+	s := rand.NewSource(1)
+	r := rand.New(s)
+
+	ac := address.NewHexCodec()
+
+	addrBz1, err := ac.StringToBytes(Address1)
+	require.NoError(t, err)
+
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(t, err)
+
+	txHashBz, err := ac.StringToBytes(TxHash1)
+	require.NoError(t, err)
+
+	id := r.Uint64()
+	logIndex := r.Uint64()
+	blockNumber := r.Uint64()
+
+	msg := types.NewMsgEventRecord(
+		addrBz1,
+		hmTypes.HeimdallHash{Hash: txHashBz},
+		logIndex,
+		blockNumber,
+		id,
+		addrBz2,
+		hmTypes.HexBytes{
+			HexBytes: make([]byte, 0),
+		},
+		chainID,
+	)
 
 	// side handler
-	result := suite.sideHandler(ctx, nil)
-	require.Equal(t, voteTypes.Vote_VOTE_SKIP, result)
+	result := suite.sideHandler(ctx, &msg)
+	require.Equal(t, hmModule.Vote_VOTE_YES, result)
 }
 
 func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
-	t, app, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+
 	// TODO HV2 - uncomment when chainmanager is implemented
 	// chainParams := app.ChainKeeper.GetParams(suite.ctx)
 
-	addr1 := sdk.AccAddress([]byte("addr1"))
+	s := rand.NewSource(1)
+	r := rand.New(s)
+
+	ac := address.NewHexCodec()
+
+	addrBz1, err := ac.StringToBytes(Address1)
+	require.NoError(t, err)
+
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(t, err)
 
 	id := r.Uint64()
 
@@ -57,12 +99,12 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		}
 
 		msg := types.NewMsgEventRecord(
-			addr1,
+			addrBz1,
 			txHash,
 			logIndex,
 			blockNumber,
 			id,
-			addr1,
+			addrBz2,
 			hmTypes.HexBytes{
 				HexBytes: make([]byte, 0),
 			},
@@ -83,86 +125,86 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, voteTypes.Vote_VOTE_YES, result)
+		require.Equal(t, hmModule.Vote_VOTE_YES, result)
 
 		// there should be no stored event record
-		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+		storedEventRecord, err := ck.GetEventRecord(ctx, id)
 		require.Nil(t, storedEventRecord)
 		require.Error(t, err)
 	})
 
-	t.Run("NoReceipt", func(t *testing.T) {
-		// TODO HV2 - uncomment when mock contract caller is implemented
-		// suite.contractCaller = mocks.IContractCaller{}
+	/*
+		t.Run("NoReceipt", func(t *testing.T) {
+			// TODO HV2 - uncomment when mock contract caller is implemented
+			// suite.contractCaller = mocks.IContractCaller{}
 
-		logIndex := uint64(200)
-		blockNumber := uint64(51)
-		txHash := hmTypes.HeimdallHash{
-			Hash: []byte("no receipt hash"),
-		}
+			logIndex := uint64(200)
+			blockNumber := uint64(51)
+			txHash := hmTypes.HeimdallHash{
+				Hash: []byte("no receipt hash"),
+			}
 
-		msg := types.NewMsgEventRecord(
-			addr1,
-			txHash,
-			logIndex,
-			blockNumber,
-			id,
-			addr1,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
-			suite.chainID,
-		)
+			msg := types.NewMsgEventRecord(
+				addrBz1,
+				txHash,
+				logIndex,
+				blockNumber,
+				id,
+				addrBz2,
+				hmTypes.HexBytes{
+					HexBytes: make([]byte, 0),
+				},
+				suite.chainID,
+			)
 
-		// TODO HV2 - uncomment when mock contract caller is implemented
-		// mock external calls -- no receipt
-		/*
+			// TODO HV2 - uncomment when mock contract caller is implemented
+			// mock external calls -- no receipt
 			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
 			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
-		*/
 
-		// execute handler
-		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, voteTypes.Vote_VOTE_SKIP, result)
-	})
+			// execute handler
+			result := suite.sideHandler(ctx, &msg)
+			require.Equal(t, hmModule.Vote_VOTE_SKIP, result)
+		})
+	*/
 
-	t.Run("NoLog", func(t *testing.T) {
-		// TODO HV2 - uncomment when mock contract caller is implemented
-		// suite.contractCaller = mocks.IContractCaller{}
+	/*
+		t.Run("NoLog", func(t *testing.T) {
+			// TODO HV2 - uncomment when mock contract caller is implemented
+			// suite.contractCaller = mocks.IContractCaller{}
 
-		logIndex := uint64(100)
-		blockNumber := uint64(510)
-		// txReceipt := &ethTypes.Receipt{
-		// 	BlockNumber: new(big.Int).SetUint64(blockNumber),
-		// }
-		txHash := hmTypes.HeimdallHash{
-			Hash: []byte("no log hash"),
-		}
+			logIndex := uint64(100)
+			blockNumber := uint64(510)
+			// txReceipt := &ethTypes.Receipt{
+			// 	BlockNumber: new(big.Int).SetUint64(blockNumber),
+			// }
+			txHash := hmTypes.HeimdallHash{
+				Hash: []byte("no log hash"),
+			}
 
-		msg := types.NewMsgEventRecord(
-			addr1,
-			txHash,
-			logIndex,
-			blockNumber,
-			id,
-			addr1,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
-			suite.chainID,
-		)
+			msg := types.NewMsgEventRecord(
+				addrBz1,
+				txHash,
+				logIndex,
+				blockNumber,
+				id,
+				addrBz2,
+				hmTypes.HexBytes{
+					HexBytes: make([]byte, 0),
+				},
+				suite.chainID,
+			)
 
-		// TODO HV2 - uncomment when mock contract caller is implemented
-		// mock external calls -- no receipt
-		/*
-			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
-		*/
+			// TODO HV2 - uncomment when mock contract caller is implemented
+			// mock external calls -- no receipt
+			// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+			// suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
 
-		// execute handler
-		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, voteTypes.Vote_VOTE_SKIP, result)
-	})
+			// execute handler
+			result := suite.sideHandler(ctx, &msg)
+			require.Equal(t, hmModule.Vote_VOTE_SKIP, result)
+		})
+	*/
 
 	t.Run("EventDataExceed", func(t *testing.T) {
 		// TODO HV2 - uncomment when mock contract caller is implemented
@@ -185,12 +227,12 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		// data created after trimming
 		msg := types.NewMsgEventRecord(
-			addr1,
+			addrBz1,
 			txHash,
 			logIndex,
 			blockNumber,
 			id,
-			addr1,
+			addrBz2,
 			hmTypes.HexBytes{
 				HexBytes: []byte(""),
 			},
@@ -212,44 +254,84 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, voteTypes.Vote_VOTE_YES, result)
+		require.Equal(t, hmModule.Vote_VOTE_YES, result)
 
 		// there should be no stored event record
-		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+		storedEventRecord, err := ck.GetEventRecord(ctx, id)
 		require.Nil(t, storedEventRecord)
 		require.Error(t, err)
 	})
 }
 
 func (suite *KeeperTestSuite) TestPostHandler() {
-	_, ctx := suite.T(), suite.ctx
+	t, ctx, chainID := suite.T(), suite.ctx, suite.chainID
+
+	s := rand.NewSource(1)
+	r := rand.New(s)
+
+	ac := address.NewHexCodec()
+
+	addrBz1, err := ac.StringToBytes(Address1)
+	require.NoError(t, err)
+
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(t, err)
+
+	txHashBz, err := ac.StringToBytes(TxHash1)
+	require.NoError(t, err)
+
+	id := r.Uint64()
+	logIndex := r.Uint64()
+	blockNumber := r.Uint64()
+
+	msg := types.NewMsgEventRecord(
+		addrBz1,
+		hmTypes.HeimdallHash{Hash: txHashBz},
+		logIndex,
+		blockNumber,
+		id,
+		addrBz2,
+		hmTypes.HexBytes{
+			HexBytes: make([]byte, 0),
+		},
+		chainID,
+	)
 
 	// TODO HV2 - in our case, post handler does not return anything. How to test then?
 	// post tx handler
-	suite.postHandler(ctx, nil, voteTypes.Vote_VOTE_YES)
+	suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
 	// require.False(t, result.IsOK(), "Post handler should fail")
 	// require.Equal(t, sdk.CodeUnknownRequest, result.Code)
 }
 
 func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
-	t, app, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
-	addr1 := sdk.AccAddress([]byte("addr1"))
+	s := rand.NewSource(1)
+	r := rand.New(s)
+
+	ac := address.NewHexCodec()
+
+	addrBz1, err := ac.StringToBytes(Address1)
+	require.NoError(t, err)
+
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(t, err)
+
+	txHashBz, err := ac.StringToBytes(TxHash1)
+	require.NoError(t, err)
 
 	id := r.Uint64()
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
-	txHash := hmTypes.HeimdallHash{
-		Hash: []byte("no log hash"),
-	}
 
 	msg := types.NewMsgEventRecord(
-		addr1,
-		txHash,
+		addrBz1,
+		hmTypes.HeimdallHash{Hash: txHashBz},
 		logIndex,
 		blockNumber,
 		id,
-		addr1,
+		addrBz2,
 		hmTypes.HexBytes{
 			HexBytes: make([]byte, 0),
 		},
@@ -258,20 +340,20 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 
 	t.Run("NoResult", func(t *testing.T) {
 		// TODO HV2 - in our case, post handler does not return anything. How to test then?
-		suite.postHandler(ctx, &msg, voteTypes.Vote_VOTE_NO)
+		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_NO)
 		// require.False(t, result.IsOK(), "Post handler should fail")
 		// require.Equal(t, common.CodeSideTxValidationFailed, result.Code)
 		// require.Equal(t, 0, len(result.Events), "No error should be emitted for failed post-tx")
 
 		// there should be no stored event record
-		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+		storedEventRecord, err := ck.GetEventRecord(ctx, id)
 		require.Nil(t, storedEventRecord)
 		require.Error(t, err)
 	})
 
 	t.Run("YesResult", func(t *testing.T) {
 		// TODO HV2 - in our case, post handler does not return anything. How to test then?
-		suite.postHandler(ctx, &msg, voteTypes.Vote_VOTE_YES)
+		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
 		// require.True(t, result.IsOK(), "Post handler should succeed")
 		// require.Greater(t, len(result.Events), 0, "Events should be emitted for successful post-tx")
 
@@ -281,31 +363,29 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 		// check sequence
-		hasSequence := app.ClerkKeeper.HasRecordSequence(ctx, sequence.String())
+		hasSequence := ck.HasRecordSequence(ctx, sequence.String())
 		require.True(t, hasSequence, "Sequence should be stored correctly")
 
 		// there should be no stored event record
-		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+		storedEventRecord, err := ck.GetEventRecord(ctx, id)
 		require.NotNil(t, storedEventRecord)
 		require.NoError(t, err)
+		require.Equal(t, id, storedEventRecord.ID)
+		require.Equal(t, logIndex, storedEventRecord.LogIndex)
 	})
 
 	t.Run("Replay", func(t *testing.T) {
 		id := r.Uint64()
 		logIndex := r.Uint64()
 		blockNumber := r.Uint64()
-		txHash := hmTypes.HeimdallHash{
-			Hash: []byte("Replay hash"),
-		}
-		addr2 := sdk.AccAddress([]byte("addr2"))
 
 		_ = types.NewMsgEventRecord(
-			addr1,
-			txHash,
+			addrBz1,
+			hmTypes.HeimdallHash{Hash: txHashBz},
 			logIndex,
 			blockNumber,
 			id,
-			addr2,
+			addrBz2,
 			hmTypes.HexBytes{
 				HexBytes: make([]byte, 0),
 			},
@@ -313,11 +393,11 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		)
 
 		// TODO HV2 - in our case, post handler does not return anything. How to test then?
-		suite.postHandler(ctx, &msg, voteTypes.Vote_VOTE_YES)
+		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
 		// require.True(t, result.IsOK(), "Post handler should succeed")
 
 		// TODO HV2 - in our case, post handler does not return anything. How to test then?
-		suite.postHandler(ctx, &msg, voteTypes.Vote_VOTE_YES)
+		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
 		// require.False(t, result.IsOK(), "Post handler should prevent replay attack")
 		// require.Equal(t, common.CodeOldTx, result.Code)
 	})

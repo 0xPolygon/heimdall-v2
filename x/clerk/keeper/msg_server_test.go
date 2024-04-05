@@ -9,31 +9,39 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/stretchr/testify/require"
 )
 
 func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
-	t, app, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
+	t, ctx, ck, chainID := suite.T(), suite.ctx, suite.keeper, suite.chainID
 
-	// TODO HV2 - let's use real data (in this whole file)
-	addr1 := sdk.AccAddress([]byte("addr1"))
+	s := rand.NewSource(1)
+	r := rand.New(s)
+
+	ac := address.NewHexCodec()
+
+	addrBz1, err := ac.StringToBytes(Address1)
+	require.NoError(t, err)
+
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(t, err)
+
+	txHashBz, err := ac.StringToBytes(TxHash1)
+	require.NoError(t, err)
 
 	id := r.Uint64()
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
 
-	txHashBytes, err := hexCodec.NewHexCodec().StringToBytes("123")
-	require.NoError(t, err)
 	// successful message
 	msg := types.NewMsgEventRecord(
-		addr1,
-		hmTypes.HeimdallHash{Hash: txHashBytes},
+		addrBz1,
+		hmTypes.HeimdallHash{Hash: txHashBz},
 		logIndex,
 		blockNumber,
 		id,
-		addr1,
+		addrBz2,
 		hmTypes.HexBytes{
 			HexBytes: make([]byte, 0),
 		},
@@ -47,7 +55,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 		// require.True(t, result.IsOK(), "expected msg record to be ok, got %v", result)
 
 		// there should be no stored event record
-		storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+		storedEventRecord, err := ck.GetEventRecord(ctx, id)
 		require.Nil(t, storedEventRecord)
 		require.Error(t, err)
 	})
@@ -55,7 +63,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	t.Run("ExistingRecord", func(t *testing.T) {
 		// store event record in keeper
 		tempTime := time.Now()
-		err := app.ClerkKeeper.SetEventRecord(ctx,
+		err := ck.SetEventRecord(ctx,
 			types.NewEventRecord(
 				msg.TxHash,
 				msg.LogIndex,
@@ -95,20 +103,29 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 }
 
 func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
-	t, app, ctx, chainID, r := suite.T(), suite.app, suite.ctx, suite.chainID, suite.r
+	t, ctx, ck, chainID := suite.T(), suite.ctx, suite.keeper, suite.chainID
 
-	addr1 := sdk.AccAddress([]byte("addr1"))
+	s := rand.NewSource(1)
+	r := rand.New(s)
 
-	txHashBytes, err := hexCodec.NewHexCodec().StringToBytes("123")
+	ac := address.NewHexCodec()
+
+	addrBz1, err := ac.StringToBytes(Address1)
+	require.NoError(t, err)
+
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(t, err)
+
+	txHashBz, err := ac.StringToBytes(TxHash1)
 	require.NoError(t, err)
 
 	msg := types.NewMsgEventRecord(
-		addr1,
-		hmTypes.HeimdallHash{Hash: txHashBytes},
+		addrBz1,
+		hmTypes.HeimdallHash{Hash: txHashBz},
 		r.Uint64(),
 		r.Uint64(),
 		r.Uint64(),
-		addr1,
+		addrBz2,
 		hmTypes.HexBytes{
 			HexBytes: make([]byte, 0),
 		},
@@ -119,7 +136,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-	app.ClerkKeeper.SetRecordSequence(ctx, sequence.String())
+	ck.SetRecordSequence(ctx, sequence.String())
 
 	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
@@ -128,24 +145,35 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	// require.Equal(t, common.CodeOldTx, result.Code)
 }
 
+// TODO HV2 - uncomment when chainmanager is implemented and added into the Keeper
+/*
 func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
-	t, app, ctx, r := suite.T(), suite.app, suite.ctx, suite.r
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
-	addr1 := sdk.AccAddress([]byte("addr1"))
+	s := rand.NewSource(1)
+	r := rand.New(s)
+
+	ac := address.NewHexCodec()
+
+	addrBz1, err := ac.StringToBytes(Address1)
+	require.NoError(t, err)
+
+	addrBz2, err := ac.StringToBytes(Address2)
+	require.NoError(t, err)
 
 	id := r.Uint64()
 
-	txHashBytes, err := hexCodec.NewHexCodec().StringToBytes("123")
+	txHashBz, err := ac.StringToBytes(TxHash1)
 	require.NoError(t, err)
 
 	// wrong chain id
 	msg := types.NewMsgEventRecord(
-		addr1,
-		hmTypes.HeimdallHash{Hash: txHashBytes},
+		sdk.AccAddress(addrBz1),
+		hmTypes.HeimdallHash{Hash: txHashBz},
 		r.Uint64(),
 		r.Uint64(),
 		id,
-		addr1,
+		sdk.AccAddress(addrBz2),
 		hmTypes.HexBytes{
 			HexBytes: make([]byte, 0),
 		},
@@ -158,7 +186,8 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 	// require.Equal(t, common.CodeInvalidBorChainID, result.Code)
 
 	// there should be no stored event record
-	storedEventRecord, err := app.ClerkKeeper.GetEventRecord(ctx, id)
+	storedEventRecord, err := ck.GetEventRecord(ctx, id)
 	require.Nil(t, storedEventRecord)
 	require.Error(t, err)
 }
+*/

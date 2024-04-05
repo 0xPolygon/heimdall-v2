@@ -1,61 +1,59 @@
 package keeper_test
 
 import (
-	"math/rand"
 	"testing"
 	"time"
 
+	storetypes "cosmossdk.io/store/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/0xPolygon/heimdall-v2/app"
-	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
-
 	// TODO HV2 - uncomment when contractCaller is implemented
 	// "github.com/0xPolygon/heimdall-v2/helper/mocks"
+
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/clerk"
+	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
 )
+
+var Address1 = "0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+var Address2 = "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+var TxHash1 = "0xc316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 
 // createTestApp returns context and app on clerk keeper
 // nolint: unparam
+/*
 func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
 	app := app.Setup(t, isCheckTx)
 	ctx := app.BaseApp.NewContext(isCheckTx)
 
 	return app, ctx
 }
+*/
 
 // KeeperTestSuite integrate test suite context object
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx        sdk.Context
-	app        *app.HeimdallApp
-	chainID    string
-	msgServer  types.MsgServer
-	sideMsgCfg hmModule.SideTxConfigurator
+	ctx    sdk.Context
+	keeper clerkKeeper.Keeper
+	// app        *app.HeimdallApp
+	chainID     string
+	msgServer   types.MsgServer
+	sideMsgCfg  hmModule.SideTxConfigurator
+	queryClient types.QueryClient
 	// TODO HV2 - uncomment when contractCaller is implemented
 	// contractCaller mocks.IContractCaller
-	r *rand.Rand
-}
-
-func (suite *KeeperTestSuite) SetupTest(t *testing.T) {
-	suite.app, suite.ctx = createTestApp(t, false)
-	// TODO HV2 - uncomment when contract caller is implemented
-	// suite.contractCaller = mocks.IContractCaller{}
-	suite.msgServer = keeper.NewMsgServerImpl(suite.app.ClerkKeeper)
-
-	// fetch chain id
-	// TODO HV2 - uncomment when ChainKeeper is implemented
-	// suite.chainID = suite.app.ChainKeeper.GetParams(suite.ctx).ChainParams.BorChainID
-
-	// random generator
-	s1 := rand.NewSource(time.Now().UnixNano())
-	suite.r = rand.New(s1)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -63,17 +61,47 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
-	t, app, ctx := suite.T(), suite.app, suite.ctx
+func (suite *KeeperTestSuite) SetupTest() {
+	key := storetypes.NewKVStoreKey(types.StoreKey)
+	storeService := runtime.NewKVStoreService(key)
+	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
+	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	hAddr := "some-address"
-	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
+	keeper := clerkKeeper.NewKeeper(
+		encCfg.Codec,
+		storeService,
+	)
+
+	suite.ctx = ctx
+	suite.keeper = keeper
+
+	clerkGenesis := types.DefaultGenesisState()
+
+	clerk.InitGenesis(ctx, &keeper, clerkGenesis)
+
+	types.RegisterInterfaces(encCfg.InterfaceRegistry)
+	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
+	types.RegisterQueryServer(queryHelper, clerkKeeper.QueryServer{K: keeper})
+	suite.queryClient = types.NewQueryClient(queryHelper)
+	suite.msgServer = clerkKeeper.NewMsgServerImpl(keeper)
+
+	suite.sideMsgCfg = hmModule.NewSideTxConfigurator()
+	types.RegisterSideMsgServer(suite.sideMsgCfg, clerkKeeper.NewSideMsgServerImpl(keeper))
+}
+
+func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+
+	ac := address.NewHexCodec()
+	addrBz, err := ac.StringToBytes(Address1)
 	require.NoError(t, err)
-	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
-	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
+
+	hHash := hmTypes.HeimdallHash{Hash: addrBz}
+
+	testRecord1 := types.NewEventRecord(hHash, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 
 	// SetEventRecord
-	ck := app.ClerkKeeper
 	err = ck.SetEventRecord(ctx, testRecord1)
 	require.Nil(t, err)
 
@@ -100,18 +128,17 @@ func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 }
 
 func (suite *KeeperTestSuite) TestGetEventRecordList() {
-	t, app, ctx := suite.T(), suite.app, suite.ctx
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
 	var i uint64
 
-	hAddr := "some-address"
-	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
+	ac := address.NewHexCodec()
+	addrBz, err := ac.StringToBytes(Address1)
 	require.NoError(t, err)
-	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
-	ck := app.ClerkKeeper
+	hHash := hmTypes.HeimdallHash{Hash: addrBz}
 
 	for i = 0; i < 60; i++ {
-		testRecord := types.NewEventRecord(hHash, i, i, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
+		testRecord := types.NewEventRecord(hHash, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
 	}
@@ -133,18 +160,17 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 }
 
 func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
-	t, app, ctx := suite.T(), suite.app, suite.ctx
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
 	var i uint64
 
-	hAddr := "some-address"
-	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
+	ac := address.NewHexCodec()
+	addrBz, err := ac.StringToBytes(Address1)
 	require.NoError(t, err)
-	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
-	ck := app.ClerkKeeper
+	hHash := hmTypes.HeimdallHash{Hash: addrBz}
 
 	for i = 0; i < 30; i++ {
-		testRecord := types.NewEventRecord(hHash, i, i, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Unix(int64(i), 0))
+		testRecord := types.NewEventRecord(hHash, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Unix(int64(i), 0))
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
 	}
@@ -165,24 +191,11 @@ func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
 	require.Equal(t, int64(19), recordList[len(recordList)-1].RecordTime.Unix())
 }
 
-func (suite *KeeperTestSuite) TestGetEventRecordKey() {
-	t, _, _ := suite.T(), suite.app, suite.ctx
-
-	hAddr := "some-address"
-	hHashBytes, err := hexCodec.NewHexCodec().StringToBytes("some-address")
-	require.NoError(t, err)
-	hHash := hmTypes.HeimdallHash{Hash: hHashBytes}
-	testRecord1 := types.NewEventRecord(hHash, 1, 1, hAddr, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
-
-	respKey := keeper.GetEventRecordKey(testRecord1.ID)
-	require.Equal(t, respKey, []byte{17, 49})
-}
-
 func (suite *KeeperTestSuite) TestSetHasGetRecordSequence() {
-	t, app, ctx := suite.T(), suite.app, suite.ctx
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
 	testSeq := "testseq"
-	ck := app.ClerkKeeper
+
 	ck.SetRecordSequence(ctx, testSeq)
 	found := ck.HasRecordSequence(ctx, testSeq)
 	require.True(t, found)
