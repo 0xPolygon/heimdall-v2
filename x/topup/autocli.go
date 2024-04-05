@@ -50,6 +50,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
 						{ProtoField: "address"}, {ProtoField: "accountProof"}},
 				},
+			},
+		},
+		Tx: &autocliv1.ServiceCommandDescriptor{
+			Service: topupv1.Msg_ServiceDesc.ServiceName,
+			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "CreateTopupTx",
 					Use:       "create-topup-tx [proposer] [user] [fee] [txHash] [logIndex] [blockNumber]",
