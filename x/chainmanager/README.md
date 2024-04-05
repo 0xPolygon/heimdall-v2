@@ -35,7 +35,7 @@ message Params {
 }
 ```
 
-## Query commands
+## Query commands (TODO HV2: revisit once we have the CLI running)
 
 One can run the following query commands from the chainmanager module :
 
