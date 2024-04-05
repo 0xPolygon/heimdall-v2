@@ -14,16 +14,16 @@ const (
 	QueryRecordSequence     = "record-sequence"
 )
 
-type queryServer struct{ k Keeper }
+type QueryServer struct{ K Keeper }
 
-var _ types.QueryServer = queryServer{}
+var _ types.QueryServer = QueryServer{}
 
 func NewQueryServer(k Keeper) types.QueryServer {
-	return queryServer{k: k}
+	return QueryServer{K: k}
 }
 
-func (s queryServer) Record(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
-	record, err := s.k.GetEventRecord(ctx, request.RecordID)
+func (s QueryServer) Record(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
+	record, err := s.K.GetEventRecord(ctx, request.RecordID)
 	if err != nil {
 		return nil, err
 	}
@@ -31,8 +31,8 @@ func (s queryServer) Record(ctx context.Context, request *types.RecordRequest) (
 	return &types.RecordResponse{Record: record}, nil
 }
 
-func (s queryServer) RecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
-	records, err := s.k.GetEventRecordList(ctx, request.Page, request.Limit)
+func (s QueryServer) RecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
+	records, err := s.K.GetEventRecordList(ctx, request.Page, request.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +45,8 @@ func (s queryServer) RecordList(ctx context.Context, request *types.RecordListRe
 	return &types.RecordListResponse{EventRecords: newRecords}, nil
 }
 
-func (s queryServer) RecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
-	records, err := s.k.GetEventRecordListWithTime(ctx, request.FromTime, request.ToTime, request.Page, request.Limit)
+func (s QueryServer) RecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
+	records, err := s.K.GetEventRecordListWithTime(ctx, request.FromTime, request.ToTime, request.Page, request.Limit)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s queryServer) RecordListWithTime(ctx context.Context, request *types.Reco
 	return &types.RecordListWithTimeResponse{EventRecords: newRecords}, nil
 }
 
-func (s queryServer) RecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
+func (s QueryServer) RecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
 	// TODO HV2 - implement after contractCallerObj is available
 	/*
 		var params types.QueryRecordSequenceParams

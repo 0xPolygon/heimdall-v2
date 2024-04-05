@@ -6,14 +6,18 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	type2 "github.com/0xPolygon/heimdall-v2/types"
 	types "github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 type sideMsgServer struct {
 	Keeper
 }
+
+var (
+	msgeventrecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
+)
 
 // NewSideMsgServerImpl returns an implementation of the clerk MsgServer interface
 // for the provided Keeper.
@@ -22,9 +26,9 @@ func NewSideMsgServerImpl(keeper Keeper) types.SideMsgServer {
 }
 
 // SideTxHandler returns a side handler for "topup" type messages.
-func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler {
+func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 	switch methodName {
-	case types.MsgEventRecordMethod:
+	case msgeventrecord:
 		return srv.SideHandleMsgEventRecord
 	default:
 		return nil
@@ -32,20 +36,20 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler
 }
 
 // PostTxHandler returns a side handler for "bank" type messages.
-func (srv *sideMsgServer) PostTxHandler(methodName string) hmTypes.PostTxHandler {
+func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler {
 	switch methodName {
-	case types.MsgEventRecordMethod:
+	case msgeventrecord:
 		return srv.PostHandleMsgEventRecord
 	default:
 		return nil
 	}
 }
 
-func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result hmTypes.Vote) {
+func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
 		srv.Logger(ctx).Error("msg type mismatched")
-		return hmTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	srv.Logger(ctx).Debug("✅ Validating External call for clerk msg",
@@ -68,7 +72,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	/*
 		receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash, params.MainchainTxConfirmations)
 		if receipt == nil || err != nil {
-			return hmTypes.Vote_VOTE_NO
+			return hmModule.Vote_VOTE_NO
 		}
 	*/
 
@@ -78,7 +82,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		eventLog, err := contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress.EthAddress(), receipt, msg.LogIndex)
 		if err != nil || eventLog == nil {
 			srv.Logger(ctx).Error("Error fetching log from txhash")
-			return hmTypes.Vote_VOTE_NO
+			return hmModule.Vote_VOTE_NO
 		}
 	*/
 
@@ -86,13 +90,13 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	/*
 		if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 			srv.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
-			return hmTypes.Vote_VOTE_NO
+			return hmModule.Vote_VOTE_NO
 		}
 
 		// check if message and event log matches
 		if eventLog.Id.Uint64() != msg.ID {
 			srv.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ID, "stateIdFromTx", eventLog.Id)
-			return hmTypes.Vote_VOTE_NO
+			return hmModule.Vote_VOTE_NO
 		}
 
 		if !bytes.Equal(eventLog.ContractAddress.Bytes(), msg.ContractAddress.Bytes()) {
@@ -102,45 +106,45 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 				"MsgContractAddress", msg.ContractAddress,
 			)
 
-			return hmTypes.Vote_VOTE_NO
+			return hmModule.Vote_VOTE_NO
 		}
 
 		if !bytes.Equal(eventLog.Data, msg.Data.GetHexBytes()) {
 			if ctx.BlockHeight() > helper.GetSpanOverrideHeight() {
-				if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.GetHexBytes(), hmTypes.HexToHexBytes(""))) {
+				if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.GetHexBytes(), hmModule.HexToHexBytes(""))) {
 					srv.Logger(ctx).Error(
 						"Data from event does not match with Msg Data",
-						"EventData", hmTypes.BytesToHexBytes(eventLog.Data),
-						"MsgData", hmTypes.BytesToHexBytes(msg.Data),
+						"EventData", hmModule.BytesToHexBytes(eventLog.Data),
+						"MsgData", hmModule.BytesToHexBytes(msg.Data),
 					)
 
-					return hmTypes.Vote_VOTE_NO
+					return hmModule.Vote_VOTE_NO
 				}
 			} else {
-				if !(len(eventLog.Data) > helper.LegacyMaxStateSyncSize && bytes.Equal(msg.Data, hmTypes.HexToHexBytes(""))) {
+				if !(len(eventLog.Data) > helper.LegacyMaxStateSyncSize && bytes.Equal(msg.Data, hmModule.HexToHexBytes(""))) {
 					srv.Logger(ctx).Error(
 						"Data from event does not match with Msg Data",
-						"EventData", hmTypes.BytesToHexBytes(eventLog.Data),
-						"MsgData", hmTypes.BytesToHexBytes(msg.Data),
+						"EventData", hmModule.BytesToHexBytes(eventLog.Data),
+						"MsgData", hmModule.BytesToHexBytes(msg.Data),
 					)
 
-					return hmTypes.Vote_VOTE_NO
+					return hmModule.Vote_VOTE_NO
 				}
 			}
 		}
 	*/
 
-	return hmTypes.Vote_VOTE_YES
+	return hmModule.Vote_VOTE_YES
 }
 
-func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmTypes.Vote) {
+func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
 		srv.Logger(ctx).Error("msg type mismatched")
 	}
 
 	// Skip handler if clerk is not approved
-	if sideTxResult != hmTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		srv.Logger(ctx).Debug("Skipping new clerk since side-tx didn't get yes votes")
 		return
 	}
@@ -195,6 +199,4 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
 		),
 	})
-
-	return
 }
