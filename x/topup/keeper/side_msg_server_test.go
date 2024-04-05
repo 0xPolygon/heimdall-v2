@@ -13,27 +13,28 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	hModule "github.com/0xPolygon/heimdall-v2/module"
+	// mod "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hModule.Vote {
-	cfg := suite.sideMsgCfg
-	return cfg.SideHandler(msg)(ctx, msg)
+// TODO HV2: enable commented code in the whole file when module is implemented
+
+func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) /*mod.Vote*/ {
+	// cfg := suite.sideMsgCfg
+	// return cfg.SideHandler(msg)(ctx, msg)
 }
 
-func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hModule.Vote) {
-	cfg := suite.sideMsgCfg
-
-	cfg.PostHandler(msg)(ctx, msg, vote)
+func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg /*vote mod.Vote*/) {
+	//cfg := suite.sideMsgCfg
+	//cfg.PostHandler(msg)(ctx, msg, vote)
 }
 
 func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	var msg types.MsgTopupTx
 
 	heimdallApp, ctx := suite.app, suite.ctx
-	chainParams := heimdallApp.ChainKeeper.GetParams(suite.ctx)
+	// chainParams := heimdallApp.ChainKeeper.GetParams(suite.ctx)
 
 	_, _, addr1 := testdata.KeyTestPubAddr()
 	_, _, addr2 := testdata.KeyTestPubAddr()
@@ -43,16 +44,17 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		malleate  func()
 		expPass   bool
 		expErrMsg string
-		posttests func(res hModule.Vote)
+		posttests func( /*res mod.Vote*/ )
 	}{
 		{
 			"success",
 			func() {
-				suite.contractCaller = mocks.IContractCaller{}
+				// suite.contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
-				txReceipt := &ethTypes.Receipt{
+				// TODO HV2: replace _ with txReceipt when implemented
+				_ = &ethTypes.Receipt{
 					BlockNumber: new(big.Int).SetUint64(blockNumber),
 				}
 				// TODO HV2: use the following line when implemented
@@ -81,21 +83,22 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 				// mock external call
-				event := &stakinginfo.StakinginfoTopUpFee{
+				// TODO HV2: replace _ with event when implemented
+				_ = &stakinginfo.StakinginfoTopUpFee{
 					User: common.Address(sdk.AccAddress(addr1.String())),
 					Fee:  coins.Amount.BigInt(),
 				}
-				suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				//suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				//suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
+			func( /*res mod.Vote*/ ) {
 				blockNumber := uint64(599)
 				bn := new(big.Int).SetUint64(blockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
-				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "side tx handler should succeed")
+				//suite.Require().Equal(res, mod.Vote_VOTE_YES, "side tx handler should succeed")
 				// there should be no stored event record
 				ok, err := heimdallApp.TopupKeeper.HasTopupSequence(ctx, sequence.String())
 				suite.Require().NoError(err)
@@ -105,7 +108,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		{
 			"no receipt",
 			func() {
-				suite.contractCaller = mocks.IContractCaller{}
+				//suite.contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
@@ -129,24 +132,25 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 					blockNumber,
 				)
 
-				suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
-				suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
+				//suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
+				//suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
 
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
 			"no log",
 			func() {
-				suite.contractCaller = mocks.IContractCaller{}
+				//suite.contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
-				txReceipt := &ethTypes.Receipt{
+				// TODO HV2: replace _ with txReceipt when implemented
+				_ = &ethTypes.Receipt{
 					BlockNumber: new(big.Int).SetUint64(blockNumber),
 				}
 				// TODO HV2: use the following line when implemented
@@ -169,24 +173,25 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 					blockNumber,
 				)
 
-				suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
+				//suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				//suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
 
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
 			"block mismatch",
 			func() {
-				suite.contractCaller = mocks.IContractCaller{}
+				//suite.contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
-				txReceipt := &ethTypes.Receipt{
+				// TODO HV2: replace _ with txReceipt when implemented
+				_ = &ethTypes.Receipt{
 					BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
 				}
 				// TODO HV2: use the following line when implemented
@@ -210,29 +215,31 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				)
 
 				// mock external call
-				event := &stakinginfo.StakinginfoTopUpFee{
+				// TODO HV2: replace _ with event when implemented
+				_ = &stakinginfo.StakinginfoTopUpFee{
 					User: common.Address(sdk.AccAddress(addr1.String())),
 					Fee:  coins.Amount.BigInt(),
 				}
 
-				suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				//suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				//suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
 			"user mismatch",
 			func() {
-				suite.contractCaller = mocks.IContractCaller{}
+				//suite.contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
-				txReceipt := &ethTypes.Receipt{
+				// TODO HV2: replace _ with txReceipt when implemented
+				_ = &ethTypes.Receipt{
 					BlockNumber: new(big.Int).SetUint64(blockNumber),
 				}
 				// TODO HV2: use the following line when implemented
@@ -256,29 +263,31 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				)
 
 				// mock external call
-				event := &stakinginfo.StakinginfoTopUpFee{
+				// TODO HV2: replace _ with event when implemented
+				_ = &stakinginfo.StakinginfoTopUpFee{
 					User: common.Address(sdk.AccAddress(addr2.String())),
 					Fee:  coins.Amount.BigInt(),
 				}
 
-				suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				//suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				//suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 		{
 			"fee mismatch",
 			func() {
-				suite.contractCaller = mocks.IContractCaller{}
+				//suite.contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
-				txReceipt := &ethTypes.Receipt{
+				// TODO HV2: replace _ with txReceipt when implemented
+				_ = &ethTypes.Receipt{
 					BlockNumber: new(big.Int).SetUint64(blockNumber),
 				}
 				// TODO HV2: use the following line when implemented
@@ -302,19 +311,20 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				)
 
 				// mock external call
-				event := &stakinginfo.StakinginfoTopUpFee{
+				// TODO HV2: replace _ with event when implemented
+				_ = &stakinginfo.StakinginfoTopUpFee{
 					User: common.Address(sdk.AccAddress(addr2.String())),
 					Fee:  new(big.Int).SetUint64(1),
 				}
 
-				suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				//suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				//suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "side tx handler should fail")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 	}
@@ -324,9 +334,9 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			suite.SetupTest()
 
 			tc.malleate()
-			res := suite.sideHandler(ctx, &msg)
+			//res := suite.sideHandler(ctx, &msg)
 
-			tc.posttests(res)
+			tc.posttests( /*res*/ )
 		})
 	}
 }
@@ -352,7 +362,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		malleate  func()
 		expPass   bool
 		expErrMsg string
-		posttests func(res hModule.Vote)
+		posttests func( /*res mod.Vote*/ )
 	}{
 		{
 			"no result",
@@ -380,8 +390,8 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_NO, "post tx handler should fail")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_NO, "post tx handler should fail")
 				// there should be no stored event record
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
@@ -416,8 +426,8 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "post tx handler should succeed")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_YES, "post tx handler should succeed")
 				// there should be no stored event record
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
@@ -470,8 +480,8 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "side tx handler should succeed")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_YES, "side tx handler should succeed")
 				// there should be stored sequence
 				// check if incoming tx is older
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
@@ -528,16 +538,16 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			},
 			true,
 			"",
-			func(res hModule.Vote) {
-				suite.Require().Equal(res, hModule.Vote_VOTE_YES, "side tx handler should succeed")
+			func( /*res mod.Vote*/ ) {
+				//suite.Require().Equal(res, mod.Vote_VOTE_YES, "side tx handler should succeed")
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 				sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 				ok, err := heimdallApp.TopupKeeper.HasTopupSequence(ctx, sequence.String())
 				suite.Require().NoError(err)
 				suite.Require().True(ok)
-				replayRes := suite.sideHandler(ctx, &msg)
-				suite.Require().Equal(replayRes, hModule.Vote_VOTE_NO, "side tx handler should fail")
+				//replayRes := suite.sideHandler(ctx, &msg)
+				//suite.Require().Equal(replayRes, mod.Vote_VOTE_NO, "side tx handler should fail")
 			},
 		},
 	}
@@ -547,7 +557,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			suite.SetupTest()
 
 			tc.malleate()
-			res := suite.sideHandler(ctx, &msg)
+			//res := suite.sideHandler(ctx, &msg)
 
 			/* TODO HV2: can we generalize here with the following and reduce the load in posttests(res)?
 			if tc.expPass {
@@ -557,7 +567,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 			}
 			*/
 
-			tc.posttests(res)
+			tc.posttests( /*res*/ )
 		})
 	}
 }

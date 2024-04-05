@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	hModule "github.com/0xPolygon/heimdall-v2/module"
 
 	"cosmossdk.io/core/appmodule"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -18,6 +17,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
+	// TODO HV2: enable when module is implemented
+	//mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -56,10 +57,12 @@ func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
+/* TODO HV2: enable when module is implemented
 // RegisterSideMsgServices registers side handler module services.
-func (am AppModule) RegisterSideMsgServices(sideCfg hModule.SideTxConfigurator) {
+func (am AppModule) RegisterSideMsgServices(sideCfg mod.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
+*/
 
 // DefaultGenesis returns default genesis state as raw bytes for the topup module.
 func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
@@ -88,16 +91,16 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
+// TODO HV2: do we need to implement this?
+
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
 func (am AppModule) IsOnePerModuleType() {
-	//TODO implement me
-	panic("implement me")
 }
+
+// TODO HV2: do we need to implement this?
 
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {
-	//TODO implement me
-	panic("implement me")
 }
 
 // RegisterServices registers module services.

@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	hModule "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -15,6 +14,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/app"
+	// TODO HV2: enable when module is implemented
+	// mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -26,8 +27,8 @@ type KeeperTestSuite struct {
 	queryClient   topupTypes.QueryClient
 	msgServer     topupTypes.MsgServer
 	sideMsgServer topupTypes.SideMsgServer
-	sideMsgCfg    hModule.SideTxConfigurator
 	/* TODO HV2: enable when SideTxConfigurator, helper, contractCaller and chainManager are implemented
+	sideMsgCfg    mod.SideTxConfigurator
 	contractCaller mocks.IContractCaller
 	chainParams    chainTypes.Params
 	*/

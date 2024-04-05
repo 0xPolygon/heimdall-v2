@@ -44,10 +44,26 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}},
 				},
 				{
-					RpcMethod:      "GetAccountProofVerify",
-					Use:            "verify-account-proof [address] [accountProof]",
-					Short:          "Verify account proof",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}, {ProtoField: "accountProof"}},
+					RpcMethod: "GetAccountProofVerify",
+					Use:       "verify-account-proof [address] [accountProof]",
+					Short:     "Verify account proof",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "address"}, {ProtoField: "accountProof"}},
+				},
+				{
+					RpcMethod: "CreateTopupTx",
+					Use:       "create-topup-tx [proposer] [user] [fee] [txHash] [logIndex] [blockNumber]",
+					Short:     "Create a topup tx",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "proposer"}, {ProtoField: "user"}, {ProtoField: "fee"},
+						{ProtoField: "txHash"}, {ProtoField: "logIndex"}, {ProtoField: "blockNumber"}},
+				},
+				{
+					RpcMethod: "WithdrawFee",
+					Use:       "withdraw-fee [proposer] [fee]",
+					Short:     "Withdraw fee",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "proposer"}, {ProtoField: "fee"}},
 				},
 			},
 		},
