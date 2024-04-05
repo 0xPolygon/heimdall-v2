@@ -11,5 +11,5 @@ func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&Params{}, "heimdall-v2/x/chainmanmager/Params", nil)
 }
 
-// NOTE(Heimdall-v2): RegisterInterfaces is a no-op as the chainmanager module doesn't have any Msg types
+// HV2: RegisterInterfaces is a no-op as the chainmanager module doesn't have any Msg types
 func RegisterInterfaces(registry types.InterfaceRegistry) {}

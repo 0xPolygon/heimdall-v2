@@ -82,9 +82,6 @@ func validateHeimdallAddress(key string, value string) error {
 	if !common.IsHexAddress(value) {
 		return fmt.Errorf("invalid address for value %s for %s in chain_params", value, key)
 	}
-	if value == "" {
-		return fmt.Errorf("invalid value for key %s in chain_params", key)
-	}
 
 	return nil
 }
