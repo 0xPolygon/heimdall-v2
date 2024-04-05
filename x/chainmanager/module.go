@@ -83,11 +83,9 @@ func (am AppModule) IsOnePerModuleType() {}
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
-// TODO HV2: uncomment when keeper and types are implemented
-
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQuerier(&am.keeper))
 }
 
 // NewAppModule creates a new AppModule object
@@ -101,12 +99,8 @@ func NewAppModule(
 	}
 }
 
-// TODO HV2: uncomment when types is implemented
-
 // QuerierRoute returns the chainmanager module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
-
-// TODO HV2: uncomment when keeper is implemented
 
 // InitGenesis performs genesis initialization for the chainmanager module. It returns
 // no validator updates.
@@ -118,8 +112,6 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 	am.keeper.InitGenesis(ctx, &genesisState)
 }
-
-// TODO HV2: uncomment when keeper is implemented
 
 // ExportGenesis returns the exported genesis state as raw bytes for the chainmanager
 // module.
