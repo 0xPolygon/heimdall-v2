@@ -31,7 +31,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QueryParamsRequest defines the request type for querying x/chainmanager parameters.
+// QueryParamsRequest defines the request type for querying x/chainmanager
+// parameters.
 type QueryParamsRequest struct {
 }
 
@@ -68,7 +69,8 @@ func (m *QueryParamsRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 
-// QueryParamsResponse defines the response type for querying x/chainmanager parameters.
+// QueryParamsResponse defines the response type for querying x/chainmanager
+// parameters.
 type QueryParamsResponse struct {
 	// params provides the parameters of the chainmanager module.
 	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`

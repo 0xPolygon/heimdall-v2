@@ -1,6 +1,7 @@
 package chainmanager
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -60,10 +61,12 @@ func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig,
 	return data.Validate()
 }
 
-// TODO HV2: implement when this PR is merged: https://github.com/0xPolygon/heimdall-v2/pull/20
-
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the chainmanager module.
-func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {}
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
+	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
+		panic(err)
+	}
+}
 
 // RegisterInterfaces registers interfaces and implementations of the chainmanager module.
 func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
