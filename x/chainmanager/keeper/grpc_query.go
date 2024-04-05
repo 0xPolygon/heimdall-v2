@@ -13,14 +13,14 @@ type Querier struct {
 	Keeper
 }
 
-var _ types.QueryServer = Keeper{}
+var _ types.QueryServer = Querier{}
 
 func NewQuerier(keeper *Keeper) Querier {
 	return Querier{Keeper: *keeper}
 }
 
 // Params implements the gRPC service handler for querying x/chainmanager parameters.
-func (k Keeper) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
