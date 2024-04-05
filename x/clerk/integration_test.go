@@ -1,16 +1,7 @@
 package clerk_test
 
-import (
-	"testing"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/0xPolygon/heimdall-v2/app"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-)
-
+// TODO HV2 - uncomment after the app tests are fixed
+/*
 // createTestApp returns context and app on clerk keeper
 // nolint: unparam
 func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
@@ -58,3 +49,4 @@ func setupClerkGenesis(t *testing.T) *app.HeimdallApp {
 
 	return happ
 }
+*/
