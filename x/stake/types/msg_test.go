@@ -7,8 +7,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/stretchr/testify/require"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -109,7 +109,6 @@ func TestMsgDecode(t *testing.T) {
 		pk1.Address().String(),
 		uint64(1),
 		uint64(1),
-		pk1,
 		hmTypes.TxHash{},
 		uint64(1),
 		uint64(0),

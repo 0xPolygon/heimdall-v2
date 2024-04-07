@@ -33,6 +33,6 @@ cd ..
 cp -r github.com/0xPolygon/heimdall-v2/* ./
 rm -rf github.com 
 
-go mod tidy
+
 
 ./scripts/protocgen-pulsar.sh

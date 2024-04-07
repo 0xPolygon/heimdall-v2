@@ -18,7 +18,6 @@ require (
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/golang/protobuf v1.5.3
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/maticnetwork/heimdall v0.3.1-0.20230227104835-81bd1055b0bc
 	github.com/spf13/cast v1.6.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17
 	google.golang.org/grpc v1.60.0
@@ -31,8 +30,6 @@ require (
 	github.com/JekaMas/workerpool v1.1.8 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/bits-and-blooms/bitset v1.10.0 // indirect
-	github.com/btcsuite/btcd v0.22.3 // indirect
-	github.com/cbergoon/merkletree v0.2.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.1.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
@@ -45,7 +42,6 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/tendermint/tendermint v0.32.7 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
@@ -59,7 +55,7 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.5 // indirect
 	cloud.google.com/go/storage v1.35.1 // indirect
-	cosmossdk.io/collections v0.4.0 // indirect
+	cosmossdk.io/collections v0.4.0
 	cosmossdk.io/depinject v1.0.0-alpha.4
 	cosmossdk.io/errors v1.0.0
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -179,11 +175,11 @@ require (
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.18.1 // indirect
+	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
-	github.com/tendermint/go-amino v0.16.0 // indirect
+	github.com/tendermint/go-amino v0.16.0
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
@@ -192,7 +188,7 @@ require (
 	go.etcd.io/bbolt v1.3.8 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
@@ -213,11 +209,9 @@ require (
 )
 
 // following versions might cause unexpected behavior
-replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-
-//replace ethereum to follow Bor client
-replace github.com/ethereum/go-ethereum => github.com/maticnetwork/bor v1.0.4
-
-replace github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240202164726-b6079b50a7c2
-
-replace github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.0.0-20240214052558-d81a33c23a8b
+replace (
+	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.0-beta
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240315104706-d86dab8157c4
+	github.com/ethereum/go-ethereum => github.com/maticnetwork/bor v1.0.4
+	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+)

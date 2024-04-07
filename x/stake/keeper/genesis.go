@@ -6,7 +6,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -26,7 +25,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 	ctx = sdkCtx
 
 	// get current val set
-	var vals []*hmTypes.Validator
+	var vals []*types.Validator
 	if len(data.CurrentValidatorSet.Validators) == 0 {
 		vals = data.Validators
 	} else {
@@ -34,7 +33,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 	}
 
 	if len(vals) != 0 {
-		resultValSet := hmTypes.NewValidatorSet(vals)
+		resultValSet := types.NewValidatorSet(vals)
 
 		// add validators in store
 		for _, validator := range resultValSet.Validators {

@@ -6,9 +6,9 @@ import (
 
 	"cosmossdk.io/math"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
@@ -46,7 +46,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		Nonce:           uint64(1),
 	}
 
-	_, err = msgServer.JoinValidator(ctx, &msgValJoin)
+	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
 	require.NoError(err)
 
 	_, ok := keeper.GetValidatorFromValID(ctx, uint64(1))
@@ -185,7 +185,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	logIndex := uint64(index)
 
 	validatorId := uint64(1)
-	validator := hmTypes.NewValidator(
+	validator := types.NewValidator(
 		validatorId,
 		10,
 		15,
@@ -216,7 +216,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		Nonce:           uint64(1),
 	}
 
-	_, err = msgServer.JoinValidator(ctx, &msgValJoin)
+	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
 	require.NotNil(err)
 }
 

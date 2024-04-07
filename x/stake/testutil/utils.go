@@ -4,8 +4,9 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"strings"
 
-	"github.com/0xPolygon/heimdall-v2/x/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 )
@@ -14,7 +15,7 @@ import (
 func GenRandomVal(count int, startBlock uint64, power int64, timeAlive uint64, randomise bool, startID uint64) (validators []types.Validator) {
 	for i := 0; i < count; i++ {
 		pubKey := secp256k1.GenPrivKey().PubKey()
-		addr := pubKey.Address().String()
+		addr := strings.ToLower(pubKey.Address().String())
 
 		pkAny, err := codectypes.NewAnyWithValue(pubKey)
 		if err != nil {

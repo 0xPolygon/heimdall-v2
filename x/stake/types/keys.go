@@ -1,10 +1,8 @@
 package types
 
-import hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-
 const (
 	// ModuleName is the name of the staking module
-	ModuleName = "staking"
+	ModuleName = "stake"
 
 	// StoreKey is the string store representation
 	StoreKey = ModuleName
@@ -40,11 +38,11 @@ func GetStakingSequenceKey(sequence string) []byte {
 
 // GetUpdatedValidators updates validators in validator set
 func GetUpdatedValidators(
-	currentSet *hmTypes.ValidatorSet,
-	validators []*hmTypes.Validator,
+	currentSet *ValidatorSet,
+	validators []*Validator,
 	ackCount uint64,
-) []*hmTypes.Validator {
-	updates := make([]*hmTypes.Validator, 0)
+) []*Validator {
+	updates := make([]*Validator, 0)
 
 	for _, v := range validators {
 		// create copy of validator

@@ -1,13 +1,11 @@
 syntax = "proto3";
 package heimdallv2.stake.v1;
 
-import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos_proto/cosmos.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
-import "heimdallv2/types/validator.proto";
+import "heimdallv2/stake/v1/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
@@ -15,8 +13,8 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 service Query {
   // Validators queries all validators that match the given status.
   //
-  // When called from another module, this query might consume a high amount of
-  // gas if the pagination field is incorrectly set.
+
+  // CurrentValidatorSet queries for the current validator set
   rpc CurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -84,7 +82,7 @@ message QueryCurrentValidatorSetRequest {}
 // RPC method
 message QueryCurrentValidatorSetResponse {
   // validators contains all the queried svalidators.
-  heimdallv2.types.ValidatorSet validator_set = 1
+  ValidatorSet validator_set = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -97,7 +95,7 @@ message QuerySignerRequest {
 // QuerySignerResponse is response type for the Query/Signer RPC method
 message QuerySignerResponse {
   // validator defines the validator info.
-  heimdallv2.types.Validator validator = 1
+  Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -110,7 +108,7 @@ message QueryValidatorRequest {
 // QueryValidatorResponse is response type for the Query/Validator RPC method
 message QueryValidatorResponse {
   // validator defines the validator info.
-  heimdallv2.types.Validator validator = 1
+  Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -132,7 +130,7 @@ message QueryCurrentProposerRequest {}
 // RPC method
 message QueryCurrentProposerResponse {
   // validator defines the validator info.
-  heimdallv2.types.Validator validator = 1
+  Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -157,7 +155,7 @@ message QueryProposerRequest {
 
 // QuerySignerResponse is response type for the Query/Proposer RPC method
 message QueryProposerResponse {
-  repeated heimdallv2.types.Validator proposers = 1
+  repeated Validator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
@@ -171,7 +169,7 @@ message QueryMilestoneProposerRequest {
 // Query/MilestoneProposer RPC method
 message QueryMilestoneProposerResponse {
   // validator defines the validator info.
-  repeated heimdallv2.types.Validator proposers = 1
+  repeated Validator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 

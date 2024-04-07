@@ -3,14 +3,13 @@ package types
 import (
 	"encoding/json"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 )
 
 // NewGenesisState creates a new GenesisState instanc e
-func NewGenesisState(validators []*hmTypes.Validator,
-	currentValSet hmTypes.ValidatorSet,
+func NewGenesisState(validators []*Validator,
+	currentValSet ValidatorSet,
 	stakingSequences []string) *GenesisState {
 	return &GenesisState{
 		Validators:          validators,

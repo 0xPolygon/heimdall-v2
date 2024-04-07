@@ -10,8 +10,8 @@ import (
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -31,7 +31,7 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // CreateValidator defines a method for creating a new validator
-func (k msgServer) JoinValidator(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
+func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating validator join msg",
 		"validatorId", msg.ValId,
 		"activationEpoch", msg.ActivationEpoch,

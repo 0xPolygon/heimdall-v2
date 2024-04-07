@@ -13,8 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-	voteTypes "github.com/0xPolygon/heimdall-v2/x/types"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 var (
@@ -35,7 +35,7 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 }
 
 // NewSideTxHandler returns a side handler for "staking" type messages.
-func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler {
+func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 
 	switch methodName {
 	case joinValidatorMethod:
@@ -52,7 +52,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) hmTypes.SideTxHandler
 }
 
 // NewSideTxHandler returns a side handler for "staking" type messages.
-func (srv *sideMsgServer) PostTxHandler(methodName string) hmTypes.PostTxHandler {
+func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler {
 
 	switch methodName {
 	case joinValidatorMethod:
@@ -69,11 +69,11 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmTypes.PostTxHandler
 }
 
 // SideHandleMsgValidatorJoin side msg validator join
-func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg) (result voteTypes.Vote) {
+func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgValidatorJoin)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Validating External call for validator join msg",
@@ -85,21 +85,26 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	contractCaller := k.IContractCaller
 
 	// chainManager params
-	params := k.cmKeeper.GetParams(ctx)
+	params, err := k.cmKeeper.GetParams(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("Error in fetching chain manager params")
+		return hmModule.Vote_VOTE_NO
+	}
+
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		k.Logger(ctx).Error("Need for more ethereum blocks to fetch the confirmed tx receipt")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// decode validator join event
 	eventLog, err := contractCaller.DecodeValidatorJoinEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		k.Logger(ctx).Error("Error while decoding the receipt")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// Generate PubKey from Pubkey in message and signer
@@ -107,20 +112,20 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	pubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		k.Logger(ctx).Error("Error in interfacing out pub key")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	signer := pubKey.Address()
 
 	// check signer pubkey in message corresponds
-	if !bytes.Equal(pubKey.Bytes(), eventLog.SignerPubkey) {
+	if !bytes.Equal(pubKey.Bytes()[1:], eventLog.SignerPubkey) {
 		k.Logger(ctx).Error(
 			"Signer Pubkey does not match",
 			"msgValidator", pubKey.String(),
 			"mainchainValidator", hmTypes.BytesToHexBytes(eventLog.SignerPubkey),
 		)
 
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check signer corresponding to pubkey matches signer from event
@@ -131,50 +136,50 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 			"mainchainValidator", eventLog.Signer.Hex(),
 		)
 
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check msg id
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
 		k.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check ActivationEpoch
 	if eventLog.ActivationEpoch.Uint64() != msg.ActivationEpoch {
 		k.Logger(ctx).Error("ActivationEpoch in message doesn't match with ActivationEpoch in log", "msgActivationEpoch", msg.ActivationEpoch, "activationEpochFromTx", eventLog.ActivationEpoch.Uint64)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check Amount
 	if eventLog.Amount.Cmp(msg.Amount.BigInt()) != 0 {
 		k.Logger(ctx).Error("Amount in message doesn't match Amount in event logs", "MsgAmount", msg.Amount, "AmountFromEvent", eventLog.Amount)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check Blocknumber
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		k.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
 		k.Logger(ctx).Error("Nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Successfully validated External call for validator join msg")
 
-	return voteTypes.Vote_VOTE_YES
+	return hmModule.Vote_VOTE_YES
 }
 
 // SideHandleMsgStakeUpdate handles stake update message
-func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) (result voteTypes.Vote) {
+func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgStakeUpdate)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Validating External call for stake update msg",
@@ -186,54 +191,58 @@ func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) 
 	contractCaller := k.IContractCaller
 
 	// chainManager params
-	params := k.cmKeeper.GetParams(ctx)
+	params, err := k.cmKeeper.GetParams(ctx)
+	if err != nil {
+		return hmModule.Vote_VOTE_NO
+	}
+
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	eventLog, err := contractCaller.DecodeValidatorStakeUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		k.Logger(ctx).Error("Error fetching log from txhash")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		k.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
 		k.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check Amount
 	if eventLog.NewAmount.Cmp(msg.NewAmount.BigInt()) != 0 {
 		k.Logger(ctx).Error("NewAmount in message doesn't match NewAmount in event logs", "MsgNewAmount", msg.NewAmount, "NewAmountFromEvent", eventLog.NewAmount)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
 		k.Logger(ctx).Error("Nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Successfully validated External call for stake update msg")
 
-	return voteTypes.Vote_VOTE_YES
+	return hmModule.Vote_VOTE_YES
 }
 
 // SideHandleMsgSignerUpdate handles signer update message
-func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg) (result voteTypes.Vote) {
+func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgSignerUpdate)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Validating External call for signer update msg",
@@ -245,13 +254,16 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	contractCaller := k.IContractCaller
 
 	// chainManager params
-	params := k.cmKeeper.GetParams(ctx)
+	params, err := k.cmKeeper.GetParams(ctx)
+	if err != nil {
+		return hmModule.Vote_VOTE_NO
+	}
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// Generate PubKey from Pubkey in message and signer
@@ -259,7 +271,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	newPubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		k.Logger(ctx).Error("Error in interfacing out pub key")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	newSigner := newPubKey.Address()
@@ -267,47 +279,47 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	eventLog, err := contractCaller.DecodeSignerUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		k.Logger(ctx).Error("Error fetching log from txhash")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		k.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
 		k.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if !bytes.Equal(eventLog.SignerPubkey, newPubKey.Bytes()[1:]) {
 		k.Logger(ctx).Error("Newsigner pubkey in txhash and msg dont match", "msgPubKey", newPubKey.String(), "pubkeyTx", hmTypes.NewPubKey(eventLog.SignerPubkey[:]).String())
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check signer corresponding to pubkey matches signer from event
 	if !bytes.Equal(newSigner.Bytes(), eventLog.NewSigner.Bytes()) {
 		k.Logger(ctx).Error("Signer Address from Pubkey does not match", "Validator", newSigner.String(), "mainchainValidator", eventLog.NewSigner.Hex())
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
 		k.Logger(ctx).Error("Nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Successfully validated External call for signer update msg")
 
-	return voteTypes.Vote_VOTE_YES
+	return hmModule.Vote_VOTE_YES
 }
 
 // SideHandleMsgValidatorExit  handle  side msg validator exit
-func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg) (result voteTypes.Vote) {
+func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgValidatorExit)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Validating External call for validator exit msg",
@@ -319,46 +331,50 @@ func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 	contractCaller := k.IContractCaller
 
 	// chainManager params
-	params := k.cmKeeper.GetParams(ctx)
+	params, err := k.cmKeeper.GetParams(ctx)
+	if err != nil {
+		return hmModule.Vote_VOTE_NO
+	}
+
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// decode validator exit
 	eventLog, err := contractCaller.DecodeValidatorExitEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		k.Logger(ctx).Error("Error fetching log from txhash")
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		k.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
 		k.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	if eventLog.DeactivationEpoch.Uint64() != msg.DeactivationEpoch {
 		k.Logger(ctx).Error("DeactivationEpoch in message doesn't match with deactivationEpoch in log", "msgDeactivationEpoch", msg.DeactivationEpoch, "deactivationEpochFromTx", eventLog.DeactivationEpoch.Uint64)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
 		k.Logger(ctx).Error("Nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
-		return voteTypes.Vote_VOTE_NO
+		return hmModule.Vote_VOTE_NO
 	}
 
 	k.Logger(ctx).Debug("✅ Successfully validated External call for validator exit msg")
 
-	return voteTypes.Vote_VOTE_YES
+	return hmModule.Vote_VOTE_YES
 }
 
 /*
@@ -366,7 +382,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 **/
 
 // PostHandleMsgValidatorJoin msg validator join
-func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg, sideTxResult voteTypes.Vote) {
+func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgValidatorJoin)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
@@ -374,7 +390,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	// Skip handler if validator join is not approved
-	if sideTxResult != voteTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		k.Logger(ctx).Debug("Skipping new validator-join since side-tx didn't get yes votes")
 		return
 	}
@@ -410,7 +426,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	// create new validator
-	newValidator := hmTypes.Validator{
+	newValidator := types.Validator{
 		ValId:       msg.ValId,
 		StartEpoch:  msg.ActivationEpoch,
 		EndEpoch:    0,
@@ -468,7 +484,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 }
 
 // PostHandleMsgStakeUpdate handles stake update message
-func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, sideTxResult voteTypes.Vote) {
+func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgStakeUpdate)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
@@ -476,7 +492,7 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 	}
 
 	// Skip handler if stakeUpdate is not approved
-	if sideTxResult != voteTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		k.Logger(ctx).Debug("Skipping stake update since side-tx didn't get yes votes")
 		return
 	}
@@ -544,7 +560,7 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 }
 
 // PostHandleMsgSignerUpdate handles signer update message
-func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg, sideTxResult voteTypes.Vote) {
+func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgSignerUpdate)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
@@ -552,7 +568,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 	}
 
 	// Skip handler if signer update is not approved
-	if sideTxResult != voteTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		k.Logger(ctx).Debug("Skipping signer update since side-tx didn't get yes votes")
 		return
 	}
@@ -676,7 +692,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 }
 
 // PostHandleMsgValidatorExit handle msg validator exit
-func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg, sideTxResult voteTypes.Vote) {
+func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgValidatorExit)
 	if !ok {
 		k.Logger(ctx).Error("msg type mismatched")
@@ -684,7 +700,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	// Skip handler if validator exit is not approved
-	if sideTxResult != voteTypes.Vote_VOTE_YES {
+	if sideTxResult != hmModule.Vote_VOTE_YES {
 		k.Logger(ctx).Debug("Skipping validator exit since side-tx didn't get yes votes")
 		return
 	}

@@ -12,15 +12,14 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	testUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-	hmModule "github.com/0xPolygon/heimdall-v2/x/types/module"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -46,40 +45,47 @@ type KeeperTestSuite struct {
 	moduleCommunicator *testUtil.ModuleCommunicatorMock
 	cmKeeper           *cmKeeper.Keeper
 	stakeKeeper        *stakeKeeper.Keeper
-	queryClient        stakingtypes.QueryClient
-	msgServer          stakingtypes.MsgServer
+	queryClient        stakeTypes.QueryClient
+	msgServer          stakeTypes.MsgServer
 	sideMsgCfg         hmModule.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) SetupTest() {
-	key := storetypes.NewKVStoreKey(stakingtypes.StoreKey)
+	key := storetypes.NewKVStoreKey(stakeTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
+
 	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	cmKeeper := cmKeeper.NewKeeper()
+	s.contractCaller = &mocks.IContractCaller{}
+
+	cmKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService)
+	_ = cmKeeper.SetParams(ctx, cmTypes.DefaultParams())
+
+	s.moduleCommunicator = &testUtil.ModuleCommunicatorMock{AckCount: uint64(0)}
 
 	keeper := stakeKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		testUtil.ModuleCommunicatorMock{AckCount: uint64(0)},
-		cmKeeper,
+		s.moduleCommunicator,
+		&cmKeeper,
 		addrCodec.NewHexCodec(),
-		&helper.ContractCaller{},
+		s.contractCaller,
 	)
 
 	s.ctx = ctx
+	s.cmKeeper = &cmKeeper
 	s.stakeKeeper = keeper
 
-	stakingtypes.RegisterInterfaces(encCfg.InterfaceRegistry)
+	stakeTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	stakingtypes.RegisterQueryServer(queryHelper, stakeKeeper.Querier{Keeper: keeper})
-	s.queryClient = stakingtypes.NewQueryClient(queryHelper)
+	stakeTypes.RegisterQueryServer(queryHelper, stakeKeeper.Querier{Keeper: keeper})
+	s.queryClient = stakeTypes.NewQueryClient(queryHelper)
 	s.msgServer = stakeKeeper.NewMsgServerImpl(keeper)
 
-	s.sideMsgCfg = hmModule.NewConfigurator()
+	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, stakeKeeper.NewSideMsgServerImpl(keeper))
 
 }
@@ -97,12 +103,12 @@ func (s *KeeperTestSuite) TestValidator() {
 	r1 := rand.New(s1)
 	n := 5
 
-	validators := make([]*hmTypes.Validator, n)
+	validators := make([]*types.Validator, n)
 	accounts := simulation.RandomAccounts(r1, n)
 
 	for i := range validators {
 		// validator
-		validators[i] = hmTypes.NewValidator(
+		validators[i] = types.NewValidator(
 			uint64(i),
 			0,
 			0,
@@ -141,12 +147,12 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	r1 := rand.New(s1)
 	n := 5
 
-	validators := make([]*hmTypes.Validator, n)
+	validators := make([]*types.Validator, n)
 	accounts := simulation.RandomAccounts(r1, n)
 
 	for i := range validators {
 		// validator
-		validators[i] = hmTypes.NewValidator(
+		validators[i] = types.NewValidator(
 			uint64(int64(i)),
 			0,
 			0,

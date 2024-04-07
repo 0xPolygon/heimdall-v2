@@ -34,10 +34,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// Validators queries all validators that match the given status.
-	//
-	// When called from another module, this query might consume a high amount of
-	// gas if the pagination field is incorrectly set.
+	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
 	// Signer queries validator info for given validator val_address.
 	Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
@@ -150,10 +147,7 @@ func (c *queryClient) StakingSequence(ctx context.Context, in *QueryStakingSeque
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// Validators queries all validators that match the given status.
-	//
-	// When called from another module, this query might consume a high amount of
-	// gas if the pagination field is incorrectly set.
+	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
 	// Signer queries validator info for given validator val_address.
 	Signer(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)

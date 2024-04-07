@@ -1,19 +1,17 @@
 package keeper_test
 
 import (
-	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 )
 
 func (s *KeeperTestSuite) TestInitExportGenesis() {
-	ctx, keeper := s.ctx, s.stakingKeeper
+	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -27,11 +25,11 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 		stakingSequence[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 
-	validators := make([]*hmTypes.Validator, n)
+	validators := make([]*types.Validator, n)
 	for i := 0; i < len(validators); i++ {
 		// validator
 		pk1 := secp256k1.GenPrivKey().PubKey()
-		validators[i] = hmTypes.NewValidator(
+		validators[i] = types.NewValidator(
 			uint64(i),
 			0,
 			0,
@@ -43,9 +41,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	}
 
 	// validator set
-	validatorSet := hmTypes.NewValidatorSet(validators)
-
-	fmt.Print("valSet Proposer", validatorSet.Proposer)
+	validatorSet := types.NewValidatorSet(validators)
 
 	genesisState := types.NewGenesisState(validators, *validatorSet, stakingSequence)
 	keeper.InitGenesis(ctx, genesisState)

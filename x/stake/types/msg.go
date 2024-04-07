@@ -5,8 +5,7 @@ import (
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
-	heimdallError "github.com/0xPolygon/heimdall-v2/x/types/error"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -52,32 +51,32 @@ func NewMsgValidatorJoin(
 // Validate validates the MsgValidatorJoin sdk msg.
 func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	if msg.SignerPubKey == nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Signer public key can't be nil")
+		return ErrInvalidMsg.Wrapf("Signer public key can't be nil")
 	}
 
 	pk, ok := msg.SignerPubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
-		return heimdallError.ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
+		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
 	}
 
 	//TODO H2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Signer public key can't be of zero bytes")
+		return ErrInvalidMsg.Wrapf("Signer public key can't be of zero bytes")
 	}
 
 	return nil
@@ -106,18 +105,18 @@ func NewMsgStakeUpdate(from string, id uint64,
 
 func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	return nil
@@ -148,32 +147,32 @@ func NewMsgSignerUpdate(from string, id uint64,
 
 func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	if msg.NewSignerPubKey == nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Signer public key can't be nil")
+		return ErrInvalidMsg.Wrapf("Signer public key can't be nil")
 	}
 
 	pk, ok := msg.NewSignerPubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
-		return heimdallError.ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
+		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
 	}
 
 	//TODO H2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
-		return heimdallError.ErrInvalidMsg.Wrapf("New signer public key can't be of zero bytes")
+		return ErrInvalidMsg.Wrapf("New signer public key can't be of zero bytes")
 	}
 
 	return nil
@@ -182,7 +181,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 // NewMsgBeginRedelegate creates a new MsgBeginRedelegate instance.
 func NewMsgValidatorExit(
 	from string, id uint64, deactivationEpoch uint64,
-	pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
+	txHash hmTypes.TxHash, logIndex uint64,
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorExit, error) {
 	return &MsgValidatorExit{
@@ -198,18 +197,18 @@ func NewMsgValidatorExit(
 
 func (msg MsgValidatorExit) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return heimdallError.ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
 	}
 
 	return nil

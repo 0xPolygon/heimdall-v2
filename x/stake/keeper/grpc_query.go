@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 // Querier is used as Keeper will have duplicate methods if used directly, and gRPC names take precedence over keeper
@@ -53,9 +52,7 @@ func (k Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	fmt.Print("-------IN VALIDATOR", req.Id)
 	validator, ok := k.GetValidatorFromValID(ctx, req.Id)
-	fmt.Print("-------OUT VALIDATOR", ok)
 
 	if !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("Error in getting validator corresposing to the given id "))
@@ -105,7 +102,7 @@ func (k Querier) Proposer(ctx context.Context, req *types.QueryProposerRequest) 
 	}
 
 	// init proposers
-	proposers := make([]hmTypes.Validator, times)
+	proposers := make([]types.Validator, times)
 
 	// get proposers
 	for index := 0; index < times; index++ {
@@ -131,7 +128,7 @@ func (k Querier) MilestoneProposer(ctx context.Context, req *types.QueryMileston
 	}
 
 	// init proposers
-	proposers := make([]hmTypes.Validator, times)
+	proposers := make([]types.Validator, times)
 
 	// get proposers
 	for index := 0; index < times; index++ {

@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_JoinValidator_FullMethodName = "/heimdallv2.stake.v1.Msg/JoinValidator"
+	Msg_ValidatorJoin_FullMethodName = "/heimdallv2.stake.v1.Msg/ValidatorJoin"
 	Msg_StakeUpdate_FullMethodName   = "/heimdallv2.stake.v1.Msg/StakeUpdate"
 	Msg_SignerUpdate_FullMethodName  = "/heimdallv2.stake.v1.Msg/SignerUpdate"
 	Msg_ValidatorExit_FullMethodName = "/heimdallv2.stake.v1.Msg/ValidatorExit"
@@ -29,11 +29,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// JoinValidator defines a method for joining a new validator.
-	JoinValidator(ctx context.Context, in *MsgValidatorJoin, opts ...grpc.CallOption) (*MsgValidatorJoinResponse, error)
+	// ValidatorJoin defines a method for joining a new validator.
+	ValidatorJoin(ctx context.Context, in *MsgValidatorJoin, opts ...grpc.CallOption) (*MsgValidatorJoinResponse, error)
 	// StakeUpdate defines a method for updating an existing validator's stake.
 	StakeUpdate(ctx context.Context, in *MsgStakeUpdate, opts ...grpc.CallOption) (*MsgStakeUpdateResponse, error)
-	// v defines a method for updating an existing validator's signer.
+	// SignerUpdate defines a method for updating an existing validator's signer.
 	SignerUpdate(ctx context.Context, in *MsgSignerUpdate, opts ...grpc.CallOption) (*MsgSignerUpdateResponse, error)
 	// ValidatorExit defines a method for exiting an existing validator
 	ValidatorExit(ctx context.Context, in *MsgValidatorExit, opts ...grpc.CallOption) (*MsgValidatorExitResponse, error)
@@ -47,9 +47,9 @@ func NewMsgClient(cc grpc.ClientConnInterface) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) JoinValidator(ctx context.Context, in *MsgValidatorJoin, opts ...grpc.CallOption) (*MsgValidatorJoinResponse, error) {
+func (c *msgClient) ValidatorJoin(ctx context.Context, in *MsgValidatorJoin, opts ...grpc.CallOption) (*MsgValidatorJoinResponse, error) {
 	out := new(MsgValidatorJoinResponse)
-	err := c.cc.Invoke(ctx, Msg_JoinValidator_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Msg_ValidatorJoin_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,11 +87,11 @@ func (c *msgClient) ValidatorExit(ctx context.Context, in *MsgValidatorExit, opt
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// JoinValidator defines a method for joining a new validator.
-	JoinValidator(context.Context, *MsgValidatorJoin) (*MsgValidatorJoinResponse, error)
+	// ValidatorJoin defines a method for joining a new validator.
+	ValidatorJoin(context.Context, *MsgValidatorJoin) (*MsgValidatorJoinResponse, error)
 	// StakeUpdate defines a method for updating an existing validator's stake.
 	StakeUpdate(context.Context, *MsgStakeUpdate) (*MsgStakeUpdateResponse, error)
-	// v defines a method for updating an existing validator's signer.
+	// SignerUpdate defines a method for updating an existing validator's signer.
 	SignerUpdate(context.Context, *MsgSignerUpdate) (*MsgSignerUpdateResponse, error)
 	// ValidatorExit defines a method for exiting an existing validator
 	ValidatorExit(context.Context, *MsgValidatorExit) (*MsgValidatorExitResponse, error)
@@ -102,8 +102,8 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (UnimplementedMsgServer) JoinValidator(context.Context, *MsgValidatorJoin) (*MsgValidatorJoinResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method JoinValidator not implemented")
+func (UnimplementedMsgServer) ValidatorJoin(context.Context, *MsgValidatorJoin) (*MsgValidatorJoinResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ValidatorJoin not implemented")
 }
 func (UnimplementedMsgServer) StakeUpdate(context.Context, *MsgStakeUpdate) (*MsgStakeUpdateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StakeUpdate not implemented")
@@ -127,20 +127,20 @@ func RegisterMsgServer(s grpc.ServiceRegistrar, srv MsgServer) {
 	s.RegisterService(&Msg_ServiceDesc, srv)
 }
 
-func _Msg_JoinValidator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Msg_ValidatorJoin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MsgValidatorJoin)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).JoinValidator(ctx, in)
+		return srv.(MsgServer).ValidatorJoin(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Msg_JoinValidator_FullMethodName,
+		FullMethod: Msg_ValidatorJoin_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).JoinValidator(ctx, req.(*MsgValidatorJoin))
+		return srv.(MsgServer).ValidatorJoin(ctx, req.(*MsgValidatorJoin))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -207,8 +207,8 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "JoinValidator",
-			Handler:    _Msg_JoinValidator_Handler,
+			MethodName: "ValidatorJoin",
+			Handler:    _Msg_ValidatorJoin_Handler,
 		},
 		{
 			MethodName: "StakeUpdate",

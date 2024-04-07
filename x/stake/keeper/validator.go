@@ -4,12 +4,10 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"strings"
 
 	addresscodec "cosmossdk.io/core/address"
 	storetypes "cosmossdk.io/store/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/types"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,10 +16,10 @@ import (
 )
 
 // AddValidator adds validator indexed with address
-func (k *Keeper) AddValidator(ctx context.Context, validator hmTypes.Validator) error {
+func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
 	store := k.storeService.OpenKVStore(ctx)
 
-	bz, err := hmTypes.MarshallValidator(k.cdc, validator)
+	bz, err := types.MarshallValidator(k.cdc, validator)
 	if err != nil {
 		return err
 	}
@@ -58,7 +56,7 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 }
 
 // GetValidatorInfo returns validator
-func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator hmTypes.Validator, err error) {
+func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
 	store := k.storeService.OpenKVStore(ctx)
 	address = strings.ToLower(address)
 	valAddr, err := k.validatorAddressCodec.StringToBytes(address)
@@ -80,7 +78,7 @@ func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validato
 	}
 
 	// unmarshall validator and return
-	validator, err = hmTypes.UnmarshallValidator(k.cdc, valBytes)
+	validator, err = types.UnmarshallValidator(k.cdc, valBytes)
 	if err != nil {
 		return validator, err
 	}
@@ -90,7 +88,7 @@ func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validato
 }
 
 // GetActiveValidatorInfo returns active validator
-func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (validator hmTypes.Validator, err error) {
+func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
 	validator, err = k.GetValidatorInfo(ctx, address)
 	if err != nil {
 		return validator, err
@@ -107,13 +105,13 @@ func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (va
 }
 
 // GetCurrentValidators returns all validators who are in validator set
-func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []hmTypes.Validator) {
+func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.Validator) {
 	// get ack count
 	ackCount := k.moduleCommunicator.GetACKCount(ctx)
 
 	// Get validators
 	// iterate through validator list
-	k.IterateValidatorsAndApplyFn(ctx, func(validator hmTypes.Validator) error {
+	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
 		// check if validator is valid for current epoch
 		if validator.IsCurrentValidator(ackCount) {
 			// append if validator is current valdiator
@@ -135,12 +133,12 @@ func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64) {
 }
 
 // GetSpanEligibleValidators returns current validators who are not getting deactivated in between next span
-func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []hmTypes.Validator) {
+func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []types.Validator) {
 	// get ack count
 	ackCount := k.moduleCommunicator.GetACKCount(ctx)
 
 	// Get validators and iterate through validator list
-	k.IterateValidatorsAndApplyFn(ctx, func(validator hmTypes.Validator) error {
+	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
 		// check if validator is valid for current epoch and endEpoch is not set.
 		if validator.EndEpoch == 0 && validator.IsCurrentValidator(ackCount) {
 			// append if validator is current valdiator
@@ -153,9 +151,9 @@ func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []hm
 }
 
 // GetAllValidators returns all validators
-func (k *Keeper) GetAllValidators(ctx context.Context) (validators []*hmTypes.Validator) {
+func (k *Keeper) GetAllValidators(ctx context.Context) (validators []*types.Validator) {
 	// iterate through validators and create validator update array
-	k.IterateValidatorsAndApplyFn(ctx, func(validator hmTypes.Validator) error {
+	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
 		// append to list of validatorUpdates
 		validators = append(validators, &validator)
 		return nil
@@ -165,7 +163,7 @@ func (k *Keeper) GetAllValidators(ctx context.Context) (validators []*hmTypes.Va
 }
 
 // IterateValidatorsAndApplyFn iterate validators and apply the given function.
-func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validator hmTypes.Validator) error) {
+func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validator types.Validator) error) {
 	store := k.storeService.OpenKVStore(ctx)
 
 	// get validator iterator
@@ -180,7 +178,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 	// loop through validators to get valid validators
 	for ; iterator.Valid(); iterator.Next() {
 		// unmarshall validator
-		validator, _ := hmTypes.UnmarshallValidator(k.cdc, iterator.Value())
+		validator, _ := types.UnmarshallValidator(k.cdc, iterator.Value())
 		// call function and return if required
 		if err := f(validator); err != nil {
 			return
@@ -220,7 +218,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *
 }
 
 // UpdateValidatorSetInStore adds validator set to store
-func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet hmTypes.ValidatorSet) error {
+func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
 	// TODO check if we may have to delay this by 1 height to sync with tendermint validator updates
 	store := k.storeService.OpenKVStore(ctx)
 
@@ -240,7 +238,7 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 }
 
 // GetValidatorSet returns current Validator Set from store
-func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet hmTypes.ValidatorSet) {
+func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet) {
 	store := k.storeService.OpenKVStore(ctx)
 	// get current validator set from store
 	bz, err := store.Get(types.CurrentValidatorSetKey)
@@ -274,7 +272,7 @@ func (k *Keeper) IncrementAccum(ctx context.Context, times int) {
 }
 
 // GetNextProposer returns next proposer
-func (k *Keeper) GetNextProposer(ctx context.Context) *hmTypes.Validator {
+func (k *Keeper) GetNextProposer(ctx context.Context) *types.Validator {
 	// get validator set
 	validatorSet := k.GetValidatorSet(ctx)
 
@@ -286,7 +284,7 @@ func (k *Keeper) GetNextProposer(ctx context.Context) *hmTypes.Validator {
 }
 
 // GetCurrentProposer returns current proposer
-func (k *Keeper) GetCurrentProposer(ctx context.Context) *hmTypes.Validator {
+func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 	// get validator set
 	validatorSet := k.GetValidatorSet(ctx)
 
@@ -302,7 +300,7 @@ func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, s
 		k.Logger(ctx).Error("SetValidatorIDToSignerAddr | Error while converting addr to bytes", "error", err)
 	}
 
-	err = store.Set(types.GetValidatorMapKey(hmTypes.ValIDToBytes(valID)), signerAddrBytes)
+	err = store.Set(types.GetValidatorMapKey(types.ValIDToBytes(valID)), signerAddrBytes)
 	if err != nil {
 		k.Logger(ctx).Error("SetValidatorIDToSignerAddr | Key or value is nil", "error", err)
 	}
@@ -311,7 +309,7 @@ func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, s
 // GetSignerFromValidatorID get signer address from validator ID
 func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (common.Address, bool) {
 	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetValidatorMapKey(hmTypes.ValIDToBytes(valID))
+	key := types.GetValidatorMapKey(types.ValIDToBytes(valID))
 	// check if validator address has been mapped
 
 	bz, err := store.Get(key)
@@ -325,13 +323,12 @@ func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (co
 }
 
 // GetValidatorFromValID returns signer from validator ID
-func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (validator hmTypes.Validator, ok bool) {
+func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (validator types.Validator, ok bool) {
 	signerAddr, ok := k.GetSignerFromValidatorID(ctx, valID)
 	if !ok {
 		return validator, ok
 	}
 
-	fmt.Println(signerAddr.Bytes())
 	// query for validator signer address
 	validator, err := k.GetValidatorInfo(ctx, signerAddr.String())
 	if err != nil {
@@ -353,7 +350,7 @@ func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt st
 }
 
 // // IterateCurrentValidatorsAndApplyFn iterate through current validators
-// func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator *hmTypes.Validator) bool) {
+// func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator *types.Validator) bool) {
 // 	currentValidatorSet := k.GetValidatorSet(ctx)
 // 	for _, v := range currentValidatorSet.Validators {
 // 		if stop := f(v); stop {
@@ -469,7 +466,7 @@ func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
 }
 
 // GetMilestoneValidatorSet returns current milestone Validator Set from store
-func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet hmTypes.ValidatorSet) {
+func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet) {
 	store := k.storeService.OpenKVStore(ctx)
 
 	var bz []byte
@@ -494,7 +491,7 @@ func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet hmT
 }
 
 // UpdateMilestoneValidatorSetInStore adds milestone validator set to store
-func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newValidatorSet hmTypes.ValidatorSet) error {
+func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
 	// TODO check if we may have to delay this by 1 height to sync with tendermint validator updates
 	store := k.storeService.OpenKVStore(ctx)
 
@@ -511,7 +508,7 @@ func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newVali
 }
 
 // GetMilestoneCurrentProposer returns current proposer
-func (k *Keeper) GetMilestoneCurrentProposer(ctx context.Context) *hmTypes.Validator {
+func (k *Keeper) GetMilestoneCurrentProposer(ctx context.Context) *types.Validator {
 	// get validator set
 	validatorSet := k.GetMilestoneValidatorSet(ctx)
 
@@ -527,13 +524,13 @@ func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 ////////////////////////    Slashing Code //////////////////////////////
 // // Slashing api's
 // // AddValidatorSigningInfo creates a signing info for validator
-// func (k *Keeper) AddValidatorSigningInfo(ctx context.Context, valID hmTypes.ValidatorID, valSigningInfo hmTypes.ValidatorSigningInfo) error {
+// func (k *Keeper) AddValidatorSigningInfo(ctx context.Context, valID types.ValidatorID, valSigningInfo types.ValidatorSigningInfo) error {
 // 	k.moduleCommunicator.CreateValidatorSigningInfo(ctx, valID, valSigningInfo)
 // 	return nil
 // }
 
 // // UpdatePower updates validator with signer and pubkey + validator => signer map
-// func (k *Keeper) Slash(ctx context.Context, valSlashingInfo hmTypes.ValidatorSlashingInfo) error {
+// func (k *Keeper) Slash(ctx context.Context, valSlashingInfo types.ValidatorSlashingInfo) error {
 // 	// get validator from state
 // 	validator, found := k.GetValidatorFromValID(ctx, valSlashingInfo.ID)
 // 	if !found {
@@ -566,7 +563,7 @@ func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 // }
 
 // // Unjail a validator
-// func (k *Keeper) Unjail(ctx context.Context, valID hmTypes.ValidatorID) {
+// func (k *Keeper) Unjail(ctx context.Context, valID types.ValidatorID) {
 // 	// get validator from state and make jailed = false
 // 	validator, found := k.GetValidatorFromValID(ctx, valID)
 // 	if !found {

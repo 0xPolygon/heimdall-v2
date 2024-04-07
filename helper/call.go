@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -24,7 +25,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
-	"github.com/0xPolygon/heimdall-v2/x/types"
 )
 
 // smart contracts' events names
@@ -48,7 +48,7 @@ type IContractCaller interface {
 	GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (root common.Hash, start, end, createdAt uint64, proposer string, err error)
 	GetRootHash(start uint64, end uint64, checkpointLength uint64) ([]byte, error)
 	GetVoteOnHash(start uint64, end uint64, milestoneLength uint64, hash string, milestoneID string) (bool, error)
-	GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error)
+	GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator stakeTypes.Validator, err error)
 	GetLastChildBlock(rootChainInstance *rootchain.Rootchain) (uint64, error)
 	CurrentHeaderBlock(rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (uint64, error)
 	GetBalance(address common.Address) (*big.Int, error)
@@ -61,18 +61,16 @@ type IContractCaller interface {
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
 
-	// decode header event
 	DecodeNewHeaderBlockEvent(common.Address, *ethTypes.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)
-	// decode validator events
+
 	DecodeValidatorTopupFeesEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoTopUpFee, error)
 	DecodeValidatorJoinEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStaked, error)
 	DecodeValidatorStakeUpdateEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStakeUpdate, error)
 	DecodeValidatorExitEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnstakeInit, error)
 	DecodeSignerUpdateEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSignerChange, error)
-	// decode state events
+
 	DecodeStateSyncedEvent(common.Address, *ethTypes.Receipt, uint64) (*statesender.StatesenderStateSynced, error)
 
-	// decode slashing events
 	DecodeSlashedEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSlashed, error)
 	DecodeUnJailedEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)
 
@@ -82,7 +80,6 @@ type IContractCaller interface {
 	StakeFor(common.Address, *big.Int, *big.Int, bool, common.Address, *stakemanager.Stakemanager) error
 	CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error)
 
-	// bor related contracts
 	CurrentSpanNumber(validatorSet *validatorset.Validatorset) (Number *big.Int)
 	GetSpanDetails(id *big.Int, validatorSet *validatorset.Validatorset) (*big.Int, *big.Int, *big.Int, error)
 	CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int)
@@ -380,7 +377,7 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 }
 
 // GetValidatorInfo get validator info
-func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
+func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator stakeTypes.Validator, err error) {
 	// amount, startEpoch, endEpoch, signer, status, err := c.StakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
 	if err != nil {
@@ -394,7 +391,7 @@ func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *sta
 	}
 
 	// newAmount
-	validator = types.Validator{
+	validator = stakeTypes.Validator{
 		ValId:       valID,
 		VotingPower: newAmount.Int64(),
 		StartEpoch:  stakerDetails.ActivationEpoch.Uint64(),
@@ -606,13 +603,13 @@ func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddress common.Ad
 }
 
 // DecodeValidatorJoinEvent represents validator staked event
-func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddress string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStaked, error) {
+func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStaked, error) {
 	event := new(stakinginfo.StakinginfoStaked)
 
 	found := false
 
 	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), common.HexToAddress(contractAddress).Bytes()) {
+		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
 			found = true
 
 			if err := UnpackLog(&c.StakingInfoABI, event, stakedEvent, vLog); err != nil {
@@ -631,14 +628,14 @@ func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddress string, receip
 }
 
 // DecodeValidatorStakeUpdateEvent represents validator stake update event
-func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddress string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
+func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
 	var (
 		event = new(stakinginfo.StakinginfoStakeUpdate)
 		found = false
 	)
 
 	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), common.HexToAddress(contractAddress).Bytes()) {
+		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
 			found = true
 
 			if err := UnpackLog(&c.StakingInfoABI, event, stakeUpdateEvent, vLog); err != nil {
@@ -657,14 +654,14 @@ func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddress string,
 }
 
 // DecodeValidatorExitEvent represents validator stake unStake event
-func (c *ContractCaller) DecodeValidatorExitEvent(contractAddress string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
+func (c *ContractCaller) DecodeValidatorExitEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
 	var (
 		event = new(stakinginfo.StakinginfoUnstakeInit)
 		found = false
 	)
 
 	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), common.HexToAddress(contractAddress).Bytes()) {
+		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
 			found = true
 
 			if err := UnpackLog(&c.StakingInfoABI, event, UnstakeInitEvent, vLog); err != nil {
@@ -683,14 +680,14 @@ func (c *ContractCaller) DecodeValidatorExitEvent(contractAddress string, receip
 }
 
 // DecodeSignerUpdateEvent represents sig update event
-func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddress string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
+func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
 	var (
 		event = new(stakinginfo.StakinginfoSignerChange)
 		found = false
 	)
 
 	for _, vLog := range receipt.Logs {
-		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), common.HexToAddress(contractAddress).Bytes()) {
+		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
 			found = true
 
 			if err := UnpackLog(&c.StakingInfoABI, event, signerChangeEvent, vLog); err != nil {
@@ -924,9 +921,9 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 
 	var err error
 
-	contractsABIs := [8]string{rootchain.RootchainABI, stakinginfo.StakinginfoABI, validatorset.ValidatorsetABI,
-		statereceiver.StatereceiverABI, statesender.StatesenderABI, stakemanager.StakemanagerABI,
-		slashmanager.SlashmanagerABI, erc20.Erc20ABI}
+	contractsABIs := [8]string{rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
+		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
+		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI}
 
 	// iterate over supported ABIs
 	for _, contractABI := range contractsABIs {
@@ -957,21 +954,21 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 // chooseContractCallerABI extracts and returns the abo.ABI object from the contractCallerObj based on its abi string
 func chooseContractCallerABI(contractCallerObj *ContractCaller, abi string) (*abi.ABI, error) {
 	switch abi {
-	case rootchain.RootchainABI:
+	case rootchain.RootchainMetaData.ABI:
 		return &contractCallerObj.RootChainABI, nil
-	case stakinginfo.StakinginfoABI:
+	case stakinginfo.StakinginfoMetaData.ABI:
 		return &contractCallerObj.StakingInfoABI, nil
-	case validatorset.ValidatorsetABI:
+	case validatorset.ValidatorsetMetaData.ABI:
 		return &contractCallerObj.ValidatorSetABI, nil
-	case statereceiver.StatereceiverABI:
+	case statereceiver.StatereceiverMetaData.ABI:
 		return &contractCallerObj.StateReceiverABI, nil
-	case statesender.StatesenderABI:
+	case statesender.StatesenderMetaData.ABI:
 		return &contractCallerObj.StateSenderABI, nil
-	case stakemanager.StakemanagerABI:
+	case stakemanager.StakemanagerMetaData.ABI:
 		return &contractCallerObj.StakeManagerABI, nil
-	case slashmanager.SlashmanagerABI:
+	case slashmanager.SlashmanagerMetaData.ABI:
 		return &contractCallerObj.SlashManagerABI, nil
-	case erc20.Erc20ABI:
+	case erc20.Erc20MetaData.ABI:
 		return &contractCallerObj.MaticTokenABI, nil
 	}
 

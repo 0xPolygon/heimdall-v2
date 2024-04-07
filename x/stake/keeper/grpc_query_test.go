@@ -146,6 +146,7 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 	require.NotNil(res)
 }
 
+// TODO HV2 Please look into this.
 // func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
 // 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 // 	require := s.Require()

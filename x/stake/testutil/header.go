@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/0xPolygon/heimdall-v2/x/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // LoadValidatorSet loads validator set
