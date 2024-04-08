@@ -49,20 +49,20 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *KeeperTestSuite) TestParamsGetterSetter() {
-	ctx, keeper := s.ctx, s.chainmanagerKeeper
+	ctx, chainmanagerKeeper := s.ctx, s.chainmanagerKeeper
 	require := s.Require()
 
 	expParams := types.DefaultParams()
 	// check that the empty keeper loads the default
-	resParams, err := keeper.GetParams(ctx)
+	resParams, err := chainmanagerKeeper.GetParams(ctx)
 	require.NoError(err)
 	require.Equal(expParams, resParams)
 
 	expParams.BorChainTxConfirmations = 256
 	expParams.MainChainTxConfirmations = 512
 	expParams.ChainParams.BorChainId = "1337"
-	require.NoError(keeper.SetParams(ctx, expParams))
-	resParams, err = keeper.GetParams(ctx)
+	require.NoError(chainmanagerKeeper.SetParams(ctx, expParams))
+	resParams, err = chainmanagerKeeper.GetParams(ctx)
 	require.NoError(err)
 	require.True(expParams.Equal(resParams))
 }

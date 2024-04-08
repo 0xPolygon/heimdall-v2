@@ -16,7 +16,7 @@ import (
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
-	schema       collections.Schema
+	Schema       collections.Schema
 	params       collections.Item[types.Params]
 }
 
@@ -26,17 +26,21 @@ func NewKeeper(
 	storeService store.KVStoreService,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
+
+	k := Keeper{
+		cdc:          cdc,
+		storeService: storeService,
+		params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+	}
+
 	schema, err := sb.Build()
 	if err != nil {
 		panic(err)
 	}
 
-	return Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		schema:       schema,
-		params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-	}
+	k.Schema = schema
+
+	return k
 }
 
 // Logger returns a module-specific logger.
