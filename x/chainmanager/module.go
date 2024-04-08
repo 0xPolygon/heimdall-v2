@@ -34,9 +34,6 @@ var (
 // ConsensusVersion defines the current x/bank module consensus version.
 const ConsensusVersion = 1
 
-// AppModuleBasic defines the basic application module used by the chainmananer module.
-// type AppModuleBasic struct{}
-
 // Name returns the chainmanager module's name.
 func (AppModule) Name() string { return types.ModuleName }
 
