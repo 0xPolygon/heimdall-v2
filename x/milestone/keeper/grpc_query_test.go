@@ -152,3 +152,47 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 
 	require.Equal(res.Result, true)
 }
+
+func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
+	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
+	require := s.Require()
+	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
+
+	path := []string{types.QueryMilestoneProposer}
+
+	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryMilestoneProposer)
+
+	req := abci.RequestQuery{
+		Path: route,
+		Data: app.Codec().MustMarshalJSON(types.NewQueryProposerParams(uint64(2))),
+	}
+	res, err := querier(ctx, path, req)
+	// check no error found
+	require.NoError(t, err)
+
+	// check response is not nil
+	require.NotNil(t, res)
+}
+
+
+  // MilestoneProposer queries for the milestone proposer
+  rpc MilestoneProposer(QueryMilestoneProposerRequest)
+      returns (QueryMilestoneProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/staking/milestone-proposer";
+  }
+
+
+  // QueryCurrentMilestoneProposerRequest is request type for the
+// Query/MilestoneProposer RPC method
+message QueryMilestoneProposerRequest {
+	uint64 times = 1 [ (amino.dont_omitempty) = true ];
+  }
+  
+  // QueryCurrentMilestoneProposerResponse is response type for the
+  // Query/MilestoneProposer RPC method
+  message QueryMilestoneProposerResponse {
+	// validator defines the validator info.
+	repeated Validator proposers = 1
+		[ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  }
