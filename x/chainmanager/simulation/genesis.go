@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// Simulation parameter constants
 const (
 	MainChainTxConfirmations = "main_chain_tx_confirmations"
 	BorChainTxConfirmations  = "bor_chain_tx_confirmations"
@@ -27,6 +26,7 @@ const (
 	StateSenderAddress    = "state_sender_address"
 
 	// Bor Chain Contracts
+
 	StateReceiverAddress = "state_receiver_address"
 	ValidatorSetAddress  = "validator_set_address"
 )
