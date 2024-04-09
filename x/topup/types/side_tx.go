@@ -3,37 +3,34 @@ package types
 import (
 	"context"
 	"fmt"
+	mod "github.com/0xPolygon/heimdall-v2/module"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc"
-	//mod "github.com/0xPolygon/heimdall-v2/module"
 )
-
-// TODO HV2: enable commented code in the whole file when module is implemented
 
 // SideMsgServer defines the interface to implement the side and post handlers.
 type SideMsgServer interface {
 	// SideTxHandler to register specific sideHandler based on methodName
-	SideTxHandler(methodName string) //mod.SideTxHandler
+	SideTxHandler(methodName string) mod.SideTxHandler
 
 	// PostTxHandler to register specific postHandler based on methodName
-	PostTxHandler(methodName string) //mod.PostTxHandler
+	PostTxHandler(methodName string) mod.PostTxHandler
 }
 
 // RegisterSideMsgServer registers server methods for the x/topup module handlers, based on the sideCfg.
-func RegisterSideMsgServer( /*sideCfg mod.SideTxConfigurator,*/ srv SideMsgServer) {
+func RegisterSideMsgServer(sideCfg mod.SideTxConfigurator, srv SideMsgServer) {
 	serviceDesc := _Msg_serviceDesc
 
 	for _, service := range serviceDesc.Methods {
 
-		// var requestTypeName string
+		var requestTypeName string
 
 		// NOTE: This is how we pull the concrete request type for each handler for registering in the InterfaceRegistry.
 		// This approach is maybe a bit hacky, but less hacky than reflecting on the handler object itself.
 		// We use a no-op interceptor to avoid actually calling into the handler itself.
 		_, _ = service.Handler(nil, context.Background(), func(i interface{}) error {
-			// TODO HV2: replace _ with msg when module is implemented
-			_, ok := i.(sdk.Msg)
+			msg, ok := i.(sdk.Msg)
 			if !ok {
 				// We panic here because there is no other alternative and the app cannot be initialized correctly
 				// this should only happen if there is a problem with code generation in which case the app won't
@@ -41,29 +38,27 @@ func RegisterSideMsgServer( /*sideCfg mod.SideTxConfigurator,*/ srv SideMsgServe
 				panic(fmt.Errorf("unable to register service method : %T does not implement sdk.Msg", i))
 			}
 
-			// requestTypeName = sdk.MsgTypeURL(msg)
+			requestTypeName = sdk.MsgTypeURL(msg)
 			return nil
 		}, noopInterceptor)
 
-		/*
+		sideHandler := srv.SideTxHandler(requestTypeName)
 
-			sideHandler := srv.SideTxHandler(requestTypeName)
+		postHandler := srv.PostTxHandler(requestTypeName)
 
-			postHandler := srv.PostTxHandler(requestTypeName)
+		if sideHandler == nil || postHandler == nil {
+			continue
+		}
 
-			if sideHandler == nil || postHandler == nil {
-				continue
-			}
+		err := sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
+		if err != nil {
+			return
+		}
+		err = sideCfg.RegisterPostHandler(requestTypeName, postHandler)
+		if err != nil {
+			return
+		}
 
-			err := sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
-			if err != nil {
-				return
-			}
-			err = sideCfg.RegisterPostHandler(requestTypeName, postHandler)
-			if err != nil {
-				return
-			}
-		*/
 	}
 }
 

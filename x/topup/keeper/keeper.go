@@ -42,14 +42,14 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	bankKeeper bk.Keeper,
 	/*
-	   	TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
-
-	   stake sk.Keeper,
-	   chainKeeper ck.Keeper,
-	   contractCaller helper.IContractCaller,
+		 TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
+		    stake sk.Keeper,
+			chainKeeper ck.Keeper,
+			contractCaller helper.IContractCaller,
 	*/
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
+
 	k := Keeper{
 		cdc:          cdc,
 		storeService: storeService,
@@ -62,7 +62,7 @@ func NewKeeper(
 		*/
 
 		// TODO HV2: in heimdall-v1, the keys are always prefixed with the key, then removed when getters are invoked
-		//  in heimdall-v2, I am only using plain keys, without the prefix. This looks correct to me. To double check.
+		//  in heimdall-v2, I am only using plain keys, without the prefix. To double check.
 		sequences:        collections.NewMap(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey, collections.BoolValue),
 		dividendAccounts: collections.NewMap(sb, types.DividendAccountMapKey, "dividend_account", collections.StringKey, codec.CollValue[hTypes.DividendAccount](cdc)),
 	}

@@ -17,6 +17,9 @@ import (
 
 func (suite *KeeperTestSuite) TestCreateTopupTx() {
 	msgServer := suite.msgServer
+	require := suite.Require()
+	keeper := suite.keeper
+	ctx := suite.ctx
 
 	var msg types.MsgTopupTx
 
@@ -57,8 +60,8 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 				blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 				sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-				err := suite.app.TopupKeeper.SetTopupSequence(suite.ctx, sequence.String())
-				suite.Require().NoError(err)
+				err := keeper.SetTopupSequence(ctx, sequence.String())
+				require.NoError(err)
 			},
 			false,
 			"already exists",
@@ -72,13 +75,13 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 			suite.SetupTest()
 
 			tc.malleate()
-			_, err := msgServer.CreateTopupTx(suite.ctx, &msg)
+			_, err := msgServer.CreateTopupTx(ctx, &msg)
 
 			if tc.expPass {
-				suite.Require().NoError(err)
+				require.NoError(err)
 			} else {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
 			}
 
 			tc.posttests()
@@ -88,6 +91,10 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 
 func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 	msgServer := suite.msgServer
+	accountKeeper := suite.accountKeeper
+	bankKeeper := suite.bankKeeper
+	ctx := suite.ctx
+	require := suite.Require()
 
 	var msg types.MsgWithdrawFeeTx
 
@@ -119,20 +126,20 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
 				// fund account from module
-				account := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr)
+				account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, account.GetAddress(), coins)
-				suite.Require().NoError(err)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, account)
+				err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+				require.NoError(err)
+				accountKeeper.SetAccount(ctx, account)
 				// check coins are set
-				suite.Require().True(suite.app.BankKeeper.GetBalance(suite.ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 			},
 			true,
 			"",
 			func() {
 				// check zero balance for account
-				account := suite.app.AccountKeeper.GetAccount(suite.ctx, addr)
-				suite.Require().True(suite.app.BankKeeper.GetBalance(suite.ctx, account.GetAddress(), authTypes.FeeToken).IsZero())
+				account := accountKeeper.GetAccount(ctx, addr)
+				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).IsZero())
 			},
 		},
 		{
@@ -144,13 +151,13 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
 				// fund account from module
-				account := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr)
+				account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, account.GetAddress(), coins)
-				suite.Require().NoError(err)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, account)
+				err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+				require.NoError(err)
+				accountKeeper.SetAccount(ctx, account)
 				// check coins are set
-				suite.Require().True(suite.app.BankKeeper.GetBalance(suite.ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 
 				amt, _ := math.NewIntFromString("2")
 				coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
@@ -160,8 +167,8 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 			"",
 			func() {
 				amt, _ := math.NewIntFromString("2")
-				account := suite.app.AccountKeeper.GetAccount(suite.ctx, addr)
-				suite.Require().True(suite.app.BankKeeper.GetBalance(suite.ctx, account.GetAddress(), authTypes.FeeToken).Amount.Equal(amt))
+				account := accountKeeper.GetAccount(ctx, addr)
+				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.Equal(amt))
 			},
 		},
 		{
@@ -173,13 +180,13 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
 				// fund account from module
-				account := suite.app.AccountKeeper.NewAccountWithAddress(suite.ctx, addr)
+				account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := suite.app.BankKeeper.SendCoinsFromModuleToAccount(suite.ctx, types.ModuleName, account.GetAddress(), coins)
-				suite.Require().NoError(err)
-				suite.app.AccountKeeper.SetAccount(suite.ctx, account)
+				err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+				require.NoError(err)
+				accountKeeper.SetAccount(ctx, account)
 				// check coins are set
-				suite.Require().True(suite.app.BankKeeper.GetBalance(suite.ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 
 				amt, _ := math.NewIntFromString("1")
 				coins = coins.Add(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
@@ -197,13 +204,13 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 			suite.SetupTest()
 
 			tc.malleate()
-			_, err := msgServer.WithdrawFeeTx(suite.ctx, &msg)
+			_, err := msgServer.WithdrawFeeTx(ctx, &msg)
 
 			if tc.expPass {
-				suite.Require().NoError(err)
+				require.NoError(err)
 			} else {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
 			}
 
 			tc.posttests()

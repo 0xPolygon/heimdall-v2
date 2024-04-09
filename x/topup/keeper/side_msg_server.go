@@ -1,19 +1,15 @@
 package keeper
 
 import (
-	//"bytes"
-	//"math/big"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	//"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	//authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"math/big"
 
-	//mod "github.com/0xPolygon/heimdall-v2/module"
-	//hTypes "github.com/0xPolygon/heimdall-v2/types"
+	mod "github.com/0xPolygon/heimdall-v2/module"
+	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
-
-// TODO HV2: enable commented code in the whole file when module is implemented
 
 var (
 	topupMsgTypeURL = sdk.MsgTypeURL(&types.MsgTopupTx{})
@@ -29,35 +25,33 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 }
 
 // SideTxHandler redirects to the right sideMsgServer side_handler based on methodName
-func (s sideMsgServer) SideTxHandler(methodName string) /*mod.SideTxHandler*/ {
+func (s sideMsgServer) SideTxHandler(methodName string) mod.SideTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
-		// return s.SideHandleTopupTx
-		return // nil
+		return s.SideHandleTopupTx
 	default:
-		return // nil
+		return nil
 	}
 }
 
 // PostTxHandler redirects to the right sideMsgServer post_handler based on methodName
-func (s sideMsgServer) PostTxHandler(methodName string) /*mod.PostTxHandler*/ {
+func (s sideMsgServer) PostTxHandler(methodName string) mod.PostTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
-		// return s.PostHandleTopupTx
-		return
+		return s.PostHandleTopupTx
 	default:
-		return // nil
+		return nil
 	}
 }
 
 // SideHandleTopupTx handles the side tx for a validator's topup
-func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) /*mod.Vote*/ {
+func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
 		logger.Error("MsgTopupTx type mismatch")
-		//return mod.Vote_VOTE_NO
+		return mod.Vote_VOTE_NO
 	}
 
 	logger.Debug("validating external call for topup msg",
@@ -66,128 +60,129 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) /*mod.Vo
 		"blockNumber", msg.BlockNumber,
 	)
 
-	// get chain params
-	/*
-		params := s.k.chainKeeper.GetParams(ctx)
-		chainParams := params.ChainParams
+	/* TODO HV2: enable when chainmanager and contract caller are implemented
+	params := s.k.chainKeeper.GetParams(ctx)
+	chainParams := params.ChainParams
 
-		// get main tx receipt
-		receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
-		if err != nil || receipt == nil {
-			return mod.Vote_VOTE_NO
-		}
+	// get main tx receipt
+	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
+	if err != nil || receipt == nil {
+		return mod.Vote_VOTE_NO
+	}
 
-		// get event log for topup
-		eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress.EthAddress(), receipt, msg.LogIndex)
-		if err != nil || eventLog == nil {
-			logger.Error("error fetching log from txhash for DecodeValidatorTopupFeesEvent")
-			return mod.Vote_VOTE_NO
-		}
+	// get event log for topup
+	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress.EthAddress(), receipt, msg.LogIndex)
+	if err != nil || eventLog == nil {
+		logger.Error("error fetching log from txhash for DecodeValidatorTopupFeesEvent")
+		return mod.Vote_VOTE_NO
+	}
 
-		if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-			logger.Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
-			return mod.Vote_VOTE_NO
-		}
+	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
+		logger.Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		return mod.Vote_VOTE_NO
+	}
 
-		if !bytes.Equal(eventLog.User.Bytes(), []byte(msg.User)) {
-			logger.Error(
-				"user address from contract event log does not match with user from topup message",
-				"eventUser", eventLog.User.String(),
-				"msgUser", msg.User,
-			)
-
-			return mod.Vote_VOTE_NO
-		}
-
-		if eventLog.Fee.Cmp(msg.Fee.BigInt()) != 0 {
-			logger.Error("fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
-			return mod.Vote_VOTE_NO
-		}
-
-		logger.Debug("Successfully validated external call for topup msg")
+	if !bytes.Equal(eventLog.User.Bytes(), []byte(msg.User)) {
+		logger.Error(
+			"user address from contract event log does not match with user from topup message",
+			"eventUser", eventLog.User.String(),
+			"msgUser", msg.User,
+		)
 
 		return mod.Vote_VOTE_NO
+	}
+
+	if eventLog.Fee.Cmp(msg.Fee.BigInt()) != 0 {
+		logger.Error("fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
+		return mod.Vote_VOTE_NO
+	}
+
+	logger.Debug("Successfully validated external call for topup msg")
+
+	return mod.Vote_VOTE_NO
 	*/
+
+	// TODO HV2: remove this return statement when the above is enabled
+	return mod.Vote_VOTE_NO
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup
-func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg /*sideTxResult mod.Vote*/) {
+func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult mod.Vote) {
 	logger := s.k.Logger(ctx)
 
-	_, ok := msgI.(*types.MsgTopupTx)
+	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
 		logger.Error("MsgTopupTx type mismatch")
 		return
 	}
 
-	/*
-		// skip handler if topup is not approved
-		if sideTxResult != mod.Vote_VOTE_YES {
-			logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
-			return
-		}
+	// skip handler if topup is not approved
+	if sideTxResult != mod.Vote_VOTE_YES {
+		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
+		return
+	}
 
-		// check if incoming tx is older
-		blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-		sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+	// check if incoming tx is older
+	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
+	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-		exists, err := s.k.HasTopupSequence(ctx, sequence.String())
-		if err != nil {
-			logger.Error("error while fetching older topup sequence", "error", err)
-			return
-		}
-		if exists {
-			logger.Error("older tx found")
-			return
-		}
+	exists, err := s.k.HasTopupSequence(ctx, sequence.String())
+	if err != nil {
+		logger.Error("error while fetching older topup sequence", "error", err)
+		return
+	}
+	if exists {
+		logger.Error("older tx found")
+		return
+	}
 
-		logger.Debug("persisting topup state", "sideTxResult", sideTxResult)
+	logger.Debug("persisting topup state", "sideTxResult", sideTxResult)
 
-		// create topup event
-		user := msg.User
-		topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
+	// create topup event
+	user := msg.User
+	topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-		// TODO HV2: is the following a proper replacement for AddCoins? Transfer from module to user, then from user to proposer
+	// TODO HV2: is the following a proper replacement for AddCoins? Transfer from module to user, then from user to proposer
 
-		err = s.k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
-		if err != nil {
-			logger.Error("error while adding coins to user", "user", user, "topupAmount", topupAmount, "error", err)
-			return
-		}
+	err = s.k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
+	if err != nil {
+		logger.Error("error while adding coins to user", "user", user, "topupAmount", topupAmount, "error", err)
+		return
+	}
 
-		err = s.k.bankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
-		if err != nil {
-			logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
-			return
-		}
+	err = s.k.bankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
+	if err != nil {
+		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
+		return
+	}
 
-		logger.Debug("persisted topup state for", "user", user, "topupAmount", topupAmount.String())
+	logger.Debug("persisted topup state for", "user", user, "topupAmount", topupAmount.String())
 
-		// save topup
-		err = s.k.SetTopupSequence(ctx, sequence.String())
-		if err != nil {
-			logger.Error("error while saving topup sequence", "sequence", sequence.String(), "error", err)
-			return
-		}
+	// save topup
+	err = s.k.SetTopupSequence(ctx, sequence.String())
+	if err != nil {
+		logger.Error("error while saving topup sequence", "sequence", sequence.String(), "error", err)
+		return
+	}
 
-		txBytes := ctx.TxBytes()
-		hash := hTypes.TxHash{Hash: txBytes}.Hash
+	txBytes := ctx.TxBytes()
+	// TODO HV2: rename _ to hash when hTypes is implemented
+	_ = hTypes.TxHash{Hash: txBytes}.Hash
 
-		ctx.EventManager().EmitEvents(sdk.Events{
-			sdk.NewEvent(
-				types.EventTypeTopup,
-				sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
-				sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-				sdk.NewAttribute(types.AttributeKeyTxHash, hTypes.BytesToHeimdallHash(hash).Hex()),
-				sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
-				sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
-				sdk.NewAttribute(types.AttributeKeyRecipient, msg.User),
-				sdk.NewAttribute(types.AttributeKeyTopupAmount, msg.Fee.String()),
-			),
-		})
-
-	*/
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeTopup,
+			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			// TODO enable the following when hTypes is implemented
+			// sdk.NewAttribute(types.AttributeKeyTxHash, hTypes.BytesToHeimdallHash(hash).Hex()),
+			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
+			sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
+			sdk.NewAttribute(types.AttributeKeyRecipient, msg.User),
+			sdk.NewAttribute(types.AttributeKeyTopupAmount, msg.Fee.String()),
+		),
+	})
 
 	return
 }

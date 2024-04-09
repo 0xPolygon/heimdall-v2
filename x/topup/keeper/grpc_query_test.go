@@ -43,7 +43,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence() {
 				txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 				sequence := new(big.Int).Mul(txReceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 				sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
-				err := suite.app.TopupKeeper.SetTopupSequence(suite.ctx, sequence.String())
+				err := suite.keeper.SetTopupSequence(suite.ctx, sequence.String())
 				suite.Require().NoError(err)
 				// TODO HV2: enable when contractCaller is implemented
 				// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
@@ -142,7 +142,7 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld() {
 				blockN := new(big.Int).SetUint64(blockNumber)
 				sequence := new(big.Int).Mul(blockN, big.NewInt(types.DefaultLogIndexUnit))
 				sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
-				_ = suite.app.TopupKeeper.SetTopupSequence(suite.ctx, sequence.String())
+				_ = suite.keeper.SetTopupSequence(suite.ctx, sequence.String())
 
 				req = &types.QueryTopupSequenceRequest{
 					TxHash:   hash.String(),
@@ -230,7 +230,7 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountByAddress() {
 					User:      hash.String(),
 					FeeAmount: big.NewInt(0).String(),
 				}
-				err = suite.app.TopupKeeper.SetDividendAccount(suite.ctx, dividendAccount)
+				err = suite.keeper.SetDividendAccount(suite.ctx, dividendAccount)
 				require.NoError(suite.T(), err)
 				req = &types.QueryDividendAccountRequest{
 					Address: hash.String(),
@@ -320,7 +320,7 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash() {
 					User:      hash.String(),
 					FeeAmount: big.NewInt(0).String(),
 				}
-				err = suite.app.TopupKeeper.SetDividendAccount(suite.ctx, dividendAccount)
+				err = suite.keeper.SetDividendAccount(suite.ctx, dividendAccount)
 				require.NoError(suite.T(), err)
 				req = &types.QueryDividendAccountRootHashRequest{}
 			},
@@ -386,7 +386,7 @@ func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof() {
 					User:      hash.String(),
 					FeeAmount: big.NewInt(0).String(),
 				}
-				err = suite.app.TopupKeeper.SetDividendAccount(suite.ctx, dividendAccount)
+				err = suite.keeper.SetDividendAccount(suite.ctx, dividendAccount)
 				require.NoError(suite.T(), err)
 				req = &types.QueryVerifyAccountProofRequest{
 					Address: hash.String(),
@@ -457,10 +457,10 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof() {
 					User:      hash.String(),
 					FeeAmount: big.NewInt(0).String(),
 				}
-				err = suite.app.TopupKeeper.SetDividendAccount(suite.ctx, dividendAccount)
+				err = suite.keeper.SetDividendAccount(suite.ctx, dividendAccount)
 				require.NoError(suite.T(), err)
 				// TODO HV2: replace _ with dividendAccounts when checkpoint is implemented in heimdall-v2
-				_, err = suite.app.TopupKeeper.GetAllDividendAccounts(suite.ctx)
+				_, err = suite.keeper.GetAllDividendAccounts(suite.ctx)
 				require.NoError(suite.T(), err)
 				// TODO HV2: enable this when checkpoint is implemented in heimdall-v2 and deleted the fake accRoot
 				// accRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
