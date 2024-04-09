@@ -13,9 +13,8 @@ const (
 	DefaultBorChainTxConfirmations          uint64 = 10
 	DefaultBorChainMilestoneTxConfirmations uint64 = 16
 
-	// TODO HV2: uncomment when this PR is merged: https://github.com/0xPolygon/cosmos-sdk/pull/3
-	// DefaultStateReceiverAddress sdk.AccAddress = sdk.AccAddressFromHex(("0x0000000000000000000000000000000000001001")
-	// DefaultValidatorSetAddress  sdk.AccAddress = sdk.AccAddressFromHex(("0x0000000000000000000000000000000000001000")
+	DefaultStateReceiverAddress = "0x0000000000000000000000000000000000001001"
+	DefaultValidatorSetAddress  = "0x0000000000000000000000000000000000001000"
 )
 
 // DefaultParams returns a default set of parameters.
@@ -24,10 +23,9 @@ func DefaultParams() Params {
 		MainChainTxConfirmations: DefaultMainChainTxConfirmations,
 		BorChainTxConfirmations:  DefaultBorChainTxConfirmations,
 		ChainParams: ChainParams{
-			BorChainId: helper.DefaultBorChainID,
-			// TODO HV2: uncomment when this PR is merged: https://github.com/0xPolygon/cosmos-sdk/pull/3
-			// StateReceiverAddress: DefaultStateReceiverAddress,
-			// ValidatorSetAddress:  DefaultValidatorSetAddress,
+			BorChainId:           helper.DefaultBorChainID,
+			StateReceiverAddress: DefaultStateReceiverAddress,
+			ValidatorSetAddress:  DefaultValidatorSetAddress,
 		},
 	}
 }

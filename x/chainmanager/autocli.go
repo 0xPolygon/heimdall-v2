@@ -18,5 +18,15 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 			},
 		},
+		Tx: &autocliv1.ServiceCommandDescriptor{
+			Service:              chainmanager.Msg_ServiceDesc.ServiceName,
+			EnhanceCustomCommand: false,
+			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
+				{
+					RpcMethod: "UpdateParams",
+					Skip:      true, // skipped because authority gated
+				},
+			},
+		},
 	}
 }

@@ -287,7 +287,8 @@ func NewHeimdallApp(
 
 	app.ChainManagerKeeper = chainmanagerkeeper.NewKeeper(
 		appCodec,
-		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]))
+		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
 	app.mm = module.NewManager(
 		// TODO HV2: add stake keeper once implemented

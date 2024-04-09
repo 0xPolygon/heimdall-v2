@@ -13,6 +13,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,6 +24,7 @@ type KeeperTestSuite struct {
 	ctx                sdk.Context
 	chainmanagerKeeper keeper.Keeper
 	queryClient        types.QueryClient
+	msgServer          types.MsgServer
 }
 
 func (s *KeeperTestSuite) SetupTest() {
@@ -32,7 +35,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	chainmanagerKeeper := keeper.NewKeeper(encCfg.Codec, storeService)
+	chainmanagerKeeper := keeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	require.NoError(chainmanagerKeeper.SetParams(ctx, types.DefaultParams()))
 
 	s.ctx = ctx
@@ -41,6 +44,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
 	types.RegisterQueryServer(queryHelper, keeper.Querier{Keeper: chainmanagerKeeper})
 	s.queryClient = types.NewQueryClient(queryHelper)
+	s.msgServer = keeper.NewMsgServerImpl(chainmanagerKeeper)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
