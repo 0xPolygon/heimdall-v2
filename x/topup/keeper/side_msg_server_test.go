@@ -429,6 +429,10 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 				ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 				require.NoError(err)
 				require.False(ok)
+
+				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
+				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
+
 				// account coins should be empty
 				// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
 				//base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
@@ -486,6 +490,9 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 				// ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 				// require.NoError(err)
 				// require.True(ok)
+
+				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
+				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
 
 				// account coins should not be empty
 				//acc2 := accountKeeper.GetAccount(ctx, addr2)

@@ -120,6 +120,9 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				//amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
 				//coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
+				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
+				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
+
 				// fund account from module
 				//account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
@@ -145,6 +148,9 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
+				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
+				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
+
 				// fund account from module
 				//account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
@@ -161,6 +167,10 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 			true,
 			"",
 			func() {
+
+				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
+				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
+
 				//amt, _ := math.NewIntFromString("2")
 				//account := accountKeeper.GetAccount(ctx, addr)
 				//require.True(BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.Equal(amt))
@@ -173,6 +183,9 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
 				amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+
+				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
+				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
 
 				// fund account from module
 				//account := accountKeeper.NewAccountWithAddress(ctx, addr)

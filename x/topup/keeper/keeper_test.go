@@ -71,7 +71,14 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	ctrl := gomock.NewController(suite.T())
 	bankKeeper := *testutil2.NewMockBankKeeper(ctrl)
+
+	// TODO HV2: fix the following expected calls
 	bankKeeper.EXPECT().IsSendEnabledDenom(gomock.Any(), gomock.Any()).Return(true).AnyTimes()
+	bankKeeper.EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(true).AnyTimes()
+	bankKeeper.EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	bankKeeper.EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	bankKeeper.EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
