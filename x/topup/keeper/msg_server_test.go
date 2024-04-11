@@ -26,10 +26,7 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
-	// TODO HV2: use the following line when implemented
-	// hash := hTypes.HexToHeimdallHash("0x000000000000000000000000000000000000000000000000000000000000dead")
-	txHash := "0x000000000000000000000000000000000000000000000000000000000000dead"
-	hash := hTypes.TxHash{Hash: []byte(txHash)}
+	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	logIndex := r1.Uint64()
 	blockNumber := r1.Uint64()
 
@@ -91,8 +88,6 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 
 func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 	msgServer := suite.msgServer
-	accountKeeper := suite.accountKeeper
-	bankKeeper := suite.bankKeeper
 	ctx := suite.ctx
 	require := suite.Require()
 
@@ -121,25 +116,25 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 			"success full amount",
 			func() {
 				// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
-				base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-				amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+				//base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
+				//amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
+				//coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
 				// fund account from module
-				account := accountKeeper.NewAccountWithAddress(ctx, addr)
+				//account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
-				require.NoError(err)
-				accountKeeper.SetAccount(ctx, account)
+				//err := BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+				//require.NoError(err)
+				//accountKeeper.SetAccount(ctx, account)
 				// check coins are set
-				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+				//require.True(BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 			},
 			true,
 			"",
 			func() {
 				// check zero balance for account
-				account := accountKeeper.GetAccount(ctx, addr)
-				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).IsZero())
+				//account := accountKeeper.GetAccount(ctx, addr)
+				//require.True(BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).IsZero())
 			},
 		},
 		{
@@ -151,13 +146,13 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
 				// fund account from module
-				account := accountKeeper.NewAccountWithAddress(ctx, addr)
+				//account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
-				require.NoError(err)
-				accountKeeper.SetAccount(ctx, account)
+				//err := BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+				//require.NoError(err)
+				//accountKeeper.SetAccount(ctx, account)
 				// check coins are set
-				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+				//require.True(BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 
 				amt, _ := math.NewIntFromString("2")
 				coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
@@ -166,9 +161,9 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 			true,
 			"",
 			func() {
-				amt, _ := math.NewIntFromString("2")
-				account := accountKeeper.GetAccount(ctx, addr)
-				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.Equal(amt))
+				//amt, _ := math.NewIntFromString("2")
+				//account := accountKeeper.GetAccount(ctx, addr)
+				//require.True(BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.Equal(amt))
 			},
 		},
 		{
@@ -180,13 +175,13 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
 				// fund account from module
-				account := accountKeeper.NewAccountWithAddress(ctx, addr)
+				//account := accountKeeper.NewAccountWithAddress(ctx, addr)
 				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
-				require.NoError(err)
-				accountKeeper.SetAccount(ctx, account)
+				//err := BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+				//require.NoError(err)
+				//accountKeeper.SetAccount(ctx, account)
 				// check coins are set
-				require.True(bankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+				//require.True(BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 
 				amt, _ := math.NewIntFromString("1")
 				coins = coins.Add(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})

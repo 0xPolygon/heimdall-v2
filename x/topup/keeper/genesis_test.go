@@ -8,7 +8,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/app"
@@ -38,7 +37,7 @@ func TestGenesisTestSuite(t *testing.T) {
 
 // TestInitExportGenesis test import and export genesis state
 func (suite *GenesisTestSuite) TestInitExportGenesis() {
-	t, heimdallApp, ctx := suite.T(), suite.app, suite.ctx
+	t, heimdallApp, ctx, require := suite.T(), suite.app, suite.ctx, suite.Require()
 	k := heimdallApp.TopupKeeper
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)

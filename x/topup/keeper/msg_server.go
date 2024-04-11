@@ -37,7 +37,7 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	)
 
 	// check if send is enabled for default denom
-	if !m.k.bankKeeper.IsSendEnabledDenom(ctx, types.DefaultDenom) {
+	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, types.DefaultDenom) {
 		m.k.Logger(ctx).Error("send not enabled")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"send for denom %s is not enabled in bank keeper", types.DefaultDenom)
@@ -89,7 +89,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 
 	// full withdraw
 	if msg.Amount.String() == big.NewInt(0).String() {
-		coins := m.k.bankKeeper.GetBalance(ctx, sdk.AccAddress(msg.Proposer), types.DefaultDenom)
+		coins := m.k.BankKeeper.GetBalance(ctx, sdk.AccAddress(msg.Proposer), types.DefaultDenom)
 		amount = coins.Amount
 	}
 
@@ -106,7 +106,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	coins := sdk.Coins{sdk.Coin{Denom: types.DefaultDenom, Amount: amount}}
 
 	// send coins from account to module
-	err := m.k.bankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
+	err := m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
 	if err != nil {
 		m.k.Logger(ctx).Error("error while sending coins from account to module",
 			"fromAddress", msg.Proposer,
@@ -116,7 +116,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 
 	}
 	// burn coins from module
-	err = m.k.bankKeeper.BurnCoins(ctx, types.ModuleName, coins)
+	err = m.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
 	if err != nil {
 		m.k.Logger(ctx).Error("error while burning coins",
 			"module", types.ModuleName,

@@ -11,7 +11,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bk "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
-	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
+	// TODO HV2: enable stakeKeeper, chainKeeper and helper when implemented in heimdall-v2
 	// "github.com/0xPolygon/heimdall-v2/chainmanager/keeper"
 	// "github.com/0xPolygon/heimdall-v2/helper"
 	// "github.com/0xPolygon/heimdall-v2/stake/keeper"
@@ -25,7 +25,7 @@ type Keeper struct {
 	storeService store.KVStoreService
 	schema       collections.Schema
 
-	bankKeeper bk.Keeper
+	BankKeeper bk.Keeper
 
 	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
 	// stakingKeeper sk.Keeper
@@ -42,10 +42,10 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	bankKeeper bk.Keeper,
 	/*
-		 TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
-		    stake sk.Keeper,
-			chainKeeper ck.Keeper,
-			contractCaller helper.IContractCaller,
+	   TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
+	   stake sk.Keeper,
+	   chainKeeper ck.Keeper,
+	   contractCaller helper.IContractCaller,
 	*/
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
@@ -54,7 +54,7 @@ func NewKeeper(
 		cdc:          cdc,
 		storeService: storeService,
 
-		bankKeeper: bankKeeper,
+		BankKeeper: bankKeeper,
 		/* TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
 		stakingKeeper: 	stakingKeeper,
 		chainKeeper:   	chainKeeper,

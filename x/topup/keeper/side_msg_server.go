@@ -145,13 +145,13 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	// TODO HV2: is the following a proper replacement for AddCoins? Transfer from module to user, then from user to proposer
 
-	err = s.k.bankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
+	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
 	if err != nil {
 		logger.Error("error while adding coins to user", "user", user, "topupAmount", topupAmount, "error", err)
 		return
 	}
 
-	err = s.k.bankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
+	err = s.k.BankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
 	if err != nil {
 		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
 		return

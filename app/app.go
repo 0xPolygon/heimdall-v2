@@ -62,8 +62,7 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 
-	// TODO HV2: enable when module is implemented
-	//mod "github.com/0xPolygon/heimdall-v2/module"
+	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -127,7 +126,7 @@ type HeimdallApp struct {
 
 	// TODO HV2: enable when VE processor is implemented
 	// Vote Extension handler
-	// VoteExtensionProcessor *VoteExtensionProcessor
+	VoteExtensionProcessor *VoteExtensionProcessor
 }
 
 func init() {
@@ -303,7 +302,7 @@ func NewHeimdallApp(
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
 		// TODO HV2: replace with our stake module
-		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.bankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 
@@ -373,15 +372,15 @@ func NewHeimdallApp(
 	}
 
 	// TODO HV2: enable when sideTx is implemented
-	//sideTxCfg := mod.NewSideTxConfigurator()
-	//app.RegisterSideMsgServices(sideTxCfg)
+	sideTxCfg := mod.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(sideTxCfg)
 
 	// TODO HV2: enable when VE processor is implemented
 	// Create the voteExtProcessor using sideTxCfg
-	//voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
-	//app.VoteExtensionProcessor = voteExtProcessor
+	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
+	app.VoteExtensionProcessor = voteExtProcessor
 	// Set the voteExtension methods to HeimdallApp
-	//bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
+	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
 
@@ -746,7 +745,6 @@ func (app *HeimdallApp) Configurator() module.Configurator {
 	return app.configurator
 }
 
-/* TODO HV2: enable when sideTx is implemented
 func (app *HeimdallApp) RegisterSideMsgServices(cfg mod.SideTxConfigurator) {
 	for _, md := range app.mm.Modules {
 		if sideMsgModule, ok := md.(mod.HasSideMsgServices); ok {
@@ -754,7 +752,6 @@ func (app *HeimdallApp) RegisterSideMsgServices(cfg mod.SideTxConfigurator) {
 		}
 	}
 }
-*/
 
 type EmptyAppOptions struct{}
 

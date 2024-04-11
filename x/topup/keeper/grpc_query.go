@@ -88,12 +88,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	if !exists {
-		q.k.Logger(ctx).Error("sequence does not exist", "txHash", req.TxHash, "index", req.LogIndex)
-		return nil, status.Errorf(codes.NotFound, "sequence with hash %s not found", req.TxHash)
-	}
-
-	return &types.QueryIsTopupTxOldResponse{IsOld: true}, nil
+	return &types.QueryIsTopupTxOldResponse{IsOld: exists}, nil
 	*/
 
 	// TODO HV2: remove the "return nil, nil" when the above method is enabled
@@ -133,6 +128,9 @@ func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.
 	accountRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if len(accountRoot) == 0 {
+		return nil, status.Errorf(codes.NotFound, "account root not found")
 	}
 	*/
 

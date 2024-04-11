@@ -1,30 +1,24 @@
 package keeper_test
 
 import (
-	"io"
+	"github.com/golang/mock/gomock"
 	"math/big"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
-	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	testutil3 "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	keeper2 "github.com/cosmos/cosmos-sdk/x/auth/keeper"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
-	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	testutil2 "github.com/cosmos/cosmos-sdk/x/gov/testutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/app"
@@ -34,17 +28,20 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
+const (
+	AccountHash = "0x000000000000000000000000000000000000dEaD"
+	TxHash      = "0x000000000000000000000000000000000000000000000000000000000000dead"
+)
+
 type KeeperTestSuite struct {
 	suite.Suite
-	ctx           sdk.Context
-	keeper        topupKeeper.Keeper
-	accountKeeper bankTypes.AccountKeeper
-	bankKeeper    bankkeeper.Keeper
-	chainID       string
-	msgServer     topupTypes.MsgServer
-	queryClient   topupTypes.QueryClient
-	sideMsgServer topupTypes.SideMsgServer
-	sideMsgCfg    mod.SideTxConfigurator
+
+	ctx    sdk.Context
+	keeper topupKeeper.Keeper
+
+	msgServer   topupTypes.MsgServer
+	sideMsgCfg  mod.SideTxConfigurator
+	queryClient topupTypes.QueryClient
 
 	/* TODO HV2: enable when contractCaller and chainManager are implemented
 	contractCaller mocks.IContractCaller
@@ -71,36 +68,24 @@ func (suite *KeeperTestSuite) SetupTest() {
 	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := testutil3.MakeTestEncodingConfig()
-	authority := authtypes.NewModuleAddress("gov").String()
-	logger := log.NewLogger(io.Discard)
 
-	accountKeeper := keeper2.NewAccountKeeper(
-		encCfg.Codec,
-		storeService,
-		authtypes.ProtoBaseAccount,
-		nil,
-		address.NewHexCodec(),
-		authority,
-	)
-
-	bankKeeper := bankkeeper.NewBaseKeeper(encCfg.Codec, storeService, accountKeeper, nil, authority, logger)
-
+	ctrl := gomock.NewController(suite.T())
+	bankKeeper := *testutil2.NewMockBankKeeper(ctrl)
+	bankKeeper.EXPECT().IsSendEnabledDenom(gomock.Any(), gomock.Any()).Return(true).AnyTimes()
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		bankKeeper,
+		&bankKeeper,
 	)
-
-	suite.ctx = ctx
-	suite.keeper = keeper
 
 	topupGenesis := topupTypes.DefaultGenesisState()
 	keeper.InitGenesis(ctx, topupGenesis)
-
 	topupTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
 	topupTypes.RegisterQueryServer(queryHelper, topupKeeper.NewQueryServer(&keeper))
 
+	suite.ctx = ctx
+	suite.keeper = keeper
 	suite.queryClient = topupTypes.NewQueryClient(queryHelper)
 	suite.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
 	suite.sideMsgCfg = mod.NewSideTxConfigurator()
@@ -108,69 +93,82 @@ func (suite *KeeperTestSuite) SetupTest() {
 }
 
 func (suite *KeeperTestSuite) TestTopupSequenceSet() {
-	t, ctx, tk := suite.T(), suite.ctx, suite.keeper
+	ctx, tk, require := suite.ctx, suite.keeper, suite.Require()
+
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
 	topupSequence := strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
-	_ = tk.SetTopupSequence(ctx, topupSequence)
-	actualResult, _ := tk.HasTopupSequence(ctx, topupSequence)
+	err := tk.SetTopupSequence(ctx, topupSequence)
+	require.Nil(err)
 
-	require.Equal(t, true, actualResult)
+	actualResult, err := tk.HasTopupSequence(ctx, topupSequence)
+	require.Nil(err)
+
+	sequences, err := tk.GetAllTopupSequences(ctx)
+	require.Nil(err)
+
+	require.Equal(true, actualResult)
+	require.Equal(len(sequences), 1)
+	require.Equal(topupSequence, sequences[0])
 }
 
 func (suite *KeeperTestSuite) TestDividendAccount() {
-	t, ctx, tk := suite.T(), suite.ctx, suite.keeper
+	ctx, tk, require := suite.ctx, suite.keeper, suite.Require()
 
 	dividendAccount := types.DividendAccount{
-		User:      "0x000000000000000000000000000000000000dEaD",
+		User:      AccountHash,
 		FeeAmount: big.NewInt(0).String(),
 	}
 	err := tk.SetDividendAccount(ctx, dividendAccount)
-	require.NoError(t, err)
+	require.NoError(err)
 
 	ok, _ := tk.HasDividendAccount(ctx, dividendAccount.User)
-	require.Equal(t, ok, true)
+	require.Equal(ok, true)
+
+	dividendAccounts, err := tk.GetAllDividendAccounts(ctx)
+	require.NoError(err)
+	require.Equal(1, len(dividendAccounts))
+	require.Equal(dividendAccount, dividendAccounts[0])
 }
 
 func (suite *KeeperTestSuite) TestAddFeeToDividendAccount() {
-	t, ctx, tk := suite.T(), suite.ctx, suite.keeper
+	ctx, tk, require := suite.ctx, suite.keeper, suite.Require()
 
-	addr := "0x000000000000000000000000000000000000dEaD"
 	amount, _ := big.NewInt(0).SetString("0", 10)
-	err := tk.AddFeeToDividendAccount(ctx, addr, amount)
-	require.NoError(t, err)
+	err := tk.AddFeeToDividendAccount(ctx, AccountHash, amount)
+	require.NoError(err)
 
-	dividendAccount, _ := tk.GetDividendAccount(ctx, addr)
+	dividendAccount, _ := tk.GetDividendAccount(ctx, AccountHash)
 	actualResult, ok := big.NewInt(0).SetString(dividendAccount.FeeAmount, 10)
-	require.Equal(t, ok, true)
-	require.Equal(t, amount, actualResult)
+	require.Equal(ok, true)
+	require.Equal(amount, actualResult)
 }
 
 func (suite *KeeperTestSuite) TestDividendAccountTree() {
-	t := suite.T()
+	require := suite.Require()
 
 	divAccounts := make([]types.DividendAccount, 5)
 	for i := 0; i < len(divAccounts); i++ {
 		divAccounts[i] = types.DividendAccount{
-			User:      "0x000000000000000000000000000000000000dEaD",
+			User:      AccountHash,
 			FeeAmount: big.NewInt(0).String(),
 		}
 	}
 
 	/* TODO HV2: enable when checkpoint is implemented
 	accountRoot, err := checkpointTypes.GetAccountRootHash(divAccounts)
-	require.NotNil(t, accountRoot)
-	require.NoError(t, err)
+	require.NotNil(accountRoot)
+	require.NoError(err)
 
-	accountProof, _, err := checkpointTypes.GetAccountProof(divAccounts, "0x000000000000000000000000000000000000dEaD")
-	require.NotNil(t, accountProof)
-	require.NoError(t, err)
+	accountProof, _, err := checkpointTypes.GetAccountProof(divAccounts, AccountHash)
+	require.NotNil(accountProof)
+	require.NoError(err)
 	*/
 
 	leafHash, err := CalculateDividendAccountHash(divAccounts[0])
-	require.NotNil(t, leafHash)
-	require.NoError(t, err)
+	require.NotNil(leafHash)
+	require.NoError(err)
 }
 
 // CalculateDividendAccountHash hashes the values of a DividendAccount
