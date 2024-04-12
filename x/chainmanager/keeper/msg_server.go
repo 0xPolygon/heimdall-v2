@@ -6,6 +6,7 @@ import (
 	errorsmod "cosmossdk.io/errors"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
@@ -21,9 +22,9 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-func (k msgServer) UpdateParams(ctx context.Context, req *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
-	if k.GetAuthority() != req.Authority {
-		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", k.GetAuthority(), req.Authority)
+func (srv msgServer) UpdateParams(ctx context.Context, req *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	if srv.GetAuthority() != req.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", srv.GetAuthority(), req.Authority)
 	}
 
 	if err := req.Params.Validate(); err != nil {
@@ -31,8 +32,8 @@ func (k msgServer) UpdateParams(ctx context.Context, req *types.MsgUpdateParams)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := k.SetParams(sdkCtx, req.Params); err != nil {
-		return nil, err
+	if err := srv.SetParams(sdkCtx, req.Params); err != nil {
+		return nil, errorsmod.Wrapf(sdkerrors.ErrLogic, "failed to update chainmanager params; %s", err)
 	}
 
 	return &types.MsgUpdateParamsResponse{}, nil
