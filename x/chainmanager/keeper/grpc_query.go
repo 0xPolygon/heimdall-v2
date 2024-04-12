@@ -28,7 +28,7 @@ func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*ty
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	params, err := k.GetParams(sdkCtx) //nolint:contextcheck
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, "failed to get params: %s", err)
 	}
 
 	return &types.QueryParamsResponse{Params: params}, nil

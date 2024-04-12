@@ -27,7 +27,7 @@ func (k msgServer) UpdateParams(ctx context.Context, req *types.MsgUpdateParams)
 	}
 
 	if err := req.Params.Validate(); err != nil {
-		return nil, err
+		return nil, errorsmod.Wrapf(types.ErrInvalidParams, "invalid chainmanager params; %s", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
