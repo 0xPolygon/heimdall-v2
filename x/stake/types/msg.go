@@ -21,7 +21,6 @@ var (
 )
 
 // NewMsgValidatorJoin creates a new MsgCreateValidator instance.
-// Delegator address and validator address are the same.
 func NewMsgValidatorJoin(
 	from string, id uint64, activationEpoch uint64,
 	amount math.Int, pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
@@ -74,7 +73,7 @@ func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
 	}
 
-	//TODO H2: Should we implement the check for the size here
+	//TODO HV2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Signer public key can't be of zero bytes")
 	}
@@ -122,7 +121,7 @@ func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
 	return nil
 }
 
-// NewMsgDelegate creates a new MsgDelegate instance.
+// NewMsgSignerUpdate creates a new MsgSignerUpdate instance.
 func NewMsgSignerUpdate(from string, id uint64,
 	pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgSignerUpdate, error) {
@@ -170,7 +169,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
 	}
 
-	//TODO H2: Should we implement the check for the size here
+	//TODO HV2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
 		return ErrInvalidMsg.Wrapf("New signer public key can't be of zero bytes")
 	}
@@ -178,7 +177,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 	return nil
 }
 
-// NewMsgBeginRedelegate creates a new MsgBeginRedelegate instance.
+// NewMsgValidatorExit creates a new MsgValidatorExit instance.
 func NewMsgValidatorExit(
 	from string, id uint64, deactivationEpoch uint64,
 	txHash hmTypes.TxHash, logIndex uint64,

@@ -1,9 +1,16 @@
 package keeper_test
 
 import (
+	"math/big"
+	"math/rand"
+	"time"
+
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
@@ -12,7 +19,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 
 	req := &types.QueryCurrentValidatorSetRequest{}
 	res, err := queryClient.CurrentValidatorSet(ctx, req)
-	// check no error found
+
 	require.NoError(err)
 	require.Equal(len(res.ValidatorSet.Validators), 0)
 
@@ -21,7 +28,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 
 	req = &types.QueryCurrentValidatorSetRequest{}
 	res, err = queryClient.CurrentValidatorSet(ctx, req)
-	// check no error found
+
 	require.NoError(err)
 
 	// check response is not nil
@@ -31,7 +38,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	require.Equal(res.ValidatorSet.TotalVotingPower, validatorSet.TotalVotingPower)
 }
 
-func (s *KeeperTestSuite) TesthandleQuerySigner() {
+func (s *KeeperTestSuite) TestHandleQuerySigner() {
 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 	require := s.Require()
 
@@ -40,7 +47,6 @@ func (s *KeeperTestSuite) TesthandleQuerySigner() {
 	}
 
 	res, err := queryClient.Signer(ctx, req)
-	// check no error found
 	require.NotNil(err)
 
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
@@ -63,7 +69,7 @@ func (s *KeeperTestSuite) TesthandleQuerySigner() {
 	require.Equal(res.Validator.ProposerPriority, validators[0].ProposerPriority)
 }
 
-func (s *KeeperTestSuite) TesthandleQueryValidator() {
+func (s *KeeperTestSuite) TestHandleQueryValidator() {
 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
 	require := s.Require()
 	req := &types.QueryValidatorRequest{
@@ -71,7 +77,6 @@ func (s *KeeperTestSuite) TesthandleQueryValidator() {
 	}
 
 	res, err := queryClient.Validator(ctx, req)
-	// check no error found
 	require.NotNil(err)
 	require.Nil(res)
 
@@ -80,7 +85,6 @@ func (s *KeeperTestSuite) TesthandleQueryValidator() {
 	}
 
 	res, err = queryClient.Validator(ctx, req)
-	// check no error found
 	require.NotNil(err)
 	require.Nil(res)
 
@@ -93,7 +97,7 @@ func (s *KeeperTestSuite) TesthandleQueryValidator() {
 	}
 
 	res, err = queryClient.Validator(ctx, req)
-	// check no error found
+
 	require.NoError(err)
 
 	// check response is not nil
@@ -114,7 +118,6 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 		ValAddress: validators[0].Signer,
 	}
 	res, err := queryClient.ValidatorStatus(ctx, req)
-	// check no error found
 	require.NoError(err)
 
 	// check response is not nil
@@ -131,96 +134,39 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 
 }
 
-// TODO H2 Recheck it
-func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
+func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
 	require := s.Require()
-	validatorSet := testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	require.NotNil(validatorSet)
 
-	req := &types.QueryCurrentProposerRequest{}
+	chainParams, err := s.cmKeeper.GetParams(ctx)
+	require.NoError(err)
 
-	res, err := queryClient.CurrentProposer(ctx, req)
+	txHash := hmTypes.TxHash{Hash: make([]byte, 20)}
+
+	txreceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
+
+	logIndex := uint64(simulation.RandIntBetween(r1, 0, 100))
+
+	req := &types.QueryStakingSequenceRequest{
+		TxHash:   txHash.EthHash().String(),
+		LogIndex: logIndex,
+	}
+
+	sequence := new(big.Int).Mul(txreceipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
+
+	keeper.SetStakingSequence(ctx, sequence.String())
+
+	s.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainChainTxConfirmations).Return(txreceipt, nil)
+
+	res, err := queryClient.StakingSequence(ctx, req)
+
 	// check no error found
 	require.NoError(err)
+
+	// check response is not nil
 	require.NotNil(res)
+	require.True(res.Status)
 }
-
-// TODO HV2 Please look into this.
-// func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
-// 	require := s.Require()
-// 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-
-// 	path := []string{types.QueryMilestoneProposer}
-
-// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryMilestoneProposer)
-
-// 	req := abci.RequestQuery{
-// 		Path: route,
-// 		Data: app.Codec().MustMarshalJSON(types.NewQueryProposerParams(uint64(2))),
-// 	}
-// 	res, err := querier(ctx, path, req)
-// 	// check no error found
-// 	require.NoError(t, err)
-
-// 	// check response is not nil
-// 	require.NotNil(t, res)
-// }
-
-// func (s *KeeperTestSuite) TestHandleQueryCurrentProposer() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
-// 	require := s.Require()
-// 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-
-// 	path := []string{types.QueryCurrentProposer}
-
-// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryCurrentProposer)
-
-// 	req := abci.RequestQuery{
-// 		Path: route,
-// 		Data: []byte{},
-// 	}
-// 	res, err := querier(ctx, path, req)
-// 	// check no error found
-// 	require.NoError(t, err)
-
-// 	// check response is not nil
-// 	require.NotNil(t, res)
-// }
-
-// func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
-// 	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
-// 	s1 := rand.NewSource(time.Now().UnixNano())
-// 	r1 := rand.New(s1)
-
-// 	txHash := hmTypes.TxHash{make([]byte, 20)}
-
-// 	txreceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-
-// 	logIndex := uint64(simulation.RandIntBetween(r1, 0, 100))
-
-// 	msg := types.NewQueryStakingSequenceParams(txHash.String(), logIndex)
-
-// 	sequence := new(big.Int).Mul(txreceipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-// 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-
-// 	keeper.SetStakingSequence(ctx, sequence.String())
-
-// 	path := []string{types.QueryStakingSequence}
-
-// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryStakingSequence)
-
-// 	req := abci.RequestQuery{
-// 		Path: route,
-// 		Data: app.Codec().MustMarshalJSON(msg),
-// 	}
-
-// 	res, err := querier(ctx, path, req)
-// 	// check no error found
-// 	require.NoError(t, err)
-
-// 	// check response is not nil
-// 	require.NotNil(t, res)
-// 	require.Equal(t, sequence.String(), string(res))
-// }

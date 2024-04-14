@@ -384,91 +384,6 @@ func (m *QueryTotalPowerResponse) GetTotalPower() int64 {
 	return 0
 }
 
-// QueryCurrentProposerRequest is request type for the Query/CurrentProposer RPC
-// method
-type QueryCurrentProposerRequest struct {
-}
-
-func (m *QueryCurrentProposerRequest) Reset()         { *m = QueryCurrentProposerRequest{} }
-func (m *QueryCurrentProposerRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryCurrentProposerRequest) ProtoMessage()    {}
-func (*QueryCurrentProposerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{8}
-}
-func (m *QueryCurrentProposerRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryCurrentProposerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryCurrentProposerRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryCurrentProposerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryCurrentProposerRequest.Merge(m, src)
-}
-func (m *QueryCurrentProposerRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryCurrentProposerRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryCurrentProposerRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryCurrentProposerRequest proto.InternalMessageInfo
-
-// QueryCurrentProposerRequest is response type for the Query/CurrentProposer
-// RPC method
-type QueryCurrentProposerResponse struct {
-	// validator defines the validator info.
-	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
-}
-
-func (m *QueryCurrentProposerResponse) Reset()         { *m = QueryCurrentProposerResponse{} }
-func (m *QueryCurrentProposerResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryCurrentProposerResponse) ProtoMessage()    {}
-func (*QueryCurrentProposerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{9}
-}
-func (m *QueryCurrentProposerResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryCurrentProposerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryCurrentProposerResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryCurrentProposerResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryCurrentProposerResponse.Merge(m, src)
-}
-func (m *QueryCurrentProposerResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryCurrentProposerResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryCurrentProposerResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryCurrentProposerResponse proto.InternalMessageInfo
-
-func (m *QueryCurrentProposerResponse) GetValidator() Validator {
-	if m != nil {
-		return m.Validator
-	}
-	return Validator{}
-}
-
 // QueryValidatorStatusRequest is response type for the Query/ValidatorStatus
 // RPC method
 type QueryValidatorStatusRequest struct {
@@ -480,7 +395,7 @@ func (m *QueryValidatorStatusRequest) Reset()         { *m = QueryValidatorStatu
 func (m *QueryValidatorStatusRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryValidatorStatusRequest) ProtoMessage()    {}
 func (*QueryValidatorStatusRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{10}
+	return fileDescriptor_a558de0a6377789c, []int{8}
 }
 func (m *QueryValidatorStatusRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -527,7 +442,7 @@ func (m *QueryValidatorStatusResponse) Reset()         { *m = QueryValidatorStat
 func (m *QueryValidatorStatusResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryValidatorStatusResponse) ProtoMessage()    {}
 func (*QueryValidatorStatusResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{11}
+	return fileDescriptor_a558de0a6377789c, []int{9}
 }
 func (m *QueryValidatorStatusResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -563,189 +478,6 @@ func (m *QueryValidatorStatusResponse) GetStatus() bool {
 	return false
 }
 
-// QuerySignerRequest is response type for the Query/Proposer RPC method
-type QueryProposerRequest struct {
-	Times uint64 `protobuf:"varint,1,opt,name=times,proto3" json:"times,omitempty"`
-}
-
-func (m *QueryProposerRequest) Reset()         { *m = QueryProposerRequest{} }
-func (m *QueryProposerRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryProposerRequest) ProtoMessage()    {}
-func (*QueryProposerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{12}
-}
-func (m *QueryProposerRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryProposerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryProposerRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryProposerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryProposerRequest.Merge(m, src)
-}
-func (m *QueryProposerRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryProposerRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryProposerRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryProposerRequest proto.InternalMessageInfo
-
-func (m *QueryProposerRequest) GetTimes() uint64 {
-	if m != nil {
-		return m.Times
-	}
-	return 0
-}
-
-// QuerySignerResponse is response type for the Query/Proposer RPC method
-type QueryProposerResponse struct {
-	Proposers []Validator `protobuf:"bytes,1,rep,name=proposers,proto3" json:"proposers"`
-}
-
-func (m *QueryProposerResponse) Reset()         { *m = QueryProposerResponse{} }
-func (m *QueryProposerResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryProposerResponse) ProtoMessage()    {}
-func (*QueryProposerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{13}
-}
-func (m *QueryProposerResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryProposerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryProposerResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryProposerResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryProposerResponse.Merge(m, src)
-}
-func (m *QueryProposerResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryProposerResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryProposerResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryProposerResponse proto.InternalMessageInfo
-
-func (m *QueryProposerResponse) GetProposers() []Validator {
-	if m != nil {
-		return m.Proposers
-	}
-	return nil
-}
-
-// QueryCurrentMilestoneProposerRequest is request type for the
-// Query/MilestoneProposer RPC method
-type QueryMilestoneProposerRequest struct {
-	Times uint64 `protobuf:"varint,1,opt,name=times,proto3" json:"times,omitempty"`
-}
-
-func (m *QueryMilestoneProposerRequest) Reset()         { *m = QueryMilestoneProposerRequest{} }
-func (m *QueryMilestoneProposerRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryMilestoneProposerRequest) ProtoMessage()    {}
-func (*QueryMilestoneProposerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{14}
-}
-func (m *QueryMilestoneProposerRequest) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryMilestoneProposerRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryMilestoneProposerRequest.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryMilestoneProposerRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryMilestoneProposerRequest.Merge(m, src)
-}
-func (m *QueryMilestoneProposerRequest) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryMilestoneProposerRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryMilestoneProposerRequest.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryMilestoneProposerRequest proto.InternalMessageInfo
-
-func (m *QueryMilestoneProposerRequest) GetTimes() uint64 {
-	if m != nil {
-		return m.Times
-	}
-	return 0
-}
-
-// QueryCurrentMilestoneProposerResponse is response type for the
-// Query/MilestoneProposer RPC method
-type QueryMilestoneProposerResponse struct {
-	// validator defines the validator info.
-	Proposers []Validator `protobuf:"bytes,1,rep,name=proposers,proto3" json:"proposers"`
-}
-
-func (m *QueryMilestoneProposerResponse) Reset()         { *m = QueryMilestoneProposerResponse{} }
-func (m *QueryMilestoneProposerResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryMilestoneProposerResponse) ProtoMessage()    {}
-func (*QueryMilestoneProposerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{15}
-}
-func (m *QueryMilestoneProposerResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryMilestoneProposerResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryMilestoneProposerResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *QueryMilestoneProposerResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryMilestoneProposerResponse.Merge(m, src)
-}
-func (m *QueryMilestoneProposerResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryMilestoneProposerResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryMilestoneProposerResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryMilestoneProposerResponse proto.InternalMessageInfo
-
-func (m *QueryMilestoneProposerResponse) GetProposers() []Validator {
-	if m != nil {
-		return m.Proposers
-	}
-	return nil
-}
-
 // QueryStakingSequenceRequest is response type for the Query/StakingSequence
 // RPC method
 type QueryStakingSequenceRequest struct {
@@ -757,7 +489,7 @@ func (m *QueryStakingSequenceRequest) Reset()         { *m = QueryStakingSequenc
 func (m *QueryStakingSequenceRequest) String() string { return proto.CompactTextString(m) }
 func (*QueryStakingSequenceRequest) ProtoMessage()    {}
 func (*QueryStakingSequenceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{16}
+	return fileDescriptor_a558de0a6377789c, []int{10}
 }
 func (m *QueryStakingSequenceRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -811,7 +543,7 @@ func (m *QueryStakingSequenceResponse) Reset()         { *m = QueryStakingSequen
 func (m *QueryStakingSequenceResponse) String() string { return proto.CompactTextString(m) }
 func (*QueryStakingSequenceResponse) ProtoMessage()    {}
 func (*QueryStakingSequenceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a558de0a6377789c, []int{17}
+	return fileDescriptor_a558de0a6377789c, []int{11}
 }
 func (m *QueryStakingSequenceResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -856,14 +588,8 @@ func init() {
 	proto.RegisterType((*QueryValidatorResponse)(nil), "heimdallv2.stake.v1.QueryValidatorResponse")
 	proto.RegisterType((*QueryTotalPowerRequest)(nil), "heimdallv2.stake.v1.QueryTotalPowerRequest")
 	proto.RegisterType((*QueryTotalPowerResponse)(nil), "heimdallv2.stake.v1.QueryTotalPowerResponse")
-	proto.RegisterType((*QueryCurrentProposerRequest)(nil), "heimdallv2.stake.v1.QueryCurrentProposerRequest")
-	proto.RegisterType((*QueryCurrentProposerResponse)(nil), "heimdallv2.stake.v1.QueryCurrentProposerResponse")
 	proto.RegisterType((*QueryValidatorStatusRequest)(nil), "heimdallv2.stake.v1.QueryValidatorStatusRequest")
 	proto.RegisterType((*QueryValidatorStatusResponse)(nil), "heimdallv2.stake.v1.QueryValidatorStatusResponse")
-	proto.RegisterType((*QueryProposerRequest)(nil), "heimdallv2.stake.v1.QueryProposerRequest")
-	proto.RegisterType((*QueryProposerResponse)(nil), "heimdallv2.stake.v1.QueryProposerResponse")
-	proto.RegisterType((*QueryMilestoneProposerRequest)(nil), "heimdallv2.stake.v1.QueryMilestoneProposerRequest")
-	proto.RegisterType((*QueryMilestoneProposerResponse)(nil), "heimdallv2.stake.v1.QueryMilestoneProposerResponse")
 	proto.RegisterType((*QueryStakingSequenceRequest)(nil), "heimdallv2.stake.v1.QueryStakingSequenceRequest")
 	proto.RegisterType((*QueryStakingSequenceResponse)(nil), "heimdallv2.stake.v1.QueryStakingSequenceResponse")
 }
@@ -871,64 +597,53 @@ func init() {
 func init() { proto.RegisterFile("heimdallv2/stake/v1/query.proto", fileDescriptor_a558de0a6377789c) }
 
 var fileDescriptor_a558de0a6377789c = []byte{
-	// 902 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x96, 0xcf, 0x6f, 0xdc, 0x44,
-	0x14, 0xc7, 0xe3, 0x94, 0x84, 0xec, 0x0b, 0x28, 0x74, 0xd2, 0xb4, 0xa9, 0xb7, 0xeb, 0x4d, 0x5d,
-	0x94, 0xa6, 0x0b, 0xb1, 0x9b, 0x4d, 0xb9, 0x95, 0x43, 0x83, 0x10, 0xe5, 0x80, 0x48, 0xbb, 0x15,
-	0x07, 0x0e, 0x2c, 0xd3, 0xf5, 0xc8, 0x3b, 0xaa, 0xd7, 0xb3, 0xf5, 0xcc, 0x9a, 0x8d, 0xa2, 0x5c,
-	0xb8, 0xf0, 0xe3, 0x84, 0x84, 0xb8, 0x72, 0x04, 0x0e, 0x1c, 0xf8, 0x33, 0x7a, 0xac, 0xc4, 0x85,
-	0x13, 0x42, 0x09, 0x12, 0x67, 0xfe, 0x83, 0xca, 0xe3, 0xb1, 0xbd, 0xeb, 0xb5, 0x37, 0xbb, 0x52,
-	0x2e, 0x51, 0xf4, 0xe6, 0xbd, 0xf7, 0xfd, 0xcc, 0x7b, 0xde, 0xaf, 0x0d, 0xf5, 0x2e, 0xa1, 0x3d,
-	0x07, 0x7b, 0x5e, 0xd8, 0xb4, 0xb9, 0xc0, 0xcf, 0x88, 0x1d, 0xee, 0xd9, 0xcf, 0x07, 0x24, 0x38,
-	0xb2, 0xfa, 0x01, 0x13, 0x0c, 0xad, 0x67, 0x09, 0x96, 0x4c, 0xb0, 0xc2, 0x3d, 0xfd, 0x8a, 0xcb,
-	0x5c, 0x26, 0xcf, 0xed, 0xe8, 0xbf, 0x38, 0x55, 0xbf, 0xe1, 0x32, 0xe6, 0x7a, 0xc4, 0xc6, 0x7d,
-	0x6a, 0x63, 0xdf, 0x67, 0x02, 0x0b, 0xca, 0x7c, 0xae, 0x4e, 0xab, 0x1d, 0xc6, 0x7b, 0x8c, 0xc7,
-	0xcd, 0x73, 0x2a, 0xfa, 0x65, 0xdc, 0xa3, 0x3e, 0xb3, 0xe5, 0x5f, 0x15, 0xba, 0x55, 0x44, 0x16,
-	0x62, 0x8f, 0x3a, 0x58, 0xb0, 0x20, 0x4e, 0x32, 0x6f, 0x42, 0xfd, 0x51, 0xd4, 0xe6, 0x83, 0x41,
-	0x10, 0x10, 0x5f, 0x7c, 0x96, 0x1c, 0xb7, 0x88, 0x78, 0x4c, 0x9e, 0x0f, 0x08, 0x17, 0xe6, 0x00,
-	0xb6, 0xca, 0x53, 0x78, 0x9f, 0xf9, 0x9c, 0xa0, 0x47, 0xf0, 0x66, 0xda, 0xb9, 0xcd, 0x89, 0xd8,
-	0xd4, 0xb6, 0xb4, 0x9d, 0xd5, 0xe6, 0x4d, 0xab, 0xe0, 0xf2, 0xd6, 0x68, 0x87, 0x83, 0xca, 0x8b,
-	0xbf, 0xeb, 0x0b, 0xbf, 0xfd, 0xf7, 0x47, 0x43, 0x7b, 0xfc, 0x46, 0x38, 0x72, 0x60, 0xde, 0x07,
-	0x24, 0x65, 0x5b, 0xd4, 0xf5, 0x49, 0xa0, 0x60, 0xd0, 0x36, 0xac, 0x86, 0xd8, 0x6b, 0x63, 0xc7,
-	0x09, 0x08, 0xe7, 0x52, 0xa6, 0x72, 0xb0, 0x14, 0xd7, 0x43, 0x88, 0xbd, 0x07, 0xf1, 0x81, 0xf9,
-	0x05, 0xac, 0x8f, 0x55, 0x2b, 0xce, 0x8f, 0xa0, 0x92, 0x8a, 0x28, 0x46, 0x63, 0x3a, 0xe3, 0x28,
-	0x60, 0x56, 0x6b, 0x5a, 0xb0, 0x21, 0xfb, 0xa7, 0x79, 0x09, 0xe0, 0x06, 0x2c, 0x52, 0x47, 0xb6,
-	0x7e, 0x2d, 0xe1, 0x5a, 0xa4, 0x8e, 0x89, 0xe1, 0x6a, 0x3e, 0xff, 0xa2, 0x91, 0x36, 0x95, 0xc4,
-	0x13, 0x26, 0xb0, 0x77, 0xc8, 0xbe, 0x4a, 0x87, 0x66, 0x3e, 0x80, 0x6b, 0x13, 0x27, 0x4a, 0x7d,
-	0x1b, 0x56, 0x45, 0x14, 0x6d, 0xf7, 0xa3, 0xb0, 0xd4, 0xbf, 0x94, 0xce, 0x53, 0xa4, 0xf9, 0x66,
-	0x0d, 0xaa, 0xa3, 0x0f, 0xc1, 0x61, 0xc0, 0xfa, 0x8c, 0x67, 0x0a, 0x2e, 0xdc, 0x28, 0x3e, 0xbe,
-	0xe8, 0x4b, 0x7e, 0xa8, 0x38, 0xb2, 0x67, 0x48, 0x60, 0x31, 0xe0, 0xf3, 0x3e, 0x1e, 0xef, 0x2b,
-	0xde, 0x89, 0x36, 0x8a, 0xb7, 0x06, 0xcb, 0x5c, 0x46, 0x64, 0x8b, 0x95, 0xa4, 0x85, 0x0a, 0x9a,
-	0xfb, 0x70, 0x45, 0x96, 0xe7, 0xc6, 0x80, 0xaa, 0xb0, 0x24, 0x68, 0x8f, 0xf0, 0xf1, 0xfd, 0xc7,
-	0x31, 0xf3, 0x4b, 0xf5, 0xc8, 0x14, 0x0d, 0xa7, 0xaf, 0x62, 0x51, 0xe5, 0xa5, 0x39, 0x87, 0x93,
-	0xd6, 0x9a, 0xf7, 0xa1, 0x26, 0x15, 0x3e, 0xa1, 0x1e, 0xe1, 0x82, 0xf9, 0x64, 0x2e, 0x3e, 0x0a,
-	0x46, 0x59, 0xf5, 0x45, 0x83, 0x62, 0xb5, 0xc5, 0x96, 0xc0, 0xcf, 0xa8, 0xef, 0xb6, 0x22, 0x3c,
-	0xbf, 0x43, 0x12, 0x4c, 0x03, 0x5e, 0x17, 0xc3, 0x76, 0x17, 0xf3, 0xee, 0xf8, 0x06, 0x97, 0xc5,
-	0xf0, 0x21, 0xe6, 0x5d, 0x64, 0x42, 0xc5, 0x63, 0x6e, 0x9b, 0xfa, 0x0e, 0x19, 0x6e, 0x2e, 0x8e,
-	0x5e, 0x65, 0xc5, 0x63, 0xee, 0xc7, 0x51, 0x38, 0xdd, 0xf0, 0x84, 0xc4, 0x4c, 0x1b, 0x6e, 0xfe,
-	0x0f, 0xb0, 0x24, 0xeb, 0xd1, 0xaf, 0x1a, 0xac, 0x17, 0x58, 0x1f, 0xba, 0x57, 0x78, 0xf3, 0x73,
-	0xcc, 0x54, 0x7f, 0x6f, 0xce, 0xaa, 0x98, 0xd6, 0xbc, 0xf5, 0x6d, 0x44, 0xf7, 0xf5, 0x9f, 0xff,
-	0xfe, 0xb8, 0xb8, 0x89, 0xae, 0x4a, 0x3b, 0xa7, 0xbe, 0x9b, 0xb9, 0xf9, 0x2e, 0x27, 0x02, 0x7d,
-	0xa3, 0xc1, 0x72, 0xec, 0x77, 0xe8, 0x76, 0xb9, 0xcc, 0x98, 0x9f, 0xea, 0x3b, 0xe7, 0x27, 0x2a,
-	0x84, 0x46, 0x86, 0x50, 0x47, 0xb5, 0x14, 0x81, 0xcb, 0x2c, 0xfb, 0x78, 0xe4, 0x67, 0x77, 0x82,
-	0xbe, 0xd7, 0xa0, 0x92, 0xde, 0x03, 0x35, 0xca, 0x35, 0xf2, 0xf6, 0xa9, 0xbf, 0x33, 0x53, 0xae,
-	0x42, 0x7a, 0x3b, 0x43, 0xba, 0x8e, 0xae, 0x4d, 0x4e, 0xc5, 0x3e, 0xa6, 0xce, 0x09, 0xfa, 0x5d,
-	0x83, 0xb5, 0xdc, 0xef, 0x1c, 0xdd, 0x9d, 0x41, 0x66, 0xcc, 0x59, 0xf4, 0xbd, 0x39, 0x2a, 0x14,
-	0xde, 0xbd, 0x0c, 0xef, 0x0e, 0xba, 0x5d, 0xb4, 0x34, 0x99, 0x9f, 0x9b, 0xdd, 0x77, 0x1a, 0x40,
-	0x66, 0xd4, 0x68, 0xca, 0x40, 0x26, 0x8c, 0x5e, 0x7f, 0x77, 0xb6, 0x64, 0xc5, 0xb7, 0x95, 0xf1,
-	0x6d, 0xa0, 0xf5, 0x94, 0x4f, 0xba, 0xbe, 0x7c, 0x1d, 0xa0, 0x9f, 0x35, 0x58, 0xcb, 0x59, 0xfa,
-	0xb4, 0xd1, 0x15, 0xbf, 0x1c, 0xa6, 0x8d, 0xae, 0xe4, 0x7d, 0x61, 0x6e, 0x67, 0x68, 0x55, 0x74,
-	0x3d, 0x45, 0xeb, 0xc4, 0xe9, 0xbb, 0x89, 0x93, 0x44, 0xc3, 0x5a, 0x49, 0xc9, 0xee, 0x94, 0xeb,
-	0xe4, 0x91, 0x1a, 0xb3, 0xa4, 0x4e, 0x67, 0x49, 0x18, 0xec, 0x63, 0x69, 0x9f, 0x27, 0xe8, 0x17,
-	0x0d, 0x2e, 0x4f, 0x78, 0x27, 0x6a, 0x96, 0x2b, 0x95, 0xd9, 0xb4, 0xbe, 0x3f, 0x57, 0x8d, 0xc2,
-	0xdc, 0xc9, 0x30, 0x6b, 0xa8, 0x9a, 0x62, 0xf6, 0x92, 0x82, 0x6c, 0x68, 0x3f, 0x69, 0xb0, 0x96,
-	0xb3, 0xc5, 0x69, 0x5b, 0x2d, 0x36, 0xe9, 0x69, 0x5b, 0x2d, 0xf1, 0x5c, 0xb3, 0x96, 0x21, 0x22,
-	0xf4, 0x56, 0x8a, 0x48, 0xf9, 0xa7, 0x9e, 0xf3, 0x64, 0x78, 0xf0, 0xf0, 0xc5, 0xa9, 0xa1, 0xbd,
-	0x3c, 0x35, 0xb4, 0x7f, 0x4e, 0x0d, 0xed, 0x87, 0x33, 0x63, 0xe1, 0xe5, 0x99, 0xb1, 0xf0, 0xd7,
-	0x99, 0xb1, 0xf0, 0xb9, 0xe5, 0x52, 0xd1, 0x1d, 0x3c, 0xb5, 0x3a, 0xac, 0x67, 0xdf, 0x1d, 0x1e,
-	0x32, 0xef, 0xc8, 0x65, 0xbe, 0x9d, 0xe8, 0xef, 0x86, 0x4d, 0x7b, 0xa8, 0x3e, 0x71, 0xc5, 0x51,
-	0x9f, 0xf0, 0xa7, 0xcb, 0xf2, 0xe3, 0x76, 0xff, 0x55, 0x00, 0x00, 0x00, 0xff, 0xff, 0x48, 0xb2,
-	0x9e, 0xe6, 0x9d, 0x0b, 0x00, 0x00,
+	// 732 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x95, 0xcf, 0x4f, 0x13, 0x41,
+	0x14, 0xc7, 0xbb, 0x55, 0x0a, 0x1d, 0x34, 0xe8, 0x54, 0xa0, 0x2e, 0xb0, 0x85, 0xc5, 0x00, 0xa2,
+	0xec, 0x42, 0xc5, 0x9b, 0x1e, 0xc0, 0x18, 0xf1, 0x06, 0xd4, 0x78, 0xf0, 0x60, 0x33, 0xb0, 0x93,
+	0xed, 0x84, 0xed, 0x4e, 0xe9, 0x4c, 0xd7, 0x12, 0xc2, 0xc5, 0x8b, 0x3f, 0x4e, 0x26, 0xc6, 0x93,
+	0x7f, 0x80, 0x1e, 0x3c, 0xf8, 0x67, 0x70, 0x24, 0xf1, 0xe2, 0xc9, 0x18, 0x30, 0xf1, 0xdf, 0x30,
+	0x3b, 0x3b, 0xdd, 0xed, 0x8f, 0x6d, 0x29, 0x89, 0x97, 0xa6, 0x79, 0xef, 0xfb, 0xde, 0xf7, 0xb3,
+	0x6f, 0xf6, 0xcd, 0x82, 0x5c, 0x09, 0x93, 0xb2, 0x85, 0x1c, 0xc7, 0xcb, 0x9b, 0x8c, 0xa3, 0x3d,
+	0x6c, 0x7a, 0x2b, 0xe6, 0x7e, 0x0d, 0x57, 0x0f, 0x8c, 0x4a, 0x95, 0x72, 0x0a, 0x33, 0x91, 0xc0,
+	0x10, 0x02, 0xc3, 0x5b, 0x51, 0x6f, 0xd8, 0xd4, 0xa6, 0x22, 0x6f, 0xfa, 0xff, 0x02, 0xa9, 0x3a,
+	0x69, 0x53, 0x6a, 0x3b, 0xd8, 0x44, 0x15, 0x62, 0x22, 0xd7, 0xa5, 0x1c, 0x71, 0x42, 0x5d, 0x26,
+	0xb3, 0x13, 0xbb, 0x94, 0x95, 0x29, 0x0b, 0x9a, 0xb7, 0xb9, 0xa8, 0xd7, 0x51, 0x99, 0xb8, 0xd4,
+	0x14, 0xbf, 0x32, 0x34, 0x1b, 0x47, 0xe6, 0x21, 0x87, 0x58, 0x88, 0xd3, 0x6a, 0x20, 0xd2, 0x67,
+	0x40, 0x6e, 0xcb, 0x6f, 0xf3, 0xa8, 0x56, 0xad, 0x62, 0x97, 0x3f, 0x6f, 0xa4, 0x0b, 0x98, 0x6f,
+	0xe3, 0xfd, 0x1a, 0x66, 0x5c, 0xaf, 0x81, 0xe9, 0xee, 0x12, 0x56, 0xa1, 0x2e, 0xc3, 0x70, 0x0b,
+	0x5c, 0x0d, 0x3b, 0x17, 0x19, 0xe6, 0x59, 0x65, 0x5a, 0x59, 0x18, 0xce, 0xcf, 0x18, 0x31, 0x0f,
+	0x6f, 0x34, 0x77, 0x58, 0x4f, 0x1f, 0xff, 0xca, 0x25, 0xbe, 0xfe, 0xfd, 0xbe, 0xa8, 0x6c, 0x5f,
+	0xf1, 0x9a, 0x12, 0xfa, 0x03, 0x00, 0x85, 0x6d, 0x81, 0xd8, 0x2e, 0xae, 0x4a, 0x18, 0x38, 0x07,
+	0x86, 0x3d, 0xe4, 0x14, 0x91, 0x65, 0x55, 0x31, 0x63, 0xc2, 0x26, 0xbd, 0x3e, 0x10, 0xd4, 0x03,
+	0x0f, 0x39, 0x6b, 0x41, 0x42, 0x7f, 0x09, 0x32, 0x2d, 0xd5, 0x92, 0xf3, 0x09, 0x48, 0x87, 0x26,
+	0x92, 0x51, 0xeb, 0xcd, 0xd8, 0x0c, 0x18, 0xd5, 0xea, 0x06, 0x18, 0x15, 0xfd, 0x43, 0x5d, 0x03,
+	0x70, 0x14, 0x24, 0x89, 0x25, 0x5a, 0x5f, 0x6e, 0x70, 0x25, 0x89, 0xa5, 0x23, 0x30, 0xd6, 0xae,
+	0xff, 0xdf, 0x48, 0x59, 0x69, 0xf1, 0x8c, 0x72, 0xe4, 0x6c, 0xd2, 0x57, 0xe1, 0xd0, 0xf4, 0x35,
+	0x30, 0xde, 0x91, 0x91, 0xee, 0x73, 0x60, 0x98, 0xfb, 0xd1, 0x62, 0xc5, 0x0f, 0x0b, 0xff, 0x4b,
+	0xe1, 0x3c, 0x79, 0xa8, 0xd7, 0x1f, 0x83, 0x89, 0x56, 0xfe, 0x02, 0x47, 0xbc, 0xc6, 0x2e, 0x7a,
+	0x2c, 0x0f, 0xc1, 0x64, 0x7c, 0x1b, 0x89, 0x33, 0x05, 0x52, 0x4c, 0x44, 0x44, 0x8b, 0xa1, 0x46,
+	0x0b, 0x19, 0xd4, 0x91, 0xa4, 0x28, 0x70, 0xb4, 0x47, 0x5c, 0xbb, 0xe0, 0xbb, 0xbb, 0xbb, 0xb8,
+	0x41, 0xa1, 0x81, 0x41, 0x5e, 0x2f, 0x96, 0x10, 0x2b, 0xb5, 0x12, 0xa4, 0x78, 0x7d, 0x03, 0xb1,
+	0x12, 0xd4, 0x41, 0xda, 0xa1, 0x76, 0x91, 0xb8, 0x16, 0xae, 0x67, 0x93, 0xcd, 0x47, 0x34, 0xe4,
+	0x50, 0xfb, 0xa9, 0x1f, 0x0e, 0x09, 0x3b, 0x2c, 0xfa, 0x22, 0xcc, 0x7f, 0x1e, 0x04, 0x03, 0xa2,
+	0x1e, 0x7e, 0x51, 0x40, 0x26, 0x66, 0x65, 0xe0, 0x6a, 0xec, 0xe1, 0x9e, 0xb3, 0x84, 0xea, 0xfd,
+	0x0b, 0x56, 0x05, 0xb4, 0xfa, 0xec, 0x5b, 0x9f, 0xee, 0xf5, 0x8f, 0x3f, 0x1f, 0x93, 0x59, 0x38,
+	0x26, 0xae, 0x01, 0xe2, 0xda, 0xd1, 0x2d, 0xb0, 0xc4, 0x30, 0x87, 0x6f, 0x14, 0x90, 0x0a, 0xf6,
+	0x04, 0xce, 0x77, 0xb7, 0x69, 0xd9, 0x43, 0x75, 0xe1, 0x7c, 0xa1, 0x44, 0x58, 0x8c, 0x10, 0x72,
+	0x70, 0x2a, 0x44, 0x60, 0x42, 0x65, 0x1e, 0x36, 0xbd, 0x36, 0x47, 0xf0, 0xbd, 0x02, 0xd2, 0xe1,
+	0x73, 0xc0, 0xc5, 0xee, 0x1e, 0xed, 0x6b, 0xa7, 0xde, 0xe9, 0x4b, 0x2b, 0x91, 0x6e, 0x45, 0x48,
+	0x37, 0xe1, 0x78, 0xe7, 0x54, 0xcc, 0x43, 0x62, 0x1d, 0xc1, 0x6f, 0x0a, 0x18, 0x69, 0x7b, 0x4f,
+	0xe1, 0x72, 0x1f, 0x36, 0x2d, 0x9b, 0xa1, 0xae, 0x5c, 0xa0, 0x42, 0xe2, 0xad, 0x46, 0x78, 0xb7,
+	0xe1, 0x7c, 0xdc, 0xa1, 0x09, 0x7d, 0xdb, 0xec, 0xde, 0x29, 0x00, 0x44, 0x0b, 0x0e, 0x7b, 0x0c,
+	0xa4, 0xe3, 0x82, 0x50, 0xef, 0xf6, 0x27, 0x96, 0x7c, 0xd3, 0x11, 0xdf, 0x28, 0xcc, 0x84, 0x7c,
+	0xe2, 0xb6, 0x10, 0xd7, 0x08, 0xfc, 0xa4, 0x80, 0x91, 0xb6, 0x05, 0xea, 0x35, 0xba, 0xf8, 0x75,
+	0xee, 0x35, 0xba, 0x2e, 0xdb, 0xa9, 0x4f, 0x45, 0x68, 0x10, 0x5e, 0x0b, 0xd1, 0x08, 0xa3, 0x8e,
+	0xc5, 0xeb, 0xeb, 0x1b, 0xc7, 0xa7, 0x9a, 0x72, 0x72, 0xaa, 0x29, 0xbf, 0x4f, 0x35, 0xe5, 0xc3,
+	0x99, 0x96, 0x38, 0x39, 0xd3, 0x12, 0x3f, 0xcf, 0xb4, 0xc4, 0x0b, 0xc3, 0x26, 0xbc, 0x54, 0xdb,
+	0x31, 0x76, 0x69, 0xd9, 0x5c, 0xae, 0x6f, 0x52, 0xe7, 0xc0, 0xa6, 0xae, 0xd9, 0xf0, 0x5f, 0xf2,
+	0xf2, 0x66, 0x5d, 0x7e, 0x44, 0xf9, 0x41, 0x05, 0xb3, 0x9d, 0x94, 0xf8, 0x7c, 0xde, 0xfb, 0x17,
+	0x00, 0x00, 0xff, 0xff, 0x09, 0x66, 0x9b, 0xe5, 0xff, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -945,20 +660,14 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for given validator val_address.
+	// Signer queries validator info for given validator validator address.
 	Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
-	// Validator queries validator info for given validator id.
+	// Validator queries validator info for a given validator id.
 	Validator(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
 	ValidatorStatus(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries total power of a validator set
+	// TotalPower queries the total power of a validator set
 	TotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
-	// CurrentProposer queries validator info for the current proposer
-	CurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error)
-	// Proposer queries for the proposer
-	Proposer(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error)
-	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error)
 	// StakingSequence queries for the staking sequence
 	StakingSequence(ctx context.Context, in *QueryStakingSequenceRequest, opts ...grpc.CallOption) (*QueryStakingSequenceResponse, error)
 }
@@ -1016,33 +725,6 @@ func (c *queryClient) TotalPower(ctx context.Context, in *QueryTotalPowerRequest
 	return out, nil
 }
 
-func (c *queryClient) CurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error) {
-	out := new(QueryCurrentProposerResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.v1.Query/CurrentProposer", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) Proposer(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error) {
-	out := new(QueryProposerResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.v1.Query/Proposer", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error) {
-	out := new(QueryMilestoneProposerResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.v1.Query/MilestoneProposer", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *queryClient) StakingSequence(ctx context.Context, in *QueryStakingSequenceRequest, opts ...grpc.CallOption) (*QueryStakingSequenceResponse, error) {
 	out := new(QueryStakingSequenceResponse)
 	err := c.cc.Invoke(ctx, "/heimdallv2.stake.v1.Query/StakingSequence", in, out, opts...)
@@ -1056,20 +738,14 @@ func (c *queryClient) StakingSequence(ctx context.Context, in *QueryStakingSeque
 type QueryServer interface {
 	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for given validator val_address.
+	// Signer queries validator info for given validator validator address.
 	Signer(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
-	// Validator queries validator info for given validator id.
+	// Validator queries validator info for a given validator id.
 	Validator(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
 	ValidatorStatus(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries total power of a validator set
+	// TotalPower queries the total power of a validator set
 	TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
-	// CurrentProposer queries validator info for the current proposer
-	CurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error)
-	// Proposer queries for the proposer
-	Proposer(context.Context, *QueryProposerRequest) (*QueryProposerResponse, error)
-	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
 	// StakingSequence queries for the staking sequence
 	StakingSequence(context.Context, *QueryStakingSequenceRequest) (*QueryStakingSequenceResponse, error)
 }
@@ -1092,15 +768,6 @@ func (*UnimplementedQueryServer) ValidatorStatus(ctx context.Context, req *Query
 }
 func (*UnimplementedQueryServer) TotalPower(ctx context.Context, req *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TotalPower not implemented")
-}
-func (*UnimplementedQueryServer) CurrentProposer(ctx context.Context, req *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CurrentProposer not implemented")
-}
-func (*UnimplementedQueryServer) Proposer(ctx context.Context, req *QueryProposerRequest) (*QueryProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Proposer not implemented")
-}
-func (*UnimplementedQueryServer) MilestoneProposer(ctx context.Context, req *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MilestoneProposer not implemented")
 }
 func (*UnimplementedQueryServer) StakingSequence(ctx context.Context, req *QueryStakingSequenceRequest) (*QueryStakingSequenceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StakingSequence not implemented")
@@ -1200,60 +867,6 @@ func _Query_TotalPower_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_CurrentProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryCurrentProposerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).CurrentProposer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.stake.v1.Query/CurrentProposer",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).CurrentProposer(ctx, req.(*QueryCurrentProposerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_Proposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryProposerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).Proposer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.stake.v1.Query/Proposer",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Proposer(ctx, req.(*QueryProposerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_MilestoneProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryMilestoneProposerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).MilestoneProposer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.stake.v1.Query/MilestoneProposer",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).MilestoneProposer(ctx, req.(*QueryMilestoneProposerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Query_StakingSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryStakingSequenceRequest)
 	if err := dec(in); err != nil {
@@ -1295,18 +908,6 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TotalPower",
 			Handler:    _Query_TotalPower_Handler,
-		},
-		{
-			MethodName: "CurrentProposer",
-			Handler:    _Query_CurrentProposer_Handler,
-		},
-		{
-			MethodName: "Proposer",
-			Handler:    _Query_Proposer_Handler,
-		},
-		{
-			MethodName: "MilestoneProposer",
-			Handler:    _Query_MilestoneProposer_Handler,
 		},
 		{
 			MethodName: "StakingSequence",
@@ -1548,62 +1149,6 @@ func (m *QueryTotalPowerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error)
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryCurrentProposerRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryCurrentProposerRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryCurrentProposerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryCurrentProposerResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryCurrentProposerResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryCurrentProposerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.Validator.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintQuery(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0xa
-	return len(dAtA) - i, nil
-}
-
 func (m *QueryValidatorStatusRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1663,136 +1208,6 @@ func (m *QueryValidatorStatusResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 		}
 		i--
 		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryProposerRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryProposerRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryProposerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Times != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Times))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryProposerResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryProposerResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryProposerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Proposers) > 0 {
-		for iNdEx := len(m.Proposers) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Proposers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryMilestoneProposerRequest) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryMilestoneProposerRequest) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryMilestoneProposerRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Times != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Times))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *QueryMilestoneProposerResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryMilestoneProposerResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *QueryMilestoneProposerResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Proposers) > 0 {
-		for iNdEx := len(m.Proposers) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Proposers[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintQuery(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0xa
-		}
 	}
 	return len(dAtA) - i, nil
 }
@@ -1964,26 +1379,6 @@ func (m *QueryTotalPowerResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryCurrentProposerRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
-func (m *QueryCurrentProposerResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = m.Validator.Size()
-	n += 1 + l + sovQuery(uint64(l))
-	return n
-}
-
 func (m *QueryValidatorStatusRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2005,60 +1400,6 @@ func (m *QueryValidatorStatusResponse) Size() (n int) {
 	_ = l
 	if m.Status {
 		n += 2
-	}
-	return n
-}
-
-func (m *QueryProposerRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Times != 0 {
-		n += 1 + sovQuery(uint64(m.Times))
-	}
-	return n
-}
-
-func (m *QueryProposerResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Proposers) > 0 {
-		for _, e := range m.Proposers {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *QueryMilestoneProposerRequest) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Times != 0 {
-		n += 1 + sovQuery(uint64(m.Times))
-	}
-	return n
-}
-
-func (m *QueryMilestoneProposerResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Proposers) > 0 {
-		for _, e := range m.Proposers {
-			l = e.Size()
-			n += 1 + l + sovQuery(uint64(l))
-		}
 	}
 	return n
 }
@@ -2666,139 +2007,6 @@ func (m *QueryTotalPowerResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryCurrentProposerRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryCurrentProposerRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryCurrentProposerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryCurrentProposerResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryCurrentProposerResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryCurrentProposerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Validator", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.Validator.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *QueryValidatorStatusRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2930,312 +2138,6 @@ func (m *QueryValidatorStatusResponse) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Status = bool(v != 0)
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryProposerRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryProposerRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryProposerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Times", wireType)
-			}
-			m.Times = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Times |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryProposerResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryProposerResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryProposerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Proposers = append(m.Proposers, Validator{})
-			if err := m.Proposers[len(m.Proposers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryMilestoneProposerRequest) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryMilestoneProposerRequest: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryMilestoneProposerRequest: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Times", wireType)
-			}
-			m.Times = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Times |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipQuery(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryMilestoneProposerResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowQuery
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryMilestoneProposerResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryMilestoneProposerResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposers", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Proposers = append(m.Proposers, Validator{})
-			if err := m.Proposers[len(m.Proposers)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])

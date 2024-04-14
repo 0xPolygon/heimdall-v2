@@ -30,7 +30,7 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// CreateValidator defines a method for creating a new validator
+// ValidatorJoin defines a method for new validator's joining
 func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoin) (*types.MsgValidatorJoinResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating validator join msg",
 		"validatorId", msg.ValId,
@@ -49,7 +49,7 @@ func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
 	}
 
-	//TODO H2 Can any attack possible about it?
+	//TODO HV2 Can any attack possible about it?
 	//String directly coming from it is not of correct length
 	signer := strings.ToLower(pk.Address().String())
 
@@ -96,7 +96,7 @@ func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	return &types.MsgValidatorJoinResponse{}, nil
 }
 
-// EditValidator defines a method for editing an existing validator
+// StakeUpdate defines a method for updating the stake of a validator
 func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (*types.MsgStakeUpdateResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating stake update msg",
 		"validatorID", msg.ValId,
@@ -155,7 +155,7 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	return &types.MsgStakeUpdateResponse{}, nil
 }
 
-// Delegate defines a method for performing a delegation of coins from a delegator to a validator
+// SignerUpdate defines a method for updating the signer of the validator
 func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating signer update msg",
 		"validatorID", msg.ValId,
@@ -219,7 +219,7 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	return &types.MsgSignerUpdateResponse{}, nil
 }
 
-// BeginRedelegate defines a method for performing a redelegation of coins from a source validator to a destination validator of given delegator
+// ValidatorExit defines a method for exiting the validator from the validator set
 func (k msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExit) (*types.MsgValidatorExitResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating validator exit msg",
 		"validatorID", msg.ValId,

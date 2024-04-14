@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"crypto/rand"
-	"fmt"
 	"math/big"
 	"strings"
 
@@ -19,7 +18,6 @@ func GenRandomVal(count int, startBlock uint64, power int64, timeAlive uint64, r
 
 		pkAny, err := codectypes.NewAnyWithValue(pubKey)
 		if err != nil {
-			fmt.Errorf("Error in generating the pubKey")
 			return
 		}
 

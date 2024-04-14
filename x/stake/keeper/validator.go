@@ -229,10 +229,16 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 	}
 
 	// set validator set with CurrentValidatorSetKey as key in store
-	store.Set(types.CurrentValidatorSetKey, bz)
+	err = store.Set(types.CurrentValidatorSetKey, bz)
+	if err != nil {
+		return err
+	}
 
 	//When there is any update in checkpoint validator set, we assign it to milestone validator set too.
-	store.Set(types.CurrentMilestoneValidatorSetKey, bz)
+	err = store.Set(types.CurrentMilestoneValidatorSetKey, bz)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -247,8 +253,7 @@ func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.Valida
 		k.Logger(ctx).Error("GetValidatorSet | CurrentValidatorSetKeyDoesNotExist ", "error", err)
 	}
 
-	// unmarhsall
-	if err := k.cdc.Unmarshal(bz, &validatorSet); err != nil {
+	if err = k.cdc.Unmarshal(bz, &validatorSet); err != nil {
 		k.Logger(ctx).Error("GetValidatorSet | UnmarshalBinaryBare", "error", err)
 	}
 
@@ -349,25 +354,25 @@ func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt st
 	return validator.LastUpdated, true
 }
 
-// // IterateCurrentValidatorsAndApplyFn iterate through current validators
-// func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator *types.Validator) bool) {
-// 	currentValidatorSet := k.GetValidatorSet(ctx)
-// 	for _, v := range currentValidatorSet.Validators {
-// 		if stop := f(v); stop {
-// 			return
-// 		}
-// 	}
-// }
-
-//
-// Staking sequence
-//
+//IterateCurrentValidatorsAndApplyFn iterate through current validators
+/*
+func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator *types.Validator) bool) {
+	currentValidatorSet := k.GetValidatorSet(ctx)
+	for _, v := range currentValidatorSet.Validators {
+		if stop := f(v); stop {
+			return
+		}
+	}
+}
+*/
 
 // SetStakingSequence sets staking sequence
-func (k *Keeper) SetStakingSequence(ctx context.Context, sequence string) {
+func (k *Keeper) SetStakingSequence(ctx context.Context, sequence string) error {
 	store := k.storeService.OpenKVStore(ctx)
 
-	store.Set(types.GetStakingSequenceKey(sequence), types.DefaultValue)
+	err := store.Set(types.GetStakingSequenceKey(sequence), types.DefaultValue)
+
+	return err
 }
 
 // HasStakingSequence checks if staking sequence already exists
@@ -438,7 +443,7 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 	return 0, errors.New("Address not found in current validator set")
 }
 
-// TODO H2 Please how to use the stop parameter here
+// TODO HV2 Please how to use the stop parameter here
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
 func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
 	currentValidatorSet := k.GetValidatorSet(ctx)
@@ -481,8 +486,7 @@ func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet typ
 		return validatorSet
 	}
 
-	// unmarhsall
-	if err := k.cdc.Unmarshal(bz, &validatorSet); err != nil {
+	if err = k.cdc.Unmarshal(bz, &validatorSet); err != nil {
 		k.Logger(ctx).Error("GetMilestoneValidatorSet | UnmarshalBinaryBare", "error", err)
 	}
 
@@ -520,66 +524,3 @@ func (k *Keeper) GetMilestoneCurrentProposer(ctx context.Context) *types.Validat
 func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 	return k.validatorAddressCodec
 }
-
-////////////////////////    Slashing Code //////////////////////////////
-// // Slashing api's
-// // AddValidatorSigningInfo creates a signing info for validator
-// func (k *Keeper) AddValidatorSigningInfo(ctx context.Context, valID types.ValidatorID, valSigningInfo types.ValidatorSigningInfo) error {
-// 	k.moduleCommunicator.CreateValidatorSigningInfo(ctx, valID, valSigningInfo)
-// 	return nil
-// }
-
-// // UpdatePower updates validator with signer and pubkey + validator => signer map
-// func (k *Keeper) Slash(ctx context.Context, valSlashingInfo types.ValidatorSlashingInfo) error {
-// 	// get validator from state
-// 	validator, found := k.GetValidatorFromValID(ctx, valSlashingInfo.ID)
-// 	if !found {
-// 		k.Logger(ctx).Error("Unable to fetch validator from store")
-// 		return errors.New("validator not found")
-// 	}
-
-// 	k.Logger(ctx).Debug("validator fetched", "validator", validator)
-
-// 	updatedPower := int64(0)
-// 	// calculate power after slash
-// 	if validator.VotingPower >= int64(valSlashingInfo.SlashedAmount) {
-// 		updatedPower = validator.VotingPower - int64(valSlashingInfo.SlashedAmount)
-// 	}
-
-// 	k.Logger(ctx).Info("slashAmount", valSlashingInfo.SlashedAmount, "prevPower", validator.VotingPower, "updatedPower", updatedPower)
-
-// 	// update power and jail status.
-// 	validator.VotingPower = updatedPower
-// 	validator.Jailed = valSlashingInfo.IsJailed
-
-// 	// add updated validator to store with new key
-// 	if err := k.AddValidator(ctx, validator); err != nil {
-// 		k.Logger(ctx).Error("Failed to add validator", "error", err)
-// 	}
-
-// 	k.Logger(ctx).Debug("updated validator with slashed voting power and jail status", "validator", validator)
-
-// 	return nil
-// }
-
-// // Unjail a validator
-// func (k *Keeper) Unjail(ctx context.Context, valID types.ValidatorID) {
-// 	// get validator from state and make jailed = false
-// 	validator, found := k.GetValidatorFromValID(ctx, valID)
-// 	if !found {
-// 		k.Logger(ctx).Error("Unable to fetch validator from store")
-// 		return
-// 	}
-
-// 	if !validator.Jailed {
-// 		k.Logger(ctx).Info("Already unjailed.")
-// 		return
-// 	}
-// 	// unjail validator
-// 	validator.Jailed = false
-
-// 	// add updated validator to store with new key
-// 	if err := k.AddValidator(ctx, validator); err != nil {
-// 		k.Logger(ctx).Error("Failed to add validator", "Error", err)
-// 	}
-// }

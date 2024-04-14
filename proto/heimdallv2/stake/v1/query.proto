@@ -11,8 +11,6 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
 // Query defines the gRPC querier service.
 service Query {
-  // Validators queries all validators that match the given status.
-  //
 
   // CurrentValidatorSet queries for the current validator set
   rpc CurrentValidatorSet(QueryCurrentValidatorSetRequest)
@@ -21,13 +19,13 @@ service Query {
     option (google.api.http).get = "/staking/validator-set";
   }
 
-  // Signer queries validator info for given validator val_address.
+  // Signer queries validator info for given validator validator address.
   rpc Signer(QuerySignerRequest) returns (QuerySignerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/staking/signer/{val_address}";
   }
 
-  // Validator queries validator info for given validator id.
+  // Validator queries validator info for a given validator id.
   rpc Validator(QueryValidatorRequest) returns (QueryValidatorResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/staking/validator/{id}";
@@ -40,37 +38,17 @@ service Query {
     option (google.api.http).get = "/staking/validator-status/{val_address}";
   }
 
-  // TotalPower queries total power of a validator set
+  // TotalPower queries the total power of a validator set
   rpc TotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/staking/totalpower";
-  }
-
-  // CurrentProposer queries validator info for the current proposer
-  rpc CurrentProposer(QueryCurrentProposerRequest)
-      returns (QueryCurrentProposerResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/current-proposer";
-  }
-
-  // Proposer queries for the proposer
-  rpc Proposer(QueryProposerRequest) returns (QueryProposerResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/proposer/{times}";
-  }
-
-  // MilestoneProposer queries for the milestone proposer
-  rpc MilestoneProposer(QueryMilestoneProposerRequest)
-      returns (QueryMilestoneProposerResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/milestone-proposer";
   }
 
   // StakingSequence queries for the staking sequence
   rpc StakingSequence(QueryStakingSequenceRequest)
       returns (QueryStakingSequenceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/isOldTx";
+    option (google.api.http).get = "/staking/isoldtx";
   }
 }
 
@@ -122,18 +100,6 @@ message QueryTotalPowerResponse {
   int64 total_power = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryCurrentProposerRequest is request type for the Query/CurrentProposer RPC
-// method
-message QueryCurrentProposerRequest {}
-
-// QueryCurrentProposerRequest is response type for the Query/CurrentProposer
-// RPC method
-message QueryCurrentProposerResponse {
-  // validator defines the validator info.
-  Validator validator = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-}
-
 // QueryValidatorStatusRequest is response type for the Query/ValidatorStatus
 // RPC method
 message QueryValidatorStatusRequest {
@@ -146,31 +112,6 @@ message QueryValidatorStatusRequest {
 message QueryValidatorStatusResponse {
   // status define the active status of validator
   bool status = 1 [ (amino.dont_omitempty) = true ];
-}
-
-// QuerySignerRequest is response type for the Query/Proposer RPC method
-message QueryProposerRequest {
-  uint64 times = 1 [ (amino.dont_omitempty) = true ];
-}
-
-// QuerySignerResponse is response type for the Query/Proposer RPC method
-message QueryProposerResponse {
-  repeated Validator proposers = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-}
-
-// QueryCurrentMilestoneProposerRequest is request type for the
-// Query/MilestoneProposer RPC method
-message QueryMilestoneProposerRequest {
-  uint64 times = 1 [ (amino.dont_omitempty) = true ];
-}
-
-// QueryCurrentMilestoneProposerResponse is response type for the
-// Query/MilestoneProposer RPC method
-message QueryMilestoneProposerResponse {
-  // validator defines the validator info.
-  repeated Validator proposers = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 // QueryStakingSequenceRequest is response type for the Query/StakingSequence

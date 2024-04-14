@@ -25,16 +25,11 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-)
-
-var (
-	PKs = simtestutil.CreateTestPubKeys(500)
 )
 
 type KeeperTestSuite struct {
@@ -94,7 +89,6 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-// tests setter/getters for validatorSignerMaps , validator set/get
 func (s *KeeperTestSuite) TestValidator() {
 	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
@@ -107,7 +101,6 @@ func (s *KeeperTestSuite) TestValidator() {
 	accounts := simulation.RandomAccounts(r1, n)
 
 	for i := range validators {
-		// validator
 		validators[i] = types.NewValidator(
 			uint64(i),
 			0,
@@ -122,18 +115,18 @@ func (s *KeeperTestSuite) TestValidator() {
 		require.NoErrorf(err, "Error while adding validator to store")
 	}
 
-	// Get random validator ID
+	// get random validator ID
 	valId := simulation.RandIntBetween(r1, 0, n)
 
-	// Get Validator Info from state
+	// get validator info from state
 	valInfo, err := keeper.GetValidatorInfo(ctx, validators[valId].Signer)
 	require.NoErrorf(err, "Error while fetching Validator")
 
-	// Get Signer Address mapped with ValidatorId
+	// get signer address mapped with validatorId
 	mappedSignerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
 	require.Truef(isMapped, "Signer Address not mapped to Validator Id")
 
-	// Check if Validator matches in state
+	// check if validator matches in state
 	require.Equal(valInfo, *validators[valId], "Validators in state doesn't match")
 	require.Equal(strings.ToLower(mappedSignerAddress.String()), validators[0].Signer, "Signer address doesn't match")
 }
@@ -151,7 +144,6 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	accounts := simulation.RandomAccounts(r1, n)
 
 	for i := range validators {
-		// validator
 		validators[i] = types.NewValidator(
 			uint64(int64(i)),
 			0,
@@ -178,96 +170,98 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	err = keeper.UpdateSigner(ctx, addr2, pkAny2, valInfo.Signer)
 	require.NoErrorf(err, "Error while updating Signer Address ")
 
-	// Check Validator Info of Prev Signer
-	prevSginerValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
+	// check validator info of prev signer
+	prevSignerValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	require.NoErrorf(err, "Error while fetching Validator Info for Prev Signer")
 
-	require.Equal(int64(0), prevSginerValInfo.VotingPower, "VotingPower of Prev Signer should be zero")
+	require.Equal(int64(0), prevSignerValInfo.VotingPower, "VotingPower of Prev Signer should be zero")
 
-	// Check Validator Info of Updated Signer
+	// check validator info of updated signer
 	updatedSignerValInfo, err := keeper.GetValidatorInfo(ctx, addr2)
 	require.NoError(err, "Error while fetching Validator Info for Updater Signer")
 
 	require.Equal(validators[0].VotingPower, updatedSignerValInfo.VotingPower, "VotingPower of updated signer should match with prev signer VotingPower")
 
-	// Check If ValidatorId is mapped To Updated Signer
+	// check if validatorId is mapped to updated signer
 	signerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
 	require.Truef(isMapped, "Signer Address not mapped to Validator Id")
 	require.Equal(addr2, strings.ToLower(signerAddress.String()), "Validator ID should be mapped to Updated Signer Address")
 
-	// Check total Validators
+	// check total validators
 	totalValidators := keeper.GetAllValidators(ctx)
 	require.LessOrEqual(6, len(totalValidators), "Total Validators should be six.")
 
-	// Check current Validators
+	// check current validators
 	currentValidators := keeper.GetCurrentValidators(ctx)
 	require.LessOrEqual(5, len(currentValidators), "Current Validators should be five.")
 }
 
-// func (s *KeeperTestSuite) TestCurrentValidator() {
-// 	type TestDataItem struct {
-// 		name        string
-// 		startblock  uint64
-// 		VotingPower int64
-// 		ackcount    uint64
-// 		result      bool
-// 		resultmsg   string
-// 	}
+// TODO HV2
+/*
+func (s *KeeperTestSuite) TestCurrentValidator() {
+	type TestDataItem struct {
+		name        string
+		startblock  uint64
+		VotingPower int64
+		ackcount    uint64
+		result      bool
+		resultmsg   string
+	}
 
-// 	dataItems := []TestDataItem{
-// 		{
-// 			name:        "VotingPower zero",
-// 			startblock:  uint64(0),
-// 			VotingPower: int64(0),
-// 			ackcount:    uint64(1),
-// 			result:      false,
-// 			resultmsg:   "should not be current validator as VotingPower is zero.",
-// 		},
-// 		{
-// 			name:        "start epoch greater than ackcount",
-// 			startblock:  uint64(3),
-// 			VotingPower: int64(10),
-// 			ackcount:    uint64(1),
-// 			result:      false,
-// 			resultmsg:   "should not be current validator as start epoch greater than ackcount.",
-// 		},
-// 	}
-// 	ctx, keeper := s.ctx, s.stakeKeeper
+	dataItems := []TestDataItem{
+		{
+			name:        "VotingPower zero",
+			startblock:  uint64(0),
+			VotingPower: int64(0),
+			ackcount:    uint64(1),
+			result:      false,
+			resultmsg:   "should not be current validator as VotingPower is zero.",
+		},
+		{
+			name:        "start epoch greater than ackcount",
+			startblock:  uint64(3),
+			VotingPower: int64(10),
+			ackcount:    uint64(1),
+			result:      false,
+			resultmsg:   "should not be current validator as start epoch greater than ackcount.",
+		},
+	}
+	ctx, keeper := s.ctx, s.stakeKeeper
 
-// 	stakeKeeper, checkpointKeeper := s.stakeKeeper, app.CheckpointKeeper
+	stakeKeeper, checkpointKeeper := s.stakeKeeper, app.CheckpointKeeper
 
-// 	for i, item := range dataItems {
-// 		suite.Run(item.name, func() {
-// 			// Create a Validator [startEpoch, endEpoch, VotingPower]
-// 			privKep := secp256k1.GenPrivKey()
-// 			pubkey := types.NewPubKey(privKep.PubKey().Bytes())
-// 			newVal := types.Validator{
-// 				ID:               types.NewValidatorID(1 + uint64(i)),
-// 				StartEpoch:       item.startblock,
-// 				EndEpoch:         item.startblock,
-// 				Nonce:            0,
-// 				VotingPower:      item.VotingPower,
-// 				Signer:           types.HexToHeimdallAddress(pubkey.Address().String()),
-// 				PubKey:           pubkey,
-// 				ProposerPriority: 0,
-// 			}
-// 			// check current validator
-// 			err := stakeKeeper.AddValidator(ctx, newVal)
-// 			require.NoError(t, err)
-// 			checkpointKeeper.UpdateACKCountWithValue(ctx, item.ackcount)
+	for i, item := range dataItems {
+		suite.Run(item.name, func() {
+			// Create a Validator [startEpoch, endEpoch, VotingPower]
+			privKep := secp256k1.GenPrivKey()
+			pubkey := types.NewPubKey(privKep.PubKey().Bytes())
+			newVal := types.Validator{
+				ID:               types.NewValidatorID(1 + uint64(i)),
+				StartEpoch:       item.startblock,
+				EndEpoch:         item.startblock,
+				Nonce:            0,
+				VotingPower:      item.VotingPower,
+				Signer:           types.HexToHeimdallAddress(pubkey.Address().String()),
+				PubKey:           pubkey,
+				ProposerPriority: 0,
+			}
+			// check current validator
+			err := stakeKeeper.AddValidator(ctx, newVal)
+			require.NoError(t, err)
+			checkpointKeeper.UpdateACKCountWithValue(ctx, item.ackcount)
 
-// 			isCurrentVal := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer.Bytes())
-// 			require.Equal(t, item.result, isCurrentVal, item.resultmsg)
-// 		})
-// 	}
-// }
+			isCurrentVal := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer.Bytes())
+			require.Equal(t, item.result, isCurrentVal, item.resultmsg)
+		})
+	}
+}
+*/
 
 func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
-	// create sub test to check if validator remove
 	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
-	// load 4 validators to state
+	// load 4 validators from state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	initValSet := keeper.GetValidatorSet(ctx)
 
@@ -291,17 +285,16 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 
 	for _, val := range updatedValSet.Validators {
 		if strings.ToLower(val.Signer) == strings.ToLower(removedVal) {
-			require.Fail("Validator is not removed from updatedvalidator set")
+			require.Fail("Validator is not removed from updated validator set")
 		}
 	}
 }
 
 func (s *KeeperTestSuite) TestAddValidatorSetChange() {
-	// create sub test to check if validator remove
 	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
-	// load 4 validators to state
+	// load 4 validators from state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	initValSet := keeper.GetValidatorSet(ctx)
 
@@ -336,7 +329,6 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 *
 */
 func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
-	// create sub test to check if validator remove
 	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
@@ -365,8 +357,8 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 	require.Equal(-1, index, "Prev Validator should not be present in CurrentValSet")
 
 	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer)
-	require.Equal(newSigner[0].Signer, newVal.Signer, "Signer address should change")
-	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubkey should change")
+	require.Equal(newSigner[0].Signer, newVal.Signer, "Signer address should be update")
+	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubkey should should be updated")
 
 	require.Equal(prevValSet.GetTotalVotingPower(), currentValSet.GetTotalVotingPower(), "Total VotingPower should not change")
 }
@@ -422,22 +414,22 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 	require.Equal(validators[0].LastUpdated, lastUpdated)
 }
 
-// func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
-// 	ctx, keeper := s.ctx, s.stakeKeeper
-// 	require := s.Require()
-// 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
+	ctx, keeper := s.ctx, s.stakeKeeper
+	require := s.Require()
+	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 
-// 	// Test ActCount = 0
-// 	app.CheckpointKeeper.UpdateACKCountWithValue(ctx, 0)
+	// Test ActCount = 0
+	s.moduleCommunicator.AckCount = 0
 
-// 	valActCount0 := keeper.GetSpanEligibleValidators(ctx)
-// 	require.LessOrEqual(len(valActCount0), 4)
+	valActCount0 := keeper.GetSpanEligibleValidators(ctx)
+	require.LessOrEqual(len(valActCount0), 4)
 
-// 	app.CheckpointKeeper.UpdateACKCountWithValue(ctx, 20)
+	s.moduleCommunicator.AckCount = 20
 
-// 	validators := keeper.GetSpanEligibleValidators(ctx)
-// 	require.LessOrEqual(len(validators), 4)
-// }
+	validators := keeper.GetSpanEligibleValidators(ctx)
+	require.LessOrEqual(len(validators), 4)
+}
 
 func (s *KeeperTestSuite) TestGetMilestoneProposer() {
 	ctx, keeper := s.ctx, s.stakeKeeper
@@ -456,22 +448,21 @@ func (s *KeeperTestSuite) TestGetMilestoneProposer() {
 }
 
 func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
-	// create sub test to check if validator remove
 	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 
 	// load 4 validators to state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 
-	initMilestoneValSetProp := keeper.GetMilestoneValidatorSet(ctx).Proposer //Getter for Milestone Validator Set Proposer
-	initCheckpointValSetProp := keeper.GetValidatorSet(ctx).Proposer         //Getter for Checkpoint Validator Set Proposer
+	initMilestoneValSetProp := keeper.GetMilestoneValidatorSet(ctx).Proposer
+	initCheckpointValSetProp := keeper.GetValidatorSet(ctx).Proposer
 
 	require.Equal(initMilestoneValSetProp, initCheckpointValSetProp)
 
 	keeper.IncrementAccum(ctx, 1)
 
-	initMilestoneValSetProp = keeper.GetMilestoneValidatorSet(ctx).Proposer //Getter for Milestone Validator Set Proposer
-	initCheckpointValSetProp = keeper.GetValidatorSet(ctx).Proposer         //Getter for Checkpoint Validator Set Proposer
+	initMilestoneValSetProp = keeper.GetMilestoneValidatorSet(ctx).Proposer
+	initCheckpointValSetProp = keeper.GetValidatorSet(ctx).Proposer
 
 	require.Equal(initMilestoneValSetProp, initCheckpointValSetProp)
 
@@ -489,7 +480,6 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 }
 
 func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
-	// create sub test to check if validator remove
 	ctx, keeper := s.ctx, s.stakeKeeper
 	require := s.Require()
 

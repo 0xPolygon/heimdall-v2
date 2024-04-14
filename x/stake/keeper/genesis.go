@@ -9,11 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// InitGenesis sets the pool and parameters for the provided keeper.  For each
-// validator in data, it sets that validator in the keeper along with manually
-// setting the indexes. In addition, it also sets any delegations found in
-// data. Finally, it updates the bonded validators.
-// Returns final validator set after applying all declaration and delegations
+// InitGenesis sets validator information for genesis.
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res []abci.ValidatorUpdate) {
 
 	// We need to pretend to be "n blocks before genesis", where "n" is the
@@ -55,7 +51,10 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 	}
 
 	for _, sequence := range data.StakingSequences {
-		k.SetStakingSequence(ctx, sequence)
+		err := k.SetStakingSequence(ctx, sequence)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return res
 }

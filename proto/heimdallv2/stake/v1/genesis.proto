@@ -17,7 +17,7 @@ message GenesisState {
   ValidatorSet current_validator_set = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
-  // staking_sequences defines the staking sequences at genesis.
+  // stakingSequences defines the staking sequences at genesis.
   repeated string staking_sequences = 3
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

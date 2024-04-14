@@ -26,11 +26,6 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgSignerUpdate{},
 		&MsgValidatorExit{},
 	)
-	//TODO H2 Please check whether we need this
-	// registry.RegisterImplementations(
-	// 	(*authz.Authorization)(nil),
-	// 	&StakeAuthorization{},
-	// )
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }

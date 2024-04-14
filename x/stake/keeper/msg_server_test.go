@@ -11,17 +11,9 @@ import (
 	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-)
-
-var (
-	PKS     = simtestutil.CreateTestPubKeys(3)
-	Addr    = sdk.AccAddress(PKS[0].Address())
-	ValAddr = sdk.ValAddress(Addr)
 )
 
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
@@ -60,13 +52,11 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorUpdate() {
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 	oldValSet := keeper.GetValidatorSet(ctx)
 
-	// vals := oldValSet.(*Validators)
 	oldSigner := oldValSet.Validators[0]
 	newSigner := testutil.GenRandomVal(1, 0, 10, 10, false, 1)
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 
-	// gen msg
 	msgSignerUpdate := stakingtypes.MsgSignerUpdate{
 		From:            newSigner[0].Signer,
 		ValId:           uint64(1),
@@ -125,7 +115,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	require.NoError(err, "expected validator exit to be ok")
 
 	updatedValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
-	// updatedValInfo.EndEpoch = 10
+
 	require.NoError(err, "Unable to get validator info from val address,ValAddr:%v Error:%v ", validators[0].Signer, err)
 	require.NotEqual(updatedValInfo.EndEpoch, validators[0].EndEpoch, "should not update deactivation epoch")
 
@@ -220,64 +210,65 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	require.NotNil(err)
 }
 
-//TODO H2 Please implement the following test after writing topUp module
+//TODO HV2 Please implement the following test after writing topUp module
+/*
+func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
+	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
+	require := s.Require()
 
-// func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
-// 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
-// 	require := s.Require()
+	pubKey := hmTypes.NewPubKey([]byte{123})
+	signerAddress := hmTypes.HexToHeimdallAddress(pubKey.Address().Hex())
 
-// 	pubKey := hmTypes.NewPubKey([]byte{123})
-// 	signerAddress := hmTypes.HexToHeimdallAddress(pubKey.Address().Hex())
+	txHash := hmTypes.HexToHeimdallHash("123")
+	logIndex := uint64(2)
+	amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 
-// 	txHash := hmTypes.HexToHeimdallHash("123")
-// 	logIndex := uint64(2)
-// 	amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
+	validatorId := hmTypes.NewValidatorID(uint64(1))
 
-// 	validatorId := hmTypes.NewValidatorID(uint64(1))
+	chainParams := app.ChainKeeper.GetParams(ctx)
 
-// 	chainParams := app.ChainKeeper.GetParams(ctx)
+	msgTopup := topupTypes.NewMsgTopup(signerAddress, signerAddress, sdk.NewInt(2000000000000000000), txHash, logIndex, uint64(2))
 
-// 	msgTopup := topupTypes.NewMsgTopup(signerAddress, signerAddress, sdk.NewInt(2000000000000000000), txHash, logIndex, uint64(2))
+	stakinginfoTopUpFee := &stakinginfo.StakinginfoTopUpFee{
+		User: signerAddress.EthAddress(),
+		Fee:  big.NewInt(100000000000000000),
+	}
 
-// 	stakinginfoTopUpFee := &stakinginfo.StakinginfoTopUpFee{
-// 		User: signerAddress.EthAddress(),
-// 		Fee:  big.NewInt(100000000000000000),
-// 	}
+	txreceipt := &ethTypes.Receipt{
+		BlockNumber: big.NewInt(10),
+	}
 
-// 	txreceipt := &ethTypes.Receipt{
-// 		BlockNumber: big.NewInt(10),
-// 	}
+	stakinginfoStaked := &stakinginfo.StakinginfoStaked{
+		Signer:          signerAddress.EthAddress(),
+		ValidatorId:     new(big.Int).SetUint64(validatorId.Uint64()),
+		ActivationEpoch: big.NewInt(1),
+		Amount:          amount,
+		Total:           big.NewInt(10),
+		SignerPubkey:    pubKey.Bytes()[1:],
+	}
 
-// 	stakinginfoStaked := &stakinginfo.StakinginfoStaked{
-// 		Signer:          signerAddress.EthAddress(),
-// 		ValidatorId:     new(big.Int).SetUint64(validatorId.Uint64()),
-// 		ActivationEpoch: big.NewInt(1),
-// 		Amount:          amount,
-// 		Total:           big.NewInt(10),
-// 		SignerPubkey:    pubKey.Bytes()[1:],
-// 	}
+	msgValJoin := types.NewMsgValidatorJoin(
+		signerAddress,
+		validatorId.Uint64(),
+		uint64(1),
+		sdk.NewInt(2000000000000000000),
+		pubKey,
+		txHash,
+		logIndex,
+		0,
+		1,
+	)
 
-// 	msgValJoin := types.NewMsgValidatorJoin(
-// 		signerAddress,
-// 		validatorId.Uint64(),
-// 		uint64(1),
-// 		sdk.NewInt(2000000000000000000),
-// 		pubKey,
-// 		txHash,
-// 		logIndex,
-// 		0,
-// 		1,
-// 	)
+	suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txreceipt, nil)
 
-// 	suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txreceipt, nil)
+	suite.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress.EthAddress(), txreceipt, msgValJoin.LogIndex).Return(stakinginfoStaked, nil)
 
-// 	suite.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress.EthAddress(), txreceipt, msgValJoin.LogIndex).Return(stakinginfoStaked, nil)
+	suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StakingInfoAddress.EthAddress(), mock.Anything, msgTopup.LogIndex).Return(stakinginfoTopUpFee, nil)
 
-// 	suite.contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StakingInfoAddress.EthAddress(), mock.Anything, msgTopup.LogIndex).Return(stakinginfoTopUpFee, nil)
+	topupResult := suite.topupHandler(ctx, msgTopup)
+	require.True(t, topupResult.IsOK(), "expected topup to be done, got %v", topupResult)
 
-// 	topupResult := suite.topupHandler(ctx, msgTopup)
-// 	require.True(t, topupResult.IsOK(), "expected topup to be done, got %v", topupResult)
-
-// 	result := suite.handler(ctx, msgValJoin)
-// 	require.True(t, result.IsOK(), "expected validator stake update to be ok, got %v", result)
-// }
+	result := suite.handler(ctx, msgValJoin)
+	require.True(t, result.IsOK(), "expected validator stake update to be ok, got %v", result)
+}
+*/

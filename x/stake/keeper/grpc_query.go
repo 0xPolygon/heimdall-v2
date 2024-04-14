@@ -3,11 +3,14 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 // Querier is used as Keeper will have duplicate methods if used directly, and gRPC names take precedence over keeper
@@ -21,9 +24,8 @@ func NewQuerier(keeper *Keeper) Querier {
 	return Querier{Keeper: keeper}
 }
 
-// Validators queries all validators that match the given status
+// CurrentValidatorSet queries all validators which are currently active in validator set
 func (k Querier) CurrentValidatorSet(ctx context.Context, req *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
-	// get validator set
 	validatorSet := k.GetValidatorSet(ctx)
 
 	return &types.QueryCurrentValidatorSetResponse{
@@ -31,7 +33,7 @@ func (k Querier) CurrentValidatorSet(ctx context.Context, req *types.QueryCurren
 	}, nil
 }
 
-// Signer queries validator info for given validator val_address.
+// Signer queries validator info for given validator validator address.
 func (k Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -46,7 +48,7 @@ func (k Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*ty
 	return &types.QuerySignerResponse{Validator: validator}, nil
 }
 
-// Validator queries validator info for given validator id.
+// Validator queries validator info for a given validator id.
 func (k Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -73,70 +75,11 @@ func (k Querier) ValidatorStatus(ctx context.Context, req *types.QueryValidatorS
 	return &types.QueryValidatorStatusResponse{Status: status}, nil
 }
 
-// TotalPower queries total power of a validator set
+// TotalPower queries the total power of a validator set
 func (k Querier) TotalPower(ctx context.Context, req *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
 	totalPower := k.GetTotalPower(ctx)
 
 	return &types.QueryTotalPowerResponse{TotalPower: totalPower}, nil
-}
-
-// CurrentProposer queries validator info for the current proposer
-func (k Querier) CurrentProposer(ctx context.Context, req *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
-	proposer := k.GetCurrentProposer(ctx)
-
-	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
-}
-
-// Proposer queries for the proposer
-func (k Querier) Proposer(ctx context.Context, req *types.QueryProposerRequest) (*types.QueryProposerResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
-
-	times := int(req.Times)
-	if times > len(validatorSet.Validators) {
-		times = len(validatorSet.Validators)
-	}
-
-	// init proposers
-	proposers := make([]types.Validator, times)
-
-	// get proposers
-	for index := 0; index < times; index++ {
-		proposers[index] = *(validatorSet.GetProposer())
-		validatorSet.IncrementProposerPriority(1)
-	}
-
-	return &types.QueryProposerResponse{Proposers: proposers}, nil
-}
-
-// MilestoneProposer queries for the milestone proposer
-func (k Querier) MilestoneProposer(ctx context.Context, req *types.QueryMilestoneProposerRequest) (*types.QueryMilestoneProposerResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
-	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
-
-	times := int(req.Times)
-	if times > len(validatorSet.Validators) {
-		times = len(validatorSet.Validators)
-	}
-
-	// init proposers
-	proposers := make([]types.Validator, times)
-
-	// get proposers
-	for index := 0; index < times; index++ {
-		proposers[index] = *(validatorSet.GetProposer())
-		validatorSet.IncrementProposerPriority(1)
-	}
-
-	return &types.QueryMilestoneProposerResponse{Proposers: proposers}, nil
 }
 
 // StakingSequence queries for the staking sequence
@@ -145,24 +88,24 @@ func (k Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSeq
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	// //TODO H2 Please implement this
-	// //chainParams := keeper.chainKeeper.GetParams(ctx
+	chainParams, err := k.cmKeeper.GetParams(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "chain params not found")
+	}
 
-	// // get main tx receipt
-	// receipt, err := k.IContractCaller.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(req.TxHash).EthHash(),)
-	// if err != nil || receipt == nil {
-	// 	return nil, status.Error(codes.InvalidArgument, "empty request")
-	// }
+	// get main tx receipt
+	receipt, err := k.IContractCaller.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainChainTxConfirmations)
+	if err != nil || receipt == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
 
-	// // sequence id
+	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
 
-	// sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-	// sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
-
-	// // check if incoming tx already exists
-	// if !k.HasStakingSequence(ctx, sequence.String()) {
-	// 	return &types.QueryStakingSequenceResponse{Status: true}, nil
-	// }
+	// check if incoming tx already exists
+	if !k.HasStakingSequence(ctx, sequence.String()) {
+		return &types.QueryStakingSequenceResponse{Status: true}, nil
+	}
 
 	return &types.QueryStakingSequenceResponse{Status: true}, nil
 }

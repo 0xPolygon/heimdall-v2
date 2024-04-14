@@ -30,7 +30,7 @@ type GenesisState struct {
 	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
 	// currentValidatorSet defines the active current validator set at genesis.
 	CurrentValidatorSet ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set"`
-	// staking_sequences defines the staking sequences at genesis.
+	// stakingSequences defines the staking sequences at genesis.
 	StakingSequences []string `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
 }
 

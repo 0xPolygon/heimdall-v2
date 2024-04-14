@@ -24,9 +24,6 @@ const (
 	Query_Validator_FullMethodName           = "/heimdallv2.stake.v1.Query/Validator"
 	Query_ValidatorStatus_FullMethodName     = "/heimdallv2.stake.v1.Query/ValidatorStatus"
 	Query_TotalPower_FullMethodName          = "/heimdallv2.stake.v1.Query/TotalPower"
-	Query_CurrentProposer_FullMethodName     = "/heimdallv2.stake.v1.Query/CurrentProposer"
-	Query_Proposer_FullMethodName            = "/heimdallv2.stake.v1.Query/Proposer"
-	Query_MilestoneProposer_FullMethodName   = "/heimdallv2.stake.v1.Query/MilestoneProposer"
 	Query_StakingSequence_FullMethodName     = "/heimdallv2.stake.v1.Query/StakingSequence"
 )
 
@@ -36,20 +33,14 @@ const (
 type QueryClient interface {
 	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for given validator val_address.
+	// Signer queries validator info for given validator validator address.
 	Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
-	// Validator queries validator info for given validator id.
+	// Validator queries validator info for a given validator id.
 	Validator(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
 	ValidatorStatus(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries total power of a validator set
+	// TotalPower queries the total power of a validator set
 	TotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
-	// CurrentProposer queries validator info for the current proposer
-	CurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error)
-	// Proposer queries for the proposer
-	Proposer(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error)
-	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error)
 	// StakingSequence queries for the staking sequence
 	StakingSequence(ctx context.Context, in *QueryStakingSequenceRequest, opts ...grpc.CallOption) (*QueryStakingSequenceResponse, error)
 }
@@ -107,33 +98,6 @@ func (c *queryClient) TotalPower(ctx context.Context, in *QueryTotalPowerRequest
 	return out, nil
 }
 
-func (c *queryClient) CurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error) {
-	out := new(QueryCurrentProposerResponse)
-	err := c.cc.Invoke(ctx, Query_CurrentProposer_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) Proposer(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error) {
-	out := new(QueryProposerResponse)
-	err := c.cc.Invoke(ctx, Query_Proposer_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *queryClient) MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error) {
-	out := new(QueryMilestoneProposerResponse)
-	err := c.cc.Invoke(ctx, Query_MilestoneProposer_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *queryClient) StakingSequence(ctx context.Context, in *QueryStakingSequenceRequest, opts ...grpc.CallOption) (*QueryStakingSequenceResponse, error) {
 	out := new(QueryStakingSequenceResponse)
 	err := c.cc.Invoke(ctx, Query_StakingSequence_FullMethodName, in, out, opts...)
@@ -149,20 +113,14 @@ func (c *queryClient) StakingSequence(ctx context.Context, in *QueryStakingSeque
 type QueryServer interface {
 	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for given validator val_address.
+	// Signer queries validator info for given validator validator address.
 	Signer(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
-	// Validator queries validator info for given validator id.
+	// Validator queries validator info for a given validator id.
 	Validator(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
 	ValidatorStatus(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries total power of a validator set
+	// TotalPower queries the total power of a validator set
 	TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
-	// CurrentProposer queries validator info for the current proposer
-	CurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error)
-	// Proposer queries for the proposer
-	Proposer(context.Context, *QueryProposerRequest) (*QueryProposerResponse, error)
-	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
 	// StakingSequence queries for the staking sequence
 	StakingSequence(context.Context, *QueryStakingSequenceRequest) (*QueryStakingSequenceResponse, error)
 	mustEmbedUnimplementedQueryServer()
@@ -186,15 +144,6 @@ func (UnimplementedQueryServer) ValidatorStatus(context.Context, *QueryValidator
 }
 func (UnimplementedQueryServer) TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TotalPower not implemented")
-}
-func (UnimplementedQueryServer) CurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CurrentProposer not implemented")
-}
-func (UnimplementedQueryServer) Proposer(context.Context, *QueryProposerRequest) (*QueryProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Proposer not implemented")
-}
-func (UnimplementedQueryServer) MilestoneProposer(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MilestoneProposer not implemented")
 }
 func (UnimplementedQueryServer) StakingSequence(context.Context, *QueryStakingSequenceRequest) (*QueryStakingSequenceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StakingSequence not implemented")
@@ -302,60 +251,6 @@ func _Query_TotalPower_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_CurrentProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryCurrentProposerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).CurrentProposer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Query_CurrentProposer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).CurrentProposer(ctx, req.(*QueryCurrentProposerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_Proposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryProposerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).Proposer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Query_Proposer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Proposer(ctx, req.(*QueryProposerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Query_MilestoneProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryMilestoneProposerRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).MilestoneProposer(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Query_MilestoneProposer_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).MilestoneProposer(ctx, req.(*QueryMilestoneProposerRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _Query_StakingSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryStakingSequenceRequest)
 	if err := dec(in); err != nil {
@@ -400,18 +295,6 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TotalPower",
 			Handler:    _Query_TotalPower_Handler,
-		},
-		{
-			MethodName: "CurrentProposer",
-			Handler:    _Query_CurrentProposer_Handler,
-		},
-		{
-			MethodName: "Proposer",
-			Handler:    _Query_Proposer_Handler,
-		},
-		{
-			MethodName: "MilestoneProposer",
-			Handler:    _Query_MilestoneProposer_Handler,
 		},
 		{
 			MethodName: "StakingSequence",

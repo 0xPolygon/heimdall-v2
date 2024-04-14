@@ -12,16 +12,17 @@ import (
 
 	"cosmossdk.io/core/appmodule"
 
-	"github.com/0xPolygon/heimdall-v2/x/stake/exported"
 	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 
 	//"github.com/0xPolygon/heimdall-v2/x/stake/simulation"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/x/auth/exported"
 )
 
 const (
@@ -30,9 +31,9 @@ const (
 
 var (
 	_ module.AppModuleBasic = AppModuleBasic{}
+	//TODO HV2
 	//_ module.AppModuleSimulation = AppModule{}
 	_ module.HasServices     = AppModule{}
-	_ module.HasInvariants   = AppModule{}
 	_ module.HasABCIGenesis  = AppModule{}
 	_ module.HasABCIEndBlock = AppModule{}
 
@@ -86,7 +87,7 @@ func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *g
 // GetTxCmd returns the root tx command for the staking module.
 func (amb AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
-	// TODO H2 Please implement the CLI
+	// TODO HV2 Please implement the CLI
 	//
 	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
@@ -123,36 +124,17 @@ func (am AppModule) IsOnePerModuleType() {}
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
-// RegisterInvariants registers the staking module invariants.
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	keeper.RegisterInvariants(ir, am.keeper)
-}
-
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 	querier := keeper.Querier{Keeper: am.keeper}
 	types.RegisterQueryServer(cfg.QueryServer(), querier)
-
-	m := keeper.NewMigrator(am.keeper, am.legacySubspace)
-	if err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 1 to 2: %v", types.ModuleName, err))
-	}
-	if err := cfg.RegisterMigration(types.ModuleName, 2, m.Migrate2to3); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 2 to 3: %v", types.ModuleName, err))
-	}
-	if err := cfg.RegisterMigration(types.ModuleName, 3, m.Migrate3to4); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 3 to 4: %v", types.ModuleName, err))
-	}
-	if err := cfg.RegisterMigration(types.ModuleName, 4, m.Migrate4to5); err != nil {
-		panic(fmt.Sprintf("failed to migrate x/%s from version 4 to 5: %v", types.ModuleName, err))
-	}
 }
 
-// // RegisterSideTxServicess registers side handler module services.
-// func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
-// 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
-// }
+// RegisterSideTxServicess registers side handler module services.
+func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
+	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
+}
 
 // InitGenesis performs genesis initialization for the staking module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
