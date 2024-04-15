@@ -1,10 +1,12 @@
 package keeper
 
 import (
+	"math/big"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"math/big"
+	"github.com/ethereum/go-ethereum/common"
 
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -167,16 +169,15 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	txBytes := ctx.TxBytes()
-	// TODO HV2: rename _ to hash when hTypes is implemented
-	_ = hTypes.TxHash{Hash: txBytes}.Hash
+	hash := hTypes.TxHash{Hash: txBytes}.Hash
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeTopup,
 			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			// TODO enable the following when hTypes is implemented
-			// sdk.NewAttribute(types.AttributeKeyTxHash, hTypes.BytesToHeimdallHash(hash).Hex()),
+			// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash once implemented
+			sdk.NewAttribute(types.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
 			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyRecipient, msg.User),

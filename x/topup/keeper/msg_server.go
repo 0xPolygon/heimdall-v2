@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
 	"cosmossdk.io/errors"
@@ -23,9 +24,8 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 // CreateTopupTx handles topup tx events
 func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
 
-	// TODO HV2: enable when this is merged and remove the nil byte slice declaration
-	// txHash := hTypes.BytesToHeimdallHash(msg.TxHash.Hash)
-	var txHash []byte
+	// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash when implemented
+	txHash := common.BytesToHash(msg.TxHash.Hash)
 
 	m.k.Logger(ctx).Debug("CreateTopupTx msg received",
 		"proposer", msg.Proposer,
@@ -58,7 +58,7 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	if exists {
 		m.k.Logger(ctx).Error("older tx found")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
-			"tx with hash %s already exists", txHash)
+			"tx with hash %s already exists", txHash.String())
 	}
 
 	// emit event if tx is valid, then return

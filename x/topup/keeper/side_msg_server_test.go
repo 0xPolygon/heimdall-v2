@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"fmt"
-	mod "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 	"math/rand"
 
@@ -14,7 +13,7 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	// mod "github.com/0xPolygon/heimdall-v2/module"
+	mod "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -90,8 +89,8 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 					Fee:  coins.Amount.BigInt(),
 				}
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				//contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				// contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
@@ -111,7 +110,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		{
 			"no receipt",
 			func() {
-				//contractCaller = mocks.IContractCaller{}
+				// contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
@@ -132,8 +131,8 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 					blockNumber,
 				)
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
-				//contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
+				// contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
+				// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
 
 			},
 			true,
@@ -146,7 +145,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			"no log",
 			func() {
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller = mocks.IContractCaller{}
+				// contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
@@ -171,8 +170,8 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 					blockNumber,
 				)
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				//contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
+				// contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
 
 			},
 			true,
@@ -185,7 +184,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			"block mismatch",
 			func() {
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller = mocks.IContractCaller{}
+				// contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
@@ -217,8 +216,8 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				}
 
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				//contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				// contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
@@ -231,7 +230,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			"user mismatch",
 			func() {
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller = mocks.IContractCaller{}
+				// contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
@@ -263,8 +262,8 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				}
 
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				//contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				// contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
@@ -277,7 +276,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			"fee mismatch",
 			func() {
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller = mocks.IContractCaller{}
+				// contractCaller = mocks.IContractCaller{}
 
 				logIndex := uint64(10)
 				blockNumber := uint64(599)
@@ -310,8 +309,8 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 				}
 
 				// TODO HV2: enable when contractCaller is implemented
-				//contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-				//contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
+				// contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+				// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 			},
 			true,
@@ -324,7 +323,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.msg), func() {
-			suite.SetupTest()
 
 			tc.malleate()
 			res := suite.sideHandler(ctx, &msg)
@@ -337,9 +335,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 	var msg types.MsgTopupTx
 
-	ctx, require := suite.ctx, suite.Require()
-	// keeper, accountKeeper, BankKeeper := suite.keeper, suite.accountKeeper, suite.BankKeeper
-	keeper := suite.keeper
+	ctx, require, keeper, accountKeeper := suite.ctx, suite.Require(), suite.keeper, suite.accountKeeper
 	// TODO HV2: enable when contractCaller is implemented
 	// contractCaller := suite.contractCaller
 
@@ -431,18 +427,17 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 				require.False(ok)
 
 				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
-				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
 
 				// account coins should be empty
 				// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-				//base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-				//amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-				//coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
-				//acc1 := accountKeeper.GetAccount(ctx, addr1)
-				//require.NotNil(acc1)
-				//coins1 := BankKeeper.GetBalance(ctx, acc1.GetAddress(), authTypes.FeeToken)
-				//require.False(coins1.IsZero())
-				//require.True(coins1.Equal(coins))
+				base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
+				amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
+				coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+				acc1 := accountKeeper.GetAccount(ctx, addr1)
+				require.NotNil(acc1)
+				coins1 := keeper.BankKeeper.GetBalance(ctx, acc1.GetAddress(), authTypes.FeeToken)
+				require.False(coins1.IsZero())
+				require.True(coins1.Equal(coins))
 			},
 		},
 		{
@@ -451,7 +446,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 
 				logIndex := rand.Uint64()
 				blockNumber := rand.Uint64()
-				// TODO HV2: use the following line when implemented
+				// TODO HV2: use the following line when implemented?
 				// hash := hTypes.HexToHeimdallHash("0x000000000000000000000000000000000000000000000000000000000001dead")
 				txHash := "0x000000000000000000000000000000000000000000000000000000000001dead"
 				hash := hTypes.TxHash{Hash: []byte(txHash)}
@@ -487,29 +482,26 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 				bn := new(big.Int).SetUint64(msg.BlockNumber)
 				sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 				sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-				// ok, err := keeper.HasTopupSequence(ctx, sequence.String())
-				// require.NoError(err)
-				// require.True(ok)
-
-				// TODO HV2: enable/edit the following once the issue with expected calls on BankKeeper is solved
-				//  Also check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
+				ok, err := keeper.HasTopupSequence(ctx, sequence.String())
+				require.NoError(err)
+				require.True(ok)
 
 				// account coins should not be empty
-				//acc2 := accountKeeper.GetAccount(ctx, addr2)
-				//require.NotNil(acc2)
-				//coins2 := BankKeeper.GetBalance(ctx, acc2.GetAddress(), authTypes.FeeToken)
-				//require.False(coins2.IsZero())
-				//acc3 := accountKeeper.GetAccount(ctx, addr3)
-				//require.NotNil(acc3)
-				//coins3 := BankKeeper.GetBalance(ctx, acc3.GetAddress(), authTypes.FeeToken)
-				//require.False(coins3.IsZero())
+				acc2 := accountKeeper.GetAccount(ctx, addr2)
+				require.NotNil(acc2)
+				coins2 := keeper.BankKeeper.GetBalance(ctx, acc2.GetAddress(), authTypes.FeeToken)
+				require.False(coins2.IsZero())
+				acc3 := accountKeeper.GetAccount(ctx, addr3)
+				require.NotNil(acc3)
+				coins3 := keeper.BankKeeper.GetBalance(ctx, acc3.GetAddress(), authTypes.FeeToken)
+				require.False(coins3.IsZero())
 
 				// check coins = acc1.coins + acc2.coins
 				// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-				//base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-				//amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-				//coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
-				//require.True(coins.Equal(coins3.Add(coins2)))
+				base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
+				amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
+				coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+				require.True(coins.Equal(coins3.Add(coins2)))
 			},
 		},
 		{
@@ -557,7 +549,6 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 
 	for _, tc := range testCases {
 		suite.Run(fmt.Sprintf("Case %s", tc.msg), func() {
-			suite.SetupTest()
 
 			tc.malleate()
 			res := suite.sideHandler(ctx, &msg)

@@ -1,30 +1,33 @@
 package keeper_test
 
 import (
-	"github.com/golang/mock/gomock"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
+	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/testutil"
+	cosmostestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	testutil3 "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	testutil2 "github.com/cosmos/cosmos-sdk/x/gov/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/app"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -42,6 +45,8 @@ type KeeperTestSuite struct {
 	msgServer   topupTypes.MsgServer
 	sideMsgCfg  mod.SideTxConfigurator
 	queryClient topupTypes.QueryClient
+
+	accountKeeper *testutil.MockAccountKeeper
 
 	/* TODO HV2: enable when contractCaller and chainManager are implemented
 	contractCaller mocks.IContractCaller
@@ -65,24 +70,54 @@ func TestKeeperTestSuite(t *testing.T) {
 func (suite *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(topupTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
-	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := cosmostestutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
-	encCfg := testutil3.MakeTestEncodingConfig()
+	encCfg := moduletestutil.MakeTestEncodingConfig()
 
 	ctrl := gomock.NewController(suite.T())
-	bankKeeper := *testutil2.NewMockBankKeeper(ctrl)
+	defer ctrl.Finish()
 
-	// TODO HV2: fix the following expected calls
+	bankKeeper := testutil.NewMockBankKeeper(ctrl)
+	accountKeeper := testutil.NewMockAccountKeeper(ctrl)
+
+	// TODO HV2: fix this part
+
+	balances := make(map[string]sdk.Coins)
+	distAcct := authtypes.NewModuleAddress("distribution")
+	balances[distAcct.String()] = sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(0)))
+
 	bankKeeper.EXPECT().IsSendEnabledDenom(gomock.Any(), gomock.Any()).Return(true).AnyTimes()
-	bankKeeper.EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(true).AnyTimes()
-	bankKeeper.EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	bankKeeper.EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	bankKeeper.EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ sdk.Context, addr sdk.AccAddress, _ string) sdk.Coin {
+		balances := balances[addr.String()]
+		for _, balance := range balances {
+			if balance.Denom == sdk.DefaultBondDenom {
+				return balance
+			}
+		}
+		return sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(0))
+	}).AnyTimes()
+	acc := authtypes.NewBaseAccountWithAddress(sdk.AccAddress(AccountHash))
+	accountKeeper.EXPECT().NewAccountWithAddress(gomock.Any(), gomock.Any()).Return(acc).AnyTimes()
+	accountKeeper.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Return(acc).AnyTimes()
+	bankKeeper.EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ sdk.Context, module string, rcpt sdk.AccAddress, coins sdk.Coins) error {
+		balances[rcpt.String()] = balances[rcpt.String()].Add(coins...)
+		return nil
+	}).AnyTimes()
+	accountKeeper.EXPECT().SetAccount(gomock.Any(), gomock.Any()).Return().AnyTimes()
+	bankKeeper.EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ sdk.Context, sender sdk.AccAddress, _ string, coins sdk.Coins) error {
+		newBalance, negative := balances[sender.String()].SafeSub(coins...)
+		if negative {
+			return fmt.Errorf("not enough balance")
+		}
+		balances[sender.String()] = newBalance
+		return nil
+	}).AnyTimes()
 	bankKeeper.EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		&bankKeeper,
+		bankKeeper,
 	)
 
 	topupGenesis := topupTypes.DefaultGenesisState()
@@ -95,6 +130,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.keeper = keeper
 	suite.queryClient = topupTypes.NewQueryClient(queryHelper)
 	suite.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
+	suite.accountKeeper = accountKeeper
 	suite.sideMsgCfg = mod.NewSideTxConfigurator()
 	topupTypes.RegisterSideMsgServer(suite.sideMsgCfg, topupKeeper.NewSideMsgServerImpl(&keeper))
 }
