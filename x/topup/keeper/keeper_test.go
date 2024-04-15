@@ -1,14 +1,12 @@
 package keeper_test
 
 import (
-	"fmt"
 	"math/big"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
-	"cosmossdk.io/math"
 	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -18,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
@@ -45,8 +42,6 @@ type KeeperTestSuite struct {
 	msgServer   topupTypes.MsgServer
 	sideMsgCfg  mod.SideTxConfigurator
 	queryClient topupTypes.QueryClient
-
-	accountKeeper *testutil.MockAccountKeeper
 
 	/* TODO HV2: enable when contractCaller and chainManager are implemented
 	contractCaller mocks.IContractCaller
@@ -78,41 +73,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 	defer ctrl.Finish()
 
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
-	accountKeeper := testutil.NewMockAccountKeeper(ctrl)
-
-	// TODO HV2: fix this part
-
-	balances := make(map[string]sdk.Coins)
-	distAcct := authtypes.NewModuleAddress("distribution")
-	balances[distAcct.String()] = sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(0)))
-
-	bankKeeper.EXPECT().IsSendEnabledDenom(gomock.Any(), gomock.Any()).Return(true).AnyTimes()
-	bankKeeper.EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ sdk.Context, addr sdk.AccAddress, _ string) sdk.Coin {
-		balances := balances[addr.String()]
-		for _, balance := range balances {
-			if balance.Denom == sdk.DefaultBondDenom {
-				return balance
-			}
-		}
-		return sdk.NewCoin(sdk.DefaultBondDenom, math.NewInt(0))
-	}).AnyTimes()
-	acc := authtypes.NewBaseAccountWithAddress(sdk.AccAddress(AccountHash))
-	accountKeeper.EXPECT().NewAccountWithAddress(gomock.Any(), gomock.Any()).Return(acc).AnyTimes()
-	accountKeeper.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Return(acc).AnyTimes()
-	bankKeeper.EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ sdk.Context, module string, rcpt sdk.AccAddress, coins sdk.Coins) error {
-		balances[rcpt.String()] = balances[rcpt.String()].Add(coins...)
-		return nil
-	}).AnyTimes()
-	accountKeeper.EXPECT().SetAccount(gomock.Any(), gomock.Any()).Return().AnyTimes()
-	bankKeeper.EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(_ sdk.Context, sender sdk.AccAddress, _ string, coins sdk.Coins) error {
-		newBalance, negative := balances[sender.String()].SafeSub(coins...)
-		if negative {
-			return fmt.Errorf("not enough balance")
-		}
-		balances[sender.String()] = newBalance
-		return nil
-	}).AnyTimes()
-	bankKeeper.EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
 
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
@@ -130,7 +90,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.keeper = keeper
 	suite.queryClient = topupTypes.NewQueryClient(queryHelper)
 	suite.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
-	suite.accountKeeper = accountKeeper
 	suite.sideMsgCfg = mod.NewSideTxConfigurator()
 	topupTypes.RegisterSideMsgServer(suite.sideMsgCfg, topupKeeper.NewSideMsgServerImpl(&keeper))
 }

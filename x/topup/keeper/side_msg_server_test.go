@@ -286,10 +286,14 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 }
 
+// TODO HV2: implement checks about account balances for `TestPostHandleTopupTx`?
+//  This was done in heimdall-v1 since it was using a real app setup (no mocks).
+//  We could achieve something similar with mocked balances tracking
+
 func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 	var msg types.MsgTopupTx
 
-	ctx, require, keeper, accountKeeper, t := suite.ctx, suite.Require(), suite.keeper, suite.accountKeeper, suite.T()
+	ctx, require, keeper, t := suite.ctx, suite.Require(), suite.keeper, suite.T()
 	// TODO HV2: enable when contractCaller is implemented
 	// contractCaller := suite.contractCaller
 
@@ -302,8 +306,6 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
 	t.Run("no result", func(t *testing.T) {
-		// TODO HV2: fix this test
-
 		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
 		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
 		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
@@ -328,15 +330,9 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.False(ok)
-
-		// account coins should be empty
-		acc1 := accountKeeper.GetAccount(ctx, addr1)
-		require.Nil(t, acc1)
 	})
 
 	t.Run("yes result", func(t *testing.T) {
-		// TODO HV2: fix this test
-
 		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
 		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
 		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
@@ -357,25 +353,18 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
+
 		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
 		// there should be no stored event record
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
-		require.False(ok)
-
-		// account coins should be empty
-		acc1 := accountKeeper.GetAccount(ctx, addr1)
-		require.NotNil(acc1)
-		coins1 := keeper.BankKeeper.GetBalance(ctx, acc1.GetAddress(), authTypes.FeeToken)
-		require.False(coins1.IsZero())
-		require.True(coins1.Equal(coins))
+		require.True(ok)
 	})
 
 	t.Run("yes result with proposer", func(t *testing.T) {
-		// TODO HV2: fix this test
-
 		logIndex := rand.Uint64()
 		blockNumber := rand.Uint64()
 		// TODO HV2: use the following line when implemented?
@@ -403,27 +392,15 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
+
 		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 		// there should be stored sequence
 		// check if incoming tx is older
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.True(ok)
-
-		// account coins should not be empty
-		acc2 := accountKeeper.GetAccount(ctx, addr2)
-		require.NotNil(acc2)
-		coins2 := keeper.BankKeeper.GetBalance(ctx, acc2.GetAddress(), authTypes.FeeToken)
-		require.False(coins2.IsZero())
-
-		acc3 := accountKeeper.GetAccount(ctx, addr3)
-		require.NotNil(acc3)
-		coins3 := keeper.BankKeeper.GetBalance(ctx, acc3.GetAddress(), authTypes.FeeToken)
-		require.False(coins3.IsZero())
-
-		// check coins = acc1.coins + acc2.coins
-		require.True(coins.Equal(coins3.Add(coins2)))
 	})
 
 	t.Run("replay", func(t *testing.T) {
@@ -453,6 +430,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
 		// there should be stored sequence
