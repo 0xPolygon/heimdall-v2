@@ -91,14 +91,6 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
-// TODO HV2: do we need to implement this?
-
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (am AppModule) IsOnePerModuleType() {
-}
-
-// TODO HV2: do we need to implement this?
-
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {
 }
