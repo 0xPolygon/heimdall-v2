@@ -1,9 +1,9 @@
 package keeper_test
 
 import (
-	"fmt"
 	"math/big"
 	"math/rand"
+	"testing"
 	"time"
 
 	"cosmossdk.io/math"
@@ -16,10 +16,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestCreateTopupTx() {
-	msgServer := suite.msgServer
-	require := suite.Require()
-	keeper := suite.keeper
-	ctx := suite.ctx
+	msgServer, require, keeper, ctx, t := suite.msgServer, suite.Require(), suite.keeper, suite.ctx, suite.T()
 
 	var msg types.MsgTopupTx
 
@@ -33,190 +30,119 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 	_, _, addr := testdata.KeyTestPubAddr()
 	fee := math.NewInt(100000000000000000)
 
-	testCases := []struct {
-		msg       string
-		malleate  func()
-		expPass   bool
-		expErrMsg string
-		posttests func()
-	}{
-		{
-			"success",
-			func() {
-				msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
-			},
-			true,
-			"",
-			func() {
-			},
-		},
-		{
-			"old tx",
-			func() {
-				msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
-				blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-				sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
-				sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-				err := keeper.SetTopupSequence(ctx, sequence.String())
-				require.NoError(err)
-			},
-			false,
-			"already exists",
-			func() {
-			},
-		},
-	}
+	t.Run("success", func(t *testing.T) {
+		msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
+		res, err := msgServer.CreateTopupTx(ctx, &msg)
+		require.NoError(err)
+		require.NotNil(res)
+	})
 
-	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.msg), func() {
-
-			tc.malleate()
-			res, err := msgServer.CreateTopupTx(ctx, &msg)
-
-			if tc.expPass {
-				require.NoError(err)
-				require.NotNil(res)
-			} else {
-				require.Error(err)
-				require.Contains(err.Error(), tc.expErrMsg)
-			}
-
-			tc.posttests()
-		})
-	}
+	t.Run("old tx", func(t *testing.T) {
+		msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
+		blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
+		sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
+		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+		err := keeper.SetTopupSequence(ctx, sequence.String())
+		require.NoError(err)
+		_, err = msgServer.CreateTopupTx(ctx, &msg)
+		require.Error(err)
+		require.Contains(err.Error(), "already exists")
+	})
 }
 
 func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
-	msgServer := suite.msgServer
-	ctx := suite.ctx
-	keeper := suite.keeper
-	accountKeeper := suite.accountKeeper
-	require := suite.Require()
+	msgServer, require, keeper, accountKeeper, ctx, t := suite.msgServer, suite.Require(), suite.keeper, suite.accountKeeper, suite.ctx, suite.T()
 
 	var msg types.MsgWithdrawFeeTx
 
 	_, _, addr := testdata.KeyTestPubAddr()
 
-	testCases := []struct {
-		msg       string
-		malleate  func()
-		expPass   bool
-		expErrMsg string
-		posttests func()
-	}{
-		{
-			"fail with no fee coins",
-			func() {
-				msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
-			},
-			false,
-			"insufficient funds",
-			func() {
-			},
-		},
-		{
-			"success full amount",
-			func() {
-				// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
-				base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-				amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
-				msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
+	t.Run("fail with no fee coins", func(t *testing.T) {
+		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
+		_, err := msgServer.WithdrawFeeTx(ctx, &msg)
+		require.Error(err)
+		require.Contains(err.Error(), "insufficient funds")
+	})
 
-				// fund account from module
-				account := accountKeeper.NewAccountWithAddress(ctx, addr)
-				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := keeper.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
-				require.NoError(err)
-				accountKeeper.SetAccount(ctx, account)
-				// check coins are set
-				require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
-			},
-			true,
-			"",
-			func() {
-				// check zero balance for account
-				account := accountKeeper.GetAccount(ctx, addr)
-				require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).IsZero())
-			},
-		},
-		{
-			"success partial amount",
-			func() {
-				// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
-				base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-				amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+	t.Run("success full amount", func(t *testing.T) {
+		// TODO HV2: fix this test
 
-				// TODO HV2: check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
+		// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
+		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
+		amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
+		coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 
-				// fund account from module
-				account := accountKeeper.NewAccountWithAddress(ctx, addr)
-				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := keeper.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
-				require.NoError(err)
-				accountKeeper.SetAccount(ctx, account)
-				// check coins are set
-				require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+		// fund account from module
+		account := accountKeeper.NewAccountWithAddress(ctx, addr)
+		// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
+		err := keeper.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+		require.NoError(err)
+		accountKeeper.SetAccount(ctx, account)
+		// check coins are set
+		require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 
-				amt, _ := math.NewIntFromString("2")
-				coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
-				msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
-			},
-			true,
-			"",
-			func() {
+		res, err := msgServer.WithdrawFeeTx(ctx, &msg)
+		require.NoError(err)
+		require.NotNil(res)
 
-				//  TODO HV2: check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
+		// check zero balance for account
+		acc := accountKeeper.GetAccount(ctx, addr)
+		require.True(keeper.BankKeeper.GetBalance(ctx, acc.GetAddress(), authTypes.FeeToken).IsZero())
+	})
 
-				amt, _ := math.NewIntFromString("2")
-				account := accountKeeper.GetAccount(ctx, addr)
-				require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.Equal(amt))
-			},
-		},
-		{
-			"amount not enough",
-			func() {
-				// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
-				base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-				amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+	t.Run("success partial amount", func(t *testing.T) {
+		// TODO HV2: fix this test
 
-				// fund account from module
-				account := accountKeeper.NewAccountWithAddress(ctx, addr)
-				// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
-				err := keeper.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
-				require.NoError(err)
-				accountKeeper.SetAccount(ctx, account)
-				// check coins are set
-				require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+		// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
+		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
+		amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
+		coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 
-				amt, _ := math.NewIntFromString("1")
-				coins = coins.Add(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
-				msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
-			},
-			false,
-			"insufficient funds",
-			func() {
-			},
-		},
-	}
+		// TODO HV2: check `setupGovKeeper` and `trackMockBalances` in cosmos-sdk to check how to set/track balances for accounts
 
-	for _, tc := range testCases {
-		suite.Run(fmt.Sprintf("Case %s", tc.msg), func() {
+		// fund account from module
+		account := accountKeeper.NewAccountWithAddress(ctx, addr)
+		// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
+		err := keeper.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+		require.NoError(err)
+		accountKeeper.SetAccount(ctx, account)
+		// check coins are set
+		require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
 
-			tc.malleate()
-			res, err := msgServer.WithdrawFeeTx(ctx, &msg)
+		amt, _ := math.NewIntFromString("2")
+		coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
+		msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
 
-			if tc.expPass {
-				require.NoError(err)
-				require.NotNil(res)
-			} else {
-				require.Error(err)
-				require.Contains(err.Error(), tc.expErrMsg)
-			}
+		res, err := msgServer.WithdrawFeeTx(ctx, &msg)
+		require.NoError(err)
+		require.NotNil(res)
 
-			tc.posttests()
-		})
-	}
+		acc := accountKeeper.GetAccount(ctx, addr)
+		require.True(keeper.BankKeeper.GetBalance(ctx, acc.GetAddress(), authTypes.FeeToken).Amount.Equal(amt))
+	})
+
+	t.Run("fail with not enough amount", func(t *testing.T) {
+		// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
+		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
+		amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
+		coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+
+		// fund account from module
+		account := accountKeeper.NewAccountWithAddress(ctx, addr)
+		// TODO HV2: is this the right way to set coins for account? Will the topup module have funds?
+		err := keeper.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, account.GetAddress(), coins)
+		require.NoError(err)
+		accountKeeper.SetAccount(ctx, account)
+		// check coins are set
+		require.True(keeper.BankKeeper.GetBalance(ctx, account.GetAddress(), authTypes.FeeToken).Amount.GT(math.ZeroInt()))
+
+		amt, _ := math.NewIntFromString("1")
+		coins = coins.Add(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
+		msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
+
+		_, err = msgServer.WithdrawFeeTx(ctx, &msg)
+		require.Error(err)
+		require.Contains(err.Error(), "not enough balance")
+	})
 }
