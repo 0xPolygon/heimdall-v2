@@ -62,7 +62,6 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 
-	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -123,10 +122,6 @@ type HeimdallApp struct {
 	simulationManager *module.SimulationManager
 
 	configurator module.Configurator
-
-	// TODO HV2: enable when VE processor is implemented
-	// Vote Extension handler
-	// VoteExtensionProcessor *VoteExtensionProcessor
 }
 
 func init() {
@@ -207,11 +202,14 @@ func NewHeimdallApp(
 	// app.caller = contractCallerObj
 
 	// TODO HV2: Set vote extension and post handlers for each module
+	// proposalHandler := abci.NewProposalHandler(logger, txConfig)
+	// voteExtHandler := abci.NewVoteExtensionHandler(logger, randProvider)
 
 	// TODO HV2: enable when ABCI is implemented
 	// Set ABCI++ Handlers
 	// bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
 	// bApp.SetProcessProposal(app.NewProcessProposalHandler())
+	// bApp.SetExtendVoteHandler(voteExtHandler.ExtendVoteHandler())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
@@ -370,17 +368,6 @@ func NewHeimdallApp(
 		panic(err)
 	}
 
-	// TODO HV2: enable when sideTx is implemented
-	sideTxCfg := mod.NewSideTxConfigurator()
-	app.RegisterSideMsgServices(sideTxCfg)
-
-	// TODO HV2: enable when VE processor is implemented
-	// Create the voteExtProcessor using sideTxCfg
-	// voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
-	// app.VoteExtensionProcessor = voteExtProcessor
-	// Set the voteExtension methods to HeimdallApp
-	// bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
-
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
 
 	reflectionSvc, err := runtimeservices.NewReflectionService()
@@ -503,7 +490,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
-	// TODO HV2: Implement VE processing logic here (or in abci.go if moved there_
+	// TODO HV2: Implement VE processing logic here (or in abci.go if moved there)
 
 	return app.mm.PreBlock(ctx)
 }
@@ -734,14 +721,6 @@ func (app *HeimdallApp) Configurator() module.Configurator {
 	return app.configurator
 }
 
-func (app *HeimdallApp) RegisterSideMsgServices(cfg mod.SideTxConfigurator) {
-	for _, md := range app.mm.Modules {
-		if sideMsgModule, ok := md.(mod.HasSideMsgServices); ok {
-			sideMsgModule.RegisterSideMsgServices(cfg)
-		}
-	}
-}
-
 type EmptyAppOptions struct{}
 
 func (ao EmptyAppOptions) Get(_ string) interface{} {
@@ -767,15 +746,6 @@ func (app *HeimdallApp) GetSubspace(moduleName string) paramstypes.Subspace {
 
 func (app *HeimdallApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
-}
-
-// cacheTxContext returns a new context based off of the provided context with
-// a cache wrapped multi-store.
-func (app *HeimdallApp) cacheTxContext(ctx sdk.Context, _ []byte) (sdk.Context, storetypes.CacheMultiStore) {
-	ms := ctx.MultiStore()
-	msCache := ms.CacheMultiStore()
-
-	return ctx.WithMultiStore(msCache), msCache
 }
 
 // GetMaccPerms returns a copy of the module account permissions
