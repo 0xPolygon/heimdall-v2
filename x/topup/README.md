@@ -1,0 +1,86 @@
+# Topup
+
+Heimdall Topup is an amount which will be used to pay fees on Heimdall chain.
+
+There are two ways to topup your account:
+
+1. When new validator joins, they can mention a `topup` amount as top-up in addition to the staked amount, which will be
+   moved as balance on Heimdall chain to pays fees on Heimdall.
+2. A user can directly call the top-up function on the staking smart contract on Ethereum to increase top-up balance on
+   Heimdall.
+
+## Messages
+
+### MsgTopupTx
+
+`MsgTopupTx` is responsible for minting balance to an address on Heimdall based on Ethereum chain's `TopUpEvent` on
+staking manager contract.
+
+Handler for this transaction processes top-up and increases the balance only once for any given `msg.TxHash`
+and `msg.LogIndex`. It throws an error if trying to process the top-up more than once.
+
+Here is the structure for the top-up transaction message:
+
+```go
+type MsgTopupTx struct {
+    Proposer    string          `json:"proposer"`
+    User        string          `json:"user"`
+    Fee         math.Int        `json:"fee"`
+    TxHash      types.TxHash    `json:"tx_hash"`
+    LogIndex    uint64          `json:"log_index"`
+    BlockNumber uint64          `json:"block_number"`
+}
+```
+
+### MsgWithdrawFeeTx
+
+`MsgWithdrawFeeTx` is responsible for withdrawing balance from Heimdall to Ethereum chain. A Validator can
+withdraw any amount from Heimdall.
+
+Handler processes the withdraw by deducting the balance from the given validator and prepares the state to send the next
+checkpoint. The next possible checkpoint will contain the withdraw related state for the specific validator.
+
+Handler gets validator information based on `ValidatorAddress` and processes the withdraw.
+
+```go
+type MsgWithdrawFeeTx struct {
+    Proposer    string      `json:"proposer"`
+    Amount      math.Int    `json:"amount"`
+}
+```
+
+## CLI Commands
+
+[//]: # (TODO HV2: fill this section once the cli commands are tested)
+
+### Topup fee
+
+```bash
+```
+
+### Withdraw fee
+
+```bash
+```
+
+To check reflected topup on account run following command
+
+```bash
+heimdallcli query auth account <validator-address> --trust-node
+```
+
+## REST APIs
+
+[//]: # (TODO HV2: fill this section once the REST APIs are tested)
+
+### Topup fee
+
+```bash
+curl -X POST ...
+```
+
+### Withdraw fee
+
+```bash
+curl -X POST ...
+```
