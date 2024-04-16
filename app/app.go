@@ -769,6 +769,15 @@ func (app *HeimdallApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
 }
 
+// cacheTxContext returns a new context based off of the provided context with
+// a cache wrapped multi-store.
+func (app *HeimdallApp) cacheTxContext(ctx sdk.Context, _ []byte) (sdk.Context, storetypes.CacheMultiStore) {
+	ms := ctx.MultiStore()
+	msCache := ms.CacheMultiStore()
+
+	return ctx.WithMultiStore(msCache), msCache
+}
+
 // GetMaccPerms returns a copy of the module account permissions
 func GetMaccPerms() map[string][]string {
 	dupMaccPerms := make(map[string][]string)
