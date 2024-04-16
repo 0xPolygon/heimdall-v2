@@ -18,7 +18,7 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	// TODO HV2: enable when module is implemented
-	//mod "github.com/0xPolygon/heimdall-v2/module"
+	// mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -47,12 +47,12 @@ func NewAppModule(keeper keeper.Keeper) AppModule {
 	}
 }
 
-// Name returns the topup module's name.
+// Name returns the x/topup module's name.
 func (AppModule) Name() string {
 	return types.ModuleName
 }
 
-// RegisterLegacyAminoCodec registers the topup module's types on the LegacyAmino codec.
+// RegisterLegacyAminoCodec registers the x/topup module's types on the LegacyAmino codec.
 func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
@@ -64,12 +64,12 @@ func (am AppModule) RegisterSideMsgServices(sideCfg mod.SideTxConfigurator) {
 }
 */
 
-// DefaultGenesis returns default genesis state as raw bytes for the topup module.
+// DefaultGenesis returns default genesis state as raw bytes for the x/topup module.
 func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-// ValidateGenesis performs genesis state validation for the topup module.
+// ValidateGenesis performs genesis state validation for the x/topup module.
 func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
@@ -79,7 +79,7 @@ func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig,
 	return data.Validate()
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the topup module.
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the x/topup module.
 func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
@@ -101,9 +101,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&am.keeper))
 }
 
-// InitGenesis performs genesis initialization for the topup module.
+// InitGenesis performs genesis initialization for the x/topup module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	start := time.Now()
+
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	telemetry.MeasureSince(start, "InitGenesis", "topup", "unmarshal")
@@ -111,17 +112,17 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	am.keeper.InitGenesis(ctx, &genesisState)
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the topup module.
+// ExportGenesis returns the exported genesis state as raw bytes for the x/topup module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
 
-// GenerateGenesisState creates a randomized GenState of the topup module.
+// GenerateGenesisState creates a randomized GenState of the x/topup module.
 func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	topupSimulation.RandomizeGenState(simState)
 }
 
-// RegisterStoreDecoder registers a decoder for topup module's types
+// RegisterStoreDecoder registers a decoder for x/topup module's types
 func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {
 }
 

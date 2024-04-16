@@ -1,16 +1,10 @@
 package types
 
 import (
-	"math/big"
-
 	"cosmossdk.io/math"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
-
 	"github.com/0xPolygon/heimdall-v2/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
-
-// TODO HV2: this file has some extension methods for msg interfaces. Do we need it at all?
 
 var _ sdk.Msg = &MsgTopupTx{}
 var _ sdk.Msg = &MsgWithdrawFeeTx{}
@@ -27,45 +21,9 @@ func NewMsgTopupTx(proposer, user string, fee math.Int, txHash types.TxHash, ind
 	}
 }
 
-// Route returns the RouterKey.
-func (msg MsgTopupTx) Route() string {
-	return RouterKey
-}
-
-// Type returns the type of the topup Msg.
+// Type returns the type of the x/topup MsgTopupTx.
 func (msg MsgTopupTx) Type() string {
 	return EventTypeTopup
-}
-
-// ValidateBasic runs stateless checks on the message
-func (msg MsgTopupTx) ValidateBasic() error {
-	if len(msg.Proposer) == 0 {
-		return errors.ErrInvalidAddress
-	}
-	return nil
-}
-
-// GetSigners returns the addresses of signers that must sign.
-func (msg MsgTopupTx) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{sdk.AccAddress(msg.Proposer)}
-}
-
-// GetSignBytes returns the message bytes to sign over.
-func (msg MsgTopupTx) GetSignBytes() []byte {
-	// TODO HV2: double check this function
-	return AppendBytes32(
-		[]byte(msg.Proposer),
-		[]byte(msg.User),
-		msg.Fee.BigInt().Bytes(),
-		msg.TxHash.GetHash(),
-		new(big.Int).SetUint64(msg.LogIndex).Bytes(),
-		new(big.Int).SetUint64(msg.BlockNumber).Bytes(),
-	)
-}
-
-// GetSideSignBytes returns the side sign bytes.
-func (msg MsgTopupTx) GetSideSignBytes() []byte {
-	return nil
 }
 
 // NewMsgWithdrawFeeTx creates and returns a new MsgWithdrawFeeTx.
@@ -76,58 +34,7 @@ func NewMsgWithdrawFeeTx(proposer string, amount math.Int) *MsgWithdrawFeeTx {
 	}
 }
 
-// Route returns the RouterKey.
-func (msg MsgWithdrawFeeTx) Route() string {
-	return RouterKey
-}
-
-// Type returns the type of the topup Msg.
+// Type returns the type of the x/topup MsgWithdrawFeeTx.
 func (msg MsgWithdrawFeeTx) Type() string {
 	return EventTypeWithdraw
-}
-
-// ValidateBasic runs stateless checks on the message
-func (msg MsgWithdrawFeeTx) ValidateBasic() error {
-	if len(msg.Proposer) == 0 {
-		return errors.ErrInvalidAddress
-	}
-	return nil
-}
-
-// GetSigners returns the addresses of signers that must sign.
-func (msg MsgWithdrawFeeTx) GetSigners() []sdk.AccAddress {
-	return []sdk.AccAddress{sdk.AccAddress(msg.Proposer)}
-}
-
-// GetSignBytes returns the message bytes to sign over.
-func (msg MsgWithdrawFeeTx) GetSignBytes() []byte {
-	// TODO HV2: double check this function
-	return AppendBytes32(
-		[]byte(msg.Proposer),
-		msg.Amount.BigInt().Bytes(),
-	)
-}
-
-func AppendBytes32(data ...[]byte) []byte {
-	var result []byte
-
-	for _, v := range data {
-		paddedV, err := convertTo32(v)
-		if err == nil {
-			result = append(result, paddedV[:]...)
-		}
-	}
-
-	return result
-}
-
-func convertTo32(input []byte) (output [32]byte, err error) {
-	l := len(input)
-	if l > 32 || l == 0 {
-		return
-	}
-
-	copy(output[32-l:], input[:])
-
-	return
 }

@@ -11,10 +11,11 @@ import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
-// TODO HV2: requests/responses and their json representations are changed.
-// TODO HV2: requests' bodies and path variables param should be ok, check for
-// query params
-// TODO HV2: API paths are changed
+/* TODO HV2: requests/responses and their json representations,
+    together with API paths might have changed.
+    Also, requests' bodies and path variables param should be ok,
+    check for correct functioning of query params
+*/
 
 // Query defines the gRPC querier service.
 service Query {
@@ -25,8 +26,7 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/heimdallv2/topup/isoldtx";
   }
-  // GetTopupTxSequence queries for a specific topup tx to check its status (old
-  // means already submitted) and returns the sequence of the tx
+  // GetTopupTxSequence queries for a specific topup tx and returns its sequence
   rpc GetTopupTxSequence(QueryTopupSequenceRequest)
       returns (QueryTopupSequenceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -54,10 +54,9 @@ service Query {
     option (google.api.http).get =
         "/heimdallv2/topup/account-proof/{address}/verify";
   }
-  // GetDividendAccountProof queries for the dividend account proof of a given
-  // address
-  rpc GetDividendAccountProof(QueryDividendAccountProofRequest)
-      returns (QueryDividendAccountProofResponse) {
+  // GetAccountProof queries for the account proof of a given address
+  rpc GetAccountProof(QueryAccountProofRequest)
+      returns (QueryAccountProofResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/heimdallv2/topup/account-proof/{address}";
   }
@@ -105,7 +104,7 @@ message QueryDividendAccountResponse {
 // GetDividendAccountRootHash RPC method
 message QueryDividendAccountRootHashRequest {}
 
-// QueryDividendAccountRootResponse the is response type for the
+// QueryDividendAccountRootResponse is the response type for the
 // GetDividendAccountRootHash RPC method
 message QueryDividendAccountRootHashResponse {
   heimdallv2.types.HeimdallHash account_root_hash = 2 [
@@ -132,23 +131,23 @@ message QueryVerifyAccountProofResponse {
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "isVerified" ];
 }
 
-// QueryDividendAccountProofParams is the request type for the
-// GetDividendAccountProof RPC method
-message QueryDividendAccountProofRequest {
+// QueryAccountProofParams is the request type for the
+// GetAccountProof RPC method
+message QueryAccountProofRequest {
   string address = 1
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "address" ];
 }
 
-// QueryDividendAccountProofResponse the is response type for the
-// GetDividendAccountProof RPC method
-message QueryDividendAccountProofResponse {
-  DividendAccountProof proof = 2
+// QueryAccountProofResponse the is response type for the GetAccountProof RPC
+// method
+message QueryAccountProofResponse {
+  AccountProof proof = 2
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "proof" ];
 }
 
-// DividendAccountProof embeds user and account info for the the
-// QueryDividendAccountProofResponse
-message DividendAccountProof {
+// AccountProof embeds user and account info for the the
+// QueryAccountProofResponse
+message AccountProof {
   string address = 1
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "address" ];
   string account_proof = 2

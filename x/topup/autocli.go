@@ -8,6 +8,7 @@ import (
 	topupv1 "github.com/0xPolygon/heimdall-v2/api/heimdallv2/topup/v1"
 )
 
+// AutoCLIOptions returns the auto cli options for the module (query and tx)
 func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 	return &autocliv1.ModuleOptions{
 		Query: &autocliv1.ServiceCommandDescriptor{
@@ -22,17 +23,17 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				{
 					RpcMethod:      "IsOldTx",
 					Use:            "is-old-tx [txHash] [logIndex]",
-					Short:          "Check if a tx is old",
+					Short:          "Check if a tx is old (already submitted)",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "txHash"}, {ProtoField: "logIndex"}},
 				},
 				{
 					RpcMethod:      "GetDividendAccount",
 					Use:            "dividend-account [address]",
-					Short:          "Query dividend account by address",
+					Short:          "Query a dividend account by its address",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}},
 				},
 				{
-					RpcMethod:      "GetDividendAccountRoot",
+					RpcMethod:      "GetDividendAccountRootHash",
 					Use:            "dividend-account-root",
 					Short:          "Query dividend account root hash",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},

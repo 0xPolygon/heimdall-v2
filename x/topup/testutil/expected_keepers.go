@@ -4,8 +4,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 )
 
-// BankKeeper extends topups's actual expected BankKeeper with additional
-// methods used in tests.
+// BankKeeper import the cosmos-sdk/x/bank keeper for test purposes
 type BankKeeper interface {
 	bankkeeper.Keeper
 }

@@ -1311,7 +1311,8 @@ func (x *MsgTopup) GetBlockNumber() uint64 {
 	return 0
 }
 
-// MsgWithdrawFee defines a high level transaction for the withdrawal of fees
+// MsgWithdrawFee defines a high level transaction for the withdrawal of fees in
+// topup module
 type MsgWithdrawFee struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

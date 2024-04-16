@@ -6,7 +6,7 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/types";
 
-// DividendAccount contains the burned fees amount
+// DividendAccount contains the burned fees
 message DividendAccount {
   option (gogoproto.equal) = true;
   string user = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];

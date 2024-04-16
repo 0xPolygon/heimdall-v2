@@ -8,10 +8,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 )
 
-// RegisterLegacyAminoCodec registers the necessary topup interfaces and concrete types
+// RegisterLegacyAminoCodec registers the necessary x/topup interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	// TODO HV2: are we using cosmos-sdk namespace here or we change it to heimdall-v2? Check common and custom modules
+	// TODO HV2: are we using cosmos-sdk namespace here or we change it to heimdall-v2? Check other modules too.
 	legacy.RegisterAminoMsg(cdc, &MsgTopupTx{}, "cosmos-sdk/MsgTopupTx")
 	legacy.RegisterAminoMsg(cdc, &MsgWithdrawFeeTx{}, "cosmos-sdk/MsgWithdrawFeeTx")
 }

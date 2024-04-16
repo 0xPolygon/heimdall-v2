@@ -22,7 +22,8 @@ message MsgTopup {
   uint64 block_number = 6;
 }
 
-// MsgWithdrawFee defines a high level transaction for the withdrawal of fees
+// MsgWithdrawFee defines a high level transaction for the withdrawal of fees in
+// topup module
 message MsgWithdrawFee {
   option (gogoproto.equal) = true;
   string from_address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];

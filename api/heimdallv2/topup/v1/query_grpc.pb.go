@@ -24,7 +24,7 @@ const (
 	Query_GetDividendAccountByAddress_FullMethodName = "/heimdallv2.topup.v1.Query/GetDividendAccountByAddress"
 	Query_GetDividendAccountRootHash_FullMethodName  = "/heimdallv2.topup.v1.Query/GetDividendAccountRootHash"
 	Query_VerifyAccountProof_FullMethodName          = "/heimdallv2.topup.v1.Query/VerifyAccountProof"
-	Query_GetDividendAccountProof_FullMethodName     = "/heimdallv2.topup.v1.Query/GetDividendAccountProof"
+	Query_GetAccountProof_FullMethodName             = "/heimdallv2.topup.v1.Query/GetAccountProof"
 )
 
 // QueryClient is the client API for Query service.
@@ -34,8 +34,7 @@ type QueryClient interface {
 	// IsTopupTxOld queries for a specific topup tx to check its status (old
 	// means already submitted)
 	IsTopupTxOld(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryIsTopupTxOldResponse, error)
-	// GetTopupTxSequence queries for a specific topup tx to check its status (old
-	// means already submitted) and returns the sequence of the tx
+	// GetTopupTxSequence queries for a specific topup tx and returns its sequence
 	GetTopupTxSequence(ctx context.Context, in *QueryTopupSequenceRequest, opts ...grpc.CallOption) (*QueryTopupSequenceResponse, error)
 	// GetDividendAccountByAddress queries for a specific DividendAccount by its
 	// address
@@ -45,9 +44,8 @@ type QueryClient interface {
 	GetDividendAccountRootHash(ctx context.Context, in *QueryDividendAccountRootHashRequest, opts ...grpc.CallOption) (*QueryDividendAccountRootHashResponse, error)
 	// VerifyAccountProof queries for the proof of an account given its address
 	VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
-	// GetDividendAccountProof queries for the dividend account proof of a given
-	// address
-	GetDividendAccountProof(ctx context.Context, in *QueryDividendAccountProofRequest, opts ...grpc.CallOption) (*QueryDividendAccountProofResponse, error)
+	// GetAccountProof queries for the account proof of a given address
+	GetAccountProof(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error)
 }
 
 type queryClient struct {
@@ -103,9 +101,9 @@ func (c *queryClient) VerifyAccountProof(ctx context.Context, in *QueryVerifyAcc
 	return out, nil
 }
 
-func (c *queryClient) GetDividendAccountProof(ctx context.Context, in *QueryDividendAccountProofRequest, opts ...grpc.CallOption) (*QueryDividendAccountProofResponse, error) {
-	out := new(QueryDividendAccountProofResponse)
-	err := c.cc.Invoke(ctx, Query_GetDividendAccountProof_FullMethodName, in, out, opts...)
+func (c *queryClient) GetAccountProof(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error) {
+	out := new(QueryAccountProofResponse)
+	err := c.cc.Invoke(ctx, Query_GetAccountProof_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -119,8 +117,7 @@ type QueryServer interface {
 	// IsTopupTxOld queries for a specific topup tx to check its status (old
 	// means already submitted)
 	IsTopupTxOld(context.Context, *QueryTopupSequenceRequest) (*QueryIsTopupTxOldResponse, error)
-	// GetTopupTxSequence queries for a specific topup tx to check its status (old
-	// means already submitted) and returns the sequence of the tx
+	// GetTopupTxSequence queries for a specific topup tx and returns its sequence
 	GetTopupTxSequence(context.Context, *QueryTopupSequenceRequest) (*QueryTopupSequenceResponse, error)
 	// GetDividendAccountByAddress queries for a specific DividendAccount by its
 	// address
@@ -130,9 +127,8 @@ type QueryServer interface {
 	GetDividendAccountRootHash(context.Context, *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error)
 	// VerifyAccountProof queries for the proof of an account given its address
 	VerifyAccountProof(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error)
-	// GetDividendAccountProof queries for the dividend account proof of a given
-	// address
-	GetDividendAccountProof(context.Context, *QueryDividendAccountProofRequest) (*QueryDividendAccountProofResponse, error)
+	// GetAccountProof queries for the account proof of a given address
+	GetAccountProof(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -155,8 +151,8 @@ func (UnimplementedQueryServer) GetDividendAccountRootHash(context.Context, *Que
 func (UnimplementedQueryServer) VerifyAccountProof(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyAccountProof not implemented")
 }
-func (UnimplementedQueryServer) GetDividendAccountProof(context.Context, *QueryDividendAccountProofRequest) (*QueryDividendAccountProofResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetDividendAccountProof not implemented")
+func (UnimplementedQueryServer) GetAccountProof(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAccountProof not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -261,20 +257,20 @@ func _Query_VerifyAccountProof_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_GetDividendAccountProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryDividendAccountProofRequest)
+func _Query_GetAccountProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryAccountProofRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetDividendAccountProof(ctx, in)
+		return srv.(QueryServer).GetAccountProof(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_GetDividendAccountProof_FullMethodName,
+		FullMethod: Query_GetAccountProof_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetDividendAccountProof(ctx, req.(*QueryDividendAccountProofRequest))
+		return srv.(QueryServer).GetAccountProof(ctx, req.(*QueryAccountProofRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -307,8 +303,8 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_VerifyAccountProof_Handler,
 		},
 		{
-			MethodName: "GetDividendAccountProof",
-			Handler:    _Query_GetDividendAccountProof_Handler,
+			MethodName: "GetAccountProof",
+			Handler:    _Query_GetAccountProof_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

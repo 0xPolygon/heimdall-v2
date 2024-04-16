@@ -3857,25 +3857,25 @@ func (x *fastReflection_QueryVerifyAccountProofResponse) ProtoMethods() *protoif
 }
 
 var (
-	md_QueryDividendAccountProofRequest         protoreflect.MessageDescriptor
-	fd_QueryDividendAccountProofRequest_address protoreflect.FieldDescriptor
+	md_QueryAccountProofRequest         protoreflect.MessageDescriptor
+	fd_QueryAccountProofRequest_address protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_v1_query_proto_init()
-	md_QueryDividendAccountProofRequest = File_heimdallv2_topup_v1_query_proto.Messages().ByName("QueryDividendAccountProofRequest")
-	fd_QueryDividendAccountProofRequest_address = md_QueryDividendAccountProofRequest.Fields().ByName("address")
+	md_QueryAccountProofRequest = File_heimdallv2_topup_v1_query_proto.Messages().ByName("QueryAccountProofRequest")
+	fd_QueryAccountProofRequest_address = md_QueryAccountProofRequest.Fields().ByName("address")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryDividendAccountProofRequest)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryAccountProofRequest)(nil)
 
-type fastReflection_QueryDividendAccountProofRequest QueryDividendAccountProofRequest
+type fastReflection_QueryAccountProofRequest QueryAccountProofRequest
 
-func (x *QueryDividendAccountProofRequest) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountProofRequest)(x)
+func (x *QueryAccountProofRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryAccountProofRequest)(x)
 }
 
-func (x *QueryDividendAccountProofRequest) slowProtoReflect() protoreflect.Message {
+func (x *QueryAccountProofRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_v1_query_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -3887,43 +3887,43 @@ func (x *QueryDividendAccountProofRequest) slowProtoReflect() protoreflect.Messa
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryDividendAccountProofRequest_messageType fastReflection_QueryDividendAccountProofRequest_messageType
-var _ protoreflect.MessageType = fastReflection_QueryDividendAccountProofRequest_messageType{}
+var _fastReflection_QueryAccountProofRequest_messageType fastReflection_QueryAccountProofRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryAccountProofRequest_messageType{}
 
-type fastReflection_QueryDividendAccountProofRequest_messageType struct{}
+type fastReflection_QueryAccountProofRequest_messageType struct{}
 
-func (x fastReflection_QueryDividendAccountProofRequest_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountProofRequest)(nil)
+func (x fastReflection_QueryAccountProofRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryAccountProofRequest)(nil)
 }
-func (x fastReflection_QueryDividendAccountProofRequest_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountProofRequest)
+func (x fastReflection_QueryAccountProofRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryAccountProofRequest)
 }
-func (x fastReflection_QueryDividendAccountProofRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountProofRequest
+func (x fastReflection_QueryAccountProofRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryAccountProofRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryDividendAccountProofRequest) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountProofRequest
+func (x *fastReflection_QueryAccountProofRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryAccountProofRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryDividendAccountProofRequest) Type() protoreflect.MessageType {
-	return _fastReflection_QueryDividendAccountProofRequest_messageType
+func (x *fastReflection_QueryAccountProofRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryAccountProofRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryDividendAccountProofRequest) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountProofRequest)
+func (x *fastReflection_QueryAccountProofRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryAccountProofRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryDividendAccountProofRequest) Interface() protoreflect.ProtoMessage {
-	return (*QueryDividendAccountProofRequest)(x)
+func (x *fastReflection_QueryAccountProofRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryAccountProofRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -3931,10 +3931,10 @@ func (x *fastReflection_QueryDividendAccountProofRequest) Interface() protorefle
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryDividendAccountProofRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryAccountProofRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.Address != "" {
 		value := protoreflect.ValueOfString(x.Address)
-		if !f(fd_QueryDividendAccountProofRequest_address, value) {
+		if !f(fd_QueryAccountProofRequest_address, value) {
 			return
 		}
 	}
@@ -3951,15 +3951,15 @@ func (x *fastReflection_QueryDividendAccountProofRequest) Range(f func(protorefl
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryDividendAccountProofRequest) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryAccountProofRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofRequest.address":
+	case "heimdallv2.topup.v1.QueryAccountProofRequest.address":
 		return x.Address != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -3969,15 +3969,15 @@ func (x *fastReflection_QueryDividendAccountProofRequest) Has(fd protoreflect.Fi
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofRequest) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryAccountProofRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofRequest.address":
+	case "heimdallv2.topup.v1.QueryAccountProofRequest.address":
 		x.Address = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -3987,16 +3987,16 @@ func (x *fastReflection_QueryDividendAccountProofRequest) Clear(fd protoreflect.
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryDividendAccountProofRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryAccountProofRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofRequest.address":
+	case "heimdallv2.topup.v1.QueryAccountProofRequest.address":
 		value := x.Address
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofRequest does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -4010,15 +4010,15 @@ func (x *fastReflection_QueryDividendAccountProofRequest) Get(descriptor protore
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryAccountProofRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofRequest.address":
+	case "heimdallv2.topup.v1.QueryAccountProofRequest.address":
 		x.Address = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4032,40 +4032,40 @@ func (x *fastReflection_QueryDividendAccountProofRequest) Set(fd protoreflect.Fi
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryAccountProofRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofRequest.address":
-		panic(fmt.Errorf("field address of message heimdallv2.topup.v1.QueryDividendAccountProofRequest is not mutable"))
+	case "heimdallv2.topup.v1.QueryAccountProofRequest.address":
+		panic(fmt.Errorf("field address of message heimdallv2.topup.v1.QueryAccountProofRequest is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryDividendAccountProofRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryAccountProofRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofRequest.address":
+	case "heimdallv2.topup.v1.QueryAccountProofRequest.address":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryDividendAccountProofRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryAccountProofRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.v1.QueryDividendAccountProofRequest", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.v1.QueryAccountProofRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -4073,7 +4073,7 @@ func (x *fastReflection_QueryDividendAccountProofRequest) WhichOneof(d protorefl
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryDividendAccountProofRequest) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryAccountProofRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -4084,7 +4084,7 @@ func (x *fastReflection_QueryDividendAccountProofRequest) GetUnknown() protorefl
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofRequest) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryAccountProofRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -4096,7 +4096,7 @@ func (x *fastReflection_QueryDividendAccountProofRequest) SetUnknown(fields prot
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryDividendAccountProofRequest) IsValid() bool {
+func (x *fastReflection_QueryAccountProofRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -4106,9 +4106,9 @@ func (x *fastReflection_QueryDividendAccountProofRequest) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryDividendAccountProofRequest) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryAccountProofRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryDividendAccountProofRequest)
+		x := input.Message.Interface().(*QueryAccountProofRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4134,7 +4134,7 @@ func (x *fastReflection_QueryDividendAccountProofRequest) ProtoMethods() *protoi
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountProofRequest)
+		x := input.Message.Interface().(*QueryAccountProofRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4171,7 +4171,7 @@ func (x *fastReflection_QueryDividendAccountProofRequest) ProtoMethods() *protoi
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountProofRequest)
+		x := input.Message.Interface().(*QueryAccountProofRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4203,10 +4203,10 @@ func (x *fastReflection_QueryDividendAccountProofRequest) ProtoMethods() *protoi
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofRequest: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryAccountProofRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryAccountProofRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -4277,25 +4277,25 @@ func (x *fastReflection_QueryDividendAccountProofRequest) ProtoMethods() *protoi
 }
 
 var (
-	md_QueryDividendAccountProofResponse       protoreflect.MessageDescriptor
-	fd_QueryDividendAccountProofResponse_proof protoreflect.FieldDescriptor
+	md_QueryAccountProofResponse       protoreflect.MessageDescriptor
+	fd_QueryAccountProofResponse_proof protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_v1_query_proto_init()
-	md_QueryDividendAccountProofResponse = File_heimdallv2_topup_v1_query_proto.Messages().ByName("QueryDividendAccountProofResponse")
-	fd_QueryDividendAccountProofResponse_proof = md_QueryDividendAccountProofResponse.Fields().ByName("proof")
+	md_QueryAccountProofResponse = File_heimdallv2_topup_v1_query_proto.Messages().ByName("QueryAccountProofResponse")
+	fd_QueryAccountProofResponse_proof = md_QueryAccountProofResponse.Fields().ByName("proof")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryDividendAccountProofResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryAccountProofResponse)(nil)
 
-type fastReflection_QueryDividendAccountProofResponse QueryDividendAccountProofResponse
+type fastReflection_QueryAccountProofResponse QueryAccountProofResponse
 
-func (x *QueryDividendAccountProofResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountProofResponse)(x)
+func (x *QueryAccountProofResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryAccountProofResponse)(x)
 }
 
-func (x *QueryDividendAccountProofResponse) slowProtoReflect() protoreflect.Message {
+func (x *QueryAccountProofResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_v1_query_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4307,43 +4307,43 @@ func (x *QueryDividendAccountProofResponse) slowProtoReflect() protoreflect.Mess
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryDividendAccountProofResponse_messageType fastReflection_QueryDividendAccountProofResponse_messageType
-var _ protoreflect.MessageType = fastReflection_QueryDividendAccountProofResponse_messageType{}
+var _fastReflection_QueryAccountProofResponse_messageType fastReflection_QueryAccountProofResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryAccountProofResponse_messageType{}
 
-type fastReflection_QueryDividendAccountProofResponse_messageType struct{}
+type fastReflection_QueryAccountProofResponse_messageType struct{}
 
-func (x fastReflection_QueryDividendAccountProofResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryDividendAccountProofResponse)(nil)
+func (x fastReflection_QueryAccountProofResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryAccountProofResponse)(nil)
 }
-func (x fastReflection_QueryDividendAccountProofResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountProofResponse)
+func (x fastReflection_QueryAccountProofResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryAccountProofResponse)
 }
-func (x fastReflection_QueryDividendAccountProofResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountProofResponse
+func (x fastReflection_QueryAccountProofResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryAccountProofResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryDividendAccountProofResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryDividendAccountProofResponse
+func (x *fastReflection_QueryAccountProofResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryAccountProofResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryDividendAccountProofResponse) Type() protoreflect.MessageType {
-	return _fastReflection_QueryDividendAccountProofResponse_messageType
+func (x *fastReflection_QueryAccountProofResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryAccountProofResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryDividendAccountProofResponse) New() protoreflect.Message {
-	return new(fastReflection_QueryDividendAccountProofResponse)
+func (x *fastReflection_QueryAccountProofResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryAccountProofResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryDividendAccountProofResponse) Interface() protoreflect.ProtoMessage {
-	return (*QueryDividendAccountProofResponse)(x)
+func (x *fastReflection_QueryAccountProofResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryAccountProofResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -4351,10 +4351,10 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Interface() protorefl
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryDividendAccountProofResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryAccountProofResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.Proof != nil {
 		value := protoreflect.ValueOfMessage(x.Proof.ProtoReflect())
-		if !f(fd_QueryDividendAccountProofResponse_proof, value) {
+		if !f(fd_QueryAccountProofResponse_proof, value) {
 			return
 		}
 	}
@@ -4371,15 +4371,15 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Range(f func(protoref
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryDividendAccountProofResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryAccountProofResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofResponse.proof":
+	case "heimdallv2.topup.v1.QueryAccountProofResponse.proof":
 		return x.Proof != nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4389,15 +4389,15 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Has(fd protoreflect.F
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryAccountProofResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofResponse.proof":
+	case "heimdallv2.topup.v1.QueryAccountProofResponse.proof":
 		x.Proof = nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4407,16 +4407,16 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Clear(fd protoreflect
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryDividendAccountProofResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryAccountProofResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofResponse.proof":
+	case "heimdallv2.topup.v1.QueryAccountProofResponse.proof":
 		value := x.Proof
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -4430,15 +4430,15 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Get(descriptor protor
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryAccountProofResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofResponse.proof":
-		x.Proof = value.Message().Interface().(*DividendAccountProof)
+	case "heimdallv2.topup.v1.QueryAccountProofResponse.proof":
+		x.Proof = value.Message().Interface().(*AccountProof)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4452,44 +4452,44 @@ func (x *fastReflection_QueryDividendAccountProofResponse) Set(fd protoreflect.F
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryAccountProofResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofResponse.proof":
+	case "heimdallv2.topup.v1.QueryAccountProofResponse.proof":
 		if x.Proof == nil {
-			x.Proof = new(DividendAccountProof)
+			x.Proof = new(AccountProof)
 		}
 		return protoreflect.ValueOfMessage(x.Proof.ProtoReflect())
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryDividendAccountProofResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryAccountProofResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.QueryDividendAccountProofResponse.proof":
-		m := new(DividendAccountProof)
+	case "heimdallv2.topup.v1.QueryAccountProofResponse.proof":
+		m := new(AccountProof)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryDividendAccountProofResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.QueryAccountProofResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryDividendAccountProofResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.QueryAccountProofResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryDividendAccountProofResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryAccountProofResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.v1.QueryDividendAccountProofResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.v1.QueryAccountProofResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -4497,7 +4497,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) WhichOneof(d protoref
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryDividendAccountProofResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryAccountProofResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -4508,7 +4508,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) GetUnknown() protoref
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryDividendAccountProofResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryAccountProofResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -4520,7 +4520,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) SetUnknown(fields pro
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryDividendAccountProofResponse) IsValid() bool {
+func (x *fastReflection_QueryAccountProofResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -4530,9 +4530,9 @@ func (x *fastReflection_QueryDividendAccountProofResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryAccountProofResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryDividendAccountProofResponse)
+		x := input.Message.Interface().(*QueryAccountProofResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4558,7 +4558,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountProofResponse)
+		x := input.Message.Interface().(*QueryAccountProofResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4602,7 +4602,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryDividendAccountProofResponse)
+		x := input.Message.Interface().(*QueryAccountProofResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4634,10 +4634,10 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryAccountProofResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryDividendAccountProofResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryAccountProofResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 2:
@@ -4670,7 +4670,7 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
 				if x.Proof == nil {
-					x.Proof = &DividendAccountProof{}
+					x.Proof = &AccountProof{}
 				}
 				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Proof); err != nil {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
@@ -4712,29 +4712,29 @@ func (x *fastReflection_QueryDividendAccountProofResponse) ProtoMethods() *proto
 }
 
 var (
-	md_DividendAccountProof               protoreflect.MessageDescriptor
-	fd_DividendAccountProof_address       protoreflect.FieldDescriptor
-	fd_DividendAccountProof_account_proof protoreflect.FieldDescriptor
-	fd_DividendAccountProof_index         protoreflect.FieldDescriptor
+	md_AccountProof               protoreflect.MessageDescriptor
+	fd_AccountProof_address       protoreflect.FieldDescriptor
+	fd_AccountProof_account_proof protoreflect.FieldDescriptor
+	fd_AccountProof_index         protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_topup_v1_query_proto_init()
-	md_DividendAccountProof = File_heimdallv2_topup_v1_query_proto.Messages().ByName("DividendAccountProof")
-	fd_DividendAccountProof_address = md_DividendAccountProof.Fields().ByName("address")
-	fd_DividendAccountProof_account_proof = md_DividendAccountProof.Fields().ByName("account_proof")
-	fd_DividendAccountProof_index = md_DividendAccountProof.Fields().ByName("index")
+	md_AccountProof = File_heimdallv2_topup_v1_query_proto.Messages().ByName("AccountProof")
+	fd_AccountProof_address = md_AccountProof.Fields().ByName("address")
+	fd_AccountProof_account_proof = md_AccountProof.Fields().ByName("account_proof")
+	fd_AccountProof_index = md_AccountProof.Fields().ByName("index")
 }
 
-var _ protoreflect.Message = (*fastReflection_DividendAccountProof)(nil)
+var _ protoreflect.Message = (*fastReflection_AccountProof)(nil)
 
-type fastReflection_DividendAccountProof DividendAccountProof
+type fastReflection_AccountProof AccountProof
 
-func (x *DividendAccountProof) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_DividendAccountProof)(x)
+func (x *AccountProof) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_AccountProof)(x)
 }
 
-func (x *DividendAccountProof) slowProtoReflect() protoreflect.Message {
+func (x *AccountProof) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_topup_v1_query_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4746,43 +4746,43 @@ func (x *DividendAccountProof) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_DividendAccountProof_messageType fastReflection_DividendAccountProof_messageType
-var _ protoreflect.MessageType = fastReflection_DividendAccountProof_messageType{}
+var _fastReflection_AccountProof_messageType fastReflection_AccountProof_messageType
+var _ protoreflect.MessageType = fastReflection_AccountProof_messageType{}
 
-type fastReflection_DividendAccountProof_messageType struct{}
+type fastReflection_AccountProof_messageType struct{}
 
-func (x fastReflection_DividendAccountProof_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_DividendAccountProof)(nil)
+func (x fastReflection_AccountProof_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_AccountProof)(nil)
 }
-func (x fastReflection_DividendAccountProof_messageType) New() protoreflect.Message {
-	return new(fastReflection_DividendAccountProof)
+func (x fastReflection_AccountProof_messageType) New() protoreflect.Message {
+	return new(fastReflection_AccountProof)
 }
-func (x fastReflection_DividendAccountProof_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_DividendAccountProof
+func (x fastReflection_AccountProof_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_AccountProof
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_DividendAccountProof) Descriptor() protoreflect.MessageDescriptor {
-	return md_DividendAccountProof
+func (x *fastReflection_AccountProof) Descriptor() protoreflect.MessageDescriptor {
+	return md_AccountProof
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_DividendAccountProof) Type() protoreflect.MessageType {
-	return _fastReflection_DividendAccountProof_messageType
+func (x *fastReflection_AccountProof) Type() protoreflect.MessageType {
+	return _fastReflection_AccountProof_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_DividendAccountProof) New() protoreflect.Message {
-	return new(fastReflection_DividendAccountProof)
+func (x *fastReflection_AccountProof) New() protoreflect.Message {
+	return new(fastReflection_AccountProof)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_DividendAccountProof) Interface() protoreflect.ProtoMessage {
-	return (*DividendAccountProof)(x)
+func (x *fastReflection_AccountProof) Interface() protoreflect.ProtoMessage {
+	return (*AccountProof)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -4790,22 +4790,22 @@ func (x *fastReflection_DividendAccountProof) Interface() protoreflect.ProtoMess
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_DividendAccountProof) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_AccountProof) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.Address != "" {
 		value := protoreflect.ValueOfString(x.Address)
-		if !f(fd_DividendAccountProof_address, value) {
+		if !f(fd_AccountProof_address, value) {
 			return
 		}
 	}
 	if x.AccountProof != "" {
 		value := protoreflect.ValueOfString(x.AccountProof)
-		if !f(fd_DividendAccountProof_account_proof, value) {
+		if !f(fd_AccountProof_account_proof, value) {
 			return
 		}
 	}
 	if x.Index != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.Index)
-		if !f(fd_DividendAccountProof_index, value) {
+		if !f(fd_AccountProof_index, value) {
 			return
 		}
 	}
@@ -4822,19 +4822,19 @@ func (x *fastReflection_DividendAccountProof) Range(f func(protoreflect.FieldDes
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_DividendAccountProof) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_AccountProof) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.DividendAccountProof.address":
+	case "heimdallv2.topup.v1.AccountProof.address":
 		return x.Address != ""
-	case "heimdallv2.topup.v1.DividendAccountProof.account_proof":
+	case "heimdallv2.topup.v1.AccountProof.account_proof":
 		return x.AccountProof != ""
-	case "heimdallv2.topup.v1.DividendAccountProof.index":
+	case "heimdallv2.topup.v1.AccountProof.index":
 		return x.Index != uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.DividendAccountProof"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.AccountProof"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.DividendAccountProof does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.AccountProof does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4844,19 +4844,19 @@ func (x *fastReflection_DividendAccountProof) Has(fd protoreflect.FieldDescripto
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_DividendAccountProof) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_AccountProof) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.DividendAccountProof.address":
+	case "heimdallv2.topup.v1.AccountProof.address":
 		x.Address = ""
-	case "heimdallv2.topup.v1.DividendAccountProof.account_proof":
+	case "heimdallv2.topup.v1.AccountProof.account_proof":
 		x.AccountProof = ""
-	case "heimdallv2.topup.v1.DividendAccountProof.index":
+	case "heimdallv2.topup.v1.AccountProof.index":
 		x.Index = uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.DividendAccountProof"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.AccountProof"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.DividendAccountProof does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.AccountProof does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4866,22 +4866,22 @@ func (x *fastReflection_DividendAccountProof) Clear(fd protoreflect.FieldDescrip
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_DividendAccountProof) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_AccountProof) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.topup.v1.DividendAccountProof.address":
+	case "heimdallv2.topup.v1.AccountProof.address":
 		value := x.Address
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.topup.v1.DividendAccountProof.account_proof":
+	case "heimdallv2.topup.v1.AccountProof.account_proof":
 		value := x.AccountProof
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.topup.v1.DividendAccountProof.index":
+	case "heimdallv2.topup.v1.AccountProof.index":
 		value := x.Index
 		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.DividendAccountProof"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.AccountProof"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.DividendAccountProof does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.AccountProof does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -4895,19 +4895,19 @@ func (x *fastReflection_DividendAccountProof) Get(descriptor protoreflect.FieldD
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_DividendAccountProof) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_AccountProof) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.DividendAccountProof.address":
+	case "heimdallv2.topup.v1.AccountProof.address":
 		x.Address = value.Interface().(string)
-	case "heimdallv2.topup.v1.DividendAccountProof.account_proof":
+	case "heimdallv2.topup.v1.AccountProof.account_proof":
 		x.AccountProof = value.Interface().(string)
-	case "heimdallv2.topup.v1.DividendAccountProof.index":
+	case "heimdallv2.topup.v1.AccountProof.index":
 		x.Index = value.Uint()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.DividendAccountProof"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.AccountProof"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.DividendAccountProof does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.AccountProof does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4921,48 +4921,48 @@ func (x *fastReflection_DividendAccountProof) Set(fd protoreflect.FieldDescripto
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_DividendAccountProof) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_AccountProof) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.DividendAccountProof.address":
-		panic(fmt.Errorf("field address of message heimdallv2.topup.v1.DividendAccountProof is not mutable"))
-	case "heimdallv2.topup.v1.DividendAccountProof.account_proof":
-		panic(fmt.Errorf("field account_proof of message heimdallv2.topup.v1.DividendAccountProof is not mutable"))
-	case "heimdallv2.topup.v1.DividendAccountProof.index":
-		panic(fmt.Errorf("field index of message heimdallv2.topup.v1.DividendAccountProof is not mutable"))
+	case "heimdallv2.topup.v1.AccountProof.address":
+		panic(fmt.Errorf("field address of message heimdallv2.topup.v1.AccountProof is not mutable"))
+	case "heimdallv2.topup.v1.AccountProof.account_proof":
+		panic(fmt.Errorf("field account_proof of message heimdallv2.topup.v1.AccountProof is not mutable"))
+	case "heimdallv2.topup.v1.AccountProof.index":
+		panic(fmt.Errorf("field index of message heimdallv2.topup.v1.AccountProof is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.DividendAccountProof"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.AccountProof"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.DividendAccountProof does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.AccountProof does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_DividendAccountProof) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_AccountProof) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.topup.v1.DividendAccountProof.address":
+	case "heimdallv2.topup.v1.AccountProof.address":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.topup.v1.DividendAccountProof.account_proof":
+	case "heimdallv2.topup.v1.AccountProof.account_proof":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.topup.v1.DividendAccountProof.index":
+	case "heimdallv2.topup.v1.AccountProof.index":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.DividendAccountProof"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.topup.v1.AccountProof"))
 		}
-		panic(fmt.Errorf("message heimdallv2.topup.v1.DividendAccountProof does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.topup.v1.AccountProof does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_DividendAccountProof) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_AccountProof) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.v1.DividendAccountProof", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.topup.v1.AccountProof", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -4970,7 +4970,7 @@ func (x *fastReflection_DividendAccountProof) WhichOneof(d protoreflect.OneofDes
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_DividendAccountProof) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_AccountProof) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -4981,7 +4981,7 @@ func (x *fastReflection_DividendAccountProof) GetUnknown() protoreflect.RawField
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_DividendAccountProof) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_AccountProof) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -4993,7 +4993,7 @@ func (x *fastReflection_DividendAccountProof) SetUnknown(fields protoreflect.Raw
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_DividendAccountProof) IsValid() bool {
+func (x *fastReflection_AccountProof) IsValid() bool {
 	return x != nil
 }
 
@@ -5003,9 +5003,9 @@ func (x *fastReflection_DividendAccountProof) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_AccountProof) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*DividendAccountProof)
+		x := input.Message.Interface().(*AccountProof)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -5038,7 +5038,7 @@ func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*DividendAccountProof)
+		x := input.Message.Interface().(*AccountProof)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -5087,7 +5087,7 @@ func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*DividendAccountProof)
+		x := input.Message.Interface().(*AccountProof)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -5119,10 +5119,10 @@ func (x *fastReflection_DividendAccountProof) ProtoMethods() *protoiface.Methods
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: DividendAccountProof: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: AccountProof: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: DividendAccountProof: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: AccountProof: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -5477,7 +5477,7 @@ func (*QueryDividendAccountRootHashRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_v1_query_proto_rawDescGZIP(), []int{5}
 }
 
-// QueryDividendAccountRootResponse the is response type for the
+// QueryDividendAccountRootResponse is the response type for the
 // GetDividendAccountRootHash RPC method
 type QueryDividendAccountRootHashResponse struct {
 	state         protoimpl.MessageState
@@ -5598,9 +5598,9 @@ func (x *QueryVerifyAccountProofResponse) GetIsVerified() bool {
 	return false
 }
 
-// QueryDividendAccountProofParams is the request type for the
-// GetDividendAccountProof RPC method
-type QueryDividendAccountProofRequest struct {
+// QueryAccountProofParams is the request type for the
+// GetAccountProof RPC method
+type QueryAccountProofRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -5608,8 +5608,8 @@ type QueryDividendAccountProofRequest struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
 
-func (x *QueryDividendAccountProofRequest) Reset() {
-	*x = QueryDividendAccountProofRequest{}
+func (x *QueryAccountProofRequest) Reset() {
+	*x = QueryAccountProofRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_v1_query_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5617,36 +5617,36 @@ func (x *QueryDividendAccountProofRequest) Reset() {
 	}
 }
 
-func (x *QueryDividendAccountProofRequest) String() string {
+func (x *QueryAccountProofRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDividendAccountProofRequest) ProtoMessage() {}
+func (*QueryAccountProofRequest) ProtoMessage() {}
 
-// Deprecated: Use QueryDividendAccountProofRequest.ProtoReflect.Descriptor instead.
-func (*QueryDividendAccountProofRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryAccountProofRequest.ProtoReflect.Descriptor instead.
+func (*QueryAccountProofRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_v1_query_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *QueryDividendAccountProofRequest) GetAddress() string {
+func (x *QueryAccountProofRequest) GetAddress() string {
 	if x != nil {
 		return x.Address
 	}
 	return ""
 }
 
-// QueryDividendAccountProofResponse the is response type for the
-// GetDividendAccountProof RPC method
-type QueryDividendAccountProofResponse struct {
+// QueryAccountProofResponse the is response type for the GetAccountProof RPC
+// method
+type QueryAccountProofResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Proof *DividendAccountProof `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
+	Proof *AccountProof `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
 }
 
-func (x *QueryDividendAccountProofResponse) Reset() {
-	*x = QueryDividendAccountProofResponse{}
+func (x *QueryAccountProofResponse) Reset() {
+	*x = QueryAccountProofResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_v1_query_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5654,27 +5654,27 @@ func (x *QueryDividendAccountProofResponse) Reset() {
 	}
 }
 
-func (x *QueryDividendAccountProofResponse) String() string {
+func (x *QueryAccountProofResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryDividendAccountProofResponse) ProtoMessage() {}
+func (*QueryAccountProofResponse) ProtoMessage() {}
 
-// Deprecated: Use QueryDividendAccountProofResponse.ProtoReflect.Descriptor instead.
-func (*QueryDividendAccountProofResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryAccountProofResponse.ProtoReflect.Descriptor instead.
+func (*QueryAccountProofResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_v1_query_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *QueryDividendAccountProofResponse) GetProof() *DividendAccountProof {
+func (x *QueryAccountProofResponse) GetProof() *AccountProof {
 	if x != nil {
 		return x.Proof
 	}
 	return nil
 }
 
-// DividendAccountProof embeds user and account info for the the
-// QueryDividendAccountProofResponse
-type DividendAccountProof struct {
+// AccountProof embeds user and account info for the the
+// QueryAccountProofResponse
+type AccountProof struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -5684,8 +5684,8 @@ type DividendAccountProof struct {
 	Index        uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
 }
 
-func (x *DividendAccountProof) Reset() {
-	*x = DividendAccountProof{}
+func (x *AccountProof) Reset() {
+	*x = AccountProof{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_topup_v1_query_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5693,32 +5693,32 @@ func (x *DividendAccountProof) Reset() {
 	}
 }
 
-func (x *DividendAccountProof) String() string {
+func (x *AccountProof) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DividendAccountProof) ProtoMessage() {}
+func (*AccountProof) ProtoMessage() {}
 
-// Deprecated: Use DividendAccountProof.ProtoReflect.Descriptor instead.
-func (*DividendAccountProof) Descriptor() ([]byte, []int) {
+// Deprecated: Use AccountProof.ProtoReflect.Descriptor instead.
+func (*AccountProof) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_v1_query_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *DividendAccountProof) GetAddress() string {
+func (x *AccountProof) GetAddress() string {
 	if x != nil {
 		return x.Address
 	}
 	return ""
 }
 
-func (x *DividendAccountProof) GetAccountProof() string {
+func (x *AccountProof) GetAccountProof() string {
 	if x != nil {
 		return x.AccountProof
 	}
 	return ""
 }
 
-func (x *DividendAccountProof) GetIndex() uint64 {
+func (x *AccountProof) GetIndex() uint64 {
 	if x != nil {
 		return x.Index
 	}
@@ -5798,20 +5798,18 @@ var file_heimdallv2_topup_v1_query_proto_rawDesc = []byte{
 	0x69, 0x73, 0x5f, 0x76, 0x65, 0x72, 0x69, 0x66, 0x69, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
 	0x08, 0x42, 0x13, 0xea, 0xde, 0x1f, 0x0a, 0x69, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x69, 0x65,
 	0x64, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0a, 0x69, 0x73, 0x56, 0x65, 0x72, 0x69, 0x66, 0x69,
-	0x65, 0x64, 0x22, 0x4e, 0x0a, 0x20, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64,
-	0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2a, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73,
-	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x10, 0xea, 0xde, 0x1f, 0x07, 0x61, 0x64, 0x64,
-	0x72, 0x65, 0x73, 0x73, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x22, 0x74, 0x0a, 0x21, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64,
-	0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4f, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x69, 0x76,
-	0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f,
-	0x66, 0x42, 0x0e, 0xea, 0xde, 0x1f, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0xa8, 0xe7, 0xb0, 0x2a,
-	0x01, 0x52, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x22, 0xa4, 0x01, 0x0a, 0x14, 0x44, 0x69, 0x76,
-	0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f,
+	0x65, 0x64, 0x22, 0x46, 0x0a, 0x18, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75,
+	0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2a,
+	0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42,
+	0x10, 0xea, 0xde, 0x1f, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x64, 0x0a, 0x19, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x47, 0x0a, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x63, 0x63,
+	0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x42, 0x0e, 0xea, 0xde, 0x1f, 0x05, 0x70,
+	0x72, 0x6f, 0x6f, 0x66, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x70, 0x72, 0x6f, 0x6f, 0x66,
+	0x22, 0x9c, 0x01, 0x0a, 0x0c, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f,
 	0x66, 0x12, 0x2a, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x09, 0x42, 0x10, 0xea, 0xde, 0x1f, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0xa8,
 	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x3a, 0x0a,
@@ -5821,7 +5819,7 @@ var file_heimdallv2_topup_v1_query_proto_rawDesc = []byte{
 	0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x24, 0x0a, 0x05, 0x69, 0x6e, 0x64,
 	0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x42, 0x0e, 0xea, 0xde, 0x1f, 0x05, 0x69, 0x6e,
 	0x64, 0x65, 0x78, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x32,
-	0xcf, 0x08, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x96, 0x01, 0x0a, 0x0c, 0x49, 0x73,
+	0xb7, 0x08, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x96, 0x01, 0x0a, 0x0c, 0x49, 0x73,
 	0x54, 0x6f, 0x70, 0x75, 0x70, 0x54, 0x78, 0x4f, 0x6c, 0x64, 0x12, 0x2e, 0x2e, 0x68, 0x65, 0x69,
 	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31,
 	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x53, 0x65, 0x71, 0x75, 0x65,
@@ -5877,34 +5875,32 @@ var file_heimdallv2_topup_v1_query_proto_rawDesc = []byte{
 	0x3d, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x32, 0x12, 0x30, 0x2f, 0x68,
 	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f,
 	0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2d, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x2f, 0x7b, 0x61,
-	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x2f, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x12, 0xc0,
-	0x01, 0x0a, 0x17, 0x47, 0x65, 0x74, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63,
-	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x35, 0x2e, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76, 0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x2f, 0x76, 0x65, 0x72, 0x69, 0x66, 0x79, 0x12, 0xa8,
+	0x01, 0x0a, 0x0f, 0x47, 0x65, 0x74, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f,
+	0x6f, 0x66, 0x12, 0x2d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x63,
 	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x36, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74,
-	0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x44, 0x69, 0x76,
-	0x69, 0x64, 0x65, 0x6e, 0x64, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f,
-	0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x36, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x12, 0x29, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e,
-	0x74, 0x2d, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x2f, 0x7b, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
-	0x7d, 0x42, 0xd5, 0x01, 0x0a, 0x17, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x40, 0x67, 0x69, 0x74,
-	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f,
-	0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70,
-	0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70,
-	0x75, 0x70, 0x2f, 0x76, 0x31, 0x3b, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x76, 0x31, 0xa2, 0x02, 0x03,
-	0x48, 0x54, 0x58, 0xaa, 0x02, 0x13, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x13, 0x48, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x5c, 0x56, 0x31, 0xe2,
-	0x02, 0x1f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54, 0x6f, 0x70,
-	0x75, 0x70, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
-	0x61, 0xea, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a,
-	0x54, 0x6f, 0x70, 0x75, 0x70, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x74, 0x1a, 0x2e, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74,
+	0x6f, 0x70, 0x75, 0x70, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x63, 0x63,
+	0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x22, 0x36, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x2b, 0x12, 0x29,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75,
+	0x70, 0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x2d, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x2f,
+	0x7b, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x42, 0xd5, 0x01, 0x0a, 0x17, 0x63, 0x6f,
+	0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x74, 0x6f, 0x70,
+	0x75, 0x70, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74,
+	0x6f, 0x50, 0x01, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x74, 0x6f, 0x70, 0x75, 0x70, 0x2f, 0x76, 0x31, 0x3b, 0x74, 0x6f,
+	0x70, 0x75, 0x70, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x54, 0x58, 0xaa, 0x02, 0x13, 0x48, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x2e, 0x56,
+	0x31, 0xca, 0x02, 0x13, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54,
+	0x6f, 0x70, 0x75, 0x70, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50,
+	0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x54, 0x6f, 0x70, 0x75, 0x70, 0x3a, 0x3a, 0x56,
+	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5930,28 +5926,28 @@ var file_heimdallv2_topup_v1_query_proto_goTypes = []interface{}{
 	(*QueryDividendAccountRootHashResponse)(nil), // 6: heimdallv2.topup.v1.QueryDividendAccountRootHashResponse
 	(*QueryVerifyAccountProofRequest)(nil),       // 7: heimdallv2.topup.v1.QueryVerifyAccountProofRequest
 	(*QueryVerifyAccountProofResponse)(nil),      // 8: heimdallv2.topup.v1.QueryVerifyAccountProofResponse
-	(*QueryDividendAccountProofRequest)(nil),     // 9: heimdallv2.topup.v1.QueryDividendAccountProofRequest
-	(*QueryDividendAccountProofResponse)(nil),    // 10: heimdallv2.topup.v1.QueryDividendAccountProofResponse
-	(*DividendAccountProof)(nil),                 // 11: heimdallv2.topup.v1.DividendAccountProof
+	(*QueryAccountProofRequest)(nil),             // 9: heimdallv2.topup.v1.QueryAccountProofRequest
+	(*QueryAccountProofResponse)(nil),            // 10: heimdallv2.topup.v1.QueryAccountProofResponse
+	(*AccountProof)(nil),                         // 11: heimdallv2.topup.v1.AccountProof
 	(*types.DividendAccount)(nil),                // 12: heimdallv2.types.DividendAccount
 	(*types.HeimdallHash)(nil),                   // 13: heimdallv2.types.HeimdallHash
 }
 var file_heimdallv2_topup_v1_query_proto_depIdxs = []int32{
 	12, // 0: heimdallv2.topup.v1.QueryDividendAccountResponse.dividend_account:type_name -> heimdallv2.types.DividendAccount
 	13, // 1: heimdallv2.topup.v1.QueryDividendAccountRootHashResponse.account_root_hash:type_name -> heimdallv2.types.HeimdallHash
-	11, // 2: heimdallv2.topup.v1.QueryDividendAccountProofResponse.proof:type_name -> heimdallv2.topup.v1.DividendAccountProof
+	11, // 2: heimdallv2.topup.v1.QueryAccountProofResponse.proof:type_name -> heimdallv2.topup.v1.AccountProof
 	0,  // 3: heimdallv2.topup.v1.Query.IsTopupTxOld:input_type -> heimdallv2.topup.v1.QueryTopupSequenceRequest
 	0,  // 4: heimdallv2.topup.v1.Query.GetTopupTxSequence:input_type -> heimdallv2.topup.v1.QueryTopupSequenceRequest
 	3,  // 5: heimdallv2.topup.v1.Query.GetDividendAccountByAddress:input_type -> heimdallv2.topup.v1.QueryDividendAccountRequest
 	5,  // 6: heimdallv2.topup.v1.Query.GetDividendAccountRootHash:input_type -> heimdallv2.topup.v1.QueryDividendAccountRootHashRequest
 	7,  // 7: heimdallv2.topup.v1.Query.VerifyAccountProof:input_type -> heimdallv2.topup.v1.QueryVerifyAccountProofRequest
-	9,  // 8: heimdallv2.topup.v1.Query.GetDividendAccountProof:input_type -> heimdallv2.topup.v1.QueryDividendAccountProofRequest
+	9,  // 8: heimdallv2.topup.v1.Query.GetAccountProof:input_type -> heimdallv2.topup.v1.QueryAccountProofRequest
 	2,  // 9: heimdallv2.topup.v1.Query.IsTopupTxOld:output_type -> heimdallv2.topup.v1.QueryIsTopupTxOldResponse
 	1,  // 10: heimdallv2.topup.v1.Query.GetTopupTxSequence:output_type -> heimdallv2.topup.v1.QueryTopupSequenceResponse
 	4,  // 11: heimdallv2.topup.v1.Query.GetDividendAccountByAddress:output_type -> heimdallv2.topup.v1.QueryDividendAccountResponse
 	6,  // 12: heimdallv2.topup.v1.Query.GetDividendAccountRootHash:output_type -> heimdallv2.topup.v1.QueryDividendAccountRootHashResponse
 	8,  // 13: heimdallv2.topup.v1.Query.VerifyAccountProof:output_type -> heimdallv2.topup.v1.QueryVerifyAccountProofResponse
-	10, // 14: heimdallv2.topup.v1.Query.GetDividendAccountProof:output_type -> heimdallv2.topup.v1.QueryDividendAccountProofResponse
+	10, // 14: heimdallv2.topup.v1.Query.GetAccountProof:output_type -> heimdallv2.topup.v1.QueryAccountProofResponse
 	9,  // [9:15] is the sub-list for method output_type
 	3,  // [3:9] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
@@ -6074,7 +6070,7 @@ func file_heimdallv2_topup_v1_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_v1_query_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDividendAccountProofRequest); i {
+			switch v := v.(*QueryAccountProofRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6086,7 +6082,7 @@ func file_heimdallv2_topup_v1_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_v1_query_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryDividendAccountProofResponse); i {
+			switch v := v.(*QueryAccountProofResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6098,7 +6094,7 @@ func file_heimdallv2_topup_v1_query_proto_init() {
 			}
 		}
 		file_heimdallv2_topup_v1_query_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*DividendAccountProof); i {
+			switch v := v.(*AccountProof); i {
 			case 0:
 				return &v.state
 			case 1:

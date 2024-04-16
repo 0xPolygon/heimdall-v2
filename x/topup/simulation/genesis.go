@@ -16,7 +16,7 @@ import (
 
 var SequenceNumber = "sequence_number"
 
-// GenSequenceNumber returns a random chainID
+// GenSequenceNumber returns a random sequence number
 func GenSequenceNumber(r *rand.Rand) string {
 	return strconv.Itoa(simulation.RandIntBetween(r, 0, math.MaxInt32))
 }
@@ -24,7 +24,7 @@ func GenSequenceNumber(r *rand.Rand) string {
 // RandomizeGenState returns a simulated topup genesis
 func RandomizeGenState(simState *module.SimulationState) {
 	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1) //nolint
+	r1 := rand.New(s1)
 	n := 5
 	accounts := simulation.RandomAccounts(r1, n)
 
@@ -38,8 +38,7 @@ func RandomizeGenState(simState *module.SimulationState) {
 
 		simState.AppParams.GetOrGenerate(SequenceNumber, &sequenceNumber, simState.Rand, func(r *rand.Rand) {
 			sequenceNumber = GenSequenceNumber(r)
-		},
-		)
+		})
 
 		sequences[i] = sequenceNumber
 

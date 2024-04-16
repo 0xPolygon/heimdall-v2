@@ -24,7 +24,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// DividendAccount contains the burned fees amount
+// DividendAccount contains the burned fees
 type DividendAccount struct {
 	User      string `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	FeeAmount string `protobuf:"bytes,2,opt,name=fee_amount,json=feeAmount,proto3" json:"fee_amount,omitempty"`

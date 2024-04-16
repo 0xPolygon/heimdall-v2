@@ -511,7 +511,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// DividendAccount contains the burned fees amount
+// DividendAccount contains the burned fees
 type DividendAccount struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

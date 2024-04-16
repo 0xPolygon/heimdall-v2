@@ -104,7 +104,8 @@ func (m *MsgTopup) GetBlockNumber() uint64 {
 	return 0
 }
 
-// MsgWithdrawFee defines a high level transaction for the withdrawal of fees
+// MsgWithdrawFee defines a high level transaction for the withdrawal of fees in
+// topup module
 type MsgWithdrawFee struct {
 	FromAddress string                `protobuf:"bytes,1,opt,name=from_address,json=fromAddress,proto3" json:"from_address,omitempty"`
 	Amount      cosmossdk_io_math.Int `protobuf:"bytes,2,opt,name=amount,proto3,customtype=cosmossdk.io/math.Int" json:"amount"`

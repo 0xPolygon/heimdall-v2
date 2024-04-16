@@ -9,7 +9,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/types"
 )
 
-// NewGenesisState creates a new genesis state for topup module
+// NewGenesisState creates a new genesis state for x/topup module
 func NewGenesisState(sequences []string, accounts []types.DividendAccount) *GenesisState {
 	return &GenesisState{
 		TopupSequences:   sequences,
@@ -17,12 +17,12 @@ func NewGenesisState(sequences []string, accounts []types.DividendAccount) *Gene
 	}
 }
 
-// DefaultGenesisState returns a default genesis state for topup module
+// DefaultGenesisState returns a default genesis state for x/topup module
 func DefaultGenesisState() *GenesisState {
 	return NewGenesisState(nil, nil)
 }
 
-// Validate performs basic validation of topup genesis data
+// Validate performs basic validation of x/topup genesis data
 func (gs GenesisState) Validate() error {
 	for _, sequence := range gs.TopupSequences {
 		if sequence == "" {

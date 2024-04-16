@@ -21,10 +21,10 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 	return &msgServer{k: keeper}
 }
 
-// CreateTopupTx handles topup tx events
+// CreateTopupTx handles the creation of topup tx events for the x/topup module
 func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
 
-	// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash when implemented
+	// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash when implemented?
 	txHash := common.BytesToHash(msg.TxHash.Hash)
 
 	m.k.Logger(ctx).Debug("CreateTopupTx msg received",
@@ -36,6 +36,7 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		"blockNumber", msg.BlockNumber,
 	)
 
+	// TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
 	// check if send is enabled for default denom
 	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, types.DefaultDenom) {
 		m.k.Logger(ctx).Error("send not enabled")
@@ -77,7 +78,7 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	return &types.MsgTopupTxResponse{}, nil
 }
 
-// WithdrawFeeTx handles withdraw fee tx events
+// WithdrawFeeTx handles withdraw fee tx events for the x/topup module
 func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeTx) (*types.MsgWithdrawFeeTxResponse, error) {
 	m.k.Logger(ctx).Debug("WithdrawFeeTx msg received",
 		"proposer", msg.Proposer,
@@ -105,6 +106,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// create coins object
 	coins := sdk.Coins{sdk.Coin{Denom: types.DefaultDenom, Amount: amount}}
 
+	// TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
 	// send coins from account to module
 	err := m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
 	if err != nil {

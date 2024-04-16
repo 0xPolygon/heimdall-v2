@@ -34,7 +34,9 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 
 	t.Run("success", func(t *testing.T) {
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().IsSendEnabledDenom(gomock.Any(), gomock.Any()).Return(true).Times(1)
+
 		msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
+
 		res, err := msgServer.CreateTopupTx(ctx, &msg)
 		require.NoError(err)
 		require.NotNil(res)
@@ -47,7 +49,9 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 		err := keeper.SetTopupSequence(ctx, sequence.String())
 		require.NoError(err)
+
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().IsSendEnabledDenom(gomock.Any(), gomock.Any()).Return(true).Times(1)
+
 		_, err = msgServer.CreateTopupTx(ctx, &msg)
 		require.Error(err)
 		require.Contains(err.Error(), "already exists")
@@ -98,7 +102,9 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 
 	t.Run("fail with insufficient funds", func(t *testing.T) {
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
+
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
+
 		_, err := msgServer.WithdrawFeeTx(ctx, &msg)
 		require.Error(err)
 		require.Contains(err.Error(), "insufficient funds")

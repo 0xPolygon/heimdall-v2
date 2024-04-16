@@ -14,7 +14,12 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// TODO HV2: these tests are failing as stake module (responsible to init the validators) is not implemented yet in heimdall-v2. Double check when done.
+/* TODO HV2: these tests are failing because app tests are broken.
+   Probably this is due to stake module (responsible to init the validators)
+   not being implemented yet in heimdall-v2.
+   Another issue could be the presence of distributionModule in heimdall-v2, to be removed.
+   Re-run the test when the above is done.
+*/
 
 // GenesisTestSuite integrate test suite context object
 type GenesisTestSuite struct {

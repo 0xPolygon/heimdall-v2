@@ -8,7 +8,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// InitGenesis sets topup module information for genesis
+// InitGenesis sets x/topup module information for genesis
 func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
 	// add sequences to genesis state
 	for _, sequence := range state.TopupSequences {
@@ -29,11 +29,11 @@ func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	sequences, err := k.GetAllTopupSequences(ctx)
 	if err != nil {
-		panic(fmt.Errorf("failed to get topup sequences during exportGenesis: %w", err))
+		panic(fmt.Errorf("failed to get topup sequences during ExportGenesis: %w", err))
 	}
 	dividendAccounts, err := k.GetAllDividendAccounts(ctx)
 	if err != nil {
-		panic(fmt.Errorf("failed to get dividend accounts during exportGenesis: %w", err))
+		panic(fmt.Errorf("failed to get dividend accounts during ExportGenesis: %w", err))
 	}
 	return &types.GenesisState{
 		TopupSequences:   sequences,

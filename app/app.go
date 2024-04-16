@@ -126,7 +126,7 @@ type HeimdallApp struct {
 
 	// TODO HV2: enable when VE processor is implemented
 	// Vote Extension handler
-	VoteExtensionProcessor *VoteExtensionProcessor
+	// VoteExtensionProcessor *VoteExtensionProcessor
 }
 
 func init() {
@@ -206,12 +206,12 @@ func NewHeimdallApp(
 
 	// app.caller = contractCallerObj
 
-	// TODO HV2: Set vote extension and post handlers for each module (use SetModVoteExtHandler and SetModPostHandler)
+	// TODO HV2: Set vote extension and post handlers for each module
 
 	// TODO HV2: enable when ABCI is implemented
 	// Set ABCI++ Handlers
-	//bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
-	//bApp.SetProcessProposal(app.NewProcessProposalHandler())
+	// bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
+	// bApp.SetProcessProposal(app.NewProcessProposalHandler())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
 
@@ -302,10 +302,9 @@ func NewHeimdallApp(
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
 		// TODO HV2: replace with our stake module
-		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.bankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-
 		topup.NewAppModule(app.TopupKeeper),
 		// TODO HV2: add custom modules
 	)
@@ -377,10 +376,10 @@ func NewHeimdallApp(
 
 	// TODO HV2: enable when VE processor is implemented
 	// Create the voteExtProcessor using sideTxCfg
-	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
-	app.VoteExtensionProcessor = voteExtProcessor
+	// voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
+	// app.VoteExtensionProcessor = voteExtProcessor
 	// Set the voteExtension methods to HeimdallApp
-	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
+	// bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
 
@@ -398,8 +397,7 @@ func NewHeimdallApp(
 	// app.MountMemoryStores(memKeys)
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
-	// TODO HV2: enable when PreBlocker is implemented
-	//app.SetPreBlocker(app.PreBlocker)
+	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.setAnteHandler(txConfig)
@@ -503,101 +501,92 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}, nil
 }
 
+// PreBlocker application updates every pre block
+func (app *HeimdallApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+	// TODO HV2: Implement VE processing logic here (or in abci.go if moved there_
+
+	return app.mm.PreBlock(ctx)
+}
+
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	// TODO HV2: implement
-	// app.AccountKeeper.SetBlockProposer(
-	// 	ctx,
-	// 	types.BytesToHeimdallAddress(req.Header.GetProposerAddress()),
-	// )
+
+	// TODO HV2: implement when ready
+	// app.AccountKeeper.SetBlockProposer(ctx,types.BytesToHeimdallAddress(req.Header.GetProposerAddress()))
 	return app.mm.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
-	// TODO HV2: consider moving the validator set update logic to staking module's EndBlock
-	// under x/staking/module.go
-
+	/* TODO HV2: consider moving the validatorSet update logic to staking module's EndBlock under x/staking/module.go
 	// transfer fees to current proposer
-	// if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
-	// 	moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
-	// 	amount := moduleAccount.GetCoins().AmountOf(authTypes.FeeToken)
-	// 	if !amount.IsZero() {
-	// 		coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: amount}}
-	// 		if err := app.SupplyKeeper.SendCoinsFromModuleToAccount(ctx, authTypes.FeeCollectorName, proposer, coins); err != nil {
-	// 			logger.Error("EndBlocker | SendCoinsFromModuleToAccount", "Error", err)
-	// 		}
-	// 	}
-	// 	// remove block proposer
-	// 	app.AccountKeeper.RemoveBlockProposer(ctx)
-	// }
+	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
+		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
+	 	amount := moduleAccount.GetCoins().AmountOf(authTypes.FeeToken)
+	 	if !amount.IsZero() {
+	 		coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: amount}}
+	 		if err := app.SupplyKeeper.SendCoinsFromModuleToAccount(ctx, authTypes.FeeCollectorName, proposer, coins); err != nil {
+	 			logger.Error("EndBlocker | SendCoinsFromModuleToAccount", "Error", err)
+	 		}
+	 	}
+	// remove block proposer
+	app.AccountKeeper.RemoveBlockProposer(ctx)
+	}
 
-	// var tmValUpdates []abci.ValidatorUpdate
+	var tmValUpdates []abci.ValidatorUpdate
 
-	// // --- Start update to new validators
-	// currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)
-	// allValidators := app.StakingKeeper.GetAllValidators(ctx)
-	// ackCount := app.CheckpointKeeper.GetACKCount(ctx)
+	// Start updating new validators
+	currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)
+	allValidators := app.StakingKeeper.GetAllValidators(ctx)
+	ackCount := app.CheckpointKeeper.GetACKCount(ctx)
 
-	// // get validator updates
-	// setUpdates := helper.GetUpdatedValidators(
-	// 	&currentValidatorSet, // pointer to current validator set -- UpdateValidators will modify it
-	// 	allValidators,        // All validators
-	// 	ackCount,             // ack count
-	// )
+	// get validator updates
+	setUpdates := helper.GetUpdatedValidators(&currentValidatorSet, allValidators, ackCount)
 
-	// if len(setUpdates) > 0 {
-	// 	// create new validator set
-	// 	if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
-	// 		// return with nothing
-	// 		logger.Error("Unable to update current validator set", "Error", err)
-	// 		return abci.ResponseEndBlock{}
-	// 	}
+	if len(setUpdates) > 0 {
+	// create new validator set
+		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
+		// return with nothing
+		logger.Error("Unable to update current validator set", "Error", err)
+	 	return abci.ResponseEndBlock{}
+		}
 
-	// 	//Hardfork to remove the rotation of validator list on stake update
-	// 	if ctx.BlockHeight() < helper.GetAalborgHardForkHeight() {
-	// 		// increment proposer priority
-	// 		currentValidatorSet.IncrementProposerPriority(1)
-	// 	}
+	// validator set change
+	logger.Debug("[ENDBLOCK] Updated current validator set", "proposer", currentValidatorSet.GetProposer())
 
-	// 	// validator set change
-	// 	logger.Debug("[ENDBLOCK] Updated current validator set", "proposer", currentValidatorSet.GetProposer())
+	// save set in store
+	if err := app.StakingKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
+		// return with nothing
+		logger.Error("unable to update current validator set in state", "Error", err)
+		return abci.ResponseEndBlock{}
+	}
 
-	// 	// save set in store
-	// 	if err := app.StakingKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
-	// 		// return with nothing
-	// 		logger.Error("Unable to update current validator set in state", "Error", err)
-	// 		return abci.ResponseEndBlock{}
-	// 	}
+	// convert updates from map to array
+	for _, v := range setUpdates {
+		tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
+			Power:  v.VotingPower,
+			PubKey: v.PubKey.ABCIPubKey(),
+			})
+		}
+	}
 
-	// 	// convert updates from map to array
-	// 	for _, v := range setUpdates {
-	// 		tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
-	// 			Power:  v.VotingPower,
-	// 			PubKey: v.PubKey.ABCIPubKey(),
-	// 		})
-	// 	}
-	// }
+	// TODO HV2: consider moving the rootchain contract address update logic to chainmanager's EndBlock() under x/chainmanager/module.go
 
-	// TODO HV2: consider moving the rootchain contract address update logic to chainmanager's EndBlock()
-	// under x/chainmanager/module.go
+	// Change root chain contract addresses if required
+	if chainManagerAddressMigration, found := helper.GetChainManagerAddressMigration(ctx.BlockHeight()); found {
+		params := app.ChainKeeper.GetParams(ctx)
+		params.ChainParams.MaticTokenAddress = chainManagerAddressMigration.MaticTokenAddress
+		params.ChainParams.StakingManagerAddress = chainManagerAddressMigration.StakingManagerAddress
+	 	params.ChainParams.RootChainAddress = chainManagerAddressMigration.RootChainAddress
+	 	params.ChainParams.SlashManagerAddress = chainManagerAddressMigration.SlashManagerAddress
+	 	params.ChainParams.StakingInfoAddress = chainManagerAddressMigration.StakingInfoAddress
+	 	params.ChainParams.StateSenderAddress = chainManagerAddressMigration.StateSenderAddress
 
-	// // Change root chain contract addresses if required
-	// if chainManagerAddressMigration, found := helper.GetChainManagerAddressMigration(ctx.BlockHeight()); found {
-	// 	params := app.ChainKeeper.GetParams(ctx)
-
-	// 	params.ChainParams.MaticTokenAddress = chainManagerAddressMigration.MaticTokenAddress
-	// 	params.ChainParams.StakingManagerAddress = chainManagerAddressMigration.StakingManagerAddress
-	// 	params.ChainParams.RootChainAddress = chainManagerAddressMigration.RootChainAddress
-	// 	params.ChainParams.SlashManagerAddress = chainManagerAddressMigration.SlashManagerAddress
-	// 	params.ChainParams.StakingInfoAddress = chainManagerAddressMigration.StakingInfoAddress
-	// 	params.ChainParams.StateSenderAddress = chainManagerAddressMigration.StateSenderAddress
-
-	// 	// update chain manager state
-	// 	app.ChainKeeper.SetParams(ctx, params)
-	// 	logger.Info("Updated chain manager state", "params", params)
-	// }
-
+		// update chain manager state
+	 	app.ChainKeeper.SetParams(ctx, params)
+	 	logger.Info("Updated chain manager state", "params", params)
+	 }
+	*/
 	return app.mm.EndBlock(ctx)
 }
 
@@ -617,7 +606,7 @@ func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	delete(modAccAddrs, authtypes.NewModuleAddress(topupTypes.ModuleName).String())
-	// TODO HV2: remove more modules from the BlockedModuleAccountAddrs so that they can send/receive tokens?
+	// TODO HV2: any other module to remove from the BlockedModuleAccountAddrs? So that they can send/receive tokens
 	return modAccAddrs
 }
 
@@ -778,15 +767,6 @@ func (app *HeimdallApp) GetSubspace(moduleName string) paramstypes.Subspace {
 
 func (app *HeimdallApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 	return app.memKeys[storeKey]
-}
-
-// cacheTxContext returns a new context based off of the provided context with
-// a cache wrapped multi-store.
-func (app *HeimdallApp) cacheTxContext(ctx sdk.Context, _ []byte) (sdk.Context, storetypes.CacheMultiStore) {
-	ms := ctx.MultiStore()
-	msCache := ms.CacheMultiStore()
-
-	return ctx.WithMultiStore(msCache), msCache
 }
 
 // GetMaccPerms returns a copy of the module account permissions

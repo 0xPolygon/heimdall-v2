@@ -38,7 +38,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	// contractCaller := suite.contractCaller
 
 	// TODO HV2: enable when chainmanager is implemented
-	// chainParams := heimdallApp.ChainKeeper.GetParams(suite.ctx)
+	// chainParams := keeper.ChainKeeper.GetParams(suite.ctx)
 
 	_, _, addr1 := testdata.KeyTestPubAddr()
 	_, _, addr2 := testdata.KeyTestPubAddr()
@@ -49,7 +49,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
-		// TODO HV2: replace _ with txReceipt when implemented
+		// TODO HV2: replace `_` with `txReceipt` when implemented
 		_ = &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
@@ -76,7 +76,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 		// mock external call
-		// TODO HV2: replace _ with event when contractCaller implemented
+		// TODO HV2: replace `_` with `event` when contractCaller implemented
 		_ = &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(sdk.AccAddress(addr1.String())),
 			Fee:  coins.Amount.BigInt(),
@@ -88,7 +88,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		res := suite.sideHandler(ctx, &msg)
 
 		require.NotNil(res)
-		// TODO HV2: enable this when side_msg_server code is fully functional (atm mod.Vote_VOTE_NO is hardcoded due to missing code)
+		// TODO HV2: enable this when side_msg_server code is fully functional (atm mod.Vote_VOTE_NO is hardcoded due to commented code)
 		// require.Equal(res, mod.Vote_VOTE_YES, "side tx handler should succeed")
 		// there should be no stored event record
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
@@ -97,6 +97,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 
 	t.Run("no receipt", func(t *testing.T) {
+		// TODO HV2: enable contractCaller when implemented
 		// contractCaller = mocks.IContractCaller{}
 
 		logIndex := uint64(10)
@@ -131,7 +132,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
-		// TODO HV2: replace _ with txReceipt when implemented
+		// TODO HV2: replace `_` with `txReceipt` when implemented
 		_ = &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
@@ -166,7 +167,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
-		// TODO HV2: replace _ with txReceipt when implemented
+		// TODO HV2: replace `_` with `txReceipt` when implemented
 		_ = &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
 		}
@@ -187,7 +188,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			blockNumber,
 		)
 
-		// TODO HV2: replace _ with event when implemented
+		// TODO HV2: replace `_` with `event` when implemented
 		_ = &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(sdk.AccAddress(addr1.String())),
 			Fee:  coins.Amount.BigInt(),
@@ -199,7 +200,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		res := suite.sideHandler(ctx, &msg)
 		require.Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
-
 	})
 
 	t.Run("user mismatch", func(t *testing.T) {
@@ -208,7 +208,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
-		// TODO HV2: replace _ with txReceipt when implemented
+		// TODO HV2: replace `_` with `txReceipt` when implemented
 		_ = &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
@@ -229,7 +229,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 			blockNumber,
 		)
 
-		// TODO HV2: replace _ with event when implemented
+		// TODO HV2: replace `_` with `event` when implemented
 		_ = &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(sdk.AccAddress(addr2.String())),
 			Fee:  coins.Amount.BigInt(),
@@ -249,7 +249,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
-		// TODO HV2: replace _ with txReceipt when implemented
+		// TODO HV2: replace `_` with `txReceipt` when implemented
 		_ = &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
@@ -271,7 +271,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		)
 
 		// mock external call
-		// TODO HV2: replace _ with event when implemented
+		// TODO HV2: replace `_` with `event` when implemented
 		_ = &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(sdk.AccAddress(addr2.String())),
 			Fee:  new(big.Int).SetUint64(1),
@@ -286,9 +286,11 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 }
 
-// TODO HV2: implement checks about account balances for `TestPostHandleTopupTx`?
-//  This was done in heimdall-v1 since it was using a real app setup (no mocks).
-//  We could achieve something similar with mocked balances tracking
+/* TODO HV2: we need to implement checks about account balances for `TestPostHandleTopupTx`
+   This was done in heimdall-v1 by using a real app setup (no mocks).
+   Hence, either we do that when app test setup is fixed,
+   or we achieve something similar with mocked balances tracking
+*/
 
 func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 	var msg types.MsgTopupTx
@@ -367,6 +369,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 	t.Run("yes result with proposer", func(t *testing.T) {
 		logIndex := rand.Uint64()
 		blockNumber := rand.Uint64()
+
 		// TODO HV2: use the following line when implemented?
 		// hash := hTypes.HexToHeimdallHash("0x000000000000000000000000000000000000000000000000000000000001dead")
 		txHash := "0x000000000000000000000000000000000000000000000000000000000001dead"
@@ -396,8 +399,8 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
+
 		// there should be stored sequence
-		// check if incoming tx is older
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.True(ok)
@@ -434,10 +437,10 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 
 		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
-		// there should be stored sequence
+		// there should be a stored sequence
 		_, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
-		// TODO HV2: enable this when side_msg_server code is all fully functional (atm mod.Vote_VOTE_NO is hardcoded due to missing code)
+		// TODO HV2: enable this when side_msg_server code is all fully functional (atm mod.Vote_VOTE_NO is hardcoded due to commented code)
 		// require.True(ok)
 
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)

@@ -38,7 +38,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	res, err := queryClient.GetTopupTxSequence(ctx, req)
 	require.NoError(err)
 	require.NotNil(res.Sequence)
-	// TODO HV2: enable this when GetTopupTxSequence is fully functional in grpc_query.go
+	// TODO HV2: enable this when `GetTopupTxSequence` is fully functional in grpc_query.go
 	// require.Equal(sequence.String(), res.Sequence)
 }
 
@@ -56,7 +56,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
 	}
 
 	_, _ = queryClient.GetTopupTxSequence(ctx, req)
-	// TODO HV2: enable this when GetTopupTxSequence is fully functional in grpc_query.go
+	// TODO HV2: enable this when `GetTopupTxSequence` is fully functional in grpc_query.go
 	// require.Error(err)
 	// require.Nil(res)
 }
@@ -68,7 +68,6 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 	logIndex := r1.Uint64()
 	blockNumber := r1.Uint64()
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
-
 	blockN := new(big.Int).SetUint64(blockNumber)
 	sequence := new(big.Int).Mul(blockN, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
@@ -82,7 +81,7 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 
 	_, err = queryClient.IsTopupTxOld(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when IsTopupTxOld is fully functional in grpc_query.go
+	// TODO HV2: enable this when `IsTopupTxOld` is fully functional in grpc_query.go
 	// require.True(res.IsOld)
 }
 
@@ -112,13 +111,13 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_Success() {
 	}
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
-	req := &types.QueryDividendAccountRequest{
-		Address: AccountHash,
-	}
-
 	ok, err := tk.HasDividendAccount(ctx, dividendAccount.User)
 	require.NoError(err)
 	require.Equal(ok, true)
+
+	req := &types.QueryDividendAccountRequest{
+		Address: AccountHash,
+	}
 
 	res, err := queryClient.GetDividendAccountByAddress(ctx, req)
 	require.NoError(err)
@@ -132,14 +131,13 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_NotFound() {
 		User:      AccountHash,
 		FeeAmount: big.NewInt(0).String(),
 	}
+	ok, err := tk.HasDividendAccount(ctx, dividendAccount.User)
+	require.NoError(err)
+	require.Equal(ok, false)
 
 	req := &types.QueryDividendAccountRequest{
 		Address: AccountHash,
 	}
-
-	ok, err := tk.HasDividendAccount(ctx, dividendAccount.User)
-	require.NoError(err)
-	require.Equal(ok, false)
 
 	res, err := queryClient.GetDividendAccountByAddress(ctx, req)
 	require.Error(err)
@@ -156,19 +154,23 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_Success() {
 	}
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
+
 	req := &types.QueryDividendAccountRootHashRequest{}
+
 	_, err = queryClient.GetDividendAccountRootHash(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when GetDividendAccountRootHash is fully functional in grpc_query.go
+	// TODO HV2: enable this when `GetDividendAccountRootHash` is fully functional in grpc_query.go
 	// require.NotNil(res.AccountRootHash)
 	// require.NotEmpty(res.AccountRootHash)
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_NotFound() {
 	ctx, queryClient, require := suite.ctx, suite.queryClient, suite.Require()
+
 	req := &types.QueryDividendAccountRootHashRequest{}
+
 	res, _ := queryClient.GetDividendAccountRootHash(ctx, req)
-	// TODO HV2: enable this when GetDividendAccountRootHash is fully functional in grpc_query.go
+	// TODO HV2: enable this when `GetDividendAccountRootHash` is fully functional in grpc_query.go
 	// require.Error(err)
 	// require.Contains(err.Error(), "not found")
 	require.Empty(res.AccountRootHash)
@@ -183,13 +185,14 @@ func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 	}
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
+
 	req := &types.QueryVerifyAccountProofRequest{
 		Address: AccountHash,
 		Proof:   "",
 	}
 	_, err = queryClient.VerifyAccountProof(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when VerifyAccountProof is fully functional in grpc_query.go
+	// TODO HV2: enable this when `VerifyAccountProof` is fully functional in grpc_query.go
 	// require.True(res.IsVerified)
 }
 
@@ -205,10 +208,10 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 	}
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
-	// TODO HV2: replace _ with dividendAccounts when checkpoint is implemented in heimdall-v2
+	// TODO HV2: replace `_` with `dividendAccounts` when checkpoint is implemented in heimdall-v2
 	_, err = tk.GetAllDividendAccounts(ctx)
 	require.NoError(err)
-	// TODO HV2: enable this when checkpoint is implemented in heimdall-v2 and deleted the fake accRoot
+	// TODO HV2: enable this when checkpoint is implemented in heimdall-v2 and deleted the mocked `accRoot`
 	// accRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 	accRoot := []byte("accRoot")
@@ -219,11 +222,12 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 	suite.contractCaller.On("CurrentAccountStateRoot", stakingInfo).Return(accountRoot, nil)
 	*/
 
-	req := &types.QueryDividendAccountProofRequest{
+	req := &types.QueryAccountProofRequest{
 		Address: AccountHash,
 	}
-	_, err = queryClient.GetDividendAccountProof(ctx, req)
+
+	_, err = queryClient.GetAccountProof(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when GetDividendAccountProof is fully functional in grpc_query.go
+	// TODO HV2: enable this when `GetAccountProof` is fully functional in grpc_query.go
 	// require.NotNil(res.Proof)
 }

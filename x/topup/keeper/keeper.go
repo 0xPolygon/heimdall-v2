@@ -26,7 +26,6 @@ type Keeper struct {
 	schema       collections.Schema
 
 	BankKeeper bk.Keeper
-
 	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
 	// stakingKeeper sk.Keeper
 	// chainKeeper ck.Keeper
@@ -53,16 +52,15 @@ func NewKeeper(
 	k := Keeper{
 		cdc:          cdc,
 		storeService: storeService,
-
-		BankKeeper: bankKeeper,
+		BankKeeper:   bankKeeper,
 		/* TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
 		stakingKeeper: 	stakingKeeper,
 		chainKeeper:   	chainKeeper,
 		contractCaller: contractCaller,
 		*/
 
-		// TODO HV2: in heimdall-v1, the keys are always prefixed with the key, then removed when getters are invoked
-		//  in heimdall-v2, I am only using plain keys, without the prefix. To double check.
+		// TODO HV2: in heimdall-v1, the keys are always prefixed with the key, then removed when getters are invoked, not sure why.
+		//  Here, I am only using plain keys, without the prefix. Is this ok? To double check.
 		sequences:        collections.NewMap(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey, collections.BoolValue),
 		dividendAccounts: collections.NewMap(sb, types.DividendAccountMapKey, "dividend_account", collections.StringKey, codec.CollValue[hTypes.DividendAccount](cdc)),
 	}
@@ -90,6 +88,7 @@ func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// defer closing the iterator
 	defer func(iter collections.Iterator[string, bool]) {
 		err := iter.Close()
@@ -97,12 +96,14 @@ func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) ([]string, error) {
 			k.Logger(ctx).Error("error closing topup sequences iterator", "err", err)
 		}
 	}(iter)
+
 	// iterate over sequences' keys, and return them
 	sequences, err := iter.Keys()
 	if err != nil {
 		k.Logger(ctx).Error("error getting topup sequences from the iterator", "err", err)
 		return nil, err
 	}
+
 	return sequences, nil
 }
 
@@ -113,7 +114,9 @@ func (k *Keeper) SetTopupSequence(ctx sdk.Context, sequence string) error {
 		k.Logger(ctx).Error("error setting topup sequence", "sequence", sequence, "err", err)
 		return err
 	}
+
 	k.Logger(ctx).Debug("topup sequence set", "sequence", sequence)
+
 	return nil
 }
 
@@ -124,7 +127,9 @@ func (k *Keeper) HasTopupSequence(ctx sdk.Context, sequence string) (bool, error
 		k.Logger(ctx).Error("error checking if topup sequence exists", "sequence", sequence, "err", err)
 		return false, err
 	}
+
 	k.Logger(ctx).Debug("topup sequence exists", "sequence", sequence, "isSequencePresent", isSequencePresent)
+
 	return isSequencePresent, nil
 }
 
@@ -135,6 +140,7 @@ func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) ([]hTypes.DividendAccou
 	if err != nil {
 		return nil, err
 	}
+
 	// defer closing the iterator
 	defer func(iter collections.Iterator[string, hTypes.DividendAccount]) {
 		err := iter.Close()
@@ -142,23 +148,27 @@ func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) ([]hTypes.DividendAccou
 			k.Logger(ctx).Error("error closing dividend accounts iterator", "err", err)
 		}
 	}(iter)
+
 	// iterate over dividend accounts' values, and return them
 	dividendAccounts, err := iter.Values()
 	if err != nil {
 		k.Logger(ctx).Error("error getting dividend accounts from the iterator", "err", err)
 		return nil, err
 	}
+
 	return dividendAccounts, nil
 }
 
-// SetDividendAccount sets the dividend account in the store for the given dividendAccount.User
+// SetDividendAccount sets the dividend account in the store for the given dividendAccount
 func (k *Keeper) SetDividendAccount(ctx sdk.Context, dividendAccount hTypes.DividendAccount) error {
 	err := k.dividendAccounts.Set(ctx, dividendAccount.User, dividendAccount)
 	if err != nil {
 		k.Logger(ctx).Error("error adding dividend account", "dividendAccount", dividendAccount, "err", err)
 		return err
 	}
+
 	k.Logger(ctx).Debug("dividend account added", "dividendAccount", dividendAccount)
+
 	return nil
 }
 
@@ -169,7 +179,9 @@ func (k *Keeper) HasDividendAccount(ctx sdk.Context, user string) (bool, error) 
 		k.Logger(ctx).Error("error checking if dividend account exists", "user", user, "err", err)
 		return false, err
 	}
+
 	k.Logger(ctx).Debug("dividend account exists", "user", user, "isDividendAccountPresent", isDividendAccountPresent)
+
 	return isDividendAccountPresent, nil
 }
 
@@ -180,7 +192,9 @@ func (k *Keeper) GetDividendAccount(ctx sdk.Context, user string) (hTypes.Divide
 		k.Logger(ctx).Error("error getting dividend account", "user", user, "err", err)
 		return hTypes.DividendAccount{}, err
 	}
+
 	k.Logger(ctx).Debug("dividend account retrieved", "user", user, "dividendAccount", dividendAccount)
+
 	return dividendAccount, nil
 }
 
@@ -191,6 +205,7 @@ func (k *Keeper) AddFeeToDividendAccount(ctx sdk.Context, user string, fee *big.
 	if err != nil {
 		return err
 	}
+
 	var dividendAccount hTypes.DividendAccount
 	if !exist {
 		// create a new dividend account
@@ -206,6 +221,7 @@ func (k *Keeper) AddFeeToDividendAccount(ctx sdk.Context, user string, fee *big.
 			return err
 		}
 	}
+
 	// update the fee
 	oldFee, _ := big.NewInt(0).SetString(dividendAccount.FeeAmount, 10)
 	totalFee := big.NewInt(0).Add(oldFee, fee).String()
@@ -218,5 +234,6 @@ func (k *Keeper) AddFeeToDividendAccount(ctx sdk.Context, user string, fee *big.
 		k.Logger(ctx).Error("error adding fee to dividend account", "user", user, "fee", fee, "err", err)
 		return err
 	}
+
 	return nil
 }

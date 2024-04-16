@@ -46,13 +46,13 @@ func (s sideMsgServer) PostTxHandler(methodName string) mod.PostTxHandler {
 	}
 }
 
-// SideHandleTopupTx handles the side tx for a validator's topup
+// SideHandleTopupTx handles the side tx for a validator's topup tx
 func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
-		logger.Error("MsgTopupTx type mismatch")
+		logger.Error("type mismatch for MsgTopupTx")
 		return mod.Vote_VOTE_NO
 	}
 
@@ -104,17 +104,17 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 	return mod.Vote_VOTE_NO
 	*/
 
-	// TODO HV2: remove this return statement when the above is enabled
+	// TODO HV2: remove this `return` statement when the above is enabled
 	return mod.Vote_VOTE_NO
 }
 
-// PostHandleTopupTx handles the post side tx for a validator's topup
+// PostHandleTopupTx handles the post side tx for a validator's topup tx
 func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult mod.Vote) {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
-		logger.Error("MsgTopupTx type mismatch")
+		logger.Error("type mismatch for MsgTopupTx")
 		return
 	}
 
@@ -145,14 +145,13 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	user := msg.User
 	topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-	// TODO HV2: is the following a proper replacement for AddCoins? Transfer from module to user, then from user to proposer
+	// TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
 
 	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
 	if err != nil {
 		logger.Error("error while adding coins to user", "user", user, "topupAmount", topupAmount, "error", err)
 		return
 	}
-
 	err = s.k.BankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
 	if err != nil {
 		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)

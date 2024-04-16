@@ -16,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
@@ -49,7 +48,7 @@ type KeeperTestSuite struct {
 	*/
 }
 
-// createTestApp returns context and app on topup keeper
+// createTestApp returns context and app
 func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
 	heimdallApp, _, _ := app.SetupApp(t, 4)
 	ctx := heimdallApp.BaseApp.NewContext(isCheckTx)
@@ -65,13 +64,13 @@ func TestKeeperTestSuite(t *testing.T) {
 func (suite *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(topupTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
+
 	testCtx := cosmostestutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
 	ctrl := gomock.NewController(suite.T())
 	defer ctrl.Finish()
-
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
 
 	keeper := topupKeeper.NewKeeper(
@@ -91,6 +90,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.queryClient = topupTypes.NewQueryClient(queryHelper)
 	suite.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
 	suite.sideMsgCfg = mod.NewSideTxConfigurator()
+
 	topupTypes.RegisterSideMsgServer(suite.sideMsgCfg, topupKeeper.NewSideMsgServerImpl(&keeper))
 }
 
@@ -109,7 +109,6 @@ func (suite *KeeperTestSuite) TestTopupSequenceSet() {
 
 	sequences, err := tk.GetAllTopupSequences(ctx)
 	require.Nil(err)
-
 	require.Equal(true, actualResult)
 	require.Equal(len(sequences), 1)
 	require.Equal(topupSequence, sequences[0])
@@ -168,18 +167,7 @@ func (suite *KeeperTestSuite) TestDividendAccountTree() {
 	require.NoError(err)
 	*/
 
-	leafHash, err := CalculateDividendAccountHash(divAccounts[0])
+	leafHash, err := testutil.CalculateDividendAccountHash(divAccounts[0])
 	require.NotNil(leafHash)
 	require.NoError(err)
-}
-
-// CalculateDividendAccountHash hashes the values of a DividendAccount
-func CalculateDividendAccountHash(da types.DividendAccount) ([]byte, error) {
-	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
-	divAccountHash := crypto.Keccak256(topupTypes.AppendBytes32(
-		[]byte(da.User),
-		fee.Bytes(),
-	))
-
-	return divAccountHash, nil
 }

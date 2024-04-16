@@ -282,9 +282,9 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// CreateTopupTx defines a method for creating a topup tx for a validator
+	// CreateTopupTx defines a RPC method for creating a topup tx for a validator
 	CreateTopupTx(ctx context.Context, in *MsgTopupTx, opts ...grpc.CallOption) (*MsgTopupTxResponse, error)
-	// WithdrawFeeTx defines a method for withdrawing the fees for a validator
+	// WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
 	WithdrawFeeTx(ctx context.Context, in *MsgWithdrawFeeTx, opts ...grpc.CallOption) (*MsgWithdrawFeeTxResponse, error)
 }
 
@@ -316,9 +316,9 @@ func (c *msgClient) WithdrawFeeTx(ctx context.Context, in *MsgWithdrawFeeTx, opt
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// CreateTopupTx defines a method for creating a topup tx for a validator
+	// CreateTopupTx defines a RPC method for creating a topup tx for a validator
 	CreateTopupTx(context.Context, *MsgTopupTx) (*MsgTopupTxResponse, error)
-	// WithdrawFeeTx defines a method for withdrawing the fees for a validator
+	// WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
 	WithdrawFeeTx(context.Context, *MsgWithdrawFeeTx) (*MsgWithdrawFeeTxResponse, error)
 }
 

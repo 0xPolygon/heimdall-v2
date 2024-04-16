@@ -1,6 +1,6 @@
 package types
 
-// topup module event types
+// x/topup module event types
 const (
 	AttributeValueCategory        = ModuleName
 	EventTypeTopup                = "topup"

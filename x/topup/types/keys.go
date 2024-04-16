@@ -9,9 +9,6 @@ const (
 	// StoreKey is the store key string for bor
 	StoreKey = ModuleName
 
-	// RouterKey is the message route for bor
-	RouterKey = ModuleName
-
 	// DefaultDenom represents the default denominator for Polygon PoS coin
 	DefaultDenom = "matic"
 

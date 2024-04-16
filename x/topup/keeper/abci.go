@@ -10,7 +10,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// BeginBlocker in x/topup module only initiates the telemetry metrics and returns, returning no errors
+// BeginBlocker in x/topup module only initiates the telemetry metrics, returning no errors
 func (k *Keeper) BeginBlocker(_ context.Context) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 	return nil

@@ -17,7 +17,7 @@ type queryServer struct {
 }
 
 // NewQueryServer creates a new querier for topup clients.
-// Besides the keeper, it also takes in the contractCaller to interact with ethereum chain
+// It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
@@ -58,7 +58,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	return &types.QueryTopupSequenceResponse{Sequence: sequence.String()}, nil
 	*/
 
-	// TODO HV2: remove the "return nil, nil" when the above method is enabled
+	// TODO HV2: remove the `return nil, nil` when the above is enabled
 	return nil, nil
 }
 
@@ -91,7 +91,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	return &types.QueryIsTopupTxOldResponse{IsOld: exists}, nil
 	*/
 
-	// TODO HV2: remove the "return nil, nil" when the above method is enabled
+	// TODO HV2: remove the `return nil, nil` when the above is enabled
 	return nil, nil
 }
 
@@ -102,6 +102,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+
 	exists, err := q.k.HasDividendAccount(sdkCtx, req.Address)
 	if err != nil {
 		return nil, err
@@ -109,16 +110,23 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 	if !exists {
 		return nil, status.Errorf(codes.NotFound, "dividend account with address %s not found", req.Address)
 	}
+
 	dividendAccount, err := q.k.GetDividendAccount(sdkCtx, req.Address)
 	if err != nil {
 		return nil, err
 	}
+
 	return &types.QueryDividendAccountResponse{DividendAccount: dividendAccount}, nil
 }
 
 func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	// TODO HV2: replace _ with dividendAccounts
+
+	// TODO HV2: replace `_` with `dividendAccounts`
 	_, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -134,7 +142,7 @@ func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.
 	}
 	*/
 
-	// TODO HV2: return accountRoot instead of nil
+	// TODO HV2: return `accountRoot` instead of nil
 	return &types.QueryDividendAccountRootHashResponse{AccountRootHash: nil}, nil
 }
 
@@ -145,7 +153,7 @@ func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVer
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// TODO HV2: replace _ with dividendAccounts
+	// TODO HV2: replace `_` with `dividendAccounts`
 	_, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -158,15 +166,18 @@ func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVer
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	// TODO HV2: replace false with accountProofStatus
+	// TODO HV2: replace `false` with `accountProofStatus`
 	return &types.QueryVerifyAccountProofResponse{IsVerified: false}, nil
 
 }
 
-func (q queryServer) GetDividendAccountProof(ctx context.Context, req *types.QueryDividendAccountProofRequest) (*types.QueryDividendAccountProofResponse, error) {
+func (q queryServer) GetAccountProof(ctx context.Context, req *types.QueryAccountProofRequest) (*types.QueryAccountProofResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
+
+	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from current account
+	// Finally, if they are equal, calculate the merkle path using GetAllDividendAccounts
 
 	/* TODO HV2: enable this when chainManager, checkpoint and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -203,6 +214,6 @@ func (q queryServer) GetDividendAccountProof(ctx context.Context, req *types.Que
 	}
 	*/
 
-	// TODO HV2: remove the "return nil, nil" when the above method is enabled
+	// TODO HV2: remove the `return nil, nil` when the above is enabled
 	return nil, nil
 }
