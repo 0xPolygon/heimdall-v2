@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"os"
 	"path"
 
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/0xPolygon/heimdall-v2/app"
+	cmd_helper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/file"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	cmtcfg "github.com/cometbft/cometbft/config"
@@ -36,8 +36,6 @@ import (
 const (
 	FlagLoadLatest = "load-latest"
 )
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // initCometBFTConfig helps to override default CometBFT Config values.
 // return cmtcfg.DefaultConfig if no custom configuration is required for the application.
@@ -163,7 +161,7 @@ func exportCmd() *cobra.Command {
 			chainID := viper.GetString(flags.FlagChainID)
 			if chainID == "" {
 				// TODO HV2 - check the randum chain id generation (RandStringRunes)
-				chainID = fmt.Sprintf("heimdall-%v", RandStringRunes(6))
+				chainID = fmt.Sprintf("heimdall-%v", cmd_helper.RandStringRunes(6))
 			}
 
 			dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
@@ -301,14 +299,4 @@ func writeGenesisFile(genesisFile, chainID string, appState json.RawMessage) err
 	}
 
 	return genDoc.SaveAs(genesisFile)
-}
-
-// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
-// generate a random string of a fixed length in Go
-func RandStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
 }
