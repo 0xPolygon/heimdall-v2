@@ -96,7 +96,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 		require.NotNil(res)
 	})
 
-	t.Run("fail with no fee coins", func(t *testing.T) {
+	t.Run("fail with insufficient funds", func(t *testing.T) {
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
 		_, err := msgServer.WithdrawFeeTx(ctx, &msg)
