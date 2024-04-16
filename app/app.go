@@ -207,8 +207,8 @@ func NewHeimdallApp(
 
 	// TODO HV2: enable when ABCI is implemented
 	// Set ABCI++ Handlers
-	// bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
-	// bApp.SetProcessProposal(app.NewProcessProposalHandler())
+	// bApp.SetPrepareProposal(proposalHandler.PrepareProposalHandler())
+	// bApp.SetProcessProposal(proposalHandler.ProcessProposalHandler())
 	// bApp.SetExtendVoteHandler(voteExtHandler.ExtendVoteHandler())
 
 	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tkeys[paramstypes.TStoreKey])
@@ -489,7 +489,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 }
 
 // PreBlocker application updates every pre block
-func (app *HeimdallApp) PreBlocker(ctx sdk.Context, _ *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
+func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	// TODO HV2: Implement VE processing logic here (or in abci.go if moved there)
 
 	return app.mm.PreBlock(ctx)
