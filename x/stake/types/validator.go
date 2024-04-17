@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"sort"
 	"strconv"
@@ -9,9 +10,11 @@ import (
 
 	"cosmossdk.io/math"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cosmosCryto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -139,6 +142,16 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 	}
 }
 
+// ConsPubKey returns the validator PubKey as a cryptotypes.PubKey.
+func (v Validator) ConsPubKey() (cryptotypes.PubKey, error) {
+	pk, ok := v.PubKey.GetCachedValue().(cryptotypes.PubKey)
+	if !ok {
+		return nil, fmt.Errorf("expecting cryptotypes.PubKey, got %T", pk)
+	}
+
+	return pk, nil
+}
+
 // Bytes computes the unique encoding of a validator with a given voting power.
 // These are the bytes that gets hashed in consensus. It excludes address
 // as its redundant with the pubkey. This also excludes ProposerPriority
@@ -183,6 +196,21 @@ func ValIDToBytes(valID uint64) []byte {
 	return []byte(strconv.FormatUint(valID, 10))
 }
 
+// CmtConsPublicKey casts Validator.ConsensusPubkey to cmtprotocrypto.PubKey.
+func (v Validator) CmtConsPublicKey() (cmtprotocrypto.PublicKey, error) {
+	pk, err := v.ConsPubKey()
+	if err != nil {
+		return cmtprotocrypto.PublicKey{}, err
+	}
+
+	tmPk, err := cryptocodec.ToCmtProtoPublicKey(pk)
+	if err != nil {
+		return cmtprotocrypto.PublicKey{}, err
+	}
+
+	return tmPk, nil
+}
+
 // --------
 
 // MinimalVal is the minimal validator representation
@@ -199,11 +227,6 @@ func (v Validator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 }
 
 ///////Following functions are implemented to support cosmos validator interface/////////
-
-// ConsPubKey implements types.ValidatorI.
-func (v *Validator) ConsPubKey() (cryptotypes.PubKey, error) {
-	panic("unimplemented")
-}
 
 // GetCommission implements types.ValidatorI.
 func (*Validator) GetCommission() math.LegacyDec {
