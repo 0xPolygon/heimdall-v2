@@ -143,7 +143,7 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	chainParams, err := s.cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	txHash := hmTypes.TxHash{Hash: make([]byte, 20)}
+	txHash := hmTypes.TxHash{Hash: make([]byte, 32)}
 
 	txreceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
