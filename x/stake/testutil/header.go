@@ -22,6 +22,8 @@ func LoadValidatorSet(require *require.Assertions, count int, keeper *stakingKee
 		require.NoError(err)
 	}
 
+	valSet.IncrementProposerPriority(1)
+
 	err := keeper.UpdateValidatorSetInStore(ctx, valSet)
 	require.NoError(err, "Unable to update validator set")
 
