@@ -177,6 +177,7 @@ func exportCmd() *cobra.Command {
 			loadLatest, _ := cmd.Flags().GetBool(FlagLoadLatest)
 
 			// TODO HV2 - what app options should we pass?
+			// or should we pass nil? `app.EmptyAppOptions{}`
 			appOptions := make(simtestutil.AppOptionsMap, 0)
 
 			happ := app.NewHeimdallApp(logger, db, nil, loadLatest, appOptions)
