@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "cosmos/query/v1/query.proto";
 import "amino/amino.proto";
 import "heimdallv2/milestone/v1/milestone.proto";
+import "heimdallv2/stake/v1/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
@@ -49,6 +50,13 @@ service Query {
       returns (QueryNoAckMilestoneByIDResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/noAck/{id}";
+  }
+
+  // MilestoneProposer queries for the milestone proposer
+  rpc MilestoneProposer(QueryMilestoneProposerRequest)
+      returns (QueryMilestoneProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/proposer";
   }
 }
 
@@ -124,4 +132,18 @@ message QueryNoAckMilestoneByIDRequest {
 // Query/NoAckMilestoneByID RPC method
 message QueryNoAckMilestoneByIDResponse {
   bool result = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryCurrentMilestoneProposerRequest is request type for the
+// Query/MilestoneProposer RPC method
+message QueryMilestoneProposerRequest {
+  uint64 times = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryCurrentMilestoneProposerResponse is response type for the
+// Query/MilestoneProposer RPC method
+message QueryMilestoneProposerResponse {
+  // validator defines the validator info.
+  repeated heimdallv2.stake.v1.Validator proposers = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

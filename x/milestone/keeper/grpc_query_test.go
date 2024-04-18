@@ -5,6 +5,7 @@ import (
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTestUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -151,4 +152,22 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 	require.Nil(err)
 
 	require.Equal(res.Result, true)
+}
+
+func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
+	ctx, _, queryClient := s.ctx, s.milestoneKeeper, s.queryClient
+	require := s.Require()
+
+	stakingKeeper := s.stakeKeeper
+
+	validatorSet := stakeTestUtil.LoadValidatorSet(require, 4, stakingKeeper, ctx, false, 10)
+
+	req := &types.QueryMilestoneProposerRequest{Times: 1}
+
+	res, err := queryClient.MilestoneProposer(ctx, req)
+	require.NotNil(res)
+	require.Nil(err)
+
+	//Check val
+	require.Equal(res.Proposers[0].Signer, validatorSet.Proposer.Signer)
 }

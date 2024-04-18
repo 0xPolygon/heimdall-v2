@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -83,4 +84,30 @@ func (k Querier) NoAckMilestoneByID(ctx context.Context, req *types.QueryNoAckMi
 	res := k.GetNoAckMilestone(ctx, req.Id)
 
 	return &types.QueryNoAckMilestoneByIDResponse{Result: res}, nil
+}
+
+// MilestoneProposer queries for the milestone proposer
+func (k Querier) MilestoneProposer(ctx context.Context, req *types.QueryMilestoneProposerRequest) (*types.QueryMilestoneProposerResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// get validator set
+	validatorSet := k.sk.GetValidatorSet(ctx)
+
+	times := int(req.Times)
+	if times > len(validatorSet.Validators) {
+		times = len(validatorSet.Validators)
+	}
+
+	// init proposers
+	proposers := make([]stakeTypes.Validator, times)
+
+	// get proposers
+	for index := 0; index < times; index++ {
+		proposers[index] = *(validatorSet.GetProposer())
+		validatorSet.IncrementProposerPriority(1)
+	}
+
+	return &types.QueryMilestoneProposerResponse{Proposers: proposers}, nil
 }
