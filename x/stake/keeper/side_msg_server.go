@@ -93,7 +93,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 
 	chainParams := params.ChainParams
 
-	// TODO CHECK FOR THE TxHash length, if not 32 return error
+	// TODO HV2 CHECK FOR THE TxHash length, if not 32 return error
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
