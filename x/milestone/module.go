@@ -1,4 +1,4 @@
-package checkpoint
+package milestone
 
 import (
 	"context"
@@ -14,7 +14,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 
-	//"github.com/0xPolygon/heimdall-v2/x/stake/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -38,17 +37,17 @@ var (
 	_ appmodule.HasBeginBlocker = AppModule{}
 )
 
-// AppModuleBasic defines the basic application module used by the checkpoint module.
+// AppModuleBasic defines the basic application module used by the milestone module.
 type AppModuleBasic struct {
 	cdc codec.Codec
 }
 
-// Name returns the staking module's name.
+// Name returns the milestone module's name.
 func (AppModuleBasic) Name() string {
 	return types.ModuleName
 }
 
-// RegisterLegacyAminoCodec registers the staking module's types on the given LegacyAmino codec.
+// RegisterLegacyAminoCodec registers the milestone module's types on the given LegacyAmino codec.
 func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
@@ -58,13 +57,13 @@ func (AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
-// DefaultGenesis returns default genesis state as raw bytes for the staking
+// DefaultGenesis returns default genesis state as raw bytes for the milestone
 // module.
 func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-// ValidateGenesis performs genesis state validation for the staking module.
+// ValidateGenesis performs genesis state validation for the milestone module.
 func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
@@ -74,22 +73,22 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return ValidateGenesis(&data)
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the staking module.
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the milestone module.
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
-// GetTxCmd returns the root tx command for the staking module.
+// GetTxCmd returns the root tx command for the milestone module.
 func (amb AppModuleBasic) GetTxCmd() *cobra.Command {
 	return nil
-	// TODO H2 Please implement the CLI
+	// TODO HV2 Please implement the CLI
 	//
 	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 
-// AppModule implements an application module for the staking module.
+// AppModule implements an application module for the milestone module.
 type AppModule struct {
 	AppModuleBasic
 
@@ -100,7 +99,6 @@ type AppModule struct {
 func NewAppModule(
 	cdc codec.Codec,
 	keeper *keeper.Keeper,
-	//ls exported.Subspace,
 ) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{cdc: cdc},
@@ -114,7 +112,7 @@ func (am AppModule) IsOnePerModuleType() {}
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
-// RegisterInvariants registers the staking module invariants.
+// RegisterInvariants registers the milestone module invariants.
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 	keeper.RegisterInvariants(ir, am.keeper)
 }
@@ -131,7 +129,7 @@ func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator)
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
-// InitGenesis performs genesis initialization for the checkpoint module.
+// InitGenesis performs genesis initialization for the milestone module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	var genesisState types.GenesisState
 
@@ -142,7 +140,7 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	return
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the staking
+// ExportGenesis returns the exported genesis state as raw bytes for the milestone
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
@@ -156,9 +154,8 @@ func (am AppModule) BeginBlock(ctx context.Context) error {
 	return am.keeper.BeginBlocker(ctx)
 }
 
-// EndBlock returns the end blocker for the checkpoint module. It returns no validator
+// EndBlock returns the end blocker for the milestone module. It returns no validator
 // updates.
 func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	return am.keeper.EndBlocker(ctx)
 }
-

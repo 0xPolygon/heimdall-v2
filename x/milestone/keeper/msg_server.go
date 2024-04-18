@@ -24,7 +24,7 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// Checkpoint handles milestone transactions
+// Milestone handles milestone transactions
 func (k msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*types.MsgMilestoneResponse, error) {
 	logger := k.Logger(ctx)
 
@@ -147,8 +147,8 @@ func (k msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 
 	bufferTime := params.MilestoneBufferTime
 
-	// Fetch last checkpoint from store
-	// TODO figure out how to handle this error
+	// Fetch last milestone from the store
+	// TODO HV2 figure out how to handle this error
 	lastMilestone, err := k.GetLastMilestone(ctx)
 	if err != nil {
 		logger.Error("Didn't find the last milestone", "err", err)

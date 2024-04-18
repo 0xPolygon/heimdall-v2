@@ -19,7 +19,7 @@ var (
 	MilestoneNoAckKey     = []byte{0x12} //Key to store the NoAckMilestone
 	MilestoneLastNoAckKey = []byte{0x13} //Key to store the Latest NoAckMilestone
 	LastMilestoneTimeout  = []byte{0x14} //Key to store the Last Milestone Timeout
-	BlockNumberKey        = []byte{0x15} //Key to store the count
+	BlockNumberKey        = []byte{0x15} //Key to store the block number
 
 	ParamsKey = []byte{0x16} // prefix for parameters
 )

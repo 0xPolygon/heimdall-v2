@@ -81,9 +81,9 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.milestoneKeeper = keeper
 	s.stakeKeeper = stakekeeper
 
-	checkpointGenesis := types.DefaultGenesisState()
+	milestoneGenesis := types.DefaultGenesisState()
 
-	keeper.InitGenesis(ctx, checkpointGenesis)
+	keeper.InitGenesis(ctx, milestoneGenesisGenesis)
 
 	milestoneTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)

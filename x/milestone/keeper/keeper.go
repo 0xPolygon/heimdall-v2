@@ -64,7 +64,7 @@ func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
 	return store.Set(types.ParamsKey, bz)
 }
 
-// GetParams gets the x/checkpoint module parameters.
+// GetParams gets the x/Milestone module parameters.
 func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) {
 	store := k.storeService.OpenKVStore(ctx)
 	bz, err := store.Get(types.ParamsKey)
