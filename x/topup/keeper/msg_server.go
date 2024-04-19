@@ -36,7 +36,12 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		"blockNumber", msg.BlockNumber,
 	)
 
-	// TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
+	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
+	   There, the BankKeeper.GetSendEnabled method is used but it's no longer available in cosmos-sdk.
+	   So the approach here is to invoke BankKeeper.IsSendEnabledDenom on matic denom
+	   I believe this is correct.
+	*/
+
 	// check if send is enabled for default denom
 	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, types.DefaultDenom) {
 		m.k.Logger(ctx).Error("send not enabled")
@@ -88,6 +93,12 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// partial withdraw
 	amount := msg.Amount
 
+	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
+	   There, the BankKeeper.GetCoins method is used to check the balance given an address.
+	   This method is no longer available in cosmos-sdk. So the approach here is to invoke BankKeeper.GetBalance.
+	   I believe this is correct.
+	*/
+
 	// full withdraw
 	if msg.Amount.String() == big.NewInt(0).String() {
 		coins := m.k.BankKeeper.GetBalance(ctx, sdk.AccAddress(msg.Proposer), types.DefaultDenom)
@@ -106,7 +117,13 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// create coins object
 	coins := sdk.Coins{sdk.Coin{Denom: types.DefaultDenom, Amount: amount}}
 
-	// TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
+	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
+	   There, the BankKeeper.SubtractCoins method is used to withdraw coins from the validator.
+	   This method is no longer available in cosmos-sdk.
+	   So the approach here is to invoke BankKeeper.SendCoinsFromAccountToModule + BankKeeper.BurnCoins
+	   Not sure if this is the correct approach.
+	*/
+
 	// send coins from account to module
 	err := m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
 	if err != nil {

@@ -145,7 +145,12 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	user := msg.User
 	topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-	// TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
+	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
+	   There, the BankKeeper.AddCoins + BankKeeper.SendCoins methods are used,
+	   but the first is no longer available in cosmos-sdk.
+	   So the approach here is to invoke BankKeeper.SendCoinsFromModuleToAccount + BankKeeper.SendCoins
+	   Not sure if this is the correct approach. Also, what will unsure that the module has the proper amount?
+	*/
 
 	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
 	if err != nil {
