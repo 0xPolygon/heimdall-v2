@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil" //nolint:typecheck
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 

@@ -16,7 +16,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil" //nolint:typecheck
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
