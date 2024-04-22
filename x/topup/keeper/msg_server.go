@@ -23,11 +23,12 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 // CreateTopupTx handles the creation of topup tx events for the x/topup module
 func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
+	logger := m.k.Logger(ctx)
 
 	// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash when implemented?
 	txHash := common.BytesToHash(msg.TxHash.Hash)
 
-	m.k.Logger(ctx).Debug("CreateTopupTx msg received",
+	logger.Debug("CreateTopupTx msg received",
 		"proposer", msg.Proposer,
 		"user", msg.User,
 		"fee", msg.Fee.String(),
@@ -44,7 +45,7 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 
 	// check if send is enabled for default denom
 	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, types.DefaultDenom) {
-		m.k.Logger(ctx).Error("send not enabled")
+		logger.Error("send not enabled")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"send for denom %s is not enabled in bank keeper", types.DefaultDenom)
 	}
@@ -59,10 +60,10 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	// check if incoming tx already exists
 	exists, err := m.k.HasTopupSequence(sdkCtx, sequence.String())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
 	}
 	if exists {
-		m.k.Logger(ctx).Error("older tx found")
+		logger.Error("older tx found")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"tx with hash %s already exists", txHash.String())
 	}
@@ -78,14 +79,16 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		),
 	})
 
-	m.k.Logger(ctx).Debug("event created for CreateTopupTx")
+	logger.Debug("event created for CreateTopupTx")
 
 	return &types.MsgTopupTxResponse{}, nil
 }
 
 // WithdrawFeeTx handles withdraw fee tx events for the x/topup module
 func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeTx) (*types.MsgWithdrawFeeTxResponse, error) {
-	m.k.Logger(ctx).Debug("WithdrawFeeTx msg received",
+	logger := m.k.Logger(ctx)
+
+	logger.Debug("WithdrawFeeTx msg received",
 		"proposer", msg.Proposer,
 		"amount", msg.Amount.String(),
 	)
@@ -105,11 +108,11 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 		amount = coins.Amount
 	}
 
-	m.k.Logger(ctx).Debug("fee amount", "fromAddress", msg.Proposer, "balance", amount.BigInt().String())
+	logger.Debug("fee amount", "fromAddress", msg.Proposer, "balance", amount.BigInt().String())
 
 	// check if there is no balance to withdraw
 	if amount.IsZero() {
-		m.k.Logger(ctx).Error("no balance to withdraw")
+		logger.Error("no balance to withdraw")
 		return nil, errors.Wrapf(sdkerrors.ErrInsufficientFunds,
 			"account %s has no balance", msg.Proposer)
 	}
@@ -127,22 +130,20 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// send coins from account to module
 	err := m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)
 	if err != nil {
-		m.k.Logger(ctx).Error("error while sending coins from account to module",
+		logger.Error("error while sending coins from account to module",
 			"fromAddress", msg.Proposer,
 			"module", types.ModuleName,
 			"err", err)
-		return nil, err
-
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
 	}
 	// burn coins from module
 	err = m.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
 	if err != nil {
-		m.k.Logger(ctx).Error("error while burning coins",
+		logger.Error("error while burning coins",
 			"module", types.ModuleName,
 			"coinsAmount", coins.String(),
 			"err", err)
-		return nil, err
-
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -150,11 +151,11 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// add Fee to dividendAccount
 	feeAmount := amount.BigInt()
 	if err := m.k.AddFeeToDividendAccount(sdkCtx, msg.Proposer, feeAmount); err != nil {
-		m.k.Logger(ctx).Error("error while adding fee to dividend account",
+		logger.Error("error while adding fee to dividend account",
 			"fromAddress", msg.Proposer,
 			"feeAmount", feeAmount,
 			"err", err)
-		return nil, err
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
 	}
 
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
@@ -166,7 +167,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 		),
 	})
 
-	m.k.Logger(ctx).Debug("event created for WithdrawFeeTx")
+	logger.Debug("event created for WithdrawFeeTx")
 
 	return &types.MsgWithdrawFeeTxResponse{}, nil
 }

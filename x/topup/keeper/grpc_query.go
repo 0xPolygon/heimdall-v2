@@ -105,7 +105,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 
 	exists, err := q.k.HasDividendAccount(sdkCtx, req.Address)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if !exists {
 		return nil, status.Errorf(codes.NotFound, "dividend account with address %s not found", req.Address)
@@ -113,7 +113,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 
 	dividendAccount, err := q.k.GetDividendAccount(sdkCtx, req.Address)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &types.QueryDividendAccountResponse{DividendAccount: dividendAccount}, nil
