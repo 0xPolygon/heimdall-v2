@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -35,10 +36,9 @@ func AppendBytes32(data ...[]byte) []byte {
 func convertTo32(input []byte) (output [32]byte, err error) {
 	l := len(input)
 	if l > 32 || l == 0 {
-		return
+		return [32]byte{}, errors.New("length issue, can't convert to 32 bytes")
 	}
-
 	copy(output[32-l:], input[:])
 
-	return
+	return output, nil
 }
