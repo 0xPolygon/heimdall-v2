@@ -41,7 +41,7 @@ func (c *sideTxConfigurator) RegisterSideHandler(msgURL string, handler SideTxHa
 		return nil
 	}
 
-	return fmt.Errorf("SideHandler corresponding to the following msg %s already exist", msgURL)
+	return fmt.Errorf("SideHandler corresponding to the following msg %s already exists", msgURL)
 }
 
 // RegisterPostHandler implements the SideTxConfigurator.RegisterPostHandler method
