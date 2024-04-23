@@ -28,7 +28,7 @@ func (v *VoteExtensionProcessor) SetSideTxConfigurator(cfg mod.SideTxConfigurato
 	v.sideTxCfg = cfg
 }
 
-// NewPrepareProposalHandler check for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
+// NewPrepareProposalHandler checks for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
@@ -75,7 +75,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	}
 }
 
-// Check for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
+// NewProcessProposalHandler checks for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
