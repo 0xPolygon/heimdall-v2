@@ -172,8 +172,8 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 
 // aggregateVotes collates votes received for a side tx
 func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vote]int64, error) {
-	voteByTxHash := make(map[string]map[mod.Vote]int64, 0)      // track votes for a side tx
-	validatorToTxMap := make(map[string]map[string]struct{}, 0) // ensure a validator doesn't procure conflicting votes for a side tx
+	voteByTxHash := make(map[string]map[mod.Vote]int64)      // track votes for a side tx
+	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
 
 	var ve mod.CanonicalSideTxResponse
 
