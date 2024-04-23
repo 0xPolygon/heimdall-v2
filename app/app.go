@@ -32,7 +32,7 @@ import (
 
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
-	sm "github.com/0xPolygon/heimdall-v2/module"
+	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
@@ -378,7 +378,7 @@ func NewHeimdallApp(
 		panic(err)
 	}
 
-	sideTxCfg := sm.NewSideTxConfigurator()
+	sideTxCfg := mod.NewSideTxConfigurator()
 	app.RegisterSideMsgServices(sideTxCfg)
 
 	// Create the voteExtProcessor using sideTxCfg
@@ -747,10 +747,9 @@ func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
-func (app *HeimdallApp) RegisterSideMsgServices(cfg sm.SideTxConfigurator) {
-
+func (app *HeimdallApp) RegisterSideMsgServices(cfg mod.SideTxConfigurator) {
 	for _, md := range app.mm.Modules {
-		if sideMsgModule, ok := md.(sm.HasSideMsgServices); ok {
+		if sideMsgModule, ok := md.(mod.HasSideMsgServices); ok {
 			sideMsgModule.RegisterSideMsgServices(cfg)
 		}
 	}

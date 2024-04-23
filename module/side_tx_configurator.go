@@ -13,9 +13,9 @@ type SideTxConfigurator interface {
 
 	RegisterPostHandler(msgURL string, handler PostTxHandler) error
 
-	SideHandler(msg sdk.Msg) SideTxHandler
+	GetSideHandler(msg sdk.Msg) SideTxHandler
 
-	PostHandler(msg sdk.Msg) PostTxHandler
+	GetPostHandler(msg sdk.Msg) PostTxHandler
 }
 
 type sideTxConfigurator struct {
@@ -46,8 +46,7 @@ func (c *sideTxConfigurator) RegisterSideHandler(msgURL string, handler SideTxHa
 
 // RegisterPostHandler implements the SideTxConfigurator.RegisterPostHandler method
 func (c *sideTxConfigurator) RegisterPostHandler(msgURL string, handler PostTxHandler) error {
-
-	if c.postHandlers[msgURL] == nil {
+	if _, ok := c.postHandlers[msgURL]; !ok {
 		c.postHandlers[msgURL] = handler
 		return nil
 	}
@@ -56,17 +55,17 @@ func (c *sideTxConfigurator) RegisterPostHandler(msgURL string, handler PostTxHa
 }
 
 // SideHandler returns sideHandler for a given msg or nil if not found.
-func (c *sideTxConfigurator) SideHandler(msg sdk.Msg) SideTxHandler {
+func (c *sideTxConfigurator) GetSideHandler(msg sdk.Msg) SideTxHandler {
 	return c.sideHandlers[sdk.MsgTypeURL(msg)]
 }
 
 // PostHandler returns postHandler for a given msg or nil if not found.
-func (c *sideTxConfigurator) PostHandler(msg sdk.Msg) PostTxHandler {
+func (c *sideTxConfigurator) GetPostHandler(msg sdk.Msg) PostTxHandler {
 	return c.postHandlers[sdk.MsgTypeURL(msg)]
 }
 
 // HasSideMsgServices is the interface for modules to register sideTx services.
 type HasSideMsgServices interface {
-	// RegisterServices allows a module to register services.
+	// RegisterServices allows a module to register side msg services.
 	RegisterSideMsgServices(SideTxConfigurator)
 }
