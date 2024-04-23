@@ -147,7 +147,7 @@ const (
 	MilestoneBufferLength = MilestoneLength * 5
 	MilestoneBufferTime   = 256 * time.Second
 
-	//DefaultOpenCollectorEndpoint is the default port of Heimdall rest server
+	// DefaultOpenCollectorEndpoint is the default port of Heimdall open collector endpoint
 	DefaultOpenCollectorEndpoint = "localhost:4317"
 )
 
