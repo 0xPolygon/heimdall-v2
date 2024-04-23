@@ -10,7 +10,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // VoteExtensionProcessor handles Vote Extension processing for Heimdall app
@@ -54,7 +53,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, errors.New("can't prepare the block without more than 2/3 majority")
 		}
 
-		bz, err := jsoniter.ConfigFastest.Marshal(req.LocalLastCommit.Votes)
+		bz, err := json.Marshal(req.LocalLastCommit.Votes)
 		if err != nil {
 			// TODO CHECK HV2: we throw an error since encoding ExtendedVoteInfo should not fail ideally
 			// clarify with Informal
@@ -97,7 +96,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		// Extract ExtendedVoteInfo from txs (encoded at the beginning)
 		bz := req.Txs[0]
 
-		if err := jsoniter.ConfigFastest.Unmarshal(bz, &extVoteInfo); err != nil {
+		if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
 			// returning an error here would cause consensus to panic. Reject the proposal instead if a proposer
 			// deliberately does not include ExtendedVoteInfo at the beginning of txs slice
 			logger.Error("Error occurred while decoding ExtendedVoteInfo", "error", err)
@@ -139,7 +138,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			if canAddVE(ctx, req.Height) {
 				// check whether ExtendedVoteInfo is encoded at the beginning
 				bz := req.Txs[0]
-				if err := jsoniter.ConfigFastest.Unmarshal(bz, &extVoteInfo); err != nil {
+				if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
 					// abnormal behavior since the block got >2/3 prevotes
 					panic(fmt.Errorf("%v occurred while decoding ExtendedVoteInfo; they should have be encoded in the beginning of txs slice",
 						err))
@@ -188,7 +187,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			Hash:            req.Hash,
 		}
 
-		bz, err := jsoniter.ConfigFastest.Marshal(canonicalSideTxRes)
+		bz, err := json.Marshal(canonicalSideTxRes)
 		if err != nil {
 			logger.Error("Error occurred while marshalling VoteExtension", "error", err)
 			return &abci.ResponseExtendVote{VoteExtension: []byte{}}, nil
@@ -280,7 +279,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 			bz := req.Txs[0]
 			// TODO HV2: Clarify with Informal: should we throw an error here ?
-			if err := jsoniter.ConfigFastest.Unmarshal(bz, &extVoteInfo); err != nil {
+			if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
 				logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
 				return nil, err
 			}

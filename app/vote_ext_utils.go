@@ -1,13 +1,13 @@
 package app
 
 import (
+	"encoding/json"
 	"sort"
 
 	"cosmossdk.io/log"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // TODO HV2: uncomment when implemented
@@ -178,7 +178,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vot
 	var ve mod.CanonicalSideTxResponse
 
 	for _, vote := range extVoteInfo {
-		if err := jsoniter.ConfigFastest.Unmarshal(vote.VoteExtension, &ve); err != nil {
+		if err := json.Unmarshal(vote.VoteExtension, &ve); err != nil {
 			return nil, err
 		}
 
