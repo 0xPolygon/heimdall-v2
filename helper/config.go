@@ -143,7 +143,7 @@ const (
 
 	//MilestoneBufferLength defines the condition to propose the
 	//milestoneTimeout if this many bor blocks have passed since
-	//the last milestone
+	// the last milestone
 	MilestoneBufferLength = MilestoneLength * 5
 	MilestoneBufferTime   = 256 * time.Second
 
