@@ -52,7 +52,7 @@ func (c *sideTxConfigurator) RegisterPostHandler(msgURL string, handler PostTxHa
 		return nil
 	}
 
-	return fmt.Errorf("PostHandler corresponding to the following msg %s already exist", msgURL)
+	return fmt.Errorf("PostHandler corresponding to the following msg %s already exists", msgURL)
 }
 
 // SideHandler returns sideHandler for a given msg or nil if not found.
