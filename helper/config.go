@@ -134,7 +134,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hardfork
 	MaxStateSyncSize = 30000
 
-	//MilestoneLength is minimun supported length of milestone
+	// MilestoneLength is minimun supported length of milestone
 	MilestoneLength = uint64(12)
 
 	MilestonePruneNumber = uint64(100)
