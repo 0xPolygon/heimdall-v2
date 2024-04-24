@@ -20,7 +20,8 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/app"
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	// TODO HV2: enable when module is merged
+	// mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
@@ -38,8 +39,9 @@ type KeeperTestSuite struct {
 	ctx    sdk.Context
 	keeper topupKeeper.Keeper
 
-	msgServer   topupTypes.MsgServer
-	sideMsgCfg  mod.SideTxConfigurator
+	msgServer topupTypes.MsgServer
+	// TODO HV2: enable when module is merged
+	// sideMsgCfg  mod.SideTxConfigurator
 	queryClient topupTypes.QueryClient
 
 	/* TODO HV2: enable when contractCaller and chainManager are implemented
@@ -89,9 +91,11 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.keeper = keeper
 	suite.queryClient = topupTypes.NewQueryClient(queryHelper)
 	suite.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
-	suite.sideMsgCfg = mod.NewSideTxConfigurator()
+	// TODO HV2: enable when module is merged
+	// suite.sideMsgCfg = mod.NewSideTxConfigurator()
 
-	topupTypes.RegisterSideMsgServer(suite.sideMsgCfg, topupKeeper.NewSideMsgServerImpl(&keeper))
+	// TODO HV2: replace nil with suite.sideMsgCfg when module is merged
+	topupTypes.RegisterSideMsgServer(nil, topupKeeper.NewSideMsgServerImpl(&keeper))
 }
 
 func (suite *KeeperTestSuite) TestTopupSequenceSet() {

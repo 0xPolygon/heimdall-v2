@@ -3,7 +3,8 @@ package types
 import (
 	"context"
 	"fmt"
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	// TODO HV2: enable when module is merged
+	// mod "github.com/0xPolygon/heimdall-v2/module"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc"
@@ -12,14 +13,17 @@ import (
 // SideMsgServer defines the interface to implement the side and post handlers.
 type SideMsgServer interface {
 	// SideTxHandler to register specific sideHandler based on methodName
-	SideTxHandler(methodName string) mod.SideTxHandler
+	// TODO HV2: enable commented code portions when module is merged
+	SideTxHandler(methodName string) //mod.SideTxHandler
 
 	// PostTxHandler to register specific postHandler based on methodName
-	PostTxHandler(methodName string) mod.PostTxHandler
+	// TODO HV2: enable commented code portions when module is merged
+	PostTxHandler(methodName string) // mod.PostTxHandler
 }
 
 // RegisterSideMsgServer registers server methods for the x/topup module handlers, based on the sideCfg.
-func RegisterSideMsgServer(sideCfg mod.SideTxConfigurator, srv SideMsgServer) {
+// TODO HV2: enable commented code portions when module is merged
+func RegisterSideMsgServer( /*sideCfg mod.SideTxConfigurator,*/ srv SideMsgServer) {
 	serviceDesc := _Msg_serviceDesc
 
 	for _, service := range serviceDesc.Methods {
@@ -50,6 +54,7 @@ func RegisterSideMsgServer(sideCfg mod.SideTxConfigurator, srv SideMsgServer) {
 			continue
 		}
 
+		/* TODO HV2: enable when module is merged
 		err := sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
 		if err != nil {
 			return
@@ -58,6 +63,7 @@ func RegisterSideMsgServer(sideCfg mod.SideTxConfigurator, srv SideMsgServer) {
 		if err != nil {
 			return
 		}
+		*/
 
 	}
 }
