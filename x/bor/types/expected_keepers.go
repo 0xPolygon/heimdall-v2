@@ -2,6 +2,8 @@ package types
 
 import (
 	"context"
+
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 type StakeKeeper interface {
@@ -11,5 +13,5 @@ type StakeKeeper interface {
 }
 
 type ChainManagerKeeper interface {
-	GetParams(ctx context.Context) (Params, error)
+	GetParams(ctx context.Context) (chainmanagertypes.Params, error)
 }

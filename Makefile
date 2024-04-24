@@ -58,3 +58,7 @@ help:
 	@echo "Available targets:"
 	@echo "  lint-deps           - Install dependencies for GolangCI-Lint tool."
 	@echo "  lint                - Runs the GolangCI-Lint tool on the codebase."
+
+mockgen:
+	mockgen -source=x/bor/types/expected_keepers.go -package testutil -destination x/bor/testutil/expected_keepers_mocks.go 
+	# TODO HV2: add mockgen for contract caller

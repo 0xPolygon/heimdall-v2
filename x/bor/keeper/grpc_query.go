@@ -4,19 +4,18 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type Querier struct {
-	keeper Keeper
+	Keeper
 }
 
 var _ types.QueryServer = Querier{}
 
 func NewQuerier(keeper Keeper) Querier {
-	return Querier{keeper: keeper}
+	return Querier{Keeper: keeper}
 }
 
 func (k Querier) LatestSpan(ctx context.Context, req *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
@@ -24,7 +23,7 @@ func (k Querier) LatestSpan(ctx context.Context, req *types.QueryLatestSpanReque
 	var emptySpan *types.Span
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	spans := k.keeper.GetAllSpans(ctx)
+	spans := k.GetAllSpans(ctx)
 	if len(spans) == 0 {
 		return &types.QueryLatestSpanResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), Span: emptySpan}, nil
 	}
@@ -37,26 +36,27 @@ func (k Querier) NextSpan(ctx context.Context, req *types.QueryNextSpanRequest) 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// fetch params
-	params, err := k.keeper.GetParams(ctx)
+	params, err := k.GetParams(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	// fetch current validator set
-	validatorSet := k.keeper.sk.GetValidatorSet(ctx)
+	validatorSet := k.sk.GetValidatorSet(ctx)
 
 	// fetch next selected block producers
-	nextSpanSeed, err := k.keeper.GetNextSpanSeed(ctx)
+	nextSpanSeed, err := k.GetNextSpanSeed(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	selectedProducers, err := k.keeper.SelectNextProducers(ctx, nextSpanSeed)
+	selectedProducers, err := k.SelectNextProducers(ctx, nextSpanSeed)
 	if err != nil {
 		return nil, err
 	}
 
-	selectedProducers = helper.SortValidatorByAddress(selectedProducers)
+	// TODO HV2: uncomment when helper is merged
+	// selectedProducers = helper.SortValidatorByAddress(selectedProducers)
 
 	// create next span
 	nextSpan := &types.Span{
@@ -75,7 +75,7 @@ func (k Querier) NextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedR
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// fetch next span seed
-	nextSpanSeed, err := k.keeper.GetNextSpanSeed(ctx)
+	nextSpanSeed, err := k.GetNextSpanSeed(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (k Querier) NextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedR
 func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	params, err := k.keeper.GetParams(ctx)
+	params, err := k.GetParams(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (k Querier) SpanById(ctx context.Context, req *types.QuerySpanByIdRequest) 
 		return nil, err
 	}
 
-	span, err := k.keeper.GetSpan(ctx, uint64(spanId))
+	span, err := k.GetSpan(ctx, uint64(spanId))
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (k Querier) SpanById(ctx context.Context, req *types.QuerySpanByIdRequest) 
 func (k Querier) SpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	spansList, err := k.keeper.GetSpanList(ctx, req.Page, req.Limit)
+	spansList, err := k.GetSpanList(ctx, req.Page, req.Limit)
 	if err != nil {
 		return nil, err
 	}

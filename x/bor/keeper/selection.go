@@ -5,7 +5,6 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -23,7 +22,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Val
 	}
 
 	// extract seed from hash
-	seedBytes := helper.ToBytes32(blkHash.Bytes()[:32])
+	seedBytes := toBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
 	// nolint: staticcheck
 	rand := rand.New(rand.NewSource(seed))
@@ -100,4 +99,17 @@ func createWeightedRanges(weights []uint64) ([]uint64, uint64) {
 	}
 
 	return weightedRanges, totalWeight
+}
+
+// TODO HV2: this method ought to be in the helper package
+
+// toBytes32 is a convenience method for converting a byte slice to a fix
+// sized 32 byte array. This method will truncate the input if it is larger
+// than 32 bytes.
+func toBytes32(x []byte) [32]byte {
+	var y [32]byte
+
+	copy(y[:], x)
+
+	return y
 }

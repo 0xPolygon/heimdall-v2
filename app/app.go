@@ -11,6 +11,8 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 
+	"github.com/0xPolygon/heimdall-v2/x/bor"
+	bortypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -40,12 +42,14 @@ import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
+	borkeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -107,7 +111,7 @@ type HeimdallApp struct {
 	// Custom Keepers
 	// TODO HV2: uncomment when implemented
 	// StakeKeeper stakekeeper.Keeper
-	// BorKeeper borkeeper.Keeper
+	BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
 	// TopupKeeper topupkeeper.Keeper
@@ -165,7 +169,7 @@ func NewHeimdallApp(
 		paramstypes.StoreKey,
 		// TODO HV2: uncomment when implemented
 		// staketypes.StoreKey,
-		// bortypes.StoreKey,
+		bortypes.StoreKey,
 		// clerktypes.StoreKey,
 		// checkpointtypes.StoreKey,
 		// topuptypes.StoreKey,
@@ -295,6 +299,7 @@ func NewHeimdallApp(
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
+		bor.NewAppModule(app.BorKeeper, address.HexCodec{}),
 	)
 
 	// Basic manager
@@ -336,7 +341,7 @@ func NewHeimdallApp(
 		// TODO HV2: uncomment when implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
-		// bortypes.ModuleName,
+		bortypes.ModuleName,
 		// clerktypes.ModuleName,
 		// topuptypes.ModuleName,
 		// chainmanagertypes.ModuleName,

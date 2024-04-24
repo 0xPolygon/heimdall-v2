@@ -10,22 +10,25 @@ import (
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // Keeper stores all chainmanager related data
 type Keeper struct {
-	cdc            codec.BinaryCodec
-	storeService   store.KVStoreService
-	ck             types.ChainManagerKeeper
-	sk             types.StakeKeeper
-	contractCaller helper.ContractCaller
-	Params         collections.Item[types.Params]
+	cdc          codec.BinaryCodec
+	storeService store.KVStoreService
+	ck           types.ChainManagerKeeper
+	sk           types.StakeKeeper
+	// TODO HV2: uncomment when contractCaller is implemented
+	// contractCaller helper.ContractCaller
+
+	Schema collections.Schema
+	Params collections.Item[types.Params]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -34,17 +37,26 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
-	caller helper.ContractCaller,
+	// caller helper.ContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
-	return Keeper{
-		cdc:            cdc,
-		storeService:   storeService,
-		ck:             chainKeeper,
-		sk:             stakingKeeper,
-		contractCaller: caller,
-		Params:         collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+	k := Keeper{
+		cdc:          cdc,
+		storeService: storeService,
+		ck:           chainKeeper,
+		sk:           stakingKeeper,
+		// TODO HV2: uncomment when contractCaller is implemented
+		// contractCaller: caller,
+		Params: collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	k.Schema = schema
+	return k
 }
 
 // Logger returns a module-specific logger
@@ -55,7 +67,7 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 
 // GetSpanKey appends prefix to start block
 func GetSpanKey(id uint64) []byte {
-	return append(types.SpanPrefixKey, []byte(strconv.FormatUint(id, 10))...)
+	return append(types.SpanPrefixKey, sdk.Uint64ToBigEndian(id)...)
 }
 
 // AddNewSpan adds new span for bor to store and updates last span
@@ -246,12 +258,13 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) (val
 	}
 
 	// sort by address
-	vals = helper.SortValidatorByAddress(vals)
+	// TODO HV2: uncomment when helper is merged
+	// vals = helper.SortValidatorByAddress(vals)
 
 	return vals, nil
 }
 
-// UpdateLastSpan updates the last span start block
+// UpdateLastSpan updates the last span
 func (k *Keeper) UpdateLastSpan(ctx context.Context, id uint64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	return store.Set(types.LastSpanIDKey, []byte(strconv.FormatUint(id, 10)))
@@ -312,8 +325,10 @@ func (k *Keeper) GetNextSpanSeed(ctx context.Context) (common.Hash, error) {
 	newEthBlock := lastEthBlock.Add(lastEthBlock, big.NewInt(1))
 	k.Logger(ctx).Debug("newEthBlock to generate seed", "newEthBlock", newEthBlock)
 
+	// TODO HV2: uncomment when contractCaller is implemented
 	// fetch block header from mainchain
-	blockHeader, err := k.contractCaller.GetMainChainBlock(newEthBlock)
+	// blockHeader, err := k.contractCaller.GetMainChainBlock(newEthBlock)
+	blockHeader := &ethtypes.Header{Number: newEthBlock} // dummy block header to avoid panic
 	if err != nil {
 		k.Logger(ctx).Error("Error fetching block header from mainchain while calculating next span seed", "error", err)
 		return common.Hash{}, err
@@ -321,9 +336,6 @@ func (k *Keeper) GetNextSpanSeed(ctx context.Context) (common.Hash, error) {
 
 	return blockHeader.Hash(), nil
 }
-
-// -----------------------------------------------------------------------------
-// Params
 
 // SetParams sets the bor module's parameters.
 func (k *Keeper) SetParams(ctx context.Context, params types.Params) error {

@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 )
 
@@ -46,8 +47,8 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, currentValSet ValidatorSet) (map[string]json.RawMessage, error) {
 	// set state to bor state
 	borState := GetGenesisStateFromAppState(cdc, appState)
-	chainState := chainmanagerTypes.GetGenesisStateFromAppState(appState)
-	borState.Spans = genFirstSpan(currentValSet, chainState.Params.ChainParams.BorChainID)
+	chainState := chainmanagertypes.GetGenesisStateFromAppState(cdc, appState)
+	borState.Spans = genFirstSpan(currentValSet, chainState.Params.ChainParams.BorChainId)
 
 	appState[ModuleName] = cdc.MustMarshalJSON(borState)
 
