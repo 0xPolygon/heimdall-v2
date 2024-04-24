@@ -202,9 +202,9 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 
 	// PSP - TODO - uncomment when we have rollbackCmd implemented
 	// rollback cmd
-	// rootCmd.AddCommand(rollbackCmd(ctx))
+	rootCmd.AddCommand(rollbackCmd(appCreator))
 
-	if args != nil && len(args) > 0 { //nolint
+	if len(args) > 0 { //nolint
 		rootCmd.SetArgs(args)
 	}
 
