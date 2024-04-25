@@ -733,7 +733,7 @@ func ToBytes32(x []byte) [32]byte {
 
 // GetPowerFromAmount returns power from amount -- note that this will populate amount object
 func GetPowerFromAmount(amount *big.Int) (*big.Int, error) {
-	decimals18 := big.NewInt(10).Exp(big.NewInt(10), big.NewInt(18), nil)
+	decimals18 := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil)
 	if amount.Cmp(decimals18) == -1 {
 		return nil, errors.New("amount must be more than 1 token")
 	}
