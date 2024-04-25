@@ -113,6 +113,11 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 	return genutil.ExportGenesisFileWithTime(config.GenesisFile(), chainID, nil, appStateJSON, cmttime.Now())
 }
 
+/*
+TODO HV2 - check `func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {}` in comsos-sdk
+maybe we can use it
+*/
+
 // InitCmd initialises files required to start heimdall
 func initCmd(ctx *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
