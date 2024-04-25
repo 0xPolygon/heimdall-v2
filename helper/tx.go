@@ -15,7 +15,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
-	"github.com/0xPolygon/heimdall-v2/contracts/slashmanager"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 )
 
@@ -37,7 +36,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 
 	// from address
 	fromAddress := common.BytesToAddress(pkObject.PubKey().Address().Bytes())
-	// fetch gas price
+	// fetch gasprice
 	gasprice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return
@@ -50,7 +49,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 	}
 
 	if gasprice.Cmp(big.NewInt(mainChainMaxGasPrice)) == 1 {
-		Logger.Error("Gas price is more than max gas price", "gasprice", gasprice)
+		Logger.Error("gas price is more than max gas price", "gasprice", gasprice)
 		err = fmt.Errorf("gas price is more than max_gas_price, gasprice = %v, maxGasPrice = %d", gasprice, mainChainMaxGasPrice)
 
 		return
@@ -68,14 +67,14 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 
 	chainId, err := client.ChainID(context.Background())
 	if err != nil {
-		Logger.Error("Unable to fetch ChainID", "error", err)
+		Logger.Error("unable tofetch ChainID", "error", err)
 		return
 	}
 
 	// create auth
 	auth, err = bind.NewKeyedTransactorWithChainID(ecdsaPrivateKey, chainId)
 	if err != nil {
-		Logger.Error("Unable to create auth object", "error", err)
+		Logger.Error("unable tocreate auth object", "error", err)
 		return
 	}
 
@@ -90,13 +89,13 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error) {
 	data, err := c.RootChainABI.Pack("submitCheckpoint", signedData, sigs)
 	if err != nil {
-		Logger.Error("Unable to pack tx for submitCheckpoint", "error", err)
+		Logger.Error("unable topack tx for submitCheckpoint", "error", err)
 		return err
 	}
 
 	auth, err := GenerateAuthObj(GetMainClient(), rootChainAddress, data)
 	if err != nil {
-		Logger.Error("Unable to create auth object", "error", err)
+		Logger.Error("unable tocreate auth object", "error", err)
 		return err
 	}
 
@@ -105,67 +104,37 @@ func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, r
 		s = append(s, fmt.Sprintf("[%s,%s,%s]", sigs[i][0].String(), sigs[i][1].String(), sigs[i][2].String()))
 	}
 
-	Logger.Debug("Sending new checkpoint",
+	Logger.Debug("sending new checkpoint",
 		"sigs", strings.Join(s, ","),
 		"data", hex.EncodeToString(signedData),
 	)
 
 	tx, err := rootChainInstance.SubmitCheckpoint(auth, signedData, sigs)
 	if err != nil {
-		Logger.Error("Error while submitting checkpoint", "error", err)
+		Logger.Error("error while submitting checkpoint", "error", err)
 		return err
 	}
 
-	Logger.Info("Submitted new checkpoint to rootchain successfully", "txHash", tx.Hash().String())
-
-	return
-}
-
-// SendTick sends slash tick to rootchain contract
-func (c *ContractCaller) SendTick(signedData []byte, sigs []byte, slashManagerAddress common.Address, slashManagerInstance *slashmanager.Slashmanager) (err error) {
-	data, err := c.SlashManagerABI.Pack("updateSlashedAmounts", signedData, sigs)
-	if err != nil {
-		Logger.Error("Unable to pack tx for updateSlashedAmounts", "error", err)
-		return err
-	}
-
-	auth, err := GenerateAuthObj(GetMainClient(), slashManagerAddress, data)
-	if err != nil {
-		Logger.Error("Unable to create auth object", "error", err)
-		return err
-	}
-
-	Logger.Info("Sending new tick",
-		"sigs", hex.EncodeToString(sigs),
-		"data", hex.EncodeToString(signedData),
-	)
-
-	tx, err := slashManagerInstance.UpdateSlashedAmounts(auth, signedData, sigs)
-	if err != nil {
-		Logger.Error("Error while submitting tick", "error", err)
-		return err
-	}
-
-	Logger.Info("Submitted new tick to slashmanager successfully", "txHash", tx.Hash().String())
+	Logger.Info("submitted new checkpoint to rootchain successfully", "txHash", tx.Hash().String())
 
 	return
 }
 
 // StakeFor stakes for a validator
 func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeAmount *big.Int, acceptDelegation bool, stakeManagerAddress common.Address, stakeManagerInstance *stakemanager.Stakemanager) error {
-	signerPubkey := GetPubKey()
-	signerPubkeyBytes := signerPubkey[1:] // remove 04 prefix
+	signerPubKey := GetPubKey()
+	signerPubKeyBytes := signerPubKey[1:] // remove 04 prefix
 
 	// pack data based on method definition
-	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubkeyBytes)
+	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKeyBytes)
 	if err != nil {
-		Logger.Error("Unable to pack tx for stakeFor", "error", err)
+		Logger.Error("unable topack tx for stakeFor", "error", err)
 		return err
 	}
 
 	auth, err := GenerateAuthObj(GetMainClient(), stakeManagerAddress, data)
 	if err != nil {
-		Logger.Error("Unable to create auth object", "error", err)
+		Logger.Error("unable tocreate auth object", "error", err)
 		return err
 	}
 
@@ -176,15 +145,15 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 		stakeAmount,
 		feeAmount,
 		acceptDelegation,
-		signerPubkeyBytes,
+		signerPubKeyBytes,
 	)
 
 	if err != nil {
-		Logger.Error("Error while submitting stake", "error", err)
+		Logger.Error("error while submitting stake", "error", err)
 		return err
 	}
 
-	Logger.Info("Submitted stake successfully", "txHash", tx.Hash().String())
+	Logger.Info("submitted stake successfully", "txHash", tx.Hash().String())
 
 	return nil
 }
@@ -193,19 +162,19 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 func (c *ContractCaller) ApproveTokens(amount *big.Int, stakeManager common.Address, tokenAddress common.Address, maticTokenInstance *erc20.Erc20) error {
 	data, err := c.MaticTokenABI.Pack("approve", stakeManager, amount)
 	if err != nil {
-		Logger.Error("Unable to pack tx for approve", "error", err)
+		Logger.Error("unable topack tx for approve", "error", err)
 		return err
 	}
 
 	auth, err := GenerateAuthObj(GetMainClient(), tokenAddress, data)
 	if err != nil {
-		Logger.Error("Unable to create auth object", "error", err)
+		Logger.Error("unable tocreate auth object", "error", err)
 		return err
 	}
 
 	tx, err := maticTokenInstance.Approve(auth, stakeManager, amount)
 	if err != nil {
-		Logger.Error("Error while approving approve", "error", err)
+		Logger.Error("error while approving approve", "error", err)
 		return err
 	}
 

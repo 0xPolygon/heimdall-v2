@@ -19,7 +19,7 @@ var (
 	reflectBigInt  = reflect.TypeOf(new(big.Int))
 )
 
-// UnpackLog unpacks log
+// UnpackLog function unpacks the given event into given log type
 func UnpackLog(abiObject *abi.ABI, out interface{}, event string, log *types.Log) error {
 	selectedEvent := EventByID(abiObject, log.Topics[0].Bytes())
 
@@ -139,18 +139,18 @@ func capitalise(input string) string {
 
 // toCamelCase converts an under-score string to a camel-case string
 func toCamelCase(input string) string {
-	toupper := false
+	toUpper := false
 	result := ""
 
 	for k, v := range input {
 		switch {
 		case k == 0:
 			result = strings.ToUpper(string(input[0]))
-		case toupper:
+		case toUpper:
 			result += strings.ToUpper(string(v))
-			toupper = false
+			toUpper = false
 		case v == '_':
-			toupper = true
+			toUpper = true
 		default:
 			result += string(v)
 		}

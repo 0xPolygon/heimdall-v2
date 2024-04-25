@@ -13,7 +13,7 @@ import (
 //go:embed allocs
 var allocs embed.FS
 
-func WriteGenesisFile(chain string, filePath string, cdc *codec.Codec) (bool, error) {
+func WriteGenesisFile(chain string, filePath string, cdc *codec.Codec) error {
 	switch chain {
 	case "amoy", "mumbai", "mainnet":
 		fn := fmt.Sprintf("allocs/%s.json", chain)
@@ -23,16 +23,16 @@ func WriteGenesisFile(chain string, filePath string, cdc *codec.Codec) (bool, er
 			err = genDoc.SaveAs(filePath)
 		}
 
-		return err == nil, err
+		return err
 	default:
-		return false, nil
+		return nil
 	}
 }
 
 func readPrealloc(filename string, cdc *codec.Codec) (result cmTypes.GenesisDoc, err error) {
 	f, err := allocs.Open(filename)
 	if err != nil {
-		err = errors.Errorf("Could not open genesis preallocation for %s: %v", filename, err)
+		err = errors.Errorf("could not open genesis preallocation for %s: %v", filename, err)
 		return
 	}
 	defer f.Close()

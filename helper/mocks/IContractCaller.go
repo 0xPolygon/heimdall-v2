@@ -8,8 +8,6 @@ import (
 	erc20 "github.com/0xPolygon/heimdall-v2/contracts/erc20"
 	common "github.com/ethereum/go-ethereum/common"
 
-	heimdall_v2types "github.com/0xPolygon/heimdall-v2/types"
-
 	mock "github.com/stretchr/testify/mock"
 
 	rootchain "github.com/0xPolygon/heimdall-v2/contracts/rootchain"
@@ -17,6 +15,8 @@ import (
 	slashmanager "github.com/0xPolygon/heimdall-v2/contracts/slashmanager"
 
 	stakemanager "github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
+
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 
 	stakinginfo "github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 
@@ -1071,22 +1071,22 @@ func (_m *IContractCaller) GetStateSenderInstance(stateSenderAddress string) (*s
 }
 
 // GetValidatorInfo provides a mock function with given fields: valID, stakingInfoInstance
-func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (heimdall_v2types.Validator, error) {
+func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (staketypes.Validator, error) {
 	ret := _m.Called(valID, stakingInfoInstance)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetValidatorInfo")
 	}
 
-	var r0 heimdall_v2types.Validator
+	var r0 staketypes.Validator
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) (heimdall_v2types.Validator, error)); ok {
+	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) (staketypes.Validator, error)); ok {
 		return rf(valID, stakingInfoInstance)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) heimdall_v2types.Validator); ok {
+	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) staketypes.Validator); ok {
 		r0 = rf(valID, stakingInfoInstance)
 	} else {
-		r0 = ret.Get(0).(heimdall_v2types.Validator)
+		r0 = ret.Get(0).(staketypes.Validator)
 	}
 
 	if rf, ok := ret.Get(1).(func(uint64, *stakinginfo.Stakinginfo) error); ok {
@@ -1185,24 +1185,6 @@ func (_m *IContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int,
 	var r0 error
 	if rf, ok := ret.Get(0).(func([]byte, [][3]*big.Int, common.Address, *rootchain.Rootchain) error); ok {
 		r0 = rf(signedData, sigs, rootChainAddress, rootChainInstance)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// SendTick provides a mock function with given fields: signedData, sigs, slashManagerAddress, slashManagerInstance
-func (_m *IContractCaller) SendTick(signedData []byte, sigs []byte, slashManagerAddress common.Address, slashManagerInstance *slashmanager.Slashmanager) error {
-	ret := _m.Called(signedData, sigs, slashManagerAddress, slashManagerInstance)
-
-	if len(ret) == 0 {
-		panic("no return value specified for SendTick")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func([]byte, []byte, common.Address, *slashmanager.Slashmanager) error); ok {
-		r0 = rf(signedData, sigs, slashManagerAddress, slashManagerInstance)
 	} else {
 		r0 = ret.Error(0)
 	}

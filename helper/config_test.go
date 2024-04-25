@@ -10,13 +10,18 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 )
 
+// SetTestConfig sets test configuration
+func SetTestConfig(_conf Configuration) {
+	conf = _conf
+}
+
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
 	t.Parallel()
 
 	// cli context
-	tendermintNode := "tcp://localhost:26657"
-	viper.Set(TendermintNodeFlag, tendermintNode)
+	cometBFTNode := "tcp://localhost:26657"
+	viper.Set(CometBFTNodeFlag, cometBFTNode)
 	viper.Set("log_level", "info")
 
 	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
@@ -33,7 +38,8 @@ func TestHeimdallConfigNewSelectionAlgoHeight(t *testing.T) {
 
 	data := map[string]bool{"mumbai": false, "mainnet": false, "local": true}
 	for chain, shouldBeZero := range data {
-		conf.BorRPCUrl = "" // allow config to be loaded again
+		// allow config to be loaded again
+		conf.BorRPCUrl = ""
 
 		viper.Set("chain", chain)
 
@@ -41,7 +47,7 @@ func TestHeimdallConfigNewSelectionAlgoHeight(t *testing.T) {
 
 		nsah := GetNewSelectionAlgoHeight()
 		if nsah == 0 && !shouldBeZero || nsah != 0 && shouldBeZero {
-			t.Errorf("Invalid GetNewSelectionAlgoHeight = %d for chain %s", nsah, chain)
+			t.Errorf("invalid GetNewSelectionAlgoHeight = %d for chain %s", nsah, chain)
 		}
 	}
 }
@@ -61,17 +67,17 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	migration, found := GetChainManagerAddressMigration(350)
 
 	if !found {
-		t.Errorf("Expected migration to be found")
+		t.Errorf("expected migration to be found")
 	}
 
 	if migration.MaticTokenAddress != newMaticContractAddress {
-		t.Errorf("Expected matic token address to be %s, got %s", newMaticContractAddress, migration.MaticTokenAddress)
+		t.Errorf("expected matic token address to be %s, got %s", newMaticContractAddress, migration.MaticTokenAddress)
 	}
 
 	// test for non existing migration
 	_, found = GetChainManagerAddressMigration(351)
 	if found {
-		t.Errorf("Expected migration to not be found")
+		t.Errorf("expected migration to not be found")
 	}
 
 	// test for non existing chain
@@ -82,11 +88,11 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 
 	_, found = GetChainManagerAddressMigration(350)
 	if found {
-		t.Errorf("Expected migration to not be found")
+		t.Errorf("expected migration to not be found")
 	}
 }
 
-func TestHeimdallConfigUpdateTendermintConfig(t *testing.T) {
+func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 	t.Parallel()
 
 	type teststruct struct {
@@ -113,16 +119,16 @@ func TestHeimdallConfigUpdateTendermintConfig(t *testing.T) {
 
 	oldConf := conf.Chain
 	viperObj := viper.New()
-	tendermintConfig := cfg.DefaultConfig()
+	cometBFTConfig := cfg.DefaultConfig()
 
 	for _, ts := range data {
 		conf.Chain = ts.chain
-		tendermintConfig.P2P.Seeds = ts.def
+		cometBFTConfig.P2P.Seeds = ts.def
 		viperObj.Set(SeedsFlag, ts.viper)
-		UpdateTendermintConfig(tendermintConfig, viperObj)
+		UpdateCometBFTConfig(cometBFTConfig, viperObj)
 
-		if tendermintConfig.P2P.Seeds != ts.value {
-			t.Errorf("Invalid UpdateTendermintConfig, tendermintConfig.P2P.Seeds not set correctly")
+		if cometBFTConfig.P2P.Seeds != ts.value {
+			t.Errorf("invalid UpdateCometBFTConfig, CometBFTConfig.P2P.Seeds not set correctly")
 		}
 	}
 

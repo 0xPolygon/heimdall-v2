@@ -51,6 +51,9 @@ proto-lint:
 proto-check-breaking:
 	@$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
 
+mock-IContract-caller:
+	cd helper && mockery --name IContractCaller  --output ./mocks
+
 .PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
 .PHONY: help

@@ -20,8 +20,8 @@ eth_rpc_url = "{{ .EthRPCUrl }}"
 # RPC endpoint for bor chain
 bor_rpc_url = "{{ .BorRPCUrl }}"
 
-# RPC endpoint for tendermint
-tendermint_rpc_url = "{{ .TendermintRPCUrl }}"
+# RPC endpoint for cometBFT
+comet_bft_rpc_url = "{{ .CometBFTRPCUrl }}"
 
 # Polygon Sub Graph URL for self-heal mechanism (optional)
 sub_graph_url = "{{ .SubGraphUrl }}"

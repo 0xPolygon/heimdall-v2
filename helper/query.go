@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	// CommitTimeout commit timeout
 	CommitTimeout = 2 * time.Minute
 )
 
@@ -31,7 +30,7 @@ func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
 // TODO HV2 Implement this later if needed
 /*
 QueryTxsByEvents performs a search for transactions for a given set of tags via
-Tendermint RPC. It returns a slice of Info object containing txs and metadata.
+cometBFT RPC. It returns a slice of Info object containing txs and metadata.
 An error is returned if the query fails.
 func QueryTxsByEvents(cliCtx cosmosContext.CLIContext, tags []string, page, limit int) (*sdk.SearchTxsResult, error) {
 	if len(tags) == 0 {
@@ -102,8 +101,8 @@ func formatTxResults(cdc *codec.Codec, resTxs []*ctypes.ResultTx, resBlocks map[
 
 */
 
-// TODO HV2 Verify function is not available, discuss this with
-//ValidateTxResult performs transaction verification.
+// TODO HV2 Verify function is not available, discuss this with informal team
+// ValidateTxResult performs transaction verification.
 /*
 func ValidateTxResult(cliCtx cosmosContext.Context, resTx *ctypes.ResultTx) error {
 
@@ -227,7 +226,7 @@ func GetBlock(cliCtx cosmosContext.Context, height int64) (*ctypes.ResultBlock, 
 	return node.Block(cliCtx.CmdContext, &height)
 }
 
-// GetBlockWithClient get block through per height
+// GetBlockWithClient gets a block given its height
 func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, error) {
 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
@@ -267,7 +266,7 @@ func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, 
 					return t.Block, nil
 				}
 			default:
-				return nil, errors.New("timed out waiting for event")
+				return nil, errors.New("received event is not of block event type")
 			}
 		case <-c.Done():
 			return nil, errors.New("timed out waiting for event")
@@ -275,7 +274,7 @@ func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, 
 	}
 }
 
-// GetBeginBlockEvents get block through per height
+// GetBeginBlockEvents get begin block events for a given height
 func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
@@ -301,7 +300,10 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 
 	// unsubscribe query
 	defer func() {
-		_ = client.Unsubscribe(c, subscriber, query)
+		err = client.Unsubscribe(c, subscriber, query)
+		if err != nil {
+			Logger.Error("error while unsubscribing", "error", err)
+		}
 	}()
 
 	for {
@@ -315,57 +317,10 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 					return t.ResultFinalizeBlock.GetEvents(), nil
 				}
 			default:
-				return nil, errors.New("timed out waiting for event")
+				return nil, errors.New("received event is not of block event type")
 			}
 		case <-c.Done():
 			return nil, errors.New("timed out waiting for event")
 		}
 	}
 }
-
-// FetchVotes fetches votes and extracts sigs from it
-func FetchVotes(
-	client *httpClient.HTTP,
-	height int64,
-) (votes []tmTypes.CommitSig, sigs []byte, chainID string, err error) {
-	// get block client
-	blockDetails, err := GetBlockWithClient(client, height+1)
-
-	if err != nil {
-		return nil, nil, "", err
-	}
-
-	// extract votes from response
-	preCommits := blockDetails.LastCommit.Signatures
-
-	// extract signs from votes
-	valSigs := GetVoteSigs(preCommits)
-
-	// extract chainID
-	chainID = blockDetails.ChainID
-
-	// return
-	return preCommits, valSigs, chainID, nil
-}
-
-// TODO HV2 Can use this logic if need
-// FetchSideTxSigs fetches side tx sigs from it
-// func FetchSideTxSigs(
-// 	client *httpClient.HTTP,
-// 	height int64,
-// 	txHash []byte,
-// 	sideTxData []byte,
-// ) ([][3]*big.Int, error) {
-// 	// get block client
-// 	blockDetails, err := GetBlockWithClient(client, height)
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// extract votes from response
-// 	preCommits := blockDetails.LastCommit.Signatures
-
-// 	// extract side-tx signs from votes
-// 	return GetSideTxSigs(txHash, sideTxData, preCommits)
-// }

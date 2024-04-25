@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	TendermintNodeFlag     = "node"
+	CometBFTNodeFlag       = "node"
 	WithHeimdallConfigFlag = "heimdall-config"
 	HomeFlag               = "home"
 	FlagClientHome         = "home-client"
@@ -47,8 +47,9 @@ const (
 	// heimdall-config flags
 	MainRPCUrlFlag               = "eth_rpc_url"
 	BorRPCUrlFlag                = "bor_rpc_url"
-	TendermintNodeURLFlag        = "tendermint_rpc_url"
+	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
 	HeimdallServerURLFlag        = "heimdall_rest_server"
+	GRPCServerURLFlag            = "grpc_server"
 	AmqpURLFlag                  = "amqp_url"
 	CheckpointerPollIntervalFlag = "checkpoint_poll_interval"
 	SyncerPollIntervalFlag       = "syncer_poll_interval"
@@ -90,7 +91,9 @@ const (
 	// DefaultAmqpURL represents default AMQP url
 	DefaultAmqpURL           = "amqp://guest:guest@localhost:5672/"
 	DefaultHeimdallServerURL = "http://0.0.0.0:1317"
-	DefaultTendermintNodeURL = "http://0.0.0.0:26657"
+	DefaultGRPCServerURL     = "http://0.0.0.0:1318"
+
+	DefaultCometBFTNodeURL = "http://0.0.0.0:26657"
 
 	NoACKWaitTime = 1800 * time.Second // Time ack service waits to clear buffer and elect new proposer (1800 seconds ~ 30 mins)
 
@@ -117,7 +120,7 @@ const (
 	DefaultLogsType = "json"
 	DefaultChain    = MainChain
 
-	DefaultTendermintNode = "tcp://localhost:26657"
+	DefaultCometBFTNode = "tcp://localhost:26657"
 
 	// TODO HV2 Please update their value with correct one
 	DefaultMainnetSeeds = "1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656"
@@ -126,10 +129,6 @@ const (
 	DefaultTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
 
 	secretFilePerm = 0600
-
-	// Legacy value - DO NOT CHANGE
-	// LegacyMaxStateSyncSize is the maximum allowed event record data size
-	LegacyMaxStateSyncSize = 100000
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hardfork
 	MaxStateSyncSize = 30000
@@ -168,16 +167,17 @@ func init() {
 
 // Configuration represents heimdall config
 type Configuration struct {
-	EthRPCUrl        string `mapstructure:"eth_rpc_url"`        // RPC endpoint for main chain
-	BorRPCUrl        string `mapstructure:"bor_rpc_url"`        // RPC endpoint for bor chain
-	TendermintRPCUrl string `mapstructure:"tendermint_rpc_url"` // tendemint node url
-	SubGraphUrl      string `mapstructure:"sub_graph_url"`      // sub graph url
+	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
+	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
+	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // tendemint node url
+	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
 
 	EthRPCTimeout time.Duration `mapstructure:"eth_rpc_timeout"` // timeout for eth rpc
 	BorRPCTimeout time.Duration `mapstructure:"bor_rpc_timeout"` // timeout for bor rpc
 
 	AmqpURL           string `mapstructure:"amqp_url"`             // amqp url
 	HeimdallServerURL string `mapstructure:"heimdall_rest_server"` // heimdall server url
+	GRPCServerURL     string `mapstructure:"grpc_server_url"`      // grpc server url
 
 	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction. eg....submit checkpoint.
 
@@ -270,10 +270,7 @@ func InitHeimdallConfig(homeDir string) {
 // InitHeimdallConfigWith initializes passed heimdall/tendermint config files
 func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	if strings.Compare(homeDir, "") == 0 {
-		return
-	}
-
-	if strings.Compare(conf.BorRPCUrl, "") != 0 {
+		Logger.Error("home directory is mentioned")
 		return
 	}
 
@@ -283,11 +280,11 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	heimdallViper.SetEnvPrefix("HEIMDALL")
 	heimdallViper.AutomaticEnv()
 
-	if heimdallConfigFileFromFLag == "" {
+	if heimdallConfigFileFromFlag == "" {
 		heimdallViper.SetConfigName("heimdall-config") // name of config file (without extension)
 		heimdallViper.AddConfigPath(configDir)         // call multiple times to add many search paths
 	} else {
-		heimdallViper.SetConfigFile(heimdallConfigFileFromFLag) // set config file explicitly
+		heimdallViper.SetConfigFile(heimdallConfigFileFromFlag) // set config file explicitly
 	}
 
 	// Handle errors reading the config file
@@ -297,23 +294,23 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	// unmarshal configuration from the standard configuration file
 	if err := heimdallViper.UnmarshalExact(&conf); err != nil {
-		log.Fatalln("Unable to unmarshall config", "Error", err)
+		log.Fatalln("unable to unmarshall config", "Error", err)
 	}
 
 	//  if there is a file with overrides submitted via flags => read it an merge it with the alreadey read standard configuration
-	if heimdallConfigFileFromFLag != "" {
+	if heimdallConfigFileFromFlag != "" {
 		heimdallViperFromFlag := viper.New()
-		heimdallViperFromFlag.SetConfigFile(heimdallConfigFileFromFLag) // set flag config file explicitly
+		heimdallViperFromFlag.SetConfigFile(heimdallConfigFileFromFlag) // set flag config file explicitly
 
 		err := heimdallViperFromFlag.ReadInConfig()
 		if err != nil { // Handle errors reading the config file sybmitted as a flag
-			log.Fatalln("Unable to read config file submitted via flag", "Error", err)
+			log.Fatalln("unable to read config file submitted via flag", "Error", err)
 		}
 
 		var confFromFlag Configuration
 		// unmarshal configuration from the configuration file submitted as a flag
 		if err = heimdallViperFromFlag.UnmarshalExact(&confFromFlag); err != nil {
-			log.Fatalln("Unable to unmarshall config file submitted via flag", "Error", err)
+			log.Fatalln("unable to unmarshall config file submitted via flag", "Error", err)
 		}
 
 		conf.Merge(&confFromFlag)
@@ -321,7 +318,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	// update configuration data with submitted flags
 	if err := conf.UpdateWithFlags(viper.GetViper(), Logger); err != nil {
-		log.Fatalln("Unable to read flag values. Check log for details.", "Error", err)
+		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
 	// perform check for json logging
@@ -365,7 +362,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	var err error
 	if mainRPCClient, err = rpc.Dial(conf.EthRPCUrl); err != nil {
-		log.Fatalln("Unable to dial via ethClient", "URL=", conf.EthRPCUrl, "chain=eth", "Error", err)
+		log.Fatalln("Unable to dial via ethClient", "URL", conf.EthRPCUrl, "chain", "eth", "Error", err)
 	}
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
@@ -420,15 +417,16 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 // GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() Configuration {
 	return Configuration{
-		EthRPCUrl:        DefaultMainRPCUrl,
-		BorRPCUrl:        DefaultBorRPCUrl,
-		TendermintRPCUrl: DefaultTendermintNodeURL,
+		EthRPCUrl:      DefaultMainRPCUrl,
+		BorRPCUrl:      DefaultBorRPCUrl,
+		CometBFTRPCUrl: DefaultCometBFTNodeURL,
 
 		EthRPCTimeout: DefaultEthRPCTimeout,
 		BorRPCTimeout: DefaultBorRPCTimeout,
 
 		AmqpURL:           DefaultAmqpURL,
 		HeimdallServerURL: DefaultHeimdallServerURL,
+		GRPCServerURL:     DefaultGRPCServerURL,
 
 		MainchainGasLimit: DefaultMainchainGasLimit,
 
@@ -460,13 +458,6 @@ func GetConfig() Configuration {
 
 func GetGenesisDoc() cmTypes.GenesisDoc {
 	return GenesisDoc
-}
-
-// TEST PURPOSE ONLY
-
-// SetTestConfig sets test configuration
-func SetTestConfig(_conf Configuration) {
-	conf = _conf
 }
 
 //
@@ -595,15 +586,15 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorRPCUrlFlag), "Error", err)
 	}
 
-	// add TendermintNodeURLFlag flag
+	// add CometBFTNodeURLFlag flag
 	cmd.PersistentFlags().String(
-		TendermintNodeURLFlag,
+		CometBFTNodeURLFlag,
 		"",
-		"Set RPC endpoint for tendermint",
+		"Set RPC endpoint for CometBFT",
 	)
 
-	if err := v.BindPFlag(TendermintNodeURLFlag, cmd.PersistentFlags().Lookup(TendermintNodeURLFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, TendermintNodeURLFlag), "Error", err)
+	if err := v.BindPFlag(CometBFTNodeURLFlag, cmd.PersistentFlags().Lookup(CometBFTNodeURLFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, CometBFTNodeURLFlag), "Error", err)
 	}
 
 	// add HeimdallServerURLFlag flag
@@ -615,6 +606,17 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 
 	if err := v.BindPFlag(HeimdallServerURLFlag, cmd.PersistentFlags().Lookup(HeimdallServerURLFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, HeimdallServerURLFlag), "Error", err)
+	}
+
+	// add GRPCServerURL flag
+	cmd.PersistentFlags().String(
+		GRPCServerURLFlag,
+		"",
+		"Set GRPC Server Endpoint",
+	)
+
+	if err := v.BindPFlag(GRPCServerURLFlag, cmd.PersistentFlags().Lookup(GRPCServerURLFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, GRPCServerURLFlag), "Error", err)
 	}
 
 	// add AmqpURLFlag flag
@@ -765,13 +767,13 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 		c.BorRPCUrl = stringConfgValue
 	}
 
-	// get endpoint for tendermint from viper/cobra
-	stringConfgValue = v.GetString(TendermintNodeURLFlag)
+	// get endpoint for cometBFT from viper/cobra
+	stringConfgValue = v.GetString(CometBFTNodeURLFlag)
 	if stringConfgValue != "" {
-		c.TendermintRPCUrl = stringConfgValue
+		c.CometBFTRPCUrl = stringConfgValue
 	}
 
-	// get endpoint for tendermint from viper/cobra
+	// get endpoint for CometBFT from viper/cobra
 	stringConfgValue = v.GetString(AmqpURLFlag)
 	if stringConfgValue != "" {
 		c.AmqpURL = stringConfgValue
@@ -781,6 +783,12 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	stringConfgValue = v.GetString(HeimdallServerURLFlag)
 	if stringConfgValue != "" {
 		c.HeimdallServerURL = stringConfgValue
+	}
+
+	// get Heimdall GRPC server endpoint from viper/cobra
+	stringConfgValue = v.GetString(GRPCServerURLFlag)
+	if stringConfgValue != "" {
+		c.GRPCServerURL = stringConfgValue
 	}
 
 	// need this error for parsing Duration values
@@ -884,8 +892,8 @@ func (c *Configuration) Merge(cc *Configuration) {
 		c.BorRPCUrl = cc.BorRPCUrl
 	}
 
-	if cc.TendermintRPCUrl != "" {
-		c.TendermintRPCUrl = cc.TendermintRPCUrl
+	if cc.CometBFTRPCUrl != "" {
+		c.CometBFTRPCUrl = cc.CometBFTRPCUrl
 	}
 
 	if cc.AmqpURL != "" {
@@ -894,6 +902,10 @@ func (c *Configuration) Merge(cc *Configuration) {
 
 	if cc.HeimdallServerURL != "" {
 		c.HeimdallServerURL = cc.HeimdallServerURL
+	}
+
+	if cc.GRPCServerURL != "" {
+		c.GRPCServerURL = cc.GRPCServerURL
 	}
 
 	if cc.MainchainGasLimit != 0 {
@@ -941,8 +953,8 @@ func (c *Configuration) Merge(cc *Configuration) {
 	}
 }
 
-// DecorateWithTendermintFlags creates tendermint flags for desired command and bind them to viper
-func DecorateWithTendermintFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, message string) {
+// DecorateWithCometBFTFlags creates cometBFT flags for desired command and bind them to viper
+func DecorateWithCometBFTFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, message string) {
 	// add seeds flag
 	cmd.PersistentFlags().String(
 		SeedsFlag,
@@ -956,20 +968,20 @@ func DecorateWithTendermintFlags(cmd *cobra.Command, v *viper.Viper, loggerInsta
 }
 
 // TODO HV2 Please update the switch case with Amoy also
-// UpdateTendermintConfig updates tenedermint config with flags and default values if needed
-func UpdateTendermintConfig(tendermintConfig *cfg.Config, v *viper.Viper) {
-	// update tendermintConfig.P2P.Seeds
+// UpdateCometBFTConfig updates tenedermint config with flags and default values if needed
+func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
+	// update cometBFTConfig.P2P.Seeds
 	seedsFlagValue := v.GetString(SeedsFlag)
 	if seedsFlagValue != "" {
-		tendermintConfig.P2P.Seeds = seedsFlagValue
+		cometBFTConfig.P2P.Seeds = seedsFlagValue
 	}
 
-	if tendermintConfig.P2P.Seeds == "" {
+	if cometBFTConfig.P2P.Seeds == "" {
 		switch conf.Chain {
 		case MainChain:
-			tendermintConfig.P2P.Seeds = DefaultMainnetSeeds
+			cometBFTConfig.P2P.Seeds = DefaultMainnetSeeds
 		case MumbaiChain:
-			tendermintConfig.P2P.Seeds = DefaultTestnetSeeds
+			cometBFTConfig.P2P.Seeds = DefaultTestnetSeeds
 		}
 	}
 }

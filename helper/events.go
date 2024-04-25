@@ -4,8 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// FilterEvents filter events by fn
-func FilterEvents(events []sdk.StringEvent, fn func(sdk.StringEvent) bool) *sdk.StringEvent {
+// FindEvents find out the particular event based on the given function
+func FindEvents(events []sdk.StringEvent, fn func(sdk.StringEvent) bool) *sdk.StringEvent {
 	for _, event := range events {
 		if fn(event) {
 			return &event

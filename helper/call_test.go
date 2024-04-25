@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	testTendermintNode = "tcp://localhost:26657"
+	testCometBFTNode = "tcp://localhost:26657"
 )
 
 // TODO HV2 Please write this test once authtypes is finalised and RecoverPubKey is implemented inside
@@ -31,7 +31,7 @@ const (
 // func TestCheckpointSigs(t *testing.T) {
 // 	t.Parallel()
 
-// 	viper.Set(TendermintNodeFlag, testTendermintNode)
+// 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 // 	viper.Set("log_level", "info")
 // 	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
 
@@ -84,7 +84,7 @@ const (
 func TestPopulateABIs(t *testing.T) {
 	t.Parallel()
 
-	viper.Set(TendermintNodeFlag, testTendermintNode)
+	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 	viper.Set("log_level", "info")
 	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
 
