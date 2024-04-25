@@ -24,14 +24,10 @@ import (
 	// 	"github.com/cosmos/cosmos-sdk/client/keys"
 	// 	"github.com/cosmos/cosmos-sdk/codec"
 	// 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"bytes"
+
 	"errors"
 	"math/big"
 	"net/http"
-	"sort"
-
-	tmTypes "github.com/cometbft/cometbft/types"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	// 	"github.com/ethereum/go-ethereum/common"
 	// 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	// 	"github.com/spf13/viper"
@@ -151,22 +147,6 @@ func GetPubObjects(pubkey crypto.PubKey) secp256k1.PubKeySecp256k1 {
 }
 
 */
-
-// GetVoteSigs returns sigs bytes from vote
-func GetVoteSigs(unFilteredVotes []tmTypes.CommitSig) (sigs []byte) {
-	votes := make([]*tmTypes.CommitSig, 0)
-
-	sort.Slice(votes, func(i, j int) bool {
-		return bytes.Compare(votes[i].ValidatorAddress.Bytes(), votes[j].ValidatorAddress.Bytes()) < 0
-	})
-
-	// loop votes and append to sig to sigs
-	for _, vote := range votes {
-		sigs = append(sigs, vote.Signature...)
-	}
-
-	return
-}
 
 /*
 type sideTxSig struct {
@@ -750,36 +730,6 @@ func GetAmountFromPower(power int64) (*big.Int, error) {
 	return pow.Mul(pow, decimals18), nil
 }
 */
-
-// UnpackSigAndVotes Unpacks Sig and Votes from Tx Payload
-func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, checkpointData []byte, err error) {
-	// recover Method from signature and ABI
-	method := abi.Methods["submitHeaderBlock"]
-	decodedPayload := payload[4:]
-	inputDataMap := make(map[string]interface{})
-	// unpack method inputs
-	err = method.Inputs.UnpackIntoMap(inputDataMap, decodedPayload)
-	if err != nil {
-		return
-	}
-
-	sigs = inputDataMap["sigs"].([]byte)
-	checkpointData = inputDataMap["txData"].([]byte)
-	votes = inputDataMap["vote"].([]byte)
-
-	return
-}
-
-// EventByID looks up a event by the topic id
-func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
-	for _, event := range abiObject.Events {
-		if bytes.Equal(event.ID.Bytes(), sigdata) {
-			return &event
-		}
-	}
-
-	return nil
-}
 
 /*
 // GetHeimdallServerEndpoint returns heimdall server endpoint
