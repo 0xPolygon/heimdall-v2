@@ -288,7 +288,7 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 	}
 
 	// subscriber
-	subscriber := fmt.Sprintf("new-block-%v", height)
+	subscriber := fmt.Sprintf("finalize-block-%v", height)
 
 	// query for event
 	query := tmTypes.QueryForEvent(tmTypes.EventNewBlock).String()
