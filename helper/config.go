@@ -268,7 +268,7 @@ func InitHeimdallConfig(homeDir string) {
 }
 
 // InitHeimdallConfigWith initializes passed heimdall/tendermint config files
-func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFLag string) {
+func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	if strings.Compare(homeDir, "") == 0 {
 		return
 	}
