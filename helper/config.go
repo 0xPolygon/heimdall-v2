@@ -142,7 +142,7 @@ const (
 	MaticChainMilestoneConfirmation = uint64(16)
 
 	// MilestoneBufferLength defines the condition to propose the
-	//milestoneTimeout if this many bor blocks have passed since
+	// milestoneTimeout if this many bor blocks have passed since
 	// the last milestone
 	MilestoneBufferLength = MilestoneLength * 5
 	MilestoneBufferTime   = 256 * time.Second
