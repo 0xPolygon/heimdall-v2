@@ -307,7 +307,7 @@ func (c *ContractCaller) GetRootHash(start uint64, end uint64, checkpointLength 
 	}
 
 	if noOfBlock > checkpointLength {
-		return nil, errors.New("number of headers requested exceeds")
+		return nil, errors.New("number of headers requested exceeds checkpoint length")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.MaticChainTimeout)
