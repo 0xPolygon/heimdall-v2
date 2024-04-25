@@ -161,6 +161,7 @@ func (k *Keeper) GetSpanList(ctx context.Context, page uint64, limit uint64) ([]
 	// get paginated iterator
 	st := runtime.KVStoreAdapter(store)
 	iterator := storetypes.KVStorePrefixIteratorPaginated(st, types.SpanPrefixKey, uint(page), uint(limit))
+	defer iterator.Close()
 
 	// loop through validators to get valid validators
 	var spans []types.Span
