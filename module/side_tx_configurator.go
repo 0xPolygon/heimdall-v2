@@ -36,7 +36,7 @@ func NewSideTxConfigurator() SideTxConfigurator {
 
 // RegisterSideHandler implements the SideTxConfigurator.RegisterSideHandler method
 func (c *sideTxConfigurator) RegisterSideHandler(msgURL string, handler SideTxHandler) error {
-	if c.sideHandlers[msgURL] == nil {
+	if _, ok := c.sideHandlers[msgURL]; !ok {
 		c.sideHandlers[msgURL] = handler
 		return nil
 	}
@@ -54,12 +54,12 @@ func (c *sideTxConfigurator) RegisterPostHandler(msgURL string, handler PostTxHa
 	return fmt.Errorf("PostHandler corresponding to the following msg %s already exists", msgURL)
 }
 
-// SideHandler returns sideHandler for a given msg or nil if not found.
+// SideHandler returns SideTxHandler for a given msg or nil if not found.
 func (c *sideTxConfigurator) GetSideHandler(msg sdk.Msg) SideTxHandler {
 	return c.sideHandlers[sdk.MsgTypeURL(msg)]
 }
 
-// PostHandler returns postHandler for a given msg or nil if not found.
+// PostHandler returns PostTxHandler for a given msg or nil if not found.
 func (c *sideTxConfigurator) GetPostHandler(msg sdk.Msg) PostTxHandler {
 	return c.postHandlers[sdk.MsgTypeURL(msg)]
 }

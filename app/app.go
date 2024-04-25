@@ -226,6 +226,16 @@ func NewHeimdallApp(
 	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[consensusparamtypes.StoreKey]), authtypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.EventService{})
 	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
+	sideTxCfg := mod.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(sideTxCfg)
+
+	// Create the voteExtProcessor using sideTxCfg
+	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
+	app.VoteExtensionProcessor = voteExtProcessor
+
+	// Set the voteExtension methods to HeimdallApp
+	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
+
 	// SDK module keepers
 
 	// add keepers
@@ -377,16 +387,6 @@ func NewHeimdallApp(
 	if err != nil {
 		panic(err)
 	}
-
-	sideTxCfg := mod.NewSideTxConfigurator()
-	app.RegisterSideMsgServices(sideTxCfg)
-
-	// Create the voteExtProcessor using sideTxCfg
-	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
-	app.VoteExtensionProcessor = voteExtProcessor
-
-	// Set the voteExtension methods to HeimdallApp
-	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
 
 	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
 
