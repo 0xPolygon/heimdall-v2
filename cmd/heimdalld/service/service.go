@@ -197,10 +197,8 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	// rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx))
 	rootCmd.AddCommand(initCmd(ctx, cdc, hApp.BasicManager))
-	// PSP - TODO - uncomment when we have testnetCmd implemented
-	// rootCmd.AddCommand(testnetCmd(ctx, cdc))
+	rootCmd.AddCommand(testnetCmd(ctx, cdc, hApp.BasicManager))
 
-	// PSP - TODO - uncomment when we have rollbackCmd implemented
 	// rollback cmd
 	rootCmd.AddCommand(rollbackCmd(appCreator))
 
