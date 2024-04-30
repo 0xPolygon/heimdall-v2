@@ -8,7 +8,7 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
 // GenesisState is the topup state that must be provided at genesis
 message GenesisState {
-  repeated string topup_sequences = 1 [ (gogoproto.jsontag) = "tx_sequences" ];
+  repeated string topup_sequences = 1 [ (gogoproto.jsontag) = "topup_sequences" ];
   repeated heimdallv2.types.DividendAccount dividend_accounts = 2 [
     (gogoproto.nullable) = false,
     (gogoproto.jsontag) = "dividend_accounts"

@@ -96,7 +96,7 @@ message QueryDividendAccountRequest {
 // QueryDividendAccountResponse the is response type for the
 // GetDividendAccountByAddress RPC method
 message QueryDividendAccountResponse {
-  heimdallv2.types.DividendAccount dividend_account = 2
+  heimdallv2.types.DividendAccount dividend_account = 1
       [ (gogoproto.nullable) = false, (gogoproto.jsontag) = "dividendAccount" ];
 }
 
@@ -107,7 +107,7 @@ message QueryDividendAccountRootHashRequest {}
 // QueryDividendAccountRootResponse is the response type for the
 // GetDividendAccountRootHash RPC method
 message QueryDividendAccountRootHashResponse {
-  heimdallv2.types.HeimdallHash account_root_hash = 2 [
+  heimdallv2.types.HeimdallHash account_root_hash = 1 [
     (amino.dont_omitempty) = true,
     (gogoproto.jsontag) = "accountRootHash"
   ];
@@ -127,7 +127,7 @@ message QueryVerifyAccountProofRequest {
 message QueryVerifyAccountProofResponse {
   // TODO HV2: check VerifyAccountProofHandlerFn where result can also be
   // embedded in a map.
-  bool is_verified = 2
+  bool is_verified = 1
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "isVerified" ];
 }
 
@@ -141,7 +141,7 @@ message QueryAccountProofRequest {
 // QueryAccountProofResponse the is response type for the GetAccountProof RPC
 // method
 message QueryAccountProofResponse {
-  AccountProof proof = 2
+  AccountProof proof = 1
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "proof" ];
 }
 

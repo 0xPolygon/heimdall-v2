@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	mod "github.com/0xPolygon/heimdall-v2/module"
 
 	"cosmossdk.io/core/appmodule"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -17,8 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
-	// TODO HV2: enable when module is implemented
-	// mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -57,12 +56,10 @@ func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
-/* TODO HV2: enable when module is implemented
 // RegisterSideMsgServices registers side handler module services.
 func (am AppModule) RegisterSideMsgServices(sideCfg mod.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
-*/
 
 // DefaultGenesis returns default genesis state as raw bytes for the x/topup module.
 func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {

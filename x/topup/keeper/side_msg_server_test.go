@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	mod "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -14,23 +15,19 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	// TODO HV2: enable when module is merged
-	// mod "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil" //nolint:typecheck
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// TODO HV2: enable commented code portions when module is merged
-func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) /*mod.Vote*/ {
-	// cfg := suite.sideMsgCfg
-	return // cfg.SideHandler(msg)(ctx, msg)
+func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) mod.Vote {
+	cfg := suite.sideMsgCfg
+	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
-// TODO HV2: enable commented code portions when module is merged
-func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg /*, vote mod.Vote*/) {
-	// cfg := suite.sideMsgCfg
-	// cfg.PostHandler(msg)(ctx, msg, vote)
+func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote mod.Vote) {
+	cfg := suite.sideMsgCfg
+	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
 func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
@@ -126,8 +123,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
 
 		res := suite.sideHandler(ctx, &msg)
-		// TODO HV2: replace "" with mod.Vote_VOTE_NO when module is merged
-		require.Equal(res, "" /*mod.Vote_VOTE_NO*/, "side tx handler should fail")
+		require.Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 	})
 
 	t.Run("no log", func(t *testing.T) {
@@ -161,8 +157,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
 
 		res := suite.sideHandler(ctx, &msg)
-		// TODO HV2: replace "" with mod.Vote_VOTE_NO when module is merged
-		require.Equal(res, "" /*mod.Vote_VOTE_NO*/, "side tx handler should fail")
+		require.Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 
 	})
 
@@ -204,8 +199,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 		res := suite.sideHandler(ctx, &msg)
-		// TODO HV2: replace "" with mod.Vote_VOTE_NO when module is merged
-		require.Equal(res, "" /*mod.Vote_VOTE_NO*/, "side tx handler should fail")
+		require.Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 	})
 
 	t.Run("user mismatch", func(t *testing.T) {
@@ -246,8 +240,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 		res := suite.sideHandler(ctx, &msg)
-		// TODO HV2: replace "" with mod.Vote_VOTE_NO when module is merged
-		require.Equal(res, "" /*mod.Vote_VOTE_NO*/, "side tx handler should fail")
+		require.Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 	})
 
 	t.Run("fee mismatch", func(t *testing.T) {
@@ -289,8 +282,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// contractCaller.On("DecodeValidatorTopupFeesEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
 
 		res := suite.sideHandler(ctx, &msg)
-		// TODO HV2: replace "" with mod.Vote_VOTE_NO when module is merged
-		require.Equal(res, "" /*mod.Vote_VOTE_NO*/, "side tx handler should fail")
+		require.Equal(res, mod.Vote_VOTE_NO, "side tx handler should fail")
 	})
 }
 
@@ -336,8 +328,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-		// TODO HV2: enable commented code portions when module is merged
-		suite.postHandler(ctx, &msg /*, mod.Vote_VOTE_NO*/)
+		suite.postHandler(ctx, &msg, mod.Vote_VOTE_NO)
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.False(ok)
@@ -367,8 +358,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-		// TODO HV2: enable commented code portions when module is merged
-		suite.postHandler(ctx, &msg /*, mod.Vote_VOTE_YES*/)
+		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
 		// there should be no stored event record
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
@@ -408,8 +398,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-		// TODO HV2: enable commented code portions when module is merged
-		suite.postHandler(ctx, &msg /*, mod.Vote_VOTE_YES*/)
+		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
 		// there should be stored sequence
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
@@ -446,8 +435,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-		// TODO HV2: enable commented code portions when module is merged
-		suite.postHandler(ctx, &msg /*, mod.Vote_VOTE_YES*/)
+		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
 		// there should be a stored sequence
 		_, err := keeper.HasTopupSequence(ctx, sequence.String())
@@ -459,7 +447,6 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		// replay
-		// TODO HV2: enable commented code portions when module is merged
-		suite.postHandler(ctx, &msg /*, mod.Vote_VOTE_NO*/)
+		suite.postHandler(ctx, &msg, mod.Vote_VOTE_NO)
 	})
 }

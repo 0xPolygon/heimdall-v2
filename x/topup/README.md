@@ -5,7 +5,7 @@ Heimdall Topup is an amount which will be used to pay fees on Heimdall chain.
 There are two ways to topup your account:
 
 1. When new validator joins, they can mention a `topup` amount as top-up in addition to the staked amount, which will be
-   moved as balance on Heimdall chain to pays fees on Heimdall.
+   moved as balance on Heimdall chain to pay fees on Heimdall.
 2. A user can directly call the top-up function on the staking smart contract on Ethereum to increase top-up balance on
    Heimdall.
 

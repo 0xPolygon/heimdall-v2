@@ -8,8 +8,7 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	// TODO HV2: enable when module is merged
-	// mod "github.com/0xPolygon/heimdall-v2/module"
+	mod "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -24,41 +23,37 @@ type sideMsgServer struct {
 
 // NewSideMsgServerImpl returns an implementation of the x/topup SideMsgServer interface for the provided Keeper.
 func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
-	// TODO HV2: do not return nil when module is merged
-	return nil //&sideMsgServer{k: keeper}
+	return &sideMsgServer{k: keeper}
 }
 
 // SideTxHandler redirects to the right sideMsgServer side_handler based on methodName
-// TODO HV2: enable commented portions when module is merged
-func (s sideMsgServer) SideTxHandler(methodName string) /*mod.SideTxHandler*/ {
+func (s sideMsgServer) SideTxHandler(methodName string) mod.SideTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
-		return // s.SideHandleTopupTx
+		return s.SideHandleTopupTx
 	default:
-		return // nil
+		return nil
 	}
 }
 
 // PostTxHandler redirects to the right sideMsgServer post_handler based on methodName
-// TODO HV2: enable commented portions when module is merged
-func (s sideMsgServer) PostTxHandler(methodName string) /*mod.PostTxHandler*/ {
+func (s sideMsgServer) PostTxHandler(methodName string) mod.PostTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
-		return // s.PostHandleTopupTx
+		return s.PostHandleTopupTx
 	default:
-		return // nil
+		return nil
 	}
 }
 
 // SideHandleTopupTx handles the side tx for a validator's topup tx
-// TODO HV2: enable commented portions when module is merged
-func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) /*mod.Vote*/ {
+func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
 		logger.Error("type mismatch for MsgTopupTx")
-		return // mod.Vote_VOTE_NO
+		return mod.Vote_VOTE_NO
 	}
 
 	logger.Debug("validating external call for topup msg",
@@ -109,12 +104,12 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) /*mod.Vo
 	return mod.Vote_VOTE_NO
 	*/
 
-	// TODO HV2: remove this `return` statement when the above is enabled
-	return
+	// TODO HV2: remove this `return mod.Vote_VOTE_NO` statement when the above is enabled
+	return mod.Vote_VOTE_NO
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup tx
-func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg /*, sideTxResult mod.Vote*/) {
+func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult mod.Vote) {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
@@ -124,12 +119,10 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg /*, sideT
 	}
 
 	// skip handler if topup is not approved
-	/* TODO HV2: enable commented portions when module is merged
 	if sideTxResult != mod.Vote_VOTE_YES {
 		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
 		return
 	}
-	*/
 
 	// check if incoming tx is older
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -146,8 +139,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg /*, sideT
 		return
 	}
 
-	// TODO HV2: enable commented portions when module is merged
-	logger.Debug("persisting topup state", "sideTxResult" /*sideTxResult*/)
+	logger.Debug("persisting topup state", "sideTxResult", sideTxResult)
 
 	// create topup event
 	user := msg.User
@@ -190,8 +182,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg /*, sideT
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
 			// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash once implemented
 			sdk.NewAttribute(types.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
-			// TODO HV2: replace "" with sideTxResult.String() when module is merged
-			sdk.NewAttribute(types.AttributeKeySideTxResult, ""),
+			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyRecipient, msg.User),
 			sdk.NewAttribute(types.AttributeKeyTopupAmount, msg.Fee.String()),
