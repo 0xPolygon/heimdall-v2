@@ -197,20 +197,21 @@ func (q queryServer) GetAccountProof(ctx context.Context, req *types.QueryAccoun
 	currentStateAccountRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
 	if !bytes.Equal(accountRootOnChain[:], currentStateAccountRoot) {
 		return nil, status.Errorf(codes.Internal, err.Error())
-	} else {
-		// Calculate new account root hash
-		merkleProof, index, err := checkpointTypes.GetAccountProof(dividendAccounts, req.Address)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-		// build response and return
-		dividendAccountProof := &types.DividendAccountProof{
-			Address:      req.Address,
-			AccountProof: merkleProof,
-			Index:        index,
-		}
+	}
 
-		return &types.QueryDividendAccountProofResponse{dividendAccountProof}, nil
+	// Calculate new account root hash
+	merkleProof, index, err := checkpointTypes.GetAccountProof(dividendAccounts, req.Address)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	// build response and return
+	dividendAccountProof := &types.DividendAccountProof{
+		Address:      req.Address,
+		AccountProof: merkleProof,
+		Index:        index,
+	}
+
+	return &types.QueryDividendAccountProofResponse{dividendAccountProof}, nil
 	}
 	*/
 
