@@ -1,16 +1,17 @@
 package app
 
 import (
+	"encoding/json"
+
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // ExportAppStateAndValidators exports the state of the application for a genesis
 // file.
 func (app *HeimdallApp) ExportAppStateAndValidators(
 	// TODO HV2: remove unused args?
-	_ bool,
+	forZeroHeight bool,
 	jailAllowedAddrs []string,
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
@@ -24,7 +25,7 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
-	appState, err := jsoniter.ConfigFastest.MarshalIndent(genState, "", "  ")
+	appState, err := json.MarshalIndent(genState, "", "  ")
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}

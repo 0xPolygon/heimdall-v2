@@ -5,6 +5,9 @@ GOPATH = $(shell go env GOPATH)
 
 GIT_COMMIT ?= $(shell git rev-list -1 HEAD)
 
+DOCKER := $(shell which docker)
+HTTPS_GIT := https://github.com/0xPolygon/heimdall-v2.git
+
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME)
 GOLANG_CROSS_VERSION  ?= v1.21.0
@@ -19,7 +22,7 @@ clean:
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.55.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.57.1
 
 .PHONY: lint
 lint:
@@ -30,46 +33,26 @@ lint:
 ###                                Protobuf                                 ###
 ###############################################################################
 
-check-proto-deps:
-ifeq (,$(shell which protoc-gen-gogofaster))
-	@go install github.com/cosmos/gogoproto/protoc-gen-gogofaster@latest
-endif
-.PHONY: check-proto-deps
+protoVer=0.14.0
+protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
+protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
-check-proto-format-deps:
-ifeq (,$(shell which clang-format))
-	$(error "clang-format is required for Protobuf formatting. See instructions for your platform on how to install it.")
-endif
-.PHONY: check-proto-format-deps
+proto-all: proto-format proto-lint proto-gen
 
-proto-gen: check-proto-deps
+proto-gen:
 	@echo "Generating Protobuf files"
-	@go run github.com/bufbuild/buf/cmd/buf generate
-.PHONY: proto-gen
+	@$(protoImage) sh ./scripts/protocgen.sh
 
-# These targets are provided for convenience and are intended for local
-# execution only.
-proto-lint: check-proto-deps
-	@echo "Linting Protobuf files"
-	@go run github.com/bufbuild/buf/cmd/buf lint
-.PHONY: proto-lint
+proto-format:
+	@$(protoImage) find ./ -name "*.proto" -exec clang-format -i {} \;
 
-proto-format: check-proto-format-deps
-	@echo "Formatting Protobuf files"
-	@find . -name '*.proto' -path "./proto/*" -exec clang-format -i {} \;
-.PHONY: proto-format
+proto-lint:
+	@$(protoImage) buf lint --error-format=json
 
-proto-check-breaking: check-proto-deps
-	@echo "Checking for breaking changes in Protobuf files against local branch"
-	@echo "Note: This is only useful if your changes have not yet been committed."
-	@echo "      Otherwise read up on buf's \"breaking\" command usage:"
-	@echo "      https://docs.buf.build/breaking/usage"
-	@go run github.com/bufbuild/buf/cmd/buf breaking --against ".git"
-.PHONY: proto-check-breaking
+proto-check-breaking:
+	@$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
 
-# proto-check-breaking-ci:
-# 	@go run github.com/bufbuild/buf/cmd/buf breaking --against $(HTTPS_GIT)#branch=v0.34.x
-# .PHONY: proto-check-breaking-ci
+.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
 .PHONY: help
 help:

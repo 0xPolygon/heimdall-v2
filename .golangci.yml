@@ -1,19 +1,9 @@
 # This file configures github.com/golangci/golangci-lint.
 
 run:
-  go: '1.21'
+  go: '1.22.1'
   timeout: 20m
   tests: true
-  # default is true. Enables skipping of directories:
-  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  skip-dirs-use-default: true
-  skip-dirs:
-    - slashing
-    - gov
-    - params
-  skip-files:
-    - gen_.*.go
-    - .*_gen.go
 
 linters:
   enable:
@@ -58,7 +48,6 @@ linters:
 linters-settings:
   gofmt:
     simplify: true
-    auto-fix: false
 
   goconst:
     min-len: 3 # minimum length of string constant
@@ -130,7 +119,6 @@ linters-settings:
       - fieldalignment
       - shadow
       - unsafeptr
-    check-shadowing: true
     enable-all: true
     settings:
       printf:
@@ -144,9 +132,6 @@ linters-settings:
           - (github.com/ethereum/go-ethereum/log.Logger).Crit
 
 issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files.
   max-issues-per-linter: 0
   max-same-issues: 0
-  #new: true
   new-from-rev: origin/main
