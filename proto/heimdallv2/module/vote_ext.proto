@@ -1,21 +1,24 @@
 syntax = "proto3";
-package proto.heimdallv2.module;
+package heimdallv2.module;
 
 option go_package = "github.com/0xPolygon/heimdall-v2/module";
 
 message CanonicalSideTxResponse {
-  repeated SideTxResponse SideTxResponses = 1;
-  bytes hash = 2;    // denotes the block hash of the block that this vote is referring to.
+  repeated SideTxResponse side_tx_responses = 1;
+  bytes hash =
+      2; // denotes the block hash of the block that this vote is referring to.
   int64 height = 3; // denotes the block height of the extended vote
 }
 
 message SideTxResponse {
-  bytes          tx_hash = 1; // denotes the tx hash for which this V.E correspond to.
-  Vote          result  = 4; // will have YES/NO/SKIP depending on the side-tx data correctness.
+  bytes tx_hash = 1; // denotes the tx hash for which this V.E correspond to.
+  Vote result =
+      4; // will have YES/NO/SKIP depending on the side-tx data correctness.
 }
 
 enum Vote {
-  // TODO HV2: should we have an UNSPECIFIED value 0 tag as suggested here: https://protobuf.dev/programming-guides/dos-donts/#unspecified-enum ?
+  // TODO HV2: should we have an UNSPECIFIED value 0 tag as suggested here:
+  // https://protobuf.dev/programming-guides/dos-donts/#unspecified-enum ?
   // currently the zero value of the enum would be interpreted as VOTE_SKIP
   VOTE_SKIP = 0;
   VOTE_YES = 1;
