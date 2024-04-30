@@ -1,10 +1,10 @@
-package error
+package errors
 
 import (
 	"os"
 )
 
-const InvalidFilePermissionErrMsg = "Invalid file permission"
+const InvalidFilePermissionErrMsg = "invalid file permission"
 
 type InvalidPermissionsError struct {
 	File string
