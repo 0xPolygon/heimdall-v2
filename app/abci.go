@@ -39,7 +39,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		}
 		// Validate VE sigs and check whether they have 2/3+ majority
 		hasTwoThirdsSigs := true
-		// TODO HV2: uncomment when implemented
+		// TODO HV2: uncomment when stake is merged
 		// if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.AccountKeeper); err != nil {
 		// 	logger.Error("PrepareProposal: Error occurred while validating VEs: ", err)
 		// 	hasTwoThirdsSigs = false
@@ -83,7 +83,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 		// check for ExtendedVoteInfo a block after vote extensions are enabled
 		if !canAddVE(ctx, req.Height) {
-			// TODO HV2: Clarify with Informal:
+			// TODO HV2: Clarify with Informal
 			// Should we execute CheckTx() as well if a malicious proposer includes an invalid tx
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 		}
@@ -106,7 +106,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 		// Validate VE sigs and check whether they have 2/3+ majority
 		hasTwoThirdsSigs := true
-		// TODO HV2: uncomment when implemented
+		// TODO HV2: uncomment when stake is merged
 		// if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), extVoteInfo, req.ProposedLastCommit.Round, app.AccountKeeper); err != nil {
 		// 	hasTwoThirdsSigs = false
 		// }
@@ -157,7 +157,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 					return nil, err
 				}
 
-				// TODO HV2: Clarify with Informal: Should we execute CheckTx() ?
+				// TODO HV2: Clarify with Informal: should we execute CheckTx() ?
 				msgs := tx.GetMsgs()
 				for _, msg := range msgs {
 					sideHandler := v.sideTxCfg.GetSideHandler(msg)
@@ -170,7 +170,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 					var txBytes cmtTypes.Tx = rawTx
 
 					// add result to side tx response
-					logger.Debug("Adding V.E", "txhash", txBytes.Hash(), "block height", req.Height, "block hash", req.Hash)
+					logger.Debug("Adding V.E.", "txHash", txBytes.Hash(), "blockHeight", req.Height, "blockHash", req.Hash)
 					ve := mod.SideTxResponse{
 						TxHash: txBytes.Hash(),
 						Result: res,
@@ -222,7 +222,7 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 
 		}
 
-		// TODO HV2: Ensure the side txs included in V.E are actually present in the block.
+		// TODO HV2: Ensure the side txs included in V.E.s are actually present in the block.
 		// This will be possible once the block is available to be consumed in RequestVerifyVoteExtension from Comet
 		for _, v := range ve.SideTxResponses {
 			// check whether the vote result is valid
@@ -264,8 +264,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 			msgs := tx.GetMsgs()
 			for _, msg := range msgs {
-				postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg) //nolint:staticcheck
-				//nolint:staticcheck
+				postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
 				if postHandler != nil {
 					// TODO HV2: uncomment when implemented
 					// app.VoteExtensionKeeper.storeTxData(ctx, txBytes.Hash(), tx)
@@ -285,75 +284,76 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				return nil, err
 			}
 
+			/* TODO HV2: uncomment when stake is merged
 			// Fetch validators from previous block
 			// TODO HV2: Heimdall as of now uses validator set from currentHeight. But should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
-			// validators := app.StakeKeeper.GetValidators(ctx, req.Height - 1)
-			// if len(validators) == 0 {
-			// 	return errors.New("No validators found")
-			// }
+			validators := app.StakeKeeper.GetValidators(ctx, req.Height - 1)
+			if len(validators) == 0 {
+				return errors.New("No validators found")
+			}
 
-			// TODO HV2: uncomment when implemented
 			// tally votes
-			// approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(extVoteInfo, logger, validators)
-			// if err != nil {
-			// 	logger.Error("Error occurred while tallying votes", "error", err)
-			// 	return nil, err
-			// }
+			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(extVoteInfo, logger, validators)
+			if err != nil {
+				logger.Error("Error occurred while tallying votes", "error", err)
+				return nil, err
+			}
 
-			// // execute side txs
-			// for _, txHash := range approvedTxs {
-			// 	// check whether tx exists
-			// 	if !app.VoteExtensionKeeper.HasTx(ctx, txHash) {
-			// 		logger.Error("side tx not found in keeper", "tx", txHash)
-			// 		continue
-			// 	}
+			// execute side txs
+			for _, txHash := range approvedTxs {
+				// check whether tx exists
+				if !app.VoteExtensionKeeper.HasTx(ctx, txHash) {
+					logger.Error("side tx not found in keeper", "tx", txHash)
+					continue
+				}
 
-			// 	// fetch side tx from keeper
-			// 	tx, err := app.VoteExtensionKeeper.GetTxData(ctx, txHash)
-			// 	if err != nil {
-			// 		logger.Error("Error occurred while fetching side tx from keeper", "error", err)
-			// 		return nil, err
-			// 	}
+				// fetch side tx from keeper
+				tx, err := app.VoteExtensionKeeper.GetTxData(ctx, txHash)
+				if err != nil {
+					logger.Error("Error occurred while fetching side tx from keeper", "error", err)
+					return nil, err
+				}
 
-			// 	// execute with YES vote
-			// 	msgs := tx.GetMsgs()
-			// 	for _, msg := range msgs {
-			// 		fn, ok := app.VoteExtensionHandler.modPostHandler[sdk.MsgTypeURL(msg)]
-			// 		if !ok {
-			// 			return nil, errors.New("Could not fetch Posthandler for the tx msg")
-			// 		}
+				// execute with YES vote
+				msgs := tx.GetMsgs()
+				for _, msg := range msgs {
+					fn, ok := app.VoteExtensionHandler.modPostHandler[sdk.MsgTypeURL(msg)]
+					if !ok {
+						return nil, errors.New("could not fetch post handler for the tx msg")
+					}
 
-			// 		// TODO HV2: how do we process the events ?
-			// 		err := fn(ctx, msg, types.Vote_VOTE_YES)
-			// 		if err != nil {
-			// 			logger.Error("Error occurred while executing post handler", "error", err, "tx", tx)
-			// 			continue
+					// TODO HV2: how do we process the events ?
+					err := fn(ctx, msg, types.Vote_VOTE_YES)
+					if err != nil {
+						logger.Error("Error occurred while executing post handler", "error", err, "tx", tx)
+						continue
 
-			// 		}
-			// 	}
+					}
+				}
 
-			// 	// remove tx from keeper to prevent re-execution
-			// 	if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-			// 		logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-			// 		return nil, err
-			// 	}
+				// remove tx from keeper to prevent re-execution
+				if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
+					logger.Error("Error occurred while deleting side tx from keeper", "error", err)
+					return nil, err
+				}
 
-			// }
+			}
 
-			// // delete the rejected and skipped txs
-			// for _, txHash := range rejectedTxs {
-			// 	if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-			// 		logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-			// 		return nil, err
-			// 	}
-			// }
+			// delete the rejected and skipped txs
+			for _, txHash := range rejectedTxs {
+				if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
+					logger.Error("Error occurred while deleting side tx from keeper", "error", err)
+					return nil, err
+				}
+			}
 
-			// for _, txHash := range skippedTxs {
-			// 	if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-			// 		logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-			// 		return nil, err
-			// 	}
-			// }
+			for _, txHash := range skippedTxs {
+				if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
+					logger.Error("Error occurred while deleting side tx from keeper", "error", err)
+					return nil, err
+				}
+			}
+			*/
 		}
 
 	}

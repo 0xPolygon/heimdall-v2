@@ -41,7 +41,7 @@ func (c *sideTxConfigurator) RegisterSideHandler(msgURL string, handler SideTxHa
 		return nil
 	}
 
-	return fmt.Errorf("SideHandler corresponding to the following msg %s already exists", msgURL)
+	return fmt.Errorf("sideHandler corresponding to the following msg %s already exists", msgURL)
 }
 
 // RegisterPostHandler implements the SideTxConfigurator.RegisterPostHandler method
@@ -51,21 +51,21 @@ func (c *sideTxConfigurator) RegisterPostHandler(msgURL string, handler PostTxHa
 		return nil
 	}
 
-	return fmt.Errorf("PostHandler corresponding to the following msg %s already exists", msgURL)
+	return fmt.Errorf("postHandler corresponding to the following msg %s already exists", msgURL)
 }
 
-// SideHandler returns SideTxHandler for a given msg or nil if not found.
+// GetSideHandler returns SideTxHandler for a given msg or nil if not found.
 func (c *sideTxConfigurator) GetSideHandler(msg sdk.Msg) SideTxHandler {
 	return c.sideHandlers[sdk.MsgTypeURL(msg)]
 }
 
-// PostHandler returns PostTxHandler for a given msg or nil if not found.
+// GetPostHandler returns PostTxHandler for a given msg or nil if not found.
 func (c *sideTxConfigurator) GetPostHandler(msg sdk.Msg) PostTxHandler {
 	return c.postHandlers[sdk.MsgTypeURL(msg)]
 }
 
 // HasSideMsgServices is the interface for modules to register sideTx services.
 type HasSideMsgServices interface {
-	// RegisterServices allows a module to register side msg services.
+	// RegisterSideMsgServices allows a module to register side msg services.
 	RegisterSideMsgServices(SideTxConfigurator)
 }

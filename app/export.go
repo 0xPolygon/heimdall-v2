@@ -9,6 +9,7 @@ import (
 // ExportAppStateAndValidators exports the state of the application for a genesis
 // file.
 func (app *HeimdallApp) ExportAppStateAndValidators(
+	// TODO HV2: remove unused args?
 	_ bool,
 	jailAllowedAddrs []string,
 	modulesToExport []string,
