@@ -20,7 +20,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
@@ -46,14 +45,6 @@ type KeeperTestSuite struct {
 	contractCaller mocks.IContractCaller
 	chainParams    chainTypes.Params
 	*/
-}
-
-// createTestApp returns context and app
-func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
-	heimdallApp, _, _ := app.SetupApp(t, 4)
-	ctx := heimdallApp.BaseApp.NewContext(isCheckTx)
-
-	return heimdallApp, ctx
 }
 
 func TestKeeperTestSuite(t *testing.T) {

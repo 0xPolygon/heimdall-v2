@@ -1,64 +1,41 @@
 package keeper_test
 
 import (
+	"github.com/0xPolygon/heimdall-v2/types"
 	"math/rand"
 	"strconv"
-	"testing"
 	"time"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/stretchr/testify/suite"
-
-	"github.com/0xPolygon/heimdall-v2/app"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 )
 
-/* TODO HV2: these tests are failing because app tests are broken.
-   Probably this is due to stake module (responsible to init the validators)
-   not being implemented yet in heimdall-v2.
-   Another issue could be the presence of distributionModule in heimdall-v2, to be removed.
-   Re-run the test when the above is done.
-*/
-
-// GenesisTestSuite integrate test suite context object
-type GenesisTestSuite struct {
-	suite.Suite
-
-	app *app.HeimdallApp
-	ctx sdk.Context
-}
-
-// SetupTest setup necessary things for genesis test
-func (suite *GenesisTestSuite) SetupTest() {
-	suite.app, suite.ctx = createTestApp(suite.T(), true)
-}
-
-// TestGenesisTestSuite
-func TestGenesisTestSuite(t *testing.T) {
-	t.Parallel()
-	suite.Run(t, new(GenesisTestSuite))
-}
-
-// TestInitExportGenesis test import and export genesis state
-func (suite *GenesisTestSuite) TestInitExportGenesis() {
-	t, heimdallApp, ctx, require := suite.T(), suite.app, suite.ctx, suite.Require()
-	k := heimdallApp.TopupKeeper
+// TestInitExportGenesis tests import and export of genesis state
+func (suite *KeeperTestSuite) TestInitExportGenesis() {
+	keeper, ctx, require := suite.keeper, suite.ctx, suite.Require()
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
 	topupSequences := make([]string, 5)
+	dividendAccounts := make([]types.DividendAccount, 5)
 
 	for i := range topupSequences {
 		topupSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
+	for i := range dividendAccounts {
+		dividendAccounts[i].User = simulation.RandStringOfLength(r1, 20)
+		dividendAccounts[i].FeeAmount = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+	}
 
 	genesisState := topupTypes.GenesisState{
-		TopupSequences: topupSequences,
+		TopupSequences:   topupSequences,
+		DividendAccounts: dividendAccounts,
 	}
-	k.InitGenesis(ctx, &genesisState)
 
-	actualParams := k.ExportGenesis(ctx)
+	keeper.InitGenesis(ctx, &genesisState)
 
-	require.LessOrEqual(t, len(topupSequences), len(actualParams.TopupSequences))
+	actualParams := keeper.ExportGenesis(ctx)
+
+	require.LessOrEqual(len(topupSequences), len(actualParams.TopupSequences))
+	require.LessOrEqual(len(dividendAccounts), len(actualParams.DividendAccounts))
 }
