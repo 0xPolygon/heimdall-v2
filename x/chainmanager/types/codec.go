@@ -3,13 +3,21 @@ package types
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 )
 
 // RegisterLegacyAminoCodec registers the necessary x/chainmanager interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	cdc.RegisterConcrete(&Params{}, "heimdall-v2/x/chainmanmager/Params", nil)
+	cdc.RegisterConcrete(&MsgUpdateParams{}, "heimdall-v2/x/chainmanager/MsgUpdateParams", nil)
 }
 
-// HV2: RegisterInterfaces is a no-op as the chainmanager module doesn't have any Msg types
-func RegisterInterfaces(registry types.InterfaceRegistry) {}
+func RegisterInterfaces(registry types.InterfaceRegistry) {
+	registry.RegisterImplementations((*sdk.Msg)(nil),
+		&MsgUpdateParams{},
+	)
+
+	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
+}
