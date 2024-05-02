@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"math/big"
 
 	"cosmossdk.io/collections"
@@ -239,7 +240,11 @@ func (k *Keeper) AddFeeToDividendAccount(ctx sdk.Context, user string, fee *big.
 	}
 
 	// update the fee
-	oldFee, _ := big.NewInt(0).SetString(dividendAccount.FeeAmount, 10)
+	oldFee, ok := big.NewInt(0).SetString(dividendAccount.FeeAmount, 10)
+	if !ok {
+		logger.Error("failed to set the old fee", "feeAmount", dividendAccount.FeeAmount, "account", dividendAccount.User)
+		return errors.New("failed to set the old fee for dividend account")
+	}
 	totalFee := big.NewInt(0).Add(oldFee, fee).String()
 	dividendAccount.FeeAmount = totalFee
 	logger.Info("fee added to dividend account", "user", user, "oldFee", oldFee, "addedFee", fee, "totalFee", totalFee)

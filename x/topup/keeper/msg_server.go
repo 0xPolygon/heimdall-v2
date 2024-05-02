@@ -103,7 +103,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	*/
 
 	// full withdraw
-	if msg.Amount.String() == big.NewInt(0).String() {
+	if msg.Amount.IsZero() {
 		coins := m.k.BankKeeper.GetBalance(ctx, sdk.AccAddress(msg.Proposer), types.DefaultDenom)
 		amount = coins.Amount
 	}
