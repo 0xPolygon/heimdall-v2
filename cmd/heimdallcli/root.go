@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cosmossdk.io/client/v2/autocli"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -15,7 +14,7 @@ import (
 // NewRootCmd creates a new root command for simd. It is called once in the main function.
 func NewRootCmd() *cobra.Command {
 	var (
-		autoCliOpts        autocli.AppOptions
+		// autoCliOpts        autocli.AppOptions
 		moduleBasicManager module.BasicManager
 		clientCtx          client.Context
 	)
@@ -59,9 +58,12 @@ func NewRootCmd() *cobra.Command {
 	// initRootCmd(rootCmd, clientCtx.TxConfig, clientCtx.InterfaceRegistry, clientCtx.Codec, moduleBasicManager)
 	initRootCmd(rootCmd, clientCtx, moduleBasicManager)
 
-	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
-		panic(err)
-	}
+	// TODO HV2 - I guesss we can remove this
+	/*
+		if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
+			panic(err)
+		}
+	*/
 
 	return rootCmd
 }
