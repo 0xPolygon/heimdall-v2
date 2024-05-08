@@ -11,12 +11,33 @@ HTTPS_GIT := https://github.com/0xPolygon/heimdall-v2.git
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 GOLANG_CROSS_VERSION  ?= v1.21.0
 
-# LDFlags
-# BUILD_FLAGS
+# Fetch git latest tag
+LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))
+VERSION := $(shell echo $(shell git describe --tags) | sed 's/^v//')
+COMMIT := $(shell git log -1 --format='%H')
+
+ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
+		  -X github.com/0xPolygon/heimdall-v2/version.ServerName=heimdalld \
+		  -X github.com/0xPolygon/heimdall-v2/version.ClientName=heimdallcli \
+		  -X github.com/0xPolygon/heimdall-v2/version.Version=$(VERSION) \
+		  -X github.com/0xPolygon/heimdall-v2/version.Commit=$(COMMIT) \
+		  -X github.com/cosmos/cosmos-sdk/version.Name=heimdall \
+		  -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld \
+		  -X github.com/cosmos/cosmos-sdk/version.ClientName=heimdallcli \
+		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
+		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
+
+BUILD_FLAGS := -ldflags '$(ldflags)'
 
 .PHONY: clean
 clean:
 	rm -rf build
+
+build: clean
+	mkdir -p build
+	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
+	go build $(BUILD_FLAGS) -o build/heimdallcli ./cmd/heimdallcli
+	@echo "====================================================\n==================Build Successful==================\n===================================================="
 
 .PHONY: lint-deps
 lint-deps:
