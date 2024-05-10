@@ -16,13 +16,13 @@ import (
 
 func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
 	cfg := suite.sideMsgCfg
-	return cfg.SideHandler(msg)(ctx, msg)
+	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
 func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
 	cfg := suite.sideMsgCfg
 
-	cfg.PostHandler(msg)(ctx, msg, vote)
+	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
 // Test cases
