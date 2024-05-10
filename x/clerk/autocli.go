@@ -1,7 +1,7 @@
 package clerk
 
 import (
-	clerkv1beta1 "github.com/0xPolygon/heimdall-v2/api/heimdallv2/clerk/v1beta1"
+	clerk "github.com/0xPolygon/heimdall-v2/api/heimdallv2/clerk"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	_ "cosmossdk.io/api/cosmos/crypto/secp256k1" // register to that it shows up in protoregistry.GlobalTypes
@@ -12,7 +12,7 @@ import (
 func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 	return &autocliv1.ModuleOptions{
 		Query: &autocliv1.ServiceCommandDescriptor{
-			Service: clerkv1beta1.Query_ServiceDesc.ServiceName,
+			Service: clerk.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "Record",
@@ -54,7 +54,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: clerkv1beta1.Msg_ServiceDesc.ServiceName,
+			Service: clerk.Msg_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "HandleMsgEventRecord",

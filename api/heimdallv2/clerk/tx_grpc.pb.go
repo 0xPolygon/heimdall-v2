@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: heimdallv2/clerk/v1beta1/tx.proto
+// source: heimdallv2/clerk/tx.proto
 
-package clerkv1beta1
+package clerk
 
 import (
 	context "context"
@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_HandleMsgEventRecord_FullMethodName = "/heimdallv2.clerk.v1beta1.Msg/HandleMsgEventRecord"
+	Msg_HandleMsgEventRecord_FullMethodName = "/heimdallv2.clerk.Msg/HandleMsgEventRecord"
 )
 
 // MsgClient is the client API for Msg service.
@@ -96,7 +96,7 @@ func _Msg_HandleMsgEventRecord_Handler(srv interface{}, ctx context.Context, dec
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Msg_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "heimdallv2.clerk.v1beta1.Msg",
+	ServiceName: "heimdallv2.clerk.Msg",
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -105,5 +105,5 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "heimdallv2/clerk/v1beta1/tx.proto",
+	Metadata: "heimdallv2/clerk/tx.proto",
 }

@@ -1,11 +1,11 @@
 syntax = "proto3";
-package heimdallv2.clerk.v1beta1;
+package heimdallv2.clerk;
 
 import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
-import "heimdallv2/clerk/v1beta1/clerk.proto";
+import "heimdallv2/clerk/clerk.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 

@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             (unknown)
-// source: heimdallv2/clerk/v1beta1/query.proto
+// source: heimdallv2/clerk/query.proto
 
-package clerkv1beta1
+package clerk
 
 import (
 	context "context"
@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_Record_FullMethodName             = "/heimdallv2.clerk.v1beta1.Query/Record"
-	Query_RecordList_FullMethodName         = "/heimdallv2.clerk.v1beta1.Query/RecordList"
-	Query_RecordListWithTime_FullMethodName = "/heimdallv2.clerk.v1beta1.Query/RecordListWithTime"
-	Query_RecordSequence_FullMethodName     = "/heimdallv2.clerk.v1beta1.Query/RecordSequence"
+	Query_Record_FullMethodName             = "/heimdallv2.clerk.Query/Record"
+	Query_RecordList_FullMethodName         = "/heimdallv2.clerk.Query/RecordList"
+	Query_RecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/RecordListWithTime"
+	Query_RecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/RecordSequence"
 )
 
 // QueryClient is the client API for Query service.
@@ -203,7 +203,7 @@ func _Query_RecordSequence_Handler(srv interface{}, ctx context.Context, dec fun
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Query_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "heimdallv2.clerk.v1beta1.Query",
+	ServiceName: "heimdallv2.clerk.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -224,5 +224,5 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "heimdallv2/clerk/v1beta1/query.proto",
+	Metadata: "heimdallv2/clerk/query.proto",
 }
