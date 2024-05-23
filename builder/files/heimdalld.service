@@ -1,0 +1,18 @@
+# TODO-HV2: test this script once app is ready (is this needed at all?)
+
+[Unit]
+  Description=heimdalld
+  StartLimitIntervalSec=500
+  StartLimitBurst=5
+[Service]
+  Restart=on-failure
+  RestartSec=5s
+  WorkingDirectory=/usr/local/bin
+  ExecStart=/usr/local/bin/heimdalld start --home /var/lib/heimdall \
+    --chain=mainnet \
+    --rest-server
+  Type=simple
+  LimitNOFILE=65536
+  User=heimdall
+[Install]
+  WantedBy=multi-user.target
