@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"io/fs"
 
 	cmTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -35,7 +36,12 @@ func readPrealloc(filename string, cdc *codec.Codec) (result cmTypes.GenesisDoc,
 		err = errors.Errorf("could not open genesis preallocation for %s: %v", filename, err)
 		return
 	}
-	defer f.Close()
+	defer func(f fs.File) {
+		err := f.Close()
+		if err != nil {
+			Logger.Error("error while closing file handler: %v", err)
+		}
+	}(f)
 
 	buf := bytes.NewBuffer(nil)
 
