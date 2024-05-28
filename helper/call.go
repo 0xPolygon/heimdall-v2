@@ -478,11 +478,11 @@ func (c *ContractCaller) GetBlockNumberFromTxHash(tx common.Hash) (*big.Int, err
 	return blkNum, nil
 }
 
-// IsTxConfirmed checks whether the tx corresponding to the given is confirmed with given
-// confirmation numbers
-func (c *ContractCaller) IsTxConfirmed(tx common.Hash, requiredConfirmations uint64) bool {
+// IsTxConfirmed checks whether the tx corresponding to the given hash is confirmed with given
+// requiredConfirmations numbers
+func (c *ContractCaller) IsTxConfirmed(txHash common.Hash, requiredConfirmations uint64) bool {
 	// get main tx receipt
-	receipt, err := c.GetConfirmedTxReceipt(tx, requiredConfirmations)
+	receipt, err := c.GetConfirmedTxReceipt(txHash, requiredConfirmations)
 	if err != nil {
 		Logger.Error("error while fetching the tx receipt", "error", err)
 		return false
