@@ -16,8 +16,8 @@ import (
 
 var SequenceNumber = "sequence_number"
 
-// GenSequenceNumber returns a random sequence number
-func GenSequenceNumber(r *rand.Rand) string {
+// genSequenceNumber returns a random sequence number
+func genSequenceNumber(r *rand.Rand) string {
 	return strconv.Itoa(simulation.RandIntBetween(r, 0, math.MaxInt32))
 }
 
@@ -39,7 +39,7 @@ func RandomizeGenState(simState *module.SimulationState) {
 	for i := 0; i < 5; i++ {
 
 		simState.AppParams.GetOrGenerate(SequenceNumber, &sequenceNumber, simState.Rand, func(r *rand.Rand) {
-			sequenceNumber = GenSequenceNumber(r)
+			sequenceNumber = genSequenceNumber(r)
 		})
 
 		sequences[i] = sequenceNumber
