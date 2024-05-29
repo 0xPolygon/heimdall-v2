@@ -6,7 +6,6 @@ const (
 	EventTypeTopup                = "topup"
 	EventTypeFeeWithdraw          = "fee-withdraw"
 	EventTypeWithdraw             = "withdraw"
-	EventTypeTransfer             = "transfer"
 	AttributeKeyRecipient         = "recipient"
 	AttributeKeySender            = "sender"
 	AttributeKeyUser              = "user"
@@ -16,6 +15,5 @@ const (
 	// TODO HV2: move the following to heimdall-v2/types as they are not specific to topup
 
 	AttributeKeyTxHash       = "txhash"
-	AttributeKeyTxLogIndex   = "tx-log-index"
 	AttributeKeySideTxResult = "side-tx-result"
 )
