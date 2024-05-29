@@ -92,7 +92,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		require.NotNil(res)
 		// TODO HV2: enable this when side_msg_server code is fully functional (atm mod.Vote_VOTE_NO is hardcoded due to commented code)
 		// require.Equal(res, mod.Vote_VOTE_YES, "side tx handler should succeed")
-		// there should be no stored event record
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.False(ok)
@@ -362,7 +361,6 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 
 		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
-		// there should be no stored event record
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.True(ok)
