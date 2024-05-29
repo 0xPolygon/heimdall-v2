@@ -135,7 +135,11 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return
 	}
 	if exists {
-		logger.Error("older tx found")
+		logger.Error("older tx found",
+			"sequence", sequence.String(),
+			"logIndex", msg.LogIndex,
+			"blockNumber", msg.BlockNumber,
+			"txHash", msg.TxHash)
 		return
 	}
 
