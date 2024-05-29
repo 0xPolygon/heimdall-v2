@@ -449,6 +449,6 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		// replay
-		suite.postHandler(ctx, &msg, mod.Vote_VOTE_NO)
+		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 	})
 }
