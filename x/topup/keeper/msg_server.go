@@ -63,7 +63,11 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
 	}
 	if exists {
-		logger.Error("older tx found")
+		logger.Error("older tx found",
+			"sequence", sequence.String(),
+			"logIndex", msg.LogIndex,
+			"blockNumber", msg.BlockNumber,
+			"txHash", txHash)
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"tx with hash %s already exists", txHash.String())
 	}
