@@ -20,7 +20,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// Keeper stores all chainmanager related data
+// Keeper stores all topup related data
 type Keeper struct {
 	cdc          codec.BinaryCodec
 	storeService store.KVStoreService
