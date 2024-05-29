@@ -135,7 +135,7 @@ message QueryVerifyAccountProofResponse {
 // GetAccountProof RPC method
 message QueryAccountProofRequest {
   string address = 1
-      [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "address" ];
+      [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "address", (cosmos_proto.scalar) = "cosmos.AddressString" ];
 }
 
 // QueryAccountProofResponse the is response type for the GetAccountProof RPC
