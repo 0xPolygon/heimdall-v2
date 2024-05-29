@@ -8,7 +8,7 @@ import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
-// Msg defines the staking Msg service.
+// Msg defines the topup Msg service.
 service Msg {
   option (cosmos.msg.v1.service) = true;
   // CreateTopupTx defines a RPC method for creating a topup tx for a validator
