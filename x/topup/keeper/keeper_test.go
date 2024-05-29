@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -139,11 +140,14 @@ func (suite *KeeperTestSuite) TestAddFeeToDividendAccount() {
 
 func (suite *KeeperTestSuite) TestDividendAccountTree() {
 	require := suite.Require()
+	codec := address.NewHexCodec()
 
 	divAccounts := make([]types.DividendAccount, 5)
 	for i := 0; i < len(divAccounts); i++ {
+		accountBytes, err := codec.StringToBytes(AccountHash)
+		require.NoError(err)
 		divAccounts[i] = types.DividendAccount{
-			User:      AccountHash,
+			User:      string(accountBytes),
 			FeeAmount: big.NewInt(0).String(),
 		}
 	}
@@ -158,7 +162,6 @@ func (suite *KeeperTestSuite) TestDividendAccountTree() {
 	require.NoError(err)
 	*/
 
-	leafHash, err := testutil.CalculateDividendAccountHash(divAccounts[0])
+	leafHash := testutil.CalculateDividendAccountHash(divAccounts[0])
 	require.NotNil(leafHash)
-	require.NoError(err)
 }

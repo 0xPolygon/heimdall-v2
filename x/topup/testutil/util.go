@@ -1,7 +1,6 @@
 package testutil
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -10,35 +9,30 @@ import (
 )
 
 // CalculateDividendAccountHash is a helper function to hash the values of a DividendAccount
-func CalculateDividendAccountHash(da types.DividendAccount) ([]byte, error) {
+func CalculateDividendAccountHash(da types.DividendAccount) []byte {
 	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
-	divAccountHash := crypto.Keccak256(AppendBytes32(
-		[]byte(da.User),
-		fee.Bytes(),
-	))
+	divAccountHash := crypto.Keccak256(AppendBytes32([]byte(da.User), fee.Bytes()))
 
-	return divAccountHash, nil
+	return divAccountHash
 }
 
 func AppendBytes32(data ...[]byte) []byte {
 	var result []byte
 
 	for _, v := range data {
-		paddedV, err := convertTo32(v)
-		if err == nil {
-			result = append(result, paddedV[:]...)
-		}
+		paddedV := convertTo32(v)
+		result = append(result, paddedV[:]...)
 	}
 
 	return result
 }
 
-func convertTo32(input []byte) (output [32]byte, err error) {
+func convertTo32(input []byte) (output [32]byte) {
 	l := len(input)
 	if l > 32 || l == 0 {
-		return [32]byte{}, errors.New("length issue, can't convert to 32 bytes")
+		return
 	}
 	copy(output[32-l:], input[:])
 
-	return output, nil
+	return output
 }
