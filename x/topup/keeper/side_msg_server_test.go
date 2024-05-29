@@ -30,6 +30,8 @@ func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote mod
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
+// TODO HV2: possibly refactor these cases into subtests to remove redundant setup code
+
 func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	var msg types.MsgTopupTx
 
