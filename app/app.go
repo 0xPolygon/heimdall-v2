@@ -313,8 +313,8 @@ func NewHeimdallApp(
 		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		topup.NewAppModule(app.TopupKeeper),
 		// TODO HV2: add custom modules
+		topup.NewAppModule(app.TopupKeeper),
 	)
 
 	// Basic manager
