@@ -131,7 +131,7 @@ message QueryVerifyAccountProofResponse {
       [ (amino.dont_omitempty) = true, (gogoproto.jsontag) = "isVerified" ];
 }
 
-// QueryAccountProofParams is the request type for the
+// QueryAccountProofRequest is the request type for the
 // GetAccountProof RPC method
 message QueryAccountProofRequest {
   string address = 1
