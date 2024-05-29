@@ -131,7 +131,11 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	exists, err := s.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
-		logger.Error("error while fetching older topup sequence", "error", err)
+		logger.Error("error while fetching older topup sequence",
+			"sequence", sequence.String(),
+			"logIndex", msg.LogIndex,
+			"blockNumber", msg.BlockNumber,
+			"error", err)
 		return
 	}
 	if exists {
