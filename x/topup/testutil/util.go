@@ -8,6 +8,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/types"
 )
 
+// TODO HV2: consider moving these function to helper?
+
 // CalculateDividendAccountHash is a helper function to hash the values of a DividendAccount
 func CalculateDividendAccountHash(da types.DividendAccount) []byte {
 	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
