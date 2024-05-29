@@ -65,7 +65,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
-			addr1.String(),
+			addr2.String(),
 			coins.Amount,
 			hash,
 			logIndex,
@@ -317,7 +317,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
-			addr1.String(),
+			addr2.String(),
 			coins.Amount,
 			hash,
 			logIndex,
