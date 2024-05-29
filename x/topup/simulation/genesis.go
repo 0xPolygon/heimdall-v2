@@ -25,16 +25,18 @@ func GenSequenceNumber(r *rand.Rand) string {
 func RandomizeGenState(simState *module.SimulationState) {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
-	n := 5
-	accounts := simulation.RandomAccounts(r1, n)
+	minAccounts := 1
+	maxAccounts := 50
+	numAccounts := rand.Intn(maxAccounts-minAccounts) + minAccounts
+	accounts := simulation.RandomAccounts(r1, numAccounts)
 
 	var (
 		sequences        = make([]string, 5)
 		dividendAccounts = make([]types.DividendAccount, 5)
-        sequenceNumber string
+		sequenceNumber   string
 	)
 
-	for i := 0; i < 5; i++ { 
+	for i := 0; i < 5; i++ {
 
 		simState.AppParams.GetOrGenerate(SequenceNumber, &sequenceNumber, simState.Rand, func(r *rand.Rand) {
 			sequenceNumber = GenSequenceNumber(r)
