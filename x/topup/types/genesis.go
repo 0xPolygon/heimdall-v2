@@ -26,7 +26,7 @@ func DefaultGenesisState() *GenesisState {
 func (gs GenesisState) Validate() error {
 	for _, sequence := range gs.TopupSequences {
 		if sequence == "" {
-			return errors.New("invalid sequence detected while validating genesis state")
+			return errors.New("invalid sequence detected while validating x/topup genesis state")
 		}
 	}
 
