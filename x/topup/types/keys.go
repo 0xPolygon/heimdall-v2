@@ -6,7 +6,7 @@ const (
 	// ModuleName is the name of the module
 	ModuleName = "topup"
 
-	// StoreKey is the store key string for bor
+	// StoreKey is the store key string for topup
 	StoreKey = ModuleName
 
 	// DefaultDenom represents the default denominator for Polygon PoS coin
