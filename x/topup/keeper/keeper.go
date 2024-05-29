@@ -36,17 +36,17 @@ type Keeper struct {
 	dividendAccounts collections.Map[string, hTypes.DividendAccount]
 }
 
-// NewKeeper create new keeper
+// NewKeeper creates a new x/topup keeper
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	bankKeeper bk.Keeper,
-	/*
-	   TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
-	   stake sk.Keeper,
-	   chainKeeper ck.Keeper,
-	   contractCaller helper.IContractCaller,
-	*/
+/*
+   TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
+   stake sk.Keeper,
+   chainKeeper ck.Keeper,
+   contractCaller helper.IContractCaller,
+*/
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 
