@@ -503,7 +503,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
-	// TODO HV2: implement when ready
+	// TODO HV2: implement when BytesToHeimdallAddress is available
 	// app.AccountKeeper.SetBlockProposer(ctx,types.BytesToHeimdallAddress(req.Header.GetProposerAddress()))
 	return app.mm.BeginBlock(ctx)
 }

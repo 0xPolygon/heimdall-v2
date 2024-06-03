@@ -39,8 +39,8 @@ type QueryClient interface {
 	// GetDividendAccountByAddress queries for a specific DividendAccount by its
 	// address
 	GetDividendAccountByAddress(ctx context.Context, in *QueryDividendAccountRequest, opts ...grpc.CallOption) (*QueryDividendAccountResponse, error)
-	// GetDividendAccountRootHash queries for the dividend account of the genesis
-	// root hash
+	// GetDividendAccountRootHash calculates and returns the dividend account root
+	// hash
 	GetDividendAccountRootHash(ctx context.Context, in *QueryDividendAccountRootHashRequest, opts ...grpc.CallOption) (*QueryDividendAccountRootHashResponse, error)
 	// VerifyAccountProof queries for the proof of an account given its address
 	VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
@@ -122,8 +122,8 @@ type QueryServer interface {
 	// GetDividendAccountByAddress queries for a specific DividendAccount by its
 	// address
 	GetDividendAccountByAddress(context.Context, *QueryDividendAccountRequest) (*QueryDividendAccountResponse, error)
-	// GetDividendAccountRootHash queries for the dividend account of the genesis
-	// root hash
+	// GetDividendAccountRootHash calculates and returns the dividend account root
+	// hash
 	GetDividendAccountRootHash(context.Context, *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error)
 	// VerifyAccountProof queries for the proof of an account given its address
 	VerifyAccountProof(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error)

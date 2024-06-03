@@ -29,23 +29,34 @@ func (gs GenesisState) Validate() error {
 			return errors.New("invalid sequence detected while validating x/topup genesis state")
 		}
 	}
+	for _, account := range gs.DividendAccounts {
+		if account.User == "" {
+			return errors.New("invalid dividend account detected while validating x/topup genesis state")
+		}
+	}
 
 	return nil
 }
 
 // GetGenesisStateFromAppState returns the x/topup module GenesisState given a raw application genesis state
-func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) *GenesisState {
+func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) (*GenesisState, error) {
 	var genesisState GenesisState
 	if appState[ModuleName] != nil {
 		cdc.MustUnmarshalJSON(appState[ModuleName], &genesisState)
 	}
-
-	return &genesisState
+	err := genesisState.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return &genesisState, nil
 }
 
 // SetGenesisStateToAppState sets x/topup module GenesisState into the raw application genesis state.
 func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, dividendAccounts []types.DividendAccount) (map[string]json.RawMessage, error) {
-	topupState := GetGenesisStateFromAppState(cdc, appState)
+	topupState, err := GetGenesisStateFromAppState(cdc, appState)
+	if err != nil {
+		return nil, err
+	}
 	topupState.DividendAccounts = dividendAccounts
 
 	appState[ModuleName] = cdc.MustMarshalJSON(topupState)
