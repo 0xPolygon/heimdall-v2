@@ -62,6 +62,13 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 		"blockNumber", msg.BlockNumber,
 	)
 
+	// check feasibility of topup tx based on msg fee
+	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
+		logger.Error("default fee exceeds amount to topup", "user", msg.User,
+			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
+		return mod.Vote_VOTE_NO
+	}
+
 	/* TODO HV2: enable when chainmanager and contract caller are implemented
 	params := s.k.chainKeeper.GetParams(ctx)
 	chainParams := params.ChainParams
@@ -153,18 +160,23 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	user := msg.User
 	topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
-	   There, the BankKeeper.AddCoins + BankKeeper.SendCoins methods are used,
-	   but the first is no longer available in cosmos-sdk.
-	   So the approach here is to invoke BankKeeper.SendCoinsFromModuleToAccount + BankKeeper.SendCoins
-	   Not sure if this is the correct approach. Also, what will unsure that the module has the proper amount?
+	/* HV2: v1's BankKeeper.AddCoins + BankKeeper.SendCoins methods are used,
+	   but the first is no longer available in cosmos-sdk. Hence, we use
+	   BankKeeper.MintCoins + BankKeeper.SendCoinsFromModuleToAccount + BankKeeper.SendCoins
 	*/
+
+	err = s.k.BankKeeper.MintCoins(ctx, types.ModuleName, topupAmount)
+	if err != nil {
+		logger.Error("error while minting coins to x/topup module", "topupAmount", topupAmount, "error", err)
+		return
+	}
 
 	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
 	if err != nil {
-		logger.Error("error while adding coins to user", "user", user, "topupAmount", topupAmount, "error", err)
+		logger.Error("error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, "error", err)
 		return
 	}
+
 	err = s.k.BankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
 	if err != nil {
 		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
