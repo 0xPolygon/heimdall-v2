@@ -41,12 +41,12 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	bankKeeper bk.Keeper,
-/*
-   TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
-   stake sk.Keeper,
-   chainKeeper ck.Keeper,
-   contractCaller helper.IContractCaller,
-*/
+	/*
+	   TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
+	   stake sk.Keeper,
+	   chainKeeper ck.Keeper,
+	   contractCaller helper.IContractCaller,
+	*/
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 
@@ -83,13 +83,14 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 }
 
 // GetAllTopupSequences returns all the topup sequences
-func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) ([]string, error) {
+func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) (seq []string, e error) {
 	logger := k.Logger(ctx)
 
 	// get the sequences iterator
 	iter, err := k.sequences.Iterate(ctx, nil)
 	if err != nil {
-		return nil, err
+		e = err
+		return nil, e
 	}
 
 	// defer closing the iterator
@@ -97,6 +98,8 @@ func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) ([]string, error) {
 		err := iter.Close()
 		if err != nil {
 			logger.Error("error closing topup sequences iterator", "err", err)
+			seq = nil
+			e = err
 		}
 	}(iter)
 
@@ -104,10 +107,11 @@ func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) ([]string, error) {
 	sequences, err := iter.Keys()
 	if err != nil {
 		logger.Error("error getting topup sequences from the iterator", "err", err)
+		e = err
 		return nil, err
 	}
 
-	return sequences, nil
+	return sequences, e
 }
 
 // SetTopupSequence sets the topup sequence value in the store for the given key
