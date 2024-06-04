@@ -98,15 +98,14 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// partial withdraw
 	amount := msg.Amount
 
-	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
-	   There, the BankKeeper.GetCoins method is used to check the balance given an address.
-	   This method is no longer available in cosmos-sdk. So the approach here is to invoke BankKeeper.GetBalance.
-	   I believe this is correct.
+	/* HV2: v1's BankKeeper.GetCoins is no longer available in cosmos-sdk.
+	Hence, we could use BankKeeper.GetBalance,
+	but - just to be compatible with vesting, if ever enabled - we use BankKeeper.SpendableCoin.
 	*/
 
 	// full withdraw
 	if msg.Amount.IsZero() {
-		coins := m.k.BankKeeper.GetBalance(ctx, sdk.AccAddress(msg.Proposer), sdk.DefaultBondDenom)
+		coins := m.k.BankKeeper.SpendableCoin(ctx, sdk.AccAddress(msg.Proposer), sdk.DefaultBondDenom)
 		amount = coins.Amount
 	}
 

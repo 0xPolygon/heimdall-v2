@@ -72,7 +72,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 		coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(coins[0]).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(coins[0]).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -91,7 +91,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 		coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -103,7 +103,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 	t.Run("fail with insufficient funds", func(t *testing.T) {
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().GetBalance(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
 
 		_, err := msgServer.WithdrawFeeTx(ctx, &msg)
 		require.Error(err)
