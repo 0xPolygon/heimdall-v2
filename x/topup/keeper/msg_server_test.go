@@ -37,7 +37,7 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 
 		msg = *types.NewMsgTopupTx(addr.String(), addr.String(), fee, hash, logIndex, blockNumber)
 
-		res, err := msgServer.CreateTopupTx(ctx, &msg)
+		res, err := msgServer.HandleTopupTx(ctx, &msg)
 		require.NoError(err)
 		require.NotNil(res)
 	})
@@ -52,7 +52,7 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().IsSendEnabledDenom(gomock.Any(), gomock.Any()).Return(true).Times(1)
 
-		_, err = msgServer.CreateTopupTx(ctx, &msg)
+		_, err = msgServer.HandleTopupTx(ctx, &msg)
 		require.Error(err)
 		require.Contains(err.Error(), "already exists")
 	})

@@ -15,19 +15,19 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: topupv1.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod:      "TopupSequence",
+					RpcMethod:      "GetTopupTxSequence",
 					Use:            "topup-sequence [txHash] [logIndex]",
 					Short:          "Query the sequence of a topup tx",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "txHash"}, {ProtoField: "logIndex"}},
 				},
 				{
-					RpcMethod:      "IsOldTx",
+					RpcMethod:      "IsTopupTxOld",
 					Use:            "is-old-tx [txHash] [logIndex]",
 					Short:          "Check if a tx is old (already submitted)",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "txHash"}, {ProtoField: "logIndex"}},
 				},
 				{
-					RpcMethod:      "GetDividendAccount",
+					RpcMethod:      "GetDividendAccountByAddress",
 					Use:            "dividend-account [address]",
 					Short:          "Query a dividend account by its address",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}},
@@ -45,7 +45,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}},
 				},
 				{
-					RpcMethod: "GetAccountProofVerify",
+					RpcMethod: "VerifyAccountProof",
 					Use:       "verify-account-proof [address] [accountProof]",
 					Short:     "Verify account proof",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
@@ -57,15 +57,15 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: topupv1.Msg_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod: "CreateTopupTx",
-					Use:       "create-topup-tx [proposer] [user] [fee] [txHash] [logIndex] [blockNumber]",
-					Short:     "Create a topup tx",
+					RpcMethod: "HandleTopupTx",
+					Use:       "handle-topup-tx [proposer] [user] [fee] [txHash] [logIndex] [blockNumber]",
+					Short:     "Handle a topup tx",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
 						{ProtoField: "proposer"}, {ProtoField: "user"}, {ProtoField: "fee"},
 						{ProtoField: "txHash"}, {ProtoField: "logIndex"}, {ProtoField: "blockNumber"}},
 				},
 				{
-					RpcMethod: "WithdrawFee",
+					RpcMethod: "WithdrawFeeTx",
 					Use:       "withdraw-fee [proposer] [fee]",
 					Short:     "Withdraw fee",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{

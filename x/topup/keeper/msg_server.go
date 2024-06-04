@@ -21,14 +21,14 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 	return &msgServer{k: keeper}
 }
 
-// CreateTopupTx handles the creation of topup tx events for the x/topup module
-func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
+// HandleTopupTx handles the topup tx events for the x/topup module
+func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
 	logger := m.k.Logger(ctx)
 
 	// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash when implemented?
 	txHash := common.BytesToHash(msg.TxHash.Hash)
 
-	logger.Debug("CreateTopupTx msg received",
+	logger.Debug("HandleTopupTx msg received",
 		"proposer", msg.Proposer,
 		"user", msg.User,
 		"fee", msg.Fee.String(),
@@ -81,7 +81,7 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		),
 	})
 
-	logger.Debug("event created for CreateTopupTx")
+	logger.Debug("event created for HandleTopupTx")
 
 	return &types.MsgTopupTxResponse{}, nil
 }

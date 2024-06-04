@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_CreateTopupTx_FullMethodName = "/heimdallv2.topup.v1.Msg/CreateTopupTx"
+	Msg_HandleTopupTx_FullMethodName = "/heimdallv2.topup.v1.Msg/HandleTopupTx"
 	Msg_WithdrawFeeTx_FullMethodName = "/heimdallv2.topup.v1.Msg/WithdrawFeeTx"
 )
 
@@ -27,8 +27,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// CreateTopupTx defines a RPC method for creating a topup tx for a validator
-	CreateTopupTx(ctx context.Context, in *MsgTopupTx, opts ...grpc.CallOption) (*MsgTopupTxResponse, error)
+	// HandleTopupTx defines a RPC method for handling a topup tx for a validator
+	HandleTopupTx(ctx context.Context, in *MsgTopupTx, opts ...grpc.CallOption) (*MsgTopupTxResponse, error)
 	// WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
 	WithdrawFeeTx(ctx context.Context, in *MsgWithdrawFeeTx, opts ...grpc.CallOption) (*MsgWithdrawFeeTxResponse, error)
 }
@@ -41,9 +41,9 @@ func NewMsgClient(cc grpc.ClientConnInterface) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) CreateTopupTx(ctx context.Context, in *MsgTopupTx, opts ...grpc.CallOption) (*MsgTopupTxResponse, error) {
+func (c *msgClient) HandleTopupTx(ctx context.Context, in *MsgTopupTx, opts ...grpc.CallOption) (*MsgTopupTxResponse, error) {
 	out := new(MsgTopupTxResponse)
-	err := c.cc.Invoke(ctx, Msg_CreateTopupTx_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Msg_HandleTopupTx_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -63,8 +63,8 @@ func (c *msgClient) WithdrawFeeTx(ctx context.Context, in *MsgWithdrawFeeTx, opt
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// CreateTopupTx defines a RPC method for creating a topup tx for a validator
-	CreateTopupTx(context.Context, *MsgTopupTx) (*MsgTopupTxResponse, error)
+	// HandleTopupTx defines a RPC method for handling a topup tx for a validator
+	HandleTopupTx(context.Context, *MsgTopupTx) (*MsgTopupTxResponse, error)
 	// WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
 	WithdrawFeeTx(context.Context, *MsgWithdrawFeeTx) (*MsgWithdrawFeeTxResponse, error)
 	mustEmbedUnimplementedMsgServer()
@@ -74,8 +74,8 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (UnimplementedMsgServer) CreateTopupTx(context.Context, *MsgTopupTx) (*MsgTopupTxResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateTopupTx not implemented")
+func (UnimplementedMsgServer) HandleTopupTx(context.Context, *MsgTopupTx) (*MsgTopupTxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleTopupTx not implemented")
 }
 func (UnimplementedMsgServer) WithdrawFeeTx(context.Context, *MsgWithdrawFeeTx) (*MsgWithdrawFeeTxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method WithdrawFeeTx not implemented")
@@ -93,20 +93,20 @@ func RegisterMsgServer(s grpc.ServiceRegistrar, srv MsgServer) {
 	s.RegisterService(&Msg_ServiceDesc, srv)
 }
 
-func _Msg_CreateTopupTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Msg_HandleTopupTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MsgTopupTx)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(MsgServer).CreateTopupTx(ctx, in)
+		return srv.(MsgServer).HandleTopupTx(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Msg_CreateTopupTx_FullMethodName,
+		FullMethod: Msg_HandleTopupTx_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CreateTopupTx(ctx, req.(*MsgTopupTx))
+		return srv.(MsgServer).HandleTopupTx(ctx, req.(*MsgTopupTx))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -137,8 +137,8 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateTopupTx",
-			Handler:    _Msg_CreateTopupTx_Handler,
+			MethodName: "HandleTopupTx",
+			Handler:    _Msg_HandleTopupTx_Handler,
 		},
 		{
 			MethodName: "WithdrawFeeTx",

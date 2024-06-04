@@ -11,8 +11,8 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 // Msg defines the topup Msg service.
 service Msg {
   option (cosmos.msg.v1.service) = true;
-  // CreateTopupTx defines a RPC method for creating a topup tx for a validator
-  rpc CreateTopupTx(MsgTopupTx) returns (MsgTopupTxResponse);
+  // HandleTopupTx defines a RPC method for handling a topup tx for a validator
+  rpc HandleTopupTx(MsgTopupTx) returns (MsgTopupTxResponse);
   // WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
   rpc WithdrawFeeTx(MsgWithdrawFeeTx) returns (MsgWithdrawFeeTxResponse);
 }
