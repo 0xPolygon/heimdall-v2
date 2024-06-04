@@ -37,10 +37,8 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		"blockNumber", msg.BlockNumber,
 	)
 
-	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
-	   There, the BankKeeper.GetSendEnabled method is used but it's no longer available in cosmos-sdk.
-	   So the approach here is to invoke BankKeeper.IsSendEnabledDenom on matic denom
-	   I believe this is correct.
+	/* HV2: v1's BankKeeper.GetSendEnabled is no longer available in cosmos-sdk.
+	   We use BankKeeper.IsSendEnabledDenom instead
 	*/
 
 	// check if send is enabled for default denom

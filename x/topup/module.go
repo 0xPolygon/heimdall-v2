@@ -3,7 +3,6 @@ package topup
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 
 	"cosmossdk.io/core/appmodule"
@@ -64,16 +63,6 @@ func (am AppModule) RegisterSideMsgServices(sideCfg mod.SideTxConfigurator) {
 // DefaultGenesis returns default genesis state as raw bytes for the x/topup module.
 func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
-}
-
-// ValidateGenesis performs genesis state validation for the x/topup module.
-func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
-	var data types.GenesisState
-	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
-		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
-	}
-
-	return data.Validate()
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the x/topup module.
