@@ -4,10 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	mod "github.com/0xPolygon/heimdall-v2/module"
 
 	"cosmossdk.io/core/appmodule"
-	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -18,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
+	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -126,14 +125,4 @@ func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
 	return nil
-}
-
-// BeginBlock returns the BeginBlocker for the x/topup module.
-func (am AppModule) BeginBlock(ctx context.Context) error {
-	return am.keeper.BeginBlocker(ctx)
-}
-
-// EndBlock returns the EndBlocker for the x/topup module.
-func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
-	return am.keeper.EndBlocker(ctx)
 }
