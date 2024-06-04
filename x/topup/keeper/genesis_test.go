@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"github.com/0xPolygon/heimdall-v2/types"
 	"math/rand"
+	"sort"
 	"strconv"
 	"time"
 
@@ -39,4 +40,23 @@ func (suite *KeeperTestSuite) TestInitExportGenesis() {
 
 	require.LessOrEqual(len(topupSequences), len(actualParams.TopupSequences))
 	require.LessOrEqual(len(dividendAccounts), len(actualParams.DividendAccounts))
+
+	sort.Strings(actualParams.TopupSequences)
+	sort.Strings(topupSequences)
+
+	sort.Slice(actualParams.DividendAccounts, func(i, j int) bool {
+		return actualParams.DividendAccounts[i].User < actualParams.DividendAccounts[j].User
+	})
+
+	sort.Slice(dividendAccounts, func(i, j int) bool {
+		return dividendAccounts[i].User < dividendAccounts[j].User
+	})
+
+	for i := range topupSequences {
+		require.Equal(topupSequences[i], actualParams.TopupSequences[i])
+	}
+	for i := range dividendAccounts {
+		require.Equal(dividendAccounts[i], actualParams.DividendAccounts[i])
+		require.Equal(dividendAccounts[i].User, actualParams.DividendAccounts[i].User)
+	}
 }
