@@ -22,13 +22,16 @@ and `msg.LogIndex`. It throws an error if trying to process the top-up more than
 Here is the structure for the top-up transaction message:
 
 ```go
-type MsgTopupTx struct {
-    Proposer    string          `json:"proposer"`
-    User        string          `json:"user"`
-    Fee         math.Int        `json:"fee"`
-    TxHash      types.TxHash    `json:"tx_hash"`
-    LogIndex    uint64          `json:"log_index"`
-    BlockNumber uint64          `json:"block_number"`
+message MsgTopupTx {
+string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+string user = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+string fee = 3 [
+(gogoproto.customtype) = "cosmossdk.io/math.Int",
+(gogoproto.nullable) = false
+];
+heimdallv2.types.TxHash tx_hash = 4 [ (gogoproto.nullable) = false ];
+uint64 log_index = 5;
+uint64 block_number = 6;
 }
 ```
 
@@ -43,9 +46,12 @@ checkpoint. The next possible checkpoint will contain the withdraw related state
 Handler gets validator information based on `ValidatorAddress` and processes the withdraw.
 
 ```go
-type MsgWithdrawFeeTx struct {
-    Proposer    string      `json:"proposer"`
-    Amount      math.Int    `json:"amount"`
+message MsgWithdrawFeeTx {
+string proposer = 1;
+string amount = 3 [
+(gogoproto.customtype) = "cosmossdk.io/math.Int",
+(gogoproto.nullable) = false
+];
 }
 ```
 
