@@ -18,12 +18,13 @@ func (suite *KeeperTestSuite) TestInitExportGenesis() {
 
 	topupSequences := make([]string, 5)
 	dividendAccounts := make([]types.DividendAccount, 5)
+	accounts := simulation.RandomAccounts(r1, 5)
 
 	for i := range topupSequences {
 		topupSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 	for i := range dividendAccounts {
-		dividendAccounts[i].User = simulation.RandStringOfLength(r1, 20)
+		dividendAccounts[i].User = accounts[i].Address.String()
 		dividendAccounts[i].FeeAmount = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 
