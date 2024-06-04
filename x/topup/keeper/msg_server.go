@@ -121,11 +121,8 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// create coins object
 	coins := sdk.Coins{sdk.Coin{Denom: sdk.DefaultBondDenom, Amount: amount}}
 
-	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
-	   There, the BankKeeper.SubtractCoins method is used to withdraw coins from the validator.
-	   This method is no longer available in cosmos-sdk.
-	   So the approach here is to invoke BankKeeper.SendCoinsFromAccountToModule + BankKeeper.BurnCoins
-	   Not sure if this is the correct approach.
+	/* HV2: v1's BankKeeper.SubtractCoins is no longer available in cosmos-sdk.
+	   We use BankKeeper.SendCoinsFromAccountToModule + BankKeeper.BurnCoins instead
 	*/
 
 	// send coins from account to module
