@@ -337,7 +337,6 @@ func NewHeimdallApp(
 		distrtypes.ModuleName,
 		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
 		genutiltypes.ModuleName,
-		topupTypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
@@ -345,7 +344,6 @@ func NewHeimdallApp(
 		// TODO HV2: replace with our stake module
 		// stakingtypes.ModuleName,
 		genutiltypes.ModuleName,
-		topupTypes.ModuleName,
 	)
 
 	genesisModuleOrder := []string{
