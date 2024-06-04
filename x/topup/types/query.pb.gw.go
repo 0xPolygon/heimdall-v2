@@ -618,7 +618,7 @@ var (
 
 	pattern_Query_GetDividendAccountByAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"heimdallv2", "topup", "dividend-account", "address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetDividendAccountRootHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"heimdallv2", "topup", "dividend-account", "root"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetDividendAccountRootHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"heimdallv2", "topup", "dividend-account-root"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_VerifyAccountProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"heimdallv2", "topup", "account-proof", "address", "verify"}, "", runtime.AssumeColonVerbOpt(false)))
 

@@ -44,7 +44,7 @@ service Query {
   rpc GetDividendAccountRootHash(QueryDividendAccountRootHashRequest)
       returns (QueryDividendAccountRootHashResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/topup/dividend-account/root";
+    option (google.api.http).get = "/heimdallv2/topup/dividend-account-root";
   }
   // VerifyAccountProof queries for the proof of an account given its address
   rpc VerifyAccountProof(QueryVerifyAccountProofRequest)
