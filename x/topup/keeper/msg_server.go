@@ -44,10 +44,10 @@ func (m msgServer) CreateTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	*/
 
 	// check if send is enabled for default denom
-	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, types.DefaultDenom) {
+	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, sdk.DefaultBondDenom) {
 		logger.Error("send not enabled")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
-			"send for denom %s is not enabled in bank keeper", types.DefaultDenom)
+			"send for denom %s is not enabled in bank keeper", sdk.DefaultBondDenom)
 	}
 
 	// calculate sequence
@@ -108,7 +108,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 
 	// full withdraw
 	if msg.Amount.IsZero() {
-		coins := m.k.BankKeeper.GetBalance(ctx, sdk.AccAddress(msg.Proposer), types.DefaultDenom)
+		coins := m.k.BankKeeper.GetBalance(ctx, sdk.AccAddress(msg.Proposer), sdk.DefaultBondDenom)
 		amount = coins.Amount
 	}
 
@@ -122,7 +122,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	}
 
 	// create coins object
-	coins := sdk.Coins{sdk.Coin{Denom: types.DefaultDenom, Amount: amount}}
+	coins := sdk.Coins{sdk.Coin{Denom: sdk.DefaultBondDenom, Amount: amount}}
 
 	/* TODO HV2: is this the proper cosmos-sdk replacement for what's being done in heimdall-v1?
 	   There, the BankKeeper.SubtractCoins method is used to withdraw coins from the validator.
