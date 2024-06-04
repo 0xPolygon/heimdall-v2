@@ -10,13 +10,9 @@ import (
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	bk "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 
-	// TODO HV2: enable stakeKeeper, chainKeeper and helper when implemented in heimdall-v2
-	// "github.com/0xPolygon/heimdall-v2/chainmanager/keeper"
-	// "github.com/0xPolygon/heimdall-v2/helper"
-	// "github.com/0xPolygon/heimdall-v2/stake/keeper"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
+
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -26,7 +22,7 @@ type Keeper struct {
 	storeService store.KVStoreService
 	schema       collections.Schema
 
-	BankKeeper bk.Keeper
+	BankKeeper types.BankKeeper
 	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
 	// stakingKeeper sk.Keeper
 	// chainKeeper ck.Keeper
@@ -40,7 +36,7 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
-	bankKeeper bk.Keeper,
+	bankKeeper types.BankKeeper,
 	/*
 	   TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
 	   stake sk.Keeper,
