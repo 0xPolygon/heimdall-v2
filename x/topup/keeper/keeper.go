@@ -145,13 +145,14 @@ func (k *Keeper) HasTopupSequence(ctx sdk.Context, sequence string) (bool, error
 }
 
 // GetAllDividendAccounts returns all the dividend accounts
-func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) ([]hTypes.DividendAccount, error) {
+func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) (da []hTypes.DividendAccount, e error) {
 	logger := k.Logger(ctx)
 
 	// get the dividend accounts iterator
 	iter, err := k.dividendAccounts.Iterate(ctx, nil)
 	if err != nil {
-		return nil, err
+		e = err
+		return nil, e
 	}
 
 	// defer closing the iterator
@@ -159,6 +160,8 @@ func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) ([]hTypes.DividendAccou
 		err := iter.Close()
 		if err != nil {
 			logger.Error("error closing dividend accounts iterator", "err", err)
+			da = nil
+			e = err
 		}
 	}(iter)
 
@@ -166,10 +169,11 @@ func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) ([]hTypes.DividendAccou
 	dividendAccounts, err := iter.Values()
 	if err != nil {
 		logger.Error("error getting dividend accounts from the iterator", "err", err)
-		return nil, err
+		e = err
+		return nil, e
 	}
 
-	return dividendAccounts, nil
+	return dividendAccounts, e
 }
 
 // SetDividendAccount sets the dividend account in the store for the given dividendAccount
