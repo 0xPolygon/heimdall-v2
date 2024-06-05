@@ -89,7 +89,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) error {
 	data, err := c.RootChainABI.Pack("submitCheckpoint", signedData, sigs)
 	if err != nil {
-		Logger.Error("unable topack tx for submitCheckpoint", "error", err)
+		Logger.Error("unable to pack tx for submitCheckpoint", "error", err)
 		return err
 	}
 
