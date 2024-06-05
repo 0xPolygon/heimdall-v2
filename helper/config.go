@@ -360,7 +360,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	var err error
 	if mainRPCClient, err = rpc.Dial(conf.EthRPCUrl); err != nil {
-		log.Fatalln("Unable to dial via ethClient", "URL", conf.EthRPCUrl, "chain", "eth", "Error", err)
+		log.Fatalln("Unable to dial via ethClient", "URL", conf.EthRPCUrl, "chain", "eth", "error", err)
 	}
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
