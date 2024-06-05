@@ -55,6 +55,8 @@ github.com/0xPolygon/cometbft v0.1.0-beta h1:npfe0dAzbEsToTQ1X433JUlZljSDG/0sLUr
 github.com/0xPolygon/cometbft v0.1.0-beta/go.mod h1:AT9vYYlEJoizPHsTyDqdcZ3LzcoCXI4ycn32WrxH3jM=
 github.com/0xPolygon/cosmos-sdk v0.1.0-beta-polygon h1:Xypx5seFQU/Ni8NE/QW4VJ2MRcaNRq0OM3CnYydHW4E=
 github.com/0xPolygon/cosmos-sdk v0.1.0-beta-polygon/go.mod h1:HPrFjuxRcw+z0bW2WwzHrvQ35lmQf8A5I/iv1NuBpv0=
+github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240315104706-d86dab8157c4 h1:tRwkAMSXUQtPqFMpKiMrfQtRcEpmG0ZUcWqhFzbwNXY=
+github.com/0xPolygon/cosmos-sdk v0.50.3-0.20240315104706-d86dab8157c4/go.mod h1:Z17Bo1abzfqKoAsi93K/WRej+/1Cb0iXaAO+8VxZR5Q=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 h1:/vQbFIOMbk2FiG/kXiLl8BRyzTWDw7gX/Hz7Dd5eDMs=
 github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4/go.mod h1:hN7oaIRCjzsZ2dE+yG5k+rsdt3qcwykqK6HVGcKwsw4=
 github.com/99designs/keyring v1.2.1 h1:tYLp1ULvO7i3fI5vE21ReQuj99QFSs7lGm0xWyJo87o=

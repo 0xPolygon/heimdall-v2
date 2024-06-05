@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"cosmossdk.io/api/tendermint/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -24,7 +25,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	// TODO HV2 Please use the stake module once it is merged
+	//"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // smart contracts' events names
@@ -375,6 +377,8 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 	return balance, nil
 }
 
+// TODO HV2 Please uncomment the following fn once the staking module is merged. Staking module has Validator struct in it.
+/*
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
 	// amount, startEpoch, endEpoch, signer, status, err := c.StakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
@@ -400,6 +404,7 @@ func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *sta
 
 	return validator, nil
 }
+*/
 
 // GetMainChainBlock returns main chain block header
 func (c *ContractCaller) GetMainChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
