@@ -160,9 +160,6 @@ var (
 var cdc = amino.NewCodec()
 
 func init() {
-	cdc.RegisterConcrete(secp256k1.PubKey{}, secp256k1.PubKeyName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKey{}, secp256k1.PrivKeyName, nil)
-
 	Logger = logger.NewTMLogger(logger.NewSyncWriter(os.Stdout))
 }
 
