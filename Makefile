@@ -53,6 +53,9 @@ proto-check-breaking:
 
 .PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
+mockgen:
+	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
+
 .PHONY: help
 help:
 	@echo "Available targets:"
