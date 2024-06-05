@@ -274,7 +274,7 @@ func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, 
 	}
 }
 
-// GetBeginBlockEvents get begin block events for a given height
+// GetBeginBlockEvents gets the begin block events for a given height
 func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
