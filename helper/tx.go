@@ -67,14 +67,14 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 
 	chainId, err := client.ChainID(context.Background())
 	if err != nil {
-		Logger.Error("unable tofetch ChainID", "error", err)
+		Logger.Error("unable to fetch ChainID", "error", err)
 		return
 	}
 
 	// create auth
 	auth, err = bind.NewKeyedTransactorWithChainID(ecdsaPrivateKey, chainId)
 	if err != nil {
-		Logger.Error("unable tocreate auth object", "error", err)
+		Logger.Error("unable to create auth object", "error", err)
 		return
 	}
 
@@ -95,7 +95,7 @@ func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, r
 
 	auth, err := GenerateAuthObj(GetMainClient(), rootChainAddress, data)
 	if err != nil {
-		Logger.Error("unable tocreate auth object", "error", err)
+		Logger.Error("unable to create auth object", "error", err)
 		return err
 	}
 
@@ -128,13 +128,13 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 	// pack data based on method definition
 	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKeyBytes)
 	if err != nil {
-		Logger.Error("unable topack tx for stakeFor", "error", err)
+		Logger.Error("unable to pack tx for stakeFor", "error", err)
 		return err
 	}
 
 	auth, err := GenerateAuthObj(GetMainClient(), stakeManagerAddress, data)
 	if err != nil {
-		Logger.Error("unable tocreate auth object", "error", err)
+		Logger.Error("unable to create auth object", "error", err)
 		return err
 	}
 
@@ -168,7 +168,7 @@ func (c *ContractCaller) ApproveTokens(amount *big.Int, stakeManager common.Addr
 
 	auth, err := GenerateAuthObj(GetMainClient(), tokenAddress, data)
 	if err != nil {
-		Logger.Error("unable tocreate auth object", "error", err)
+		Logger.Error("unable to create auth object", "error", err)
 		return err
 	}
 
