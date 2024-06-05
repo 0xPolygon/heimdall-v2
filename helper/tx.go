@@ -86,7 +86,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 }
 
 // SendCheckpoint sends checkpoint to rootchain contract
-func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error) {
+func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) error {
 	data, err := c.RootChainABI.Pack("submitCheckpoint", signedData, sigs)
 	if err != nil {
 		Logger.Error("unable topack tx for submitCheckpoint", "error", err)
@@ -117,7 +117,7 @@ func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, r
 
 	Logger.Info("submitted new checkpoint to rootchain successfully", "txHash", tx.Hash().String())
 
-	return
+	return nil
 }
 
 // StakeFor stakes for a validator
