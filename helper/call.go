@@ -163,6 +163,11 @@ func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootcha
 		ci, err := rootchain.NewRootchain(address, mainChainClient)
 		c.ContractInstanceCache[address] = ci
 
+		if err != nil {
+			Logger.Error("error in fetching the root chain instance from mainchain client", "error", err)
+			return nil, err
+		}
+
 		return ci, err
 	}
 
@@ -177,6 +182,11 @@ func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*sta
 	if !ok {
 		ci, err := stakinginfo.NewStakinginfo(address, mainChainClient)
 		c.ContractInstanceCache[address] = ci
+
+		if err != nil {
+			Logger.Error("error in fetching the stakinginfo instance from mainchain client", "error", err)
+			return nil, err
+		}
 
 		return ci, err
 	}
@@ -193,6 +203,11 @@ func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*v
 		ci, err := validatorset.NewValidatorset(address, mainChainClient)
 		c.ContractInstanceCache[address] = ci
 
+		if err != nil {
+			Logger.Error("error in fetching the validator set from mainchain client", "error", err)
+			return nil, err
+		}
+
 		return ci, err
 	}
 
@@ -207,6 +222,11 @@ func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (
 	if !ok {
 		ci, err := stakemanager.NewStakemanager(address, mainChainClient)
 		c.ContractInstanceCache[address] = ci
+
+		if err != nil {
+			Logger.Error("error in fetching the stake manager from mainchain client", "error", err)
+			return nil, err
+		}
 
 		return ci, err
 	}
@@ -223,6 +243,11 @@ func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*s
 		ci, err := slashmanager.NewSlashmanager(address, mainChainClient)
 		c.ContractInstanceCache[address] = ci
 
+		if err != nil {
+			Logger.Error("error in fetching the slash manager from mainchain client", "error", err)
+			return nil, err
+		}
+
 		return ci, err
 	}
 
@@ -237,6 +262,11 @@ func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*sta
 	if !ok {
 		ci, err := statesender.NewStatesender(address, mainChainClient)
 		c.ContractInstanceCache[address] = ci
+
+		if err != nil {
+			Logger.Error("error in fetching the statesender from mainchain client", "error", err)
+			return nil, err
+		}
 
 		return ci, err
 	}
@@ -253,6 +283,11 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (
 		ci, err := statereceiver.NewStatereceiver(address, maticClient)
 		c.ContractInstanceCache[address] = ci
 
+		if err != nil {
+			Logger.Error("error in fetching the statereceiver from mainchain client", "error", err)
+			return nil, err
+		}
+
 		return ci, err
 	}
 
@@ -267,6 +302,11 @@ func (c *ContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc20
 	if !ok {
 		ci, err := erc20.NewErc20(address, mainChainClient)
 		c.ContractInstanceCache[address] = ci
+
+		if err != nil {
+			Logger.Error("error in fetching the matic token address from mainchain client", "error", err)
+			return nil, err
+		}
 
 		return ci, err
 	}
