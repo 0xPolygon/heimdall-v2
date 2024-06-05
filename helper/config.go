@@ -34,7 +34,7 @@ const (
 	FlagClientHome         = "home-client"
 	OverwriteGenesisFlag   = "overwrite-genesis"
 	RestServerFlag         = "rest-server"
-	GRPCServerFlag         = "grpc-server-flag"
+	GRPCServerFlag         = "grpc-server"
 	BridgeFlag             = "bridge"
 	LogLevel               = "log_level"
 	LogsWriterFileFlag     = "logs_writer_file"
