@@ -36,8 +36,8 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 
 	// from address
 	fromAddress := common.BytesToAddress(pkObject.PubKey().Address().Bytes())
-	// fetch gasprice
-	gasprice, err := client.SuggestGasPrice(context.Background())
+	// fetch gasPrice
+	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
 		return
 	}
@@ -48,9 +48,9 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 		mainChainMaxGasPrice = DefaultMainchainMaxGasPrice
 	}
 
-	if gasprice.Cmp(big.NewInt(mainChainMaxGasPrice)) == 1 {
-		Logger.Error("gas price is more than max gas price", "gasprice", gasprice)
-		err = fmt.Errorf("gas price is more than max_gas_price, gasprice = %v, maxGasPrice = %d", gasprice, mainChainMaxGasPrice)
+	if gasPrice.Cmp(big.NewInt(mainChainMaxGasPrice)) == 1 {
+		Logger.Error("gas price is more than max gas price", "gasprice", gasPrice)
+		err = fmt.Errorf("gas price is more than max_gas_price, gasprice = %v, maxGasPrice = %d", gasPrice, mainChainMaxGasPrice)
 
 		return
 	}
@@ -78,7 +78,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 		return
 	}
 
-	auth.GasPrice = gasprice
+	auth.GasPrice = gasPrice
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.GasLimit = gasLimit
 
