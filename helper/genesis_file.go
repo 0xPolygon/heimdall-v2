@@ -11,7 +11,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO HV2 Once the genesis files are ready, please add them inside the alloc folder and
+// uncomment the following "go:embed allocs" comment.
+
+/*
 //go:embed allocs
+*/
+
 var allocs embed.FS
 
 func WriteGenesisFile(chain string, filePath string, cdc *codec.Codec) error {
