@@ -16,13 +16,13 @@ import (
 
 	stakemanager "github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 
-	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-
 	stakinginfo "github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 
 	statereceiver "github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 
 	statesender "github.com/0xPolygon/heimdall-v2/contracts/statesender"
+
+	tenderminttypes "cosmossdk.io/api/tendermint/types"
 
 	types "github.com/ethereum/go-ethereum/core/types"
 
@@ -1071,22 +1071,22 @@ func (_m *IContractCaller) GetStateSenderInstance(stateSenderAddress string) (*s
 }
 
 // GetValidatorInfo provides a mock function with given fields: valID, stakingInfoInstance
-func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (staketypes.Validator, error) {
+func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (tenderminttypes.Validator, error) {
 	ret := _m.Called(valID, stakingInfoInstance)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetValidatorInfo")
 	}
 
-	var r0 staketypes.Validator
+	var r0 tenderminttypes.Validator
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) (staketypes.Validator, error)); ok {
+	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) (tenderminttypes.Validator, error)); ok {
 		return rf(valID, stakingInfoInstance)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) staketypes.Validator); ok {
+	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) tenderminttypes.Validator); ok {
 		r0 = rf(valID, stakingInfoInstance)
 	} else {
-		r0 = ret.Get(0).(staketypes.Validator)
+		r0 = ret.Get(0).(tenderminttypes.Validator)
 	}
 
 	if rf, ok := ret.Get(1).(func(uint64, *stakinginfo.Stakinginfo) error); ok {

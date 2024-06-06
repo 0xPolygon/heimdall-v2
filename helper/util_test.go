@@ -1,19 +1,15 @@
 package helper
 
-/*
 // TODO HV2 Please implement it once authtype is finalised and recoverFromPubkey fn is made
 import (
-	"encoding/hex"
 	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/maticnetwork/heimdall/contracts/rootchain"
-	"github.com/maticnetwork/heimdall/types"
 )
 
+// TODO HV2 Please write this test once authtypes is finalised and RecoverPubKey is implemented inside
+/*
 func TestUnpackSigAndVotes(t *testing.T) {
 	t.Parallel()
 
@@ -50,6 +46,7 @@ func TestUnpackSigAndVotes(t *testing.T) {
 		require.Equal(t, signerAddresses[i], hex.EncodeToString(signerAddress), "Signer Address Doesn't match")
 	}
 }
+*/
 
 func TestGetPowerFromAmount(t *testing.T) {
 	t.Parallel()
@@ -72,5 +69,3 @@ func TestGetPowerFromAmount(t *testing.T) {
 		require.Equal(t, p.String(), v, "Power must match")
 	}
 }
-
-*/
