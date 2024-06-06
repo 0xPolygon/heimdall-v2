@@ -53,9 +53,9 @@ proto-check-breaking:
 
 mock:
 	go install github.com/vektra/mockery/v2/...@latest
-	cd helper && mockery --name IContractCaller  --output ./mocks 
+	cd helper && mockery --name IContractCaller  --output ./mocks --filename=mock_contract_caller.go
 	go install github.com/golang/mock/mockgen@latest
-	mockgen -destination=helper/mocks/http_client_mock.go -package=mocks --source=./helper/util.go HTTPClient
+	mockgen -destination=helper/mocks/mock_http_client.go.go -package=mocks --source=./helper/util.go HTTPClient
 
 .PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
