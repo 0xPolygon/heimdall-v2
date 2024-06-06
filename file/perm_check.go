@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	types "github.com/0xPolygon/heimdall-v2/types/error"
+	errTypes "github.com/0xPolygon/heimdall-v2/types/error"
 )
 
 // PermCheck checks the secret key and the keystore files.
@@ -17,19 +17,19 @@ func PermCheck(filePath string, validPerm os.FileMode) error {
 	if err != nil {
 
 		if errors.Is(err, os.ErrNotExist) {
-			return errors.New(fmt.Sprintf("no file exist corresponding to this path: %s", filePath))
+			return fmt.Errorf("no file exist corresponding to this path: %s", filePath)
 
 		}
 
 		if !errors.Is(err, os.ErrExist) {
-			return types.InvalidPermissionsError{File: filePath, Perm: validPerm, Err: err}
+			return errTypes.InvalidPermissionsError{File: filePath, Perm: validPerm, Err: err}
 		}
 
 	}
 
 	filePerm := f.Mode()
 	if filePerm != validPerm {
-		return types.InvalidPermissionsError{File: filePath, Perm: validPerm}
+		return errTypes.InvalidPermissionsError{File: filePath, Perm: validPerm}
 	}
 
 	return nil
