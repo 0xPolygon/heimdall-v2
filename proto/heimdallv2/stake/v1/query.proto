@@ -19,7 +19,7 @@ service Query {
     option (google.api.http).get = "/staking/validator-set";
   }
 
-  // Signer queries validator info for given validator validator address.
+  // Signer queries validator info for a given validator address.
   rpc Signer(QuerySignerRequest) returns (QuerySignerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/staking/signer/{val_address}";
@@ -41,14 +41,14 @@ service Query {
   // TotalPower queries the total power of a validator set
   rpc TotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/totalpower";
+    option (google.api.http).get = "/staking/total-power";
   }
 
   // StakingSequence queries for the staking sequence
-  rpc StakingSequence(QueryStakingSequenceRequest)
-      returns (QueryStakingSequenceResponse) {
+  rpc StakingIsOldTx(QueryStakingIsOldTxRequest)
+      returns (QueryStakingIsOldTxResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/isoldtx";
+    option (google.api.http).get = "/staking/is-old-tx";
   }
 }
 
@@ -116,7 +116,7 @@ message QueryValidatorStatusResponse {
 
 // QueryStakingSequenceRequest is response type for the Query/StakingSequence
 // RPC method
-message QueryStakingSequenceRequest {
+message QueryStakingIsOldTxRequest {
 
   string tx_hash = 1 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
@@ -124,7 +124,7 @@ message QueryStakingSequenceRequest {
 
 // QueryValidatorStatusResponse is response type for the Query/StakingSequence
 // RPC method
-message QueryStakingSequenceResponse {
+message QueryStakingIsOldTxResponse {
   // status define the active status of validator
   bool status = 1 [ (amino.dont_omitempty) = true ];
 }
