@@ -15,7 +15,7 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  // ValidatorJoin defines a method for joining a new validator.
+  // ValidatorJoin defines a method for a new validator to join
   rpc ValidatorJoin(MsgValidatorJoin) returns (MsgValidatorJoinResponse);
 
   // StakeUpdate defines a method for updating an existing validator's stake.
@@ -28,10 +28,9 @@ service Msg {
   rpc ValidatorExit(MsgValidatorExit) returns (MsgValidatorExitResponse);
 }
 
-// MsgValidatorJoin defines a SDK message for joining of the new
-// validator
+//  MsgValidatorJoin defines a message for a new validator to join the network
 message MsgValidatorJoin {
-  option (amino.name) = "staking/MsgValidatorJoin";
+  option (amino.name) = "heimdall-v2/MsgValidatorJoin";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -59,9 +58,9 @@ message MsgValidatorJoin {
 // MsgValidatorJoinResponse defines the Msg/ValidatorJoin response type.
 message MsgValidatorJoinResponse {}
 
-// MsgStakeUpdate defines a SDK message for performing a stake update
+// MsgStakeUpdate defines a message for performing a stake update
 message MsgStakeUpdate {
-  option (amino.name) = "cosmos-sdk/MsgStakeUpdate";
+  option (amino.name) = "heimdall-v2/MsgStakeUpdate";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -86,10 +85,10 @@ message MsgStakeUpdate {
 // MsgStakeUpdateResponse defines the Msg/StakeUpdate response type.
 message MsgStakeUpdateResponse {}
 
-// MsgSignerUpdate defines a SDK message for updating signer of the existing
+// MsgSignerUpdate defines a message for updating signer of the existing
 // validator
 message MsgSignerUpdate {
-  option (amino.name) = "cosmos-sdk/MsgSignerUpdate";
+  option (amino.name) = "heimdall-v2/MsgSignerUpdate";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -111,9 +110,9 @@ message MsgSignerUpdate {
 // MsgSignerUpdate defines the Msg/SignerUpdate response type.
 message MsgSignerUpdateResponse {}
 
-// MsgValidatorExit defines a SDK message for exiting the validator
+// MsgValidatorExit defines a message for exiting the validator
 message MsgValidatorExit {
-  option (amino.name) = "cosmos-sdk/MsgValidatorExit";
+  option (amino.name) = "heimdall-v2/MsgValidatorExit";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
