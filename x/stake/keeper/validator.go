@@ -244,28 +244,32 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 }
 
 // GetValidatorSet returns current Validator Set from store
-func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet) {
+func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
 	store := k.storeService.OpenKVStore(ctx)
 	// get current validator set from store
 	bz, err := store.Get(types.CurrentValidatorSetKey)
 
 	if err != nil {
 		k.Logger(ctx).Error("GetValidatorSet | CurrentValidatorSetKeyDoesNotExist ", "error", err)
+		return validatorSet, err
 	}
 
 	if err = k.cdc.Unmarshal(bz, &validatorSet); err != nil {
 		k.Logger(ctx).Error("GetValidatorSet | UnmarshalBinaryBare", "error", err)
+		return validatorSet, err
 	}
 
 	// return validator set
-	return validatorSet
+	return validatorSet, nil
 }
 
 // IncrementAccum increments accum for validator set by n times and replace validator set in store
 func (k *Keeper) IncrementAccum(ctx context.Context, times int) {
 	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
-
+	validatorSet, err := k.GetValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("IncrementAccum | UpdateValidatorSetInStore", "error", err)
+	}
 	// increment accum
 	validatorSet.IncrementProposerPriority(times)
 
@@ -279,7 +283,11 @@ func (k *Keeper) IncrementAccum(ctx context.Context, times int) {
 // GetNextProposer returns next proposer
 func (k *Keeper) GetNextProposer(ctx context.Context) *types.Validator {
 	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
+	validatorSet, err := k.GetValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
+		return nil
+	}
 
 	// Increment accum in copy
 	copiedValidatorSet := validatorSet.CopyIncrementProposerPriority(1)
@@ -291,7 +299,11 @@ func (k *Keeper) GetNextProposer(ctx context.Context) *types.Validator {
 // GetCurrentProposer returns current proposer
 func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 	// get validator set
-	validatorSet := k.GetValidatorSet(ctx)
+	validatorSet, err := k.GetValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
+		return nil
+	}
 
 	// return get proposer
 	return validatorSet.GetProposer()
@@ -446,7 +458,12 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 // TODO HV2 Please how to use the stop parameter here
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
 func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
-	currentValidatorSet := k.GetValidatorSet(ctx)
+	currentValidatorSet, err := k.GetValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
+		return nil
+	}
+
 	for _, v := range currentValidatorSet.Validators {
 		if stop := f(v); !stop {
 			return nil

@@ -20,81 +20,77 @@ type Querier struct {
 
 var _ types.QueryServer = Querier{}
 
-func NewQuerier(keeper *Keeper) Querier {
-	return Querier{Keeper: keeper}
-}
-
 // CurrentValidatorSet queries all validators which are currently active in validator set
-func (k Querier) CurrentValidatorSet(ctx context.Context, req *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
-	validatorSet := k.GetValidatorSet(ctx)
+func (q Querier) CurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
+	validatorSet, err := q.GetValidatorSet(ctx)
 
 	return &types.QueryCurrentValidatorSetResponse{
 		ValidatorSet: validatorSet,
-	}, nil
+	}, err
 }
 
 // Signer queries validator info for given validator validator address.
-func (k Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
+func (q Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	validator, err := k.GetValidatorInfo(ctx, req.ValAddress)
+	validator, err := q.GetValidatorInfo(ctx, req.ValAddress)
 
 	if err != nil {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("Error in getting validator corresposing to the given address Err:%s", err))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresposing to the given address", req.ValAddress, "err", err))
 	}
 
 	return &types.QuerySignerResponse{Validator: validator}, nil
 }
 
 // Validator queries validator info for a given validator id.
-func (k Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
+func (q Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	validator, ok := k.GetValidatorFromValID(ctx, req.Id)
+	validator, ok := q.GetValidatorFromValID(ctx, req.Id)
 
 	if !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("Error in getting validator corresposing to the given id "))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresposing to the given id", req.Id))
 	}
 
 	return &types.QueryValidatorResponse{Validator: validator}, nil
 }
 
 // ValidatorStatus queries validator status for given validator val_address.
-func (k Querier) ValidatorStatus(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
+func (q Querier) ValidatorStatus(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	// get validator status by signer address
-	status := k.IsCurrentValidatorByAddress(ctx, req.ValAddress)
+	status := q.IsCurrentValidatorByAddress(ctx, req.ValAddress)
 
 	return &types.QueryValidatorStatusResponse{Status: status}, nil
 }
 
 // TotalPower queries the total power of a validator set
-func (k Querier) TotalPower(ctx context.Context, req *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
-	totalPower := k.GetTotalPower(ctx)
+func (q Querier) TotalPower(ctx context.Context, _ *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
+	totalPower := q.GetTotalPower(ctx)
 
 	return &types.QueryTotalPowerResponse{TotalPower: totalPower}, nil
 }
 
 // StakingSequence queries for the staking sequence
-func (k Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSequenceRequest) (*types.QueryStakingSequenceResponse, error) {
+func (q Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSequenceRequest) (*types.QueryStakingSequenceResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	chainParams, err := k.cmKeeper.GetParams(ctx)
+	chainParams, err := q.cmKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "chain params not found")
 	}
 
 	// get main tx receipt
-	receipt, err := k.IContractCaller.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainChainTxConfirmations)
+	receipt, err := q.IContractCaller.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -103,7 +99,7 @@ func (k Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSeq
 	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
 
 	// check if incoming tx already exists
-	if !k.HasStakingSequence(ctx, sequence.String()) {
+	if !q.HasStakingSequence(ctx, sequence.String()) {
 		return &types.QueryStakingSequenceResponse{Status: true}, nil
 	}
 

@@ -11,8 +11,7 @@ import (
 )
 
 func (s *KeeperTestSuite) TestInitExportGenesis() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)

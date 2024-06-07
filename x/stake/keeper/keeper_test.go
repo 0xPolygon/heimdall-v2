@@ -23,6 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,6 +31,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+)
+
+var (
+	pk1      = secp256k1.GenPrivKey().PubKey()
+	pk2      = secp256k1.GenPrivKey().PubKey()
+	pk3      = secp256k1.GenPrivKey().PubKey()
+	valAddr1 = sdk.ValAddress(pk1.Address())
+	valAddr2 = sdk.ValAddress(pk2.Address())
+	valAddr3 = sdk.ValAddress(pk3.Address())
 )
 
 type KeeperTestSuite struct {
