@@ -6,8 +6,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// ValidateGenesis validates the provided staking genesis state to ensure the
-// expected invariants holds. (i.e. params in correct bounds, no duplicate validators)
+// ValidateGenesis validates the provided stake genesis state to ensure that listed
+// validators and staking sequences are valid
 func ValidateGenesis(data *types.GenesisState) error {
 	for _, validator := range data.Validators {
 		if !validator.ValidateBasic() {
