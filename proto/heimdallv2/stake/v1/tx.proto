@@ -107,7 +107,7 @@ message MsgSignerUpdate {
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 
-// MsgSignerUpdate defines the Msg/SignerUpdate response type.
+// MsgSignerUpdateResponse defines the Msg/SignerUpdate response type.
 message MsgSignerUpdateResponse {}
 
 // MsgValidatorExit defines a message for exiting the validator
@@ -130,5 +130,5 @@ message MsgValidatorExit {
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 
-// MsgValidatorExit defines the Msg/ValidatorExit response type.
+// MsgValidatorExitResponse defines the Msg/ValidatorExit response type.
 message MsgValidatorExitResponse {}
