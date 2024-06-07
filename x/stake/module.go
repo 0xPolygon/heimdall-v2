@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModuleBasic = AppModule{}
 	//TODO HV2
 	//_ module.AppModuleSimulation = AppModule{}
 	_ module.HasServices     = AppModule{}
