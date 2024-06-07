@@ -77,9 +77,9 @@ message QuerySignerResponse {
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryValidatorRequest is response type for the Query/Validator RPC method
+// QueryValidatorRequest is request type for the Query/Validator RPC method
 message QueryValidatorRequest {
-  // validator_id defines the validator id to query for.
+  // id defines the validator id to query for.
   uint64 id = 1 [ (amino.dont_omitempty) = true ];
 }
 
@@ -97,32 +97,32 @@ message QueryTotalPowerRequest {}
 // QueryTotalPowerResponse is response type for the
 // Query/TotalPower RPC method
 message QueryTotalPowerResponse {
+  // total power denotes the total power of all the validators
   int64 total_power = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryValidatorStatusRequest is response type for the Query/ValidatorStatus
 // RPC method
 message QueryValidatorStatusRequest {
-  // val_address defines the validator val_address to query for.
+  // val_address defines the validator address to query for.
   string val_address = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryValidatorStatusResponse is response type for the Query/ValidatorStatus
 // RPC method
 message QueryValidatorStatusResponse {
-  // status define the active status of validator
+  // status define whether the particular validator is active in the validator set
   bool status = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryStakingSequenceRequest is response type for the Query/StakingSequence
+// QueryStakingIsOldTxRequest is request type for the Query/StakingIsOldTx
 // RPC method
 message QueryStakingIsOldTxRequest {
-
   string tx_hash = 1 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryValidatorStatusResponse is response type for the Query/StakingSequence
+// QueryStakingIsOldTxResponse is response type for the Query/StakingIsOldTx
 // RPC method
 message QueryStakingIsOldTxResponse {
   // status define the active status of validator
