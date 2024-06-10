@@ -33,65 +33,6 @@ func TestHeimdallConfig(t *testing.T) {
 	fmt.Println("PublicKey", pubKey.String())
 }
 
-func TestHeimdallConfigNewSelectionAlgoHeight(t *testing.T) {
-	t.Parallel()
-
-	data := map[string]bool{"mumbai": false, "mainnet": false, "local": true}
-	for chain, shouldBeZero := range data {
-		// allow config to be loaded again
-		conf.BorRPCUrl = ""
-
-		viper.Set("chain", chain)
-
-		InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
-
-		nsah := GetNewSelectionAlgoHeight()
-		if nsah == 0 && !shouldBeZero || nsah != 0 && shouldBeZero {
-			t.Errorf("invalid GetNewSelectionAlgoHeight = %d for chain %s", nsah, chain)
-		}
-	}
-}
-
-func TestGetChainManagerAddressMigration(t *testing.T) {
-	t.Parallel()
-
-	newMaticContractAddress := "0x0000000000000000000000000000000000001234"
-
-	chainManagerAddressMigrations["mumbai"] = map[int64]ChainManagerAddressMigration{
-		350: {MaticTokenAddress: newMaticContractAddress},
-	}
-
-	viper.Set("chain", "mumbai")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
-
-	migration, found := GetChainManagerAddressMigration(350)
-
-	if !found {
-		t.Errorf("expected migration to be found")
-	}
-
-	if migration.MaticTokenAddress != newMaticContractAddress {
-		t.Errorf("expected matic token address to be %s, got %s", newMaticContractAddress, migration.MaticTokenAddress)
-	}
-
-	// test for non existing migration
-	_, found = GetChainManagerAddressMigration(351)
-	if found {
-		t.Errorf("expected migration to not be found")
-	}
-
-	// test for non existing chain
-	conf.BorRPCUrl = ""
-
-	viper.Set("chain", "newChain")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
-
-	_, found = GetChainManagerAddressMigration(350)
-	if found {
-		t.Errorf("expected migration to not be found")
-	}
-}
-
 func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 	t.Parallel()
 

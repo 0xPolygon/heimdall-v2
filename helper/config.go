@@ -200,7 +200,6 @@ type Configuration struct {
 	LogsType       string `mapstructure:"logs_type"`        // if true, enable logging in json format
 	LogsWriterFile string `mapstructure:"logs_writer_file"` // if given, Logs will be written to this file else os.Stdout
 
-	// current chain - newSelectionAlgoHeight depends on this
 	Chain string `mapstructure:"chain"`
 }
 
@@ -225,15 +224,7 @@ var Logger logger.Logger
 // GenesisDoc contains the genesis file
 var GenesisDoc cmTypes.GenesisDoc
 
-var newSelectionAlgoHeight int64 = 0
-
-var spanOverrideHeight int64 = 0
-
 var milestoneBorBlockHeight uint64 = 0
-
-var aalborgHeight int64 = 0
-
-var newHexToStringAlgoHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
 	MaticTokenAddress     string
@@ -390,25 +381,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Chain {
 	case MainChain:
-		newSelectionAlgoHeight = 375300
-		spanOverrideHeight = 8664000
-		newHexToStringAlgoHeight = 9266260
-		aalborgHeight = 15950759
 	case MumbaiChain:
-		newSelectionAlgoHeight = 282500
-		spanOverrideHeight = 10205000
-		newHexToStringAlgoHeight = 12048023
-		aalborgHeight = 18035772
 	case AmoyChain:
-		newSelectionAlgoHeight = 0
-		spanOverrideHeight = 0
-		newHexToStringAlgoHeight = 0
-		aalborgHeight = 0
 	default:
-		newSelectionAlgoHeight = 0
-		spanOverrideHeight = 0
-		newHexToStringAlgoHeight = 0
-		aalborgHeight = 0
+
 	}
 }
 
@@ -513,29 +489,9 @@ func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
 }
 
-// GetNewSelectionAlgoHeight returns newSelectionAlgoHeight
-func GetNewSelectionAlgoHeight() int64 {
-	return newSelectionAlgoHeight
-}
-
-// GetSpanOverrideHeight returns spanOverrideHeight
-func GetSpanOverrideHeight() int64 {
-	return spanOverrideHeight
-}
-
-// GetAalborgHardForkHeight returns AalborgHardForkHeight
-func GetAalborgHardForkHeight() int64 {
-	return aalborgHeight
-}
-
 // GetMilestoneBorBlockHeight returns milestoneBorBlockHeight
 func GetMilestoneBorBlockHeight() uint64 {
 	return milestoneBorBlockHeight
-}
-
-// GetNewHexToStringAlgoHeight returns newHexToStringAlgoHeight
-func GetNewHexToStringAlgoHeight() int64 {
-	return newHexToStringAlgoHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
