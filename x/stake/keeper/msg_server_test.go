@@ -45,7 +45,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	require.False(false, ok, "Should not add validator")
 }
 
-func (s *KeeperTestSuite) TestHandleMsgValidatorUpdate() {
+func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
 	require := s.Require()
 	// pass 0 as time alive to generate non de-activated validators

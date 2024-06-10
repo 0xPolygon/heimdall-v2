@@ -73,7 +73,7 @@ func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
 	}
 
-	//TODO HV2: Should we implement the check for the size here
+	// TODO HV2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Signer public key can't be of zero bytes")
 	}
@@ -169,7 +169,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
 	}
 
-	//TODO HV2: Should we implement the check for the size here
+	// TODO HV2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
 		return ErrInvalidMsg.Wrapf("New signer public key can't be of zero bytes")
 	}

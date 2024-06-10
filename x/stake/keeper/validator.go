@@ -171,7 +171,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 	defer iterator.Close()
 
 	if err != nil {
-		k.Logger(ctx).Error("Error in getting iterator for validators")
+		k.Logger(ctx).Error("error in getting iterator for validators")
 		return
 	}
 
@@ -419,7 +419,7 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 	defer iterator.Close()
 
 	if err != nil {
-		k.Logger(ctx).Error("Error in getting iterator for validators")
+		k.Logger(ctx).Error("error in getting iterator for validators")
 		return
 	}
 
@@ -523,9 +523,7 @@ func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newVali
 	}
 
 	// set validator set with CurrentMilestoneValidatorSetKey as key in store
-	store.Set(types.CurrentMilestoneValidatorSetKey, bz)
-
-	return nil
+	return store.Set(types.CurrentMilestoneValidatorSetKey, bz)
 }
 
 // GetMilestoneCurrentProposer returns current proposer

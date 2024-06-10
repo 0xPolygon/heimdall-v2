@@ -23,7 +23,7 @@ func DefaultGenesisState() *GenesisState {
 	return &GenesisState{}
 }
 
-// GetGenesisStateFromAppState returns x/staking GenesisState given raw application
+// GetGenesisStateFromAppState returns x/stake GenesisState given raw application
 // genesis state.
 func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) *GenesisState {
 	var genesisState GenesisState

@@ -59,16 +59,13 @@ func (q Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest
 	return &types.QueryValidatorResponse{Validator: validator}, nil
 }
 
-// ValidatorStatus queries validator status for given validator val_address.
+// ValidatorStatus queries validator status for given validator address.
 func (q Querier) ValidatorStatus(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	// get validator status by signer address
-	status := q.IsCurrentValidatorByAddress(ctx, req.ValAddress)
-
-	return &types.QueryValidatorStatusResponse{Status: status}, nil
+	return &types.QueryValidatorStatusResponse{Status: q.IsCurrentValidatorByAddress(ctx, req.ValAddress)}, nil
 }
 
 // TotalPower queries the total power of a validator set
