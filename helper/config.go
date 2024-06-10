@@ -376,13 +376,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	privVal := privval.LoadFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
-	cdc.MustUnmarshalBinaryBare(privVal.Key.PrivKey.Bytes(), &privKeyObject)
-	cdc.MustUnmarshalBinaryBare(privKeyObject.PubKey().Bytes(), &pubKeyObject)
+	fmt.Println(privVal)
+	privKeyObject = privVal.Key.PrivKey.Bytes()
+	pubKeyObject = privVal.Key.PubKey.Bytes()
 
 	switch conf.Chain {
-	case MainChain:
-	case MumbaiChain:
-	case AmoyChain:
+	case MainChain, MumbaiChain, AmoyChain:
 	default:
 
 	}

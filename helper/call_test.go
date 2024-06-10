@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"os"
 	"testing"
 
 	//authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -18,7 +17,6 @@ import (
 	//"github.com/0xPolygon/heimdall-v2/x/types"
 	//authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -82,11 +80,6 @@ const (
 // TestPopulateABIs tests that package level ABIs cache works as expected
 // by not invoking json methods after contracts ABIs' init
 func TestPopulateABIs(t *testing.T) {
-	t.Parallel()
-
-	viper.Set(CometBFTNodeFlag, testCometBFTNode)
-	viper.Set("log_level", "info")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
 
 	t.Log("ABIs map should be empty and all ABIs not found")
 	assert.True(t, len(ContractsABIsMap) == 0)
