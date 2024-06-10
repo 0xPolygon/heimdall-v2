@@ -15,7 +15,7 @@ require (
 	github.com/cometbft/cometbft v0.38.2
 	github.com/cosmos/cosmos-db v1.0.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
-	github.com/cosmos/cosmos-sdk v0.50.1
+	github.com/cosmos/cosmos-sdk v0.50.2
 	github.com/cosmos/gogoproto v1.4.11
 	github.com/ethereum/go-ethereum v1.13.15
 	github.com/golang/mock v1.6.0
@@ -232,10 +232,19 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
+// following versions might cause unexpected behavior
+replace github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+
+// HV2 related packages
 replace (
-	// HV2
+	cosmossdk.io/api => github.com/0xPolygon/cosmos-sdk/api v0.7.2
+	cosmossdk.io/client/v2 => github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.1
+	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.0
+	cosmossdk.io/errors => github.com/0xPolygon/cosmos-sdk/errors v1.0.0
+	cosmossdk.io/log => github.com/0xPolygon/cosmos-sdk/log v1.2.1
+	cosmossdk.io/math => github.com/0xPolygon/cosmos-sdk/math v1.2.0
+	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.0.1
+	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.12.0
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.0-beta
 	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.1.1-beta-polygon
-	// following versions might cause unexpected behavior
-	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
