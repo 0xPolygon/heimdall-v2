@@ -387,9 +387,7 @@ func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(
 func (k *Keeper) SetStakingSequence(ctx context.Context, sequence string) error {
 	store := k.storeService.OpenKVStore(ctx)
 
-	err := store.Set(types.GetStakingSequenceKey(sequence), types.DefaultValue)
-
-	return err
+	return store.Set(types.GetStakingSequenceKey(sequence), types.DefaultValue)
 }
 
 // HasStakingSequence checks if staking sequence already exists
