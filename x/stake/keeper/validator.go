@@ -475,7 +475,11 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 // MilestoneIncrementAccum increments accum for milestone validator set by n times and replace validator set in store
 func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
 	// get milestone validator set
-	validatorSet := k.GetMilestoneValidatorSet(ctx)
+	validatorSet, err := k.GetMilestoneValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching the milestone validator set from the db", "error", err)
+		return
+	}
 
 	// increment accum
 	validatorSet.IncrementProposerPriority(times)
@@ -483,32 +487,33 @@ func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
 	// replace
 
 	if err := k.UpdateMilestoneValidatorSetInStore(ctx, validatorSet); err != nil {
-		k.Logger(ctx).Error("IncrementAccum | UpdateValidatorSetInStore", "error", err)
+		k.Logger(ctx).Error("error in setting the milestone validator set in the db", "error", err)
 	}
 }
 
 // GetMilestoneValidatorSet returns current milestone Validator Set from store
-func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet) {
+func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
 	store := k.storeService.OpenKVStore(ctx)
 
 	var bz []byte
 
-	bz, err := store.Get(types.CurrentMilestoneValidatorSetKey)
+	bz, err = store.Get(types.CurrentMilestoneValidatorSetKey)
 	if bz == nil {
 		bz, err = store.Get(types.CurrentValidatorSetKey)
 	}
 
 	if err != nil {
 		k.Logger(ctx).Error("GetMilestoneValidatorSet | UnmarshalBinaryBare", "error", err)
-		return validatorSet
+		return validatorSet, err
 	}
 
 	if err = k.cdc.Unmarshal(bz, &validatorSet); err != nil {
 		k.Logger(ctx).Error("GetMilestoneValidatorSet | UnmarshalBinaryBare", "error", err)
+		return validatorSet, err
 	}
 
 	// return validator set
-	return validatorSet
+	return validatorSet, nil
 }
 
 // UpdateMilestoneValidatorSetInStore adds milestone validator set to store
@@ -529,7 +534,10 @@ func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newVali
 // GetMilestoneCurrentProposer returns current proposer
 func (k *Keeper) GetMilestoneCurrentProposer(ctx context.Context) *types.Validator {
 	// get validator set
-	validatorSet := k.GetMilestoneValidatorSet(ctx)
+	validatorSet, err := k.GetMilestoneValidatorSet(ctx)
+	if err != nil {
+		return nil
+	}
 
 	// return get proposer
 	return validatorSet.GetProposer()
