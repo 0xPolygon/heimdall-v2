@@ -7,12 +7,46 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+
+	storetypes "cosmossdk.io/store/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/cosmos/cosmos-sdk/std"
+	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/x/bank"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	"github.com/cosmos/cosmos-sdk/x/distribution"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	"github.com/cosmos/cosmos-sdk/x/params"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
+	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/cosmos/cosmos-sdk/x/gov"
+	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
+	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
+	"github.com/cosmos/gogoproto/proto"
+
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/client/v2/autocli"
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
+	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -112,7 +146,7 @@ type HeimdallApp struct {
 	// ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
 	TopupKeeper topupKeeper.Keeper
-	// ChainKeeper chainmanagerkeeper.Keeper
+	ChainManagerKeeper chainmanagerkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	// caller helper.ContractCaller
@@ -172,8 +206,8 @@ func NewHeimdallApp(
 		// bortypes.StoreKey,
 		// clerktypes.StoreKey,
 		// checkpointtypes.StoreKey,
-		topupTypes.StoreKey,
-		// chainmanagertypes.StoreKey,
+		topuptypes.StoreKey,
+		chainmanagertypes.StoreKey,
 	)
 
 	// register streaming services
@@ -294,6 +328,11 @@ func NewHeimdallApp(
 	// custom keepers
 	// TODO HV2: initialize custom module keepers
 
+	app.ChainManagerKeeper = chainmanagerkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
@@ -314,6 +353,7 @@ func NewHeimdallApp(
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
+		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper),
 	)
 
@@ -353,14 +393,13 @@ func NewHeimdallApp(
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		chainmanagertypes.ModuleName,
+		topupTypes.ModuleName,
 		// TODO HV2: uncomment when modules are implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
-		topupTypes.ModuleName,
-		// chainmanagertypes.ModuleName,
-
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
@@ -423,9 +462,6 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
-	// TODO HV2: pass contract caller and keepers for chainmanager and distribution
-	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
-	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			ante.HandlerOptions{
@@ -571,24 +607,6 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 				PubKey: v.PubKey.ABCIPubKey(),
 			})
 		}
-	}
-
-	// TODO HV2: consider moving the rootchain contract address update logic to chainmanager's EndBlock() under x/chainmanager/module.go
-
-	// Change root chain contract addresses if required
-	if chainManagerAddressMigration, found := helper.GetChainManagerAddressMigration(ctx.BlockHeight()); found {
-		params := app.ChainKeeper.GetParams(ctx)
-
-		params.ChainParams.MaticTokenAddress = chainManagerAddressMigration.MaticTokenAddress
-		params.ChainParams.StakingManagerAddress = chainManagerAddressMigration.StakingManagerAddress
-		params.ChainParams.RootChainAddress = chainManagerAddressMigration.RootChainAddress
-		params.ChainParams.SlashManagerAddress = chainManagerAddressMigration.SlashManagerAddress
-		params.ChainParams.StakingInfoAddress = chainManagerAddressMigration.StakingInfoAddress
-		params.ChainParams.StateSenderAddress = chainManagerAddressMigration.StateSenderAddress
-
-		// update chain manager state
-		app.ChainKeeper.SetParams(ctx, params)
-		logger.Info("Updated chain manager state", "params", params)
 	}
 	*/
 
