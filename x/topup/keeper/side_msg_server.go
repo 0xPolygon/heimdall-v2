@@ -69,8 +69,8 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 		return mod.Vote_VOTE_NO
 	}
 
-	/* TODO HV2: enable when chainmanager and contract caller are implemented
-	params := s.k.chainKeeper.GetParams(ctx)
+	/* TODO HV2: enable when contract caller is implemented
+	params := s.k.ChainKeeper.GetParams(ctx)
 	chainParams := params.ChainParams
 
 	// get main tx receipt

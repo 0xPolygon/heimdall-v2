@@ -33,7 +33,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	/* TODO HV2: enable this when chainManager  and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams := q.k.chainKeeper.GetParams(sdkCtx)
+	chainParams := q.k.ChainKeeper.GetParams(sdkCtx)
 	// get main tx receipt
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(types.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainchainTxConfirmations)
 	if err != nil || receipt == nil {
@@ -71,7 +71,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	/* TODO HV2: enable this when chainManager  and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams := q.k.chainKeeper.GetParams(sdkCtx)
+	chainParams := q.k.ChainKeeper.GetParams(sdkCtx)
 	// get main tx receipt
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(types.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainchainTxConfirmations)
 	if err != nil || receipt == nil {
@@ -182,7 +182,7 @@ func (q queryServer) GetAccountProof(ctx context.Context, req *types.QueryAccoun
 	/* TODO HV2: enable this when chainManager, checkpoint and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams := q.k.chainKeeper.GetParams(sdkCtx)
+	chainParams := q.k.ChainKeeper.GetParams(sdkCtx)
 	stakingInfoAddress := chainParams.ChainParams.StakingInfoAddress.EthAddress()
 	stakingInfoInstance, _ := q.k.contractCaller.GetStakingInfoInstance(stakingInfoAddress)
 	accountRootOnChain, err := q.k.contractCaller.CurrentAccountStateRoot(stakingInfoInstance)

@@ -82,7 +82,7 @@ func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwrunt
 	}
 }
 
-// RegisterInterfaces registers interfaces and implementations of the chainmanager module.
+// RegisterInterfaces registers interfaces and implementations of the x/topup module.
 func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }

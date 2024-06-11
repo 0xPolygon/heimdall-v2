@@ -24,7 +24,7 @@ type Keeper struct {
 
 	BankKeeper  types.BankKeeper
 	stakeKeeper types.StakeKeeper
-	chainKeeper types.ChainKeeper
+	ChainKeeper types.ChainKeeper
 	// TODO HV2: enable contractCaller when implemented in heimdall-v2
 	// IContractCaller helper.IContractCaller
 
@@ -50,7 +50,7 @@ func NewKeeper(
 		storeService: storeService,
 		BankKeeper:   bankKeeper,
 		stakeKeeper:  stakeKeeper,
-		chainKeeper:  chainKeeper,
+		ChainKeeper:  chainKeeper,
 		// TODO HV2: enable contractCaller when implemented in heimdall-v2
 		// contractCaller: contractCaller,
 

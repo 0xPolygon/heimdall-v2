@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -24,5 +25,5 @@ type StakeKeeper interface {
 
 // ChainKeeper defines the chain keeper contract used by x/topup module
 type ChainKeeper interface {
-	// TODO HV2: implement functions for ChainKeeper and generate its mocks
+	GetParams(ctx sdk.Context) chainmanagertypes.Params
 }

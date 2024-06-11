@@ -7,17 +7,19 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/golang/mock/gomock"
 
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
-	/* TODO HV2: enable when helper, contractCaller and chainManager are implemented
-	suite.contractCaller = mocks.IContractCaller{}
-	suite.chainParams = suite.app.ChainKeeper.GetParams(suite.ctx)
-	*/
+	// TODO HV2: enable when contractCaller is implemented
+	// suite.contractCaller = mocks.IContractCaller{}
+
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
@@ -25,6 +27,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 	sequence := new(big.Int).Mul(txReceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
+	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams()).Times(1)
 	err := tk.SetTopupSequence(ctx, sequence.String())
 	require.NoError(err)
 	// TODO HV2: enable when contractCaller is implemented

@@ -43,10 +43,8 @@ type KeeperTestSuite struct {
 	sideMsgCfg  mod.SideTxConfigurator
 	queryClient topupTypes.QueryClient
 
-	/* TODO HV2: enable when contractCaller and chainManager are implemented
-	contractCaller mocks.IContractCaller
-	chainParams    chainTypes.Params
-	*/
+	// TODO HV2: enable when contractCaller is implemented
+	// contractCaller mocks.IContractCaller
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -65,14 +63,15 @@ func (suite *KeeperTestSuite) SetupTest() {
 	ctrl := gomock.NewController(suite.T())
 	defer ctrl.Finish()
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
+	chainKeeper := testutil.NewMockChainKeeper(ctrl)
 
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		bankKeeper,
-		// TODO HV2: replace nil with stakeKeeper and chainKeeper mocks once implemented
+		// TODO HV2: replace nil with stakeKeeper mock once implemented
 		nil,
-		nil,
+		chainKeeper,
 	)
 
 	topupGenesis := topupTypes.DefaultGenesisState()

@@ -37,7 +37,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 	ctx, keeper, require, t := suite.ctx, suite.keeper, suite.Require(), suite.T()
 
-	// TODO HV2: enable when chainmanager is implemented
+	// TODO HV2: enable when contract caller is implemented
 	// chainParams := keeper.ChainKeeper.GetParams(suite.ctx)
 
 	_, _, addr1 := testdata.KeyTestPubAddr()
