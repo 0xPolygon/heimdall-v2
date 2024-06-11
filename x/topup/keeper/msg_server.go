@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 
@@ -46,6 +47,13 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		logger.Error("send not enabled")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"send for denom %s is not enabled in bank keeper", sdk.DefaultBondDenom)
+	}
+
+	// check feasibility of topup tx based on msg fee
+	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
+		logger.Error("default fee exceeds amount to topup", "user", msg.User,
+			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
+		return nil, errors.Wrapf(sdkerrors.ErrInsufficientFunds, "default fee exceeds amount to topup")
 	}
 
 	// calculate sequence
