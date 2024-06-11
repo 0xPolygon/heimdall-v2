@@ -313,7 +313,11 @@ func (vals *ValidatorSet) GetProposer() (proposer *Validator) {
 func (vals *ValidatorSet) findProposer() *Validator {
 	var proposer *Validator
 	for _, val := range vals.Validators {
-		if proposer == nil || !(strings.ToLower(val.Signer) == strings.ToLower(proposer.Signer)) {
+		if proposer == nil {
+			proposer = val
+		}
+
+		if !strings.EqualFold(val.Signer, proposer.Signer) {
 			proposer = proposer.CompareProposerPriority(val)
 		}
 	}
@@ -352,7 +356,7 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 
 	// Scan changes by address and append valid validators to updates or removals lists.
 	for _, valUpdate := range changes {
-		if strings.ToLower(valUpdate.Signer) == strings.ToLower(prevAddr) {
+		if strings.EqualFold(valUpdate.Signer, prevAddr) {
 			err = fmt.Errorf("duplicate entry %v in %v", valUpdate, changes)
 			return nil, nil, err
 		}
