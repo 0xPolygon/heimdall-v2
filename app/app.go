@@ -571,6 +571,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 			})
 		}
 	}
+	*/
 
 	return app.mm.EndBlock(ctx)
 }
