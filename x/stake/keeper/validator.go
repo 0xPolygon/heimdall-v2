@@ -397,12 +397,12 @@ func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
 	store := k.storeService.OpenKVStore(ctx)
 	key := types.GetStakingSequenceKey(sequence)
 
-	bz, err := store.Get(key)
-	if bz == nil || err != nil {
-		return false
+	res, err := store.Has(key)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking for the existence of staking key in store", "error", err)
 	}
 
-	return true
+	return res
 }
 
 // GetStakingSequences returns all the sequences appended together
