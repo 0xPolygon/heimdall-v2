@@ -59,7 +59,7 @@ message QueryCurrentValidatorSetRequest {}
 // QueryCurrentValidatorSetResponse is response type for the Query/ValidatorSet
 // RPC method
 message QueryCurrentValidatorSetResponse {
-  // validators contains all the queried svalidators.
+  // validator_set contains the queried set of validators
   ValidatorSet validator_set = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

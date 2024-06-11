@@ -605,10 +605,6 @@ func (vals *ValidatorSet) UpdateWithChangeSet(changes []*Validator) error {
 
 //----------------
 
-func (vals *ValidatorSet) GetString() string {
-	return vals.StringIndented("")
-}
-
 // StringIndented return string
 func (vals *ValidatorSet) StringIndented(indent string) string {
 	if vals == nil {

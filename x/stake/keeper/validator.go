@@ -168,7 +168,12 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 
 	// get validator iterator
 	iterator, err := store.Iterator(types.ValidatorsKey, storetypes.PrefixEndBytes(types.ValidatorsKey))
-	defer iterator.Close()
+	defer func() {
+		err := iterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("error in closing the iterator", "error", err)
+		}
+	}()
 
 	if err != nil {
 		k.Logger(ctx).Error("error in getting iterator for validators")
@@ -400,7 +405,7 @@ func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
 	return true
 }
 
-// GetStakingSequences checks if Staking already exists
+// GetStakingSequences returns all the sequences appended together
 func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string) {
 	k.IterateStakingSequencesAndApplyFn(ctx, func(sequence string) error {
 		sequences = append(sequences, sequence)

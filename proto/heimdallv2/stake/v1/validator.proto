@@ -9,7 +9,7 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
-// Validator define the validator structure
+// Validators define the validator structure
 message Validator {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
