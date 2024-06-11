@@ -9,6 +9,7 @@ DOCKER := $(shell which docker)
 HTTPS_GIT := https://github.com/0xPolygon/heimdall-v2.git
 
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
+HTTPS_GIT := https://$(PACKAGE_NAME)
 GOLANG_CROSS_VERSION  ?= v1.21.0
 
 # LDFlags
@@ -53,12 +54,76 @@ proto-check-breaking:
 
 .PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
-mockgen:
+mock:
 	# TODO HV2: enrich the mockgen command with all other modules' mocks
 	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
+
+
+###############################################################################
+###                                docker                                   ###
+###############################################################################
+
+build-docker: # TODO-HV2: check this command once we have a proper docker build
+	@echo Fetching latest tag: $(LATEST_GIT_TAG)
+	git checkout $(LATEST_GIT_TAG)
+	docker build -t "maticnetwork/heimdall:$(LATEST_GIT_TAG)" -f Dockerfile .
+
+push-docker: # TODO-HV2: check this command once we have a proper docker push
+	@echo Pushing docker tag image: $(LATEST_GIT_TAG)
+	docker push "maticnetwork/heimdall:$(LATEST_GIT_TAG)"
+
+###############################################################################
+###                                release                                  ###
+###############################################################################
+
+.PHONY: release-dry-run # TODO-HV2: check this command once we have a proper release process
+release-dry-run:
+	@docker run \
+		--platform linux/amd64 \
+		--rm \
+		--privileged \
+		-e CGO_ENABLED=1 \
+		-e CGO_CFLAGS=-Wno-unused-function \
+		-e GITHUB_TOKEN \
+		-e DOCKER_USERNAME \
+		-e DOCKER_PASSWORD \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-w /go/src/$(PACKAGE_NAME) \
+		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		--rm-dist --skip-validate --skip-publish
+
+.PHONY: release # TODO-HV2: check this command once we have a proper release process
+release:
+	@docker run \
+		--rm \
+		--privileged \
+		-e CGO_ENABLED=1 \
+		-e GITHUB_TOKEN \
+		-e DOCKER_USERNAME \
+		-e DOCKER_PASSWORD \
+		-e SLACK_WEBHOOK \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.docker/config.json:/root/.docker/config.json \
+		-v `pwd`:/go/src/$(PACKAGE_NAME) \
+		-w /go/src/$(PACKAGE_NAME) \
+		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
+		--rm-dist --skip-validate
+
 
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  lint-deps           - Install dependencies for GolangCI-Lint tool."
-	@echo "  lint                - Runs the GolangCI-Lint tool on the codebase."
+	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
+	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
+	@echo "  clean               	- Delete build folder."
+	@echo "  mock                	- Generate mocks."
+	@echo "  proto-all           	- Format, lint and generate proto files."
+	@echo "  proto-format        	- Format proto files."
+	@echo "  proto-gen           	- Generate proto files."
+	@echo "  proto-check-breaking   - Check if proto breaks against git head."
+	@echo "  build-docker        	- Build a Docker image for the latest Git tag."
+	@echo "  push-docker         	- Push the Docker image for the latest Git tag."
+	@echo "  build-docker-develop	- Build a Docker image for the development branch."
+	@echo "  release-dry-run     	- Perform a dry run of the release process."
+	@echo "  release             	- Execute the actual release process."
