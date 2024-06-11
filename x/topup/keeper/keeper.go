@@ -22,10 +22,10 @@ type Keeper struct {
 	storeService store.KVStoreService
 	schema       collections.Schema
 
-	BankKeeper types.BankKeeper
-	// TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
-	// stakingKeeper sk.Keeper
-	// chainKeeper ck.Keeper
+	BankKeeper  types.BankKeeper
+	stakeKeeper types.StakeKeeper
+	chainKeeper types.ChainKeeper
+	// TODO HV2: enable contractCaller when implemented in heimdall-v2
 	// IContractCaller helper.IContractCaller
 
 	sequences        collections.Map[string, bool]
@@ -37,12 +37,11 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	bankKeeper types.BankKeeper,
-	/*
-	   TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented
-	   stake sk.Keeper,
-	   chainKeeper ck.Keeper,
-	   contractCaller helper.IContractCaller,
-	*/
+	stakeKeeper types.StakeKeeper,
+	chainKeeper types.ChainKeeper,
+	// TODO HV2: enable contractCaller when implemented
+	//
+	//	contractCaller helper.IContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 
@@ -50,11 +49,10 @@ func NewKeeper(
 		cdc:          cdc,
 		storeService: storeService,
 		BankKeeper:   bankKeeper,
-		/* TODO HV2: enable stakeKeeper, chainKeeper and contractCaller when implemented in heimdall-v2
-		stakingKeeper: 	stakingKeeper,
-		chainKeeper:   	chainKeeper,
-		contractCaller: contractCaller,
-		*/
+		stakeKeeper:  stakeKeeper,
+		chainKeeper:  chainKeeper,
+		// TODO HV2: enable contractCaller when implemented in heimdall-v2
+		// contractCaller: contractCaller,
 
 		// TODO HV2: in heimdall-v1, the keys are always prefixed with the key, then removed when getters are invoked, not sure why.
 		//  Here, I am only using plain keys, without the prefix. Is this ok? To double check.

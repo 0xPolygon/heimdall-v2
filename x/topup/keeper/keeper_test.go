@@ -70,6 +70,9 @@ func (suite *KeeperTestSuite) SetupTest() {
 		encCfg.Codec,
 		storeService,
 		bankKeeper,
+		// TODO HV2: replace nil with stakeKeeper and chainKeeper mocks once implemented
+		nil,
+		nil,
 	)
 
 	topupGenesis := topupTypes.DefaultGenesisState()
