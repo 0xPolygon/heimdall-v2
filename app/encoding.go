@@ -14,7 +14,7 @@ import (
 // This is provided for compatibility between protobuf and amino implementations.
 type EncodingConfig struct {
 	InterfaceRegistry types.InterfaceRegistry
-	Marshaler         codec.Codec
+	Marshaller        codec.Codec
 	TxConfig          client.TxConfig
 	Amino             *codec.LegacyAmino
 }
@@ -24,7 +24,6 @@ func MakeEncodingConfig() EncodingConfig {
 	interfaceRegistry, _ := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
-			// TODO HV2: replace with address.HexCodec once https://github.com/0xPolygon/cosmos-sdk/pull/3 is merged
 			AddressCodec:          address.HexCodec{},
 			ValidatorAddressCodec: address.HexCodec{},
 		},
@@ -38,7 +37,7 @@ func MakeEncodingConfig() EncodingConfig {
 
 	return EncodingConfig{
 		InterfaceRegistry: interfaceRegistry,
-		Marshaler:         appCodec,
+		Marshaller:        appCodec,
 		TxConfig:          txConfig,
 		Amino:             legacyAmino,
 	}
