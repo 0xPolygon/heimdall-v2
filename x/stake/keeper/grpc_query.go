@@ -97,7 +97,7 @@ func (q Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSeq
 
 	// check if incoming tx already exists
 	if !q.HasStakingSequence(ctx, sequence.String()) {
-		return &types.QueryStakingSequenceResponse{Status: true}, nil
+		return &types.QueryStakingSequenceResponse{Status: false}, nil
 	}
 
 	return &types.QueryStakingSequenceResponse{Status: true}, nil
