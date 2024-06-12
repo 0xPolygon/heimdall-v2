@@ -42,7 +42,7 @@ func GetUpdatedValidators(
 	validators []*Validator,
 	ackCount uint64,
 ) []*Validator {
-	updates := make([]*Validator, 0)
+	updates := make([]*Validator, 0, len(validators))
 
 	for _, v := range validators {
 		// create copy of validator

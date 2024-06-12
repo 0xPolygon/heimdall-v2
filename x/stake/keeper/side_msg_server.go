@@ -452,7 +452,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	// Add Validator signing info. It is required for slashing module
 	k.Logger(ctx).Debug("adding signing info for new validator")
 
-	//TODO HV2 PLease check whether we need the following code or not
+	// TODO HV2 PLease check whether we need the following code or not
 	//as this code belongs to slashing
 	// valSigningInfo := hmTypes.NewValidatorSigningInfo(newValidator.ID, ctx.BlockHeight(), int64(0), int64(0))
 	// if err = k.AddValidatorSigningInfo(ctx, newValidator.ID, valSigningInfo); err != nil {
@@ -634,12 +634,9 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 
 	k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
 
-	// remove old validator from HM
+	// remove the old validator from validator set
 	oldValidator.EndEpoch = k.moduleCommunicator.GetACKCount(ctx)
-
-	// remove old validator from TM
 	oldValidator.VotingPower = 0
-	// updated last
 	oldValidator.LastUpdated = sequence.String()
 
 	// updated nonce
@@ -676,7 +673,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 	// Move heimdall fee to new signer
 	//
 
-	//TODO HV2 Please check this code once module communicatator is defined properlu
+	// TODO HV2 Please check this code once module communicatator is defined properlu
 	// // check if fee is already withdrawn
 	// coins := k.moduleCommunicator.GetCoins(ctx, oldValidator.Signer)
 

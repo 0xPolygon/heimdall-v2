@@ -49,7 +49,7 @@ func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
 	}
 
-	//TODO HV2 Can any attack possible about it?
+	// TODO HV2 Can any attack possible about it?
 	//String directly coming from it is not of correct length
 	signer := strings.ToLower(pk.Address().String())
 

@@ -210,7 +210,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	require.NotNil(err)
 }
 
-//TODO HV2 Please implement the following test after writing topUp module
+// TODO HV2 Please implement the following test after writing topUp module
 /*
 func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
