@@ -18,7 +18,7 @@ import (
 func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
 
 	// store validator with address prefixed with validator key as index
-	err := k.Validators.Set(ctx, validator.Signer, validator)
+	err := k.validators.Set(ctx, validator.Signer, validator)
 	if err != nil {
 		k.Logger(ctx).Error("error while setting the validator in store", "err", err)
 	}
@@ -50,7 +50,7 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
 	address = strings.ToLower(address)
 
-	validator, err = k.Validators.Get(ctx, address)
+	validator, err = k.validators.Get(ctx, address)
 
 	if err != nil {
 		return validator, errors.New(fmt.Sprintf("error while fetching the validator from the store", "err", err))
@@ -136,7 +136,7 @@ func (k *Keeper) GetAllValidators(ctx context.Context) (validators []*types.Vali
 // IterateValidatorsAndApplyFn iterate validators and apply the given function.
 func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validator types.Validator) error) {
 	// get validator iterator
-	iterator, err := k.Validators.Iterate(ctx, nil)
+	iterator, err := k.validators.Iterate(ctx, nil)
 
 	// get validator iterator
 	defer func() {
@@ -203,14 +203,14 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *
 // UpdateValidatorSetInStore adds validator set to store
 func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
 	// set validator set with CurrentValidatorSetKey as key in store
-	err := k.ValidatorSet.Set(ctx, types.CurrentValidatorSetKey, newValidatorSet)
+	err := k.validatorSet.Set(ctx, types.CurrentValidatorSetKey, newValidatorSet)
 	if err != nil {
 		k.Logger(ctx).Error("error in setting the current validator set in store", "err", err)
 		return err
 	}
 
 	// When there is any update in checkpoint validator set, we assign it to milestone validator set too.
-	err = k.ValidatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
+	err = k.validatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
 	if err != nil {
 		k.Logger(ctx).Error("error in setting the current milestone validator set in store", "err", err)
 		return err
@@ -222,7 +222,7 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 // GetValidatorSet returns current Validator Set from store
 func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
 	// get current validator set from store
-	validatorSet, err = k.ValidatorSet.Get(ctx, types.CurrentValidatorSetKey)
+	validatorSet, err = k.validatorSet.Get(ctx, types.CurrentValidatorSetKey)
 	if err != nil {
 		k.Logger(ctx).Error("error in fetching current validator set from store", "error", err)
 		return validatorSet, err
@@ -283,7 +283,7 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 
 // SetValidatorIDToSignerAddr sets mapping for validator ID to signer address
 func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, signerAddr string) {
-	err := k.SignerIDMap.Set(ctx, valID, signerAddr)
+	err := k.signer.Set(ctx, valID, signerAddr)
 	if err != nil {
 		k.Logger(ctx).Error("key or value is nil", "error", err)
 	}
@@ -291,7 +291,7 @@ func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, s
 
 // GetSignerFromValidatorID get signer address from validator ID
 func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (common.Address, bool) {
-	signer, err := k.SignerIDMap.Get(ctx, valID)
+	signer, err := k.signer.Get(ctx, valID)
 	if err != nil {
 		k.Logger(ctx).Error("error while getting fetching signer address", "error", err)
 		return common.Address{}, false
@@ -330,12 +330,12 @@ func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt st
 
 // SetStakingSequence sets staking sequence
 func (k *Keeper) SetStakingSequence(ctx context.Context, sequence string) error {
-	return k.StakingSequenceMap.Set(ctx, sequence, types.DefaultValue)
+	return k.sequences.Set(ctx, sequence, types.DefaultValue)
 }
 
 // HasStakingSequence checks if staking sequence already exists
 func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
-	res, err := k.StakingSequenceMap.Has(ctx, sequence)
+	res, err := k.sequences.Has(ctx, sequence)
 	if err != nil {
 		k.Logger(ctx).Error("error while checking for the existence of staking key in store", "error", err)
 		return false
@@ -357,7 +357,7 @@ func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string) {
 // IterateStakingSequencesAndApplyFn iterate validators and apply the given function.
 func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(sequence string) error) {
 	// get staking sequence iterator
-	iterator, err := k.StakingSequenceMap.Iterate(ctx, nil)
+	iterator, err := k.sequences.Iterate(ctx, nil)
 	defer iterator.Close()
 
 	if err != nil {
@@ -437,7 +437,7 @@ func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
 // GetMilestoneValidatorSet returns current milestone Validator Set from store
 func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
 	// get the current milestone validator set
-	validatorSet, err = k.ValidatorSet.Get(ctx, types.CurrentMilestoneValidatorSetKey)
+	validatorSet, err = k.validatorSet.Get(ctx, types.CurrentMilestoneValidatorSetKey)
 	if err != nil {
 		k.Logger(ctx).Error("error while getting milestone validator set from store", "error", err)
 		return validatorSet, err
@@ -450,7 +450,7 @@ func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet typ
 // UpdateMilestoneValidatorSetInStore adds milestone validator set to store
 func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
 	// set validator set with CurrentMilestoneValidatorSetKey as key in store
-	return k.ValidatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
+	return k.validatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
 }
 
 // GetMilestoneCurrentProposer returns current proposer

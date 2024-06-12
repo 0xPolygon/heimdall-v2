@@ -29,14 +29,14 @@ type Keeper struct {
 	IContractCaller       helper.IContractCaller
 
 	// Validators key: valAddr | value: Validator
-	Validators collections.Map[string, types.Validator]
+	validators collections.Map[string, types.Validator]
 
 	// ValidatorSet
-	ValidatorSet collections.Map[[]byte, types.ValidatorSet]
+	validatorSet collections.Map[[]byte, types.ValidatorSet]
 
-	SignerIDMap collections.Map[uint64, string]
+	signer collections.Map[uint64, string]
 
-	StakingSequenceMap collections.Map[string, []byte]
+	sequences collections.Map[string, bool]
 }
 
 // NewKeeper creates a new staking Keeper instance
@@ -59,6 +59,12 @@ func NewKeeper(
 		cmKeeper:              cmKeeper,
 		validatorAddressCodec: validatorAddressCodec,
 		IContractCaller:       contractCaller,
+
+		validators:   collections.NewMap(sb, types.ValidatorsKey, "validator", collections.StringKey, codec.CollValue[types.Validator](cdc)),
+		validatorSet: collections.NewMap(sb, types.ValidatorSetKey, "validator_set", collections.BytesKey, codec.CollValue[types.ValidatorSet](cdc)),
+
+		sequences: collections.NewMap(sb, types.StakeSequenceKey, "stake_sequence", collections.StringKey, collections.BoolValue),
+		signer:    collections.NewMap(sb, types.SignerKey, "signer", collections.Uint64Key, collections.StringValue),
 	}
 
 	// build the schema and set it in the keeper

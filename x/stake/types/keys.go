@@ -12,12 +12,13 @@ const (
 )
 
 var (
-	DefaultValue = []byte{0x01} // Value to store in CacheCheckpoint and CacheCheckpointACK & ValidatorSetChange Flag
+	DefaultValue = true // Value to store in CacheCheckpoint and CacheCheckpointACK & ValidatorSetChange Flag
 
 	ValidatorsKey                   = []byte{0x21} // prefix for each key to a validator
-	ValidatorMapKey                 = []byte{0x22} // prefix for each key for validator map
+	ValidatorSetKey                 = []byte{0x22} // prefix for each key for validator map
 	CurrentValidatorSetKey          = []byte{0x23} // Key to store current validator set
-	StakingSequenceKey              = []byte{0x24} // prefix for each key for staking sequence map
+	StakeSequenceKey                = []byte{0x24} // prefix for each key for staking sequence map
+	SignerKey                       = []byte{0x25} //prefix for signer address for signer map
 	CurrentMilestoneValidatorSetKey = []byte{0x25} // Key to store current validator set for milestone
 )
 
