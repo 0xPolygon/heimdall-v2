@@ -54,8 +54,10 @@ func NewKeeper(
 		// TODO HV2: enable contractCaller when implemented in heimdall-v2
 		// contractCaller: contractCaller,
 
-		// TODO HV2: in heimdall-v1, the keys are always prefixed with the key, then removed when getters are invoked, not sure why.
-		//  Here, I am only using plain keys, without the prefix. Is this ok? To double check.
+		// TODO HV2: in heimdall-v1, when using iterators or setting something in the store, prefixes are used.
+		//  Then, they are removed during iteration, not sure why.
+		//  For instance, check the usages of `TopupSequencePrefixKey` at https://github.com/maticnetwork/heimdall/blob/develop/topup/keeper.go#L24
+		//  I believe they might be useless for collections, hence I am only using plain keys, without the prefix. Is this ok? To double check.
 		sequences:        collections.NewMap(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey, collections.BoolValue),
 		dividendAccounts: collections.NewMap(sb, types.DividendAccountMapKey, "dividend_account", collections.StringKey, codec.CollValue[hTypes.DividendAccount](cdc)),
 	}
