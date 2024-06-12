@@ -2,12 +2,11 @@ package keeper
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 
 	addresscodec "cosmossdk.io/core/address"
-	storetypes "cosmossdk.io/store/types"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,22 +16,14 @@ import (
 
 // AddValidator adds validator indexed with address
 func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
-	store := k.storeService.OpenKVStore(ctx)
-
-	bz, err := types.MarshallValidator(k.cdc, validator)
-	if err != nil {
-		return err
-	}
-
-	valAddrBytes, err := k.validatorAddressCodec.StringToBytes(validator.Signer)
-	if err != nil {
-		return err
-	}
 
 	// store validator with address prefixed with validator key as index
-	store.Set(types.GetValidatorKey(valAddrBytes), bz)
+	err := k.Validators.Set(ctx, validator.Signer, validator)
+	if err != nil {
+		k.Logger(ctx).Error("error while setting the validator in store", "err", err)
+	}
 
-	k.Logger(ctx).Debug("Validator stored", "key", hex.EncodeToString(types.GetValidatorKey(valAddrBytes)), "validator", validator.String())
+	k.Logger(ctx).Debug("Validator stored", "key", validator.Signer, "validator", validator.String())
 
 	// add validator to validator ID => SignerAddress map
 	k.SetValidatorIDToSignerAddr(ctx, validator.ValId, validator.Signer)
@@ -55,35 +46,16 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 	return validator.IsCurrentValidator(ackCount)
 }
 
-// GetValidatorInfo returns validator
+// GetValidatorInfo returns the validator info given its address
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
-	store := k.storeService.OpenKVStore(ctx)
 	address = strings.ToLower(address)
-	valAddr, err := k.validatorAddressCodec.StringToBytes(address)
-	if err != nil {
-		return validator, err
-	}
 
-	// check if validator exists
-	key := types.GetValidatorKey(valAddr)
-
-	valBytes, err := store.Get(key)
+	validator, err = k.Validators.Get(ctx, address)
 
 	if err != nil {
-		return validator, errors.New("error while fetchig the validator from the store")
+		return validator, errors.New(fmt.Sprintf("error while fetching the validator from the store", "err", err))
 	}
 
-	if valBytes == nil {
-		return validator, errors.New("Validator not found")
-	}
-
-	// unmarshall validator and return
-	validator, err = types.UnmarshallValidator(k.cdc, valBytes)
-	if err != nil {
-		return validator, err
-	}
-
-	// return true if validator
 	return validator, nil
 }
 
@@ -97,10 +69,9 @@ func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (va
 	// get ack count
 	ackCount := k.moduleCommunicator.GetACKCount(ctx)
 	if !validator.IsCurrentValidator(ackCount) {
-		return validator, errors.New("Validator is not active")
+		return validator, errors.New("validator is not active")
 	}
 
-	// return true if validator
 	return validator, nil
 }
 
@@ -114,7 +85,7 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.V
 	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
 		// check if validator is valid for current epoch
 		if validator.IsCurrentValidator(ackCount) {
-			// append if validator is current valdiator
+			// append if validator is current validiator
 			validators = append(validators, validator)
 		}
 		return nil
@@ -141,7 +112,7 @@ func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []ty
 	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
 		// check if validator is valid for current epoch and endEpoch is not set.
 		if validator.EndEpoch == 0 && validator.IsCurrentValidator(ackCount) {
-			// append if validator is current valdiator
+			// append if validator is current validator
 			validators = append(validators, validator)
 		}
 		return nil
@@ -164,10 +135,10 @@ func (k *Keeper) GetAllValidators(ctx context.Context) (validators []*types.Vali
 
 // IterateValidatorsAndApplyFn iterate validators and apply the given function.
 func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validator types.Validator) error) {
-	store := k.storeService.OpenKVStore(ctx)
+	// get validator iterator
+	iterator, err := k.Validators.Iterate(ctx, nil)
 
 	// get validator iterator
-	iterator, err := store.Iterator(types.ValidatorsKey, storetypes.PrefixEndBytes(types.ValidatorsKey))
 	defer func() {
 		err := iterator.Close()
 		if err != nil {
@@ -180,23 +151,28 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 		return
 	}
 
-	// loop through validators to get valid validators
+	// loop through all the validators
 	for ; iterator.Valid(); iterator.Next() {
 		// unmarshall validator
-		validator, _ := types.UnmarshallValidator(k.cdc, iterator.Value())
+		validator, err := iterator.Value()
+		if err != nil {
+			k.Logger(ctx).Error("error in getting validator from iterator", "err", err)
+			return
+		}
+
 		// call function and return if required
-		if err := f(validator); err != nil {
+		if err = f(validator); err != nil {
 			return
 		}
 	}
 }
 
-// UpdateSigner updates validator with signer and pubkey + validator => signer map
+// UpdateSigner updates validator fields in store
 func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *codecTypes.Any, prevSigner string) error {
 	// get old validator from state and make power 0
 	validator, err := k.GetValidatorInfo(ctx, prevSigner)
 	if err != nil {
-		k.Logger(ctx).Error("Unable to fetch validator from store")
+		k.Logger(ctx).Error("unable to fetch validator from store")
 		return err
 	}
 
@@ -206,7 +182,8 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *
 
 	// update validator
 	if err := k.AddValidator(ctx, validator); err != nil {
-		k.Logger(ctx).Error("UpdateSigner | AddValidator", "error", err)
+		k.Logger(ctx).Error("error in adding validator", "error", err)
+		return err
 	}
 
 	//update signer in prev Validator
@@ -216,7 +193,8 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *
 
 	// add updated validator to store with new key
 	if err = k.AddValidator(ctx, validator); err != nil {
-		k.Logger(ctx).Error("UpdateSigner | AddValidator", "error", err)
+		k.Logger(ctx).Error("error in adding validator", "error", err)
+		return err
 	}
 
 	return nil
@@ -224,24 +202,17 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *
 
 // UpdateValidatorSetInStore adds validator set to store
 func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
-	// TODO check if we may have to delay this by 1 height to sync with tendermint validator updates
-	store := k.storeService.OpenKVStore(ctx)
-
-	// marshall validator set
-	bz, err := k.cdc.Marshal(&newValidatorSet)
-	if err != nil {
-		return err
-	}
-
 	// set validator set with CurrentValidatorSetKey as key in store
-	err = store.Set(types.CurrentValidatorSetKey, bz)
+	err := k.ValidatorSet.Set(ctx, types.CurrentValidatorSetKey, newValidatorSet)
 	if err != nil {
+		k.Logger(ctx).Error("error in setting the current validator set in store", "err", err)
 		return err
 	}
 
-	//When there is any update in checkpoint validator set, we assign it to milestone validator set too.
-	err = store.Set(types.CurrentMilestoneValidatorSetKey, bz)
+	// When there is any update in checkpoint validator set, we assign it to milestone validator set too.
+	err = k.ValidatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
 	if err != nil {
+		k.Logger(ctx).Error("error in setting the current milestone validator set in store", "err", err)
 		return err
 	}
 
@@ -250,17 +221,10 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 
 // GetValidatorSet returns current Validator Set from store
 func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
-	store := k.storeService.OpenKVStore(ctx)
 	// get current validator set from store
-	bz, err := store.Get(types.CurrentValidatorSetKey)
-
+	validatorSet, err = k.ValidatorSet.Get(ctx, types.CurrentValidatorSetKey)
 	if err != nil {
-		k.Logger(ctx).Error("GetValidatorSet | CurrentValidatorSetKeyDoesNotExist ", "error", err)
-		return validatorSet, err
-	}
-
-	if err = k.cdc.Unmarshal(bz, &validatorSet); err != nil {
-		k.Logger(ctx).Error("GetValidatorSet | UnmarshalBinaryBare", "error", err)
+		k.Logger(ctx).Error("error in fetching current validator set from store", "error", err)
 		return validatorSet, err
 	}
 
@@ -269,20 +233,23 @@ func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.Valida
 }
 
 // IncrementAccum increments accum for validator set by n times and replace validator set in store
-func (k *Keeper) IncrementAccum(ctx context.Context, times int) {
+func (k *Keeper) IncrementAccum(ctx context.Context, times int) error {
 	// get validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("IncrementAccum | UpdateValidatorSetInStore", "error", err)
+		k.Logger(ctx).Error("error in fetching validator set from store", "error", err)
+		return err
+
 	}
 	// increment accum
 	validatorSet.IncrementProposerPriority(times)
 
-	// replace
-
 	if err := k.UpdateValidatorSetInStore(ctx, validatorSet); err != nil {
-		k.Logger(ctx).Error("IncrementAccum | UpdateValidatorSetInStore", "error", err)
+		k.Logger(ctx).Error("error in updating validator set in store", "error", err)
+		return err
 	}
+
+	return nil
 }
 
 // GetNextProposer returns next proposer
@@ -316,32 +283,22 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 
 // SetValidatorIDToSignerAddr sets mapping for validator ID to signer address
 func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, signerAddr string) {
-	store := k.storeService.OpenKVStore(ctx)
-	signerAddrBytes, err := k.validatorAddressCodec.StringToBytes(signerAddr)
+	err := k.SignerIDMap.Set(ctx, valID, signerAddr)
 	if err != nil {
-		k.Logger(ctx).Error("SetValidatorIDToSignerAddr | Error while converting addr to bytes", "error", err)
-	}
-
-	err = store.Set(types.GetValidatorMapKey(types.ValIDToBytes(valID)), signerAddrBytes)
-	if err != nil {
-		k.Logger(ctx).Error("SetValidatorIDToSignerAddr | Key or value is nil", "error", err)
+		k.Logger(ctx).Error("key or value is nil", "error", err)
 	}
 }
 
 // GetSignerFromValidatorID get signer address from validator ID
 func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (common.Address, bool) {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetValidatorMapKey(types.ValIDToBytes(valID))
-	// check if validator address has been mapped
-
-	bz, err := store.Get(key)
-	if err != nil || bz == nil {
-		k.Logger(ctx).Error("GetSignerFromValidatorID | ValidatorIDKeyDoesNotExist ", "error", err)
+	signer, err := k.SignerIDMap.Get(ctx, valID)
+	if err != nil {
+		k.Logger(ctx).Error("error while getting fetching signer address", "error", err)
 		return common.Address{}, false
 	}
 
 	// return address from bytes
-	return common.BytesToAddress(bz), true
+	return common.Address(common.FromHex(signer)), true
 }
 
 // GetValidatorFromValID returns signer from validator ID
@@ -371,33 +328,17 @@ func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt st
 	return validator.LastUpdated, true
 }
 
-//IterateCurrentValidatorsAndApplyFn iterate through current validators
-/*
-func (k *Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator *types.Validator) bool) {
-	currentValidatorSet := k.GetValidatorSet(ctx)
-	for _, v := range currentValidatorSet.Validators {
-		if stop := f(v); stop {
-			return
-		}
-	}
-}
-*/
-
 // SetStakingSequence sets staking sequence
 func (k *Keeper) SetStakingSequence(ctx context.Context, sequence string) error {
-	store := k.storeService.OpenKVStore(ctx)
-
-	return store.Set(types.GetStakingSequenceKey(sequence), types.DefaultValue)
+	return k.StakingSequenceMap.Set(ctx, sequence, types.DefaultValue)
 }
 
 // HasStakingSequence checks if staking sequence already exists
 func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
-	store := k.storeService.OpenKVStore(ctx)
-	key := types.GetStakingSequenceKey(sequence)
-
-	res, err := store.Has(key)
+	res, err := k.StakingSequenceMap.Has(ctx, sequence)
 	if err != nil {
 		k.Logger(ctx).Error("error while checking for the existence of staking key in store", "error", err)
+		return false
 	}
 
 	return res
@@ -415,10 +356,8 @@ func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string) {
 
 // IterateStakingSequencesAndApplyFn iterate validators and apply the given function.
 func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(sequence string) error) {
-	store := k.storeService.OpenKVStore(ctx)
-
-	// get validator iterator
-	iterator, err := store.Iterator(types.ValidatorsKey, storetypes.PrefixEndBytes(types.ValidatorsKey))
+	// get staking sequence iterator
+	iterator, err := k.StakingSequenceMap.Iterate(ctx, nil)
 	defer iterator.Close()
 
 	if err != nil {
@@ -428,7 +367,10 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 
 	// loop through validators to get valid validators
 	for ; iterator.Valid(); iterator.Next() {
-		sequence := string(iterator.Key()[len(types.StakingSequenceKey):])
+		sequence, err := iterator.Key()
+		if err != nil {
+			k.Logger(ctx).Error("error in getting key value", "err", err)
+		}
 
 		// call function and return if required
 		if err := f(sequence); err != nil {
@@ -487,8 +429,6 @@ func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
 	// increment accum
 	validatorSet.IncrementProposerPriority(times)
 
-	// replace
-
 	if err := k.UpdateMilestoneValidatorSetInStore(ctx, validatorSet); err != nil {
 		k.Logger(ctx).Error("error in setting the milestone validator set in the db", "error", err)
 	}
@@ -496,22 +436,10 @@ func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
 
 // GetMilestoneValidatorSet returns current milestone Validator Set from store
 func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
-	store := k.storeService.OpenKVStore(ctx)
-
-	var bz []byte
-
-	bz, err = store.Get(types.CurrentMilestoneValidatorSetKey)
-	if bz == nil {
-		bz, err = store.Get(types.CurrentValidatorSetKey)
-	}
-
+	// get the current milestone validator set
+	validatorSet, err = k.ValidatorSet.Get(ctx, types.CurrentMilestoneValidatorSetKey)
 	if err != nil {
-		k.Logger(ctx).Error("GetMilestoneValidatorSet | UnmarshalBinaryBare", "error", err)
-		return validatorSet, err
-	}
-
-	if err = k.cdc.Unmarshal(bz, &validatorSet); err != nil {
-		k.Logger(ctx).Error("GetMilestoneValidatorSet | UnmarshalBinaryBare", "error", err)
+		k.Logger(ctx).Error("error while getting milestone validator set from store", "error", err)
 		return validatorSet, err
 	}
 
@@ -521,17 +449,8 @@ func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet typ
 
 // UpdateMilestoneValidatorSetInStore adds milestone validator set to store
 func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
-	// TODO check if we may have to delay this by 1 height to sync with tendermint validator updates
-	store := k.storeService.OpenKVStore(ctx)
-
-	// marshall validator set
-	bz, err := k.cdc.Marshal(&newValidatorSet)
-	if err != nil {
-		return err
-	}
-
 	// set validator set with CurrentMilestoneValidatorSetKey as key in store
-	return store.Set(types.CurrentMilestoneValidatorSetKey, bz)
+	return k.ValidatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
 }
 
 // GetMilestoneCurrentProposer returns current proposer
