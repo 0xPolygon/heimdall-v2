@@ -27,7 +27,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 	sequence := new(big.Int).Mul(txReceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
-	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams()).Times(1)
+	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 	err := tk.SetTopupSequence(ctx, sequence.String())
 	require.NoError(err)
 	// TODO HV2: enable when contractCaller is implemented
