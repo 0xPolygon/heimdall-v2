@@ -11,6 +11,8 @@ import (
 
 	storetypes "cosmossdk.io/store/types"
 
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -41,6 +43,7 @@ import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
+	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -112,7 +115,7 @@ type HeimdallApp struct {
 	// ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
 	// TopupKeeper topupkeeper.Keeper
-	// ChainKeeper chainmanagerkeeper.Keeper
+	ChainManagerKeeper chainmanagerkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	// caller helper.ContractCaller
@@ -173,7 +176,7 @@ func NewHeimdallApp(
 		// clerktypes.StoreKey,
 		// checkpointtypes.StoreKey,
 		// topuptypes.StoreKey,
-		// chainmanagertypes.StoreKey,
+		chainmanagertypes.StoreKey,
 	)
 
 	// register streaming services
@@ -294,6 +297,11 @@ func NewHeimdallApp(
 	// custom keepers
 	// TODO HV2: initialize custom module keepers
 
+	app.ChainManagerKeeper = chainmanagerkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
 	app.mm = module.NewManager(
 		// TODO HV2: add stake keeper once implemented
 		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
@@ -307,6 +315,7 @@ func NewHeimdallApp(
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
+		chainmanager.NewAppModule(app.ChainManagerKeeper),
 	)
 
 	// Basic manager
@@ -345,14 +354,13 @@ func NewHeimdallApp(
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		consensusparamtypes.ModuleName,
-		// TODO HV2: uncomment when modules are implemented
+		chainmanagertypes.ModuleName,
+		// TODO HV2: uncomment when implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
 		// topuptypes.ModuleName,
-		// chainmanagertypes.ModuleName,
-
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
@@ -415,9 +423,6 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
-	// TODO HV2: pass contract caller and keepers for chainmanager and distribution
-	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
-	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			ante.HandlerOptions{
@@ -565,24 +570,6 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 				PubKey: v.PubKey.ABCIPubKey(),
 			})
 		}
-	}
-
-	// TODO HV2: consider moving the rootchain contract address update logic to chainmanager's EndBlock() under x/chainmanager/module.go
-
-	// Change root chain contract addresses if required
-	if chainManagerAddressMigration, found := helper.GetChainManagerAddressMigration(ctx.BlockHeight()); found {
-		params := app.ChainKeeper.GetParams(ctx)
-
-		params.ChainParams.MaticTokenAddress = chainManagerAddressMigration.MaticTokenAddress
-		params.ChainParams.StakingManagerAddress = chainManagerAddressMigration.StakingManagerAddress
-		params.ChainParams.RootChainAddress = chainManagerAddressMigration.RootChainAddress
-		params.ChainParams.SlashManagerAddress = chainManagerAddressMigration.SlashManagerAddress
-		params.ChainParams.StakingInfoAddress = chainManagerAddressMigration.StakingInfoAddress
-		params.ChainParams.StateSenderAddress = chainManagerAddressMigration.StateSenderAddress
-
-		// update chain manager state
-		app.ChainKeeper.SetParams(ctx, params)
-		logger.Info("Updated chain manager state", "params", params)
 	}
 	*/
 
