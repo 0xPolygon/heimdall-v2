@@ -181,11 +181,12 @@ func (m *MockChainKeeper) EXPECT() *MockChainKeeperMockRecorder {
 }
 
 // GetParams mocks base method.
-func (m *MockChainKeeper) GetParams(ctx types0.Context) types.Params {
+func (m *MockChainKeeper) GetParams(ctx context.Context) (types.Params, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetParams", ctx)
 	ret0, _ := ret[0].(types.Params)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetParams indicates an expected call of GetParams.

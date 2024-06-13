@@ -25,5 +25,5 @@ type StakeKeeper interface {
 
 // ChainKeeper defines the chain keeper contract used by x/topup module
 type ChainKeeper interface {
-	GetParams(ctx sdk.Context) chainmanagertypes.Params
+	GetParams(ctx context.Context) (chainmanagertypes.Params, error)
 }
