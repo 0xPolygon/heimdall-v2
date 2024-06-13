@@ -22,8 +22,6 @@ cosmossdk.io/depinject v1.0.0-alpha.4 h1:PLNp8ZYAMPTUKyG9IK2hsbciDWqna2z1Wsl98ok
 cosmossdk.io/depinject v1.0.0-alpha.4/go.mod h1:HeDk7IkR5ckZ3lMGs/o91AVUc7E596vMaOmslGFM3yU=
 cosmossdk.io/simapp v0.0.0-20230620040119-e078f1a49e8b h1:gVne6jyHzNoolppqg4kGeA05Shepq6Zfh0Ju30leb94=
 cosmossdk.io/simapp v0.0.0-20230620040119-e078f1a49e8b/go.mod h1:zOlUzwIlm0KrgRWeyVQeZBULtn/uBjwtYMa9ZySzntk=
-cosmossdk.io/store v1.0.1 h1:XBDhCqlL+2MUgE8CHWwndKVJ4beX+TyaPIjB5SV62dM=
-cosmossdk.io/store v1.0.1/go.mod h1:EFtENTqVTuWwitGW1VwaBct+yDagk7oG/axBMPH+FXs=
 cosmossdk.io/tools/confix v0.0.0-20230613133644-0a778132a60f h1:G9ndAIFl35a7pz197rGu8CfZLlKmTpn4zQ/jzb2tdUg=
 cosmossdk.io/tools/confix v0.0.0-20230613133644-0a778132a60f/go.mod h1:xd13uWr9L1xgATVLYwW2xaB9M6Kdv1AEhHY7CMIvdMo=
 cosmossdk.io/x/circuit v0.1.0 h1:IAej8aRYeuOMritczqTlljbUVHq1E85CpBqaCTwYgXs=
@@ -141,8 +139,6 @@ github.com/cenkalti/backoff v2.2.1+incompatible/go.mod h1:90ReRw6GdpyfrHakVjL/QH
 github.com/cenkalti/backoff/v4 v4.1.1/go.mod h1:scbssz8iZGpm3xbr14ovlUdkxfGXNInqkPWOWmG2CLw=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
-github.com/cenkalti/backoff/v4 v4.2.1 h1:y4OZtCnogmCPw98Zjyt5a6+QwPLGkiQsYW5oUqylYbM=
-github.com/cenkalti/backoff/v4 v4.2.1/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/cp v0.1.0 h1:SE+dxFebS7Iik5LK0tsi1k9ZCxEaFX4AjQmoyA+1dJk=
 github.com/cespare/cp v0.1.0/go.mod h1:SOGHArjBr4JWaSDEVpWpo/hNg6RoKrls6Oh40hiwW+s=

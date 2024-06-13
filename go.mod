@@ -28,15 +28,14 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.9.0
-	github.com/tendermint/go-amino v0.16.0
 	go.opentelemetry.io/otel v1.25.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.25.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.25.0
 	go.opentelemetry.io/otel/sdk v1.25.0
 	go.opentelemetry.io/otel/trace v1.25.0
 	golang.org/x/sync v0.6.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
 	google.golang.org/grpc v1.63.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240116215550-a9fa1716bcac
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -134,7 +133,6 @@ require (
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
@@ -207,6 +205,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/supranational/blst v0.3.11 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
+	github.com/tendermint/go-amino v0.16.0 // indirect
 	github.com/tetratelabs/wazero v1.6.0 // indirect
 	github.com/tidwall/btree v1.7.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
@@ -231,7 +230,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
