@@ -14,8 +14,6 @@ const (
 )
 
 var (
-	// DefaultTopupSequenceValue defines the default value of the topup sequence key
-	DefaultTopupSequenceValue = true
 	// TopupSequencePrefixKey represents the topup sequence prefix key
 	TopupSequencePrefixKey = collections.NewPrefix([]byte{0x81})
 	// DividendAccountMapKey represents the prefix for each key for the dividend account map

@@ -28,7 +28,7 @@ type Keeper struct {
 	// TODO HV2: enable contractCaller when implemented in heimdall-v2
 	// IContractCaller helper.IContractCaller
 
-	sequences        collections.Map[string, bool]
+	sequences        collections.KeySet[string]
 	dividendAccounts collections.Map[string, hTypes.DividendAccount]
 }
 
@@ -54,11 +54,9 @@ func NewKeeper(
 		// TODO HV2: enable contractCaller when implemented in heimdall-v2
 		// contractCaller: contractCaller,
 
-		// TODO HV2: in heimdall-v1, when using iterators or setting something in the store, prefixes are used.
-		//  Then, they are removed during iteration, not sure why.
-		//  For instance, check the usages of `TopupSequencePrefixKey` at https://github.com/maticnetwork/heimdall/blob/develop/topup/keeper.go#L24
-		//  I believe they might be useless for collections, hence I am only using plain keys, without the prefix. Is this ok? To double check.
-		sequences:        collections.NewMap(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey, collections.BoolValue),
+		// HV2: Compared to v1, we are not using prefixes as they are handled by collections directly.
+		// Also, `sequences` is a KeySet (despite being implemented as a `Map` in v1) because it only holds keys (no values).
+		sequences:        collections.NewKeySet(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey),
 		dividendAccounts: collections.NewMap(sb, types.DividendAccountMapKey, "dividend_account", collections.StringKey, codec.CollValue[hTypes.DividendAccount](cdc)),
 	}
 
@@ -90,7 +88,7 @@ func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) (seq []string, e error) {
 	}
 
 	// defer closing the iterator
-	defer func(iter collections.Iterator[string, bool]) {
+	defer func(iter collections.KeySetIterator[string]) {
 		err := iter.Close()
 		if err != nil {
 			logger.Error("error closing topup sequences iterator", "err", err)
@@ -114,7 +112,7 @@ func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) (seq []string, e error) {
 func (k *Keeper) SetTopupSequence(ctx sdk.Context, sequence string) error {
 	logger := k.Logger(ctx)
 
-	err := k.sequences.Set(ctx, sequence, types.DefaultTopupSequenceValue)
+	err := k.sequences.Set(ctx, sequence)
 	if err != nil {
 		logger.Error("error setting topup sequence", "sequence", sequence, "err", err)
 		return err
