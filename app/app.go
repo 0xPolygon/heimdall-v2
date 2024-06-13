@@ -78,6 +78,7 @@ var (
 		authtypes.FeeCollectorName: nil,
 		govtypes.ModuleName:        nil,
 		distrtypes.ModuleName:      nil,
+		topupTypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
 	}
 )
 
