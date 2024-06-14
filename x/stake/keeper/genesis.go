@@ -11,8 +11,7 @@ import (
 
 // InitGenesis sets validator information for genesis.
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res []abci.ValidatorUpdate) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	ctx = sdkCtx
+	ctx = sdk.UnwrapSDKContext(ctx)
 
 	// get current val set
 	var vals []*types.Validator
@@ -30,6 +29,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 			// Add individual validator to state
 			if err := k.AddValidator(ctx, *validator); err != nil {
 				k.Logger(ctx).Error("error caused inside InitGenesis fn", "error", err)
+				panic(err)
 			}
 
 			// update validator set in store

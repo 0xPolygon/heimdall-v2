@@ -14,8 +14,7 @@ import (
 )
 
 func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
-	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
-	require := s.Require()
+	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
 	req := &types.QueryCurrentValidatorSetRequest{}
 	res, err := queryClient.CurrentValidatorSet(ctx, req)
@@ -23,7 +22,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	require.NoError(err)
 	require.Equal(len(res.ValidatorSet.Validators), 0)
 
-	//Set the validator set
+	// Set the validator set
 	validatorSet := testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 
 	req = &types.QueryCurrentValidatorSetRequest{}
@@ -39,8 +38,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 }
 
 func (s *KeeperTestSuite) TestHandleQuerySigner() {
-	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
-	require := s.Require()
+	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
 	req := &types.QuerySignerRequest{
 		ValAddress: common.Address{}.String(),
@@ -70,8 +68,8 @@ func (s *KeeperTestSuite) TestHandleQuerySigner() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryValidator() {
-	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
-	require := s.Require()
+	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
+
 	req := &types.QueryValidatorRequest{
 		Id: uint64(0),
 	}
@@ -109,8 +107,8 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
-	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
-	require := s.Require()
+	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
+
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetAllValidators(ctx)
 
@@ -135,10 +133,10 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
-	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
+	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
+
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
-	require := s.Require()
 
 	chainParams, err := s.cmKeeper.GetParams(ctx)
 	require.NoError(err)

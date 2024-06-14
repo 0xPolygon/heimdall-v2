@@ -43,8 +43,7 @@ func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModul
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
-	ctx, _, _ := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, require, _ := s.ctx, s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -438,8 +437,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
@@ -632,8 +630,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 	validators := keeper.GetCurrentValidators(ctx)
@@ -890,8 +888,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
@@ -1085,8 +1082,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	txHash := hmTypes.TxHash{common.Hash{}.Bytes()}
@@ -1187,8 +1184,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 	oldValSet := keeper.GetValidatorSet(ctx)
@@ -1239,8 +1236,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 	validators := keeper.GetCurrentValidators(ctx)
@@ -1291,8 +1288,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)

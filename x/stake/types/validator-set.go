@@ -607,35 +607,6 @@ func (vals *ValidatorSet) UpdateWithChangeSet(changes []*Validator) error {
 	return vals.updateWithChangeSet(changes, true)
 }
 
-//----------------
-
-// StringIndented return string
-func (vals *ValidatorSet) StringIndented(indent string) string {
-	if vals == nil {
-		return "nil-ValidatorSet"
-	}
-
-	var valStrings []string
-
-	vals.Iterate(func(index int, val *Validator) bool {
-		valStrings = append(valStrings, val.String())
-		return false
-	})
-
-	return fmt.Sprintf(`ValidatorSet{
-%s  Proposer: %v
-%s  Validators:
-%s    %v
-%s}`,
-		indent, vals.GetProposer().String(),
-		indent,
-		indent, strings.Join(valStrings, "\n"+indent+"    "),
-		indent)
-}
-
-//-------------------------------------
-// Implements sort for sorting validators by address.
-
 // ValidatorsByAddress sorts validators by address.
 type ValidatorsByAddress []*Validator
 
@@ -653,9 +624,7 @@ func (valz ValidatorsByAddress) Swap(i, j int) {
 	valz[j] = it
 }
 
-///////////////////////////////////////////////////////////////////////////////
 // safe addition/subtraction
-
 func safeAdd(a, b int64) (int64, bool) {
 	if b > 0 && a > math.MaxInt64-b {
 		return -1, true

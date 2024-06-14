@@ -100,8 +100,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *KeeperTestSuite) TestValidator() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -143,8 +142,7 @@ func (s *KeeperTestSuite) TestValidator() {
 
 // tests VotingPower change, validator creation, validator set update when signer changes
 func (s *KeeperTestSuite) TestUpdateSigner() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -236,7 +234,8 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 			resultmsg:   "should not be current validator as start epoch greater than ackcount.",
 		},
 	}
-	ctx, keeper := s.ctx, s.stakeKeeper
+	ctx, keeper,require := s.ctx, s.stakeKeeper,s.Require()
+
 
 	stakeKeeper, checkpointKeeper := s.stakeKeeper, app.CheckpointKeeper
 
@@ -268,8 +267,7 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 */
 
 func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators from state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
@@ -301,8 +299,7 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 }
 
 func (s *KeeperTestSuite) TestAddValidatorSetChange() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators from state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
@@ -339,8 +336,7 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 *
 */
 func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators to state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
@@ -374,8 +370,8 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 }
 
 func (s *KeeperTestSuite) TestGetCurrentValidators() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
 	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, validators[0].Signer)
@@ -384,8 +380,7 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 }
 
 func (s *KeeperTestSuite) TestGetCurrentProposer() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	currentValSet := keeper.GetValidatorSet(ctx)
@@ -394,8 +389,8 @@ func (s *KeeperTestSuite) TestGetCurrentProposer() {
 }
 
 func (s *KeeperTestSuite) TestGetNextProposer() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 
 	nextProposer := keeper.GetNextProposer(ctx)
@@ -403,8 +398,8 @@ func (s *KeeperTestSuite) TestGetNextProposer() {
 }
 
 func (s *KeeperTestSuite) TestGetValidatorFromValID() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
 
@@ -414,8 +409,8 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 }
 
 func (s *KeeperTestSuite) TestGetLastUpdated() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
 
@@ -425,8 +420,8 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 }
 
 func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 
 	// Test ActCount = 0
@@ -442,8 +437,8 @@ func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
 }
 
 func (s *KeeperTestSuite) TestGetMilestoneProposer() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
 	currentValSet1 := keeper.GetMilestoneValidatorSet(ctx)
 	currentMilestoneProposer := keeper.GetMilestoneCurrentProposer(ctx)
@@ -458,8 +453,7 @@ func (s *KeeperTestSuite) TestGetMilestoneProposer() {
 }
 
 func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators to state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
@@ -490,8 +484,7 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 }
 
 func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
-	ctx, keeper := s.ctx, s.stakeKeeper
-	require := s.Require()
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators to state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)

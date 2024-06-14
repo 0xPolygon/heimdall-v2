@@ -17,8 +17,7 @@ import (
 )
 
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
 	pk1 := secp256k1.GenPrivKey().PubKey()
 	require.NotNil(pk1)
@@ -46,8 +45,8 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
+
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 	oldValSet := keeper.GetValidatorSet(ctx)
@@ -92,8 +91,8 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
+
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 	validators := keeper.GetCurrentValidators(ctx)
@@ -127,8 +126,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
@@ -157,8 +155,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 }
 
 func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -213,8 +210,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 // TODO HV2 Please implement the following test after writing topUp module
 /*
 func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.stakeKeeper
-	require := s.Require()
+	ctx, msgServer, keeper,require := s.ctx, s.msgServer, s.stakeKeeper,s.Require()
 
 	pubKey := hmTypes.NewPubKey([]byte{123})
 	signerAddress := hmTypes.HexToHeimdallAddress(pubKey.Address().Hex())

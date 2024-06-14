@@ -10,19 +10,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/telemetry"
 )
 
-// BeginBlocker will send the current time value to telemetry.
-func (k *Keeper) BeginBlocker(ctx context.Context) error {
-	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
-	return nil
-}
-
 // EndBlocker called at the end of every block, and returns validator updates
 func (k *Keeper) EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
 	var tmValUpdates []abci.ValidatorUpdate
 
-	currentValidatorSet := k.GetValidatorSet(ctx)
+	currentValidatorSet, err := k.GetValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while calling the GetValidatorSet fn", "err", err)
+		return tmValUpdates, err
+	}
+
 	allValidators := k.GetAllValidators(ctx)
 	ackCount := k.moduleCommunicator.GetACKCount(ctx)
 
