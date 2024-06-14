@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"errors"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"math/big"
 
 	"cosmossdk.io/collections"
@@ -12,8 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
-
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 

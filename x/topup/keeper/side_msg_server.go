@@ -94,7 +94,10 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 		return mod.Vote_VOTE_NO
 	}
 
-	if !bytes.Equal(eventLog.User.Bytes(), []byte(msg.User)) {
+	// TODO HV2: discuss this with the team
+	msgAddr := common.HexToAddress(msg.User)
+
+	if !bytes.Equal(eventLog.User.Bytes(), msgAddr.Bytes()) {
 		logger.Error(
 			"user address from contract event log does not match with user from topup message",
 			"eventUser", eventLog.User.String(),
