@@ -8,12 +8,13 @@ import (
 func ExponentialBackoff(action func() error, max uint, wait time.Duration) error {
 	var err error
 
-	if max > 10 {
-		max = 10
-	}
-
 	for i := uint(0); i < max; i++ {
 		if err = action(); err == nil {
+			break
+		}
+
+		// To prevent the wait time beyond 10 minutes
+		if wait.Minutes() > float64(10) {
 			break
 		}
 
