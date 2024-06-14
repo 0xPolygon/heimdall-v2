@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"math/big"
 	"math/rand"
 	"strconv"
@@ -22,6 +21,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"

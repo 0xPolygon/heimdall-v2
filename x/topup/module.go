@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0xPolygon/heimdall-v2/helper"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cometbft/cometbft/types/time"
@@ -17,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
