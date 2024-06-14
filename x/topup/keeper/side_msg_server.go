@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -69,20 +70,22 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 		return mod.Vote_VOTE_NO
 	}
 
-	/* TODO HV2: enable when contract caller is implemented
-	params := s.k.ChainKeeper.GetParams(ctx)
+	params, err := s.k.ChainKeeper.GetParams(ctx)
+	if err != nil {
+		return mod.Vote_VOTE_NO
+	}
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainchainTxConfirmations)
+	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		return mod.Vote_VOTE_NO
 	}
 
 	// get event log for topup
-	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress.EthAddress(), receipt, msg.LogIndex)
+	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(common.HexToAddress(chainParams.StakingInfoAddress), receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		logger.Error("error fetching log from txhash for DecodeValidatorTopupFeesEvent")
+		logger.Error("error fetching log from txHash for DecodeValidatorTopupFeesEvent")
 		return mod.Vote_VOTE_NO
 	}
 
@@ -108,11 +111,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 
 	logger.Debug("Successfully validated external call for topup msg")
 
-	return mod.Vote_VOTE_NO
-	*/
-
-	// TODO HV2: remove this `return mod.Vote_VOTE_NO` statement when the above is enabled
-	return mod.Vote_VOTE_NO
+	return mod.Vote_VOTE_YES
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup tx

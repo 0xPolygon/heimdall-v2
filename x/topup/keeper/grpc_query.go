@@ -2,11 +2,14 @@ package keeper
 
 import (
 	"context"
+	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -30,14 +33,20 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	/* TODO HV2: enable this when chainManager  and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams := q.k.ChainKeeper.GetParams(sdkCtx)
-	// get main tx receipt
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(types.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainchainTxConfirmations)
-	if err != nil || receipt == nil {
+	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	// get main tx receipt
+	txHash := heimdallTypes.TxHash{Hash: common.FromHex(req.TxHash)}
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash.Hash), chainParams.MainChainTxConfirmations)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if receipt == nil {
+		return nil, status.Errorf(codes.NotFound, "receipt not found")
 	}
 
 	// get sequence id
@@ -56,10 +65,6 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	}
 
 	return &types.QueryTopupSequenceResponse{Sequence: sequence.String()}, nil
-	*/
-
-	// TODO HV2: remove the `return nil, nil` when the above is enabled
-	return nil, nil
 }
 
 // IsTopupTxOld implements the gRPC service handler to query the status of a topup tx
@@ -68,14 +73,20 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	/* TODO HV2: enable this when chainManager  and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams := q.k.ChainKeeper.GetParams(sdkCtx)
-	// get main tx receipt
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(types.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainchainTxConfirmations)
-	if err != nil || receipt == nil {
+	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
+	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	// get main tx receipt
+	txHash := heimdallTypes.TxHash{Hash: common.FromHex(req.TxHash)}
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash.Hash), chainParams.MainChainTxConfirmations)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if receipt == nil {
+		return nil, status.Errorf(codes.NotFound, "receipt not found")
 	}
 
 	// get sequence id
@@ -89,10 +100,6 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	}
 
 	return &types.QueryIsTopupTxOldResponse{IsOld: exists}, nil
-	*/
-
-	// TODO HV2: remove the `return nil, nil` when the above is enabled
-	return nil, nil
 }
 
 // GetDividendAccountByAddress implements the gRPC service handler to query a dividend account by its address
@@ -179,21 +186,29 @@ func (q queryServer) GetAccountProof(ctx context.Context, req *types.QueryAccoun
 	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from current account
 	// Finally, if they are equal, calculate the merkle path using GetAllDividendAccounts
 
-	/* TODO HV2: enable this when chainManager, checkpoint and contractCaller are implemented in heimdall-v2
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams := q.k.ChainKeeper.GetParams(sdkCtx)
-	stakingInfoAddress := chainParams.ChainParams.StakingInfoAddress.EthAddress()
-	stakingInfoInstance, _ := q.k.contractCaller.GetStakingInfoInstance(stakingInfoAddress)
-	accountRootOnChain, err := q.k.contractCaller.CurrentAccountStateRoot(stakingInfoInstance)
+	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
+	stakingInfoAddress := chainParams.ChainParams.StakingInfoAddress
+	stakingInfoInstance, err := q.k.contractCaller.GetStakingInfoInstance(stakingInfoAddress)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	// TODO HV2: replace `_` with `accountRootOnChain` when checkpoint is implemented in heimdall-v2
+	_, err = q.k.contractCaller.CurrentAccountStateRoot(stakingInfoInstance)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	// TODO HV2: replace `_` with `dividendAccounts` when checkpoint is implemented in heimdall-v2
+	_, err = q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	/* TODO HV2: enable this when chainManager, checkpoint and contractCaller are implemented in heimdall-v2
 	currentStateAccountRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
 	if !bytes.Equal(accountRootOnChain[:], currentStateAccountRoot) {
 		return nil, status.Errorf(codes.Internal, err.Error())
