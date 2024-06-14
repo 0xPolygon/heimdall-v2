@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0xPolygon/heimdall-v2/helper"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cometbft/cometbft/types/time"
@@ -32,16 +33,14 @@ var (
 
 // AppModule implements an application module for the topup module.
 type AppModule struct {
-	keeper keeper.Keeper
-	// TODO HV2: enable contractCaller when implemented in heimdall-v2
-	// contractCaller helper.IContractCaller
+	keeper         keeper.Keeper
+	contractCaller helper.IContractCaller
 }
 
-func NewAppModule(keeper keeper.Keeper) AppModule {
+func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
 	return AppModule{
-		keeper: keeper,
-		// TODO HV2: enable contractCaller when implemented in heimdall-v2
-		// contractCaller: contractCaller,
+		keeper:         keeper,
+		contractCaller: contractCaller,
 	}
 }
 
