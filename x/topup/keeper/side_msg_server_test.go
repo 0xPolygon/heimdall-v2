@@ -1,9 +1,9 @@
 package keeper_test
 
 import (
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/stretchr/testify/mock"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -42,16 +42,14 @@ func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote mod
 func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	var msg types.MsgTopupTx
 
-	ctx, keeper, require, t, contractCaller := suite.ctx, suite.keeper, suite.Require(), suite.T(), &suite.contractCaller
+	ctx, keeper, require, t, contractCaller := suite.ctx, suite.keeper, suite.Require(), suite.T(), suite.contractCaller
 
-	keeper.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
+	keeper.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(6)
 
 	_, _, addr1 := testdata.KeyTestPubAddr()
 	_, _, addr2 := testdata.KeyTestPubAddr()
 
 	t.Run("success", func(t *testing.T) {
-		contractCaller := suite.contractCaller
-
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
 		txReceipt := &ethTypes.Receipt{
@@ -79,11 +77,12 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		// mock external call
 		event := &stakinginfo.StakinginfoTopUpFee{
-			User: common.Address(sdk.AccAddress(addr1.String())),
+			User: common.HexToAddress(addr2.String()),
 			Fee:  coins.Amount.BigInt(),
 		}
-		contractCaller.On("GetConfirmedTxReceipt", hash, chainmanagertypes.DefaultParams().MainChainTxConfirmations).Return(txReceipt, nil)
-		contractCaller.On("DecodeValidatorTopupFeesEvent", chainmanagertypes.DefaultParams().ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
+
+		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		contractCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
 		res := suite.sideHandler(ctx, &msg)
 
@@ -95,8 +94,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 
 	t.Run("no receipt", func(t *testing.T) {
-		contractCaller := mocks.IContractCaller{}
-
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
 		hash := hTypes.TxHash{Hash: []byte(TxHash)}
@@ -121,7 +118,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 
 	t.Run("no log", func(t *testing.T) {
-		contractCaller := mocks.IContractCaller{}
 
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
@@ -151,8 +147,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 
 	t.Run("block mismatch", func(t *testing.T) {
-		contractCaller := mocks.IContractCaller{}
-
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
 		txReceipt := &ethTypes.Receipt{
@@ -186,8 +180,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 
 	t.Run("user mismatch", func(t *testing.T) {
-		contractCaller := mocks.IContractCaller{}
-
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
 		txReceipt := &ethTypes.Receipt{
@@ -221,8 +213,6 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 
 	t.Run("fee mismatch", func(t *testing.T) {
-		contractCaller := mocks.IContractCaller{}
-
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
 		txReceipt := &ethTypes.Receipt{

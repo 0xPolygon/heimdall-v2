@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"math/big"
 	"math/rand"
 	"strconv"

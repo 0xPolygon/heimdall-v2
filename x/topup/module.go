@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/0xPolygon/heimdall-v2/helper"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cometbft/cometbft/types/time"
