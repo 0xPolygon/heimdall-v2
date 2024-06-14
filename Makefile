@@ -60,6 +60,11 @@ mock:
 
 .PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
 
+mock:
+	# TODO HV2: enrich the mockgen command with all other modules' mocks
+	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
+
+
 ###############################################################################
 ###                                docker                                   ###
 ###############################################################################
@@ -111,13 +116,20 @@ release:
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate
 
+
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  lint-deps           - Install dependencies for GolangCI-Lint tool."
-	@echo "  lint                - Runs the GolangCI-Lint tool on the codebase."
-	@echo "  build-docker        - Builds a Docker image for the latest Git tag."
-	@echo "  push-docker         - Pushes the Docker image for the latest Git tag."
-	@echo "  build-docker-develop- Builds a Docker image for the development branch."
-	@echo "  release-dry-run     - Performs a dry run of the release process."
-	@echo "  release             - Executes the actual release process."
+	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
+	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
+	@echo "  clean               	- Delete build folder."
+	@echo "  mock                	- Generate mocks."
+	@echo "  proto-all           	- Format, lint and generate proto files."
+	@echo "  proto-format        	- Format proto files."
+	@echo "  proto-gen           	- Generate proto files."
+	@echo "  proto-check-breaking   - Check if proto breaks against git head."
+	@echo "  build-docker        	- Build a Docker image for the latest Git tag."
+	@echo "  push-docker         	- Push the Docker image for the latest Git tag."
+	@echo "  build-docker-develop	- Build a Docker image for the development branch."
+	@echo "  release-dry-run     	- Perform a dry run of the release process."
+	@echo "  release             	- Execute the actual release process."

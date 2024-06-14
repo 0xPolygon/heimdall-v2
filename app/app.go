@@ -7,65 +7,68 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-
-	storetypes "cosmossdk.io/store/types"
-
-	"github.com/cosmos/cosmos-sdk/std"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/cosmos-sdk/x/consensus"
-	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
-	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
-	"github.com/cosmos/cosmos-sdk/x/params"
-	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
-	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
-
-	"cosmossdk.io/client/v2/autocli"
-	"cosmossdk.io/core/appmodule"
-	mod "github.com/0xPolygon/heimdall-v2/module"
-	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
-	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/types/msgservice"
-	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
-	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
-	"github.com/cosmos/gogoproto/proto"
-
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
+	"cosmossdk.io/client/v2/autocli"
+	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/version"
+	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
+	"github.com/cosmos/cosmos-sdk/x/distribution"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
+	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
+	"github.com/cosmos/cosmos-sdk/x/genutil"
+	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
+	"github.com/cosmos/cosmos-sdk/x/gov"
+	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	govv1beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	"github.com/cosmos/cosmos-sdk/x/params"
+	paramsclient "github.com/cosmos/cosmos-sdk/x/params/client"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
+	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
+	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
+	"github.com/cosmos/gogoproto/proto"
+
+	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
+	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/topup"
+	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 var (
@@ -75,6 +78,7 @@ var (
 		authtypes.FeeCollectorName: nil,
 		govtypes.ModuleName:        nil,
 		distrtypes.ModuleName:      nil,
+		topupTypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
 	}
 )
 
@@ -111,8 +115,8 @@ type HeimdallApp struct {
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
-	// TopupKeeper topupkeeper.Keeper
-	// ChainKeeper chainmanagerkeeper.Keeper
+	TopupKeeper        topupKeeper.Keeper
+	ChainManagerKeeper chainmanagerkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	// caller helper.ContractCaller
@@ -172,8 +176,8 @@ func NewHeimdallApp(
 		// bortypes.StoreKey,
 		// clerktypes.StoreKey,
 		// checkpointtypes.StoreKey,
-		// topuptypes.StoreKey,
-		// chainmanagertypes.StoreKey,
+		topupTypes.StoreKey,
+		chainmanagertypes.StoreKey,
 	)
 
 	// register streaming services
@@ -294,6 +298,21 @@ func NewHeimdallApp(
 	// custom keepers
 	// TODO HV2: initialize custom module keepers
 
+	app.ChainManagerKeeper = chainmanagerkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String())
+
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		app.BankKeeper,
+		// TODO HV2: replace nil with stakeKeeper when implemented
+		nil,
+		app.ChainManagerKeeper,
+		// TODO HV2: add required contractCaller when implemented
+	)
+
 	app.mm = module.NewManager(
 		// TODO HV2: add stake keeper once implemented
 		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
@@ -307,6 +326,8 @@ func NewHeimdallApp(
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
+		chainmanager.NewAppModule(app.ChainManagerKeeper),
+		topup.NewAppModule(app.TopupKeeper),
 	)
 
 	// Basic manager
@@ -345,14 +366,13 @@ func NewHeimdallApp(
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		chainmanagertypes.ModuleName,
+		topupTypes.ModuleName,
 		// TODO HV2: uncomment when modules are implemented
 		// staketypes.ModuleName,
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
-		// topuptypes.ModuleName,
-		// chainmanagertypes.ModuleName,
-
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
@@ -415,9 +435,6 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
-	// TODO HV2: pass contract caller and keepers for chainmanager and distribution
-	// see https://github.com/maticnetwork/heimdall/commit/ea3bc8efd52d43bd620d51c317e2e1b1afd908f7
-	// https://github.com/maticnetwork/heimdall/commit/5ce56fb60634211798b32745358adfa8fd1bbbc5
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
 			ante.HandlerOptions{
@@ -492,11 +509,9 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	// TODO HV2: implement
-	// app.AccountKeeper.SetBlockProposer(
-	// 	ctx,
-	// 	types.BytesToHeimdallAddress(req.Header.GetProposerAddress()),
-	// )
+
+	// TODO HV2: implement when BytesToHeimdallAddress is available
+	// app.AccountKeeper.SetBlockProposer(ctx,types.BytesToHeimdallAddress(req.Header.GetProposerAddress()))
 	return app.mm.BeginBlock(ctx)
 }
 
@@ -566,24 +581,6 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 			})
 		}
 	}
-
-	// TODO HV2: consider moving the rootchain contract address update logic to chainmanager's EndBlock() under x/chainmanager/module.go
-
-	// Change root chain contract addresses if required
-	if chainManagerAddressMigration, found := helper.GetChainManagerAddressMigration(ctx.BlockHeight()); found {
-		params := app.ChainKeeper.GetParams(ctx)
-
-		params.ChainParams.MaticTokenAddress = chainManagerAddressMigration.MaticTokenAddress
-		params.ChainParams.StakingManagerAddress = chainManagerAddressMigration.StakingManagerAddress
-		params.ChainParams.RootChainAddress = chainManagerAddressMigration.RootChainAddress
-		params.ChainParams.SlashManagerAddress = chainManagerAddressMigration.SlashManagerAddress
-		params.ChainParams.StakingInfoAddress = chainManagerAddressMigration.StakingInfoAddress
-		params.ChainParams.StateSenderAddress = chainManagerAddressMigration.StateSenderAddress
-
-		// update chain manager state
-		app.ChainKeeper.SetParams(ctx, params)
-		logger.Info("Updated chain manager state", "params", params)
-	}
 	*/
 
 	return app.mm.EndBlock(ctx)
@@ -604,8 +601,8 @@ func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 
 func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	// TODO HV2: add topup module to enable it to receive/send tokens.
-	// See https://github.com/0xPolygon/cosmos-sdk/pull/5#discussion_r1513037980
+	delete(modAccAddrs, authtypes.NewModuleAddress(topupTypes.ModuleName).String())
+	// TODO HV2: any other module to remove from the BlockedModuleAccountAddrs? So that they can send/receive tokens
 	return modAccAddrs
 }
 
