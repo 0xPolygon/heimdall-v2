@@ -274,13 +274,11 @@ func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, 
 	}
 }
 
-// GetBeginBlockEvents gets the begin block events for a given height
-func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
+// GetFinalizeBlockEvents gets the begin block events for a given height
+func GetFinalizeBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
 
-	// TODO HV2 It give all the events, not only begin blocks
-	// get block using client
 	blockResults, err := client.BlockResults(c, &height)
 	if err == nil && blockResults != nil {
 		return blockResults.FinalizeBlockEvents, nil
