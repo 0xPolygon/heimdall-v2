@@ -201,7 +201,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 
 	// Run migrations only for "mock" module. We exclude it from
 	// the VersionMap to simulate upgrading with a new module.
-	_, err := app.mm.RunMigrations(ctx, app.Configurator(),
+	_, err := app.mm.RunMigrations(ctx, app.configurator,
 		module.VersionMap{
 			"bank":         1,
 			"auth":         auth.AppModule{}.ConsensusVersion(),
