@@ -18,7 +18,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
+	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -30,7 +30,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 	err := tk.SetTopupSequence(ctx, sequence.String())
 	require.NoError(err)
-	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Times(1)
+	suite.contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
 		TxHash:   hash.String(),
@@ -44,7 +44,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
+	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -52,7 +52,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
-	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	suite.contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
@@ -78,7 +78,7 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
 	err := tk.SetTopupSequence(ctx, sequence.String())
 	require.NoError(err)
-	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	suite.contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
@@ -92,14 +92,14 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsNotOld() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
+	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	logIndex := r1.Uint64()
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
-	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	suite.contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
@@ -226,8 +226,8 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 	accRoot := []byte("accRoot")
 	copy(accountRoot[:], accRoot)
 
-	contractCaller.On("GetStakingInfoInstance", mock.Anything).Return(stakingInfo, nil)
-	contractCaller.On("CurrentAccountStateRoot", stakingInfo).Return(accountRoot, nil)
+	suite.contractCaller.On("GetStakingInfoInstance", mock.Anything).Return(stakingInfo, nil)
+	suite.contractCaller.On("CurrentAccountStateRoot", stakingInfo).Return(accountRoot, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryAccountProofRequest{

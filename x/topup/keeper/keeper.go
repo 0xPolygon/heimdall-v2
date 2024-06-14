@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"errors"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"math/big"
 
 	"cosmossdk.io/collections"
@@ -23,6 +24,7 @@ type Keeper struct {
 	schema       collections.Schema
 
 	BankKeeper     types.BankKeeper
+	stakeKeeper    types.StakeKeeper
 	ChainKeeper    types.ChainKeeper
 	contractCaller helper.IContractCaller
 
@@ -44,6 +46,7 @@ func NewKeeper(
 		cdc:            cdc,
 		storeService:   storeService,
 		BankKeeper:     bankKeeper,
+		stakeKeeper:    stakeKeeper,
 		ChainKeeper:    chainKeeper,
 		contractCaller: contractCaller,
 
