@@ -30,10 +30,10 @@ func NewValidator(
 	power int64,
 	pubKey cryptotypes.PubKey,
 	signer string,
-) *Validator {
+) (*Validator, error) {
 	pkAny, err := codectypes.NewAnyWithValue(pubKey)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	return &Validator{
 		ValId:       id,
@@ -43,7 +43,7 @@ func NewValidator(
 		VotingPower: power,
 		PubKey:      pkAny,
 		Signer:      signer,
-	}
+	}, nil
 }
 
 // SortValidatorByAddress sorts a slice of validators by address
@@ -62,11 +62,7 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 	currentEpoch := ackCount + 1
 
 	// validator hasn't initialised unstake
-	if !v.Jailed && v.StartEpoch <= currentEpoch && (v.EndEpoch == 0 || v.EndEpoch > currentEpoch) && v.VotingPower > 0 {
-		return true
-	}
-
-	return false
+	return !v.Jailed && v.StartEpoch <= currentEpoch && (v.EndEpoch == 0 || v.EndEpoch > currentEpoch) && v.VotingPower > 0
 }
 
 // Validates validator
@@ -91,23 +87,15 @@ func (v *Validator) ValidateBasic() bool {
 
 // amino marshall validator
 func MarshallValidator(cdc codec.BinaryCodec, validator Validator) (bz []byte, err error) {
-	bz, err = cdc.Marshal(&validator)
-	if err != nil {
-		return bz, err
-	}
-
-	return bz, nil
+	return cdc.Marshal(&validator)
 }
 
 // amono unmarshall validator
 func UnmarshallValidator(cdc codec.BinaryCodec, value []byte) (Validator, error) {
 	var validator Validator
+	err := cdc.Unmarshal(value, &validator)
 
-	if err := cdc.Unmarshal(value, &validator); err != nil {
-		return validator, err
-	}
-
-	return validator, nil
+	return validator, err
 }
 
 // Copy creates a new copy of the validator so we can mutate accum.

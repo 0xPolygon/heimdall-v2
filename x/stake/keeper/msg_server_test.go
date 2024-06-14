@@ -172,7 +172,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	logIndex := uint64(index)
 
 	validatorId := uint64(1)
-	validator := types.NewValidator(
+	validator, err := types.NewValidator(
 		validatorId,
 		10,
 		15,
@@ -181,6 +181,8 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		pk1,
 		addr,
 	)
+
+	require.NoError(err)
 
 	err = keeper.AddValidator(ctx, *validator)
 

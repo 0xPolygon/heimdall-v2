@@ -78,7 +78,7 @@ func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return nil, errorsmod.Wrap(hmerrors.ErrOldTx, "Older invalid tx found")
 	}
 
@@ -120,7 +120,7 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
 	}
 
@@ -188,7 +188,7 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
 	}
 
@@ -249,7 +249,7 @@ func (k msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
 	}
 

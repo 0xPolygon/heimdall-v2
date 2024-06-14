@@ -87,7 +87,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	// chainManager params
 	params, err := k.cmKeeper.GetParams(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error in fetching chain manager params")
+		k.Logger(ctx).Error("error in fetching chain manager params", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -97,7 +97,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		k.Logger(ctx).Error("need for more ethereum blocks to fetch the confirmed tx receipt")
+		k.Logger(ctx).Error("need for more ethereum blocks to fetch the confirmed tx receipt", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -194,6 +194,7 @@ func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) 
 	// chainManager params
 	params, err := k.cmKeeper.GetParams(ctx)
 	if err != nil {
+		k.Logger(ctx).Error("error in fetching params from store", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -202,12 +203,13 @@ func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) 
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
+		k.Logger(ctx).Error("error in getting event receipt from etherum ", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
 	eventLog, err := contractCaller.DecodeValidatorStakeUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		k.Logger(ctx).Error("error fetching log from txhash")
+		k.Logger(ctx).Error("error fetching log from txhash", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -257,6 +259,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	// chainManager params
 	params, err := k.cmKeeper.GetParams(ctx)
 	if err != nil {
+		k.Logger(ctx).Error("error in fetching params from store", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 	chainParams := params.ChainParams
@@ -264,6 +267,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
+		k.Logger(ctx).Error("error in getting event receipt from etherum ", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -279,7 +283,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 
 	eventLog, err := contractCaller.DecodeSignerUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		k.Logger(ctx).Error("error fetching log from txhash")
+		k.Logger(ctx).Error("error fetching log from txhash", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -334,6 +338,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 	// chainManager params
 	params, err := k.cmKeeper.GetParams(ctx)
 	if err != nil {
+		k.Logger(ctx).Error("error in fetching params from store", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -342,13 +347,14 @@ func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
+		k.Logger(ctx).Error("error in getting event receipt from etherum ", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
 	// decode validator exit
 	eventLog, err := contractCaller.DecodeValidatorExitEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		k.Logger(ctx).Error("error fetching log from txhash")
+		k.Logger(ctx).Error("error fetching log from txhash", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -403,7 +409,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return
 	}
 
@@ -435,11 +441,8 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 		VotingPower: votingPower.Int64(),
 		PubKey:      anyPk,
 		Signer:      strings.ToLower(signer),
-		LastUpdated: "",
+		LastUpdated: sequence.String(),
 	}
-
-	// update last updated
-	newValidator.LastUpdated = sequence.String()
 
 	// add validator to store
 	k.Logger(ctx).Debug("adding new validator to state", "validator", newValidator.String())
@@ -471,13 +474,12 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{Hash: txBytes}.Bytes()
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeValidatorJoin,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(hash).Hex()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()),
 			sdk.NewAttribute(hmTypes.AttributeKeyTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(newValidator.ValId, 10)),
@@ -510,7 +512,7 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return
 	}
 
@@ -532,6 +534,7 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 	// set validator amount
 	p, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
 	if err != nil {
+		k.Logger(ctx).Error("error in calculating power value from amount", "err", err)
 		return
 	}
 
@@ -553,14 +556,13 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{Hash: txBytes}.Bytes()
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeStakeUpdate,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(hash).Hex()), // tx hash
-			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),             // result
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()), // tx hash
+			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),                // result
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
@@ -589,7 +591,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return
 	}
 
@@ -621,7 +623,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 	validator.Nonce = msg.Nonce
 
 	// check if we are actually updating signer
-	if !(newSigner == validator.Signer) {
+	if newSigner != validator.Signer {
 		// Update signer in prev Validator
 		validator.Signer = newSigner
 		validator.PubKey = anyPk
@@ -665,10 +667,6 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 		return
 	}
 
-	// TX bytes
-	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{Hash: txBytes}.Bytes()
-
 	//
 	// Move heimdall fee to new signer
 	//
@@ -688,11 +686,14 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 	// 	}
 	// }
 
+	// tx bytes
+	txBytes := ctx.TxBytes()
+
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeSignerUpdate,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(hash).Hex()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
@@ -723,7 +724,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("older invalid tx found")
+		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
 		return
 	}
 
@@ -759,13 +760,12 @@ func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{Hash: txBytes}.Bytes()
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeValidatorExit,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(hash).Hex()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),

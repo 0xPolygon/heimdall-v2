@@ -64,7 +64,7 @@ message QueryCurrentValidatorSetResponse {
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QuerySignerRequest is response type for the Query/Signer RPC method
+// QuerySignerRequest is request type for the Query/Signer RPC method
 message QuerySignerRequest {
   // val_address defines the validator val_address to query for.
   string val_address = 1 [ (amino.dont_omitempty) = true ];

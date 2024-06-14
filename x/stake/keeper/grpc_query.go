@@ -38,7 +38,7 @@ func (q Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*ty
 	validator, err := q.GetValidatorInfo(ctx, req.ValAddress)
 
 	if err != nil {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresposing to the given address", req.ValAddress, "err", err))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given address", req.ValAddress, "err", err))
 	}
 
 	return &types.QuerySignerResponse{Validator: validator}, nil
@@ -53,7 +53,7 @@ func (q Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest
 	validator, ok := q.GetValidatorFromValID(ctx, req.Id)
 
 	if !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresposing to the given id", req.Id))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given id", req.Id))
 	}
 
 	return &types.QueryValidatorResponse{Validator: validator}, nil

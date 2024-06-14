@@ -27,7 +27,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	validators := make([]*types.Validator, n)
 	for i := 0; i < len(validators); i++ {
 		pk1 := secp256k1.GenPrivKey().PubKey()
-		validators[i] = types.NewValidator(
+		validators[i], err = types.NewValidator(
 			uint64(i),
 			0,
 			0,
@@ -36,6 +36,8 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 			pk1,
 			accounts[i].Address.String(),
 		)
+
+		require.NoError(err)
 	}
 
 	validatorSet := types.NewValidatorSet(validators)

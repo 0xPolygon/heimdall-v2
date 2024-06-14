@@ -110,7 +110,7 @@ func (s *KeeperTestSuite) TestValidator() {
 	accounts := simulation.RandomAccounts(r1, n)
 
 	for i := range validators {
-		validators[i] = types.NewValidator(
+		validators[i], err = types.NewValidator(
 			uint64(i),
 			0,
 			0,
@@ -119,6 +119,8 @@ func (s *KeeperTestSuite) TestValidator() {
 			pk1,
 			accounts[i].Address.String(),
 		)
+
+		require.NoError(err)
 
 		err := keeper.AddValidator(ctx, *validators[i])
 		require.NoErrorf(err, "Error while adding validator to store")
@@ -152,7 +154,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	accounts := simulation.RandomAccounts(r1, n)
 
 	for i := range validators {
-		validators[i] = types.NewValidator(
+		validators[i], err = types.NewValidator(
 			uint64(int64(i)),
 			0,
 			0,
@@ -161,6 +163,8 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 			pk1,
 			accounts[i].Address.String(),
 		)
+
+		require.NoError(err)
 
 		err := keeper.AddValidator(ctx, *validators[i])
 		require.NoErrorf(err, "Error while adding validator to store")
