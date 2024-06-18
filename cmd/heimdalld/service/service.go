@@ -805,23 +805,3 @@ func CryptoKeyToPubkey(key crypto.PubKey) hmTypes.PubKey {
 	return hmTypes.NewPubKey(validatorPublicKey[:])
 }
 */
-
-// TODO HV2 - removed this, using `server.CreateSDKLogger` instead
-/*
-func SetupCtxLogger(logWriter io.Writer, logLevel string) (log.Logger, error) {
-	logger := log.NewTMLogger(log.NewSyncWriter(logWriter))
-
-	logger, err := tmflags.ParseLogLevel(logLevel, logger, cmtcfg.DefaultLogLevel)
-	if err != nil {
-		return nil, err
-	}
-
-	if viper.GetBool(cli.TraceFlag) {
-		logger = log.NewTracingLogger(logger)
-	}
-
-	logger = logger.With("module", "main")
-
-	return logger, nil
-}
-*/
