@@ -678,12 +678,12 @@ func nodeDir(i int) string {
 	return filepath.Join(outDir, nodeDirName, nodeDaemonHomeName)
 }
 
-// hostname of ip of nodes
+// hostnameOrIP returns the hostname of ip of nodes
 func hostnameOrIP(i int) string {
 	return fmt.Sprintf("%s%d", viper.GetString(flagNodeHostPrefix), i)
 }
 
-// populate persistent peers in config
+// populatePersistentPeersInConfigAndWriteIt populates persistent peers in config
 func populatePersistentPeersInConfigAndWriteIt(config *cmtcfg.Config) {
 	persistentPeers := make([]string, totalValidators())
 
