@@ -161,7 +161,7 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 
 	// adding heimdall configuration flags to root command
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
-	helper.DecorateWithTendermintFlags(rootCmd, viper.GetViper(), logger, "main")
+	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
 
 	tendermintCmd := &cobra.Command{
 		Use:   "tendermint",
@@ -218,7 +218,7 @@ func getNewApp(serverCtx *server.Context, logger log.Logger) *app.HeimdallApp {
 	// return func(logger log.Logger, db dbm.DB, storeTracer io.Writer) abci.Application {
 	// init heimdall config
 	helper.InitHeimdallConfig("")
-	helper.UpdateTendermintConfig(serverCtx.Config, viper.GetViper())
+	helper.UpdateCometBFTConfig(serverCtx.Config, viper.GetViper())
 
 	dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
 	db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, dataDir)

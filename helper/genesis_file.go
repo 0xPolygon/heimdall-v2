@@ -20,23 +20,23 @@ import (
 
 var allocs embed.FS
 
-func WriteGenesisFile(chain string, filePath string, cdc *codec.Codec) error {
+func WriteGenesisFile(chain string, filePath string) (bool, error) {
 	switch chain {
 	case "amoy", "mumbai", "mainnet":
 		fn := fmt.Sprintf("allocs/%s.json", chain)
 
-		genDoc, err := readPrealloc(fn, cdc)
+		genDoc, err := readPrealloc(fn)
 		if err == nil {
 			err = genDoc.SaveAs(filePath)
 		}
 
-		return err
+		return err == nil, err
 	default:
-		return nil
+		return false, nil
 	}
 }
 
-func readPrealloc(filename string, cdc *codec.Codec) (result cmTypes.GenesisDoc, err error) {
+func readPrealloc(filename string) (result cmTypes.GenesisDoc, err error) {
 	f, err := allocs.Open(filename)
 	if err != nil {
 		err = errors.Errorf("could not open genesis preallocation for %s: %v", filename, err)
@@ -53,7 +53,7 @@ func readPrealloc(filename string, cdc *codec.Codec) (result cmTypes.GenesisDoc,
 
 	_, err = buf.ReadFrom(f)
 	if err == nil {
-		err = (*cdc).UnmarshalInterfaceJSON(buf.Bytes(), &result)
+		err = codec.NewLegacyAmino().UnmarshalJSON(buf.Bytes(), &result)
 	}
 
 	return

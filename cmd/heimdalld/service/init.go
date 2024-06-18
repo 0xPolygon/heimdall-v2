@@ -34,7 +34,7 @@ type initHeimdallConfig struct {
 	forceInit   bool
 }
 
-// TODO HV2 - this finction was heavlily modified, review carefully
+// TODO HV2 - this function was heavily modified, review carefully
 func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHeimdallConfig, config *cmtcfg.Config, mbm module.BasicManager, cliCdc codec.Codec) error {
 	conf := helper.GetDefaultHeimdallConfig()
 	conf.Chain = initConfig.chain
@@ -66,7 +66,7 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 	}
 
 	if writeGenesis {
-		genesisCreated, err := helper.WriteGenesisFile(initConfig.chain, config.GenesisFile(), cdc)
+		genesisCreated, err := helper.WriteGenesisFile(initConfig.chain, config.GenesisFile())
 		if err != nil {
 			return err
 		} else if genesisCreated {

@@ -69,11 +69,11 @@ func NewRootCmd() *cobra.Command {
 }
 
 func initTendermintViperConfig(cmd *cobra.Command) {
-	tendermintNode, _ := cmd.Flags().GetString(helper.TendermintNodeFlag)
+	tendermintNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
 	homeValue, _ := cmd.Flags().GetString(helper.HomeFlag)
 
 	// set to viper
-	viper.Set(helper.TendermintNodeFlag, tendermintNode)
+	viper.Set(helper.CometBFTNodeFlag, tendermintNode)
 	viper.Set(helper.HomeFlag, homeValue)
 
 	// start heimdall config
