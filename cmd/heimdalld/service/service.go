@@ -792,8 +792,7 @@ func WriteDefaultHeimdallConfig(path string, conf helper.Configuration) {
 	if _, err := os.Stat(path); err == nil {
 		logger.Info(fmt.Sprintf("Config file %s already exists. Skip writing default heimdall config.", path))
 	} else if errors.Is(err, os.ErrNotExist) {
-		// TODO HV2 - uncomment when helper is implemented
-		// helper.WriteConfigFile(path, &conf)
+		helper.WriteConfigFile(path, &conf)
 	} else {
 		logger.Error("Error while checking for config file", "Error", err)
 	}
