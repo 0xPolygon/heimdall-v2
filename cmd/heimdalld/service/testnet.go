@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	cmd_helper "github.com/0xPolygon/heimdall-v2/cmd"
+	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cometbft/cometbft/crypto"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -45,7 +45,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			// create chain id
 			chainID := viper.GetString(flags.FlagChainID)
 			if chainID == "" {
-				chainID = fmt.Sprintf("heimdall-%v", cmd_helper.RandStringRunes(6))
+				chainID = fmt.Sprintf("heimdall-%v", cmdhelper.RandStringRunes(6))
 			}
 
 			// num of validators = validators in genesis files

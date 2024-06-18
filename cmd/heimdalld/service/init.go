@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	cmd_helper "github.com/0xPolygon/heimdall-v2/cmd"
+	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/libs/cli"
@@ -79,7 +79,7 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 	// create chain id
 	chainID := initConfig.chainID
 	if chainID == "" {
-		chainID = fmt.Sprintf("heimdall-%v", cmd_helper.RandStringRunes(6))
+		chainID = fmt.Sprintf("heimdall-%v", cmdhelper.RandStringRunes(6))
 	}
 
 	appGenState := mbm.DefaultGenesis(cliCdc)
