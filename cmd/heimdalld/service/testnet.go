@@ -20,8 +20,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-// TODO HV2 - this finction was heavlily modified, review carefully
-// TestnetCmd initialises files required to start heimdall testnet
+// TODO HV2 - this function was heavily modified, review carefully
+// testnetCmd initialises files required to start heimdall testnet
 func testnetCmd(ctx *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create-testnet",
