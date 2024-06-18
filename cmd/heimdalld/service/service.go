@@ -461,14 +461,6 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 		return fmt.Errorf("failed to load or gen node key: %s", err)
 	}
 
-	// TODO HV2 - we don't need this
-	/*
-		UpgradeOldPrivValFile converts old priv_validator.json file (prior to Tendermint 0.28)
-		to the new priv_validator_key.json and priv_validator_state.json files.
-
-	*/
-	// server.UpgradeOldPrivValFile(cfg)
-
 	cmtApp := server.NewCometABCIWrapper(app)
 
 	// create & start tendermint node
@@ -774,14 +766,6 @@ func InitializeNodeValidatorFiles(
 	}
 
 	nodeID = string(nodeKey.ID())
-
-	// TODO HV2 - we don't need this
-	/*
-		UpgradeOldPrivValFile converts old priv_validator.json file (prior to Tendermint 0.28)
-		to the new priv_validator_key.json and priv_validator_state.json files.
-
-	*/
-	// server.UpgradeOldPrivValFile(config)
 
 	pvKeyFile := config.PrivValidatorKeyFile()
 	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0777); err != nil {
