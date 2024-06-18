@@ -425,14 +425,14 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 		return fmt.Errorf("failed to open trace writer: %s", err)
 	}
 
-	app := appCreator(ctx.Logger, db, traceWriter, vp)
+	appc := appCreator(ctx.Logger, db, traceWriter, vp)
 
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		return fmt.Errorf("failed to load or gen node key: %s", err)
 	}
 
-	cmtApp := server.NewCometABCIWrapper(app)
+	cmtApp := server.NewCometABCIWrapper(appc)
 
 	// create & start cometbft node
 	tmNode, err := node.NewNode(
@@ -527,7 +527,10 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 			return tmNode.Stop()
 		}
 
-		db.Close()
+		err = db.Close()
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
