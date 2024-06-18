@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var checkpointEndpoint = "/chainmanager/params"
+const chainmanagerEndpoint = "/chainmanager/params"
 
 // StakeCmd stakes for a validator
 func StakeCmd(cliCtx client.Context) *cobra.Command {
