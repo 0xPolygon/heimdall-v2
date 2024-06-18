@@ -20,6 +20,7 @@ import (
 	"cosmossdk.io/log"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"github.com/0xPolygon/heimdall-v2/app"
+	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -183,7 +184,7 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	// rootCmd.AddCommand(server.UnsafeResetAllCmd(ctx))
 	rootCmd.AddCommand(flags.LineBreak)
 	rootCmd.AddCommand(cometbftCmd)
-	rootCmd.AddCommand(server.ExportCmd(appExporter, "/var/lib/heimdall"))
+	rootCmd.AddCommand(server.ExportCmd(appExporter, cmdhelper.GetDefaultHomeDir()))
 	rootCmd.AddCommand(flags.LineBreak)
 	rootCmd.AddCommand(version.Cmd) // Using heimdall version, not Cosmos SDK version
 	// End of block
@@ -207,7 +208,7 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	}
 
 	// prepare and add flags
-	executor := cli.PrepareBaseCmd(rootCmd, "HD", os.ExpandEnv("/var/lib/heimdall"))
+	executor := cli.PrepareBaseCmd(rootCmd, "HD", os.ExpandEnv(cmdhelper.GetDefaultHomeDir()))
 	if err := executor.Execute(); err != nil {
 		// Note: Handle with #870
 		panic(err)
