@@ -140,7 +140,7 @@ func ApproveCmd(cliCtx client.Context) *cobra.Command {
 	return cmd
 }
 
-// TODO HV2 - uncomment when we have helper
+// TODO HV2 - uncomment when we have chainmanager
 /*
 // GetChainmanagerParams return configManager params
 func GetChainmanagerParams(cliCtx client.Context) (*chainmanagerTypes.Params, error) {
