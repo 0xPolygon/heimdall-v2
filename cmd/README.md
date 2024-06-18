@@ -1,12 +1,12 @@
 # CMD
 
-The `cmd` package is responsible for starting the heimdall application provides the CLI framework (based on [cobra](https://github.com/spf13/cobra)).
+The `cmd` package is responsible for starting the heimdall application and provides the CLI framework (based on [cobra](https://github.com/spf13/cobra)).
 
 ## heimdallcli
 
 `heimdallcli` is the command line interface to interact with the heimdall application.
 
-Apart from some command commands taken for the upstream, it has 2 customised commands:
+Apart from some commands taken for the upstream, it has 2 customised commands:
 - `stake`: Stake matic tokens for your account.
 - `approve`: Approve the tokens to stake.
 
