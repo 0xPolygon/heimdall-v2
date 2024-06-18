@@ -25,7 +25,7 @@ func NewRootCmd() *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			if cmd.Use != version.Cmd.Use {
 				// initialise config
-				initTendermintViperConfig(cmd)
+				initCometBFTViperConfig(cmd)
 			}
 
 			// set the default command outputs
@@ -68,12 +68,12 @@ func NewRootCmd() *cobra.Command {
 	return rootCmd
 }
 
-func initTendermintViperConfig(cmd *cobra.Command) {
-	tendermintNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
+func initCometBFTViperConfig(cmd *cobra.Command) {
+	cometbftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
 	homeValue, _ := cmd.Flags().GetString(helper.HomeFlag)
 
 	// set to viper
-	viper.Set(helper.CometBFTNodeFlag, tendermintNode)
+	viper.Set(helper.CometBFTNodeFlag, cometbftNode)
 	viper.Set(helper.HomeFlag, homeValue)
 
 	// start heimdall config

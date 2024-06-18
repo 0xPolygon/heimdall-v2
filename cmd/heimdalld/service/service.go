@@ -70,7 +70,7 @@ var (
 	flagNodeHostPrefix   = "node-host-prefix"
 )
 
-// Tendermint full-node start flags
+// CometBFT full-node start flags
 const (
 	flagAddress      = "address"
 	flagTraceStore   = "trace-store"
@@ -163,16 +163,16 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
 	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
 
-	tendermintCmd := &cobra.Command{
-		Use:   "tendermint",
-		Short: "Tendermint subcommands",
+	cometbftCmd := &cobra.Command{
+		Use:   "cometbft",
+		Short: "CometBFT subcommands",
 	}
 
 	hApp = getNewApp(ctx, ctx.Logger)
 
 	rootCmd.AddCommand(heimdallStart(shutdownCtx, ctx, appCreator, cdc)) // New Heimdall start command
 
-	tendermintCmd.AddCommand(
+	cometbftCmd.AddCommand(
 		server.ShowNodeIDCmd(),
 		server.ShowValidatorCmd(),
 		server.ShowAddressCmd(),
@@ -182,7 +182,7 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	// TODO HV2 - this has been removed from cosmos-sdk, should we remove it too?
 	// rootCmd.AddCommand(server.UnsafeResetAllCmd(ctx))
 	rootCmd.AddCommand(flags.LineBreak)
-	rootCmd.AddCommand(tendermintCmd)
+	rootCmd.AddCommand(cometbftCmd)
 	rootCmd.AddCommand(server.ExportCmd(appExporter, "/var/lib/heimdall"))
 	rootCmd.AddCommand(flags.LineBreak)
 	rootCmd.AddCommand(version.Cmd) // Using heimdall version, not Cosmos SDK version
@@ -255,9 +255,9 @@ func heimdallStart(shutdownCtx context.Context, ctx *server.Context, appCreator 
 	cmd := &cobra.Command{
 		Use:   "start",
 		Short: "Run the full node",
-		Long: `Run the full node application with Tendermint in process.
+		Long: `Run the full node application with CometBFT in process.
 Starting rest server is provided with the flag --rest-server and starting bridge with
-the flag --bridge when starting Tendermint in process.
+the flag --bridge when starting CometBFT in process.
 Pruning options can be provided via the '--pruning' flag. The options are as follows:
 
 syncable: only those states not needed for state syncing will be deleted (keeps last 100 + every 10000th)
@@ -294,7 +294,7 @@ which accepts a path for the resulting pprof file.
 				ctx.Logger = logger
 			}
 
-			ctx.Logger.Info("starting ABCI with Tendermint")
+			ctx.Logger.Info("starting ABCI with CometBFT")
 
 			startRestServer, _ := cmd.Flags().GetBool(helper.RestServerFlag)
 			startBridge, _ := cmd.Flags().GetBool(helper.BridgeFlag)
@@ -358,7 +358,7 @@ which accepts a path for the resulting pprof file.
 	cmd.Flags().Bool(FlagOpenTracing, false, "start open tracing")
 	cmd.Flags().String(FlagOpenCollectorEndpoint, helper.DefaultOpenCollectorEndpoint, "Default OpenTelemetry Collector Endpoint")
 
-	// add support for all Tendermint-specific command line options
+	// add support for all CometBFT-specific command line options
 	cmtcmd.AddNodeFlags(cmd)
 
 	return cmd
@@ -463,7 +463,7 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 
 	cmtApp := server.NewCometABCIWrapper(app)
 
-	// create & start tendermint node
+	// create & start cometbft node
 	tmNode, err := node.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
@@ -478,9 +478,9 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 		return fmt.Errorf("failed to create new node: %s", err)
 	}
 
-	// start Tendermint node here
+	// start CometBFT node here
 	if err = tmNode.Start(); err != nil {
-		return fmt.Errorf("failed to start Tendermint node: %s", err)
+		return fmt.Errorf("failed to start CometBFT node: %s", err)
 	}
 
 	var cpuProfileCleanup func()
@@ -535,7 +535,7 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 		}
 	*/
 
-	// stop phase for Tendermint node
+	// stop phase for CometBFT node
 	g.Go(func() error {
 		// wait here for interrupt signal or
 		// until something in the group returns non-nil error
