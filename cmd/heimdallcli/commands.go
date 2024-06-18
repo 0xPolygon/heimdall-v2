@@ -38,17 +38,18 @@ const (
 )
 
 // initCometBFTConfig helps to override default CometBFT Config values.
-// return cmtcfg.DefaultConfig if no custom configuration is required for the application.
+// It return cmtcfg.DefaultConfig if no custom configuration is required for the application.
 func initCometBFTConfig() *cmtcfg.Config {
 	return cmtcfg.DefaultConfig()
 }
 
 // initAppConfig helps to override default appConfig template and configs.
-// return "", nil if no custom configuration is required for the application.
+// It returns '"", nil” if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
 	return "", nil
 }
 
+// initRootCmd adds the necessary commands to the root command
 func initRootCmd(
 	rootCmd *cobra.Command,
 	cliCtx client.Context,
