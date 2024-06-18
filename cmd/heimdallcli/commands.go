@@ -9,7 +9,7 @@ import (
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/0xPolygon/heimdall-v2/app"
-	cmd_helper "github.com/0xPolygon/heimdall-v2/cmd"
+	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/file"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	cmtcfg "github.com/cometbft/cometbft/config"
@@ -161,7 +161,7 @@ func exportCmd() *cobra.Command {
 			chainID := viper.GetString(flags.FlagChainID)
 			if chainID == "" {
 				// TODO HV2 - check the randum chain id generation (RandStringRunes)
-				chainID = fmt.Sprintf("heimdall-%v", cmd_helper.RandStringRunes(6))
+				chainID = fmt.Sprintf("heimdall-%v", cmdhelper.RandStringRunes(6))
 			}
 
 			dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
