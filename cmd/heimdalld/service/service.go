@@ -61,7 +61,7 @@ import (
 
 var logger = helper.Logger.With("module", "cmd/heimdalld")
 
-var (
+const (
 	flagNodeDirPrefix    = "node-dir-prefix"
 	flagNumValidators    = "v"
 	flagNumNonValidators = "n"
@@ -118,34 +118,6 @@ func GetSignerInfo(pub crypto.PubKey, priv []byte, cdc *codec.Codec) ValidatorAc
 	}
 }
 */
-
-// TODO HV2 - this is not used anywhere, should we remove it?
-func GetHeimdallApp() *app.HeimdallApp {
-	tickCount := 0
-
-	tick := time.NewTicker(1 * time.Second)
-	defer tick.Stop()
-
-	for hApp == nil {
-		select { //nolint
-		case <-tick.C:
-			logger.Info("Waiting for heimdall app to be initialized")
-
-			if hApp != nil {
-				logger.Info("Heimdall app initialized")
-				return hApp
-			}
-
-			tickCount++
-			if tickCount > 10 {
-				panic("Heimdall app not initialized")
-			}
-		}
-	}
-
-	return hApp
-}
-
 func NewHeimdallService(pCtx context.Context, args []string) {
 	cdc := codec.NewLegacyAmino()
 	ctx := server.NewDefaultContext()
@@ -171,7 +143,7 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 
 	hApp = getNewApp(ctx, ctx.Logger)
 
-	rootCmd.AddCommand(heimdallStart(shutdownCtx, ctx, appCreator, cdc)) // New Heimdall start command
+	rootCmd.AddCommand(heimdallStart(shutdownCtx, ctx, appCreator, cdc))
 
 	cometbftCmd.AddCommand(
 		server.ShowNodeIDCmd(),
@@ -203,7 +175,7 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	// rollback cmd
 	rootCmd.AddCommand(rollbackCmd(appCreator))
 
-	if len(args) > 0 { //nolint
+	if len(args) > 0 {
 		rootCmd.SetArgs(args)
 	}
 
@@ -216,7 +188,6 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 }
 
 func getNewApp(serverCtx *server.Context, logger log.Logger) *app.HeimdallApp {
-	// return func(logger log.Logger, db dbm.DB, storeTracer io.Writer) abci.Application {
 	// init heimdall config
 	helper.InitHeimdallConfig("")
 	helper.UpdateCometBFTConfig(serverCtx.Config, viper.GetViper())
@@ -235,7 +206,6 @@ func getNewApp(serverCtx *server.Context, logger log.Logger) *app.HeimdallApp {
 		baseapp.SetHaltTime(viper.GetUint64(FlagHaltTime)))
 
 	return hApp
-	// }
 }
 
 func appExporter(logger log.Logger, db dbm.DB, traceWriter io.Writer, height int64, forZeroHeight bool, jailAllowedAddrs []string, opts servertypes.AppOptions, modulesToExport []string) (servertypes.ExportedApp, error) {
@@ -699,7 +669,7 @@ func totalValidators() int {
 	return numNonValidators + numValidators
 }
 
-// get node directory path
+// nodeDir gets the node directory path
 func nodeDir(i int) string {
 	outDir := viper.GetString(flagOutputDir)
 	nodeDirName := fmt.Sprintf("%s%d", viper.GetString(flagNodeDirPrefix), i)
