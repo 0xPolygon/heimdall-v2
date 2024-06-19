@@ -9,7 +9,7 @@ const (
 	FlagAccountRootHash    = "account-root-hash"
 	FlagBorChainID         = "bor-chain-id"
 	FlagHeaderNumber       = "header"
-	FlagCheckpointTxHash   = "txhash"
+	FlagCheckpointTxHash   = "tx-hash"
 	FlagCheckpointLogIndex = "log-index"
 	FlagAutoConfigure      = "auto-configure"
 	FlagLimit              = "limit"

@@ -136,7 +136,7 @@ message QueryCheckpointLatestResponse {
 
 // QueryNextCheckpointRequest is request type for the next checkpoint
 // RPC method
-message QueryNextCheckpointRequest { string bor_chain_id = 1; }
+message QueryNextCheckpointRequest { string bor_chain_i_d = 1; }
 
 // QueryNextCheckpointResponse is response type for the
 // Query/Checkpoints/prepare RPC method
