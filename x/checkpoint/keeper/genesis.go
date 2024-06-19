@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -21,7 +22,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	if len(data.Checkpoints) != 0 {
 		// check if we are provided all the headers
 		if int(data.AckCount) != len(data.Checkpoints) {
-			panic(errors.New("Incorrect state in state-dump , Please Check "))
+			panic(errors.New(fmt.Sprintf("incorrect state in state-dump , please Check", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)))
 		}
 		// sort headers before loading to state
 		data.Checkpoints = types.SortHeaders(data.Checkpoints)
@@ -29,7 +30,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		for i, checkpoint := range data.Checkpoints {
 			checkpointIndex := uint64(i) + 1
 			if err := k.AddCheckpoint(ctx, checkpointIndex, checkpoint); err != nil {
-				k.Logger(ctx).Error("InitGenesis | AddCheckpoint",
+				k.Logger(ctx).Error("error while adding the checkpoint to store",
 					"checkpointIndex", checkpointIndex,
 					"checkpoint", checkpoint.String(),
 					"error", err)
@@ -40,7 +41,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	// Add checkpoint in buffer
 	if data.BufferedCheckpoint != nil {
 		if err := k.SetCheckpointBuffer(ctx, *data.BufferedCheckpoint); err != nil {
-			k.Logger(ctx).Error("InitGenesis | SetCheckpointBuffer", "error", err)
+			k.Logger(ctx).Error("error while setting the checkpoint in buffer", "error", err)
 		}
 	}
 
@@ -55,7 +56,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params, err := k.GetParams(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("Error in getting checkpoint params in export genesis call", "error", err)
+		k.Logger(ctx).Error("error in getting checkpoint params in export genesis call", "error", err)
 
 		return nil
 	}
