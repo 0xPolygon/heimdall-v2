@@ -63,11 +63,6 @@ func initRootCmd(
 		genutilcli.InitCmd(basicManager, app.DefaultNodeHome),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
-		// TODO HV2 - should we have these?
-		/*
-			pruning.Cmd(newApp, app.DefaultNodeHome),
-			snapshot.Cmd(newApp),
-		*/
 	)
 
 	// TODO HV2 - should we have these?

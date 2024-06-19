@@ -1,14 +1,10 @@
 package cmdhelper
 
-import "math/rand"
+import (
+	"math/rand"
+)
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-const defaultHomeDir = "/var/lib/heimdall"
-
-func GetDefaultHomeDir() string {
-	return defaultHomeDir
-}
 
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 // generate a random string of a fixed length in Go

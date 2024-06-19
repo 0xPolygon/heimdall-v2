@@ -20,7 +20,6 @@ import (
 	"cosmossdk.io/log"
 	pruningtypes "cosmossdk.io/store/pruning/types"
 	"github.com/0xPolygon/heimdall-v2/app"
-	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
@@ -37,6 +36,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	pruning "github.com/cosmos/cosmos-sdk/client/pruning"
+	snapshot "github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
@@ -156,7 +157,7 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	// rootCmd.AddCommand(server.UnsafeResetAllCmd(ctx))
 	rootCmd.AddCommand(flags.LineBreak)
 	rootCmd.AddCommand(cometbftCmd)
-	rootCmd.AddCommand(server.ExportCmd(appExporter, cmdhelper.GetDefaultHomeDir()))
+	rootCmd.AddCommand(server.ExportCmd(appExporter, app.DefaultNodeHome))
 	rootCmd.AddCommand(flags.LineBreak)
 	rootCmd.AddCommand(version.Cmd) // Using heimdall version, not Cosmos SDK version
 	// End of block
@@ -175,12 +176,18 @@ func NewHeimdallService(pCtx context.Context, args []string) {
 	// rollback cmd
 	rootCmd.AddCommand(rollbackCmd(appCreator))
 
+	// pruning cmd
+	pruning.Cmd(appCreator, app.DefaultNodeHome)
+
+	// snapshot cmd
+	snapshot.Cmd(appCreator)
+
 	if len(args) > 0 {
 		rootCmd.SetArgs(args)
 	}
 
 	// prepare and add flags
-	executor := cli.PrepareBaseCmd(rootCmd, "HD", os.ExpandEnv(cmdhelper.GetDefaultHomeDir()))
+	executor := cli.PrepareBaseCmd(rootCmd, "HD", os.ExpandEnv(app.DefaultNodeHome))
 	if err := executor.Execute(); err != nil {
 		// Note: Handle with #870
 		panic(err)
