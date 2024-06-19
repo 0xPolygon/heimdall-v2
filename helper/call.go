@@ -417,34 +417,38 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 	return balance, nil
 }
 
-// TODO HV2 Please uncomment the following fn once the staking module is merged. Staking module has Validator struct in it.
-/*
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-	// amount, startEpoch, endEpoch, signer, status, err := c.StakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-	if err != nil {
-		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
-		return
-	}
+	// TODO HV2 Uncomment when staking module is merged, as it contains the v2 validator struct
 
-	newAmount, err := GetPowerFromAmount(stakerDetails.Amount)
-	if err != nil {
-		return
-	}
+	/*
+		// amount, startEpoch, endEpoch, signer, status, err := c.StakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+		stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+		if err != nil {
+			Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
+			return
+		}
 
-	// newAmount
-	validator = types.Validator{
-		ValId:       valID,
-		VotingPower: newAmount.Int64(),
-		StartEpoch:  stakerDetails.ActivationEpoch.Uint64(),
-		EndEpoch:    stakerDetails.DeactivationEpoch.Uint64(),
-		Signer:      stakerDetails.Signer.String(),
-	}
+		newAmount, err := GetPowerFromAmount(stakerDetails.Amount)
+		if err != nil {
+			return
+		}
 
-	return validator, nil
+		// newAmount
+		validator = types.Validator{
+			ValId:       valID,
+			VotingPower: newAmount.Int64(),
+			StartEpoch:  stakerDetails.ActivationEpoch.Uint64(),
+			EndEpoch:    stakerDetails.DeactivationEpoch.Uint64(),
+			Signer:      stakerDetails.Signer.String(),
+		}
+
+		return validator, nil
+	*/
+
+	// TODO HV2 Remove the following line when staking module is merged
+	return types.Validator{}, nil
 }
-*/
 
 // GetMainChainBlock returns main chain block header
 func (c *ContractCaller) GetMainChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
