@@ -42,7 +42,7 @@ func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote mod
 func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	var msg types.MsgTopupTx
 
-	ctx, keeper, require, t, contractCaller := suite.ctx, suite.keeper, suite.Require(), suite.T(), suite.contractCaller
+	ctx, keeper, require, t, contractCaller := suite.ctx, suite.keeper, suite.Require(), suite.T(), &suite.contractCaller
 
 	keeper.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(6)
 

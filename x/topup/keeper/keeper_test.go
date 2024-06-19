@@ -43,7 +43,7 @@ type KeeperTestSuite struct {
 	msgServer      topupTypes.MsgServer
 	sideMsgCfg     mod.SideTxConfigurator
 	queryClient    topupTypes.QueryClient
-	contractCaller *mocks.IContractCaller
+	contractCaller mocks.IContractCaller
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -64,14 +64,14 @@ func (suite *KeeperTestSuite) SetupTest() {
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
 	chainKeeper := testutil.NewMockChainKeeper(ctrl)
 
-	suite.contractCaller = &mocks.IContractCaller{}
+	suite.contractCaller = mocks.IContractCaller{}
 
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		bankKeeper,
 		chainKeeper,
-		suite.contractCaller,
+		&suite.contractCaller,
 	)
 
 	topupGenesis := topupTypes.DefaultGenesisState()
