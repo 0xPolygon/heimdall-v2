@@ -148,7 +148,7 @@ func txCommand() *cobra.Command {
 	return cmd
 }
 
-// exportCmd a state dump file
+// exportCmd exports genesis file with state-dump
 func exportCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "export-heimdall",
