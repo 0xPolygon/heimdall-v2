@@ -1,22 +1,24 @@
 package keeper_test
 
 import (
-	mod "github.com/0xPolygon/heimdall-v2/module"
 	"math/big"
 	"math/rand"
 	"testing"
+	"time"
 
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	mod "github.com/0xPolygon/heimdall-v2/module"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/testutil" //nolint:typecheck
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -55,16 +57,14 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		}
 		hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr2.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -79,7 +79,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// TODO HV2: replace `_` with `event` when contractCaller implemented
 		_ = &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(sdk.AccAddress(addr1.String())),
-			Fee:  coins.Amount.BigInt(),
+			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 		// TODO HV2: enable when contractCaller is implemented
 		// contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
@@ -103,16 +103,14 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		blockNumber := uint64(599)
 		hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr1.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -137,16 +135,14 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		}
 		hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr1.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -172,16 +168,14 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		}
 		hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr1.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -190,7 +184,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// TODO HV2: replace `_` with `event` when implemented
 		_ = &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(sdk.AccAddress(addr1.String())),
-			Fee:  coins.Amount.BigInt(),
+			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
 		// TODO HV2: enable when contractCaller is implemented
@@ -213,16 +207,14 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		}
 		hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr1.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -231,7 +223,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		// TODO HV2: replace `_` with `event` when implemented
 		_ = &stakinginfo.StakinginfoTopUpFee{
 			User: common.Address(sdk.AccAddress(addr2.String())),
-			Fee:  coins.Amount.BigInt(),
+			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
 		}
 
 		// TODO HV2: enable when contractCaller is implemented
@@ -254,16 +246,14 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		}
 		hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr1.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -307,16 +297,14 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 
 	t.Run("no result", func(t *testing.T) {
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr2.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -334,16 +322,14 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 	})
 
 	t.Run("yes result", func(t *testing.T) {
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr1.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -374,16 +360,14 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		txHash := "0x000000000000000000000000000000000000000000000000000000000001dead"
 		hash := hTypes.TxHash{Hash: []byte(txHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr2.String(),
 			addr3.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -412,16 +396,14 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		txHash := "0x000000000000000000000000000000000000000000000000000000000002dead"
 		hash := hTypes.TxHash{Hash: []byte(txHash)}
 
-		// TODO HV2: replace the following with simulation.RandomFeeCoins() when implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amt := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amt)}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		// topup msg
 		msg = *types.NewMsgTopupTx(
 			addr1.String(),
 			addr1.String(),
-			coins.Amount,
+			coins.AmountOf(authTypes.FeeToken),
 			hash,
 			logIndex,
 			blockNumber,
@@ -439,7 +421,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		suite.postHandler(ctx, &msg, mod.Vote_VOTE_YES)
 
 		// there should be a stored sequence
-		_, err := keeper.HasTopupSequence(ctx, sequence.String())
+		_, err = keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		// TODO HV2: enable this when side_msg_server code is all fully functional (atm mod.Vote_VOTE_NO is hardcoded due to commented code)
 		// require.True(ok)

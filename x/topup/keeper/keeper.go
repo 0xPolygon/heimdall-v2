@@ -12,7 +12,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
-
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 

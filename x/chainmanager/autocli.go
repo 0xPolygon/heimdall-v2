@@ -2,7 +2,8 @@ package chainmanager
 
 import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
-	chainmanager "github.com/0xPolygon/heimdall-v2/api/heimdallv2/chainmanager"
+
+	"github.com/0xPolygon/heimdall-v2/api/heimdallv2/chainmanager"
 )
 
 func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
