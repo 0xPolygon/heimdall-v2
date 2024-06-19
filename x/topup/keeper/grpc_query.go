@@ -208,7 +208,7 @@ func (q queryServer) GetAccountProof(ctx context.Context, req *types.QueryAccoun
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	/* TODO HV2: enable this when chainManager, checkpoint and contractCaller are implemented in heimdall-v2
+	/* TODO HV2: enable this when chainManager and checkpoint are implemented in heimdall-v2
 	currentStateAccountRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
 	if !bytes.Equal(accountRootOnChain[:], currentStateAccountRoot) {
 		return nil, status.Errorf(codes.Internal, err.Error())

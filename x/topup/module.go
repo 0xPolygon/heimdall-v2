@@ -34,10 +34,10 @@ var (
 // AppModule implements an application module for the topup module.
 type AppModule struct {
 	keeper         keeper.Keeper
-	contractCaller helper.IContractCaller
+	contractCaller helper.ContractCaller
 }
 
-func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
+func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
 	return AppModule{
 		keeper:         keeper,
 		contractCaller: contractCaller,

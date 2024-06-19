@@ -18,7 +18,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), suite.contractCaller
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -44,7 +44,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), suite.contractCaller
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -66,7 +66,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), suite.contractCaller
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	logIndex := r1.Uint64()
@@ -92,7 +92,7 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsNotOld() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), suite.contractCaller
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	logIndex := r1.Uint64()
@@ -207,7 +207,7 @@ func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), suite.contractCaller
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 
 	var accountRoot [32]byte
 	stakingInfo := &stakinginfo.Stakinginfo{}
