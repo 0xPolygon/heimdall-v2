@@ -17,7 +17,7 @@ message GenesisState {
   Checkpoint buffered_checkpoint = 2
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
 
-  uint64 last_no_a_c_k = 3 [ (amino.dont_omitempty) = true ];
+  uint64 last_no_ack = 3 [ (amino.dont_omitempty) = true ];
 
   uint64 ack_count = 4 [ (amino.dont_omitempty) = true ];
 
