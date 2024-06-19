@@ -23,7 +23,7 @@ type Keeper struct {
 	schema collections.Schema
 
 	authority             string
-	moduleCommunicator    types.ModuleCommunicator
+	checkpointKeeper      types.CheckpointKeeper
 	cmKeeper              *cmKeeper.Keeper
 	validatorAddressCodec addresscodec.Codec
 	IContractCaller       helper.IContractCaller
@@ -44,7 +44,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
 	authority string,
-	moduleCommunicator types.ModuleCommunicator,
+	checkpointKeeper types.CheckpointKeeper,
 	cmKeeper *cmKeeper.Keeper,
 	validatorAddressCodec addresscodec.Codec,
 	contractCaller helper.IContractCaller,
@@ -55,7 +55,7 @@ func NewKeeper(
 		storeService:          storeService,
 		cdc:                   cdc,
 		authority:             authority,
-		moduleCommunicator:    moduleCommunicator,
+		checkpointKeeper:      checkpointKeeper,
 		cmKeeper:              cmKeeper,
 		validatorAddressCodec: validatorAddressCodec,
 		IContractCaller:       contractCaller,

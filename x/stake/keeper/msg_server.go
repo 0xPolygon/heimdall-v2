@@ -11,8 +11,8 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	hmerrors "github.com/0xPolygon/heimdall-v2/types/error"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	hmerrors "github.com/0xPolygon/heimdall-v2/x/types/error"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"

@@ -25,6 +25,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	}
 
 	validators := make([]*types.Validator, n)
+	var err error
 	for i := 0; i < len(validators); i++ {
 		pk1 := secp256k1.GenPrivKey().PubKey()
 		validators[i], err = types.NewValidator(

@@ -637,7 +637,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 	k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
 
 	// remove the old validator from validator set
-	oldValidator.EndEpoch = k.moduleCommunicator.GetACKCount(ctx)
+	oldValidator.EndEpoch = k.checkpointKeeper.GetACKCount(ctx)
 	oldValidator.VotingPower = 0
 	oldValidator.LastUpdated = sequence.String()
 
@@ -673,7 +673,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 
 	// TODO HV2 Please check this code once module communicatator is defined properlu
 	// // check if fee is already withdrawn
-	// coins := k.moduleCommunicator.GetCoins(ctx, oldValidator.Signer)
+	// coins := k..GetCoins(ctx, oldValidator.Signer)
 
 	// maticBalance := coins.AmountOf(authTypes.FeeToken)
 	// if !maticBalance.IsZero() {

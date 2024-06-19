@@ -57,9 +57,16 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 // ExportGenesis returns a GenesisState for a given context and keeper. The
 // GenesisState will contain the validators and the staking sequences
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+
+	validatorSet, err := k.GetValidatorSet(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching validator set from store", "err", err)
+		return nil
+	}
+
 	return &types.GenesisState{
 		k.GetAllValidators(ctx),
-		k.GetValidatorSet(ctx),
+		validatorSet,
 		k.GetStakingSequences(ctx),
 	}
 }

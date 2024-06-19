@@ -23,7 +23,7 @@ func (k *Keeper) EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error)
 	}
 
 	allValidators := k.GetAllValidators(ctx)
-	ackCount := k.moduleCommunicator.GetACKCount(ctx)
+	ackCount := k.checkpointKeeper.GetACKCount(ctx)
 
 	// get validator updates
 	setUpdates := types.GetUpdatedValidators(

@@ -45,14 +45,14 @@ var (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx                sdk.Context
-	contractCaller     *mocks.IContractCaller
-	moduleCommunicator *testUtil.ModuleCommunicatorMock
-	cmKeeper           *cmKeeper.Keeper
-	stakeKeeper        *stakeKeeper.Keeper
-	queryClient        stakeTypes.QueryClient
-	msgServer          stakeTypes.MsgServer
-	sideMsgCfg         hmModule.SideTxConfigurator
+	ctx              sdk.Context
+	contractCaller   *mocks.IContractCaller
+	checkpointKeeper *testUtil.CheckpointKeeperMock
+	cmKeeper         *cmKeeper.Keeper
+	stakeKeeper      *stakeKeeper.Keeper
+	queryClient      stakeTypes.QueryClient
+	msgServer        stakeTypes.MsgServer
+	sideMsgCfg       hmModule.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) SetupTest() {
@@ -68,13 +68,13 @@ func (s *KeeperTestSuite) SetupTest() {
 	cmKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService)
 	_ = cmKeeper.SetParams(ctx, cmTypes.DefaultParams())
 
-	s.moduleCommunicator = &testUtil.ModuleCommunicatorMock{AckCount: uint64(0)}
+	s.checkpointKeeper = &testUtil.CheckpointKeeperMock{AckCount: uint64(0)}
 
 	keeper := stakeKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		s.moduleCommunicator,
+		s.checkpointKeeper,
 		&cmKeeper,
 		addrCodec.NewHexCodec(),
 		s.contractCaller,
@@ -153,6 +153,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	validators := make([]*types.Validator, n)
 	accounts := simulation.RandomAccounts(r1, n)
 
+	var err error
 	for i := range validators {
 		validators[i], err = types.NewValidator(
 			uint64(int64(i)),
@@ -275,14 +276,16 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 
 	// load 4 validators from state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	initValSet := keeper.GetValidatorSet(ctx)
+	initValSet, err := keeper.GetValidatorSet(ctx)
+
+	require.NoError(err)
 
 	currentValSet := initValSet.Copy()
 	prevValidatorSet := initValSet.Copy()
 
 	prevValidatorSet.Validators[0].StartEpoch = 20
 
-	err := keeper.AddValidator(ctx, *prevValidatorSet.Validators[0])
+	err = keeper.AddValidator(ctx, *prevValidatorSet.Validators[0])
 	require.NoError(err)
 
 	setUpdates := types.GetUpdatedValidators(currentValSet, keeper.GetAllValidators(ctx), 5)
@@ -307,7 +310,9 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 
 	// load 4 validators from state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	initValSet := keeper.GetValidatorSet(ctx)
+	initValSet, err := keeper.GetValidatorSet(ctx)
+
+	require.NoError(err)
 
 	validators := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
 	prevValSet := initValSet.Copy()
@@ -315,7 +320,7 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	valToBeAdded := validators[0]
 	currentValSet := initValSet.Copy()
 
-	err := keeper.AddValidator(ctx, valToBeAdded)
+	err = keeper.AddValidator(ctx, valToBeAdded)
 	require.NoError(err)
 
 	_, err = keeper.GetValidatorInfo(ctx, valToBeAdded.GetSigner())
@@ -344,17 +349,19 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 
 	// load 4 validators to state
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	initValSet := keeper.GetValidatorSet(ctx)
+	initValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
 
 	keeper.IncrementAccum(ctx, 2)
 
 	prevValSet := initValSet.Copy()
-	currentValSet := keeper.GetValidatorSet(ctx)
+	currentValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
 
 	valToUpdate := currentValSet.Validators[0]
 	newSigner := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
 
-	err := keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
+	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
 	require.NoError(err)
 
 	setUpdates := types.GetUpdatedValidators(&currentValSet, keeper.GetAllValidators(ctx), 5)
@@ -387,7 +394,9 @@ func (s *KeeperTestSuite) TestGetCurrentProposer() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	currentValSet := keeper.GetValidatorSet(ctx)
+	currentValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
 	currentProposer := keeper.GetCurrentProposer(ctx)
 	require.Equal(currentValSet.GetProposer(), currentProposer)
 }
@@ -429,12 +438,12 @@ func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
 
 	// Test ActCount = 0
-	s.moduleCommunicator.AckCount = 0
+	s.checkpointKeeper.AckCount = 0
 
 	valActCount0 := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(valActCount0), 4)
 
-	s.moduleCommunicator.AckCount = 20
+	s.checkpointKeeper.AckCount = 20
 
 	validators := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(validators), 4)
@@ -444,13 +453,17 @@ func (s *KeeperTestSuite) TestGetMilestoneProposer() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	testUtil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	currentValSet1 := keeper.GetMilestoneValidatorSet(ctx)
+	currentValSet1, err := keeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
+
 	currentMilestoneProposer := keeper.GetMilestoneCurrentProposer(ctx)
 	require.Equal(currentValSet1.GetProposer(), currentMilestoneProposer)
 
 	keeper.MilestoneIncrementAccum(ctx, 1)
 
-	currentValSet2 := keeper.GetMilestoneValidatorSet(ctx)
+	currentValSet2, err := keeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
+
 	currentMilestoneProposer = keeper.GetMilestoneCurrentProposer(ctx)
 	require.NotEqual(currentValSet1.GetProposer(), currentMilestoneProposer)
 	require.Equal(currentValSet2.GetProposer(), currentMilestoneProposer)

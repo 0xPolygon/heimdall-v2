@@ -1281,7 +1281,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 		currentVals := keeper.GetCurrentValidators(ctx)
 		require.Equal(4, len(currentVals), "No of current validators should exist before epoch passes")
 
-		s.moduleCommunicator.AckCount = 20
+		s.checkpointKeeper.AckCount = 20
 		currentVals = keeper.GetCurrentValidators(ctx)
 		require.Equal(3, len(currentVals), "No of current validators should reduce after epoch passes")
 	})

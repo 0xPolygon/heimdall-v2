@@ -4,6 +4,6 @@ import (
 	"context"
 )
 
-type ModuleCommunicator interface {
+type CheckpointKeeper interface {
 	GetACKCount(ctx context.Context) uint64
 }

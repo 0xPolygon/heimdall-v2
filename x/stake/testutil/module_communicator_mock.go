@@ -2,10 +2,10 @@ package testutil
 
 import "context"
 
-type ModuleCommunicatorMock struct {
+type CheckpointKeeperMock struct {
 	AckCount uint64
 }
 
-func (m ModuleCommunicatorMock) GetACKCount(ctx context.Context) uint64 {
+func (m CheckpointKeeperMock) GetACKCount(ctx context.Context) uint64 {
 	return m.AckCount
 }
