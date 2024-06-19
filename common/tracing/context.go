@@ -64,7 +64,7 @@ func Exec(ctx context.Context, spanName string, opts ...Option) {
 		optFn(ctx, span)
 	}
 
-	if tr != nil {
+	if tr != nil && span != nil {
 		span.End()
 	}
 }
