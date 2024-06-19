@@ -319,7 +319,7 @@ which accepts a path for the resulting pprof file.
 	cmd.Flags().String(flagPruning, "syncable", "Pruning strategy: syncable, nothing, everything")
 	cmd.Flags().String(
 		FlagMinGasPrices, "",
-		"Minimum gas prices to accept for transactions; Any fee in a tx must meet this minimum (e.g. 0.01photino;0.0001stake)",
+		"Minimum gas prices to accept for transactions; Any fee in a tx must meet this minimum (e.g. 0.01matic;0.0001pol)",
 	)
 	cmd.Flags().Uint64(FlagHaltHeight, 0, "Height at which to gracefully halt the chain and shutdown the node")
 	cmd.Flags().Uint64(FlagHaltTime, 0, "Minimum block time (in Unix seconds) at which to gracefully halt the chain and shutdown the node")
