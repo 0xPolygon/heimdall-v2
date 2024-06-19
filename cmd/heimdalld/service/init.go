@@ -114,7 +114,7 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 }
 
 /*
-TODO HV2 - check `func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {}` in comsos-sdk
+TODO HV2 - check `func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {}` in cosmos-sdk
 maybe we can use it
 */
 
