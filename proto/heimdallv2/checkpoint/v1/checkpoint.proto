@@ -29,7 +29,7 @@ message Checkpoint {
 
   string bor_chain_i_d = 5 [ (amino.dont_omitempty) = true ];
 
-  uint64 time_stamp = 6 [ (amino.dont_omitempty) = true ];
+  uint64 timestamp = 6 [ (amino.dont_omitempty) = true ];
 }
 
 // Params structure
