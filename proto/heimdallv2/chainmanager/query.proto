@@ -1,0 +1,31 @@
+syntax = "proto3";
+package heimdallv2.chainmanager;
+
+import "cosmos/query/v1/query.proto";
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "heimdallv2/chainmanager/chainmanager.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // Params queries the parameters of x/chainmanager module..
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/heimdallv2/chainmanager/params";
+  }
+}
+
+// QueryParamsRequest defines the request type for querying x/chainmanager
+// parameters.
+message QueryParamsRequest {}
+
+// QueryParamsResponse defines the response type for querying x/chainmanager
+// parameters.
+message QueryParamsResponse {
+  // params provides the parameters of the chainmanager module.
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
