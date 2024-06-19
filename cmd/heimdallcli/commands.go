@@ -162,7 +162,7 @@ func exportCmd() *cobra.Command {
 			// create chain id
 			chainID := viper.GetString(flags.FlagChainID)
 			if chainID == "" {
-				// TODO HV2 - check the randum chain id generation (RandStringRunes)
+				// TODO HV2 - check the random chain id generation (RandStringRunes)
 				chainID = fmt.Sprintf("heimdall-%v", cmdhelper.RandStringRunes(6))
 			}
 
@@ -173,10 +173,25 @@ func exportCmd() *cobra.Command {
 				panic(err)
 			}
 
-			forZeroHeight, _ := cmd.Flags().GetBool(server.FlagForZeroHeight)
-			jailAllowedAddrs, _ := cmd.Flags().GetStringSlice(server.FlagJailAllowedAddrs)
-			modulesToExport, _ := cmd.Flags().GetStringSlice(server.FlagModulesToExport)
-			loadLatest, _ := cmd.Flags().GetBool(FlagLoadLatest)
+			forZeroHeight, err := cmd.Flags().GetBool(server.FlagForZeroHeight)
+			if err != nil {
+				panic(err)
+			}
+
+			jailAllowedAddrs, err := cmd.Flags().GetStringSlice(server.FlagJailAllowedAddrs)
+			if err != nil {
+				panic(err)
+			}
+
+			modulesToExport, err := cmd.Flags().GetStringSlice(server.FlagModulesToExport)
+			if err != nil {
+				panic(err)
+			}
+
+			loadLatest, err := cmd.Flags().GetBool(FlagLoadLatest)
+			if err != nil {
+				panic(err)
+			}
 
 			// TODO HV2 - what app options should we pass?
 			// or should we pass nil? `app.EmptyAppOptions{}`
