@@ -2,6 +2,10 @@ package main
 
 import (
 	client "github.com/cosmos/cosmos-sdk/client"
+
+	// TODO HV2 - uncomment when we have FetchFromAPI uncommented in helper
+	// chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +18,7 @@ func StakeCmd(cliCtx client.Context) *cobra.Command {
 		Short: "Stake matic tokens for your account",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			// TODO HV2 - uncomment when we have helper
+			// TODO HV2 - uncomment when we have staking
 			/*
 				helper.InitHeimdallConfig("")
 
@@ -88,7 +92,7 @@ func ApproveCmd(cliCtx client.Context) *cobra.Command {
 		Short: "Approve the tokens to stake",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
-			// TODO HV2 - uncomment when we have helper
+			// TODO HV2 - uncomment when we have staking
 			/*
 				helper.InitHeimdallConfig("")
 
@@ -140,20 +144,20 @@ func ApproveCmd(cliCtx client.Context) *cobra.Command {
 	return cmd
 }
 
-// TODO HV2 - uncomment when we have chainmanager
+// TODO HV2 - uncomment when we have FetchFromAPI uncommented in helper
 /*
 // GetChainmanagerParams return configManager params
-func GetChainmanagerParams(cliCtx client.Context) (*chainmanagerTypes.Params, error) {
+func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
 	response, err := helper.FetchFromAPI(
 		cliCtx,
-		helper.GetHeimdallServerEndpoint(checkpointEndpoint),
+		helper.GetHeimdallServerEndpoint(chainmanagerEndpoint),
 	)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var params chainmanagerTypes.Params
+	var params chainmanagertypes.Params
 	if err := json.Unmarshal(response.Result, &params); err != nil {
 		return nil, err
 	}
