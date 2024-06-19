@@ -15,13 +15,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 )
 
-var logger = helper.Logger.With("module", "checkpoint/client/cli")
+var logger = helper.Logger.With("module", "x/", types.ModuleName, "/client/cli")
 
 // NewTxCmd returns a root CLI command handler for all x/checkpoint transaction commands.
-func NewTxCmd(valAddrCodec, ac address.Codec) *cobra.Command {
+func NewTxCmd(valAddrCodec address.Codec) *cobra.Command {
 	checkpointTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
-		Short:                      "Staking transaction subcommands",
+		Short:                      "Checkpoint transaction subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -127,11 +127,11 @@ func CheckpointAdjustCmd(ac address.Codec) *cobra.Command {
 	return cmd
 }
 
-// NewEditValidatorCmd returns a CLI command handler for creating a MsgEditValidator transaction.
+// CheckpointCmd returns a CLI command handler for creating a MsgEditValidator transaction.
 func CheckpointCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-checkpoint",
-		Short: "send checkpoint to tendermint and ethereum chain ",
+		Short: "send checkpoint to cometBFT and ethereum chain ",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {

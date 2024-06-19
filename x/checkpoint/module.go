@@ -23,12 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 )
 
-const (
-	consensusVersion uint64 = 5
-)
-
 var (
-	_ module.AppModuleBasic = AppModuleBasic{}
 	//_ module.AppModuleSimulation = AppModule{}
 	_ module.HasServices     = AppModule{}
 	_ module.HasABCIEndBlock = AppModule{}
@@ -37,34 +32,43 @@ var (
 	_ appmodule.HasBeginBlocker = AppModule{}
 )
 
-// AppModuleBasic defines the basic application module used by the checkpoint module.
-type AppModuleBasic struct {
-	cdc codec.Codec
+// AppModule implements an application module for the checkpoint module.
+type AppModule struct {
+	keeper *keeper.Keeper
+}
+
+// NewAppModule creates a new AppModule object
+func NewAppModule(
+	keeper *keeper.Keeper,
+) AppModule {
+	return AppModule{
+		keeper: keeper,
+	}
 }
 
 // Name returns the checkpoint module's name.
-func (AppModuleBasic) Name() string {
+func (AppModule) Name() string {
 	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec registers the checkpoint module's types on the given LegacyAmino codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
 // RegisterInterfaces registers the module's interface types
-func (AppModuleBasic) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
+func (AppModule) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the checkpoint
 // module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the checkpoint module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+func (AppModule) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -74,33 +78,15 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the checkpoint module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
 // GetTxCmd returns the root tx command for the checkpoint module.
-func (amb AppModuleBasic) GetTxCmd() *cobra.Command {
-	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
-}
-
-// AppModule implements an application module for the checkpoint module.
-type AppModule struct {
-	AppModuleBasic
-	keeper *keeper.Keeper
-}
-
-// NewAppModule creates a new AppModule object
-func NewAppModule(
-	cdc codec.Codec,
-	keeper *keeper.Keeper,
-	//ls exported.Subspace,
-) AppModule {
-	return AppModule{
-		AppModuleBasic: AppModuleBasic{cdc: cdc},
-		keeper:         keeper,
-	}
+func (am AppModule) GetTxCmd() *cobra.Command {
+	return cli.NewTxCmd(am.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
@@ -139,9 +125,6 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
-
-// ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return consensusVersion }
 
 // BeginBlock returns the begin blocker for the checkpoint module.
 func (am AppModule) BeginBlock(ctx context.Context) error {
