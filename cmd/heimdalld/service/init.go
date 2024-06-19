@@ -108,7 +108,10 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "%s\n", string(out))
+	_, err = fmt.Fprintf(os.Stderr, "%s\n", string(out))
+	if err != nil {
+		return err
+	}
 
 	return genutil.ExportGenesisFileWithTime(config.GenesisFile(), chainID, nil, appStateJSON, cmttime.Now())
 }
