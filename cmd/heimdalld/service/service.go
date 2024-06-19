@@ -732,29 +732,29 @@ func getGenesisAccount(address []byte) authTypes.GenesisAccount {
 
 // InitializeNodeValidatorFiles initializes node and priv validator files
 func InitializeNodeValidatorFiles(
-	config *cmtcfg.Config) (nodeID string, valPubKey crypto.PubKey, priv crypto.PrivKey, err error,
+	config *cmtcfg.Config) (nodeID string, valPubKey crypto.PubKey, privKey crypto.PrivKey, err error,
 ) {
 	nodeKey, err := p2p.LoadOrGenNodeKey(config.NodeKeyFile())
 	if err != nil {
-		return nodeID, valPubKey, priv, err
+		return nodeID, valPubKey, privKey, err
 	}
 
 	nodeID = string(nodeKey.ID())
 
 	pvKeyFile := config.PrivValidatorKeyFile()
 	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0777); err != nil {
-		return nodeID, valPubKey, priv, err
+		return nodeID, valPubKey, privKey, err
 	}
 
 	pvStateFile := config.PrivValidatorStateFile()
 	if err := cmtos.EnsureDir(filepath.Dir(pvStateFile), 0777); err != nil {
-		return nodeID, valPubKey, priv, err
+		return nodeID, valPubKey, privKey, err
 	}
 
 	FilePv := privval.LoadOrGenFilePV(pvKeyFile, pvStateFile)
 	valPubKey, err = FilePv.GetPubKey()
 	if err != nil {
-		return nodeID, valPubKey, priv, err
+		return nodeID, valPubKey, privKey, err
 	}
 
 	return nodeID, valPubKey, FilePv.Key.PrivKey, nil
