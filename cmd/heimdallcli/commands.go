@@ -34,7 +34,8 @@ import (
 )
 
 const (
-	FlagLoadLatest = "load-latest"
+	FlagLoadLatest  = "load-latest"
+	DumpGenesosFile = "config/dump-genesis.json"
 )
 
 // initCometBFTConfig helps to override default CometBFT Config values.
@@ -187,9 +188,9 @@ func exportCmd() *cobra.Command {
 				panic(err)
 			}
 
-			err = writeGenesisFile(file.Rootify("config/dump-genesis.json", config.RootDir), chainID, exportedApp.AppState)
+			err = writeGenesisFile(file.Rootify(DumpGenesosFile, config.RootDir), chainID, exportedApp.AppState)
 			if err == nil {
-				fmt.Println("New genesis json file created:", file.Rootify("config/dump-genesis.json", config.RootDir))
+				fmt.Println("New genesis json file created:", file.Rootify(DumpGenesosFile, config.RootDir))
 			}
 			return err
 		},
