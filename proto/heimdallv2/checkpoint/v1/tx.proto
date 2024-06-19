@@ -10,15 +10,15 @@ import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 
-// Msg defines the staking Msg service.
+// Msg defines the checkpoint msg service.
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  // CheckpointAdjust defines a method for checkpointAdjust
+  // CheckpointAdjust defines a method for adjusting the checkpoint
   rpc CheckpointAdjust(MsgCheckpointAdjust)
       returns (MsgCheckpointAdjustResponse);
 
-  // Checkpoint defines a method for checkpoint
+  // Checkpoint defines a method for the new checkpoint
   rpc Checkpoint(MsgCheckpoint) returns (MsgCheckpointResponse);
 
   // CheckpointAck defines a method for checkpoint ack
@@ -118,7 +118,7 @@ message MsgCheckpointAck {
   uint64 log_index = 8 [ (amino.dont_omitempty) = true ];
 }
 
-// MsgCheckpointAck defines the Msg/CheckpointAck response type.
+// MsgCheckpointAckResponse defines the Msg/CheckpointAck response type.
 message MsgCheckpointAckResponse {}
 
 // MsgCheckpointNoAck defines a SDK message for creating the no-ack
@@ -134,5 +134,5 @@ message MsgCheckpointNoAck {
   ];
 }
 
-// MsgCheckpointNoAck defines the Msg/CheckpointNoAck response type.
+// MsgCheckpointNoAckResponse defines the Msg/CheckpointNoAck response type.
 message MsgCheckpointNoAckResponse {}
