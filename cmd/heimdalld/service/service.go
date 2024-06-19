@@ -258,7 +258,7 @@ which accepts a path for the resulting pprof file.
 
 				logger, err := server.CreateSDKLogger(ctx, logWriter)
 				if err != nil {
-					logger.Error("Unable to setup logger", "err", err)
+					logger.Error("unable to setup logger", "err", err)
 					return err
 				}
 
@@ -276,11 +276,11 @@ which accepts a path for the resulting pprof file.
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// bridge binding
 			if err := viper.BindPFlag("all", cmd.Flags().Lookup("all")); err != nil {
-				logger.Error("GetStartCmd | BindPFlag | all", "Error", err)
+				logger.Error("getstartcmd | bindpflag | all", "error", err)
 			}
 
 			if err := viper.BindPFlag("only", cmd.Flags().Lookup("only")); err != nil {
-				logger.Error("GetStartCmd | BindPFlag | only", "Error", err)
+				logger.Error("getstartcmd | bindpflag | only", "error", err)
 			}
 		},
 	}
@@ -300,7 +300,7 @@ which accepts a path for the resulting pprof file.
 	cmd.PersistentFlags().String(helper.LogLevel, ctx.Config.LogLevel, "Log level")
 
 	if err := viper.BindPFlag(helper.LogLevel, cmd.PersistentFlags().Lookup(helper.LogLevel)); err != nil {
-		logger.Error("main | BindPFlag | helper.LogLevel", "Error", err)
+		logger.Error("main | bindpflag | helper.loglevel", "error", err)
 	}
 
 	// bridge flags =  start flags (all, only) + root bridge cmd flags
@@ -417,7 +417,7 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 
 	db, err := openDB(home)
 	if err != nil {
-		return fmt.Errorf("failed to open DB: %s", err)
+		return fmt.Errorf("failed to open db: %s", err)
 	}
 
 	traceWriter, err := openTraceWriter(traceWriterFile)
@@ -451,7 +451,7 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 
 	// start CometBFT node here
 	if err = tmNode.Start(); err != nil {
-		return fmt.Errorf("failed to start CometBFT node: %s", err)
+		return fmt.Errorf("failed to start cometbft node: %s", err)
 	}
 
 	var cpuProfileCleanup func()
@@ -538,7 +538,7 @@ func startInProcess(cmd *cobra.Command, shutdownCtx context.Context, ctx *server
 	// wait here for all go routines to finish,
 	// or something to break
 	if err := g.Wait(); err != nil {
-		ctx.Logger.Error("Error shutting down services", "Error", err)
+		ctx.Logger.Error("error shutting down services", "error", err)
 		return err
 	}
 
@@ -721,7 +721,7 @@ func getGenesisAccount(address []byte) authTypes.GenesisAccount {
 	genesisBalance, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
 
 	if err := acc.SetCoins(sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(genesisBalance)}}); err != nil {
-		logger.Error("getGenesisAccount | SetCoins", "Error", err)
+		logger.Error("getgenesisaccount | setcoins", "error", err)
 	}
 
 	result, _ := authTypes.NewGenesisAccountI(&acc)
@@ -768,7 +768,7 @@ func WriteDefaultHeimdallConfig(path string, conf helper.Configuration) {
 	} else if errors.Is(err, os.ErrNotExist) {
 		helper.WriteConfigFile(path, &conf)
 	} else {
-		logger.Error("Error while checking for config file", "Error", err)
+		logger.Error("error while checking for config file", "error", err)
 	}
 }
 

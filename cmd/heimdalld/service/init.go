@@ -58,7 +58,7 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 		} else if err == nil {
 			logger.Info(fmt.Sprintf("Found genesis file %v, skipping writing genesis file\n", config.GenesisFile()))
 		} else {
-			logger.Error(fmt.Sprintf("Error checking if genesis file %v exists: %v\n", config.GenesisFile(), err))
+			logger.Error(fmt.Sprintf("error checking if genesis file %v exists: %v\n", config.GenesisFile(), err))
 			return err
 		}
 	} else {
