@@ -5,14 +5,12 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 
 	errorsmod "cosmossdk.io/errors"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	hmerrors "github.com/0xPolygon/heimdall-v2/types/error"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -36,22 +34,26 @@ func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		"validatorId", msg.ValId,
 		"activationEpoch", msg.ActivationEpoch,
 		"amount", msg.Amount,
-		"SignerPubkey", msg.SignerPubKey.String(),
+		"SignerPubKey", msg.SignerPubKey.String(),
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
 
 	// Generate PubKey from Pubkey in message and signer
-	pubkey := msg.SignerPubKey
-	pk, ok := pubkey.GetCachedValue().(cryptotypes.PubKey)
+	pubKey := msg.SignerPubKey
+	pk, ok := pubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "error in interfacing out pub key")
 	}
 
 	// TODO HV2 Can any attack possible about it?
 	//String directly coming from it is not of correct length
-	signer := strings.ToLower(pk.Address().String())
+	signer, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
+	if err != nil {
+		k.Logger(ctx).Error("signer is invalid", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid")
+	}
 
 	// Check if validator has been validator before
 	if _, ok := k.GetSignerFromValidatorID(ctx, msg.ValId); ok {
@@ -68,18 +70,18 @@ func (k msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	// validate voting power
 	_, err = helper.GetPowerFromAmount(msg.Amount.BigInt())
 	if err != nil {
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.Amount, msg.ValId))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.Amount, msg.ValId))
 	}
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
 		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(hmerrors.ErrOldTx, "Older invalid tx found")
+		return nil, errorsmod.Wrap(types.ErrOldTx, "Older invalid tx found")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -110,36 +112,36 @@ func (k msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	_, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
 		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
+		return nil, errorsmod.Wrap(types.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
 		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "Older invalid tx found")
 	}
 
 	// pull validator from store
 	validator, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
 		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
+		return nil, errorsmod.Wrap(types.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
 	if msg.Nonce != validator.Nonce+1 {
 		k.Logger(ctx).Error("Incorrect validator nonce")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNonce, "Incorrect validator nonce")
+		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "Incorrect validator nonce")
 	}
 
 	// set validator amount
 	_, err := helper.GetPowerFromAmount(msg.NewAmount.BigInt())
 	if err != nil {
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.NewAmount, msg.ValId))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprintf("Invalid amount %v for validator %v", msg.NewAmount, msg.ValId))
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -169,41 +171,45 @@ func (k msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	pubkey := msg.NewSignerPubKey
 	pk, ok := pubkey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "Error in interfacing out pub key")
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "error in interfacing out pub key")
 	}
 
-	newSigner := strings.ToLower(pk.Address().String())
+	newSigner, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
+	if err != nil {
+		k.Logger(ctx).Error("signer is invalid", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid")
+	}
 
 	// pull validator from store
 	validator, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
 		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
+		return nil, errorsmod.Wrap(types.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
 		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "Older invalid tx found")
 	}
 
 	// check if new signer address is same as existing signer
 	if newSigner == validator.Signer {
 		// No signer change
 		k.Logger(ctx).Error("NewSigner same as OldSigner.")
-		return nil, errorsmod.Wrap(hmerrors.ErrNoSignerChange, "NewSigner same as OldSigner")
+		return nil, errorsmod.Wrap(types.ErrNoSignerChange, "NewSigner same as OldSigner")
 
 	}
 
 	// check nonce validity
 	if msg.Nonce != validator.Nonce+1 {
 		k.Logger(ctx).Error("Incorrect validator nonce")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNonce, "Incorrect validator nonce")
+		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "Incorrect validator nonce")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -232,31 +238,31 @@ func (k msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	validator, ok := k.GetValidatorFromValID(ctx, msg.ValId)
 	if !ok {
 		k.Logger(ctx).Error("Fetching of validator from store failed", "validatorID", msg.ValId)
-		return nil, errorsmod.Wrap(hmerrors.ErrNoValidator, "Fetching of validator from store failed")
+		return nil, errorsmod.Wrap(types.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
 	k.Logger(ctx).Debug("validator in store", "validator", validator)
 	// check if validator deactivation period is set
 	if validator.EndEpoch != 0 {
 		k.Logger(ctx).Error("Validator already unbonded")
-		return nil, errorsmod.Wrap(hmerrors.ErrValUnbonded, "Validator already unbonded")
+		return nil, errorsmod.Wrap(types.ErrValUnbonded, "Validator already unbonded")
 	}
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
 		k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidMsg, "Older invalid tx found")
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "Older invalid tx found")
 	}
 
 	// check nonce validity
 	if msg.Nonce != validator.Nonce+1 {
 		k.Logger(ctx).Error("Incorrect validator nonce")
-		return nil, errorsmod.Wrap(hmerrors.ErrInvalidNonce, "Incorrect validator nonce")
+		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "Incorrect validator nonce")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

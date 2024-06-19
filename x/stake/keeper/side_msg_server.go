@@ -11,6 +11,7 @@ import (
 
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
@@ -77,7 +78,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	k.Logger(ctx).Debug("✅ validating external call for validator join msg",
-		"txHash", hmTypes.BytesToHeimdallHash(msg.TxHash.Bytes()),
+		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -95,7 +96,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 
 	// TODO HV2 CHECK FOR THE TxHash length, if not 32 return error
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		k.Logger(ctx).Error("need for more ethereum blocks to fetch the confirmed tx receipt", "err", err)
 		return hmModule.Vote_VOTE_NO
@@ -123,7 +124,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 		k.Logger(ctx).Error(
 			"Signer Pubkey does not match",
 			"msgValidator", pubKey.String(),
-			"mainchainValidator", hmTypes.BytesToHexBytes(eventLog.SignerPubkey),
+			"mainchainValidator", common.Bytes2Hex(eventLog.SignerPubkey),
 		)
 
 		return hmModule.Vote_VOTE_NO
@@ -184,7 +185,7 @@ func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) 
 	}
 
 	k.Logger(ctx).Debug("✅ validating external call for stake update msg",
-		"txHash", hmTypes.BytesToHeimdallHash(msg.TxHash.Bytes()),
+		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -201,7 +202,7 @@ func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) 
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		k.Logger(ctx).Error("error in getting event receipt from etherum ", "err", err)
 		return hmModule.Vote_VOTE_NO
@@ -249,7 +250,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	}
 
 	k.Logger(ctx).Debug("✅ Validating External call for signer update msg",
-		"txHash", hmTypes.BytesToHeimdallHash(msg.TxHash.Bytes()),
+		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -265,7 +266,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		k.Logger(ctx).Error("error in getting event receipt from etherum ", "err", err)
 		return hmModule.Vote_VOTE_NO
@@ -328,7 +329,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	k.Logger(ctx).Debug("✅ validating external call for validator exit msg",
-		"txHash", hmTypes.BytesToHeimdallHash(msg.TxHash.Bytes()),
+		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -345,7 +346,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash.EthHash(), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		k.Logger(ctx).Error("error in getting event receipt from etherum ", "err", err)
 		return hmModule.Vote_VOTE_NO
@@ -404,7 +405,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 
 	// Check for replay attack
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
@@ -479,7 +480,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 		sdk.NewEvent(
 			types.EventTypeValidatorJoin,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),
 			sdk.NewAttribute(hmTypes.AttributeKeyTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(newValidator.ValId, 10)),
@@ -507,7 +508,7 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 
 	// Check for replay attack
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
@@ -561,8 +562,8 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 		sdk.NewEvent(
 			types.EventTypeStakeUpdate,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()), // tx hash
-			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),                // result
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),   // tx hash
+			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
@@ -587,7 +588,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 
 	// Check for replay attack
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 	// check if incoming tx is older
 	if k.HasStakingSequence(ctx, sequence.String()) {
@@ -693,7 +694,7 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 		sdk.NewEvent(
 			types.EventTypeSignerUpdate,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
@@ -719,7 +720,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 
 	// Check for replay attack
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
@@ -765,7 +766,7 @@ func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 		sdk.NewEvent(
 			types.EventTypeValidatorExit,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(txBytes).Hex()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),

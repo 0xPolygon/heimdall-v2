@@ -148,16 +148,16 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	logIndex := uint64(simulation.RandIntBetween(r1, 0, 100))
 
 	req := &types.QueryStakingSequenceRequest{
-		TxHash:   txHash.EthHash().String(),
+		TxHash:   common.Bytes2Hex(txHash.Hash),
 		LogIndex: logIndex,
 	}
 
-	sequence := new(big.Int).Mul(txreceipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(txreceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
 
 	keeper.SetStakingSequence(ctx, sequence.String())
 
-	s.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainChainTxConfirmations).Return(txreceipt, nil)
+	s.contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txreceipt, nil)
 
 	res, err := queryClient.StakingSequence(ctx, req)
 

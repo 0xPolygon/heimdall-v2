@@ -9,8 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // Querier is used as Keeper will have duplicate methods if used directly, and gRPC names take precedence over keeper
@@ -29,7 +28,7 @@ func (q Querier) CurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentV
 	}, err
 }
 
-// Signer queries validator info for given validator validator address.
+// Signer queries validator info for given validator address.
 func (q Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -87,12 +86,12 @@ func (q Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSeq
 	}
 
 	// get main tx receipt
-	receipt, err := q.IContractCaller.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(req.TxHash).EthHash(), chainParams.MainChainTxConfirmations)
+	receipt, err := q.IContractCaller.GetConfirmedTxReceipt(common.HexToHash(req.TxHash), chainParams.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
 
 	// check if incoming tx already exists

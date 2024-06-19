@@ -65,7 +65,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.contractCaller = &mocks.IContractCaller{}
 
-	cmKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService)
+	cmKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService, "")
 	_ = cmKeeper.SetParams(ctx, cmTypes.DefaultParams())
 
 	s.checkpointKeeper = &testUtil.CheckpointKeeperMock{AckCount: uint64(0)}
@@ -108,6 +108,8 @@ func (s *KeeperTestSuite) TestValidator() {
 
 	validators := make([]*types.Validator, n)
 	accounts := simulation.RandomAccounts(r1, n)
+
+	var err error
 
 	for i := range validators {
 		validators[i], err = types.NewValidator(
@@ -334,16 +336,6 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	require.Equal(prevValSet.GetTotalVotingPower()+valToBeAdded.VotingPower, currentValSet.GetTotalVotingPower(), "Total VotingPower should be increased")
 }
 
-/*
-	 Validator Set changes When
-		1. When ackCount changes
-		2. When new validator joins
-		3. When validator updates stake
-		4. When signer is updatedctx
-		5. When Validator Exits
-
-*
-*/
 func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
@@ -475,26 +467,40 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 	// load 4 validators to state
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 
-	initMilestoneValSetProp := keeper.GetMilestoneValidatorSet(ctx).Proposer
-	initCheckpointValSetProp := keeper.GetValidatorSet(ctx).Proposer
+	initMilestoneValSet, err := keeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
+
+	initMilestoneValSetProp := initMilestoneValSet.Proposer
+
+	initCheckpointValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	initCheckpointValSetProp := initCheckpointValSet.Proposer
 
 	require.Equal(initMilestoneValSetProp, initCheckpointValSetProp)
 
 	keeper.IncrementAccum(ctx, 1)
 
-	initMilestoneValSetProp = keeper.GetMilestoneValidatorSet(ctx).Proposer
-	initCheckpointValSetProp = keeper.GetValidatorSet(ctx).Proposer
+	initMilestoneValSet, err = keeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
+
+	initMilestoneValSetProp = initMilestoneValSet.Proposer
+
+	initCheckpointValSet, err = keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	initCheckpointValSetProp = initCheckpointValSet.Proposer
 
 	require.Equal(initMilestoneValSetProp, initCheckpointValSetProp)
 
-	initValSet := keeper.GetMilestoneValidatorSet(ctx)
+	initValSet, err := keeper.GetMilestoneValidatorSet(ctx)
 
 	keeper.MilestoneIncrementAccum(ctx, 1)
 
 	initValSet.IncrementProposerPriority(1)
 	_proposer := initValSet.Proposer
 
-	currentValSet := keeper.GetMilestoneValidatorSet(ctx)
+	currentValSet, err := keeper.GetMilestoneValidatorSet(ctx)
 	proposer := currentValSet.Proposer
 
 	require.Equal(_proposer, proposer)
@@ -505,17 +511,19 @@ func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
 
 	// load 4 validators to state
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	initValSet := keeper.GetMilestoneValidatorSet(ctx)
+	initValSet, err := keeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
 
 	keeper.MilestoneIncrementAccum(ctx, 1)
 
 	prevValSet := initValSet.Copy()
-	currentValSet := keeper.GetMilestoneValidatorSet(ctx)
+	currentValSet, err := keeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
 
 	valToUpdate := currentValSet.Validators[0]
 	newSigner := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
 
-	err := keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
+	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
 	require.NoError(err)
 
 	setUpdates := types.GetUpdatedValidators(&currentValSet, keeper.GetAllValidators(ctx), 5)

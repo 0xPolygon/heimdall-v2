@@ -5382,7 +5382,7 @@ func (x *QueryStakingSequenceRequest) GetLogIndex() uint64 {
 	return 0
 }
 
-// QueryValidatorStatusResponse is response type for the Query/StakingSequence
+// QueryStakingSequenceResponse is response type for the Query/StakingSequence
 // RPC method
 type QueryStakingSequenceResponse struct {
 	state         protoimpl.MessageState

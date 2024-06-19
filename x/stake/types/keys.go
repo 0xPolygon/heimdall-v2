@@ -9,6 +9,9 @@ const (
 
 	// RouterKey is the msg router key for the staking module
 	RouterKey = ModuleName
+
+	// DefaultLogIndexUnit represents the default unit for txHash + logIndex
+	DefaultLogIndexUnit = 100000
 )
 
 var (
@@ -21,6 +24,12 @@ var (
 	SignerKey                       = []byte{0x25} //prefix for signer address for signer map
 	CurrentMilestoneValidatorSetKey = []byte{0x25} // Key to store current validator set for milestone
 )
+
+// PubKey pubkey
+type PubKey [65]byte
+
+// ZeroPubKey represents empty pub key
+var ZeroPubKey = PubKey{}
 
 // GetUpdatedValidators updates validators in validator set
 func GetUpdatedValidators(

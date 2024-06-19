@@ -186,7 +186,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *
 		return err
 	}
 
-	//update signer in prev Validator
+	//update signer in prev validator
 	validator.Signer = newSigner
 	validator.PubKey = newPubkey
 	validator.VotingPower = validatorPower
@@ -354,7 +354,7 @@ func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string) {
 	return
 }
 
-// IterateStakingSequencesAndApplyFn iterate validators and apply the given function.
+// IterateStakingSequencesAndApplyFn iterates staking sequences and applies the given function.
 func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(sequence string) error) {
 	// get staking sequence iterator
 	iterator, err := k.sequences.Iterate(ctx, nil)

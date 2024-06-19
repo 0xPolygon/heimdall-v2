@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cosmosCryto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -72,7 +71,7 @@ func (v *Validator) ValidateBasic() bool {
 	if !ok {
 		return false
 	}
-	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
+	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
 		return false
 	}
 

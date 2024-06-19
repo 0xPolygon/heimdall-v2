@@ -534,7 +534,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		app.AccountKeeper.RemoveBlockProposer(ctx)
 	}
 
-	var tmValUpdates []abci.ValidatorUpdate
+	var cmtValUpdates []abci.ValidatorUpdate
 
 	// Start updating new validators
 	currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)

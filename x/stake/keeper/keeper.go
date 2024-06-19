@@ -39,7 +39,7 @@ type Keeper struct {
 	sequences collections.Map[string, bool]
 }
 
-// NewKeeper creates a new staking Keeper instance
+// NewKeeper creates a new stake Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,

@@ -7,6 +7,12 @@ var (
 	EventTypeStakeUpdate   = "stake-update"
 	EventTypeValidatorExit = "validator-exit"
 
-	AttributeKeySigner     = "signer"
+	AttributeKeySigner            = "signer"
+	AttributeKeyDeactivationEpoch = "deactivation-epoch"
+	AttributeKeyActivationEpoch   = "activation-epoch"
+	AttributeKeyValidatorID       = "validator-id"
+	AttributeKeyValidatorNonce    = "validator-nonce"
+	AttributeKeyUpdatedAt         = "updated-at"
+
 	AttributeValueCategory = ModuleName
 )

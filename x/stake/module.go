@@ -29,10 +29,10 @@ var (
 	_ module.AppModuleBasic = AppModule{}
 
 	// TODO HV2 implement the AppModuleSimulation
-	_ module.AppModuleSimulation = AppModule{}
-	_ module.HasServices         = AppModule{}
-	_ module.HasABCIGenesis      = AppModule{}
-	_ module.HasABCIEndBlock     = AppModule{}
+	//_ module.AppModuleSimulation = AppModule{}
+	_ module.HasServices     = AppModule{}
+	_ module.HasABCIGenesis  = AppModule{}
+	_ module.HasABCIEndBlock = AppModule{}
 
 	_ appmodule.AppModule = AppModule{}
 )

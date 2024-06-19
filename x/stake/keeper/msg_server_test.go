@@ -12,6 +12,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -48,8 +49,9 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
-	oldValSet := keeper.GetValidatorSet(ctx)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	oldValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
 
 	oldSigner := oldValSet.Validators[0]
 	newSigner := testutil.GenRandomVal(1, 0, 10, 10, false, 1)
@@ -94,16 +96,16 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := hmTypes.HexToHeimdallHash("123")
+	msgTxHash := common.Hex2Bytes("123")
 
 	validators[0].EndEpoch = 10
 	msgValidatorExit := stakingtypes.MsgValidatorExit{
 		From:              validators[0].Signer,
 		ValId:             uint64(1),
 		DeactivationEpoch: validators[0].EndEpoch,
-		TxHash:            hmTypes.TxHash(msgTxHash),
+		TxHash:            hmTypes.TxHash{msgTxHash},
 		LogIndex:          uint64(0),
 		BlockNumber:       uint64(0),
 		Nonce:             uint64(1),
@@ -129,24 +131,26 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
-	oldValSet := keeper.GetValidatorSet(ctx)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	oldValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := hmTypes.HexToHeimdallHash("123")
+	msgTxHash := common.Hex2Bytes("123")
 	newAmount := math.NewInt(2000000000000000000)
 
 	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
 		From:        oldVal.Signer,
 		ValId:       oldVal.ValId,
 		NewAmount:   newAmount,
-		TxHash:      hmTypes.TxHash(msgTxHash),
+		TxHash:      hmTypes.TxHash{msgTxHash},
 		LogIndex:    uint64(0),
 		BlockNumber: uint64(0),
 		Nonce:       uint64(1),
 	}
 
-	_, err := msgServer.StakeUpdate(ctx, &msgStakeUpdate)
+	_, err = msgServer.StakeUpdate(ctx, &msgStakeUpdate)
 	require.NoError(err, "expected validator stake update to be ok")
 
 	updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer)

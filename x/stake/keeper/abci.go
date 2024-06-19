@@ -14,12 +14,12 @@ import (
 func (k *Keeper) EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
-	var tmValUpdates []abci.ValidatorUpdate
+	var cmtValUpdates []abci.ValidatorUpdate
 
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while calling the GetValidatorSet fn", "err", err)
-		return tmValUpdates, err
+		return cmtValUpdates, err
 	}
 
 	allValidators := k.GetAllValidators(ctx)
@@ -37,30 +37,30 @@ func (k *Keeper) EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error)
 		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
 			// return error
 			k.Logger(ctx).Error("unable to update current validator set", "error", err)
-			return tmValUpdates, err
+			return cmtValUpdates, err
 		}
 
 		// save set in store
 		if err := k.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
 			// return with nothing
 			k.Logger(ctx).Error("unable to update current validator set in state", "error", err)
-			return tmValUpdates, err
+			return cmtValUpdates, err
 		}
 
 		// convert updates from map to array
 		for _, v := range setUpdates {
-			tmProtoPk, err := v.CmtConsPublicKey()
+			cmtProtoPk, err := v.CmtConsPublicKey()
 			if err != nil {
 				// TODO HV2 Should we panic at this condition?
 				panic(err)
 			}
 
-			tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
+			cmtValUpdates = append(cmtValUpdates, abci.ValidatorUpdate{
 				Power:  v.VotingPower,
-				PubKey: tmProtoPk,
+				PubKey: cmtProtoPk,
 			})
 		}
 	}
 
-	return tmValUpdates, nil
+	return cmtValUpdates, nil
 }

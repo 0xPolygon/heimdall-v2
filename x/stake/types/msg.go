@@ -74,7 +74,7 @@ func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 	}
 
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
+	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
 		return ErrInvalidMsg.Wrapf("Signer public key can't be of zero bytes")
 	}
 
@@ -170,7 +170,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 	}
 
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), hmTypes.ZeroPubKey.Bytes()) {
+	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
 		return ErrInvalidMsg.Wrapf("New signer public key can't be of zero bytes")
 	}
 
