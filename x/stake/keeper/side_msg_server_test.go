@@ -440,7 +440,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	oldValSet := keeper.GetValidatorSet(ctx)
 
 	oldSigner := oldValSet.Validators[0]
@@ -633,7 +633,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := hmTypes.TxHash{common.Hash{}.Bytes()}
 	chainParams, err := s.cmKeeper.GetParams(ctx)
@@ -891,7 +891,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	oldValSet := keeper.GetValidatorSet(ctx)
 	oldVal := oldValSet.Validators[0]
 
@@ -1187,7 +1187,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	oldValSet := keeper.GetValidatorSet(ctx)
 
 	oldSigner := oldValSet.Validators[0]
@@ -1239,7 +1239,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := hmTypes.TxHash{common.Hash{}.Bytes()}
 	blockNumber := big.NewInt(10)
@@ -1291,7 +1291,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	oldValSet := keeper.GetValidatorSet(ctx)
 	oldVal := oldValSet.Validators[0]
 

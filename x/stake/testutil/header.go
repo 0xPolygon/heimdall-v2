@@ -9,8 +9,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// LoadValidatorSet loads validator set
-func LoadValidatorSet(require *require.Assertions, count int, keeper *stakingKeeper.Keeper, ctx sdk.Context, randomise bool, timeAlive int) types.ValidatorSet {
+// LoadRandomValidatorSet loads random validator set
+func LoadRandomValidatorSet(require *require.Assertions, count int, keeper *stakingKeeper.Keeper, ctx sdk.Context, randomise bool, timeAlive int) types.ValidatorSet {
 	var valSet types.ValidatorSet
 
 	validators := GenRandomVal(count, 0, 10, uint64(timeAlive), randomise, 1)

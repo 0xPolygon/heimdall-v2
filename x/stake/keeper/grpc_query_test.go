@@ -23,7 +23,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	require.Equal(len(res.ValidatorSet.Validators), 0)
 
 	// Set the validator set
-	validatorSet := testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
+	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 
 	req = &types.QueryCurrentValidatorSetRequest{}
 	res, err = queryClient.CurrentValidatorSet(ctx, req)
@@ -47,7 +47,7 @@ func (s *KeeperTestSuite) TestHandleQuerySigner() {
 	res, err := queryClient.Signer(ctx, req)
 	require.NotNil(err)
 
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 
 	validators := keeper.GetAllValidators(ctx)
 
@@ -86,7 +86,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 	require.NotNil(err)
 	require.Nil(res)
 
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 
 	validators := keeper.GetAllValidators(ctx)
 
@@ -109,7 +109,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
-	testutil.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetAllValidators(ctx)
 
 	req := &types.QueryValidatorStatusRequest{
