@@ -5,14 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
 
 	"cosmossdk.io/core/appmodule"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -24,12 +21,11 @@ import (
 )
 
 var (
+	// TODO HV2 implement this later
 	//_ module.AppModuleSimulation = AppModule{}
-	_ module.HasServices     = AppModule{}
-	_ module.HasABCIEndBlock = AppModule{}
+	_ module.HasServices = AppModule{}
 
-	_ appmodule.AppModule       = AppModule{}
-	_ appmodule.HasBeginBlocker = AppModule{}
+	_ appmodule.AppModule = AppModule{}
 )
 
 // AppModule implements an application module for the checkpoint module.
@@ -68,7 +64,7 @@ func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 // ValidateGenesis performs genesis state validation for the checkpoint module.
-func (AppModule) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+func (AppModule) ValidateGenesis(cdc codec.JSONCodec, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -84,14 +80,6 @@ func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwrunt
 	}
 }
 
-// GetTxCmd returns the root tx command for the checkpoint module.
-func (am AppModule) GetTxCmd() *cobra.Command {
-	return cli.NewTxCmd(am.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
-}
-
-// IsOnePerModuleType implements the depinject.OnePerModuleType interface.
-func (am AppModule) IsOnePerModuleType() {}
-
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
@@ -104,7 +92,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), querier)
 }
 
-// RegisterSideTxServicess registers side handler module services.
+// RegisterSideMsgServices registers side handler module services.
 func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
@@ -116,23 +104,10 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	cdc.MustUnmarshalJSON(data, &genesisState)
 
 	am.keeper.InitGenesis(ctx, &genesisState)
-
-	return
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the checkpoint
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
-}
-
-// BeginBlock returns the begin blocker for the checkpoint module.
-func (am AppModule) BeginBlock(ctx context.Context) error {
-	return am.keeper.BeginBlocker(ctx)
-}
-
-// EndBlock returns the end blocker for the checkpoint module. It returns no validator
-// updates.
-func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
-	return am.keeper.EndBlocker(ctx)
 }

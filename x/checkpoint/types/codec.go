@@ -26,7 +26,7 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgCheckpointAck{},
 		&MsgCheckpointNoAck{},
 	)
-	//TODO HV2 Please check whether we need this
+	// TODO HV2 Please check whether we need this
 	// registry.RegisterImplementations(
 	// 	(*authz.Authorization)(nil),
 	// 	&StakeAuthorization{},
