@@ -1484,31 +1484,31 @@ func decodeEvent(t *testing.T, eventName string, receipt ethTypes.Receipt) error
 
 	switch eventName {
 	case "DecodeNewHeaderBlockEvent":
-		_, err = contractCaller.DecodeNewHeaderBlockEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeNewHeaderBlockEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeValidatorStakeUpdateEvent":
-		_, err = contractCaller.DecodeValidatorStakeUpdateEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeValidatorStakeUpdateEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeSignerUpdateEvent":
-		_, err = contractCaller.DecodeSignerUpdateEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeSignerUpdateEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeValidatorTopupFeesEvent":
-		_, err = contractCaller.DecodeValidatorTopupFeesEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeValidatorTopupFeesEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeValidatorJoinEvent":
-		_, err = contractCaller.DecodeValidatorJoinEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeValidatorJoinEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeValidatorExitEvent":
-		_, err = contractCaller.DecodeValidatorExitEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeValidatorExitEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeStateSyncedEvent":
-		_, err = contractCaller.DecodeStateSyncedEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeStateSyncedEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeSlashedEvent":
-		_, err = contractCaller.DecodeSlashedEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeSlashedEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	case "DecodeUnJailedEvent":
-		_, err = contractCaller.DecodeUnJailedEvent(receipt.Logs[0].Address, &receipt, uint64(receipt.Logs[0].Index))
+		_, err = contractCaller.DecodeUnJailedEvent(receipt.Logs[0].Address.Hex(), &receipt, uint64(receipt.Logs[0].Index))
 
 	default:
 		return errors.New("Unrecognized event")

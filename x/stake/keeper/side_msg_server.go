@@ -299,7 +299,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 	}
 
 	if !bytes.Equal(eventLog.SignerPubkey, newPubKey.Bytes()[1:]) {
-		k.Logger(ctx).Error("newsigner pubkey in txhash and msg dont match", "msgPubKey", newPubKey.String(), "pubkeyTx", hmTypes.NewPubKey(eventLog.SignerPubkey[:]).String())
+		k.Logger(ctx).Error("newsigner pubkey in txhash and msg dont match", "msgPubKey", newPubKey.String(), "pubkeyTx", eventLog.SignerPubkey[:])
 		return hmModule.Vote_VOTE_NO
 	}
 
