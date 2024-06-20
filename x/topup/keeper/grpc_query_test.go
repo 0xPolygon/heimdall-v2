@@ -8,7 +8,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
 
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
@@ -16,9 +18,7 @@ import (
 )
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
-	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
-	// TODO HV2: enable when contractCaller is implemented
-	// suite.contractCaller = mocks.IContractCaller{}
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -30,8 +30,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 	err := tk.SetTopupSequence(ctx, sequence.String())
 	require.NoError(err)
-	// TODO HV2: enable when contractCaller is implemented
-	// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
 		TxHash:   hash.String(),
@@ -41,31 +40,33 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	res, err := queryClient.GetTopupTxSequence(ctx, req)
 	require.NoError(err)
 	require.NotNil(res.Sequence)
-	// TODO HV2: enable this when `GetTopupTxSequence` is fully functional in grpc_query.go
-	// require.Equal(sequence.String(), res.Sequence)
+	require.Equal(sequence.String(), res.Sequence)
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
-	_, ctx, queryClient, _ := suite.T(), suite.ctx, suite.queryClient, suite.Require()
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	logIndex := r1.Uint64()
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
+
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
 		TxHash:   hash.String(),
 		LogIndex: logIndex,
 	}
 
-	_, _ = queryClient.GetTopupTxSequence(ctx, req)
-	// TODO HV2: enable this when `GetTopupTxSequence` is fully functional in grpc_query.go
-	// require.Error(err)
-	// require.Nil(res)
+	res, err := queryClient.GetTopupTxSequence(ctx, req)
+	require.Error(err)
+	require.Nil(res)
 }
 
 func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
-	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	logIndex := r1.Uint64()
@@ -73,27 +74,33 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	blockN := new(big.Int).SetUint64(blockNumber)
 	sequence := new(big.Int).Mul(blockN, big.NewInt(types.DefaultLogIndexUnit))
+	txReceipt := &ethTypes.Receipt{BlockNumber: blockN}
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
 	err := tk.SetTopupSequence(ctx, sequence.String())
 	require.NoError(err)
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
 		TxHash:   hash.String(),
 		LogIndex: logIndex,
 	}
 
-	_, err = queryClient.IsTopupTxOld(ctx, req)
+	res, err := queryClient.IsTopupTxOld(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when `IsTopupTxOld` is fully functional in grpc_query.go
-	// require.True(res.IsOld)
+	require.True(res.IsOld)
 }
 
 func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsNotOld() {
-	ctx, queryClient, require := suite.ctx, suite.queryClient, suite.Require()
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	logIndex := r1.Uint64()
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
+
+	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
 		TxHash:   hash.String(),
@@ -200,11 +207,10 @@ func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
-	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
+	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
 
 	var accountRoot [32]byte
-	// TODO HV2: enable this when contractCaller is implemented in heimdall-v2
-	// stakingInfo := &stakinginfo.Stakinginfo{}
+	stakingInfo := &stakinginfo.Stakinginfo{}
 	dividendAccount := hTypes.DividendAccount{
 		User:      AccountHash,
 		FeeAmount: big.NewInt(0).String(),
@@ -220,10 +226,9 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 	accRoot := []byte("accRoot")
 	copy(accountRoot[:], accRoot)
 
-	/* TODO HV2: enable this when helper and contractCaller are implemented in heimdall-v2
-	suite.contractCaller.On("GetStakingInfoInstance", mock.Anything).Return(stakingInfo, nil)
-	suite.contractCaller.On("CurrentAccountStateRoot", stakingInfo).Return(accountRoot, nil)
-	*/
+	contractCaller.On("GetStakingInfoInstance", mock.Anything).Return(stakingInfo, nil)
+	contractCaller.On("CurrentAccountStateRoot", stakingInfo).Return(accountRoot, nil)
+	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryAccountProofRequest{
 		Address: AccountHash,

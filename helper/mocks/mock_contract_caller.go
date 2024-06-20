@@ -1128,9 +1128,9 @@ func (_m *IContractCaller) GetValidatorSetInstance(validatorSetAddress string) (
 	return r0, r1
 }
 
-// GetVoteOnHash provides a mock function with given fields: start, end, milestoneLength, hash, milestoneID
-func (_m *IContractCaller) GetVoteOnHash(start uint64, end uint64, milestoneLength uint64, hash string, milestoneID string) (bool, error) {
-	ret := _m.Called(start, end, milestoneLength, hash, milestoneID)
+// GetVoteOnHash provides a mock function with given fields: start, end, hash, milestoneID
+func (_m *IContractCaller) GetVoteOnHash(start uint64, end uint64, hash string, milestoneID string) (bool, error) {
+	ret := _m.Called(start, end, hash, milestoneID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetVoteOnHash")
@@ -1138,17 +1138,17 @@ func (_m *IContractCaller) GetVoteOnHash(start uint64, end uint64, milestoneLeng
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64, uint64, uint64, string, string) (bool, error)); ok {
-		return rf(start, end, milestoneLength, hash, milestoneID)
+	if rf, ok := ret.Get(0).(func(uint64, uint64, string, string) (bool, error)); ok {
+		return rf(start, end, hash, milestoneID)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, uint64, uint64, string, string) bool); ok {
-		r0 = rf(start, end, milestoneLength, hash, milestoneID)
+	if rf, ok := ret.Get(0).(func(uint64, uint64, string, string) bool); ok {
+		r0 = rf(start, end, hash, milestoneID)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(uint64, uint64, uint64, string, string) error); ok {
-		r1 = rf(start, end, milestoneLength, hash, milestoneID)
+	if rf, ok := ret.Get(1).(func(uint64, uint64, string, string) error); ok {
+		r1 = rf(start, end, hash, milestoneID)
 	} else {
 		r1 = ret.Error(1)
 	}
