@@ -1,10 +1,14 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path"
+	"strings"
+	"time"
 
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
@@ -13,7 +17,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/file"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	cmtcfg "github.com/cometbft/cometbft/config"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/cli"
+	"github.com/cometbft/cometbft/privval"
 	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -21,12 +27,18 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	"github.com/cosmos/cosmos-sdk/client/rpc"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+	ethCommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/console/prompt"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	// TODO HV2 - uncomment when we have the client package
@@ -75,10 +87,8 @@ func initRootCmd(
 		txCommand(),
 		keys.Commands(),
 		exportCmd(),
-		// TODO HV2 - do we need this? Why?
-		// generateKeystore(),
-		// PSP - TODO HV2 - uncomment this
-		// generateValidatorKey(),
+		generateKeystore(),
+		generateValidatorKey(),
 
 		StakeCmd(cliCtx),
 		ApproveCmd(cliCtx),
@@ -212,9 +222,8 @@ func exportCmd() *cobra.Command {
 	return cmd
 }
 
-/*
 // generateKeystore generate keystore file from private key
-func generateKeystore(_ *codec.Codec) *cobra.Command {
+func generateKeystore() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate-keystore <private-key>",
 		Short: "Generates keystore file using private key",
@@ -254,13 +263,12 @@ func generateKeystore(_ *codec.Codec) *cobra.Command {
 		},
 	}
 
-	return client.GetCommands(cmd)[0]
+	return cmd
 }
-*/
 
-/*
 // generateValidatorKey generate validator key
 func generateValidatorKey() *cobra.Command {
+	cdc := codec.NewLegacyAmino()
 	cmd := &cobra.Command{
 		Use:   "generate-validatorkey <private-key>",
 		Short: "Generate validator key file using private key",
@@ -274,7 +282,7 @@ func generateValidatorKey() *cobra.Command {
 
 			// set private object
 			var privObject secp256k1.PrivKey
-			copy(privObject.Key[:], ds)
+			copy(privObject[:], ds)
 
 			// node key
 			nodeKey := privval.FilePVKey{
@@ -297,9 +305,8 @@ func generateValidatorKey() *cobra.Command {
 		},
 	}
 
-	return client.GetCommands(cmd)[0]
+	return cmd
 }
-*/
 
 func writeGenesisFile(genesisFile, chainID string, appState json.RawMessage) error {
 	genDoc := cmttypes.GenesisDoc{
@@ -312,4 +319,47 @@ func writeGenesisFile(genesisFile, chainID string, appState json.RawMessage) err
 	}
 
 	return genDoc.SaveAs(genesisFile)
+}
+
+// keyFileName implements the naming convention for keyfiles:
+// UTC--<created_at UTC ISO8601>-<address hex>
+func keyFileName(keyAddr ethCommon.Address) string {
+	ts := time.Now().UTC()
+	return fmt.Sprintf("UTC--%s--%s", toISO8601(ts), hex.EncodeToString(keyAddr[:]))
+}
+
+func toISO8601(t time.Time) string {
+	var tz string
+
+	name, offset := t.Zone()
+	if name == "UTC" {
+		tz = "Z"
+	} else {
+		tz = fmt.Sprintf("%03d00", offset/3600)
+	}
+
+	return fmt.Sprintf("%04d-%02d-%02dT%02d-%02d-%02d.%09d%s",
+		t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), tz)
+}
+
+// promptPassphrase prompts the user for a passphrase.  Set confirmation to true
+// to require the user to confirm the passphrase.
+func promptPassphrase(confirmation bool) (string, error) {
+	passphrase, err := prompt.Stdin.PromptPassword("Passphrase: ")
+	if err != nil {
+		return "", err
+	}
+
+	if confirmation {
+		confirm, err := prompt.Stdin.PromptPassword("Repeat passphrase: ")
+		if err != nil {
+			return "", err
+		}
+
+		if passphrase != confirm {
+			return "", errors.New("passphrases do not match")
+		}
+	}
+
+	return passphrase, nil
 }
