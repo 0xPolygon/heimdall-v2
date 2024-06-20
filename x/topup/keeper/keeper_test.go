@@ -21,6 +21,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
@@ -39,12 +40,10 @@ type KeeperTestSuite struct {
 	ctx    sdk.Context
 	keeper topupKeeper.Keeper
 
-	msgServer   topupTypes.MsgServer
-	sideMsgCfg  mod.SideTxConfigurator
-	queryClient topupTypes.QueryClient
-
-	// TODO HV2: enable when contractCaller is implemented
-	// contractCaller mocks.IContractCaller
+	msgServer      topupTypes.MsgServer
+	sideMsgCfg     mod.SideTxConfigurator
+	queryClient    topupTypes.QueryClient
+	contractCaller mocks.IContractCaller
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -65,6 +64,8 @@ func (suite *KeeperTestSuite) SetupTest() {
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
 	chainKeeper := testutil.NewMockChainKeeper(ctrl)
 
+	suite.contractCaller = mocks.IContractCaller{}
+
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
@@ -72,6 +73,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 		// TODO HV2: replace nil with stakeKeeper mock once implemented
 		nil,
 		chainKeeper,
+		&suite.contractCaller,
 	)
 
 	topupGenesis := topupTypes.DefaultGenesisState()
