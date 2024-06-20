@@ -169,7 +169,7 @@ func (_m *IContractCaller) CurrentStateCounter(stateSenderInstance *statesender.
 }
 
 // DecodeNewHeaderBlockEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeNewHeaderBlockEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*rootchain.RootchainNewHeaderBlock, error) {
+func (_m *IContractCaller) DecodeNewHeaderBlockEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*rootchain.RootchainNewHeaderBlock, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -178,10 +178,10 @@ func (_m *IContractCaller) DecodeNewHeaderBlockEvent(_a0 common.Address, _a1 *ty
 
 	var r0 *rootchain.RootchainNewHeaderBlock
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *rootchain.RootchainNewHeaderBlock); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *rootchain.RootchainNewHeaderBlock); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -189,7 +189,7 @@ func (_m *IContractCaller) DecodeNewHeaderBlockEvent(_a0 common.Address, _a1 *ty
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -199,7 +199,7 @@ func (_m *IContractCaller) DecodeNewHeaderBlockEvent(_a0 common.Address, _a1 *ty
 }
 
 // DecodeSignerUpdateEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeSignerUpdateEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoSignerChange, error) {
+func (_m *IContractCaller) DecodeSignerUpdateEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoSignerChange, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -208,10 +208,10 @@ func (_m *IContractCaller) DecodeSignerUpdateEvent(_a0 common.Address, _a1 *type
 
 	var r0 *stakinginfo.StakinginfoSignerChange
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*stakinginfo.StakinginfoSignerChange, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*stakinginfo.StakinginfoSignerChange, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *stakinginfo.StakinginfoSignerChange); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *stakinginfo.StakinginfoSignerChange); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -219,7 +219,7 @@ func (_m *IContractCaller) DecodeSignerUpdateEvent(_a0 common.Address, _a1 *type
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -229,7 +229,7 @@ func (_m *IContractCaller) DecodeSignerUpdateEvent(_a0 common.Address, _a1 *type
 }
 
 // DecodeSlashedEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeSlashedEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoSlashed, error) {
+func (_m *IContractCaller) DecodeSlashedEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoSlashed, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -238,10 +238,10 @@ func (_m *IContractCaller) DecodeSlashedEvent(_a0 common.Address, _a1 *types.Rec
 
 	var r0 *stakinginfo.StakinginfoSlashed
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*stakinginfo.StakinginfoSlashed, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*stakinginfo.StakinginfoSlashed, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *stakinginfo.StakinginfoSlashed); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *stakinginfo.StakinginfoSlashed); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -249,7 +249,7 @@ func (_m *IContractCaller) DecodeSlashedEvent(_a0 common.Address, _a1 *types.Rec
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -259,7 +259,7 @@ func (_m *IContractCaller) DecodeSlashedEvent(_a0 common.Address, _a1 *types.Rec
 }
 
 // DecodeStateSyncedEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeStateSyncedEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*statesender.StatesenderStateSynced, error) {
+func (_m *IContractCaller) DecodeStateSyncedEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*statesender.StatesenderStateSynced, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -268,10 +268,10 @@ func (_m *IContractCaller) DecodeStateSyncedEvent(_a0 common.Address, _a1 *types
 
 	var r0 *statesender.StatesenderStateSynced
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*statesender.StatesenderStateSynced, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*statesender.StatesenderStateSynced, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *statesender.StatesenderStateSynced); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *statesender.StatesenderStateSynced); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -279,7 +279,7 @@ func (_m *IContractCaller) DecodeStateSyncedEvent(_a0 common.Address, _a1 *types
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -289,7 +289,7 @@ func (_m *IContractCaller) DecodeStateSyncedEvent(_a0 common.Address, _a1 *types
 }
 
 // DecodeUnJailedEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeUnJailedEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoUnJailed, error) {
+func (_m *IContractCaller) DecodeUnJailedEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoUnJailed, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -298,10 +298,10 @@ func (_m *IContractCaller) DecodeUnJailedEvent(_a0 common.Address, _a1 *types.Re
 
 	var r0 *stakinginfo.StakinginfoUnJailed
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *stakinginfo.StakinginfoUnJailed); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *stakinginfo.StakinginfoUnJailed); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -309,7 +309,7 @@ func (_m *IContractCaller) DecodeUnJailedEvent(_a0 common.Address, _a1 *types.Re
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -319,7 +319,7 @@ func (_m *IContractCaller) DecodeUnJailedEvent(_a0 common.Address, _a1 *types.Re
 }
 
 // DecodeValidatorExitEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeValidatorExitEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
+func (_m *IContractCaller) DecodeValidatorExitEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -328,10 +328,10 @@ func (_m *IContractCaller) DecodeValidatorExitEvent(_a0 common.Address, _a1 *typ
 
 	var r0 *stakinginfo.StakinginfoUnstakeInit
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*stakinginfo.StakinginfoUnstakeInit, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*stakinginfo.StakinginfoUnstakeInit, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *stakinginfo.StakinginfoUnstakeInit); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *stakinginfo.StakinginfoUnstakeInit); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -339,7 +339,7 @@ func (_m *IContractCaller) DecodeValidatorExitEvent(_a0 common.Address, _a1 *typ
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -349,7 +349,7 @@ func (_m *IContractCaller) DecodeValidatorExitEvent(_a0 common.Address, _a1 *typ
 }
 
 // DecodeValidatorJoinEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeValidatorJoinEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoStaked, error) {
+func (_m *IContractCaller) DecodeValidatorJoinEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoStaked, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -358,10 +358,10 @@ func (_m *IContractCaller) DecodeValidatorJoinEvent(_a0 common.Address, _a1 *typ
 
 	var r0 *stakinginfo.StakinginfoStaked
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*stakinginfo.StakinginfoStaked, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*stakinginfo.StakinginfoStaked, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *stakinginfo.StakinginfoStaked); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *stakinginfo.StakinginfoStaked); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -369,7 +369,7 @@ func (_m *IContractCaller) DecodeValidatorJoinEvent(_a0 common.Address, _a1 *typ
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -379,7 +379,7 @@ func (_m *IContractCaller) DecodeValidatorJoinEvent(_a0 common.Address, _a1 *typ
 }
 
 // DecodeValidatorStakeUpdateEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeValidatorStakeUpdateEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
+func (_m *IContractCaller) DecodeValidatorStakeUpdateEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -388,10 +388,10 @@ func (_m *IContractCaller) DecodeValidatorStakeUpdateEvent(_a0 common.Address, _
 
 	var r0 *stakinginfo.StakinginfoStakeUpdate
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*stakinginfo.StakinginfoStakeUpdate, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*stakinginfo.StakinginfoStakeUpdate, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *stakinginfo.StakinginfoStakeUpdate); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *stakinginfo.StakinginfoStakeUpdate); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -399,7 +399,7 @@ func (_m *IContractCaller) DecodeValidatorStakeUpdateEvent(_a0 common.Address, _
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -409,7 +409,7 @@ func (_m *IContractCaller) DecodeValidatorStakeUpdateEvent(_a0 common.Address, _
 }
 
 // DecodeValidatorTopupFeesEvent provides a mock function with given fields: _a0, _a1, _a2
-func (_m *IContractCaller) DecodeValidatorTopupFeesEvent(_a0 common.Address, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
+func (_m *IContractCaller) DecodeValidatorTopupFeesEvent(_a0 string, _a1 *types.Receipt, _a2 uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -418,10 +418,10 @@ func (_m *IContractCaller) DecodeValidatorTopupFeesEvent(_a0 common.Address, _a1
 
 	var r0 *stakinginfo.StakinginfoTopUpFee
 	var r1 error
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) (*stakinginfo.StakinginfoTopUpFee, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) (*stakinginfo.StakinginfoTopUpFee, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(common.Address, *types.Receipt, uint64) *stakinginfo.StakinginfoTopUpFee); ok {
+	if rf, ok := ret.Get(0).(func(string, *types.Receipt, uint64) *stakinginfo.StakinginfoTopUpFee); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
@@ -429,7 +429,7 @@ func (_m *IContractCaller) DecodeValidatorTopupFeesEvent(_a0 common.Address, _a1
 		}
 	}
 
-	if rf, ok := ret.Get(1).(func(common.Address, *types.Receipt, uint64) error); ok {
+	if rf, ok := ret.Get(1).(func(string, *types.Receipt, uint64) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
