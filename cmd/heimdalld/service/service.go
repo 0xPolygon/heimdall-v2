@@ -25,6 +25,7 @@ import (
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/cli"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/node"
@@ -42,6 +43,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+	ethCommon "github.com/ethereum/go-ethereum/common"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	// TODO HV2 - uncomment when we have server implemented
@@ -104,13 +106,11 @@ type ValidatorAccountFormatter struct {
 	PubKey  string `json:"pub_key,omitempty" yaml:"pub_key"`
 }
 
-// TODO HV2 - uncomment when adding testnet commands
-/*
 // GetSignerInfo returns signer information
-func GetSignerInfo(pub crypto.PubKey, priv []byte, cdc *codec.Codec) ValidatorAccountFormatter {
+func GetSignerInfo(pub crypto.PubKey, priv []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
 	var privObject secp256k1.PrivKey
 
-	cdc.MustUnmarshalBinaryBare(priv, &privObject)
+	cdc.MustUnmarshal(priv, &privObject)
 
 	return ValidatorAccountFormatter{
 		Address: ethCommon.BytesToAddress(pub.Address().Bytes()).String(),
@@ -118,7 +118,7 @@ func GetSignerInfo(pub crypto.PubKey, priv []byte, cdc *codec.Codec) ValidatorAc
 		PrivKey: "0x" + hex.EncodeToString(privObject[:]),
 	}
 }
-*/
+
 func NewHeimdallService(pCtx context.Context, args []string) {
 	cdc := codec.NewLegacyAmino()
 	ctx := server.NewDefaultContext()
@@ -779,10 +779,6 @@ func WriteDefaultHeimdallConfig(path string, conf helper.Configuration) {
 	}
 }
 
-// TODO HV2 - we dont need this as we are using the same public key
-/*
-func CryptoKeyToPubkey(key crypto.PubKey) hmTypes.PubKey {
-	validatorPublicKey := helper.GetPubObjects(key)
-	return hmTypes.NewPubKey(validatorPublicKey[:])
+func CryptoKeyToPubkey(key crypto.PubKey) secp256k1.PubKey {
+	return helper.GetPubObjects(key)
 }
-*/

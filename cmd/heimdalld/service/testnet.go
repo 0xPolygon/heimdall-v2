@@ -64,7 +64,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			*/
 
 			// signers data to dump in the signer-dump file
-			// signers := make([]ValidatorAccountFormatter, totalValidators)
+			signers := make([]ValidatorAccountFormatter, totalValidators)
 
 			// Initialise variables for all validators
 			nodeIDs := make([]string, totalValidators)
@@ -137,7 +137,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 					}
 				*/
 
-				// signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
+				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
 
 				WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "config/heimdall-config.toml"), helper.GetDefaultHeimdallConfig())
 			}
