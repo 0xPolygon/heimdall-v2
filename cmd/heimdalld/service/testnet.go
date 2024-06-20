@@ -45,7 +45,11 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			// create chain id
 			chainID := viper.GetString(flags.FlagChainID)
 			if chainID == "" {
-				chainID = fmt.Sprintf("heimdall-%v", cmdhelper.RandStringRunes(6))
+				suffix, err := cmdhelper.GenerateRandomString(6)
+				if err != nil {
+					return err
+				}
+				chainID = fmt.Sprintf("heimdall-%v", suffix)
 			}
 
 			// num of validators = validators in genesis files

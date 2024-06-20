@@ -167,8 +167,11 @@ func exportCmd() *cobra.Command {
 			// create chain id
 			chainID := viper.GetString(flags.FlagChainID)
 			if chainID == "" {
-				// TODO HV2 - check the random chain id generation (RandStringRunes)
-				chainID = fmt.Sprintf("heimdall-%v", cmdhelper.RandStringRunes(6))
+				suffix, err := cmdhelper.GenerateRandomString(6)
+				if err != nil {
+					panic(err)
+				}
+				chainID = fmt.Sprintf("heimdall-%v", suffix)
 			}
 
 			dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")

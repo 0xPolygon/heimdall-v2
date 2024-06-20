@@ -79,7 +79,11 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 	// create chain id
 	chainID := initConfig.chainID
 	if chainID == "" {
-		chainID = fmt.Sprintf("heimdall-%v", cmdhelper.RandStringRunes(6))
+		suffix, err := cmdhelper.GenerateRandomString(6)
+		if err != nil {
+			return err
+		}
+		chainID = fmt.Sprintf("heimdall-%v", suffix)
 	}
 
 	appGenState := mbm.DefaultGenesis(cliCdc)
