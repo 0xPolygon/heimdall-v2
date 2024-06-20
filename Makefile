@@ -52,7 +52,7 @@ proto-lint:
 proto-check-breaking:
 	@$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
 
-mock:
+mock-helper:
 	go install github.com/vektra/mockery/v2/...@latest
 	cd helper && mockery --name IContractCaller  --output ./mocks --filename=mock_contract_caller.go
 	go install github.com/golang/mock/mockgen@latest
