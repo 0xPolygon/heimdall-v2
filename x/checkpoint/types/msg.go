@@ -38,7 +38,7 @@ func NewMsgCheckpointAdjust(
 	}
 }
 
-//TODO HV2 Not required
+// TODO HV2 Not required
 // func (msg MsgCheckpointAdjust) GetSignBytes() []byte {
 // 	b, err := ModuleCdc.MarshalJSON(msg)
 // 	if err != nil {

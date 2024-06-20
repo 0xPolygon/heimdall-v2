@@ -73,7 +73,7 @@ func CheckpointAdjustCmd(ac address.Codec) *cobra.Command {
 				return err
 			}
 
-			//	end block
+			// end block
 			endBlock, err := cmd.Flags().GetUint64(FlagEndBlock)
 			if err != nil {
 				return err
@@ -121,7 +121,7 @@ func CheckpointAdjustCmd(ac address.Codec) *cobra.Command {
 		logger.Error("SendCheckpointAdjust | MarkFlagRequired | FlagEndBlock", "Error", err)
 	}
 
-	//TODO HV2 Please check this, do we require it or not?
+	// TODO HV2 Please check this, do we require it or not?
 	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
@@ -164,7 +164,7 @@ func CheckpointCmd(ac address.Codec) *cobra.Command {
 				return err
 			}
 
-			//	end block
+			// end block
 			endBlock, err := cmd.Flags().GetUint64(FlagEndBlock)
 			if err != nil {
 				return err
@@ -187,6 +187,7 @@ func CheckpointCmd(ac address.Codec) *cobra.Command {
 				startBlock,
 				endBlock,
 				hmTypes.HexToHeimdallHash(rootHashStr),
+
 				hmTypes.HexToHeimdallHash(accountRootHashStr),
 				borChainID,
 			)
