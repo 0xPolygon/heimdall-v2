@@ -62,18 +62,18 @@ type IContractCaller interface {
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
 
-	DecodeNewHeaderBlockEvent(common.Address, *ethTypes.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)
+	DecodeNewHeaderBlockEvent(string, *ethTypes.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)
 
-	DecodeValidatorTopupFeesEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoTopUpFee, error)
-	DecodeValidatorJoinEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStaked, error)
-	DecodeValidatorStakeUpdateEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStakeUpdate, error)
-	DecodeValidatorExitEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnstakeInit, error)
-	DecodeSignerUpdateEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSignerChange, error)
+	DecodeValidatorTopupFeesEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoTopUpFee, error)
+	DecodeValidatorJoinEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStaked, error)
+	DecodeValidatorStakeUpdateEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoStakeUpdate, error)
+	DecodeValidatorExitEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnstakeInit, error)
+	DecodeSignerUpdateEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSignerChange, error)
 
-	DecodeStateSyncedEvent(common.Address, *ethTypes.Receipt, uint64) (*statesender.StatesenderStateSynced, error)
+	DecodeStateSyncedEvent(string, *ethTypes.Receipt, uint64) (*statesender.StatesenderStateSynced, error)
 
-	DecodeSlashedEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSlashed, error)
-	DecodeUnJailedEvent(common.Address, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)
+	DecodeSlashedEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoSlashed, error)
+	DecodeUnJailedEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)
 
 	GetMainTxReceipt(common.Hash) (*ethTypes.Receipt, error)
 	GetMaticTxReceipt(common.Hash) (*ethTypes.Receipt, error)
@@ -605,8 +605,10 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 //
 
 // DecodeNewHeaderBlockEvent represents new header block event
-func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*rootchain.RootchainNewHeaderBlock, error) {
+func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*rootchain.RootchainNewHeaderBlock, error) {
 	event := new(rootchain.RootchainNewHeaderBlock)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -622,10 +624,12 @@ func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddress common.Addres
 }
 
 // DecodeValidatorTopupFeesEvent represents topUp for fees tokens
-func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
+func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
 	var (
 		event = new(stakinginfo.StakinginfoTopUpFee)
 	)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -641,8 +645,10 @@ func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddress common.Ad
 }
 
 // DecodeValidatorJoinEvent represents validator staked event
-func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStaked, error) {
+func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStaked, error) {
 	event := new(stakinginfo.StakinginfoStaked)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -658,10 +664,12 @@ func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddress common.Address
 }
 
 // DecodeValidatorStakeUpdateEvent represents validator stake update event
-func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
+func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
 	var (
 		event = new(stakinginfo.StakinginfoStakeUpdate)
 	)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -678,10 +686,12 @@ func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddress common.
 }
 
 // DecodeValidatorExitEvent represents validator stake unStake event
-func (c *ContractCaller) DecodeValidatorExitEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
+func (c *ContractCaller) DecodeValidatorExitEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
 	var (
 		event = new(stakinginfo.StakinginfoUnstakeInit)
 	)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -698,10 +708,12 @@ func (c *ContractCaller) DecodeValidatorExitEvent(contractAddress common.Address
 }
 
 // DecodeSignerUpdateEvent represents sig update event
-func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
+func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
 	var (
 		event = new(stakinginfo.StakinginfoSignerChange)
 	)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -717,10 +729,12 @@ func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddress common.Address,
 }
 
 // DecodeStateSyncedEvent decode state sync data
-func (c *ContractCaller) DecodeStateSyncedEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*statesender.StatesenderStateSynced, error) {
+func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*statesender.StatesenderStateSynced, error) {
 	var (
 		event = new(statesender.StatesenderStateSynced)
 	)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -738,10 +752,12 @@ func (c *ContractCaller) DecodeStateSyncedEvent(contractAddress common.Address, 
 // decode slashing events
 
 // DecodeSlashedEvent represents tick ack on contract
-func (c *ContractCaller) DecodeSlashedEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSlashed, error) {
+func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSlashed, error) {
 	var (
 		event = new(stakinginfo.StakinginfoSlashed)
 	)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
@@ -757,10 +773,12 @@ func (c *ContractCaller) DecodeSlashedEvent(contractAddress common.Address, rece
 }
 
 // DecodeUnJailedEvent represents unJail on contract
-func (c *ContractCaller) DecodeUnJailedEvent(contractAddress common.Address, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnJailed, error) {
+func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnJailed, error) {
 	var (
 		event = new(stakinginfo.StakinginfoUnJailed)
 	)
+
+	contractAddress := common.HexToAddress(contractAddressString)
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
