@@ -83,7 +83,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 	}
 
 	// get event log for topup
-	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(common.HexToAddress(chainParams.StakingInfoAddress), receipt, msg.LogIndex)
+	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		logger.Error("error fetching log from txHash for DecodeValidatorTopupFeesEvent")
 		return mod.Vote_VOTE_NO
