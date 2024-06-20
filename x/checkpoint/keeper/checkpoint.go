@@ -75,7 +75,7 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (type
 	return _checkpoint, nil
 }
 
-//TODO HV2 This function is not requierd
+// TODO HV2 This function is not requierd
 // // GetCheckpointList returns all checkpoints with params like page and limit
 // func (k *Keeper) GetCheckpointList(ctx context.Context, page uint64, limit uint64) ([]types.Checkpoint, error) {
 // 	store := k.storeService.OpenKVStore(ctx)
