@@ -62,6 +62,7 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
@@ -119,7 +120,7 @@ type HeimdallApp struct {
 	ChainManagerKeeper chainmanagerkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
-	// caller helper.ContractCaller
+	caller helper.ContractCaller
 
 	mm           *module.Manager
 	BasicManager module.BasicManager
@@ -200,14 +201,12 @@ func NewHeimdallApp(
 	}
 
 	// Contract caller
-	// TODO HV2: uncomment when contractCaller implemented
+	contractCallerObj, err := helper.NewContractCaller()
+	if err != nil {
+		panic(err)
+	}
 
-	// contractCallerObj, err := helper.NewContractCaller()
-	// if err != nil {
-	// 	cmn.Exit(err.Error())
-	// }
-
-	// app.caller = contractCallerObj
+	app.caller = contractCallerObj
 
 	// TODO HV2: Set vote extension and post handlers for each module (use SetModVoteExtHandler and SetModPostHandler)
 
@@ -310,7 +309,7 @@ func NewHeimdallApp(
 		// TODO HV2: replace nil with stakeKeeper when implemented
 		nil,
 		app.ChainManagerKeeper,
-		// TODO HV2: add required contractCaller when implemented
+		&app.caller,
 	)
 
 	app.mm = module.NewManager(
@@ -327,7 +326,7 @@ func NewHeimdallApp(
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
-		topup.NewAppModule(app.TopupKeeper),
+		topup.NewAppModule(app.TopupKeeper, app.caller),
 	)
 
 	// Basic manager
@@ -383,7 +382,7 @@ func NewHeimdallApp(
 		app.MsgServiceRouter(),
 		app.GRPCQueryRouter(),
 	)
-	err := app.mm.RegisterServices(app.configurator)
+	err = app.mm.RegisterServices(app.configurator)
 	if err != nil {
 		panic(err)
 	}

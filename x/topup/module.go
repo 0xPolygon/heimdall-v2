@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
@@ -32,16 +33,14 @@ var (
 
 // AppModule implements an application module for the topup module.
 type AppModule struct {
-	keeper keeper.Keeper
-	// TODO HV2: enable contractCaller when implemented in heimdall-v2
-	// contractCaller helper.IContractCaller
+	keeper         keeper.Keeper
+	contractCaller helper.ContractCaller
 }
 
-func NewAppModule(keeper keeper.Keeper) AppModule {
+func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
 	return AppModule{
-		keeper: keeper,
-		// TODO HV2: enable contractCaller when implemented in heimdall-v2
-		// contractCaller: contractCaller,
+		keeper:         keeper,
+		contractCaller: contractCaller,
 	}
 }
 

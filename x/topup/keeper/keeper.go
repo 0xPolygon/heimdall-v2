@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -21,11 +22,10 @@ type Keeper struct {
 	storeService store.KVStoreService
 	schema       collections.Schema
 
-	BankKeeper  types.BankKeeper
-	stakeKeeper types.StakeKeeper
-	ChainKeeper types.ChainKeeper
-	// TODO HV2: enable contractCaller when implemented in heimdall-v2
-	// IContractCaller helper.IContractCaller
+	BankKeeper     types.BankKeeper
+	stakeKeeper    types.StakeKeeper
+	ChainKeeper    types.ChainKeeper
+	contractCaller helper.IContractCaller
 
 	sequences        collections.KeySet[string]
 	dividendAccounts collections.Map[string, hTypes.DividendAccount]
@@ -38,20 +38,17 @@ func NewKeeper(
 	bankKeeper types.BankKeeper,
 	stakeKeeper types.StakeKeeper,
 	chainKeeper types.ChainKeeper,
-	// TODO HV2: enable contractCaller when implemented
-	//
-	//	contractCaller helper.IContractCaller,
+	contractCaller helper.IContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 
 	k := Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		BankKeeper:   bankKeeper,
-		stakeKeeper:  stakeKeeper,
-		ChainKeeper:  chainKeeper,
-		// TODO HV2: enable contractCaller when implemented in heimdall-v2
-		// contractCaller: contractCaller,
+		cdc:            cdc,
+		storeService:   storeService,
+		BankKeeper:     bankKeeper,
+		stakeKeeper:    stakeKeeper,
+		ChainKeeper:    chainKeeper,
+		contractCaller: contractCaller,
 
 		// HV2: Compared to v1, we are not using prefixes as they are handled by collections directly.
 		// Also, `sequences` is a KeySet (despite being implemented as a `Map` in v1) because it only holds keys (no values).

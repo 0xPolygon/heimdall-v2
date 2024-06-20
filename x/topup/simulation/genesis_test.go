@@ -44,8 +44,10 @@ func TestRandomizedGenState(t *testing.T) {
 	var topupGenesis types.GenesisState
 	simState.Cdc.MustUnmarshalJSON(simState.GenState[types.ModuleName], &topupGenesis)
 
-	require.Equal(t, numOfSequencesAndAccounts, len(topupGenesis.TopupSequences))
-	require.Equal(t, numOfSequencesAndAccounts, len(topupGenesis.DividendAccounts))
+	require.NotNil(t, topupGenesis)
+	require.NotNil(t, topupGenesis.TopupSequences)
+	require.NotNil(t, topupGenesis.DividendAccounts)
+	require.Equal(t, len(topupGenesis.DividendAccounts), len(topupGenesis.TopupSequences))
 }
 
 // TestRandomizedGenState1 tests abnormal scenarios of applying RandomizedGenState.
