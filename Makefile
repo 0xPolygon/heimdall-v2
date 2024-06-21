@@ -19,6 +19,9 @@ GOLANG_CROSS_VERSION  ?= v1.21.0
 clean:
 	rm -rf build
 
+test:
+	go test  -v ./...
+
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
@@ -58,6 +61,7 @@ mock:
 	# TODO HV2: enrich the mockgen command with all other modules' mocks
 	go install github.com/golang/mock/mockgen@latest
 	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
+	mockgen -source=x/stake/types/expected_keepers.go -destination=x/stake/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -destination=helper/mocks/mock_http_client.go.go -package=mocks --source=./helper/util.go HTTPClient
 	go install github.com/vektra/mockery/v2/...@latest
 	cd helper && mockery --name IContractCaller  --output ./mocks --filename=mock_contract_caller.go
@@ -121,6 +125,7 @@ help:
 	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
 	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
 	@echo "  clean               	- Delete build folder."
+	@echo "  test               	- Run the tests."
 	@echo "  mock                	- Generate mocks."
 	@echo "  proto-all           	- Format, lint and generate proto files."
 	@echo "  proto-format        	- Format proto files."

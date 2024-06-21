@@ -44,8 +44,8 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
 	require.NoError(err)
 
-	_, ok := keeper.GetValidatorFromValID(ctx, uint64(1))
-	require.False(false, ok, "Should not add validator")
+	_, err = keeper.GetValidatorFromValID(ctx, uint64(1))
+	require.NotNilf(err, "Should not add validator")
 }
 
 // TODO HV2: Add negative test cases as well

@@ -1,8 +1,7 @@
 package keeper_test
 
 import (
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/golang/mock/gomock"
 	"math/rand"
 	"strings"
 	"testing"
@@ -20,6 +19,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
@@ -45,7 +46,7 @@ type KeeperTestSuite struct {
 	stakeKeeper *stakeKeeper.Keeper
 
 	contractCaller   *mocks.IContractCaller
-	checkpointKeeper *testUtil.CheckpointKeeperMock
+	checkpointKeeper *testUtil.MockCheckpointKeeper
 	cmKeeper         *cmKeeper.Keeper
 	queryClient      stakeTypes.QueryClient
 	msgServer        stakeTypes.MsgServer
@@ -67,7 +68,9 @@ func (s *KeeperTestSuite) SetupTest() {
 	err := cmk.SetParams(ctx, cmTypes.DefaultParams())
 	s.Require().NoError(err)
 
-	s.checkpointKeeper = &testUtil.CheckpointKeeperMock{AckCount: uint64(0)}
+	ctrl := gomock.NewController(s.T())
+	defer ctrl.Finish()
+	s.checkpointKeeper = testUtil.NewMockCheckpointKeeper(ctrl)
 
 	keeper := stakeKeeper.NewKeeper(
 		encCfg.Codec,
@@ -205,6 +208,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	require.LessOrEqual(6, len(totalValidators), "Total Validators should be six.")
 
 	// check current validators
+	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(0)).Times(1)
 	currentValidators := keeper.GetCurrentValidators(ctx)
 	require.LessOrEqual(5, len(currentValidators), "Current Validators should be five.")
 }
@@ -429,12 +433,12 @@ func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 
 	// Test ActCount = 0
-	s.checkpointKeeper.AckCount = 0
+	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(0)).Times(1)
 
 	valActCount0 := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(valActCount0), 4)
 
-	s.checkpointKeeper.AckCount = 20
+	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(0)).Times(20)
 
 	validators := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(validators), 4)

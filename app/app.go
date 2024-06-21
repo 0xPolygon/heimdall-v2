@@ -3,10 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/0xPolygon/heimdall-v2/x/stake"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"io"
 	"os"
 	"path/filepath"
@@ -24,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
@@ -71,6 +68,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -319,7 +319,6 @@ func NewHeimdallApp(
 	app.StakeKeeper = stakeKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
-		"",
 		// TODO HV2: replace nil with checkpoint keeper when implemented
 		nil,
 		app.ChainManagerKeeper,
@@ -335,7 +334,7 @@ func NewHeimdallApp(
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
-		stake.NewAppModule(appCodec, app.StakeKeeper, app.caller, app.GetSubspace(stakingtypes.ModuleName)),
+		stake.NewAppModule(app.StakeKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules

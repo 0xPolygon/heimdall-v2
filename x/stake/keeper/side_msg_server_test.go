@@ -3,6 +3,7 @@ package keeper_test
 import (
 	"encoding/json"
 	"errors"
+	"github.com/golang/mock/gomock"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -1098,7 +1099,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 
 		actualResult, err := keeper.GetValidatorFromValID(ctx, validatorId)
 		require.Nil(err, "Should add validator")
-		require.NotNil(actualResult, "got %v", actualResult)
+		require.NotNilf(actualResult, "got %v", actualResult)
 	})
 
 	s.Run("Replay", func() {
@@ -1243,7 +1244,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 		currentVals := keeper.GetCurrentValidators(ctx)
 		require.Equal(4, len(currentVals), "No of current validators should exist before epoch passes")
 
-		s.checkpointKeeper.AckCount = 20
+		s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(20)).Times(1)
 		currentVals = keeper.GetCurrentValidators(ctx)
 		require.Equal(3, len(currentVals), "No of current validators should reduce after epoch passes")
 	})

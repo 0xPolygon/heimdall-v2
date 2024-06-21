@@ -160,7 +160,7 @@ func TestRunMigrations(t *testing.T) {
 					"auth":         auth.AppModule{}.ConsensusVersion(),
 					"distribution": distribution.AppModule{}.ConsensusVersion(),
 					"gov":          gov.AppModule{}.ConsensusVersion(),
-					// TODO HV2: uncomment when implemented
+					// TODO HV2: do we need to add ConsensusVersion for all custom modules?
 					// "stake":      stake.AppModule{}.ConsensusVersion(),
 					// "bor": bor.AppModule{}.ConsensusVersion(),
 					// "clerk": clerk.AppModule{}.ConsensusVersion(),
@@ -207,7 +207,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 			"auth":         auth.AppModule{}.ConsensusVersion(),
 			"distribution": distribution.AppModule{}.ConsensusVersion(),
 			"gov":          gov.AppModule{}.ConsensusVersion(),
-			// TODO HV2: uncomment when implemented
+			// TODO HV2: do we need to add ConsensusVersion for all custom modules?
 			// "stake":      stake.AppModule{}.ConsensusVersion(),
 			// "bor": bor.AppModule{}.ConsensusVersion(),
 			// "clerk": clerk.AppModule{}.ConsensusVersion(),

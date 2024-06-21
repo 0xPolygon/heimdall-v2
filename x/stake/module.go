@@ -41,11 +41,11 @@ type AppModuleBasic struct {
 // AppModule implements an application module for the stake module.
 type AppModule struct {
 	keeper         keeper.Keeper
-	contractCaller helper.IContractCaller
+	contractCaller helper.ContractCaller
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
+func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
 	return AppModule{
 		keeper:         keeper,
 		contractCaller: contractCaller,
