@@ -1,6 +1,6 @@
 package types
 
-/* TODO HV2: what to do with this file? Delete or enable it
+/* TODO HV2: @Vaibhav enable and fix the tests
 
 import (
 	"fmt"

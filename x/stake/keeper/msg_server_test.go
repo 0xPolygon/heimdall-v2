@@ -48,7 +48,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	require.NotNilf(err, "Should not add validator")
 }
 
-// TODO HV2: Add negative test cases as well
+// TODO HV2: @Vaibhav add negative test cases as well
 //  e.g. ValidatorJoin fails when validator already exists, or it has a duplicate ID, etc.
 
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
@@ -219,7 +219,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 }
 
 func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
-	/* TODO HV2: topup is available, hence this test has to be fixed and enabled. With real data (e.g. not "123" as a valid hash)
+	/* TODO HV2: @Vaibhav topup is available, hence this test has to be fixed and enabled. With real data (e.g. not "123" as a valid hash)
 	ctx, msgServer, keeper,require := s.ctx, s.msgServer, s.stakeKeeper,s.Require()
 
 	pubKey := hmTypes.NewPubKey([]byte{123})

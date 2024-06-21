@@ -93,7 +93,7 @@ func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwrunt
 // GetTxCmd returns the root tx command for the stake module.
 func (am AppModule) GetTxCmd() *cobra.Command {
 	return nil
-	// TODO HV2 implement the cli
+	// TODO HV2: @Vaibhav implement the cli
 	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 
@@ -137,7 +137,7 @@ func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error
 }
 
 func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
-	// TODO HV2: implement stakeSimulation
+	// TODO HV2: @Vaibhav implement stakeSimulation
 	// stakeSimulation.RandomizeGenState(simState)
 }
 

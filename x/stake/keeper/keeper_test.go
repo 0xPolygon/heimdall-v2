@@ -213,7 +213,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	require.LessOrEqual(5, len(currentValidators), "Current Validators should be five.")
 }
 
-// TODO HV2 enable and eventually fix this test when checkpoint is merged
+// TODO HV2: @Vaibhav enable and fix this test (you can use the checkpoint mock from the suite)
 /*
 func (s *KeeperTestSuite) TestCurrentValidator() {
 	type TestDataItem struct {

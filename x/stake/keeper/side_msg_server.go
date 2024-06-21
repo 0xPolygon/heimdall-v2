@@ -391,7 +391,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return hmModule.Vote_VOTE_NO
 	}
 
-	// TODO HV2: these two are repeated over 2 or 3 handlers. Consider factoring it out into a helper function
+	// TODO HV2: @Vaibhav these two are repeated over 2 or 3 handlers. Refactor it out into a helper function
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		s.k.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
@@ -486,7 +486,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// Add Validator signing info. It is required for slashing module
 	s.k.Logger(ctx).Debug("adding signing info for new validator")
 
-	/* TODO HV2 PLease check whether we need the following code or not (it belongs to slashing in v1)
+	/* TODO HV2: @Vaibhav check whether we need the following code or not (it belongs to slashing in v1). If not, remove
 	valSigningInfo := hmTypes.NewValidatorSigningInfo(newValidator.ID, ctx.BlockHeight(), int64(0), int64(0))
 	if err = s.k.AddValidatorSigningInfo(ctx, newValidator.ID, valSigningInfo); err != nil {
 		s.k.Logger(ctx).Error("Unable to add validator signing info to state", "valSigningInfo", valSigningInfo.String(), "error", err)
@@ -688,7 +688,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	// Move heimdall fee to new signer
 
-	/* TODO HV2: enable this
+	/* TODO HV2: @Vaibhav enable this
 	// check if fee is already withdrawn
 	coins := s.k.GetCoins(ctx, oldValidator.Signer)
 

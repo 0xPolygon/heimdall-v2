@@ -96,7 +96,7 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.V
 
 func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error) {
 	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator cosmosTypes.ValidatorI) bool {
-		// TODO HV2: Will this result in inconsistent behaviour?
+		// TODO HV2: @Vaibhav will this result in inconsistent behaviour?
 		//  Given that we have our own validator definition, I think we ought to be using that and not what's defined in cosmos.
 		totalPower += validator.GetBondedTokens().Int64()
 		return true
@@ -415,7 +415,7 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
 func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
-	// TODO HV2 Please how to use the stop parameter here
+	// TODO HV2: @Vaibhav check how to use the stop parameter here and eventually update/delete this comment
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
