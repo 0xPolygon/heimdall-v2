@@ -2,15 +2,15 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// InitGenesis sets validator information for genesis.
-func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res []abci.ValidatorUpdate) {
+// InitGenesis sets validator information for genesis in x/stake module
+func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	ctx = sdk.UnwrapSDKContext(ctx)
 
 	// get current val set
@@ -28,8 +28,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 		for _, validator := range resultValSet.Validators {
 			// Add individual validator to state
 			if err := k.AddValidator(ctx, *validator); err != nil {
-				k.Logger(ctx).Error("error caused inside InitGenesis fn", "error", err)
-				panic(err)
+				panic(fmt.Errorf("error adding the validator while initializing stake genesis: %w", err))
 			}
 
 			// update validator set in store
@@ -37,9 +36,12 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 				panic(err)
 			}
 
-			// increment accum if init validator set
+			// increment accum if initializing the validator set
 			if len(data.CurrentValidatorSet.Validators) == 0 {
-				k.IncrementAccum(ctx, 1)
+				err := k.IncrementAccum(ctx, 1)
+				if err != nil {
+					panic(fmt.Errorf("error incrementing the validators set accum while initializing stake genesis: %w", err))
+				}
 			}
 		}
 	}
@@ -47,15 +49,13 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) (res 
 	for _, sequence := range data.StakingSequences {
 		err := k.SetStakingSequence(ctx, sequence)
 		if err != nil {
-			k.Logger(ctx).Error("error in setting staking sequence", "error", err)
-			panic(err)
+			panic(fmt.Errorf("error in setting staking sequence while initializing stake genesis: %w", err))
 		}
 	}
-	return res
 }
 
-// ExportGenesis returns a GenesisState for a given context and keeper. The
-// GenesisState will contain the validators and the staking sequences
+// ExportGenesis returns a GenesisState for the given stake context and keeper.
+// The GenesisState will contain the validators and the staking sequences
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	validatorSet, err := k.GetValidatorSet(ctx)
@@ -64,9 +64,15 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return nil
 	}
 
+	sequences, err := k.GetStakingSequences(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching staking sequences from store", "err", err)
+		return nil
+	}
+
 	return &types.GenesisState{
-		k.GetAllValidators(ctx),
-		validatorSet,
-		k.GetStakingSequences(ctx),
+		Validators:          k.GetAllValidators(ctx),
+		CurrentValidatorSet: validatorSet,
+		StakingSequences:    sequences,
 	}
 }

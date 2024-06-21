@@ -1,25 +1,16 @@
 package keeper_test
 
 import (
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"math/rand"
 	"strings"
 	"testing"
 	"time"
 
+	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/stretchr/testify/suite"
-
-	storetypes "cosmossdk.io/store/types"
-
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	testUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -29,27 +20,33 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/stretchr/testify/suite"
+
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	testUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var (
-	pk1      = secp256k1.GenPrivKey().PubKey()
+	pk       = secp256k1.GenPrivKey().PubKey()
 	pk2      = secp256k1.GenPrivKey().PubKey()
-	pk3      = secp256k1.GenPrivKey().PubKey()
-	valAddr1 = sdk.ValAddress(pk1.Address())
 	valAddr2 = sdk.ValAddress(pk2.Address())
-	valAddr3 = sdk.ValAddress(pk3.Address())
 )
 
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx              sdk.Context
+	ctx         sdk.Context
+	stakeKeeper *stakeKeeper.Keeper
+
 	contractCaller   *mocks.IContractCaller
 	checkpointKeeper *testUtil.CheckpointKeeperMock
 	cmKeeper         *cmKeeper.Keeper
-	stakeKeeper      *stakeKeeper.Keeper
 	queryClient      stakeTypes.QueryClient
 	msgServer        stakeTypes.MsgServer
 	sideMsgCfg       hmModule.SideTxConfigurator
@@ -65,33 +62,34 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.contractCaller = &mocks.IContractCaller{}
 
-	cmKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService, "")
-	_ = cmKeeper.SetParams(ctx, cmTypes.DefaultParams())
+	authority := authtypes.NewModuleAddress(govtypes.ModuleName)
+	cmk := cmKeeper.NewKeeper(encCfg.Codec, storeService, authority.String())
+	err := cmk.SetParams(ctx, cmTypes.DefaultParams())
+	s.Require().NoError(err)
 
 	s.checkpointKeeper = &testUtil.CheckpointKeeperMock{AckCount: uint64(0)}
 
 	keeper := stakeKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.checkpointKeeper,
-		&cmKeeper,
+		cmk,
 		addrCodec.NewHexCodec(),
 		s.contractCaller,
 	)
 
 	s.ctx = ctx
-	s.cmKeeper = &cmKeeper
-	s.stakeKeeper = keeper
+	s.cmKeeper = &cmk
+	s.stakeKeeper = &keeper
 
 	stakeTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	stakeTypes.RegisterQueryServer(queryHelper, stakeKeeper.Querier{Keeper: keeper})
+	stakeTypes.RegisterQueryServer(queryHelper, stakeKeeper.NewQueryServer(&keeper))
 	s.queryClient = stakeTypes.NewQueryClient(queryHelper)
-	s.msgServer = stakeKeeper.NewMsgServerImpl(keeper)
+	s.msgServer = stakeKeeper.NewMsgServerImpl(&keeper)
 
 	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
-	types.RegisterSideMsgServer(s.sideMsgCfg, stakeKeeper.NewSideMsgServerImpl(keeper))
+	types.RegisterSideMsgServer(s.sideMsgCfg, stakeKeeper.NewSideMsgServerImpl(&keeper))
 
 }
 
@@ -118,13 +116,13 @@ func (s *KeeperTestSuite) TestValidator() {
 			0,
 			1,
 			int64(simulation.RandIntBetween(r1, 10, 100)), // power
-			pk1,
+			pk,
 			accounts[i].Address.String(),
 		)
 
 		require.NoError(err)
 
-		err := keeper.AddValidator(ctx, *validators[i])
+		err = keeper.AddValidator(ctx, *validators[i])
 		require.NoErrorf(err, "Error while adding validator to store")
 	}
 
@@ -136,8 +134,8 @@ func (s *KeeperTestSuite) TestValidator() {
 	require.NoErrorf(err, "Error while fetching Validator")
 
 	// get signer address mapped with validatorId
-	mappedSignerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
-	require.Truef(isMapped, "Signer Address not mapped to Validator Id")
+	mappedSignerAddress, err := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
+	require.Nilf(err, "Signer Address not mapped to Validator Id")
 
 	// check if validator matches in state
 	require.Equal(valInfo, *validators[valId], "Validators in state doesn't match")
@@ -163,7 +161,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 			0,
 			1,
 			int64(simulation.RandIntBetween(r1, 10, 100)), // power
-			pk1,
+			pk,
 			accounts[i].Address.String(),
 		)
 
@@ -173,7 +171,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 		require.NoErrorf(err, "Error while adding validator to store")
 	}
 
-	// Fetch Validator Info from Store
+	// fetch validator info from store
 	valInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	require.NoErrorf(err, "Error while fetching Validator Info from store")
 
@@ -198,8 +196,8 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	require.Equal(validators[0].VotingPower, updatedSignerValInfo.VotingPower, "VotingPower of updated signer should match with prev signer VotingPower")
 
 	// check if validatorId is mapped to updated signer
-	signerAddress, isMapped := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
-	require.Truef(isMapped, "Signer Address not mapped to Validator Id")
+	signerAddress, err := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
+	require.Nilf(err, "Signer Address not mapped to Validator Id")
 	require.Equal(addr2, strings.ToLower(signerAddress.String()), "Validator ID should be mapped to Updated Signer Address")
 
 	// check total validators
@@ -211,7 +209,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	require.LessOrEqual(5, len(currentValidators), "Current Validators should be five.")
 }
 
-// TODO HV2
+// TODO HV2 enable and eventually fix this test when checkpoint is merged
 /*
 func (s *KeeperTestSuite) TestCurrentValidator() {
 	type TestDataItem struct {
@@ -316,7 +314,7 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 
 	require.NoError(err)
 
-	validators := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
+	validators := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
 	prevValSet := initValSet.Copy()
 
 	valToBeAdded := validators[0]
@@ -344,14 +342,15 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 	initValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
-	keeper.IncrementAccum(ctx, 2)
+	err = keeper.IncrementAccum(ctx, 2)
+	require.NoError(err)
 
 	prevValSet := initValSet.Copy()
 	currentValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
 	valToUpdate := currentValSet.Validators[0]
-	newSigner := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
+	newSigner := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
 
 	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
 	require.NoError(err)
@@ -408,8 +407,8 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
 
-	valInfo, ok := keeper.GetValidatorFromValID(ctx, validators[0].ValId)
-	require.Equal(ok, true)
+	valInfo, err := keeper.GetValidatorFromValID(ctx, validators[0].ValId)
+	require.NoError(err)
 	require.Equal(validators[0], valInfo)
 }
 
@@ -419,8 +418,8 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 	validators := keeper.GetCurrentValidators(ctx)
 
-	lastUpdated, ok := keeper.GetLastUpdated(ctx, validators[0].ValId)
-	require.Equal(ok, true)
+	lastUpdated, err := keeper.GetLastUpdated(ctx, validators[0].ValId)
+	require.NoError(err)
 	require.Equal(validators[0].LastUpdated, lastUpdated)
 }
 
@@ -479,7 +478,8 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 
 	require.Equal(initMilestoneValSetProp, initCheckpointValSetProp)
 
-	keeper.IncrementAccum(ctx, 1)
+	err = keeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
 
 	initMilestoneValSet, err = keeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
@@ -497,10 +497,12 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 
 	keeper.MilestoneIncrementAccum(ctx, 1)
 
+	require.NotNil(initValSet)
 	initValSet.IncrementProposerPriority(1)
 	_proposer := initValSet.Proposer
 
 	currentValSet, err := keeper.GetMilestoneValidatorSet(ctx)
+	require.NotNil(currentValSet)
 	proposer := currentValSet.Proposer
 
 	require.Equal(_proposer, proposer)
@@ -521,7 +523,7 @@ func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
 	require.NoError(err)
 
 	valToUpdate := currentValSet.Validators[0]
-	newSigner := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
+	newSigner := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
 
 	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
 	require.NoError(err)

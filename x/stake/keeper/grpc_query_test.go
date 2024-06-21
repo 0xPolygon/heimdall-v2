@@ -5,12 +5,13 @@ import (
 	"math/rand"
 	"time"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
@@ -22,7 +23,6 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	require.NoError(err)
 	require.Equal(len(res.ValidatorSet.Validators), 0)
 
-	// Set the validator set
 	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 
 	req = &types.QueryCurrentValidatorSetRequest{}
@@ -30,7 +30,6 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 
 	require.NoError(err)
 
-	// check response is not nil
 	require.NotNil(res)
 	require.Equal(res.ValidatorSet.Proposer.GetSigner(), validatorSet.Proposer.GetSigner())
 	require.Equal(len(res.ValidatorSet.Validators), len(validatorSet.Validators))
@@ -56,10 +55,8 @@ func (s *KeeperTestSuite) TestHandleQuerySigner() {
 	}
 
 	res, err = queryClient.Signer(ctx, req)
-	// check no error found
 	require.NoError(err)
 
-	// check response is not nil
 	require.Equal(res.Validator.Signer, validators[0].Signer)
 	require.Equal(res.Validator.StartEpoch, validators[0].StartEpoch)
 	require.Equal(res.Validator.EndEpoch, validators[0].EndEpoch)
@@ -98,7 +95,6 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 
 	require.NoError(err)
 
-	// check response is not nil
 	require.Equal(res.Validator.Signer, validators[0].Signer)
 	require.Equal(res.Validator.StartEpoch, validators[0].StartEpoch)
 	require.Equal(res.Validator.EndEpoch, validators[0].EndEpoch)
@@ -118,7 +114,6 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	res, err := queryClient.ValidatorStatus(ctx, req)
 	require.NoError(err)
 
-	// check response is not nil
 	require.NotNil(res)
 	require.True(res.Status)
 
@@ -126,7 +121,6 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 		ValAddress: common.Address{}.String(),
 	}
 	res, err = queryClient.ValidatorStatus(ctx, req)
-	// check no error found
 	require.Nil(err)
 	require.False(res.Status)
 
@@ -143,7 +137,7 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 
 	txHash := hmTypes.TxHash{Hash: make([]byte, 32)}
 
-	txreceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
+	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	logIndex := uint64(simulation.RandIntBetween(r1, 0, 100))
 
@@ -152,19 +146,17 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 		LogIndex: logIndex,
 	}
 
-	sequence := new(big.Int).Mul(txreceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(txReceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
 
-	keeper.SetStakingSequence(ctx, sequence.String())
+	err = keeper.SetStakingSequence(ctx, sequence.String())
+	require.NoError(err)
 
-	s.contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txreceipt, nil)
+	s.contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 	res, err := queryClient.StakingSequence(ctx, req)
 
-	// check no error found
 	require.NoError(err)
-
-	// check response is not nil
 	require.NotNil(res)
 	require.True(res.Status)
 }

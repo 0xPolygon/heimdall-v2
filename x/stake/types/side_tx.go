@@ -1,19 +1,20 @@
 package types
 
 import (
-	context "context"
-	fmt "fmt"
+	"context"
+	"fmt"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc"
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	grpc "google.golang.org/grpc"
 )
 
 type SideMsgServer interface {
-	//SideHandler to register specific sideHandler based on methodName
+	// SideTxHandler to register specific sideHandler based on methodName
 	SideTxHandler(methodName string) hmModule.SideTxHandler
 
-	//PostHandler to register specific postHandler based on methodName
+	// PostTxHandler to register specific postHandler based on methodName
 	PostTxHandler(methodName string) hmModule.PostTxHandler
 }
 
@@ -48,8 +49,15 @@ func RegisterSideMsgServer(sideCfg hmModule.SideTxConfigurator, srv SideMsgServe
 			continue
 		}
 
-		sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
-		sideCfg.RegisterPostHandler(requestTypeName, postHandler)
+		err := sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
+		if err != nil {
+			return
+		}
+
+		err = sideCfg.RegisterPostHandler(requestTypeName, postHandler)
+		if err != nil {
+			return
+		}
 	}
 }
 

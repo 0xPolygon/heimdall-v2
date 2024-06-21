@@ -5,11 +5,11 @@ import (
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 var (

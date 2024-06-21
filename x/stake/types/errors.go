@@ -9,7 +9,7 @@ var (
 	ErrInvalidMsg = errorsmod.Register(ModuleName, 2, "invalid message")
 
 	// ErrOldTx is returned if the respective stake related tx from L1 has already been processed
-	ErrOldTx = errorsmod.Register(ModuleName, 3, "old tx, laready processed")
+	ErrOldTx = errorsmod.Register(ModuleName, 3, "old tx, already processed")
 
 	// ErrNoValidator is returned if the respective validator doesn't exist
 	ErrNoValidator = errorsmod.Register(ModuleName, 4, "no respective validator found")

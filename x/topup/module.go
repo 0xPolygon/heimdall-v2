@@ -37,6 +37,7 @@ type AppModule struct {
 	contractCaller helper.ContractCaller
 }
 
+// NewAppModule creates a new AppModule object
 func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
 	return AppModule{
 		keeper:         keeper,

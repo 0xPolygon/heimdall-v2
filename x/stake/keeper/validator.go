@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"cosmossdk.io/collections"
 	"errors"
 	"fmt"
 	"strings"
@@ -21,6 +22,7 @@ func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) er
 	err := k.validators.Set(ctx, validator.Signer, validator)
 	if err != nil {
 		k.Logger(ctx).Error("error while setting the validator in store", "err", err)
+		return err
 	}
 
 	k.Logger(ctx).Debug("Validator stored", "key", validator.Signer, "validator", validator.String())
@@ -48,12 +50,10 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 
 // GetValidatorInfo returns the validator info given its address
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
-	address = strings.ToLower(address)
-
-	validator, err = k.validators.Get(ctx, address)
+	validator, err = k.validators.Get(ctx, strings.ToLower(address))
 
 	if err != nil {
-		return validator, errors.New(fmt.Sprintf("error while fetching the validator from the store", "err", err))
+		return validator, errors.New(fmt.Sprintf("error while fetching the validator from the store %v", err))
 	}
 
 	return validator, nil
@@ -85,7 +85,7 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.V
 	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
 		// check if validator is valid for current epoch
 		if validator.IsCurrentValidator(ackCount) {
-			// append if validator is current validiator
+			// append if validator is current validator
 			validators = append(validators, validator)
 		}
 		return nil
@@ -94,11 +94,16 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.V
 	return
 }
 
-func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64) {
-	k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator cosmosTypes.ValidatorI) bool {
+func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error) {
+	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator cosmosTypes.ValidatorI) bool {
+		// TODO HV2: Will this result in inconsistent behaviour?
+		//  Given that we have our own validator definition, I think we ought to be using that and not what's defined in cosmos.
 		totalPower += validator.GetBondedTokens().Int64()
 		return true
 	})
+	if err != nil {
+		return 0, err
+	}
 
 	return
 }
@@ -168,7 +173,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 }
 
 // UpdateSigner updates validator fields in store
-func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *codecTypes.Any, prevSigner string) error {
+func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey *codecTypes.Any, prevSigner string) error {
 	// get old validator from state and make power 0
 	validator, err := k.GetValidatorInfo(ctx, prevSigner)
 	if err != nil {
@@ -188,7 +193,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubkey *
 
 	//update signer in prev validator
 	validator.Signer = newSigner
-	validator.PubKey = newPubkey
+	validator.PubKey = newPubKey
 	validator.VotingPower = validatorPower
 
 	// add updated validator to store with new key
@@ -244,7 +249,7 @@ func (k *Keeper) IncrementAccum(ctx context.Context, times int) error {
 	// increment accum
 	validatorSet.IncrementProposerPriority(times)
 
-	if err := k.UpdateValidatorSetInStore(ctx, validatorSet); err != nil {
+	if err = k.UpdateValidatorSetInStore(ctx, validatorSet); err != nil {
 		k.Logger(ctx).Error("error in updating validator set in store", "error", err)
 		return err
 	}
@@ -268,7 +273,7 @@ func (k *Keeper) GetNextProposer(ctx context.Context) *types.Validator {
 	return copiedValidatorSet.GetProposer()
 }
 
-// GetCurrentProposer returns current proposer
+// GetCurrentProposer returns the current proposer from the validator set
 func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 	// get validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
@@ -277,7 +282,6 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 		return nil
 	}
 
-	// return get proposer
 	return validatorSet.GetProposer()
 }
 
@@ -289,48 +293,48 @@ func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, s
 	}
 }
 
-// GetSignerFromValidatorID get signer address from validator ID
-func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (common.Address, bool) {
+// GetSignerFromValidatorID gets the signer address from the validator id
+func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (common.Address, error) {
 	signer, err := k.signer.Get(ctx, valID)
 	if err != nil {
 		k.Logger(ctx).Error("error while getting fetching signer address", "error", err)
-		return common.Address{}, false
+		return common.Address{}, err
 	}
 
 	// return address from bytes
-	return common.Address(common.FromHex(signer)), true
+	return common.Address(common.FromHex(signer)), nil
 }
 
 // GetValidatorFromValID returns signer from validator ID
-func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (validator types.Validator, ok bool) {
-	signerAddr, ok := k.GetSignerFromValidatorID(ctx, valID)
-	if !ok {
-		return validator, ok
+func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (validator types.Validator, err error) {
+	signerAddr, err := k.GetSignerFromValidatorID(ctx, valID)
+	if err != nil {
+		return validator, err
 	}
 
 	// query for validator signer address
-	validator, err := k.GetValidatorInfo(ctx, signerAddr.String())
+	validator, err = k.GetValidatorInfo(ctx, signerAddr.String())
 	if err != nil {
-		return validator, false
+		return validator, err
 	}
 
-	return validator, true
+	return validator, nil
 }
 
 // GetLastUpdated get last updated at for validator
-func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt string, found bool) {
+func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt string, err error) {
 	// get validator
-	validator, ok := k.GetValidatorFromValID(ctx, valID)
-	if !ok {
-		return "", false
+	validator, err := k.GetValidatorFromValID(ctx, valID)
+	if err != nil {
+		return "", err
 	}
 
-	return validator.LastUpdated, true
+	return validator.LastUpdated, nil
 }
 
 // SetStakingSequence sets staking sequence
 func (k *Keeper) SetStakingSequence(ctx context.Context, sequence string) error {
-	return k.sequences.Set(ctx, sequence, types.DefaultValue)
+	return k.sequences.Set(ctx, sequence, true)
 }
 
 // HasStakingSequence checks if staking sequence already exists
@@ -345,27 +349,37 @@ func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
 }
 
 // GetStakingSequences returns all the sequences appended together
-func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string) {
-	k.IterateStakingSequencesAndApplyFn(ctx, func(sequence string) error {
+func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string, err error) {
+	err = k.IterateStakingSequencesAndApplyFn(ctx, func(sequence string) error {
 		sequences = append(sequences, sequence)
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	return
 }
 
 // IterateStakingSequencesAndApplyFn iterates staking sequences and applies the given function.
-func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(sequence string) error) {
+func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(sequence string) error) (e error) {
 	// get staking sequence iterator
 	iterator, err := k.sequences.Iterate(ctx, nil)
-	defer iterator.Close()
+	defer func(iterator collections.Iterator[string, bool]) {
+		err := iterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("error in closing the iterator", "error", err)
+			e = err
+		}
+	}(iterator)
 
 	if err != nil {
 		k.Logger(ctx).Error("error in getting iterator for validators")
 		return
 	}
 
-	// loop through validators to get valid validators
+	// loop through validators to get valid value
 	for ; iterator.Valid(); iterator.Next() {
 		sequence, err := iterator.Key()
 		if err != nil {
@@ -377,6 +391,8 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 			return
 		}
 	}
+
+	return
 }
 
 // GetValIdFromAddress returns a validator's id given its address string
@@ -384,29 +400,26 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 	// get ack count
 	ackCount := k.checkpointKeeper.GetACKCount(ctx)
 
-	address = strings.ToLower(address)
-
-	// get validator info
-	validator, err := k.GetValidatorInfo(ctx, address)
+	validator, err := k.GetValidatorInfo(ctx, strings.ToLower(address))
 	if err != nil {
 		return 0, err
 	}
 
 	// check if validator is current validator
-	if validator.IsCurrentValidator(ackCount) {
-		return validator.ValId, nil
+	if !validator.IsCurrentValidator(ackCount) {
+		return 0, errors.New("address not found in current validator set")
 	}
 
-	return 0, errors.New("Address not found in current validator set")
+	return validator.ValId, nil
 }
 
-// TODO HV2 Please how to use the stop parameter here
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
 func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
+	// TODO HV2 Please how to use the stop parameter here
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
-		return nil
+		return err
 	}
 
 	for _, v := range currentValidatorSet.Validators {

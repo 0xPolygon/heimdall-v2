@@ -5,23 +5,30 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
-// Querier is used as Keeper will have duplicate methods if used directly, and gRPC names take precedence over keeper
-type Querier struct {
-	*Keeper
+var _ types.QueryServer = queryServer{}
+
+type queryServer struct {
+	k *Keeper
 }
 
-var _ types.QueryServer = Querier{}
+// NewQueryServer creates a new querier for stake clients.
+// It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
+func NewQueryServer(k *Keeper) types.QueryServer {
+	return queryServer{
+		k: k,
+	}
+}
 
 // CurrentValidatorSet queries all validators which are currently active in validator set
-func (q Querier) CurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
-	validatorSet, err := q.GetValidatorSet(ctx)
+func (q queryServer) CurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
+	validatorSet, err := q.k.GetValidatorSet(ctx)
 
 	return &types.QueryCurrentValidatorSetResponse{
 		ValidatorSet: validatorSet,
@@ -29,73 +36,79 @@ func (q Querier) CurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentV
 }
 
 // Signer queries validator info for given validator address.
-func (q Querier) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
+func (q queryServer) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	validator, err := q.GetValidatorInfo(ctx, req.ValAddress)
+	validator, err := q.k.GetValidatorInfo(ctx, req.ValAddress)
 
 	if err != nil {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given address", req.ValAddress, "err", err))
+		return nil, status.Errorf(codes.NotFound, "error in getting validator corresponding to the given address %s", req.ValAddress)
 	}
 
 	return &types.QuerySignerResponse{Validator: validator}, nil
 }
 
 // Validator queries validator info for a given validator id.
-func (q Querier) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
+func (q queryServer) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	validator, ok := q.GetValidatorFromValID(ctx, req.Id)
+	validator, err := q.k.GetValidatorFromValID(ctx, req.Id)
 
-	if !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given id", req.Id))
+	if err != nil {
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given id %d", req.Id))
 	}
 
 	return &types.QueryValidatorResponse{Validator: validator}, nil
 }
 
 // ValidatorStatus queries validator status for given validator address.
-func (q Querier) ValidatorStatus(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
+func (q queryServer) ValidatorStatus(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	return &types.QueryValidatorStatusResponse{Status: q.IsCurrentValidatorByAddress(ctx, req.ValAddress)}, nil
+	return &types.QueryValidatorStatusResponse{Status: q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)}, nil
 }
 
 // TotalPower queries the total power of a validator set
-func (q Querier) TotalPower(ctx context.Context, _ *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
-	totalPower := q.GetTotalPower(ctx)
+func (q queryServer) TotalPower(ctx context.Context, _ *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
+	totalPower, err := q.k.GetTotalPower(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	return &types.QueryTotalPowerResponse{TotalPower: totalPower}, nil
 }
 
 // StakingSequence queries for the staking sequence
-func (q Querier) StakingSequence(ctx context.Context, req *types.QueryStakingSequenceRequest) (*types.QueryStakingSequenceResponse, error) {
+func (q queryServer) StakingSequence(ctx context.Context, req *types.QueryStakingSequenceRequest) (*types.QueryStakingSequenceResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	chainParams, err := q.cmKeeper.GetParams(ctx)
+	chainParams, err := q.k.cmKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "chain params not found")
 	}
 
 	// get main tx receipt
-	receipt, err := q.IContractCaller.GetConfirmedTxReceipt(common.HexToHash(req.TxHash), chainParams.MainChainTxConfirmations)
-	if err != nil || receipt == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.HexToHash(req.TxHash), chainParams.MainChainTxConfirmations)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+	if receipt == nil {
+		return nil, status.Errorf(codes.NotFound, "receipt not found")
 	}
 
 	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
 
 	// check if incoming tx already exists
-	if !q.HasStakingSequence(ctx, sequence.String()) {
+	if !q.k.HasStakingSequence(ctx, sequence.String()) {
 		return &types.QueryStakingSequenceResponse{Status: false}, nil
 	}
 

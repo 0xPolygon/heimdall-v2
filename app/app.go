@@ -3,6 +3,10 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/0xPolygon/heimdall-v2/x/stake"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"io"
 	"os"
 	"path/filepath"
@@ -111,13 +115,13 @@ type HeimdallApp struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	// Custom Keepers
+	StakeKeeper        stakeKeeper.Keeper
+	TopupKeeper        topupKeeper.Keeper
+	ChainManagerKeeper chainmanagerkeeper.Keeper
 	// TODO HV2: uncomment when the keepers are implemented
-	// StakeKeeper stakekeeper.Keeper
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
-	TopupKeeper        topupKeeper.Keeper
-	ChainManagerKeeper chainmanagerkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
@@ -312,6 +316,17 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.StakeKeeper = stakeKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[stakingtypes.StoreKey]),
+		"",
+		// TODO HV2: replace nil with checkpoint keeper when implemented
+		nil,
+		app.ChainManagerKeeper,
+		address.HexCodec{},
+		&app.caller,
+	)
+
 	app.mm = module.NewManager(
 		// TODO HV2: add stake keeper once implemented
 		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
@@ -320,8 +335,7 @@ func NewHeimdallApp(
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
-		// TODO HV2: replace with our stake module
-		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		stake.NewAppModule(appCodec, app.StakeKeeper, app.caller, app.GetSubspace(stakingtypes.ModuleName)),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules

@@ -33,7 +33,7 @@ var (
 // ValidatorSet represent a set of *Validator at a given height.
 // The validators can be fetched by address or index.
 // The index is in order of .Address, so the indices are fixed
-// for all rounds of a given blockchain height - ie. the validators
+// for all rounds of a given blockchain height - i.e. the validators
 // are sorted by their address.
 // On the other hand, the .ProposerPriority of each validator and
 // the designated .GetProposer() of a set changes every round,
@@ -41,7 +41,7 @@ var (
 // NOTE: Not goroutine-safe.
 // NOTE: All get/set to validators should copy the value for safety.
 
-// NewValidatrSet initializes a ValidatorSet by copying over the
+// NewValidatorSet initializes a ValidatorSet by copying over the
 // values from `valz`, a list of Validators. If valz is nil or empty,
 // the new ValidatorSet will have an empty list of Validators.
 // The addresses of validators in `valz` must be unique otherwise the
@@ -59,7 +59,7 @@ func NewValidatorSet(valz []*Validator) *ValidatorSet {
 	return vals
 }
 
-// Nil or empty validator sets are invalid.
+// IsNilOrEmpty check if the validator set is nil or empty
 func (vals *ValidatorSet) IsNilOrEmpty() bool {
 	return vals == nil || len(vals.Validators) == 0
 }
@@ -73,8 +73,7 @@ func (vals *ValidatorSet) CopyIncrementProposerPriority(times int) *ValidatorSet
 }
 
 // IncrementProposerPriority increments ProposerPriority of each validator and updates the
-// proposer. Panics if validator set is empty.
-// `times` must be positive.
+// proposer. Panics if validator set is empty. `times` must be positive.
 func (vals *ValidatorSet) IncrementProposerPriority(times int) {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
@@ -162,20 +161,20 @@ func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 		panic("empty validator set")
 	}
 
-	max := int64(math.MinInt64)
-	min := int64(math.MaxInt64)
+	maxP := int64(math.MinInt64)
+	minP := int64(math.MaxInt64)
 
 	for _, v := range vals.Validators {
-		if v.ProposerPriority < min {
-			min = v.ProposerPriority
+		if v.ProposerPriority < minP {
+			minP = v.ProposerPriority
 		}
 
-		if v.ProposerPriority > max {
-			max = v.ProposerPriority
+		if v.ProposerPriority > maxP {
+			maxP = v.ProposerPriority
 		}
 	}
 
-	diff := max - min
+	diff := maxP - minP
 	if diff < 0 {
 		return -1 * diff
 	}
@@ -184,12 +183,12 @@ func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 }
 
 func (vals *ValidatorSet) getValWithMostPriority() *Validator {
-	var res *Validator
+	res := Validator{}
 	for _, val := range vals.Validators {
-		res = res.CompareProposerPriority(val)
+		res = *res.CompareProposerPriority(val)
 	}
 
-	return res
+	return &res
 }
 
 func (vals *ValidatorSet) shiftByAvgProposerPriority() {
@@ -204,7 +203,7 @@ func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	}
 }
 
-// Makes a copy of the validator list.
+// validatorListCopy makes a copy of the validator list.
 func validatorListCopy(valsList []*Validator) []*Validator {
 	if valsList == nil {
 		return nil
@@ -227,8 +226,7 @@ func (vals *ValidatorSet) Copy() *ValidatorSet {
 	}
 }
 
-// HasAddress returns true if address given is in the validator set, false -
-// otherwise.
+// HasAddress returns true if address given is in the validator set, false otherwise.
 func (vals *ValidatorSet) HasAddress(address string) bool {
 	idx := sort.Search(len(vals.Validators), func(i int) bool {
 		return strings.Compare(strings.ToLower(address), strings.ToLower(vals.Validators[i].Signer)) <= 0
@@ -286,7 +284,7 @@ func (vals *ValidatorSet) updateTotalVotingPower() {
 	vals.TotalVotingPower = sum
 }
 
-// TotalVotingPower returns the sum of the voting powers of all validators.
+// GetTotalVotingPower returns the sum of the voting powers of all validators.
 // It recomputes the total voting power if required.
 func (vals *ValidatorSet) GetTotalVotingPower() int64 {
 	if vals.TotalVotingPower == 0 {
@@ -335,13 +333,9 @@ func (vals *ValidatorSet) Iterate(fn func(index int, val *Validator) bool) {
 	}
 }
 
-// Checks changes against duplicates, splits the changes in updates and removals, sorts them by address.
-//
-// Returns:
-// updates, removals - the sorted lists of updates and removals
-// err - non-nil if duplicate entries or entries with negative voting power are seen
-//
-// No changes are made to 'origChanges'.
+// processChanges checks the changes against duplicates, splits the changes in updates and removals,
+// and sorts them by address. It returns: the sorted lists of updates and removals
+// and an error if duplicate entries or entries with negative voting power are seen
 func processChanges(origChanges []*Validator) (updates, removals []*Validator, err error) {
 	// Make a deep copy of the changes and sort by address.
 	changes := validatorListCopy(origChanges)
@@ -384,14 +378,12 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 	return updates, removals, err
 }
 
-// Verifies a list of updates against a validator set, making sure the allowed
+// verifyUpdates verifies a list of updates against a validator set, making sure the allowed
 // total voting power would not be exceeded if these updates would be applied to the set.
-//
 // Returns:
 // updatedTotalVotingPower - the new total voting power if these updates would be applied
 // numNewValidators - number of new validators
 // err - non-nil if the maximum allowed total voting power would be exceeded
-//
 // 'updates' should be a list of proper validator changes, i.e. they have been verified
 // by processChanges for duplicates and invalid values.
 // No changes are made to the validator set 'vals'.
@@ -424,9 +416,8 @@ func verifyUpdates(updates []*Validator, vals *ValidatorSet) (updatedTotalVoting
 	return updatedTotalVotingPower, numNewValidators, nil
 }
 
-// Computes the proposer priority for the validators not present in the set based on 'updatedTotalVotingPower'.
+// computeNewPriorities computes the proposer priority for the validators not present in the set based on 'updatedTotalVotingPower'.
 // Leaves unchanged the priorities of validators that are changed.
-//
 // 'updates' parameter must be a list of unique validators to be added or updated.
 // No changes are made to the validator set 'vals'.
 func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotalVotingPower int64) {
@@ -450,7 +441,7 @@ func computeNewPriorities(updates []*Validator, vals *ValidatorSet, updatedTotal
 	}
 }
 
-// Merges the vals' validator list with the updates list.
+// applyUpdates merges the validators list with the updates list.
 // When two elements with same address are seen, the one from updates is selected.
 // Expects updates to be a list of updates sorted by address with no duplicates or errors,
 // must have been validated with verifyUpdates() and priorities computed with computeNewPriorities().
@@ -490,7 +481,7 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 	vals.Validators = merged[:i]
 }
 
-// Checks that the validators to be removed are part of the validator set.
+// verifyRemovals checks that the validators to be removed are part of the validator set.
 // No changes are made to the validator set 'vals'.
 func verifyRemovals(deletes []*Validator, vals *ValidatorSet) error {
 	for _, valUpdate := range deletes {
@@ -509,8 +500,9 @@ func verifyRemovals(deletes []*Validator, vals *ValidatorSet) error {
 	return nil
 }
 
-// TODO HV2 PLEASE WRITE THE TESTCASE FOR IT
-// Removes the validators specified in 'deletes' from validator set 'vals'.
+// TODO HV2 Write a test case for this function
+
+// applyRemovals removes the validators specified in 'deletes' from validator set 'vals'.
 // Should not fail as verification has been done before.
 func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 	existing := vals.Validators
@@ -539,7 +531,7 @@ func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 	vals.Validators = merged[:i]
 }
 
-// Main function used by UpdateWithChangeSet() and NewValidatorSet().
+// updateWithChangeSet is the main function used by UpdateWithChangeSet() and NewValidatorSet().
 // If 'allowDeletes' is false then delete operations (identified by validators with voting power 0)
 // are not allowed and will trigger an error if present in 'changes'.
 // The 'allowDeletes' flag is set to false by NewValidatorSet() and to true by UpdateWithChangeSet().
@@ -607,21 +599,51 @@ func (vals *ValidatorSet) UpdateWithChangeSet(changes []*Validator) error {
 	return vals.updateWithChangeSet(changes, true)
 }
 
+// GetUpdatedValidators updates validators in validator set
+func GetUpdatedValidators(
+	currentSet *ValidatorSet,
+	validators []*Validator,
+	ackCount uint64,
+) []*Validator {
+	updates := make([]*Validator, 0, len(validators))
+
+	for _, v := range validators {
+		// create copy of validator
+		validator := v.Copy()
+
+		address := validator.Signer
+
+		_, val := currentSet.GetByAddress(address)
+		if val != nil && !validator.IsCurrentValidator(ackCount) {
+			// remove validator
+			validator.VotingPower = 0
+			updates = append(updates, validator)
+		} else if val == nil && validator.IsCurrentValidator(ackCount) {
+			// add validator
+			updates = append(updates, validator)
+		} else if val != nil && validator.VotingPower != val.VotingPower {
+			updates = append(updates, validator)
+		}
+	}
+
+	return updates
+}
+
 // ValidatorsByAddress sorts validators by address.
 type ValidatorsByAddress []*Validator
 
-func (valz ValidatorsByAddress) Len() int {
-	return len(valz)
+func (vals ValidatorsByAddress) Len() int {
+	return len(vals)
 }
 
-func (valz ValidatorsByAddress) Less(i, j int) bool {
-	return strings.Compare(strings.ToLower(valz[i].Signer), strings.ToLower(valz[j].Signer)) == -1
+func (vals ValidatorsByAddress) Less(i, j int) bool {
+	return strings.Compare(strings.ToLower(vals[i].Signer), strings.ToLower(vals[j].Signer)) == -1
 }
 
-func (valz ValidatorsByAddress) Swap(i, j int) {
-	it := valz[i]
-	valz[i] = valz[j]
-	valz[j] = it
+func (vals ValidatorsByAddress) Swap(i, j int) {
+	it := vals[i]
+	vals[i] = vals[j]
+	vals[j] = it
 }
 
 // safe addition/subtraction

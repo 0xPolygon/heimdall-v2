@@ -5,16 +5,19 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+)
+
+const (
+	TxHash = "0x000000000000000000000000000000000000000000000000000000000000dead"
 )
 
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
@@ -23,7 +26,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	pk1 := secp256k1.GenPrivKey().PubKey()
 	require.NotNil(pk1)
 
-	pubkey, err := codectypes.NewAnyWithValue(pk1)
+	pubKey, err := codectypes.NewAnyWithValue(pk1)
 	require.NoError(err)
 
 	msgValJoin := stakingtypes.MsgValidatorJoin{
@@ -31,7 +34,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ValId:           uint64(1),
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
-		SignerPubKey:    pubkey,
+		SignerPubKey:    pubKey,
 		TxHash:          hmTypes.TxHash{},
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
@@ -45,6 +48,9 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	require.False(false, ok, "Should not add validator")
 }
 
+// TODO HV2: Add negative test cases as well
+//  e.g. ValidatorJoin fails when validator already exists, or it has a duplicate ID, etc.
+
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
@@ -54,7 +60,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	require.NoError(err)
 
 	oldSigner := oldValSet.Validators[0]
-	newSigner := testutil.GenRandomVal(1, 0, 10, 10, false, 1)
+	newSigner := testutil.GenRandomVals(1, 0, 10, 10, false, 1)
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 
@@ -70,7 +76,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 
 	result, err := msgServer.SignerUpdate(ctx, &msgSignerUpdate)
 
-	require.NoError(err, "expected validator update to be ok, got %v", result)
+	require.NoErrorf(err, "expected validator update to be ok, got %v", result)
 
 	newValidators := keeper.GetCurrentValidators(ctx)
 	require.Equal(len(oldValSet.Validators), len(newValidators), "Number of current validators should be equal")
@@ -80,12 +86,13 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	err = oldValSet.UpdateWithChangeSet(setUpdates)
 	require.NoError(err)
 
-	_ = keeper.UpdateValidatorSetInStore(ctx, oldValSet)
+	err = keeper.UpdateValidatorSetInStore(ctx, oldValSet)
+	require.NoError(err)
 
-	ValFrmID, ok := keeper.GetValidatorFromValID(ctx, oldSigner.ValId)
-	require.True(ok, "signer should be found, got %v", ok)
+	ValFrmID, err := keeper.GetValidatorFromValID(ctx, oldSigner.ValId)
+	require.Nilf(err, "signer should be found, got %v", err)
 	require.NotEqual(oldSigner.Signer, newSigner[0].Signer, "Should not update state")
-	require.Equal(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
+	require.Equalf(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
 
 	removedVal, err := keeper.GetValidatorInfo(ctx, oldSigner.Signer)
 	require.Empty(err)
@@ -98,30 +105,28 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := common.Hex2Bytes("123")
+	msgTxHash := common.Hex2Bytes(TxHash)
 
 	validators[0].EndEpoch = 10
 	msgValidatorExit := stakingtypes.MsgValidatorExit{
 		From:              validators[0].Signer,
 		ValId:             uint64(1),
 		DeactivationEpoch: validators[0].EndEpoch,
-		TxHash:            hmTypes.TxHash{msgTxHash},
+		TxHash:            hmTypes.TxHash{Hash: msgTxHash},
 		LogIndex:          uint64(0),
 		BlockNumber:       uint64(0),
 		Nonce:             uint64(1),
 	}
 
 	_, err := msgServer.ValidatorExit(ctx, &msgValidatorExit)
-
 	require.NoError(err, "expected validator exit to be ok")
 
 	updatedValInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
-
-	require.NoError(err, "Unable to get validator info from val address,ValAddr:%v Error:%v ", validators[0].Signer, err)
+	require.NoErrorf(err, "Unable to get validator info from val address, valAddr: %v error: %v ", validators[0].Signer, err)
 	require.NotEqual(updatedValInfo.EndEpoch, validators[0].EndEpoch, "should not update deactivation epoch")
 
-	_, found := keeper.GetValidatorFromValID(ctx, validators[0].ValId)
-	require.True(found, "Validator should be present even after deactivation")
+	_, err = keeper.GetValidatorFromValID(ctx, validators[0].ValId)
+	require.Nilf(err, "Validator should be present even after deactivation")
 
 	_, err = msgServer.ValidatorExit(ctx, &msgValidatorExit)
 	require.NoError(err, "should not fail, as state is not updated for validatorExit")
@@ -137,14 +142,14 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := common.Hex2Bytes("123")
+	msgTxHash := common.Hex2Bytes(TxHash)
 	newAmount := math.NewInt(2000000000000000000)
 
 	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
 		From:        oldVal.Signer,
 		ValId:       oldVal.ValId,
 		NewAmount:   newAmount,
-		TxHash:      hmTypes.TxHash{msgTxHash},
+		TxHash:      hmTypes.TxHash{Hash: msgTxHash},
 		LogIndex:    uint64(0),
 		BlockNumber: uint64(0),
 		Nonce:       uint64(1),
@@ -154,8 +159,8 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	require.NoError(err, "expected validator stake update to be ok")
 
 	updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer)
-	require.NoError(err, "unable to fetch validator info %v-", err)
-	require.NotEqual(newAmount.Int64(), updatedVal.VotingPower, "Validator VotingPower should not be updated to %v", newAmount.Int64())
+	require.NoErrorf(err, "unable to fetch validator info %v", err)
+	require.NotEqualf(newAmount.Int64(), updatedVal.VotingPower, "Validator VotingPower should not be updated to %v", newAmount.Int64())
 }
 
 func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
@@ -167,7 +172,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	pk1 := secp256k1.GenPrivKey().PubKey()
 	require.NotNil(pk1)
 
-	pubkey, err := codectypes.NewAnyWithValue(pk1)
+	pubKey, err := codectypes.NewAnyWithValue(pk1)
 	require.NoError(err)
 
 	addr := pk1.Address().String()
@@ -202,7 +207,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		ValId:           validatorId,
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(100000)),
-		SignerPubKey:    pubkey,
+		SignerPubKey:    pubKey,
 		TxHash:          hmTypes.TxHash{},
 		LogIndex:        logIndex,
 		BlockNumber:     uint64(0),
@@ -213,9 +218,8 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	require.NotNil(err)
 }
 
-// TODO HV2 Please implement the following test after writing topUp module
-/*
 func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
+	/* TODO HV2: topup is available, hence this test has to be fixed and enabled. With real data (e.g. not "123" as a valid hash)
 	ctx, msgServer, keeper,require := s.ctx, s.msgServer, s.stakeKeeper,s.Require()
 
 	pubKey := hmTypes.NewPubKey([]byte{123})
@@ -231,16 +235,16 @@ func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
 
 	msgTopup := topupTypes.NewMsgTopup(signerAddress, signerAddress, sdk.NewInt(2000000000000000000), txHash, logIndex, uint64(2))
 
-	stakinginfoTopUpFee := &stakinginfo.StakinginfoTopUpFee{
+	stakingInfoTopUpFee := &stakingInfo.stakingInfoTopUpFee{
 		User: signerAddress.EthAddress(),
 		Fee:  big.NewInt(100000000000000000),
 	}
 
-	txreceipt := &ethTypes.Receipt{
+	txReceipt := &ethTypes.Receipt{
 		BlockNumber: big.NewInt(10),
 	}
 
-	stakinginfoStaked := &stakinginfo.StakinginfoStaked{
+	stakingInfoStaked := &stakingInfo.StakingInfoStaked{
 		Signer:          signerAddress.EthAddress(),
 		ValidatorId:     new(big.Int).SetUint64(validatorId.Uint64()),
 		ActivationEpoch: big.NewInt(1),
@@ -272,5 +276,5 @@ func (s *KeeperTestSuite) TestTopupSuccessBeforeValidatorJoin() {
 
 	result := suite.handler(ctx, msgValJoin)
 	require.True(t, result.IsOK(), "expected validator stake update to be ok, got %v", result)
+	*/
 }
-*/

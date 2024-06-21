@@ -4,19 +4,17 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/codec"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
-
-var coinPos = sdk.NewInt64Coin(sdk.DefaultBondDenom, 1000)
 
 func TestMsgDecode(t *testing.T) {
 	registry := codectypes.NewInterfaceRegistry()
@@ -24,16 +22,14 @@ func TestMsgDecode(t *testing.T) {
 	types.RegisterInterfaces(registry)
 	cdc := codec.NewProtoCodec(registry)
 
-	// firstly we start testing the pubkey serialization
-
+	// testing the pubKey serialization
 	pk1 := secp256k1.GenPrivKey().PubKey()
-
 	pk1bz, err := cdc.MarshalInterface(pk1)
 	require.NoError(t, err)
-	var pkUnmarshaled cryptotypes.PubKey
-	err = cdc.UnmarshalInterface(pk1bz, &pkUnmarshaled)
+	var pkUnmarshalled cryptotypes.PubKey
+	err = cdc.UnmarshalInterface(pk1bz, &pkUnmarshalled)
 	require.NoError(t, err)
-	require.True(t, pk1.Equals(pkUnmarshaled.(*secp256k1.PubKey)))
+	require.True(t, pk1.Equals(pkUnmarshalled.(*secp256k1.PubKey)))
 
 	msgValJoin, err := types.NewMsgValidatorJoin(
 		pk1.Address().String(),
@@ -51,10 +47,10 @@ func TestMsgDecode(t *testing.T) {
 	msgSerialized, err := cdc.MarshalInterface(msgValJoin)
 	require.NoError(t, err)
 
-	var msgUnmarshaled sdk.Msg
-	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshaled)
+	var msgUnmarshalled sdk.Msg
+	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshalled)
 	require.NoError(t, err)
-	msgValJoin2, ok := msgUnmarshaled.(*types.MsgValidatorJoin)
+	msgValJoin2, ok := msgUnmarshalled.(*types.MsgValidatorJoin)
 	require.True(t, ok)
 	require.Equal(t, msgValJoin.From, msgValJoin2.From)
 	require.True(t, msgValJoin.SignerPubKey.Equal(msgValJoin2.SignerPubKey))
@@ -75,9 +71,9 @@ func TestMsgDecode(t *testing.T) {
 	msgSerialized, err = cdc.MarshalInterface(msgSignerUpdate)
 	require.NoError(t, err)
 
-	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshaled)
+	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshalled)
 	require.NoError(t, err)
-	msgSignerUpdate2, ok := msgUnmarshaled.(*types.MsgSignerUpdate)
+	msgSignerUpdate2, ok := msgUnmarshalled.(*types.MsgSignerUpdate)
 	require.True(t, ok)
 	require.Equal(t, msgSignerUpdate.From, msgSignerUpdate2.From)
 	require.True(t, msgSignerUpdate.NewSignerPubKey.Equal(msgSignerUpdate2.NewSignerPubKey))
@@ -97,9 +93,9 @@ func TestMsgDecode(t *testing.T) {
 	msgSerialized, err = cdc.MarshalInterface(msgStakeUpdate)
 	require.NoError(t, err)
 
-	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshaled)
+	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshalled)
 	require.NoError(t, err)
-	msgStakeUpdate2, ok := msgUnmarshaled.(*types.MsgStakeUpdate)
+	msgStakeUpdate2, ok := msgUnmarshalled.(*types.MsgStakeUpdate)
 	require.True(t, ok)
 	require.Equal(t, msgStakeUpdate.From, msgStakeUpdate2.From)
 	require.Equal(t, msgStakeUpdate.ValId, msgStakeUpdate2.ValId)
@@ -119,9 +115,9 @@ func TestMsgDecode(t *testing.T) {
 	msgSerialized, err = cdc.MarshalInterface(msgValidatorExit)
 	require.NoError(t, err)
 
-	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshaled)
+	err = cdc.UnmarshalInterface(msgSerialized, &msgUnmarshalled)
 	require.NoError(t, err)
-	msgValidatorExit2, ok := msgUnmarshaled.(*types.MsgValidatorExit)
+	msgValidatorExit2, ok := msgUnmarshalled.(*types.MsgValidatorExit)
 	require.True(t, ok)
 	require.Equal(t, msgValidatorExit.From, msgValidatorExit2.From)
 	require.Equal(t, msgValidatorExit.ValId, msgValidatorExit2.ValId)
