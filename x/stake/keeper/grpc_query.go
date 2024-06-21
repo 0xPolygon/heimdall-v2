@@ -71,7 +71,7 @@ func (q queryServer) ValidatorStatus(ctx context.Context, req *types.QueryValida
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	return &types.QueryValidatorStatusResponse{Status: q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)}, nil
+	return &types.QueryValidatorStatusResponse{IsOld: q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)}, nil
 }
 
 // TotalPower queries the total power of a validator set
@@ -84,8 +84,8 @@ func (q queryServer) TotalPower(ctx context.Context, _ *types.QueryTotalPowerReq
 	return &types.QueryTotalPowerResponse{TotalPower: totalPower}, nil
 }
 
-// StakingSequence queries for the staking sequence
-func (q queryServer) StakingSequence(ctx context.Context, req *types.QueryStakingSequenceRequest) (*types.QueryStakingSequenceResponse, error) {
+// StakingIsOldTx queries for the staking sequence
+func (q queryServer) StakingIsOldTx(ctx context.Context, req *types.QueryStakingIsOldTxRequest) (*types.QueryStakingIsOldTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -109,8 +109,8 @@ func (q queryServer) StakingSequence(ctx context.Context, req *types.QueryStakin
 
 	// check if incoming tx already exists
 	if !q.k.HasStakingSequence(ctx, sequence.String()) {
-		return &types.QueryStakingSequenceResponse{Status: false}, nil
+		return &types.QueryStakingIsOldTxResponse{IsOld: false}, nil
 	}
 
-	return &types.QueryStakingSequenceResponse{Status: true}, nil
+	return &types.QueryStakingIsOldTxResponse{IsOld: true}, nil
 }

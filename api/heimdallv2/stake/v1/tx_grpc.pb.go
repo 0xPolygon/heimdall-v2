@@ -29,7 +29,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// ValidatorJoin defines a method for joining a new validator.
+	// ValidatorJoin defines a method for a new validator to join
 	ValidatorJoin(ctx context.Context, in *MsgValidatorJoin, opts ...grpc.CallOption) (*MsgValidatorJoinResponse, error)
 	// StakeUpdate defines a method for updating an existing validator's stake.
 	StakeUpdate(ctx context.Context, in *MsgStakeUpdate, opts ...grpc.CallOption) (*MsgStakeUpdateResponse, error)
@@ -87,7 +87,7 @@ func (c *msgClient) ValidatorExit(ctx context.Context, in *MsgValidatorExit, opt
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// ValidatorJoin defines a method for joining a new validator.
+	// ValidatorJoin defines a method for a new validator to join
 	ValidatorJoin(context.Context, *MsgValidatorJoin) (*MsgValidatorJoinResponse, error)
 	// StakeUpdate defines a method for updating an existing validator's stake.
 	StakeUpdate(context.Context, *MsgStakeUpdate) (*MsgStakeUpdateResponse, error)

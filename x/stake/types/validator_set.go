@@ -49,7 +49,7 @@ var (
 func NewValidatorSet(valz []*Validator) *ValidatorSet {
 	vals := &ValidatorSet{}
 	if err := vals.updateWithChangeSet(valz, false); err != nil {
-		panic(fmt.Sprintf("cannot create validator set: %s", err))
+		panic(fmt.Sprintf("cannot create validator set: %s", err.Error()))
 	}
 
 	if len(valz) > 0 {
@@ -59,7 +59,7 @@ func NewValidatorSet(valz []*Validator) *ValidatorSet {
 	return vals
 }
 
-// IsNilOrEmpty check if the validator set is nil or empty
+// IsNilOrEmpty checks whether the validator set is empty or nil
 func (vals *ValidatorSet) IsNilOrEmpty() bool {
 	return vals == nil || len(vals.Validators) == 0
 }
@@ -80,7 +80,7 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int) {
 	}
 
 	if times <= 0 {
-		panic("Cannot call IncrementProposerPriority with non-positive times")
+		panic("cannot call IncrementProposerPriority with non-positive times")
 	}
 
 	// Cap the difference between priorities to be proportional to 2*totalPower by
@@ -99,6 +99,7 @@ func (vals *ValidatorSet) IncrementProposerPriority(times int) {
 	vals.Proposer = proposer
 }
 
+// RescalePriorities rescales the priorities
 func (vals *ValidatorSet) RescalePriorities(diffMax int64) {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
@@ -123,6 +124,7 @@ func (vals *ValidatorSet) RescalePriorities(diffMax int64) {
 	}
 }
 
+// incrementProposerPriority increments the proposer priority of each validator in a set
 func (vals *ValidatorSet) incrementProposerPriority() *Validator {
 	for _, val := range vals.Validators {
 		// Check for overflow for sum.
@@ -137,7 +139,7 @@ func (vals *ValidatorSet) incrementProposerPriority() *Validator {
 	return mostest
 }
 
-// Should not be called on an empty validator set.
+// computeAvgProposerPriority computes the average proposer priority of a validator set
 func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 	n := int64(len(vals.Validators))
 
@@ -152,7 +154,7 @@ func (vals *ValidatorSet) computeAvgProposerPriority() int64 {
 	}
 
 	// This should never happen: each val.ProposerPriority is in bounds of int64.
-	panic(fmt.Sprintf("Cannot represent avg ProposerPriority as an int64 %v", avg))
+	panic(fmt.Sprintf("cannot represent avg ProposerPriority as an int64 %v", avg))
 }
 
 // Compute the difference between the max and min ProposerPriority of that set.
@@ -182,15 +184,21 @@ func computeMaxMinPriorityDiff(vals *ValidatorSet) int64 {
 	return diff
 }
 
+// getValWithMostPriority returns validator with max priority
 func (vals *ValidatorSet) getValWithMostPriority() *Validator {
-	res := Validator{}
+	var res *Validator
 	for _, val := range vals.Validators {
-		res = *res.CompareProposerPriority(val)
+		if res == nil {
+			res = val
+		}
+
+		res = res.CompareProposerPriority(val)
 	}
 
-	return &res
+	return res
 }
 
+// shiftByAvgProposerPriority shifts the proper priority of every validator in a set
 func (vals *ValidatorSet) shiftByAvgProposerPriority() {
 	if vals.IsNilOrEmpty() {
 		panic("empty validator set")
@@ -232,7 +240,7 @@ func (vals *ValidatorSet) HasAddress(address string) bool {
 		return strings.Compare(strings.ToLower(address), strings.ToLower(vals.Validators[i].Signer)) <= 0
 	})
 
-	return idx < len(vals.Validators) && strings.ToLower(vals.Validators[idx].Signer) == strings.ToLower(address)
+	return idx < len(vals.Validators) && strings.EqualFold(vals.Validators[idx].Signer, address)
 }
 
 // GetByAddress returns an index of the validator with address and validator
@@ -242,7 +250,7 @@ func (vals *ValidatorSet) GetByAddress(address string) (index int, val *Validato
 		return strings.Compare(strings.ToLower(address), strings.ToLower(vals.Validators[i].Signer)) <= 0
 	})
 
-	if idx < len(vals.Validators) && strings.ToLower(vals.Validators[idx].Signer) == strings.ToLower(address) {
+	if idx < len(vals.Validators) && strings.EqualFold(vals.Validators[idx].Signer, address) {
 		return idx, vals.Validators[idx].Copy()
 	}
 
@@ -267,7 +275,7 @@ func (vals *ValidatorSet) Len() int {
 	return len(vals.Validators)
 }
 
-// Force recalculation of the set's total voting power.
+// updateTotalVotingPower forces recalculation of the set's total voting power.
 func (vals *ValidatorSet) updateTotalVotingPower() {
 	sum := int64(0)
 	for _, val := range vals.Validators {
@@ -275,7 +283,7 @@ func (vals *ValidatorSet) updateTotalVotingPower() {
 		sum = safeAddClip(sum, val.VotingPower)
 		if sum > MaxTotalVotingPower {
 			panic(fmt.Sprintf(
-				"Total voting power should be guarded to not exceed %v; got: %v",
+				"total voting power should be guarded to not exceed %v; got: %v",
 				MaxTotalVotingPower,
 				sum))
 		}
@@ -361,8 +369,8 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 		}
 
 		if valUpdate.VotingPower > MaxTotalVotingPower {
-			err = fmt.Errorf("to prevent clipping/ overflow, voting power can't be higher than %v: %v ",
-				MaxTotalVotingPower, valUpdate)
+			err = fmt.Errorf("to prevent clipping/ overflow, voting power %v can't be higher than %v",
+				valUpdate, MaxTotalVotingPower)
 			return nil, nil, err
 		}
 
@@ -457,7 +465,7 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 		} else {
 			// Apply add or update.
 			merged[i] = updates[0]
-			if strings.ToLower(existing[0].Signer) == strings.ToLower(updates[0].Signer) {
+			if strings.EqualFold(existing[0].Signer, updates[0].Signer) {
 				// Validator is present in both, advance existing.
 				existing = existing[1:]
 			}
@@ -489,7 +497,7 @@ func verifyRemovals(deletes []*Validator, vals *ValidatorSet) error {
 
 		_, val := vals.GetByAddress(address)
 		if val == nil {
-			return fmt.Errorf("failed to find validator %X to remove", address)
+			return fmt.Errorf("failed to find validator %s to remove", address)
 		}
 	}
 
@@ -512,7 +520,7 @@ func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 
 	// Loop over deletes until we removed all of them.
 	for len(deletes) > 0 {
-		if strings.ToLower(existing[0].Signer) == strings.ToLower(deletes[0].Signer) {
+		if strings.EqualFold(existing[0].Signer, deletes[0].Signer) {
 			deletes = deletes[1:]
 		} else { // Leave it in the resulting slice.
 			merged[i] = existing[0]

@@ -69,9 +69,9 @@ func (s *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler 
 	}
 }
 
-// SideHandleMsgValidatorJoin handles a validator join message
-func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgValidatorJoin)
+// SideHandleMsgValidatorJoin is a side handler for validator join msg
+func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg) (result hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgValidatorJoin)
 	if !ok {
 		s.k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return hmModule.Vote_VOTE_NO
@@ -204,8 +204,8 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 }
 
 // SideHandleMsgStakeUpdate handles stake update message
-func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgStakeUpdate)
+func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) (result hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgStakeUpdate)
 	if !ok {
 		s.k.Logger(ctx).Error("type mismatch for MsgStakeUpdate")
 		return hmModule.Vote_VOTE_NO

@@ -47,35 +47,35 @@ func NewMsgValidatorJoin(
 	}, nil
 }
 
-// Validate validates the MsgValidatorJoin sdk msg.
+// This fn validates the validator join msg before it is executed
 func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	if msg.SignerPubKey == nil {
-		return ErrInvalidMsg.Wrapf("Signer public key can't be nil")
+		return ErrInvalidMsg.Wrap("signer public key can't be nil")
 	}
 
 	pk, ok := msg.SignerPubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
-		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
+		return ErrInvalidMsg.Wrap("error in unwrapping the public key")
 	}
 
 	// TODO HV2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
-		return ErrInvalidMsg.Wrapf("Signer public key can't be of zero bytes")
+		return ErrInvalidMsg.Wrap("signer public key can't be of zero bytes")
 	}
 
 	return nil
@@ -102,20 +102,21 @@ func NewMsgStakeUpdate(from string, id uint64,
 	}, nil
 }
 
+// This fn validates the stake update msg before it is executed
 func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	return nil
@@ -144,34 +145,35 @@ func NewMsgSignerUpdate(from string, id uint64,
 	}, nil
 }
 
+// This fn validates the signer update msg before it is executed
 func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	if msg.NewSignerPubKey == nil {
-		return ErrInvalidMsg.Wrapf("Signer public key can't be nil")
+		return ErrInvalidMsg.Wrap("signer public key can't be nil")
 	}
 
 	pk, ok := msg.NewSignerPubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
-		return ErrInvalidMsg.Wrapf("Error in unwrapping the public key")
+		return ErrInvalidMsg.Wrap("error in unwrapping the public key")
 	}
 
 	// TODO HV2: Should we implement the check for the size here
 	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
-		return ErrInvalidMsg.Wrapf("New signer public key can't be of zero bytes")
+		return ErrInvalidMsg.Wrap("new signer public key can't be of zero bytes")
 	}
 
 	return nil
@@ -194,20 +196,21 @@ func NewMsgValidatorExit(
 	}, nil
 }
 
+// This fn validates the validator exit msg before it is executed
 func (msg MsgValidatorExit) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
-		return ErrInvalidMsg.Wrapf("Invalid validator ID %v", msg.ValId)
+		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %v", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
 	return nil

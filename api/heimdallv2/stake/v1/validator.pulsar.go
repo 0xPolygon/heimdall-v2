@@ -1555,7 +1555,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Validator define the validator structure
+// Validators define the validator structure
 type Validator struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1663,8 +1663,7 @@ func (x *Validator) GetProposerPriority() int64 {
 	return 0
 }
 
-// ValidatorSet this following defines the
-// set of validator
+// ValidatorSet defines the set of validator
 type ValidatorSet struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1672,7 +1671,8 @@ type ValidatorSet struct {
 
 	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
 	Proposer   *Validator   `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	// total voting power
+	// total voting power denotes the total power of all the active validators in
+	// the validator set
 	TotalVotingPower int64 `protobuf:"varint,3,opt,name=total_voting_power,json=totalVotingPower,proto3" json:"total_voting_power,omitempty"`
 }
 

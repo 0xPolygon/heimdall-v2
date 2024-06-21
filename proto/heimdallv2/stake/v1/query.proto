@@ -111,8 +111,9 @@ message QueryValidatorStatusRequest {
 // QueryValidatorStatusResponse is response type for the Query/ValidatorStatus
 // RPC method
 message QueryValidatorStatusResponse {
-  // status define whether the particular validator is active in the validator set
-  bool status = 1 [ (amino.dont_omitempty) = true ];
+  // status define whether the particular validator is active in the validator
+  // set
+  bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryStakingIsOldTxRequest is request type for the Query/StakingIsOldTx
@@ -126,5 +127,5 @@ message QueryStakingIsOldTxRequest {
 // RPC method
 message QueryStakingIsOldTxResponse {
   // status define the active status of validator
-  bool status = 1 [ (amino.dont_omitempty) = true ];
+  bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }

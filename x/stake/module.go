@@ -33,12 +33,12 @@ var (
 	_ appmodule.AppModule        = AppModule{}
 )
 
-// AppModuleBasic defines the basic application module used by the staking module.
+// AppModuleBasic defines the basic application module used by the stake module.
 type AppModuleBasic struct {
 	cdc codec.Codec
 }
 
-// AppModule implements an application module for the staking module.
+// AppModule implements an application module for the stake module.
 type AppModule struct {
 	keeper         keeper.Keeper
 	contractCaller helper.IContractCaller
@@ -52,12 +52,12 @@ func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) A
 	}
 }
 
-// Name returns the staking module's name.
+// Name returns the stake module's name.
 func (AppModule) Name() string {
 	return types.ModuleName
 }
 
-// RegisterLegacyAminoCodec registers the staking module's types on the given LegacyAmino codec.
+// RegisterLegacyAminoCodec registers the stake module's types on the given LegacyAmino codec.
 func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
@@ -67,13 +67,13 @@ func (AppModule) RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
-// DefaultGenesis returns default genesis state as raw bytes for the staking
+// DefaultGenesis returns default genesis state as raw bytes for the stake
 // module.
 func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
-// ValidateGenesis performs genesis state validation for the staking module.
+// ValidateGenesis performs genesis state validation for the stake module.
 func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
@@ -83,18 +83,17 @@ func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig,
 	return ValidateGenesis(&data)
 }
 
-// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the staking module.
+// RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the stake module.
 func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
-// GetTxCmd returns the root tx command for the staking module.
+// GetTxCmd returns the root tx command for the stake module.
 func (am AppModule) GetTxCmd() *cobra.Command {
 	return nil
-	// TODO HV2 Please implement the CLI
-	//
+	// TODO HV2 implement the cli
 	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 
@@ -112,7 +111,7 @@ func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator)
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
 
-// InitGenesis performs genesis initialization for the staking module.
+// InitGenesis performs genesis initialization for the stake module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
 	start := time.Now()
 
@@ -125,13 +124,13 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	return []abci.ValidatorUpdate{}
 }
 
-// ExportGenesis returns the exported genesis state as raw bytes for the staking
+// ExportGenesis returns the exported genesis state as raw bytes for the stake
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
 
-// EndBlock returns the end blocker for the staking module. It returns validator
+// EndBlock returns the end blocker for the stake module. It returns validator
 // updates.
 func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	return am.keeper.EndBlocker(ctx)

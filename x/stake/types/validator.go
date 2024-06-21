@@ -45,6 +45,7 @@ func NewValidator(
 }
 
 // SortValidatorByAddress sorts a slice of validators by address
+// to sort it we compare the values of signer field
 func SortValidatorByAddress(a []Validator) []Validator {
 	sort.Slice(a, func(i, j int) bool {
 		return strings.Compare(strings.ToLower(a[i].Signer), strings.ToLower(a[j].Signer)) < 0

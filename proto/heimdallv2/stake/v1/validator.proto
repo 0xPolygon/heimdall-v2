@@ -41,6 +41,7 @@ message ValidatorSet {
   Validator proposer = 2
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
 
-  // total voting power denotes the total power of all the active validators in the validator set
+  // total voting power denotes the total power of all the active validators in
+  // the validator set
   int64 total_voting_power = 3 [ (amino.dont_omitempty) = true ];
 }

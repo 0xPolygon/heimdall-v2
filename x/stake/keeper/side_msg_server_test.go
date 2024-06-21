@@ -303,7 +303,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		}
 
 		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
-
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -340,7 +339,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		}
 
 		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
-
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -377,7 +375,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		}
 
 		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
-
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -414,7 +411,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 		}
 
 		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
-
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -1193,7 +1189,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 		ValFrmID, err := keeper.GetValidatorFromValID(ctx, oldSigner.ValId)
 		require.NoErrorf(err, "new signer should be found, got %v", ok)
 		require.Equal(ValFrmID.Signer, newSigner[0].Signer, "New Signer should be mapped to old validator ID")
-		require.Equal(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
+		require.Equalf(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
 
 		removedVal, err := keeper.GetValidatorInfo(ctx, oldSigner.Signer)
 		require.Empty(err, "deleted validator should be found, got %v", err)
