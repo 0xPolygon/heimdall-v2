@@ -54,7 +54,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	require.NoError(err)
 
 	oldSigner := oldValSet.Validators[0]
-	newSigner := testutil.GenRandomVal(1, 0, 10, 10, false, 1)
+	newSigner := testutil.GenRandomVals(1, 0, 10, 10, false, 1)
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 
@@ -85,7 +85,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ValFrmID, ok := keeper.GetValidatorFromValID(ctx, oldSigner.ValId)
 	require.True(ok, "signer should be found, got %v", ok)
 	require.NotEqual(oldSigner.Signer, newSigner[0].Signer, "Should not update state")
-	require.Equal(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
+	require.Equalf(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
 
 	removedVal, err := keeper.GetValidatorInfo(ctx, oldSigner.Signer)
 	require.Empty(err)
@@ -154,7 +154,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	require.NoError(err, "expected validator stake update to be ok")
 
 	updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer)
-	require.NoError(err, "unable to fetch validator info %v-", err)
+	require.NoErrorf(err, "unable to fetch validator info %v", err)
 	require.NotEqual(newAmount.Int64(), updatedVal.VotingPower, "Validator VotingPower should not be updated to %v", newAmount.Int64())
 }
 

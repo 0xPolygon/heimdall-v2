@@ -32,9 +32,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 
 	// check response is not nil
 	require.NotNil(res)
-	require.Equal(res.ValidatorSet.Proposer.GetSigner(), validatorSet.Proposer.GetSigner())
-	require.Equal(len(res.ValidatorSet.Validators), len(validatorSet.Validators))
-	require.Equal(res.ValidatorSet.TotalVotingPower, validatorSet.TotalVotingPower)
+	require.Equal(res.ValidatorSet, validatorSet)
 }
 
 func (s *KeeperTestSuite) TestHandleQuerySigner() {
@@ -60,11 +58,7 @@ func (s *KeeperTestSuite) TestHandleQuerySigner() {
 	require.NoError(err)
 
 	// check response is not nil
-	require.Equal(res.Validator.Signer, validators[0].Signer)
-	require.Equal(res.Validator.StartEpoch, validators[0].StartEpoch)
-	require.Equal(res.Validator.EndEpoch, validators[0].EndEpoch)
-	require.Equal(res.Validator.PubKey.Compare(validators[0].PubKey), 0)
-	require.Equal(res.Validator.ProposerPriority, validators[0].ProposerPriority)
+	require.Equal(res.Validator, validators[0])
 }
 
 func (s *KeeperTestSuite) TestHandleQueryValidator() {
@@ -99,11 +93,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 	require.NoError(err)
 
 	// check response is not nil
-	require.Equal(res.Validator.Signer, validators[0].Signer)
-	require.Equal(res.Validator.StartEpoch, validators[0].StartEpoch)
-	require.Equal(res.Validator.EndEpoch, validators[0].EndEpoch)
-	require.Equal(res.Validator.PubKey.Compare(validators[0].PubKey), 0)
-	require.Equal(res.Validator.ProposerPriority, validators[0].ProposerPriority)
+	require.Equal(res.Validator, validators[0])
 }
 
 func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
@@ -120,7 +110,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 
 	// check response is not nil
 	require.NotNil(res)
-	require.True(res.Status)
+	require.True(res.IsOld)
 
 	req = &types.QueryValidatorStatusRequest{
 		ValAddress: common.Address{}.String(),
@@ -128,7 +118,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	res, err = queryClient.ValidatorStatus(ctx, req)
 	// check no error found
 	require.Nil(err)
-	require.False(res.Status)
+	require.False(res.IsOld)
 
 }
 
@@ -147,7 +137,7 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 
 	logIndex := uint64(simulation.RandIntBetween(r1, 0, 100))
 
-	req := &types.QueryStakingSequenceRequest{
+	req := &types.QueryStakingIsOldTxRequest{
 		TxHash:   common.Bytes2Hex(txHash.Hash),
 		LogIndex: logIndex,
 	}
@@ -159,12 +149,12 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 
 	s.contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txreceipt, nil)
 
-	res, err := queryClient.StakingSequence(ctx, req)
+	res, err := queryClient.StakingIsOldTx(ctx, req)
 
 	// check no error found
 	require.NoError(err)
 
 	// check response is not nil
 	require.NotNil(res)
-	require.True(res.Status)
+	require.True(res.IsOld)
 }

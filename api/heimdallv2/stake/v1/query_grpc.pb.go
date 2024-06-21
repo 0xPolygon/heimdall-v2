@@ -24,7 +24,7 @@ const (
 	Query_Validator_FullMethodName           = "/heimdallv2.stake.v1.Query/Validator"
 	Query_ValidatorStatus_FullMethodName     = "/heimdallv2.stake.v1.Query/ValidatorStatus"
 	Query_TotalPower_FullMethodName          = "/heimdallv2.stake.v1.Query/TotalPower"
-	Query_StakingSequence_FullMethodName     = "/heimdallv2.stake.v1.Query/StakingSequence"
+	Query_StakingIsOldTx_FullMethodName      = "/heimdallv2.stake.v1.Query/StakingIsOldTx"
 )
 
 // QueryClient is the client API for Query service.
@@ -33,7 +33,7 @@ const (
 type QueryClient interface {
 	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for given validator validator address.
+	// Signer queries validator info for a given validator address.
 	Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
 	// Validator queries validator info for a given validator id.
 	Validator(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
@@ -42,7 +42,7 @@ type QueryClient interface {
 	// TotalPower queries the total power of a validator set
 	TotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
 	// StakingSequence queries for the staking sequence
-	StakingSequence(ctx context.Context, in *QueryStakingSequenceRequest, opts ...grpc.CallOption) (*QueryStakingSequenceResponse, error)
+	StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakingIsOldTxResponse, error)
 }
 
 type queryClient struct {
@@ -98,9 +98,9 @@ func (c *queryClient) TotalPower(ctx context.Context, in *QueryTotalPowerRequest
 	return out, nil
 }
 
-func (c *queryClient) StakingSequence(ctx context.Context, in *QueryStakingSequenceRequest, opts ...grpc.CallOption) (*QueryStakingSequenceResponse, error) {
-	out := new(QueryStakingSequenceResponse)
-	err := c.cc.Invoke(ctx, Query_StakingSequence_FullMethodName, in, out, opts...)
+func (c *queryClient) StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakingIsOldTxResponse, error) {
+	out := new(QueryStakingIsOldTxResponse)
+	err := c.cc.Invoke(ctx, Query_StakingIsOldTx_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (c *queryClient) StakingSequence(ctx context.Context, in *QueryStakingSeque
 type QueryServer interface {
 	// CurrentValidatorSet queries for the current validator set
 	CurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for given validator validator address.
+	// Signer queries validator info for a given validator address.
 	Signer(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
 	// Validator queries validator info for a given validator id.
 	Validator(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
@@ -122,7 +122,7 @@ type QueryServer interface {
 	// TotalPower queries the total power of a validator set
 	TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
 	// StakingSequence queries for the staking sequence
-	StakingSequence(context.Context, *QueryStakingSequenceRequest) (*QueryStakingSequenceResponse, error)
+	StakingIsOldTx(context.Context, *QueryStakingIsOldTxRequest) (*QueryStakingIsOldTxResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -145,8 +145,8 @@ func (UnimplementedQueryServer) ValidatorStatus(context.Context, *QueryValidator
 func (UnimplementedQueryServer) TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TotalPower not implemented")
 }
-func (UnimplementedQueryServer) StakingSequence(context.Context, *QueryStakingSequenceRequest) (*QueryStakingSequenceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StakingSequence not implemented")
+func (UnimplementedQueryServer) StakingIsOldTx(context.Context, *QueryStakingIsOldTxRequest) (*QueryStakingIsOldTxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StakingIsOldTx not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -251,20 +251,20 @@ func _Query_TotalPower_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_StakingSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryStakingSequenceRequest)
+func _Query_StakingIsOldTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryStakingIsOldTxRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).StakingSequence(ctx, in)
+		return srv.(QueryServer).StakingIsOldTx(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_StakingSequence_FullMethodName,
+		FullMethod: Query_StakingIsOldTx_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).StakingSequence(ctx, req.(*QueryStakingSequenceRequest))
+		return srv.(QueryServer).StakingIsOldTx(ctx, req.(*QueryStakingIsOldTxRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -297,8 +297,8 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_TotalPower_Handler,
 		},
 		{
-			MethodName: "StakingSequence",
-			Handler:    _Query_StakingSequence_Handler,
+			MethodName: "StakingIsOldTx",
+			Handler:    _Query_StakingIsOldTx_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

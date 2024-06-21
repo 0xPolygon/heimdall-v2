@@ -19,8 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// NewValidator func creates a new validator,
-// the HeimdallAddress field is generated using Address i.e. [20]byte
+// NewValidator func creates a new validator
 func NewValidator(
 	id uint64,
 	startEpoch uint64,
@@ -46,7 +45,7 @@ func NewValidator(
 }
 
 // SortValidatorByAddress sorts a slice of validators by address
-// to sort it we compare the values of the Signer(HeimdallAddress i.e. [20]byte)
+// to sort it we compare the values of signer field
 func SortValidatorByAddress(a []Validator) []Validator {
 	sort.Slice(a, func(i, j int) bool {
 		return strings.Compare(strings.ToLower(a[i].Signer), strings.ToLower(a[j].Signer)) < 0
@@ -64,7 +63,7 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 	return !v.Jailed && v.StartEpoch <= currentEpoch && (v.EndEpoch == 0 || v.EndEpoch > currentEpoch) && v.VotingPower > 0
 }
 
-// Validates validator
+// ValidateBasic validates a validator struct
 func (v *Validator) ValidateBasic() bool {
 	pk, ok := v.PubKey.GetCachedValue().(cryptotypes.PubKey)
 
@@ -75,21 +74,19 @@ func (v *Validator) ValidateBasic() bool {
 		return false
 	}
 
-	zeroAddress := common.Address{}.String()
-
-	if strings.Compare(strings.ToLower(v.Signer), strings.ToLower(zeroAddress)) == 0 {
+	if strings.Compare(strings.ToLower(v.Signer), strings.ToLower(common.Address{}.String())) == 0 {
 		return false
 	}
 
 	return true
 }
 
-// amino marshall validator
+// MarshalValidator marshals the validator struct
 func MarshallValidator(cdc codec.BinaryCodec, validator Validator) (bz []byte, err error) {
 	return cdc.Marshal(&validator)
 }
 
-// amono unmarshall validator
+// UnmarshallValidator unmarshals the validator struct
 func UnmarshallValidator(cdc codec.BinaryCodec, value []byte) (Validator, error) {
 	var validator Validator
 	err := cdc.Unmarshal(value, &validator)
@@ -98,7 +95,6 @@ func UnmarshallValidator(cdc codec.BinaryCodec, value []byte) (Validator, error)
 }
 
 // Copy creates a new copy of the validator so we can mutate accum.
-// Panics if the validator is nil.
 func (v *Validator) Copy() *Validator {
 	vCopy := *v
 	return &vCopy
@@ -124,7 +120,7 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 		case result > 0:
 			return other
 		default:
-			panic("Cannot compare identical validators")
+			panic("cannot compare identical validators")
 		}
 	}
 }
@@ -153,7 +149,7 @@ func (v *Validator) Bytes() []byte {
 }
 
 // UpdatedAt returns block number of last validator update
-func (v *Validator) UpdatedAt() string {
+func (v *Validator) LastUpdatedAt() string {
 	return v.LastUpdated
 }
 
@@ -176,9 +172,7 @@ func (v *Validator) GetOperator() string {
 	return v.Signer
 }
 
-// --------
-
-// Bytes get bytes of validatorID
+// ValIDToBytes converts valID to bytes
 func ValIDToBytes(valID uint64) []byte {
 	return []byte(strconv.FormatUint(valID, 10))
 }
@@ -198,8 +192,6 @@ func (v Validator) CmtConsPublicKey() (cmtprotocrypto.PublicKey, error) {
 	return tmPk, nil
 }
 
-// --------
-
 // MinimalVal is the minimal validator representation
 // Used to send validator information to bor validator contract
 type MinimalVal struct {
@@ -213,7 +205,7 @@ func (v Validator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
 	return unpacker.UnpackAny(v.PubKey, &pk)
 }
 
-///////Following functions are implemented to support cosmos validator interface/////////
+// Following functions are implemented to support cosmos validator interface
 
 // GetCommission implements types.ValidatorI.
 func (*Validator) GetCommission() math.LegacyDec {

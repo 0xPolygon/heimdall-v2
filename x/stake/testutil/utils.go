@@ -11,7 +11,7 @@ import (
 )
 
 // GenRandomVal generate random validators
-func GenRandomVal(count int, startBlock uint64, power int64, timeAlive uint64, randomise bool, startID uint64) (validators []types.Validator) {
+func GenRandomVals(count int, startBlock uint64, power int64, timeAlive uint64, randomise bool, startID uint64) (validators []types.Validator) {
 	for i := 0; i < count; i++ {
 		pubKey := secp256k1.GenPrivKey().PubKey()
 		addr := strings.ToLower(pubKey.Address().String())

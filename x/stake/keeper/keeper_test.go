@@ -316,7 +316,7 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 
 	require.NoError(err)
 
-	validators := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
+	validators := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
 	prevValSet := initValSet.Copy()
 
 	valToBeAdded := validators[0]
@@ -351,7 +351,7 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 	require.NoError(err)
 
 	valToUpdate := currentValSet.Validators[0]
-	newSigner := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
+	newSigner := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
 
 	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
 	require.NoError(err)
@@ -521,7 +521,7 @@ func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
 	require.NoError(err)
 
 	valToUpdate := currentValSet.Validators[0]
-	newSigner := testUtil.GenRandomVal(1, 0, 10, 10, false, 1)
+	newSigner := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
 
 	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
 	require.NoError(err)

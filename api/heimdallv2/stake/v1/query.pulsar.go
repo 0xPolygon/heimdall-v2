@@ -3683,13 +3683,13 @@ func (x *fastReflection_QueryValidatorStatusRequest) ProtoMethods() *protoiface.
 
 var (
 	md_QueryValidatorStatusResponse        protoreflect.MessageDescriptor
-	fd_QueryValidatorStatusResponse_status protoreflect.FieldDescriptor
+	fd_QueryValidatorStatusResponse_is_old protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_stake_v1_query_proto_init()
 	md_QueryValidatorStatusResponse = File_heimdallv2_stake_v1_query_proto.Messages().ByName("QueryValidatorStatusResponse")
-	fd_QueryValidatorStatusResponse_status = md_QueryValidatorStatusResponse.Fields().ByName("status")
+	fd_QueryValidatorStatusResponse_is_old = md_QueryValidatorStatusResponse.Fields().ByName("is_old")
 }
 
 var _ protoreflect.Message = (*fastReflection_QueryValidatorStatusResponse)(nil)
@@ -3757,9 +3757,9 @@ func (x *fastReflection_QueryValidatorStatusResponse) Interface() protoreflect.P
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QueryValidatorStatusResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Status != false {
-		value := protoreflect.ValueOfBool(x.Status)
-		if !f(fd_QueryValidatorStatusResponse_status, value) {
+	if x.IsOld != false {
+		value := protoreflect.ValueOfBool(x.IsOld)
+		if !f(fd_QueryValidatorStatusResponse_is_old, value) {
 			return
 		}
 	}
@@ -3778,8 +3778,8 @@ func (x *fastReflection_QueryValidatorStatusResponse) Range(f func(protoreflect.
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QueryValidatorStatusResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.status":
-		return x.Status != false
+	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.is_old":
+		return x.IsOld != false
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryValidatorStatusResponse"))
@@ -3796,8 +3796,8 @@ func (x *fastReflection_QueryValidatorStatusResponse) Has(fd protoreflect.FieldD
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryValidatorStatusResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.status":
-		x.Status = false
+	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.is_old":
+		x.IsOld = false
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryValidatorStatusResponse"))
@@ -3814,8 +3814,8 @@ func (x *fastReflection_QueryValidatorStatusResponse) Clear(fd protoreflect.Fiel
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QueryValidatorStatusResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.status":
-		value := x.Status
+	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.is_old":
+		value := x.IsOld
 		return protoreflect.ValueOfBool(value)
 	default:
 		if descriptor.IsExtension() {
@@ -3837,8 +3837,8 @@ func (x *fastReflection_QueryValidatorStatusResponse) Get(descriptor protoreflec
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryValidatorStatusResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.status":
-		x.Status = value.Bool()
+	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.is_old":
+		x.IsOld = value.Bool()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryValidatorStatusResponse"))
@@ -3859,8 +3859,8 @@ func (x *fastReflection_QueryValidatorStatusResponse) Set(fd protoreflect.FieldD
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryValidatorStatusResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.status":
-		panic(fmt.Errorf("field status of message heimdallv2.stake.v1.QueryValidatorStatusResponse is not mutable"))
+	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.is_old":
+		panic(fmt.Errorf("field is_old of message heimdallv2.stake.v1.QueryValidatorStatusResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryValidatorStatusResponse"))
@@ -3874,7 +3874,7 @@ func (x *fastReflection_QueryValidatorStatusResponse) Mutable(fd protoreflect.Fi
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QueryValidatorStatusResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.status":
+	case "heimdallv2.stake.v1.QueryValidatorStatusResponse.is_old":
 		return protoreflect.ValueOfBool(false)
 	default:
 		if fd.IsExtension() {
@@ -3945,7 +3945,7 @@ func (x *fastReflection_QueryValidatorStatusResponse) ProtoMethods() *protoiface
 		var n int
 		var l int
 		_ = l
-		if x.Status {
+		if x.IsOld {
 			n += 2
 		}
 		if x.unknownFields != nil {
@@ -3977,9 +3977,9 @@ func (x *fastReflection_QueryValidatorStatusResponse) ProtoMethods() *protoiface
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.Status {
+		if x.IsOld {
 			i--
-			if x.Status {
+			if x.IsOld {
 				dAtA[i] = 1
 			} else {
 				dAtA[i] = 0
@@ -4038,7 +4038,7 @@ func (x *fastReflection_QueryValidatorStatusResponse) ProtoMethods() *protoiface
 			switch fieldNum {
 			case 1:
 				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field IsOld", wireType)
 				}
 				var v int
 				for shift := uint(0); ; shift += 7 {
@@ -4055,7 +4055,7 @@ func (x *fastReflection_QueryValidatorStatusResponse) ProtoMethods() *protoiface
 						break
 					}
 				}
-				x.Status = bool(v != 0)
+				x.IsOld = bool(v != 0)
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -4092,27 +4092,27 @@ func (x *fastReflection_QueryValidatorStatusResponse) ProtoMethods() *protoiface
 }
 
 var (
-	md_QueryStakingSequenceRequest           protoreflect.MessageDescriptor
-	fd_QueryStakingSequenceRequest_tx_hash   protoreflect.FieldDescriptor
-	fd_QueryStakingSequenceRequest_log_index protoreflect.FieldDescriptor
+	md_QueryStakingIsOldTxRequest           protoreflect.MessageDescriptor
+	fd_QueryStakingIsOldTxRequest_tx_hash   protoreflect.FieldDescriptor
+	fd_QueryStakingIsOldTxRequest_log_index protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_stake_v1_query_proto_init()
-	md_QueryStakingSequenceRequest = File_heimdallv2_stake_v1_query_proto.Messages().ByName("QueryStakingSequenceRequest")
-	fd_QueryStakingSequenceRequest_tx_hash = md_QueryStakingSequenceRequest.Fields().ByName("tx_hash")
-	fd_QueryStakingSequenceRequest_log_index = md_QueryStakingSequenceRequest.Fields().ByName("log_index")
+	md_QueryStakingIsOldTxRequest = File_heimdallv2_stake_v1_query_proto.Messages().ByName("QueryStakingIsOldTxRequest")
+	fd_QueryStakingIsOldTxRequest_tx_hash = md_QueryStakingIsOldTxRequest.Fields().ByName("tx_hash")
+	fd_QueryStakingIsOldTxRequest_log_index = md_QueryStakingIsOldTxRequest.Fields().ByName("log_index")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryStakingSequenceRequest)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryStakingIsOldTxRequest)(nil)
 
-type fastReflection_QueryStakingSequenceRequest QueryStakingSequenceRequest
+type fastReflection_QueryStakingIsOldTxRequest QueryStakingIsOldTxRequest
 
-func (x *QueryStakingSequenceRequest) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryStakingSequenceRequest)(x)
+func (x *QueryStakingIsOldTxRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryStakingIsOldTxRequest)(x)
 }
 
-func (x *QueryStakingSequenceRequest) slowProtoReflect() protoreflect.Message {
+func (x *QueryStakingIsOldTxRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_stake_v1_query_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4124,43 +4124,43 @@ func (x *QueryStakingSequenceRequest) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryStakingSequenceRequest_messageType fastReflection_QueryStakingSequenceRequest_messageType
-var _ protoreflect.MessageType = fastReflection_QueryStakingSequenceRequest_messageType{}
+var _fastReflection_QueryStakingIsOldTxRequest_messageType fastReflection_QueryStakingIsOldTxRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryStakingIsOldTxRequest_messageType{}
 
-type fastReflection_QueryStakingSequenceRequest_messageType struct{}
+type fastReflection_QueryStakingIsOldTxRequest_messageType struct{}
 
-func (x fastReflection_QueryStakingSequenceRequest_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryStakingSequenceRequest)(nil)
+func (x fastReflection_QueryStakingIsOldTxRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryStakingIsOldTxRequest)(nil)
 }
-func (x fastReflection_QueryStakingSequenceRequest_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryStakingSequenceRequest)
+func (x fastReflection_QueryStakingIsOldTxRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryStakingIsOldTxRequest)
 }
-func (x fastReflection_QueryStakingSequenceRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryStakingSequenceRequest
+func (x fastReflection_QueryStakingIsOldTxRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryStakingIsOldTxRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryStakingSequenceRequest) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryStakingSequenceRequest
+func (x *fastReflection_QueryStakingIsOldTxRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryStakingIsOldTxRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryStakingSequenceRequest) Type() protoreflect.MessageType {
-	return _fastReflection_QueryStakingSequenceRequest_messageType
+func (x *fastReflection_QueryStakingIsOldTxRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryStakingIsOldTxRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryStakingSequenceRequest) New() protoreflect.Message {
-	return new(fastReflection_QueryStakingSequenceRequest)
+func (x *fastReflection_QueryStakingIsOldTxRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryStakingIsOldTxRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryStakingSequenceRequest) Interface() protoreflect.ProtoMessage {
-	return (*QueryStakingSequenceRequest)(x)
+func (x *fastReflection_QueryStakingIsOldTxRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryStakingIsOldTxRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -4168,16 +4168,16 @@ func (x *fastReflection_QueryStakingSequenceRequest) Interface() protoreflect.Pr
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryStakingSequenceRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_QueryStakingIsOldTxRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.TxHash != "" {
 		value := protoreflect.ValueOfString(x.TxHash)
-		if !f(fd_QueryStakingSequenceRequest_tx_hash, value) {
+		if !f(fd_QueryStakingIsOldTxRequest_tx_hash, value) {
 			return
 		}
 	}
 	if x.LogIndex != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.LogIndex)
-		if !f(fd_QueryStakingSequenceRequest_log_index, value) {
+		if !f(fd_QueryStakingIsOldTxRequest_log_index, value) {
 			return
 		}
 	}
@@ -4194,17 +4194,17 @@ func (x *fastReflection_QueryStakingSequenceRequest) Range(f func(protoreflect.F
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryStakingSequenceRequest) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryStakingIsOldTxRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.tx_hash":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.tx_hash":
 		return x.TxHash != ""
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.log_index":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.log_index":
 		return x.LogIndex != uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4214,17 +4214,17 @@ func (x *fastReflection_QueryStakingSequenceRequest) Has(fd protoreflect.FieldDe
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceRequest) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryStakingIsOldTxRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.tx_hash":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.tx_hash":
 		x.TxHash = ""
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.log_index":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.log_index":
 		x.LogIndex = uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4234,19 +4234,19 @@ func (x *fastReflection_QueryStakingSequenceRequest) Clear(fd protoreflect.Field
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryStakingSequenceRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryStakingIsOldTxRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.tx_hash":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.tx_hash":
 		value := x.TxHash
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.log_index":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.log_index":
 		value := x.LogIndex
 		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceRequest does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -4260,17 +4260,17 @@ func (x *fastReflection_QueryStakingSequenceRequest) Get(descriptor protoreflect
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryStakingIsOldTxRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.tx_hash":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.tx_hash":
 		x.TxHash = value.Interface().(string)
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.log_index":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.log_index":
 		x.LogIndex = value.Uint()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4284,44 +4284,44 @@ func (x *fastReflection_QueryStakingSequenceRequest) Set(fd protoreflect.FieldDe
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryStakingIsOldTxRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.tx_hash":
-		panic(fmt.Errorf("field tx_hash of message heimdallv2.stake.v1.QueryStakingSequenceRequest is not mutable"))
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.log_index":
-		panic(fmt.Errorf("field log_index of message heimdallv2.stake.v1.QueryStakingSequenceRequest is not mutable"))
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.tx_hash":
+		panic(fmt.Errorf("field tx_hash of message heimdallv2.stake.v1.QueryStakingIsOldTxRequest is not mutable"))
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.log_index":
+		panic(fmt.Errorf("field log_index of message heimdallv2.stake.v1.QueryStakingIsOldTxRequest is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryStakingSequenceRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryStakingIsOldTxRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.tx_hash":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.tx_hash":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.stake.v1.QueryStakingSequenceRequest.log_index":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxRequest.log_index":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryStakingSequenceRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryStakingIsOldTxRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.stake.v1.QueryStakingSequenceRequest", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.stake.v1.QueryStakingIsOldTxRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -4329,7 +4329,7 @@ func (x *fastReflection_QueryStakingSequenceRequest) WhichOneof(d protoreflect.O
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryStakingSequenceRequest) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryStakingIsOldTxRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -4340,7 +4340,7 @@ func (x *fastReflection_QueryStakingSequenceRequest) GetUnknown() protoreflect.R
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceRequest) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryStakingIsOldTxRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -4352,7 +4352,7 @@ func (x *fastReflection_QueryStakingSequenceRequest) SetUnknown(fields protorefl
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryStakingSequenceRequest) IsValid() bool {
+func (x *fastReflection_QueryStakingIsOldTxRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -4362,9 +4362,9 @@ func (x *fastReflection_QueryStakingSequenceRequest) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryStakingSequenceRequest) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryStakingIsOldTxRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryStakingSequenceRequest)
+		x := input.Message.Interface().(*QueryStakingIsOldTxRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4393,7 +4393,7 @@ func (x *fastReflection_QueryStakingSequenceRequest) ProtoMethods() *protoiface.
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryStakingSequenceRequest)
+		x := input.Message.Interface().(*QueryStakingIsOldTxRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4435,7 +4435,7 @@ func (x *fastReflection_QueryStakingSequenceRequest) ProtoMethods() *protoiface.
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryStakingSequenceRequest)
+		x := input.Message.Interface().(*QueryStakingIsOldTxRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4467,10 +4467,10 @@ func (x *fastReflection_QueryStakingSequenceRequest) ProtoMethods() *protoiface.
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingSequenceRequest: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingIsOldTxRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingSequenceRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingIsOldTxRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -4560,25 +4560,25 @@ func (x *fastReflection_QueryStakingSequenceRequest) ProtoMethods() *protoiface.
 }
 
 var (
-	md_QueryStakingSequenceResponse        protoreflect.MessageDescriptor
-	fd_QueryStakingSequenceResponse_status protoreflect.FieldDescriptor
+	md_QueryStakingIsOldTxResponse        protoreflect.MessageDescriptor
+	fd_QueryStakingIsOldTxResponse_is_old protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_stake_v1_query_proto_init()
-	md_QueryStakingSequenceResponse = File_heimdallv2_stake_v1_query_proto.Messages().ByName("QueryStakingSequenceResponse")
-	fd_QueryStakingSequenceResponse_status = md_QueryStakingSequenceResponse.Fields().ByName("status")
+	md_QueryStakingIsOldTxResponse = File_heimdallv2_stake_v1_query_proto.Messages().ByName("QueryStakingIsOldTxResponse")
+	fd_QueryStakingIsOldTxResponse_is_old = md_QueryStakingIsOldTxResponse.Fields().ByName("is_old")
 }
 
-var _ protoreflect.Message = (*fastReflection_QueryStakingSequenceResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_QueryStakingIsOldTxResponse)(nil)
 
-type fastReflection_QueryStakingSequenceResponse QueryStakingSequenceResponse
+type fastReflection_QueryStakingIsOldTxResponse QueryStakingIsOldTxResponse
 
-func (x *QueryStakingSequenceResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_QueryStakingSequenceResponse)(x)
+func (x *QueryStakingIsOldTxResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryStakingIsOldTxResponse)(x)
 }
 
-func (x *QueryStakingSequenceResponse) slowProtoReflect() protoreflect.Message {
+func (x *QueryStakingIsOldTxResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_stake_v1_query_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4590,43 +4590,43 @@ func (x *QueryStakingSequenceResponse) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_QueryStakingSequenceResponse_messageType fastReflection_QueryStakingSequenceResponse_messageType
-var _ protoreflect.MessageType = fastReflection_QueryStakingSequenceResponse_messageType{}
+var _fastReflection_QueryStakingIsOldTxResponse_messageType fastReflection_QueryStakingIsOldTxResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryStakingIsOldTxResponse_messageType{}
 
-type fastReflection_QueryStakingSequenceResponse_messageType struct{}
+type fastReflection_QueryStakingIsOldTxResponse_messageType struct{}
 
-func (x fastReflection_QueryStakingSequenceResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_QueryStakingSequenceResponse)(nil)
+func (x fastReflection_QueryStakingIsOldTxResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryStakingIsOldTxResponse)(nil)
 }
-func (x fastReflection_QueryStakingSequenceResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_QueryStakingSequenceResponse)
+func (x fastReflection_QueryStakingIsOldTxResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryStakingIsOldTxResponse)
 }
-func (x fastReflection_QueryStakingSequenceResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryStakingSequenceResponse
+func (x fastReflection_QueryStakingIsOldTxResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryStakingIsOldTxResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_QueryStakingSequenceResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_QueryStakingSequenceResponse
+func (x *fastReflection_QueryStakingIsOldTxResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryStakingIsOldTxResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_QueryStakingSequenceResponse) Type() protoreflect.MessageType {
-	return _fastReflection_QueryStakingSequenceResponse_messageType
+func (x *fastReflection_QueryStakingIsOldTxResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryStakingIsOldTxResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_QueryStakingSequenceResponse) New() protoreflect.Message {
-	return new(fastReflection_QueryStakingSequenceResponse)
+func (x *fastReflection_QueryStakingIsOldTxResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryStakingIsOldTxResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_QueryStakingSequenceResponse) Interface() protoreflect.ProtoMessage {
-	return (*QueryStakingSequenceResponse)(x)
+func (x *fastReflection_QueryStakingIsOldTxResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryStakingIsOldTxResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -4634,10 +4634,10 @@ func (x *fastReflection_QueryStakingSequenceResponse) Interface() protoreflect.P
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_QueryStakingSequenceResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Status != false {
-		value := protoreflect.ValueOfBool(x.Status)
-		if !f(fd_QueryStakingSequenceResponse_status, value) {
+func (x *fastReflection_QueryStakingIsOldTxResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.IsOld != false {
+		value := protoreflect.ValueOfBool(x.IsOld)
+		if !f(fd_QueryStakingIsOldTxResponse_is_old, value) {
 			return
 		}
 	}
@@ -4654,15 +4654,15 @@ func (x *fastReflection_QueryStakingSequenceResponse) Range(f func(protoreflect.
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_QueryStakingSequenceResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_QueryStakingIsOldTxResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceResponse.status":
-		return x.Status != false
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxResponse.is_old":
+		return x.IsOld != false
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4672,15 +4672,15 @@ func (x *fastReflection_QueryStakingSequenceResponse) Has(fd protoreflect.FieldD
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_QueryStakingIsOldTxResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceResponse.status":
-		x.Status = false
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxResponse.is_old":
+		x.IsOld = false
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4690,16 +4690,16 @@ func (x *fastReflection_QueryStakingSequenceResponse) Clear(fd protoreflect.Fiel
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_QueryStakingSequenceResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryStakingIsOldTxResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceResponse.status":
-		value := x.Status
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxResponse.is_old":
+		value := x.IsOld
 		return protoreflect.ValueOfBool(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -4713,15 +4713,15 @@ func (x *fastReflection_QueryStakingSequenceResponse) Get(descriptor protoreflec
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_QueryStakingIsOldTxResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceResponse.status":
-		x.Status = value.Bool()
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxResponse.is_old":
+		x.IsOld = value.Bool()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4735,40 +4735,40 @@ func (x *fastReflection_QueryStakingSequenceResponse) Set(fd protoreflect.FieldD
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryStakingIsOldTxResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceResponse.status":
-		panic(fmt.Errorf("field status of message heimdallv2.stake.v1.QueryStakingSequenceResponse is not mutable"))
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxResponse.is_old":
+		panic(fmt.Errorf("field is_old of message heimdallv2.stake.v1.QueryStakingIsOldTxResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_QueryStakingSequenceResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_QueryStakingIsOldTxResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.stake.v1.QueryStakingSequenceResponse.status":
+	case "heimdallv2.stake.v1.QueryStakingIsOldTxResponse.is_old":
 		return protoreflect.ValueOfBool(false)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingSequenceResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.stake.v1.QueryStakingIsOldTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingSequenceResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.stake.v1.QueryStakingIsOldTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_QueryStakingSequenceResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_QueryStakingIsOldTxResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.stake.v1.QueryStakingSequenceResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.stake.v1.QueryStakingIsOldTxResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -4776,7 +4776,7 @@ func (x *fastReflection_QueryStakingSequenceResponse) WhichOneof(d protoreflect.
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_QueryStakingSequenceResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_QueryStakingIsOldTxResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -4787,7 +4787,7 @@ func (x *fastReflection_QueryStakingSequenceResponse) GetUnknown() protoreflect.
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_QueryStakingSequenceResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_QueryStakingIsOldTxResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -4799,7 +4799,7 @@ func (x *fastReflection_QueryStakingSequenceResponse) SetUnknown(fields protoref
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_QueryStakingSequenceResponse) IsValid() bool {
+func (x *fastReflection_QueryStakingIsOldTxResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -4809,9 +4809,9 @@ func (x *fastReflection_QueryStakingSequenceResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_QueryStakingSequenceResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_QueryStakingIsOldTxResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*QueryStakingSequenceResponse)
+		x := input.Message.Interface().(*QueryStakingIsOldTxResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4823,7 +4823,7 @@ func (x *fastReflection_QueryStakingSequenceResponse) ProtoMethods() *protoiface
 		var n int
 		var l int
 		_ = l
-		if x.Status {
+		if x.IsOld {
 			n += 2
 		}
 		if x.unknownFields != nil {
@@ -4836,7 +4836,7 @@ func (x *fastReflection_QueryStakingSequenceResponse) ProtoMethods() *protoiface
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*QueryStakingSequenceResponse)
+		x := input.Message.Interface().(*QueryStakingIsOldTxResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4855,9 +4855,9 @@ func (x *fastReflection_QueryStakingSequenceResponse) ProtoMethods() *protoiface
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.Status {
+		if x.IsOld {
 			i--
-			if x.Status {
+			if x.IsOld {
 				dAtA[i] = 1
 			} else {
 				dAtA[i] = 0
@@ -4876,7 +4876,7 @@ func (x *fastReflection_QueryStakingSequenceResponse) ProtoMethods() *protoiface
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*QueryStakingSequenceResponse)
+		x := input.Message.Interface().(*QueryStakingIsOldTxResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4908,15 +4908,15 @@ func (x *fastReflection_QueryStakingSequenceResponse) ProtoMethods() *protoiface
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingSequenceResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingIsOldTxResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingSequenceResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryStakingIsOldTxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
 				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field IsOld", wireType)
 				}
 				var v int
 				for shift := uint(0); ; shift += 7 {
@@ -4933,7 +4933,7 @@ func (x *fastReflection_QueryStakingSequenceResponse) ProtoMethods() *protoiface
 						break
 					}
 				}
-				x.Status = bool(v != 0)
+				x.IsOld = bool(v != 0)
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -5017,7 +5017,7 @@ type QueryCurrentValidatorSetResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// validators contains all the queried svalidators.
+	// validator_set contains the queried set of validators
 	ValidatorSet *ValidatorSet `protobuf:"bytes,1,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
 }
 
@@ -5048,7 +5048,7 @@ func (x *QueryCurrentValidatorSetResponse) GetValidatorSet() *ValidatorSet {
 	return nil
 }
 
-// QuerySignerRequest is response type for the Query/Signer RPC method
+// QuerySignerRequest is request type for the Query/Signer RPC method
 type QuerySignerRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5122,13 +5122,13 @@ func (x *QuerySignerResponse) GetValidator() *Validator {
 	return nil
 }
 
-// QueryValidatorRequest is response type for the Query/Validator RPC method
+// QueryValidatorRequest is request type for the Query/Validator RPC method
 type QueryValidatorRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// validator_id defines the validator id to query for.
+	// id defines the validator id to query for.
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -5231,6 +5231,7 @@ type QueryTotalPowerResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// total power denotes the total power of all the validators
 	TotalPower int64 `protobuf:"varint,1,opt,name=total_power,json=totalPower,proto3" json:"total_power,omitempty"`
 }
 
@@ -5268,7 +5269,7 @@ type QueryValidatorStatusRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// val_address defines the validator val_address to query for.
+	// val_address defines the validator address to query for.
 	ValAddress string `protobuf:"bytes,1,opt,name=val_address,json=valAddress,proto3" json:"val_address,omitempty"`
 }
 
@@ -5306,8 +5307,9 @@ type QueryValidatorStatusResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// status define the active status of validator
-	Status bool `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
+	// status define whether the particular validator is active in the validator
+	// set
+	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
 func (x *QueryValidatorStatusResponse) Reset() {
@@ -5330,16 +5332,16 @@ func (*QueryValidatorStatusResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_v1_query_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *QueryValidatorStatusResponse) GetStatus() bool {
+func (x *QueryValidatorStatusResponse) GetIsOld() bool {
 	if x != nil {
-		return x.Status
+		return x.IsOld
 	}
 	return false
 }
 
-// QueryStakingSequenceRequest is response type for the Query/StakingSequence
+// QueryStakingIsOldTxRequest is request type for the Query/StakingIsOldTx
 // RPC method
-type QueryStakingSequenceRequest struct {
+type QueryStakingIsOldTxRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -5348,8 +5350,8 @@ type QueryStakingSequenceRequest struct {
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
-func (x *QueryStakingSequenceRequest) Reset() {
-	*x = QueryStakingSequenceRequest{}
+func (x *QueryStakingIsOldTxRequest) Reset() {
+	*x = QueryStakingIsOldTxRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_stake_v1_query_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5357,44 +5359,44 @@ func (x *QueryStakingSequenceRequest) Reset() {
 	}
 }
 
-func (x *QueryStakingSequenceRequest) String() string {
+func (x *QueryStakingIsOldTxRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryStakingSequenceRequest) ProtoMessage() {}
+func (*QueryStakingIsOldTxRequest) ProtoMessage() {}
 
-// Deprecated: Use QueryStakingSequenceRequest.ProtoReflect.Descriptor instead.
-func (*QueryStakingSequenceRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryStakingIsOldTxRequest.ProtoReflect.Descriptor instead.
+func (*QueryStakingIsOldTxRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_v1_query_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *QueryStakingSequenceRequest) GetTxHash() string {
+func (x *QueryStakingIsOldTxRequest) GetTxHash() string {
 	if x != nil {
 		return x.TxHash
 	}
 	return ""
 }
 
-func (x *QueryStakingSequenceRequest) GetLogIndex() uint64 {
+func (x *QueryStakingIsOldTxRequest) GetLogIndex() uint64 {
 	if x != nil {
 		return x.LogIndex
 	}
 	return 0
 }
 
-// QueryStakingSequenceResponse is response type for the Query/StakingSequence
+// QueryStakingIsOldTxResponse is response type for the Query/StakingIsOldTx
 // RPC method
-type QueryStakingSequenceResponse struct {
+type QueryStakingIsOldTxResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// status define the active status of validator
-	Status bool `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
+	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
-func (x *QueryStakingSequenceResponse) Reset() {
-	*x = QueryStakingSequenceResponse{}
+func (x *QueryStakingIsOldTxResponse) Reset() {
+	*x = QueryStakingIsOldTxResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_stake_v1_query_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5402,20 +5404,20 @@ func (x *QueryStakingSequenceResponse) Reset() {
 	}
 }
 
-func (x *QueryStakingSequenceResponse) String() string {
+func (x *QueryStakingIsOldTxResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*QueryStakingSequenceResponse) ProtoMessage() {}
+func (*QueryStakingIsOldTxResponse) ProtoMessage() {}
 
-// Deprecated: Use QueryStakingSequenceResponse.ProtoReflect.Descriptor instead.
-func (*QueryStakingSequenceResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use QueryStakingIsOldTxResponse.ProtoReflect.Descriptor instead.
+func (*QueryStakingIsOldTxResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_v1_query_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *QueryStakingSequenceResponse) GetStatus() bool {
+func (x *QueryStakingIsOldTxResponse) GetIsOld() bool {
 	if x != nil {
-		return x.Status
+		return x.IsOld
 	}
 	return false
 }
@@ -5473,93 +5475,93 @@ var file_heimdallv2_stake_v1_query_proto_rawDesc = []byte{
 	0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52,
 	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x26, 0x0a, 0x0b, 0x76, 0x61, 0x6c, 0x5f, 0x61, 0x64,
 	0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
-	0x2a, 0x01, 0x52, 0x0a, 0x76, 0x61, 0x6c, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x3d,
+	0x2a, 0x01, 0x52, 0x0a, 0x76, 0x61, 0x6c, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x3c,
 	0x0a, 0x1c, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72,
-	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1d,
-	0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x42, 0x05,
-	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x22, 0x61, 0x0a,
-	0x1b, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x71,
-	0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a, 0x07,
-	0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8,
-	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x12, 0x22, 0x0a, 0x09,
-	0x6c, 0x6f, 0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42,
-	0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x6c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78,
-	0x22, 0x3d, 0x0a, 0x1c, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67,
-	0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x12, 0x1d, 0x0a, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08,
-	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x32,
-	0x9b, 0x07, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0xa7, 0x01, 0x0a, 0x13, 0x43, 0x75,
-	0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65,
-	0x74, 0x12, 0x34, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73,
-	0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x75, 0x72,
-	0x72, 0x65, 0x6e, 0x74, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x35, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1c,
+	0x0a, 0x06, 0x69, 0x73, 0x5f, 0x6f, 0x6c, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x42, 0x05,
+	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x69, 0x73, 0x4f, 0x6c, 0x64, 0x22, 0x60, 0x0a, 0x1a,
+	0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x49, 0x73, 0x4f, 0x6c,
+	0x64, 0x54, 0x78, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78,
+	0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
+	0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x12, 0x22, 0x0a, 0x09, 0x6c, 0x6f,
+	0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8,
+	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x6c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x22, 0x3b,
+	0x0a, 0x1b, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x49, 0x73,
+	0x4f, 0x6c, 0x64, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1c, 0x0a,
+	0x06, 0x69, 0x73, 0x5f, 0x6f, 0x6c, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x42, 0x05, 0xa8,
+	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x69, 0x73, 0x4f, 0x6c, 0x64, 0x32, 0x9b, 0x07, 0x0a, 0x05,
+	0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0xa7, 0x01, 0x0a, 0x13, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e,
+	0x74, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x12, 0x34, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65,
+	0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74,
+	0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x35, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43,
+	0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53,
+	0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x23, 0x88, 0xe7, 0xb0, 0x2a,
+	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x18, 0x12, 0x16, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e,
+	0x67, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x2d, 0x73, 0x65, 0x74, 0x12,
+	0x87, 0x01, 0x0a, 0x06, 0x53, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53,
+	0x69, 0x67, 0x6e, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2a, 0x88,
+	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x73, 0x74, 0x61,
+	0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x2f, 0x7b, 0x76, 0x61, 0x6c,
+	0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x12, 0x8a, 0x01, 0x0a, 0x09, 0x56, 0x61,
+	0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x12, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
 	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61,
-	0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x23,
-	0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x18, 0x12, 0x16, 0x2f, 0x73, 0x74,
-	0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x2d,
-	0x73, 0x65, 0x74, 0x12, 0x87, 0x01, 0x0a, 0x06, 0x53, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x12, 0x27,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x69, 0x67, 0x6e, 0x65, 0x72,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x53, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x2a, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d,
-	0x2f, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x73, 0x69, 0x67, 0x6e, 0x65, 0x72, 0x2f,
-	0x7b, 0x76, 0x61, 0x6c, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x12, 0x8a, 0x01,
-	0x0a, 0x09, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x12, 0x2a, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x24, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x19, 0x12, 0x17, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x76, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x6f, 0x72, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0xac, 0x01, 0x0a, 0x0f, 0x56,
-	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x30,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61,
-	0x74, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74,
-	0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69,
-	0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x34, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x29,
-	0x12, 0x27, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x6f, 0x72, 0x2d, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x2f, 0x7b, 0x76, 0x61, 0x6c,
-	0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x7d, 0x12, 0x89, 0x01, 0x0a, 0x0a, 0x54, 0x6f,
-	0x74, 0x61, 0x6c, 0x50, 0x6f, 0x77, 0x65, 0x72, 0x12, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x50, 0x6f, 0x77, 0x65, 0x72, 0x52, 0x65,
-	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x1a, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56,
+	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x24, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x19, 0x12, 0x17, 0x2f,
+	0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
+	0x72, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0xac, 0x01, 0x0a, 0x0f, 0x56, 0x61, 0x6c, 0x69, 0x64,
+	0x61, 0x74, 0x6f, 0x72, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x12, 0x30, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53,
+	0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x31, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e,
+	0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
+	0x72, 0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x34, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x29, 0x12, 0x27, 0x2f, 0x73,
+	0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72,
+	0x2d, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x2f, 0x7b, 0x76, 0x61, 0x6c, 0x5f, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x7d, 0x12, 0x8a, 0x01, 0x0a, 0x0a, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x50,
+	0x6f, 0x77, 0x65, 0x72, 0x12, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x54, 0x6f, 0x74, 0x61, 0x6c, 0x50, 0x6f, 0x77, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73,
+	0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x54, 0x6f, 0x74,
+	0x61, 0x6c, 0x50, 0x6f, 0x77, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
+	0x21, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x16, 0x12, 0x14, 0x2f, 0x73,
+	0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x2d, 0x70, 0x6f, 0x77,
+	0x65, 0x72, 0x12, 0x94, 0x01, 0x0a, 0x0e, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x49, 0x73,
+	0x4f, 0x6c, 0x64, 0x54, 0x78, 0x12, 0x2f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
 	0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x54, 0x6f, 0x74, 0x61, 0x6c, 0x50, 0x6f, 0x77, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x20, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15,
-	0x12, 0x13, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x74, 0x6f, 0x74, 0x61, 0x6c,
-	0x70, 0x6f, 0x77, 0x65, 0x72, 0x12, 0x95, 0x01, 0x0a, 0x0f, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e,
-	0x67, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x30, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x53, 0x65, 0x71, 0x75,
-	0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x31, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76,
-	0x31, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x53, 0x65,
-	0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1d,
-	0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x12, 0x12, 0x10, 0x2f, 0x73, 0x74,
-	0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f, 0x69, 0x73, 0x6f, 0x6c, 0x64, 0x74, 0x78, 0x42, 0xd5, 0x01,
-	0x0a, 0x17, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
-	0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2f, 0x76,
-	0x31, 0x3b, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x53, 0x58, 0xaa,
-	0x02, 0x13, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x53, 0x74, 0x61,
-	0x6b, 0x65, 0x2e, 0x56, 0x31, 0xca, 0x02, 0x13, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x5c, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1f, 0x48, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x5c, 0x56,
-	0x31, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x15,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x53, 0x74, 0x61, 0x6b,
-	0x65, 0x3a, 0x3a, 0x56, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x49, 0x73, 0x4f, 0x6c, 0x64, 0x54, 0x78, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x30, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x53, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x49, 0x73, 0x4f, 0x6c, 0x64, 0x54, 0x78,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x14, 0x12, 0x12, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x69, 0x6e, 0x67, 0x2f,
+	0x69, 0x73, 0x2d, 0x6f, 0x6c, 0x64, 0x2d, 0x74, 0x78, 0x42, 0xd5, 0x01, 0x0a, 0x17, 0x63, 0x6f,
+	0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61,
+	0x6b, 0x65, 0x2e, 0x76, 0x31, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74,
+	0x6f, 0x50, 0x01, 0x5a, 0x40, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f,
+	0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2f, 0x76, 0x31, 0x3b, 0x73, 0x74,
+	0x61, 0x6b, 0x65, 0x76, 0x31, 0xa2, 0x02, 0x03, 0x48, 0x53, 0x58, 0xaa, 0x02, 0x13, 0x48, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x56,
+	0x31, 0xca, 0x02, 0x13, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53,
+	0x74, 0x61, 0x6b, 0x65, 0x5c, 0x56, 0x31, 0xe2, 0x02, 0x1f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x5c, 0x56, 0x31, 0x5c, 0x47, 0x50,
+	0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x53, 0x74, 0x61, 0x6b, 0x65, 0x3a, 0x3a, 0x56,
+	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5586,8 +5588,8 @@ var file_heimdallv2_stake_v1_query_proto_goTypes = []interface{}{
 	(*QueryTotalPowerResponse)(nil),          // 7: heimdallv2.stake.v1.QueryTotalPowerResponse
 	(*QueryValidatorStatusRequest)(nil),      // 8: heimdallv2.stake.v1.QueryValidatorStatusRequest
 	(*QueryValidatorStatusResponse)(nil),     // 9: heimdallv2.stake.v1.QueryValidatorStatusResponse
-	(*QueryStakingSequenceRequest)(nil),      // 10: heimdallv2.stake.v1.QueryStakingSequenceRequest
-	(*QueryStakingSequenceResponse)(nil),     // 11: heimdallv2.stake.v1.QueryStakingSequenceResponse
+	(*QueryStakingIsOldTxRequest)(nil),       // 10: heimdallv2.stake.v1.QueryStakingIsOldTxRequest
+	(*QueryStakingIsOldTxResponse)(nil),      // 11: heimdallv2.stake.v1.QueryStakingIsOldTxResponse
 	(*ValidatorSet)(nil),                     // 12: heimdallv2.stake.v1.ValidatorSet
 	(*Validator)(nil),                        // 13: heimdallv2.stake.v1.Validator
 }
@@ -5600,13 +5602,13 @@ var file_heimdallv2_stake_v1_query_proto_depIdxs = []int32{
 	4,  // 5: heimdallv2.stake.v1.Query.Validator:input_type -> heimdallv2.stake.v1.QueryValidatorRequest
 	8,  // 6: heimdallv2.stake.v1.Query.ValidatorStatus:input_type -> heimdallv2.stake.v1.QueryValidatorStatusRequest
 	6,  // 7: heimdallv2.stake.v1.Query.TotalPower:input_type -> heimdallv2.stake.v1.QueryTotalPowerRequest
-	10, // 8: heimdallv2.stake.v1.Query.StakingSequence:input_type -> heimdallv2.stake.v1.QueryStakingSequenceRequest
+	10, // 8: heimdallv2.stake.v1.Query.StakingIsOldTx:input_type -> heimdallv2.stake.v1.QueryStakingIsOldTxRequest
 	1,  // 9: heimdallv2.stake.v1.Query.CurrentValidatorSet:output_type -> heimdallv2.stake.v1.QueryCurrentValidatorSetResponse
 	3,  // 10: heimdallv2.stake.v1.Query.Signer:output_type -> heimdallv2.stake.v1.QuerySignerResponse
 	5,  // 11: heimdallv2.stake.v1.Query.Validator:output_type -> heimdallv2.stake.v1.QueryValidatorResponse
 	9,  // 12: heimdallv2.stake.v1.Query.ValidatorStatus:output_type -> heimdallv2.stake.v1.QueryValidatorStatusResponse
 	7,  // 13: heimdallv2.stake.v1.Query.TotalPower:output_type -> heimdallv2.stake.v1.QueryTotalPowerResponse
-	11, // 14: heimdallv2.stake.v1.Query.StakingSequence:output_type -> heimdallv2.stake.v1.QueryStakingSequenceResponse
+	11, // 14: heimdallv2.stake.v1.Query.StakingIsOldTx:output_type -> heimdallv2.stake.v1.QueryStakingIsOldTxResponse
 	9,  // [9:15] is the sub-list for method output_type
 	3,  // [3:9] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
@@ -5742,7 +5744,7 @@ func file_heimdallv2_stake_v1_query_proto_init() {
 			}
 		}
 		file_heimdallv2_stake_v1_query_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryStakingSequenceRequest); i {
+			switch v := v.(*QueryStakingIsOldTxRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5754,7 +5756,7 @@ func file_heimdallv2_stake_v1_query_proto_init() {
 			}
 		}
 		file_heimdallv2_stake_v1_query_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*QueryStakingSequenceResponse); i {
+			switch v := v.(*QueryStakingIsOldTxResponse); i {
 			case 0:
 				return &v.state
 			case 1:

@@ -69,11 +69,11 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandle
 	}
 }
 
-// SideHandleMsgValidatorJoin side msg validator join
-func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgValidatorJoin)
+// SideHandleMsgValidatorJoin is a side handler for validator join msg
+func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg) (result hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgValidatorJoin)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -124,7 +124,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 		k.Logger(ctx).Error(
 			"Signer Pubkey does not match",
 			"msgValidator", pubKey.String(),
-			"mainchainValidator", common.Bytes2Hex(eventLog.SignerPubkey),
+			"mainChainValidator", common.Bytes2Hex(eventLog.SignerPubkey),
 		)
 
 		return hmModule.Vote_VOTE_NO
@@ -135,7 +135,7 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 		k.Logger(ctx).Error(
 			"Signer Address from Pubkey does not match",
 			"Validator", signer.String(),
-			"mainchainValidator", eventLog.Signer.Hex(),
+			"mainChainValidator", eventLog.Signer.Hex(),
 		)
 
 		return hmModule.Vote_VOTE_NO
@@ -177,10 +177,10 @@ func (k *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 }
 
 // SideHandleMsgStakeUpdate handles stake update message
-func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgStakeUpdate)
+func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) (result hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgStakeUpdate)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -242,10 +242,10 @@ func (k *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg) 
 }
 
 // SideHandleMsgSignerUpdate handles signer update message
-func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgSignerUpdate)
+func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg) (result hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -305,7 +305,7 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 
 	// check signer corresponding to pubkey matches signer from event
 	if !bytes.Equal(newSigner.Bytes(), eventLog.NewSigner.Bytes()) {
-		k.Logger(ctx).Error("signer address from pubkey does not match", "validator", newSigner.String(), "mainchainValidator", eventLog.NewSigner.Hex())
+		k.Logger(ctx).Error("signer address from pubkey does not match", "validator", newSigner.String(), "mainChainValidator", eventLog.NewSigner.Hex())
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -321,10 +321,10 @@ func (k *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg)
 }
 
 // SideHandleMsgValidatorExit  handle  side msg validator exit
-func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgValidatorExit)
+func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg) (result hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -385,15 +385,11 @@ func (k *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg
 	return hmModule.Vote_VOTE_YES
 }
 
-/*
-	Post Handlers - update the state of the tx
-**/
-
 // PostHandleMsgValidatorJoin msg validator join
-func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgValidatorJoin)
+func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg, sideTxResult hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgValidatorJoin)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return
 	}
 
@@ -493,10 +489,10 @@ func (k *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, _msg sdk.Msg
 }
 
 // PostHandleMsgStakeUpdate handles stake update message
-func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgStakeUpdate)
+func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, sideTxResult hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgStakeUpdate)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return
 	}
 
@@ -573,10 +569,10 @@ func (k *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, _msg sdk.Msg, 
 }
 
 // PostHandleMsgSignerUpdate handles signer update message
-func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgSignerUpdate)
+func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg, sideTxResult hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return
 	}
 
@@ -705,10 +701,10 @@ func (k *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, _msg sdk.Msg,
 }
 
 // PostHandleMsgValidatorExit handle msg validator exit
-func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgValidatorExit)
+func (k *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg, sideTxResult hmModule.Vote) {
+	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
-		k.Logger(ctx).Error("msg type mismatched")
+		k.Logger(ctx).Error("type mismatch for MsgValidatorJoin")
 		return
 	}
 
