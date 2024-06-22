@@ -10,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -46,10 +47,27 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 
 	_, err = keeper.GetValidatorFromValID(ctx, uint64(1))
 	require.NotNilf(err, "Should not add validator")
-}
 
-// TODO HV2: @Vaibhav add negative test cases as well
-//  e.g. ValidatorJoin fails when validator already exists, or it has a duplicate ID, etc.
+	votingPower, err := helper.GetPowerFromAmount(msgValJoin.Amount.BigInt())
+	require.NoError(err)
+
+	newValidator := types.Validator{
+		ValId:       msgValJoin.ValId,
+		StartEpoch:  msgValJoin.ActivationEpoch,
+		EndEpoch:    0,
+		Nonce:       msgValJoin.Nonce,
+		VotingPower: votingPower.Int64(),
+		PubKey:      msgValJoin.SignerPubKey,
+		Signer:      msgValJoin.From,
+		LastUpdated: "",
+	}
+
+	err = keeper.AddValidator(ctx, newValidator)
+	require.NoError(err)
+
+	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
+	require.NotNil(err)
+}
 
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()

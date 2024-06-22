@@ -2,10 +2,11 @@ package keeper
 
 import (
 	"context"
-	"cosmossdk.io/collections"
 	"errors"
 	"fmt"
 	"strings"
+
+	"cosmossdk.io/collections"
 
 	addresscodec "cosmossdk.io/core/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"

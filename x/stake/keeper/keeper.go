@@ -22,6 +22,7 @@ type Keeper struct {
 	schema       collections.Schema
 
 	checkpointKeeper      types.CheckpointKeeper
+	bankKeeper            types.BankKeeper
 	cmKeeper              cmKeeper.Keeper
 	validatorAddressCodec addresscodec.Codec
 	contractCaller        helper.IContractCaller
@@ -37,6 +38,7 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
 	checkpointKeeper types.CheckpointKeeper,
+	bankKeeper types.BankKeeper,
 	cmKeeper cmKeeper.Keeper,
 	validatorAddressCodec addresscodec.Codec,
 	contractCaller helper.IContractCaller,
@@ -47,6 +49,7 @@ func NewKeeper(
 		storeService:          storeService,
 		cdc:                   cdc,
 		checkpointKeeper:      checkpointKeeper,
+		bankKeeper:            bankKeeper,
 		cmKeeper:              cmKeeper,
 		validatorAddressCodec: validatorAddressCodec,
 		contractCaller:        contractCaller,

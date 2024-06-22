@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cosmos/cosmos-sdk/codec/address"
+	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -117,7 +118,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	signer := pubKey.Address()
-	ac := address.NewHexCodec()
+	ac := addrCodec.NewHexCodec()
 	_, err = ac.BytesToString(signer.Bytes())
 	if err != nil {
 		s.k.Logger(ctx).Error("error in converting signer address to string", "err", err)
@@ -517,8 +518,6 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
-
-	return
 }
 
 // PostHandleMsgStakeUpdate handles stake update message
@@ -592,8 +591,6 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
-
-	return
 }
 
 // PostHandleMsgSignerUpdate handles signer update message
@@ -687,22 +684,30 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	}
 
 	// Move heimdall fee to new signer
+	oldAccAddress, err := addrCodec.NewHexCodec().StringToBytes(oldValidator.Signer)
+	if err != nil {
+		s.k.Logger(ctx).Error("error in coverting hex address to bytes", "error", err)
+		return
+	}
 
-	/* TODO HV2: @Vaibhav enable this
-	// check if fee is already withdrawn
-	coins := s.k.GetCoins(ctx, oldValidator.Signer)
+	newAccAddress, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
+	if err != nil {
+		s.k.Logger(ctx).Error("error in coverting hex address to bytes", "error", err)
+		return
+	}
 
-	maticBalance := coins.AmountOf(authTypes.FeeToken)
+	coins := s.k.bankKeeper.GetBalance(ctx, oldAccAddress, authTypes.FeeToken)
+
+	maticBalance := coins.Amount.Abs()
 	if !maticBalance.IsZero() {
-	s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer.String(), "to", validator.Signer.String(), "balance", maticBalance.String())
+		s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", maticBalance.String())
 
-	maticCoins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: maticBalance}}
-	if err := s.k.moduleCommunicator.SendCoins(ctx, oldValidator.Signer, validator.Signer, maticCoins); err != nil {
-		s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer.String(), "to", validator.Signer.String(), "balance", maticBalance.String())
-		return err.Result()
+		maticCoins := sdk.Coins{coins}
+		if err := s.k.bankKeeper.SendCoins(ctx, oldAccAddress, newAccAddress, maticCoins); err != nil {
+			s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", maticBalance.String())
+			return
 		}
 	}
-	*/
 
 	txBytes := ctx.TxBytes()
 
@@ -716,8 +721,6 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
-
-	return
 }
 
 // PostHandleMsgValidatorExit handles msg validator exit
@@ -782,6 +785,4 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
-
-	return
 }
