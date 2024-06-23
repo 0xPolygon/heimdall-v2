@@ -9,9 +9,9 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -41,7 +41,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
 		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
+		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -53,8 +53,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
 		Proposer:    common.HexToAddress("0xdummyAddress456").String(),
 		StartBlock:  0,
 		EndBlock:    512,
-		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
-		,
+		RootHash:    hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 	}
 
 	checkpointAdjust.String()
@@ -71,8 +70,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
 	responseCheckpoint, _ := keeper.GetCheckpointByNumber(ctx, 1)
 	require.Equal(responseCheckpoint.EndBlock, uint64(512))
 	require.Equal(responseCheckpoint.Proposer, common.HexToAddress("0xdummyAddress456").String())
-	require.Equal(responseCheckpoint.RootHash,hmTypes.HeimdallHash{testutil.RandomBytes()},
-)
+	require.Equal(responseCheckpoint.RootHash, hmTypes.HeimdallHash{testutil.RandomBytes()})
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain() {
@@ -83,7 +81,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain
 		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		RootHash: hmTypes.HeimdallHash{testutil.RandomBytes()},
+		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -96,7 +94,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain
 		StartBlock:  0,
 		EndBlock:    256,
 		RootHash:    hmTypes.HeimdallHash{testutil.RandomBytes()},
-
 	}
 	rootchainInstance := &rootchain.Rootchain{}
 	s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
@@ -115,7 +112,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustNotSameCheckpointAsRootCh
 		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		RootHash:  hmTypes.HeimdallHash{testutil.RandomBytes()},
+		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -127,8 +124,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustNotSameCheckpointAsRootCh
 		Proposer:    common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock:  0,
 		EndBlock:    256,
-		RootHash:  hmTypes.HeimdallHash{testutil.RandomBytes()},
-
+		RootHash:    hmTypes.HeimdallHash{testutil.RandomBytes()},
 	}
 
 	rootchainInstance := &rootchain.Rootchain{}
@@ -177,7 +173,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		result := s.sideHandler(ctx, &msgCheckpoint)
 		require.Equal(result, hmModule.Vote_VOTE_YES)
 
-		bufferedHeader, _ := keeper.GetCheckpointFromBuffer(ctx)
+		bufferedHeader, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+
 		require.Nil(bufferedHeader, "Should not store state")
 	})
 
