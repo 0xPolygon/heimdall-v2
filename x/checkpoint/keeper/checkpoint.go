@@ -17,30 +17,13 @@ func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, che
 	return nil
 }
 
-// SetCheckpointBuffer flushes Checkpoint Buffer
+// SetCheckpointBuffer sets the checkpoint in buffer
 func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
 	err := k.bufferedCheckpoint.Set(ctx, &checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in setting the buffered checkpoint in store", "error", err)
 		return err
 	}
-
-	return nil
-}
-
-// addCheckpoint adds checkpoint to store
-func (k *Keeper) addCheckpoint(ctx context.Context, key []byte, checkpoint types.Checkpoint) error {
-	store := k.storeService.OpenKVStore(ctx)
-
-	// create Checkpoint block and marshall
-	out, err := k.cdc.Marshal(&checkpoint)
-	if err != nil {
-		k.Logger(ctx).Error("Error marshalling checkpoint", "error", err)
-		return err
-	}
-
-	// store in key provided
-	store.Set(key, out)
 
 	return nil
 }
@@ -55,7 +38,7 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (type
 	return checkpoint, nil
 }
 
-// GetLastCheckpoint gets last checkpoint, checkpoint number = TotalACKs
+// GetLastCheckpoint gets last checkpoint, last checkpoint number is equal to total checkpoint ack count
 func (k *Keeper) GetLastCheckpoint(ctx context.Context) (types.Checkpoint, error) {
 	acksCount := k.GetACKCount(ctx)
 
@@ -85,7 +68,7 @@ func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) {
 	k.bufferedCheckpoint.Remove(ctx)
 }
 
-// GetCheckpointFromBuffer gets checkpoint in buffer
+// GetCheckpointFromBuffer gets buffered checkpoint from store
 func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (*types.Checkpoint, error) {
 	checkpoint, err := k.bufferedCheckpoint.Get(ctx)
 	if err != nil {
@@ -110,7 +93,7 @@ func (k *Keeper) GetLastNoAck(ctx context.Context) uint64 {
 	return res
 }
 
-// GetCheckpoints get checkpoint all checkpoints
+// GetCheckpoints get all the checkpoints from the store
 func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error) {
 	var checkpoints []types.Checkpoint
 
@@ -120,7 +103,12 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error)
 		return checkpoints, err
 	}
 
-	defer iterator.Close()
+	defer func() {
+		err := iterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("error in closing the checkpoint iterator", "error", err)
+		}
+	}()
 
 	var checkpoint types.Checkpoint
 
@@ -137,11 +125,7 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error)
 	return checkpoints, nil
 }
 
-//
-// Ack count
-//
-
-// GetACKCount returns current ACK count
+// GetACKCount returns current ack count
 func (k Keeper) GetACKCount(ctx context.Context) uint64 {
 	res, err := k.ackCount.Get(ctx)
 	if err != nil {

@@ -57,15 +57,16 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		)
 
 		// send checkpoint to handler
-		_, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
+		res, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
+		require.Nil(res)
 		require.NoError(err)
 
-		bufferedHeader, _ := keeper.GetCheckpointFromBuffer(ctx)
+		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
 		require.Empty(bufferedHeader, "Should not store state")
 	})
 
 	s.Run("Invalid Proposer", func() {
-		//ZeroAddresss
 		header.Proposer = common.Address{}.String()
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(
@@ -220,7 +221,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
 	require.NoError(err)
 
-	keeper.SetCheckpointBuffer(ctx, header)
+	err=keeper.SetCheckpointBuffer(ctx, header)
+	require.NoError(err)
 
 	checkpointBuffer, err := keeper.GetCheckpointFromBuffer(ctx)
 	require.NoError(err)
@@ -280,7 +282,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
 	require.NoError(err)
 
-	keeper.SetCheckpointBuffer(ctx, header)
+	err=keeper.SetCheckpointBuffer(ctx, header)
+	require.NoError(err)
 
 	// send checkpoint to handler
 	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
@@ -334,7 +337,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	err = keeper.SetCheckpointBuffer(ctx, header)
 	require.NoError(err)
 
-	s.Run("success", func() {
+	s.Run("Success", func() {
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.Address{}.String(),
 			headerId,

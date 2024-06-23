@@ -10,10 +10,10 @@ import (
 )
 
 type SideMsgServer interface {
-	//SideHandler to register specific sideHandler based on methodName
+	//SideTxHandler to register specific sideHandler based on methodName
 	SideTxHandler(methodName string) hmModule.SideTxHandler
 
-	//PostHandler to register specific postHandler based on methodName
+	//PostTxHandler to register specific postHandler based on methodName
 	PostTxHandler(methodName string) hmModule.PostTxHandler
 }
 

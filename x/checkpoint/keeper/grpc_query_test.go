@@ -4,13 +4,14 @@ import (
 	"time"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {
-	ctx, _, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
+	ctx, queryClient := s.ctx, s.queryClient
 	require := s.Require()
 
 	req := &types.QueryParamsRequest{}
@@ -38,8 +39,8 @@ func (s *KeeperTestSuite) TestQueryAckCount() {
 	require.NoError(err)
 	require.NotNil(res)
 
-	actualAckcount := res.GetCount()
-	require.Equal(actualAckcount, ackCount)
+	actualAckCount := res.GetCount()
+	require.Equal(actualAckCount, ackCount)
 }
 
 func (s *KeeperTestSuite) TestQueryCheckpoint() {
@@ -55,7 +56,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := hmTypes.HexToHeimdallHash("123")
+	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
 	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
@@ -69,7 +70,8 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 		timestamp,
 	)
 
-	keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+	err = keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+	require.NoError(err)
 
 	res, err = queryClient.Checkpoint(ctx, req)
 	require.NoError(err)
@@ -90,7 +92,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := hmTypes.HexToHeimdallHash("123")
+	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
 	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
@@ -130,60 +132,6 @@ func (s *KeeperTestSuite) TestQueryLastNoAck() {
 	require.Equal(res.Result, noAck)
 }
 
-// func (s *KeeperTestSuite) TestQueryCheckpointList() {
-// 	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
-// 	require := s.Require()
-
-// 	keeper := keeper
-
-// 	count := 5
-
-// 	startBlock := uint64(0)
-// 	endBlock := uint64(0)
-// 	checkpoints := make([]hmTypes.Checkpoint, count)
-
-// 	for i := 0; i < count; i++ {
-// 		headerBlockNumber := uint64(i) + 1
-
-// 		startBlock = startBlock + endBlock
-// 		endBlock = endBlock + uint64(255)
-// 		rootHash := hmTypes.HexToHeimdallHash("123")
-// 		proposerAddress := common.HexToAddress("0xdummyAddress123").String()
-// 		timestamp := uint64(time.Now().Unix()) + uint64(i)
-// 		borChainId := "1234"
-
-// 		checkpoint := hmTypes.CreateBlock(
-// 			startBlock,
-// 			endBlock,
-// 			rootHash,
-// 			proposerAddress,
-// 			borChainId,
-// 			timestamp,
-// 		)
-// 		checkpoints[i] = checkpoint
-// 		err := keeper.AddCheckpoint(ctx, headerBlockNumber, checkpoint)
-// 		require.NoError(t, err)
-// 		keeper.UpdateACKCount(ctx)
-// 	}
-
-// 	path := []string{types.QueryCheckpointList}
-
-// 	route := fmt.Sprintf("custom/%s/%s", types.QuerierRoute, types.QueryCheckpointList)
-// 	req := abci.RequestQuery{
-// 		Path: route,
-// 		Data: app.Codec().MustMarshalJSON(hmTypes.NewQueryPaginationParams(uint64(1), uint64(10))),
-// 	}
-// 	res, sdkErr := querier(ctx, path, req)
-// 	require.NoError(t, sdkErr)
-// 	require.NotNil(t, res)
-
-// 	var actualRes []hmTypes.Checkpoint
-
-// 	err := jsoniter.ConfigFastest.Unmarshal(res, &actualRes)
-// 	require.NoError(t, err)
-// 	require.Equal(t, checkpoints, actualRes)
-// }
-
 func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
 	require := s.Require()
@@ -193,7 +141,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HexToHeimdallHash("123")
+	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
 	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
@@ -208,7 +156,8 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	)
 
 	s.contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash.Bytes(), nil)
-	keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+	require.NoError(err)
 
 	req := types.QueryNextCheckpointRequest{BorChainId: borChainId}
 
