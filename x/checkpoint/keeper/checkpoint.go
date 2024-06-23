@@ -2,30 +2,26 @@ package keeper
 
 import (
 	"context"
-	"errors"
-	"strconv"
 
-	storetypes "cosmossdk.io/store/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	"github.com/cosmos/cosmos-sdk/runtime"
 )
 
 // AddCheckpoint adds checkpoint into final blocks
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
-	key := types.GetCheckpointKey(checkpointNumber)
-	if err := k.addCheckpoint(ctx, key, checkpoint); err != nil {
+	err := k.checkpoint.Set(ctx, checkpointNumber, checkpoint)
+	if err != nil {
+		k.Logger(ctx).Error("error in setting the checkpoint in store", "error", err)
 		return err
 	}
-
-	k.Logger(ctx).Info("Adding good checkpoint to state", "checkpoint", checkpoint, "checkpointNumber", checkpointNumber)
 
 	return nil
 }
 
 // SetCheckpointBuffer flushes Checkpoint Buffer
 func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
-	err := k.addCheckpoint(ctx, types.BufferCheckpointKey, checkpoint)
+	err := k.bufferedCheckpoint.Set(ctx, &checkpoint)
 	if err != nil {
+		k.Logger(ctx).Error("error in setting the buffered checkpoint in store", "error", err)
 		return err
 	}
 
@@ -51,92 +47,27 @@ func (k *Keeper) addCheckpoint(ctx context.Context, key []byte, checkpoint types
 
 // GetCheckpointByNumber to get checkpoint by checkpoint number
 func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (types.Checkpoint, error) {
-	store := k.storeService.OpenKVStore(ctx)
-	checkpointKey := types.GetCheckpointKey(number)
-
-	var _checkpoint types.Checkpoint
-
-	chBytes, err := store.Get(checkpointKey)
-
+	checkpoint, err := k.checkpoint.Get(ctx, number)
 	if err != nil {
-		return _checkpoint, errors.New("error while fetchig the checkpoint from the store")
+		return checkpoint, err
 	}
 
-	if chBytes == nil {
-		return _checkpoint, errors.New("Checkpoint not found in store")
-	}
-
-	// unmarshall validator and return
-	_checkpoint, err = types.UnMarshallCheckpoint(k.cdc, chBytes)
-	if err != nil {
-		return _checkpoint, err
-	}
-
-	return _checkpoint, nil
+	return checkpoint, nil
 }
-
-// TODO HV2 This function is not requierd
-// // GetCheckpointList returns all checkpoints with params like page and limit
-// func (k *Keeper) GetCheckpointList(ctx context.Context, page uint64, limit uint64) ([]types.Checkpoint, error) {
-// 	store := k.storeService.OpenKVStore(ctx)
-
-// 	// create headers
-// 	var checkpoints []types.Checkpoint
-
-// 	// have max limit
-// 	if limit > 20 {
-// 		limit = 20
-// 	}
-
-// 	// get validator iterator
-// 	iterator, err := store.Iterator(types.ValidatorsKey, storetypes.PrefixEndBytes(types.ValidatorsKey))
-// 	defer iterator.Close()
-
-// 	// get paginated iterator
-// 	iterator := hmTypes.KVStorePrefixIteratorPaginated(store, CheckpointKey, uint(page), uint(limit))
-
-// 	// loop through validators to get valid validators
-// 	for ; iterator.Valid(); iterator.Next() {
-// 		var checkpoint types.Checkpoint
-// 		if err := hmTypes.UnMarshallCheckpoint(iterator.Value(), &checkpoint); err == nil {
-// 			checkpoints = append(checkpoints, checkpoint)
-// 		}
-// 	}
-
-// 	return checkpoints, nil
-// }
 
 // GetLastCheckpoint gets last checkpoint, checkpoint number = TotalACKs
 func (k *Keeper) GetLastCheckpoint(ctx context.Context) (types.Checkpoint, error) {
-	store := k.storeService.OpenKVStore(ctx)
 	acksCount := k.GetACKCount(ctx)
 
-	lastCheckpointKey := acksCount
+	lastCheckpointNumber := acksCount
 
-	// fetch checkpoint and unmarshall
-	var _checkpoint types.Checkpoint
-
-	// no checkpoint received
-	// header key
-	headerKey := types.GetCheckpointKey(lastCheckpointKey)
-
-	chBytes, err := store.Get(headerKey)
-
+	checkpoint, err := k.checkpoint.Get(ctx, lastCheckpointNumber)
 	if err != nil {
-		return _checkpoint, errors.New("error while fetchig the checkpoint from the store")
+		k.Logger(ctx).Error("error while fetching last checkpoint from store", "err", err)
+		return checkpoint, err
 	}
 
-	if chBytes == nil {
-		return _checkpoint, types.ErrNoCheckpointFound
-	}
-
-	// unmarshall validator and return
-	_checkpoint, err = types.UnMarshallCheckpoint(k.cdc, chBytes)
-	if err != nil {
-		return _checkpoint, err
-	}
-
-	return _checkpoint, nil
+	return checkpoint, nil
 }
 
 // HasStoreValue check if value exists in store or not
@@ -151,87 +82,59 @@ func (k *Keeper) HasStoreValue(ctx context.Context, key []byte) bool {
 
 // FlushCheckpointBuffer flushes Checkpoint Buffer
 func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) {
-	store := k.storeService.OpenKVStore(ctx)
-	store.Delete(types.BufferCheckpointKey)
+	k.bufferedCheckpoint.Remove(ctx)
 }
 
 // GetCheckpointFromBuffer gets checkpoint in buffer
 func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (*types.Checkpoint, error) {
-	store := k.storeService.OpenKVStore(ctx)
-
-	// checkpoint block header
-	var checkpoint types.Checkpoint
-
-	chBytes, err := store.Get(types.BufferCheckpointKey)
-
+	checkpoint, err := k.bufferedCheckpoint.Get(ctx)
 	if err != nil {
-		return nil, errors.New("error while fetchig the buffer checkpoint key from the store")
+		return checkpoint, err
 	}
 
-	if chBytes == nil {
-		return nil, errors.New("No checkpoint found in buffer")
-	}
-
-	// unmarshall validator and return
-	checkpoint, err = types.UnMarshallCheckpoint(k.cdc, chBytes)
-	if err != nil {
-		return &checkpoint, err
-	}
-
-	return &checkpoint, nil
+	return checkpoint, nil
 }
 
 // SetLastNoAck set last no-ack object
-func (k *Keeper) SetLastNoAck(ctx context.Context, timestamp uint64) {
-	store := k.storeService.OpenKVStore(ctx)
-	// convert timestamp to bytes
-	value := []byte(strconv.FormatUint(timestamp, 10))
-	// set no-ack
-	store.Set(types.LastNoACKKey, value)
+func (k *Keeper) SetLastNoAck(ctx context.Context, timestamp uint64) error {
+	return k.lastNoAck.Set(ctx, timestamp)
 }
 
 // GetLastNoAck returns last no ack
 func (k *Keeper) GetLastNoAck(ctx context.Context) uint64 {
-	store := k.storeService.OpenKVStore(ctx)
-
-	resBytes, err := store.Get(types.LastNoACKKey)
-
+	res, err := k.lastNoAck.Get(ctx)
 	if err != nil {
 		return uint64(0)
 	}
 
-	if resBytes == nil {
-		return uint64(0)
-	}
-
-	// unmarshall result
-	result, err := strconv.ParseUint(string(resBytes), 10, 64)
-	if err != nil {
-		return uint64(0)
-	}
-
-	return result
+	return res
 }
 
 // GetCheckpoints get checkpoint all checkpoints
-func (k *Keeper) GetCheckpoints(ctx context.Context) []types.Checkpoint {
-	store := k.storeService.OpenKVStore(ctx)
-	// get checkpoint header iterator
-	iterator := storetypes.KVStorePrefixIterator(runtime.KVStoreAdapter(store), types.CheckpointKey)
+func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error) {
+	var checkpoints []types.Checkpoint
+
+	iterator, err := k.checkpoint.Iterate(ctx, nil)
+	if err != nil {
+		k.Logger(ctx).Error("error in getting the iterator", "err", err)
+		return checkpoints, err
+	}
+
 	defer iterator.Close()
 
-	// create headers
-	var headers []types.Checkpoint
+	var checkpoint types.Checkpoint
 
 	// loop through validators to get valid validators
 	for ; iterator.Valid(); iterator.Next() {
-		var checkpoint types.Checkpoint
-		if err := k.cdc.Unmarshal(iterator.Value(), &checkpoint); err == nil {
-			headers = append(headers, checkpoint)
+		checkpoint, err = iterator.Value()
+		if err != nil {
+			k.Logger(ctx).Error("error while getting checkpoint from iterator", "err", err)
+			return checkpoints, err
 		}
+		checkpoints = append(checkpoints, checkpoint)
 	}
 
-	return headers
+	return checkpoints, nil
 }
 
 //
@@ -240,48 +143,23 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) []types.Checkpoint {
 
 // GetACKCount returns current ACK count
 func (k Keeper) GetACKCount(ctx context.Context) uint64 {
-	store := k.storeService.OpenKVStore(ctx)
-	// check if ack count is there
-	resBytes, err := store.Get(types.ACKCountKey)
-
+	res, err := k.ackCount.Get(ctx)
 	if err != nil {
 		return uint64(0)
 	}
 
-	if resBytes == nil {
-		return uint64(0)
-	}
-
-	// unmarshall result
-	result, err := strconv.ParseUint(string(resBytes), 10, 64)
-	if err != nil {
-		return uint64(0)
-	}
-
-	return result
+	return res
 }
 
 // UpdateACKCountWithValue updates ACK with value
-func (k Keeper) UpdateACKCountWithValue(ctx context.Context, value uint64) {
-	store := k.storeService.OpenKVStore(ctx)
-
-	// convert
-	ackCount := []byte(strconv.FormatUint(value, 10))
-
-	// update
-	store.Set(types.ACKCountKey, ackCount)
+func (k Keeper) UpdateACKCountWithValue(ctx context.Context, value uint64) error {
+	return k.ackCount.Set(ctx, value)
 }
 
 // UpdateACKCount updates ACK count by 1
-func (k Keeper) UpdateACKCount(ctx context.Context) {
-	store := k.storeService.OpenKVStore(ctx)
-
+func (k Keeper) UpdateACKCount(ctx context.Context) error {
 	// get current ACK Count
-	ACKCount := k.GetACKCount(ctx)
+	ackCount := k.GetACKCount(ctx)
 
-	// increment by 1
-	ACKs := []byte(strconv.FormatUint(ACKCount+1, 10))
-
-	// update
-	store.Set(types.ACKCountKey, ACKs)
+	return k.ackCount.Set(ctx, ackCount+1)
 }

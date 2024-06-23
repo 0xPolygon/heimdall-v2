@@ -61,12 +61,18 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return nil
 	}
 
+	checkpoints, err := k.GetCheckpoints(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in getting checkpoints in export genesis call", "error", err)
+		return nil
+	}
+
 	bufferedCheckpoint, _ := k.GetCheckpointFromBuffer(ctx)
 	return &types.GenesisState{
 		Params:             params,
 		BufferedCheckpoint: bufferedCheckpoint,
 		LastNoACK:          k.GetLastNoAck(ctx),
 		AckCount:           k.GetACKCount(ctx),
-		Checkpoints:        types.SortHeaders(k.GetCheckpoints(ctx)),
+		Checkpoints:        types.SortHeaders(checkpoints),
 	}
 }
