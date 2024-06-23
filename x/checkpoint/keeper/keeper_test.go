@@ -16,6 +16,7 @@ import (
 	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	testUtil "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -123,7 +124,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	headerBlockNumber := uint64(2000)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HexToHeimdallHash("123")
+	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
 	proposerAddress := common.Address{}.String()
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
@@ -164,7 +165,7 @@ func (s *KeeperTestSuite) TestGetCheckpointList() {
 
 		startBlock = startBlock + endBlock
 		endBlock = endBlock + uint64(255)
-		rootHash := hmTypes.HexToHeimdallHash("123")
+		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
 		proposerAddress := common.Address{}.String()
 		timestamp := uint64(time.Now().Unix()) + uint64(i)
 		borChainId := "1234"

@@ -11,6 +11,7 @@ import (
 
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -40,7 +41,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
 		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		RootHash:   hmTypes.HexToHeimdallHash("123"),
+		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -52,7 +53,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
 		Proposer:    common.HexToAddress("0xdummyAddress456").String(),
 		StartBlock:  0,
 		EndBlock:    512,
-		RootHash:    hmTypes.HexToHeimdallHash("456"),
+		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
+		,
 	}
 
 	checkpointAdjust.String()
@@ -69,7 +71,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
 	responseCheckpoint, _ := keeper.GetCheckpointByNumber(ctx, 1)
 	require.Equal(responseCheckpoint.EndBlock, uint64(512))
 	require.Equal(responseCheckpoint.Proposer, common.HexToAddress("0xdummyAddress456").String())
-	require.Equal(responseCheckpoint.RootHash, hmTypes.HexToHeimdallHash("456"))
+	require.Equal(responseCheckpoint.RootHash,hmTypes.HeimdallHash{testutil.RandomBytes()},
+)
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain() {
@@ -80,7 +83,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain
 		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		RootHash:   hmTypes.HexToHeimdallHash("123"),
+		RootHash: hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -92,7 +95,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain
 		Proposer:    common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock:  0,
 		EndBlock:    256,
-		RootHash:    hmTypes.HexToHeimdallHash("456"),
+		RootHash:    hmTypes.HeimdallHash{testutil.RandomBytes()},
+
 	}
 	rootchainInstance := &rootchain.Rootchain{}
 	s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
@@ -111,7 +115,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustNotSameCheckpointAsRootCh
 		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		RootHash:   hmTypes.HexToHeimdallHash("123"),
+		RootHash:  hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -123,7 +127,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustNotSameCheckpointAsRootCh
 		Proposer:    common.HexToAddress("0xdummyAddress123").String(),
 		StartBlock:  0,
 		EndBlock:    256,
-		RootHash:    hmTypes.HexToHeimdallHash("123"),
+		RootHash:  hmTypes.HeimdallHash{testutil.RandomBytes()},
+
 	}
 
 	rootchainInstance := &rootchain.Rootchain{}
@@ -243,7 +248,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 		rootchainInstance := &rootchain.Rootchain{}
@@ -266,8 +271,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
-			hmTypes.HexToHeimdallHash("123"),
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 		rootchainInstance := &rootchain.Rootchain{}
@@ -375,7 +380,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -404,7 +409,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
+
 			uint64(1),
 		)
 
@@ -422,7 +428,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -453,7 +459,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header2.StartBlock,
 			header2.EndBlock,
 			header2.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -490,7 +496,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header5.StartBlock,
 			header5.EndBlock-1,
 			header5.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -532,7 +538,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header6.StartBlock,
 			header6.EndBlock+1,
 			header6.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
