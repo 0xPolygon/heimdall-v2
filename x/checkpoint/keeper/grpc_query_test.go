@@ -61,7 +61,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 
-	checkpointBlock := types.CreateBlock(
+	checkpointBlock := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
@@ -97,7 +97,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 
-	checkpointBlock := types.CreateBlock(
+	checkpointBlock := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
@@ -146,7 +146,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 
-	checkpointBlock := types.CreateBlock(
+	checkpointBlock := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,

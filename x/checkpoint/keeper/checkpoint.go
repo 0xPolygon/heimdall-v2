@@ -6,7 +6,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
-// AddCheckpoint adds checkpoint into final blocks
+// AddCheckpoint adds checkpoint into the db store
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
 	err := k.checkpoint.Set(ctx, checkpointNumber, checkpoint)
 	if err != nil {

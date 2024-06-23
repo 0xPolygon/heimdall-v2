@@ -104,7 +104,7 @@ func (q Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpo
 		start = lastCheckpoint.EndBlock + 1
 	}
 
-	end := start + params.AvgCheckpointLength
+	endBlockNumber := start + params.AvgCheckpointLength
 
 	contractCaller := q.IContractCaller
 
@@ -123,7 +123,7 @@ func (q Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpo
 	checkpointMsg := types.MsgCheckpoint{
 		Proposer:        proposer.Signer,
 		StartBlock:      start,
-		EndBlock:        start + params.AvgCheckpointLength,
+		EndBlock:        endBlockNumber,
 		RootHash:        hmTypes.BytesToHeimdallHash(rootHash),
 		AccountRootHash: hmTypes.BytesToHeimdallHash(accRootHash),
 		BorChainID:      req.GetBorChainId(),

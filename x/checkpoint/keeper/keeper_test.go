@@ -123,7 +123,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 
-	Checkpoint := types.CreateBlock(
+	Checkpoint := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
