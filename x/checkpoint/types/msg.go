@@ -38,28 +38,13 @@ func NewMsgCheckpointAdjust(
 	}
 }
 
-// TODO HV2 Not required
-// func (msg MsgCheckpointAdjust) GetSignBytes() []byte {
-// 	b, err := ModuleCdc.MarshalJSON(msg)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	return sdk.MustSortJSON(b)
-// }
-
-// // GetSigners returns address of the signer
-// func (msg MsgCheckpointAdjust) GetSigners() []sdk.AccAddress {
-// 	return []sdk.AccAddress{types.HeimdallAddressToAccAddress(msg.From)}
-// }
-
-// func (msg MsgCheckpointAdjust) Route() string {
-// 	return RouterKey
-// }
+func (msg MsgCheckpointAdjust) GetSignBytes() []byte {
+	return nil
+}
 
 // Type returns message type
 func (msg MsgCheckpointAdjust) Type() string {
-	return "checkpoint-adjust"
+	return EventTypeCheckpointAdjust
 }
 
 func (msg MsgCheckpointAdjust) ValidateBasic(ac address.Codec) error {
@@ -111,11 +96,7 @@ func NewMsgCheckpointBlock(
 
 // Type returns message type
 func (msg MsgCheckpoint) Type() string {
-	return "checkpoint"
-}
-
-func (msg MsgCheckpoint) Route() string {
-	return RouterKey
+	return EventTypeCheckpoint
 }
 
 func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
@@ -185,7 +166,7 @@ func NewMsgCheckpointAck(
 }
 
 func (msg MsgCheckpointAck) Type() string {
-	return "checkpoint-ack"
+	return EventTypeCheckpointAck
 }
 
 // ValidateBasic validate basic
@@ -224,10 +205,6 @@ func (msg MsgCheckpointAck) GetSideSignBytes() []byte {
 	return nil
 }
 
-//
-// Msg Checkpoint No Ack
-//
-
 var _ sdk.Msg = &MsgCheckpointNoAck{}
 
 func NewMsgCheckpointNoAck(from string) MsgCheckpointNoAck {
@@ -237,11 +214,7 @@ func NewMsgCheckpointNoAck(from string) MsgCheckpointNoAck {
 }
 
 func (msg MsgCheckpointNoAck) Type() string {
-	return "checkpoint-no-ack"
-}
-
-func (msg MsgCheckpointNoAck) Route() string {
-	return RouterKey
+	return EventTypeCheckpointNoAck
 }
 
 func (msg MsgCheckpointNoAck) ValidateBasic(ac address.Codec) error {

@@ -56,8 +56,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
 		RootHash:    hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 	}
 
-	checkpointAdjust.String()
-
 	rootchainInstance := &rootchain.Rootchain{}
 	s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
 	s.contractCaller.On("GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything).Return(borCommon.HexToHash("456"), uint64(0), uint64(512), uint64(1), common.HexToAddress("0xdummyAddress456").String(), nil)
@@ -105,7 +103,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustNotSameCheckpointAsRootChain() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
 
 	checkpoint := types.Checkpoint{
@@ -136,7 +134,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustNotSameCheckpointAsRootCh
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
 
 	start := uint64(0)
@@ -203,7 +201,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		require.Nil(bufferedHeader, "Should not store state")
 	})
 
-	s.Run("invalid checkpoint", func() {
+	s.Run("invalid roothash", func() {
 		s.contractCaller.Mock = mock.Mock{}
 
 		// create checkpoint msg
@@ -225,7 +223,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
 	start := uint64(0)
 	maxSize := uint64(256)
@@ -285,7 +283,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
 	stakingKeeper := s.stakeKeeper
 
@@ -354,7 +352,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
 
 	start := uint64(0)

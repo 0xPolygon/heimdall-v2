@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/cbergoon/merkletree"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/tendermint/crypto/sha3"
 
@@ -93,22 +92,6 @@ func GetAccountProof(dividendAccounts []hmTypes.DividendAccount, userAddr string
 	proof := appendBytes32(branchArray...)
 
 	return proof, index, err
-}
-
-// VerifyAccountProof returns proof of dividend Account
-func VerifyAccountProof(dividendAccounts []hmTypes.DividendAccount, userAddr string, proofToVerify string) (bool, error) {
-	proof, _, err := GetAccountProof(dividendAccounts, userAddr)
-	if err != nil {
-		// nolint: nilerr
-		return false, nil
-	}
-
-	// check proof bytes
-	if bytes.Equal(common.FromHex(proofToVerify), proof) {
-		return true, nil
-	}
-
-	return false, nil
 }
 
 //nolint:unparam
