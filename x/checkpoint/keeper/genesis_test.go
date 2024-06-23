@@ -12,7 +12,7 @@ import (
 )
 
 func (s *KeeperTestSuite) TestInitExportGenesis() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.checkpointKeeper
+	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
 
 	s1 := rand.NewSource(time.Now().UnixNano())
@@ -28,7 +28,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 
-	bufferedCheckpoint := types.CreateBlock(
+	bufferedCheckpoint := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
@@ -43,7 +43,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 		checkpoints[i] = bufferedCheckpoint
 	}
 
-	params := types.Params{}
+	params := types.DefaultParams()
 	genesisState := types.NewGenesisState(
 		params,
 		&bufferedCheckpoint,

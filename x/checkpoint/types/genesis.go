@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -39,7 +40,22 @@ func DefaultGenesisState() *GenesisState {
 	}
 }
 
-// GetGenesisStateFromAppState returns x/Checkpoint GenesisState given raw application
+// ValidateGenesis validates the provided checkpoint data
+func ValidateGenesis(data *GenesisState) error {
+	if err := data.Params.Validate(); err != nil {
+		return err
+	}
+
+	if len(data.Checkpoints) != 0 {
+		if int(data.AckCount) != len(data.Checkpoints) {
+			return errors.New("incorrect state in state-dump , please Check")
+		}
+	}
+
+	return nil
+}
+
+// GetGenesisStateFromAppState returns x/checkpoint GenesisState given raw application
 // genesis state.
 func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) *GenesisState {
 	var genesisState GenesisState
