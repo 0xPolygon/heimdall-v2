@@ -16,7 +16,7 @@ func GenRandCheckpoint(start uint64, headerSize uint64) (headerBlock types.Check
 	rootHash := hmTypes.HeimdallHash{RandomBytes()}
 	proposer := common.Address{}.String()
 
-	headerBlock = types.CreateBlock(
+	headerBlock = types.CreateCheckpoint(
 		start,
 		end,
 		rootHash,

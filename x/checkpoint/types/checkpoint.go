@@ -1,25 +1,35 @@
 package types
 
 import (
-	"github.com/cosmos/cosmos-sdk/codec"
+	"sort"
+
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
-// MarshallCheckpoint - amino Marshall Checkpoint
-func MarshallCheckpoint(cdc codec.BinaryCodec, checkpoint Checkpoint) (bz []byte, err error) {
-	bz, err = cdc.Marshal(&checkpoint)
-	if err != nil {
-		return bz, err
+// CreateCheckpoint generate new checkpoint
+func CreateCheckpoint(
+	start uint64,
+	end uint64,
+	rootHash hmTypes.HeimdallHash,
+	proposer string,
+	borChainID string,
+	timestamp uint64,
+) Checkpoint {
+	return Checkpoint{
+		StartBlock: start,
+		EndBlock:   end,
+		RootHash:   rootHash,
+		Proposer:   proposer,
+		BorChainID: borChainID,
+		TimeStamp:  timestamp,
 	}
-
-	return bz, nil
 }
 
-// UnMarshallCheckpoint - amino Unmarshall Checkpoint
-func UnMarshallCheckpoint(cdc codec.BinaryCodec, value []byte) (Checkpoint, error) {
-	var checkpoint Checkpoint
-	if err := cdc.Unmarshal(value, &checkpoint); err != nil {
-		return checkpoint, err
-	}
+// SortHeaders sorts array of headers on the basis for timestamps
+func SortHeaders(headers []Checkpoint) []Checkpoint {
+	sort.Slice(headers, func(i, j int) bool {
+		return headers[i].TimeStamp < headers[j].TimeStamp
+	})
 
-	return checkpoint, nil
+	return headers
 }

@@ -16,10 +16,5 @@ var (
 	AttributeKeyAccountHash = "account-hash"
 	AttributeKeyHash        = "hash"
 
-	EventTypeMilestone        = "milestone"
-	EventTypeMilestoneTimeout = "milestone-timeout"
-
-	AttributeKeyMilestoneID = "milestone-id"
-
 	AttributeValueCategory = ModuleName
 )

@@ -48,8 +48,15 @@ func RegisterSideMsgServer(sideCfg hmModule.SideTxConfigurator, srv SideMsgServe
 			continue
 		}
 
-		sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
-		sideCfg.RegisterPostHandler(requestTypeName, postHandler)
+		err := sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
+		if err != nil {
+			panic("error in registering the side handler")
+		}
+
+		err = sideCfg.RegisterPostHandler(requestTypeName, postHandler)
+		if err != nil {
+			panic("error in registering the post handler")
+		}
 	}
 }
 
