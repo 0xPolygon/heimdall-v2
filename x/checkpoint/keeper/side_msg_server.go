@@ -30,7 +30,7 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
-// SideTxHandler returns a side handler for "staking" type messages.
+// SideTxHandler returns a side handler for "checkpoin" type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 
 	switch methodName {
@@ -61,9 +61,9 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandle
 }
 
 // SideHandleCheckpointAdjust side msg for checkpoint adjust
-func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
+func (srv *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	// logger
-	logger := k.Logger(ctx)
+	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAdjust)
 	if !ok {
@@ -71,7 +71,7 @@ func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg
 		return hmModule.Vote_VOTE_NO
 	}
 
-	chainParams, err := k.ck.GetParams(ctx)
+	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting chain manager params", "error", err)
 		return hmModule.Vote_VOTE_NO
@@ -79,21 +79,21 @@ func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg
 
 	rootChainAddress := chainParams.ChainParams.RootChainAddress
 
-	params, err := k.GetParams(ctx)
+	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting params", "error", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
-	contractCaller := k.IContractCaller
+	contractCaller := srv.IContractCaller
 
-	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
+	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if checkpointBuffer != nil {
 		logger.Error("checkpoint buffer", "error", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
-	checkpointObj, err := k.GetCheckpointByNumber(ctx, msg.HeaderIndex)
+	checkpointObj, err := srv.GetCheckpointByNumber(ctx, msg.HeaderIndex)
 	if err != nil {
 		logger.Error("Unable to get checkpoint from db", "header index", msg.HeaderIndex, "error", err)
 		return hmModule.Vote_VOTE_NO
@@ -112,7 +112,7 @@ func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	if checkpointObj.EndBlock == end && checkpointObj.StartBlock == start && bytes.Equal(checkpointObj.RootHash.Bytes(), root.Bytes()) && strings.ToLower(checkpointObj.Proposer) == strings.ToLower(proposer) {
-		logger.Error("Same Checkpoint in DB")
+		logger.Error("same checkpoint in db")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -135,9 +135,9 @@ func (k *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg
 }
 
 // SideHandleMsgCheckpoint handles checkpoint message
-func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
+func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	// logger
-	logger := k.Logger(ctx)
+	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpoint)
 	if !ok {
@@ -145,9 +145,9 @@ func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (
 		return hmModule.Vote_VOTE_NO
 	}
 
-	contractCaller := k.IContractCaller
+	contractCaller := srv.IContractCaller
 
-	chainParams, err := k.ck.GetParams(ctx)
+	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting chain manager params", "error", err)
 		return hmModule.Vote_VOTE_NO
@@ -156,7 +156,7 @@ func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (
 	maticTxConfirmations := chainParams.BorChainTxConfirmations
 
 	// get params
-	params, err := k.GetParams(ctx)
+	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting params", "error", err)
 		return hmModule.Vote_VOTE_NO
@@ -187,9 +187,9 @@ func (k *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg) (
 }
 
 // SideHandleMsgCheckpointAck handles side checkpoint-ack message
-func (k *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg) hmModule.Vote {
+func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg) hmModule.Vote {
 	// logger
-	logger := k.Logger(ctx)
+	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAck)
 	if !ok {
@@ -197,9 +197,9 @@ func (k *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 		return hmModule.Vote_VOTE_NO
 	}
 
-	contractCaller := k.IContractCaller
+	contractCaller := srv.IContractCaller
 
-	chainParams, err := k.ck.GetParams(ctx)
+	chainParams, err := srv.ck.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting chain manager params", "error", err)
 		return hmModule.Vote_VOTE_NO
@@ -208,7 +208,7 @@ func (k *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 	rootChainAddress := chainParams.ChainParams.RootChainAddress
 
 	// get params
-	params, err := k.GetParams(ctx)
+	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("Error in getting params", "error", err)
 		return hmModule.Vote_VOTE_NO
@@ -260,8 +260,8 @@ func (k *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 **/
 
 // PostHandleMsgCheckpointAdjust msg for checkpointAdjust
-func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	logger := k.Logger(ctx)
+func (srv *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
+	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAdjust)
 	if !ok {
@@ -275,13 +275,13 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.
 		return
 	}
 
-	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
+	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if checkpointBuffer != nil {
 		logger.Error("checkpoint buffer exists", "error", err)
 		return
 	}
 
-	checkpointObj, err := k.GetCheckpointByNumber(ctx, msg.HeaderIndex)
+	checkpointObj, err := srv.GetCheckpointByNumber(ctx, msg.HeaderIndex)
 	if err != nil {
 		logger.Error("Unable to get checkpoint from db",
 			"checkpoint number", msg.HeaderIndex,
@@ -291,7 +291,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.
 	}
 
 	if checkpointObj.EndBlock == msg.EndBlock && checkpointObj.StartBlock == msg.StartBlock && bytes.Equal(checkpointObj.RootHash.Bytes(), msg.RootHash.Bytes()) && strings.ToLower(checkpointObj.Proposer) == strings.ToLower(msg.Proposer) {
-		logger.Error("Same Checkpoint in DB")
+		logger.Error("same Checkpoint in db")
 		return
 	}
 
@@ -308,7 +308,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.
 	//
 
 	// Add checkpoint to store
-	if err = k.AddCheckpoint(ctx, msg.HeaderIndex, checkpointObj); err != nil {
+	if err = srv.AddCheckpoint(ctx, msg.HeaderIndex, checkpointObj); err != nil {
 		logger.Error("Error while adding checkpoint into store", "checkpointNumber", msg.HeaderIndex)
 		return
 	}
@@ -333,8 +333,8 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, _msg sdk.
 }
 
 // PostHandleMsgCheckpoint handles the checkpoint msg
-func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	logger := k.Logger(ctx)
+func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
+	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpoint)
 	if !ok {
@@ -353,7 +353,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, s
 	//
 
 	// fetch last checkpoint from store
-	if lastCheckpoint, err := k.GetLastCheckpoint(ctx); err == nil {
+	if lastCheckpoint, err := srv.GetLastCheckpoint(ctx); err == nil {
 		// make sure new checkpoint is after tip
 		if lastCheckpoint.EndBlock > msg.StartBlock {
 			logger.Error("Checkpoint already exists",
@@ -381,12 +381,12 @@ func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, s
 	// Save checkpoint to buffer store
 	//
 
-	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
+	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if err == nil && checkpointBuffer != nil {
 		logger.Debug("Checkpoint already exists in buffer")
 
 		// get checkpoint buffer time from params
-		params, err := k.GetParams(ctx)
+		params, err := srv.GetParams(ctx)
 		if err != nil {
 			logger.Error("Checkpoint params not found", "error", err)
 		}
@@ -401,7 +401,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, s
 	timeStamp := uint64(ctx.BlockTime().Unix())
 
 	// Add checkpoint to buffer with root hash and account hash
-	if err = k.SetCheckpointBuffer(ctx, types.Checkpoint{
+	if err = srv.SetCheckpointBuffer(ctx, types.Checkpoint{
 		StartBlock: msg.StartBlock,
 		EndBlock:   msg.EndBlock,
 		RootHash:   msg.RootHash,
@@ -439,8 +439,8 @@ func (k *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, _msg sdk.Msg, s
 }
 
 // PostHandleMsgCheckpointAck handles checkpoint-ack
-func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	logger := k.Logger(ctx)
+func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
+	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgCheckpointAck)
 	if !ok {
@@ -455,7 +455,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	// get last checkpoint from buffer
-	checkpointObj, err := k.GetCheckpointFromBuffer(ctx)
+	checkpointObj, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("Unable to get checkpoint buffer", "error", err)
 		return
@@ -467,7 +467,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 		return
 	}
 
-	// Return err if start and end matches but contract root hash doesn't match
+	// return err if start and end matche but contract root hash doesn't match
 	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !msg.RootHash.Equals(checkpointObj.RootHash) {
 		logger.Error("Invalid ACK",
 			"startExpected", checkpointObj.StartBlock,
@@ -475,7 +475,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 			"endExpected", checkpointObj.EndBlock,
 			"endReceived", msg.StartBlock,
 			"rootExpected", checkpointObj.RootHash.String(),
-			"rootRecieved", msg.RootHash.String(),
+			"rootReceived", msg.RootHash.String(),
 		)
 
 		return
@@ -495,7 +495,7 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 	//
 
 	// Add checkpoint to store
-	if err = k.AddCheckpoint(ctx, msg.Number, *checkpointObj); err != nil {
+	if err = srv.AddCheckpoint(ctx, msg.Number, *checkpointObj); err != nil {
 		logger.Error("Error while adding checkpoint into store", "checkpointNumber", msg.Number)
 		return
 	}
@@ -503,17 +503,17 @@ func (k *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, _msg sdk.Msg
 	logger.Debug("Checkpoint added to store", "checkpointNumber", msg.Number)
 
 	// Flush buffer
-	k.FlushCheckpointBuffer(ctx)
+	srv.FlushCheckpointBuffer(ctx)
 
 	logger.Debug("Checkpoint buffer flushed after receiving checkpoint ack")
 
 	// Update ack count in staking module
-	k.UpdateACKCount(ctx)
+	srv.UpdateACKCount(ctx)
 
-	logger.Info("Valid ack received", "CurrentACKCount", k.GetACKCount(ctx)-1, "UpdatedACKCount", k.GetACKCount(ctx))
+	logger.Info("Valid ack received", "CurrentACKCount", srv.GetACKCount(ctx)-1, "UpdatedACKCount", srv.GetACKCount(ctx))
 
 	// Increment accum (selects new proposer)
-	k.sk.IncrementAccum(ctx, 1)
+	srv.sk.IncrementAccum(ctx, 1)
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
