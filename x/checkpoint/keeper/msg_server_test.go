@@ -6,6 +6,7 @@ import (
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 
@@ -126,7 +127,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustCheckpointBuffer() {
 		Proposer:   common.Address{}.String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		RootHash:   hmTypes.HexToHeimdallHash("123"),
+		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -139,7 +140,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustCheckpointBuffer() {
 		Proposer:    common.Address([]byte("DifferentProposer123")).String(),
 		StartBlock:  0,
 		EndBlock:    512,
-		RootHash:    hmTypes.HexToHeimdallHash("456"),
+		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
 	}
 
 	_, err = msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
@@ -154,7 +155,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsMsg() {
 		Proposer:   common.Address{}.String(),
 		StartBlock: 0,
 		EndBlock:   256,
-		RootHash:   hmTypes.HexToHeimdallHash("123"),
+		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
 		BorChainID: "testchainid",
 		TimeStamp:  1,
 	}
@@ -167,7 +168,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsMsg() {
 		Proposer:    common.Address{}.String(),
 		StartBlock:  0,
 		EndBlock:    256,
-		RootHash:    hmTypes.HexToHeimdallHash("123"),
+		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
 	}
 
 	_, err = msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
@@ -321,7 +322,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -341,7 +342,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -360,7 +361,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(123),
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -375,8 +376,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
-			hmTypes.HexToHeimdallHash("9887"),
-			hmTypes.HexToHeimdallHash("123123"),
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{testutil.RandomBytes()},
 			uint64(1),
 		)
 
