@@ -22,11 +22,11 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	schema       collections.Schema
 
-	authority          string
-	sk                 stakeKeeper.Keeper
-	ck                 cmKeeper.Keeper
-	moduleCommunicator types.ModuleCommunicator
-	IContractCaller    helper.IContractCaller
+	authority       string
+	sk              stakeKeeper.Keeper
+	ck              cmKeeper.Keeper
+	topupKeeper     types.TopupKeeper
+	IContractCaller helper.IContractCaller
 
 	checkpoint         collections.Map[uint64, types.Checkpoint]
 	bufferedCheckpoint collections.Item[*types.Checkpoint]
@@ -44,18 +44,18 @@ func NewKeeper(
 	authority string,
 	stakingKeeper stakeKeeper.Keeper,
 	cmKeeper cmKeeper.Keeper,
-	moduleCommunicator types.ModuleCommunicator,
+	topupKeeper types.TopupKeeper,
 	contractCaller helper.IContractCaller,
 
 ) *Keeper {
 	return &Keeper{
-		storeService:       storeService,
-		cdc:                cdc,
-		authority:          authority,
-		sk:                 stakingKeeper,
-		ck:                 cmKeeper,
-		moduleCommunicator: moduleCommunicator,
-		IContractCaller:    contractCaller,
+		storeService:    storeService,
+		cdc:             cdc,
+		authority:       authority,
+		sk:              stakingKeeper,
+		ck:              cmKeeper,
+		topupKeeper:     topupKeeper,
+		IContractCaller: contractCaller,
 	}
 }
 
@@ -66,15 +66,21 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 }
 
 // SetParams sets the x/checkpoint module parameters.
-// CONTRACT: This method performs no validation of the parameters.
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
-	return k.params.Set(ctx, params)
+	err := k.params.Set(ctx, params)
+	if err != nil {
+		k.Logger(ctx).Error("error in setting the checkpoint params", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // GetParams gets the x/checkpoint module parameters.
 func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) {
 	params, err = k.params.Get(ctx)
 	if err != nil {
+		k.Logger(ctx).Error("error in fetching the checkpoint params", "error", err)
 		return params, err
 	}
 

@@ -11,11 +11,17 @@ import (
 
 // InitGenesis sets initial state for checkpoint module
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
-	k.SetParams(ctx, data.Params)
+	err := k.SetParams(ctx, data.Params)
+	if err != nil {
+		panic(errors.New(fmt.Sprintf("error in setting checkpoint params during init genesis", "err", err)))
+	}
 
 	// Set last no-ack
 	if data.LastNoACK > 0 {
-		k.SetLastNoAck(ctx, data.LastNoACK)
+		err = k.SetLastNoAck(ctx, data.LastNoACK)
+		if err != nil {
+			panic(errors.New(fmt.Sprintf("error in setting last ack count during init genesis", "err", err)))
+		}
 	}
 
 	// Add finalised checkpoints to state
@@ -46,9 +52,10 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	}
 
 	// Set initial ack count
-	k.UpdateACKCountWithValue(ctx, data.AckCount)
-
-	return
+	err = k.UpdateACKCountWithValue(ctx, data.AckCount)
+	if err != nil {
+		panic(errors.New(fmt.Sprintf("error while updating the ack value in store", "error", err)))
+	}
 }
 
 // ExportGenesis returns a GenesisState for a given context and keeper of

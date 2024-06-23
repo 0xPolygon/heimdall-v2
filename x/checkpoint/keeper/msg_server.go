@@ -34,7 +34,7 @@ func (k msgServer) CheckpointAdjust(ctx context.Context, msg *types.MsgCheckpoin
 
 	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
 	if checkpointBuffer != nil {
-		logger.Error("checkpoint buffer exists", "error", err)
+		logger.Error("checkpoint already exists in buffer", "error", err)
 		return nil, errorsmod.Wrap(types.ErrCheckpointBufferFound, "checkpoint buffer not found")
 	}
 
@@ -44,8 +44,8 @@ func (k msgServer) CheckpointAdjust(ctx context.Context, msg *types.MsgCheckpoin
 		return nil, errorsmod.Wrap(types.ErrNoCheckpointFound, "checkpoint not found in db")
 	}
 
-	if checkpointObj.EndBlock == msg.EndBlock && checkpointObj.StartBlock == msg.StartBlock && bytes.Equal(checkpointObj.RootHash.Bytes(), msg.RootHash.Bytes()) && strings.ToLower(checkpointObj.Proposer) == strings.ToLower(msg.Proposer) {
-		logger.Error("same Checkpoint in DB")
+	if checkpointObj.EndBlock == msg.EndBlock && checkpointObj.StartBlock == msg.StartBlock && bytes.Equal(checkpointObj.RootHash.Bytes(), msg.RootHash.Bytes()) && strings.EqualFold(checkpointObj.Proposer, msg.Proposer) {
+		logger.Error("same checkpoint in db")
 		return nil, errorsmod.Wrap(types.ErrCheckpointAlreadyExists, "checkpoint already exist in db")
 	}
 
@@ -65,7 +65,7 @@ func (k msgServer) CheckpointAdjust(ctx context.Context, msg *types.MsgCheckpoin
 	return &types.MsgCheckpointAdjustResponse{}, nil
 }
 
-// Checkpoint msg is for handling the checkpoint msg
+// Checkpoint function handles the checkpoint msg
 func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
 	logger := k.Logger(ctx)
 
@@ -77,10 +77,6 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		logger.Error("error in fetching checkpoint parameter")
 		return nil, errorsmod.Wrap(types.ErrCheckpointParams, "error in fetching checkpoint parameter")
 	}
-
-	//
-	// Check checkpoint buffer
-	//
 
 	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
 	if err == nil {
@@ -95,10 +91,6 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			return nil, errorsmod.Wrap(types.ErrNoACK, fmt.Sprint("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime))
 		}
 	}
-
-	//
-	// Validate last checkpoint
-	//
 
 	// fetch last checkpoint from store
 	if lastCheckpoint, err := k.GetLastCheckpoint(ctx); err == nil {
@@ -125,13 +117,9 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock))
 	}
 
-	//
-	// Validate account hash
-	//
-
 	// Make sure latest AccountRootHash matches
 	// Calculate new account root hash
-	dividendAccounts := k.moduleCommunicator.GetAllDividendAccounts(ctx)
+	dividendAccounts := k.topupKeeper.GetAllDividendAccounts(ctx)
 	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
 
 	// Get account root hash from dividend accounts
@@ -154,10 +142,6 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			"hash", hmTypes.BytesToHeimdallHash(accountRoot).HexString(),
 			"msgHash", msg.AccountRootHash))
 	}
-
-	//
-	// Validate proposer
-	//
 
 	// Check proposer in message
 	validatorSet := k.sk.GetValidatorSet(ctx)
@@ -192,11 +176,11 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	return &types.MsgCheckpointResponse{}, nil
 }
 
-// CheckpointAck is for handling the ack msg
+// CheckpointAck function handles the checkpoint ack msg
 func (k msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAck) (*types.MsgCheckpointAckResponse, error) {
 	logger := k.Logger(ctx)
 
-	// Get last checkpoint from buffer
+	// get last checkpoint from buffer
 	headerBlock, err := k.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
@@ -208,17 +192,19 @@ func (k msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAc
 		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block", "startExpected", headerBlock.StartBlock, "startReceived", msg.StartBlock))
 	}
 
-	// Return err if start and end matches but contract root hash doesn't match
-	if msg.StartBlock == headerBlock.StartBlock && msg.EndBlock == headerBlock.EndBlock && !msg.RootHash.Equals(headerBlock.RootHash) {
+	// return err if start and end match but contract root hash doesn't match
+	if msg.StartBlock == headerBlock.StartBlock &&
+		msg.EndBlock == headerBlock.EndBlock &&
+		!msg.RootHash.Equal(headerBlock.RootHash) {
 		logger.Error("Invalid ACK",
 			"startExpected", headerBlock.StartBlock,
 			"startReceived", msg.StartBlock,
 			"endExpected", headerBlock.EndBlock,
 			"endReceived", msg.StartBlock,
 			"rootExpected", headerBlock.RootHash.String(),
-			"rootRecieved", msg.RootHash.String(),
+			"rootReceived", msg.RootHash.String(),
 		)
-		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("Invalid Ack"))
+		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid ack"))
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -233,7 +219,7 @@ func (k msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAc
 	return &types.MsgCheckpointAckResponse{}, nil
 }
 
-// CheckpointNoAck handles checkpoint no-ack transaction
+// CheckpointNoAck function handles checkpoint no-ack msg
 func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpointNoAck) (*types.MsgCheckpointNoAckResponse, error) {
 	logger := k.Logger(ctx)
 
@@ -253,13 +239,16 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 	bufferTime := params.CheckpointBufferTime
 
 	// Fetch last checkpoint from store
-	// TODO figure out how to handle this error
-	lastCheckpoint, _ := k.GetLastCheckpoint(ctx)
+	lastCheckpoint, err := k.GetLastCheckpoint(ctx)
+	if err != nil {
+		return nil, errorsmod.Wrap(types.ErrInvalidNoACK, "no checkpoint exist in db still now")
+	}
+
 	lastCheckpointTime := time.Unix(int64(lastCheckpoint.TimeStamp), 0)
 
-	// If last checkpoint is not present or last checkpoint happens before checkpoint buffer time -- thrown an error
+	// If last checkpoint is not present or last checkpoint happens before checkpoint buffer time,throw an error
 	if lastCheckpointTime.After(currentTime) || (currentTime.Sub(lastCheckpointTime) < bufferTime) {
-		logger.Debug("invalid No ACK -- Waiting for last checkpoint ACK", "lastCheckpointTime", lastCheckpointTime, "current time", currentTime,
+		logger.Debug("invalid no ack -- waiting for last checkpoint ack", "lastCheckpointTime", lastCheckpointTime, "current time", currentTime,
 			"buffer Time", bufferTime.String(),
 		)
 
@@ -287,7 +276,7 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 
 	//If NoAck sender is not the valid proposer, return error
 	if !isProposer {
-		return nil, errorsmod.Wrap(types.ErrInvalidNoACK, "ack proposer is not correct")
+		return nil, errorsmod.Wrap(types.ErrInvalidNoACKProposer, "ack proposer is not correct")
 	}
 
 	// Check last no ack - prevents repetitive no-ack
@@ -309,10 +298,6 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 	newLastNoAck := uint64(currentTime.Unix())
 	k.SetLastNoAck(ctx, newLastNoAck)
 	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
-
-	//
-	// Update to new proposer
-	//
 
 	// Increment accum (selects new proposer)
 	k.sk.IncrementAccum(ctx, 1)

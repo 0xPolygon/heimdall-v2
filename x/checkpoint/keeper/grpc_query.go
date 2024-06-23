@@ -17,16 +17,12 @@ type Querier struct {
 	*Keeper
 }
 
-//var _ types.QueryServer = Querier{}
-
-func NewQuerier(keeper *Keeper) Querier {
-	return Querier{Keeper: keeper}
-}
+var _ types.QueryServer = Querier{}
 
 // Params gives the params
-func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (q Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
-	params, err := k.GetParams(ctx)
+	params, err := q.GetParams(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,15 +33,15 @@ func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*ty
 }
 
 // AckCount gives the checkpoint count
-func (k Querier) AckCount(ctx context.Context, req *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
-	count := k.GetACKCount(ctx)
+func (q Querier) AckCount(ctx context.Context, req *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
+	count := q.GetACKCount(ctx)
 
 	return &types.QueryAckCountResponse{Count: count}, nil
 }
 
 // Checkpoint gives the checkpoint based on number
-func (k Querier) Checkpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
-	checkpoint, err := k.GetCheckpointByNumber(ctx, req.Number)
+func (q Querier) Checkpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
+	checkpoint, err := q.GetCheckpointByNumber(ctx, req.Number)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +50,8 @@ func (k Querier) Checkpoint(ctx context.Context, req *types.QueryCheckpointReque
 }
 
 // CheckpointLatest gives the latest checkpoint
-func (k Querier) CheckpointLatest(ctx context.Context, req *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
-	checkpoint, err := k.GetLastCheckpoint(ctx)
+func (q Querier) CheckpointLatest(ctx context.Context, req *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
+	checkpoint, err := q.GetLastCheckpoint(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +60,8 @@ func (k Querier) CheckpointLatest(ctx context.Context, req *types.QueryCheckpoin
 }
 
 // CheckpointBuffer gives checkpoint from buffer
-func (k Querier) CheckpointBuffer(ctx context.Context, req *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
-	checkpoint, err := k.GetCheckpointFromBuffer(ctx)
+func (q Querier) CheckpointBuffer(ctx context.Context, req *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
+	checkpoint, err := q.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -74,23 +70,23 @@ func (k Querier) CheckpointBuffer(ctx context.Context, req *types.QueryCheckpoin
 }
 
 // LastNoAck gives the last no ack
-func (k Querier) LastNoAck(ctx context.Context, req *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
-	noAck := k.GetLastNoAck(ctx)
+func (q Querier) LastNoAck(ctx context.Context, req *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
+	noAck := q.GetLastNoAck(ctx)
 
 	return &types.QueryLastNoAckResponse{Result: noAck}, nil
 }
 
 // NextCheckpoint gives next expected checkpoint
-func (k Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpointRequest) (*types.QueryNextCheckpointResponse, error) {
+func (q Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpointRequest) (*types.QueryNextCheckpointResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	// get validator set
-	validatorSet := k.sk.GetValidatorSet(ctx)
+	validatorSet := q.sk.GetValidatorSet(ctx)
 	proposer := validatorSet.GetProposer()
-	ackCount := k.GetACKCount(ctx)
-	params, err := k.GetParams(ctx)
+	ackCount := q.GetACKCount(ctx)
+	params, err := q.GetParams(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +96,7 @@ func (k Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpo
 	if ackCount != 0 {
 		checkpointNumber := ackCount
 
-		lastCheckpoint, err := k.GetCheckpointByNumber(ctx, checkpointNumber)
+		lastCheckpoint, err := q.GetCheckpointByNumber(ctx, checkpointNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -110,14 +106,14 @@ func (k Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpo
 
 	end := start + params.AvgCheckpointLength
 
-	contractCaller := k.IContractCaller
+	contractCaller := q.IContractCaller
 
 	rootHash, err := contractCaller.GetRootHash(start, end, params.MaxCheckpointLength)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("could not fetch roothash for start:%v end:%v error:%v", start, end, err.Error()))
 	}
 
-	accs := k.moduleCommunicator.GetAllDividendAccounts(ctx)
+	accs := q.moduleCommunicator.GetAllDividendAccounts(ctx)
 
 	accRootHash, err := types.GetAccountRootHash(accs)
 	if err != nil {
@@ -137,19 +133,19 @@ func (k Querier) NextCheckpoint(ctx context.Context, req *types.QueryNextCheckpo
 }
 
 // CurrentProposer queries validator info for the current proposer
-func (k Querier) CurrentProposer(ctx context.Context, req *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
-	proposer := k.sk.GetCurrentProposer(ctx)
+func (q Querier) CurrentProposer(ctx context.Context, req *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
+	proposer := q.sk.GetCurrentProposer(ctx)
 
 	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
 }
 
-func (k Querier) Proposer(ctx context.Context, req *types.QueryProposerRequest) (*types.QueryProposerResponse, error) {
+func (q Querier) Proposer(ctx context.Context, req *types.QueryProposerRequest) (*types.QueryProposerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	// get validator set
-	validatorSet := k.sk.GetValidatorSet(ctx)
+	validatorSet := q.sk.GetValidatorSet(ctx)
 
 	times := int(req.Times)
 	if times > len(validatorSet.Validators) {

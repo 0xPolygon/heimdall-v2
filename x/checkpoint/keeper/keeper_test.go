@@ -27,16 +27,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/testutil"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-)
-
-var (
-	PKs = simtestutil.CreateTestPubKeys(500)
 )
 
 type KeeperTestSuite struct {
@@ -46,7 +40,7 @@ type KeeperTestSuite struct {
 	checkpointKeeper   *checkpointKeeper.Keeper
 	stakeKeeper        *stakekeeper.Keeper
 	contractCaller     *mocks.IContractCaller
-	moduleCommunicator *testUtil.ModuleCommunicatorMock
+	moduleCommunicator *testutil.
 	cmKeeper           *cmKeeper.Keeper
 	queryClient        checkpointTypes.QueryClient
 	msgServer          checkpointTypes.MsgServer
@@ -149,48 +143,6 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	require.Equal(proposerAddress, result.Proposer)
 	require.Equal(timestamp, result.TimeStamp)
 }
-
-/*
-func (s *KeeperTestSuite) TestGetCheckpointList() {
-	ctx, keeper := s.ctx, s.checkpointKeeper
-	require := s.Require()
-
-	count := 5
-
-	startBlock := uint64(0)
-	endBlock := uint64(0)
-
-	for i := 0; i < count; i++ {
-		headerBlockNumber := uint64(i) + 1
-
-		startBlock = startBlock + endBlock
-		endBlock = endBlock + uint64(255)
-		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
-		proposerAddress := common.Address{}.String()
-		timestamp := uint64(time.Now().Unix()) + uint64(i)
-		borChainId := "1234"
-
-		Checkpoint := hmTypes.CreateBlock(
-			startBlock,
-			endBlock,
-			rootHash,
-			proposerAddress,
-			borChainId,
-			timestamp,
-		)
-
-		err := keeper.AddCheckpoint(ctx, headerBlockNumber, Checkpoint)
-		require.NoError(err)
-
-		keeper.UpdateACKCount(ctx)
-	}
-
-	result, err := keeper.GetCheckpointList(ctx, uint64(1), uint64(20))
-	require.NoError(err)
-	require.LessOrEqual(count, len(result))
-}
-
-*/
 
 func (s *KeeperTestSuite) TestHasStoreValue() {
 	ctx, keeper := s.ctx, s.checkpointKeeper
