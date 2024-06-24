@@ -28,103 +28,12 @@ func NewTxCmd(valAddrCodec address.Codec) *cobra.Command {
 	}
 
 	checkpointTxCmd.AddCommand(
-		CheckpointAdjustCmd(valAddrCodec),
 		CheckpointCmd(valAddrCodec),
 		//CheckpointAckCmd(valAddrCodec),
 		CheckpointNoAckCmd(),
 	)
 
 	return checkpointTxCmd
-}
-
-// CheckpointAdjustCmd returns a CLI command handler for creating a NewMsgCheckpointAdjust tx
-func CheckpointAdjustCmd(ac address.Codec) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "checkpoint-adjust",
-		Short: "adjusts previous checkpoint transaction according to ethereum chain (details to be provided for checkpoint on ethereum chain)",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			clientCtx, err := client.GetClientTxContext(cmd)
-			if err != nil {
-				return err
-			}
-
-			// header index
-			headerIndex, err := cmd.Flags().GetUint64(FlagHeaderNumber)
-			if err != nil {
-				return err
-			}
-
-			// get from
-			from := clientCtx.GetFromAddress().String()
-
-			// get proposer
-			proposer, err := cmd.Flags().GetString(FlagProposerAddress)
-			if err != nil {
-				return err
-			}
-
-			_, err = ac.StringToBytes(proposer)
-			if err != nil {
-				return err
-			}
-
-			startBlock, err := cmd.Flags().GetUint64(FlagStartBlock)
-			if err != nil {
-				return err
-			}
-
-			// end block
-			endBlock, err := cmd.Flags().GetUint64(FlagEndBlock)
-			if err != nil {
-				return err
-			}
-
-			// root hash
-			rootHashStr, err := cmd.Flags().GetString(FlagRootHash)
-			if err != nil {
-				return err
-			}
-
-			if rootHashStr == "" {
-				return fmt.Errorf("root hash cannot be empty")
-			}
-
-			msg := types.NewMsgCheckpointAdjust(headerIndex, startBlock, endBlock, proposer, from, hmTypes.HexToHeimdallHash(rootHashStr))
-
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
-		},
-	}
-
-	cmd.Flags().String(FlagHeaderNumber, "", "--header=<header-index>")
-	cmd.Flags().StringP(FlagProposerAddress, "p", "", "--proposer=<proposer-address>")
-	cmd.Flags().Uint64(FlagStartBlock, 0, "--start-block=<start-block-number>")
-	cmd.Flags().Uint64(FlagEndBlock, 0, "--end-block=<end-block-number>")
-	cmd.Flags().StringP(FlagRootHash, "r", "", "--root-hash=<root-hash>")
-
-	if err := cmd.MarkFlagRequired(FlagHeaderNumber); err != nil {
-		logger.Error("SendCheckpointAdjust | MarkFlagRequired | FlagHeaderNumber", "Error", err)
-	}
-
-	if err := cmd.MarkFlagRequired(FlagRootHash); err != nil {
-		logger.Error("SendCheckpointAdjust | MarkFlagRequired | FlagRootHash", "Error", err)
-	}
-
-	if err := cmd.MarkFlagRequired(FlagProposerAddress); err != nil {
-		logger.Error("SendCheckpointAdjust | MarkFlagRequired | FlagProposerAddress", "Error", err)
-	}
-
-	if err := cmd.MarkFlagRequired(FlagStartBlock); err != nil {
-		logger.Error("SendCheckpointAdjust | MarkFlagRequired | FlagStartBlock", "Error", err)
-	}
-
-	if err := cmd.MarkFlagRequired(FlagEndBlock); err != nil {
-		logger.Error("SendCheckpointAdjust | MarkFlagRequired | FlagEndBlock", "Error", err)
-	}
-
-	// TODO HV2 Please check this, do we require it or not?
-	flags.AddTxFlagsToCmd(cmd)
-
-	return cmd
 }
 
 // CheckpointCmd returns a CLI command handler for creating a MsgEditValidator transaction.

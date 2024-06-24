@@ -8,6 +8,7 @@ import (
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/maticnetwork/bor/common"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -19,9 +20,8 @@ type sideMsgServer struct {
 }
 
 var (
-	checkpointAdjust = sdk.MsgTypeURL(&types.MsgCheckpointAdjust{})
-	checkpoint       = sdk.MsgTypeURL(&types.MsgCheckpoint{})
-	checkpointAck    = sdk.MsgTypeURL(&types.MsgCheckpointAck{})
+	checkpoint    = sdk.MsgTypeURL(&types.MsgCheckpoint{})
+	checkpointAck = sdk.MsgTypeURL(&types.MsgCheckpointAck{})
 )
 
 // NewSideMsgServerImpl returns an implementation of the checkpoint sideMsgServer interface
@@ -34,8 +34,6 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 
 	switch methodName {
-	case checkpointAdjust:
-		return srv.SideHandleCheckpointAdjust
 	case checkpoint:
 		return srv.SideHandleMsgCheckpoint
 	case checkpointAck:
@@ -49,8 +47,6 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandle
 func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler {
 
 	switch methodName {
-	case checkpointAdjust:
-		return srv.PostHandleMsgCheckpointAdjust
 	case checkpoint:
 		return srv.PostHandleMsgCheckpoint
 	case checkpointAck:
@@ -58,83 +54,6 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandle
 	default:
 		return nil
 	}
-}
-
-// SideHandleCheckpointAdjust side msg for checkpoint adjust
-func (srv *sideMsgServer) SideHandleCheckpointAdjust(ctx sdk.Context, sdkMsg sdk.Msg) (result hmModule.Vote) {
-	// logger
-	logger := srv.Logger(ctx)
-
-	msg, ok := sdkMsg.(*types.MsgCheckpointAdjust)
-	if !ok {
-		logger.Error("msg type mismatched")
-		return hmModule.Vote_VOTE_NO
-	}
-
-	chainParams, err := srv.ck.GetParams(ctx)
-	if err != nil {
-		logger.Error("error in getting chain manager params", "error", err)
-		return hmModule.Vote_VOTE_NO
-	}
-
-	rootChainAddress := chainParams.ChainParams.RootChainAddress
-
-	params, err := srv.GetParams(ctx)
-	if err != nil {
-		logger.Error("error in getting params", "error", err)
-		return hmModule.Vote_VOTE_NO
-	}
-
-	contractCaller := srv.IContractCaller
-
-	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
-	if checkpointBuffer != nil {
-		logger.Error("checkpoint already exists in buffer", "error", err)
-		return hmModule.Vote_VOTE_NO
-	}
-
-	checkpointObj, err := srv.GetCheckpointByNumber(ctx, msg.HeaderIndex)
-	if err != nil {
-		logger.Error("unable to get checkpoint from db", "header index", msg.HeaderIndex, "error", err)
-		return hmModule.Vote_VOTE_NO
-	}
-
-	rootChainInstance, err := contractCaller.GetRootChainInstance(rootChainAddress)
-	if err != nil {
-		logger.Error("nable to fetch rootchain contract instance", "eth address", rootChainAddress, "error", err)
-		return hmModule.Vote_VOTE_NO
-	}
-
-	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.HeaderIndex, rootChainInstance, params.ChildBlockInterval)
-	if err != nil {
-		logger.Error("unable to fetch checkpoint from rootchain", "checkpointNumber", msg.HeaderIndex, "error", err)
-		return hmModule.Vote_VOTE_NO
-	}
-
-	if checkpointObj.EndBlock == end &&
-		checkpointObj.StartBlock == start &&
-		bytes.Equal(checkpointObj.RootHash.Bytes(), root.Bytes()) &&
-		strings.EqualFold(checkpointObj.Proposer, proposer) {
-		logger.Error("same checkpoint in db")
-		return hmModule.Vote_VOTE_NO
-	}
-
-	if msg.EndBlock != end || msg.StartBlock != start || !bytes.Equal(msg.RootHash.Bytes(), root.Bytes()) || strings.ToLower(msg.Proposer) != strings.ToLower(proposer) {
-		logger.Error("checkpoint fields fetched from ethereum does match with those in msg",
-			"message start block", msg.StartBlock,
-			"Rootchain Checkpoint start block", start,
-			"message end block", msg.EndBlock,
-			"Rootchain Checkpointt end block", end,
-			"message proposer", msg.Proposer,
-			"Rootchain Checkpoint proposer", proposer,
-			"message root hash", msg.RootHash,
-			"Rootchain Checkpoint root hash", root,
-		)
-
-		return hmModule.Vote_VOTE_NO
-	}
-
-	return hmModule.Vote_VOTE_YES
 }
 
 // SideHandleMsgCheckpoint handles checkpoint message
@@ -166,7 +85,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	}
 
 	// validate checkpoint
-	validCheckpoint, err := types.ValidateCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, maticTxConfirmations)
+	validCheckpoint, err := types.IsValidCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, maticTxConfirmations)
 	if err != nil {
 		logger.Error("error validating checkpoint",
 			"startBlock", msg.StartBlock,
@@ -258,83 +177,6 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	return hmModule.Vote_VOTE_YES
 }
 
-/*
-	Post Handlers - update the state of the tx
-**/
-
-// PostHandleMsgCheckpointAdjust msg for checkpointAdjust
-func (srv *sideMsgServer) PostHandleMsgCheckpointAdjust(ctx sdk.Context, sdkMsg sdk.Msg, sideTxResult hmModule.Vote) {
-	logger := srv.Logger(ctx)
-
-	msg, ok := sdkMsg.(*types.MsgCheckpointAdjust)
-	if !ok {
-		logger.Error("msg type mismatched")
-		return
-	}
-
-	// Skip handler if validator join is not approved
-	if sideTxResult != hmModule.Vote_VOTE_YES {
-		logger.Debug("skipping new validator-join since side-tx didn't get yes votes")
-		return
-	}
-
-	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
-	if checkpointBuffer != nil {
-		logger.Error("checkpoint buffer exists", "error", err)
-		return
-	}
-
-	checkpointObj, err := srv.GetCheckpointByNumber(ctx, msg.HeaderIndex)
-	if err != nil {
-		logger.Error("unable to get checkpoint from db",
-			"checkpoint number", msg.HeaderIndex,
-			"error", err)
-
-		return
-	}
-
-	if checkpointObj.EndBlock == msg.EndBlock && checkpointObj.StartBlock == msg.StartBlock && bytes.Equal(checkpointObj.RootHash.Bytes(), msg.RootHash.Bytes()) && strings.ToLower(checkpointObj.Proposer) == strings.ToLower(msg.Proposer) {
-		logger.Error("same Checkpoint in db")
-		return
-	}
-
-	logger.Info("Previous checkpoint details: EndBlock -", checkpointObj.EndBlock, ", RootHash -", msg.RootHash, " Proposer -", checkpointObj.Proposer)
-
-	checkpointObj.EndBlock = msg.EndBlock
-	checkpointObj.RootHash = hmTypes.BytesToHeimdallHash(msg.RootHash.Bytes())
-	checkpointObj.Proposer = msg.Proposer
-
-	logger.Info("new checkpoint details: endBlock", checkpointObj.EndBlock, ", rootHash :", msg.RootHash, " proposer :", checkpointObj.Proposer)
-
-	//
-	// Update checkpoint state
-	//
-
-	// Add checkpoint to store
-	if err = srv.AddCheckpoint(ctx, msg.HeaderIndex, checkpointObj); err != nil {
-		logger.Error("error while adding checkpoint into store", "checkpointNumber", msg.HeaderIndex)
-		return
-	}
-
-	logger.Debug("checkpoint updated to store", "checkpointNumber", msg.HeaderIndex)
-
-	// Emit event for checkpoints
-	ctx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			types.EventTypeCheckpointAck,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),    // module name
-			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
-			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.HeaderIndex, 10)),
-			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
-			sdk.NewAttribute(types.AttributeKeyRootHash, msg.RootHash.String()),
-		),
-	})
-
-	return
-}
-
 // PostHandleMsgCheckpoint handles the checkpoint msg
 func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Msg, sideTxResult hmModule.Vote) {
 	logger := srv.Logger(ctx)
@@ -423,15 +265,14 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{txBytes}.Bytes()
 
 	// Emit event for checkpoints
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeCheckpoint,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),                // module name
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(hash).Hex()), // tx hash
-			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),             // result
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),    // module name
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),   // tx hash
+			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
@@ -511,24 +352,25 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	logger.Debug("checkpoint buffer flushed after receiving checkpoint ack")
 
 	// Update ack count in staking module
-	srv.UpdateACKCount(ctx)
-
-	logger.Info("valid ack received", "currentACKCount", srv.GetACKCount(ctx)-1, "updatedACKCount", srv.GetACKCount(ctx))
+	err = srv.UpdateACKCount(ctx)
+	if err != nil {
+		logger.Error("error while updating the ack count", "err", err)
+		return
+	}
 
 	// Increment accum (selects new proposer)
 	srv.sk.IncrementAccum(ctx, 1)
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{txBytes}.Bytes()
 
 	// Emit event for checkpoints
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeCheckpointAck,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),                // module name
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(hash).Hex()), // tx hash
-			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),             // result
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),    // module name
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),   // tx hash
+			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
 			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.Number, 10)),
 		),
 	})

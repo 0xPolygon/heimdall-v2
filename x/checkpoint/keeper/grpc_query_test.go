@@ -22,8 +22,7 @@ func (s *KeeperTestSuite) TestQueryParams() {
 	require.NoError(err)
 	require.NotNil(res)
 
-	require.Equal(defaultParams.AvgCheckpointLength, res.Params.AvgCheckpointLength)
-	require.Equal(defaultParams.MaxCheckpointLength, res.Params.MaxCheckpointLength)
+	require.True(defaultParams.Equal(res.Params))
 }
 
 func (s *KeeperTestSuite) TestQueryAckCount() {
