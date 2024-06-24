@@ -37,6 +37,9 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 
 	if appState[ModuleName] != nil {
 		cdc.MustUnmarshalJSON(appState[ModuleName], &genesisState)
+		if err := genesisState.Validate(); err != nil {
+			panic(err)
+		}
 	}
 
 	return &genesisState
@@ -48,27 +51,31 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 	// set state to bor state
 	borState := GetGenesisStateFromAppState(cdc, appState)
 	chainState := chainmanagertypes.GetGenesisStateFromAppState(cdc, appState)
-	borState.Spans = genFirstSpan(currentValSet, chainState.Params.ChainParams.BorChainId)
+	borChainId := chainState.Params.ChainParams.BorChainId
+	if borChainId == "" {
+		panic("borChainId is empty, please check the order of genesis initialization in your app")
+	}
+	borState.Spans = genFirstSpan(currentValSet, borChainId)
 
 	appState[ModuleName] = cdc.MustMarshalJSON(borState)
 
 	return appState, nil
 }
 
-// genFirstSpan generates default first validator producer set
-func genFirstSpan(valset ValidatorSet, chainId string) []*Span {
+// genFirstSpan generates default first span using the validators producer set
+func genFirstSpan(valSet ValidatorSet, chainId string) []*Span {
 	var (
 		firstSpan         []*Span
 		selectedProducers []Validator
 	)
 
-	if len(valset.Validators) > int(DefaultProducerCount) {
+	if len(valSet.Validators) > int(DefaultProducerCount) {
 		// pop top validators and select
 		for i := 0; uint64(i) < DefaultProducerCount; i++ {
-			selectedProducers = append(selectedProducers, *valset.Validators[i])
+			selectedProducers = append(selectedProducers, *valSet.Validators[i])
 		}
 	} else {
-		for _, val := range valset.Validators {
+		for _, val := range valSet.Validators {
 			selectedProducers = append(selectedProducers, *val)
 		}
 	}
@@ -77,7 +84,7 @@ func genFirstSpan(valset ValidatorSet, chainId string) []*Span {
 		Id:                0,
 		StartBlock:        0,
 		EndBlock:          0 + DefaultFirstSpanDuration - 1,
-		ValidatorSet:      valset,
+		ValidatorSet:      valSet,
 		SelectedProducers: selectedProducers,
 		ChainId:           chainId,
 	}

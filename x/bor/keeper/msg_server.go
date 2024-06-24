@@ -4,8 +4,10 @@ import (
 	"context"
 	"strconv"
 
+	"cosmossdk.io/errors"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type msgServer struct {
@@ -20,10 +22,10 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-func (k msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpanRequest) (*types.MsgProposeSpanResponse, error) {
-	logger := k.Logger(ctx)
+func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpanRequest) (*types.MsgProposeSpanResponse, error) {
+	logger := m.Logger(ctx)
 
-	logger.Debug("✅ Validating proposed span msg",
+	logger.Debug("✅ validating proposed span msg",
 		"proposer", msg.Proposer,
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
@@ -34,14 +36,14 @@ func (k msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpanReq
 	_, err := sdk.ValAddressFromHex(msg.Proposer)
 	if err != nil {
 		logger.Error("invalid proposer address", "error", err)
-		return nil, err
+		return nil, errors.Wrapf(err, "invalid proposer address")
 	}
 
 	// verify chain id
-	chainParams, err := k.ck.GetParams(ctx)
+	chainParams, err := m.ck.GetParams(ctx)
 	if err != nil {
 		logger.Error("failed to get chain params", "error", err)
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to get chain params")
 	}
 
 	if chainParams.ChainParams.BorChainId != msg.ChainId {
@@ -49,15 +51,21 @@ func (k msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpanReq
 		return nil, types.ErrInvalidChainID
 	}
 
-	lastSpan, err := k.GetLastSpan(ctx)
+	// verify seed length
+	if len(msg.Seed) != common.HashLength {
+		logger.Error("invalid seed length", "expected", common.HashLength, "got", len(msg.Seed))
+		return nil, types.ErrInvalidSeedLength
+	}
+
+	lastSpan, err := m.GetLastSpan(ctx)
 	if err != nil {
-		logger.Error("Unable to fetch last span", "Error", err)
-		return nil, err
+		logger.Error("unable to fetch last span", "Error", err)
+		return nil, errors.Wrapf(err, "unable to fetch last span")
 	}
 
 	// Validate span continuity
-	if lastSpan.Id+1 != msg.SpanId || msg.StartBlock != lastSpan.EndBlock+1 || msg.EndBlock < msg.StartBlock {
-		logger.Error("Blocks not in continuity",
+	if lastSpan.Id+1 != msg.SpanId || msg.StartBlock != lastSpan.EndBlock+1 || msg.EndBlock <= msg.StartBlock {
+		logger.Error("blocks not in continuity",
 			"lastSpanId", lastSpan.Id,
 			"spanId", msg.SpanId,
 			"lastSpanStartBlock", lastSpan.StartBlock,

@@ -9,7 +9,7 @@ var _ sdk.Msg = &MsgProposeSpanRequest{}
 // NewMsgProposeSpanRequest creates a new MsgProposeSpanRequest instance
 func NewMsgProposeSpanRequest(
 	spanID uint64,
-	propser string,
+	proposer string,
 	startBlock uint64,
 	endBlock uint64,
 	chainId string,
@@ -17,7 +17,7 @@ func NewMsgProposeSpanRequest(
 ) *MsgProposeSpanRequest {
 	return &MsgProposeSpanRequest{
 		SpanId:     spanID,
-		Proposer:   propser,
+		Proposer:   proposer,
 		StartBlock: startBlock,
 		EndBlock:   endBlock,
 		ChainId:    chainId,
@@ -25,7 +25,7 @@ func NewMsgProposeSpanRequest(
 	}
 }
 
-// Type returns the type of the x/topup MsgTopupTx.
+// Type returns the type of the x/bor MsgTopupTx.
 func (msg MsgProposeSpanRequest) Type() string {
 	return EventTypeProposeSpan
 }

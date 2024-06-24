@@ -53,7 +53,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 
 	}
 
-	logger.Debug("✅ Validating External call for span msg",
+	logger.Debug("✅ validating External call for span msg",
 		"proposer", msg.Proposer,
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
@@ -62,16 +62,16 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 	)
 
 	// calculate next span seed locally
-	nextSpanSeed, err := s.k.GetNextSpanSeed(ctx)
+	nextSpanSeed, err := s.k.FetchNextSpanSeed(ctx)
 	if err != nil {
-		logger.Error("Error fetching next span seed from mainchain")
+		logger.Error("error fetching next span seed from mainchain", "error", err)
 		return hModule.Vote_VOTE_SKIP
 	}
 
 	// check if span seed matches or not.
 	if !bytes.Equal(msg.Seed, nextSpanSeed.Bytes()) {
 		logger.Error(
-			"Span Seed does not match",
+			"span seed does not match",
 			"msgSeed", msg.Seed,
 			"mainchainSeed", nextSpanSeed.String(),
 		)
@@ -84,13 +84,13 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 	// childBlock, err := s.k.contractCaller.GetBorChainBlock(nil)
 	childBlock := &ethtypes.Header{Number: big.NewInt(1)} // dummy block to avoid nil pointer
 	if err != nil {
-		logger.Error("Error fetching current child block", "error", err)
+		logger.Error("error fetching current child block", "error", err)
 		return hModule.Vote_VOTE_SKIP
 	}
 
 	lastSpan, err := s.k.GetLastSpan(ctx)
 	if err != nil {
-		logger.Error("Error fetching last span", "error", err)
+		logger.Error("error fetching last span", "error", err)
 		return hModule.Vote_VOTE_SKIP
 	}
 
@@ -98,7 +98,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 	// check if span proposed is in-turn or not
 	if !(lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock) {
 		logger.Error(
-			"Span proposed is not in-turn",
+			"span proposed is not in-turn",
 			"currentChildBlock", currentBlock,
 			"msgStartblock", msg.StartBlock,
 			"msgEndBlock", msg.EndBlock,
@@ -107,7 +107,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 		return hModule.Vote_VOTE_NO
 	}
 
-	logger.Debug("✅ Successfully validated External call for span msg")
+	logger.Debug("✅ successfully validated External call for span msg")
 
 	return hModule.Vote_VOTE_YES
 }
@@ -123,7 +123,7 @@ func (s sideMsgServer) PostTxHandler(methodName string) hModule.PostTxHandler {
 	}
 }
 
-// PostHandleMsgEventSpan handles state persisting span msg
+// PostHandleMsgSpan handles state persisting span msg
 func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult hModule.Vote) {
 	logger := s.k.Logger(ctx)
 
@@ -135,27 +135,27 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	// Skip handler if span is not approved
 	if sideTxResult != hModule.Vote_VOTE_YES {
-		logger.Debug("Skipping new span since side-tx didn't get yes votes")
+		logger.Debug("skipping new span since side-tx didn't get yes votes")
 		return
 	}
 
 	// check for replay
 	ok, err := s.k.HasSpan(ctx, msg.SpanId)
 	if err != nil {
-		logger.Error("Error ocurred while checking for span", "span id", msg.SpanId, "error", err)
+		logger.Error("error ocurred while checking for span", "span id", msg.SpanId, "error", err)
 		return
 	}
 	if ok {
-		logger.Debug("Skipping new span as it's already processed", "span id", msg.SpanId)
+		logger.Debug("skipping new span as it's already processed", "span id", msg.SpanId)
 		return
 	}
 
-	logger.Debug("Persisting span state", "span id", msg.SpanId, "sideTxResult", sideTxResult)
+	logger.Debug("persisting span state", "span id", msg.SpanId, "sideTxResult", sideTxResult)
 
 	// freeze for new span
 	err = s.k.FreezeSet(ctx, msg.SpanId, msg.StartBlock, msg.EndBlock, msg.ChainId, common.Hash(msg.Seed))
 	if err != nil {
-		s.k.Logger(ctx).Error("Unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
+		logger.Error("unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
 		return
 
 	}

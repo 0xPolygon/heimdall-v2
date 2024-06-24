@@ -1,10 +1,10 @@
 package types
 
-import fmt "fmt"
+import "fmt"
 
 // Default parameter values
 const (
-	DefaultSprintDuration    uint64 = 64
+	DefaultSprintDuration    uint64 = 16
 	DefaultSpanDuration      uint64 = 100 * DefaultSprintDuration
 	DefaultFirstSpanDuration uint64 = 256
 	DefaultProducerCount     uint64 = 4
@@ -49,7 +49,7 @@ func (p Params) Validate() error {
 func validateSprintDuration(i interface{}) error {
 	v, ok := i.(uint64)
 	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
+		return fmt.Errorf("invalid sprint duration parameter type: %T", i)
 	}
 
 	if v == 0 {
@@ -63,7 +63,7 @@ func validateSprintDuration(i interface{}) error {
 func validateSpanDuration(i interface{}) error {
 	v, ok := i.(uint64)
 	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
+		return fmt.Errorf("invalid span duration parameter type: %T", i)
 	}
 
 	if v == 0 {
@@ -77,7 +77,7 @@ func validateSpanDuration(i interface{}) error {
 func validateProducerCount(i interface{}) error {
 	v, ok := i.(uint64)
 	if !ok {
-		return fmt.Errorf("invalid parameter type: %T", i)
+		return fmt.Errorf("invalid producer count parameter type: %T", i)
 	}
 
 	if v == 0 {

@@ -37,10 +37,6 @@ message Validator {
 message ValidatorSet {
   repeated Validator validators = 1;
   Validator proposer = 2;
-
-  // TODO HV2: do we even need these ?
-  int64 total_voting_power = 3;
-  map<string, int64> validators_map = 4;
 }
 
 // Params represents the parameters for the bor module

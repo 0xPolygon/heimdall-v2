@@ -11,7 +11,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: bor.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod: "SpanById",
+					RpcMethod: "GetSpanById",
 					Use:       "span-by-id [id]",
 					Short:     "Query bor span by id",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
@@ -19,45 +19,34 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					},
 				},
 				{
-					RpcMethod: "SpanList",
+					RpcMethod: "GetSpanList",
 					Use:       "span-list",
 					Short:     "Query list of bor spans",
 				},
 				{
-					RpcMethod: "LatestSpan",
+					RpcMethod: "GetLatestSpan",
 					Use:       "latest-span",
 					Short:     "Query latest bor span",
 				},
 				{
-					RpcMethod: "NextSpanSeed",
+					RpcMethod: "GetNextSpanSeed",
 					Use:       "next-span-seed",
 					Short:     "Query next bor span seed",
 				},
 				{
-					RpcMethod: "NextSpan",
+					RpcMethod: "GetNextSpan",
 					Use:       "next-span",
 					Short:     "Query next bor span",
-				},
-				{
-					RpcMethod: "Params",
-					Use:       "params",
-					Short:     "Query bor params",
-				},
-			},
-		},
-		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: bor.Msg_ServiceDesc.ServiceName,
-			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
-				{
-					RpcMethod: "ProposeSpan",
-					Use:       "propose-span [proposer] [span-id] [start-block] [chain-id]",
-					Short:     "Propose a new bor span",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "proposer"},
 						{ProtoField: "span_id"},
 						{ProtoField: "start_block"},
-						{ProtoField: "chain_id"},
+						{ProtoField: "bor_chain_id"},
 					},
+				},
+				{
+					RpcMethod: "GetParams",
+					Use:       "params",
+					Short:     "Query bor params",
 				},
 			},
 		},

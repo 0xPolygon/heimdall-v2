@@ -11,7 +11,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	io "io"
 	reflect "reflect"
-	sort "sort"
 	sync "sync"
 )
 
@@ -1739,94 +1738,10 @@ func (x *_ValidatorSet_1_list) IsValid() bool {
 	return x.list != nil
 }
 
-var _ protoreflect.Map = (*_ValidatorSet_4_map)(nil)
-
-type _ValidatorSet_4_map struct {
-	m *map[string]int64
-}
-
-func (x *_ValidatorSet_4_map) Len() int {
-	if x.m == nil {
-		return 0
-	}
-	return len(*x.m)
-}
-
-func (x *_ValidatorSet_4_map) Range(f func(protoreflect.MapKey, protoreflect.Value) bool) {
-	if x.m == nil {
-		return
-	}
-	for k, v := range *x.m {
-		mapKey := (protoreflect.MapKey)(protoreflect.ValueOfString(k))
-		mapValue := protoreflect.ValueOfInt64(v)
-		if !f(mapKey, mapValue) {
-			break
-		}
-	}
-}
-
-func (x *_ValidatorSet_4_map) Has(key protoreflect.MapKey) bool {
-	if x.m == nil {
-		return false
-	}
-	keyUnwrapped := key.String()
-	concreteValue := keyUnwrapped
-	_, ok := (*x.m)[concreteValue]
-	return ok
-}
-
-func (x *_ValidatorSet_4_map) Clear(key protoreflect.MapKey) {
-	if x.m == nil {
-		return
-	}
-	keyUnwrapped := key.String()
-	concreteKey := keyUnwrapped
-	delete(*x.m, concreteKey)
-}
-
-func (x *_ValidatorSet_4_map) Get(key protoreflect.MapKey) protoreflect.Value {
-	if x.m == nil {
-		return protoreflect.Value{}
-	}
-	keyUnwrapped := key.String()
-	concreteKey := keyUnwrapped
-	v, ok := (*x.m)[concreteKey]
-	if !ok {
-		return protoreflect.Value{}
-	}
-	return protoreflect.ValueOfInt64(v)
-}
-
-func (x *_ValidatorSet_4_map) Set(key protoreflect.MapKey, value protoreflect.Value) {
-	if !key.IsValid() || !value.IsValid() {
-		panic("invalid key or value provided")
-	}
-	keyUnwrapped := key.String()
-	concreteKey := keyUnwrapped
-	valueUnwrapped := value.Int()
-	concreteValue := valueUnwrapped
-	(*x.m)[concreteKey] = concreteValue
-}
-
-func (x *_ValidatorSet_4_map) Mutable(key protoreflect.MapKey) protoreflect.Value {
-	panic("should not call Mutable on protoreflect.Map whose value is not of type protoreflect.Message")
-}
-
-func (x *_ValidatorSet_4_map) NewValue() protoreflect.Value {
-	v := int64(0)
-	return protoreflect.ValueOfInt64(v)
-}
-
-func (x *_ValidatorSet_4_map) IsValid() bool {
-	return x.m != nil
-}
-
 var (
-	md_ValidatorSet                    protoreflect.MessageDescriptor
-	fd_ValidatorSet_validators         protoreflect.FieldDescriptor
-	fd_ValidatorSet_proposer           protoreflect.FieldDescriptor
-	fd_ValidatorSet_total_voting_power protoreflect.FieldDescriptor
-	fd_ValidatorSet_validators_map     protoreflect.FieldDescriptor
+	md_ValidatorSet            protoreflect.MessageDescriptor
+	fd_ValidatorSet_validators protoreflect.FieldDescriptor
+	fd_ValidatorSet_proposer   protoreflect.FieldDescriptor
 )
 
 func init() {
@@ -1834,8 +1749,6 @@ func init() {
 	md_ValidatorSet = File_heimdallv2_bor_bor_proto.Messages().ByName("ValidatorSet")
 	fd_ValidatorSet_validators = md_ValidatorSet.Fields().ByName("validators")
 	fd_ValidatorSet_proposer = md_ValidatorSet.Fields().ByName("proposer")
-	fd_ValidatorSet_total_voting_power = md_ValidatorSet.Fields().ByName("total_voting_power")
-	fd_ValidatorSet_validators_map = md_ValidatorSet.Fields().ByName("validators_map")
 }
 
 var _ protoreflect.Message = (*fastReflection_ValidatorSet)(nil)
@@ -1915,18 +1828,6 @@ func (x *fastReflection_ValidatorSet) Range(f func(protoreflect.FieldDescriptor,
 			return
 		}
 	}
-	if x.TotalVotingPower != int64(0) {
-		value := protoreflect.ValueOfInt64(x.TotalVotingPower)
-		if !f(fd_ValidatorSet_total_voting_power, value) {
-			return
-		}
-	}
-	if len(x.ValidatorsMap) != 0 {
-		value := protoreflect.ValueOfMap(&_ValidatorSet_4_map{m: &x.ValidatorsMap})
-		if !f(fd_ValidatorSet_validators_map, value) {
-			return
-		}
-	}
 }
 
 // Has reports whether a field is populated.
@@ -1946,10 +1847,6 @@ func (x *fastReflection_ValidatorSet) Has(fd protoreflect.FieldDescriptor) bool 
 		return len(x.Validators) != 0
 	case "heimdallv2.bor.ValidatorSet.proposer":
 		return x.Proposer != nil
-	case "heimdallv2.bor.ValidatorSet.total_voting_power":
-		return x.TotalVotingPower != int64(0)
-	case "heimdallv2.bor.ValidatorSet.validators_map":
-		return len(x.ValidatorsMap) != 0
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.ValidatorSet"))
@@ -1970,10 +1867,6 @@ func (x *fastReflection_ValidatorSet) Clear(fd protoreflect.FieldDescriptor) {
 		x.Validators = nil
 	case "heimdallv2.bor.ValidatorSet.proposer":
 		x.Proposer = nil
-	case "heimdallv2.bor.ValidatorSet.total_voting_power":
-		x.TotalVotingPower = int64(0)
-	case "heimdallv2.bor.ValidatorSet.validators_map":
-		x.ValidatorsMap = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.ValidatorSet"))
@@ -1999,15 +1892,6 @@ func (x *fastReflection_ValidatorSet) Get(descriptor protoreflect.FieldDescripto
 	case "heimdallv2.bor.ValidatorSet.proposer":
 		value := x.Proposer
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
-	case "heimdallv2.bor.ValidatorSet.total_voting_power":
-		value := x.TotalVotingPower
-		return protoreflect.ValueOfInt64(value)
-	case "heimdallv2.bor.ValidatorSet.validators_map":
-		if len(x.ValidatorsMap) == 0 {
-			return protoreflect.ValueOfMap(&_ValidatorSet_4_map{})
-		}
-		mapValue := &_ValidatorSet_4_map{m: &x.ValidatorsMap}
-		return protoreflect.ValueOfMap(mapValue)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.ValidatorSet"))
@@ -2034,12 +1918,6 @@ func (x *fastReflection_ValidatorSet) Set(fd protoreflect.FieldDescriptor, value
 		x.Validators = *clv.list
 	case "heimdallv2.bor.ValidatorSet.proposer":
 		x.Proposer = value.Message().Interface().(*Validator)
-	case "heimdallv2.bor.ValidatorSet.total_voting_power":
-		x.TotalVotingPower = value.Int()
-	case "heimdallv2.bor.ValidatorSet.validators_map":
-		mv := value.Map()
-		cmv := mv.(*_ValidatorSet_4_map)
-		x.ValidatorsMap = *cmv.m
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.ValidatorSet"))
@@ -2071,14 +1949,6 @@ func (x *fastReflection_ValidatorSet) Mutable(fd protoreflect.FieldDescriptor) p
 			x.Proposer = new(Validator)
 		}
 		return protoreflect.ValueOfMessage(x.Proposer.ProtoReflect())
-	case "heimdallv2.bor.ValidatorSet.validators_map":
-		if x.ValidatorsMap == nil {
-			x.ValidatorsMap = make(map[string]int64)
-		}
-		value := &_ValidatorSet_4_map{m: &x.ValidatorsMap}
-		return protoreflect.ValueOfMap(value)
-	case "heimdallv2.bor.ValidatorSet.total_voting_power":
-		panic(fmt.Errorf("field total_voting_power of message heimdallv2.bor.ValidatorSet is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.ValidatorSet"))
@@ -2098,11 +1968,6 @@ func (x *fastReflection_ValidatorSet) NewField(fd protoreflect.FieldDescriptor) 
 	case "heimdallv2.bor.ValidatorSet.proposer":
 		m := new(Validator)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
-	case "heimdallv2.bor.ValidatorSet.total_voting_power":
-		return protoreflect.ValueOfInt64(int64(0))
-	case "heimdallv2.bor.ValidatorSet.validators_map":
-		m := make(map[string]int64)
-		return protoreflect.ValueOfMap(&_ValidatorSet_4_map{m: &m})
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.ValidatorSet"))
@@ -2182,30 +2047,6 @@ func (x *fastReflection_ValidatorSet) ProtoMethods() *protoiface.Methods {
 			l = options.Size(x.Proposer)
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
-		if x.TotalVotingPower != 0 {
-			n += 1 + runtime.Sov(uint64(x.TotalVotingPower))
-		}
-		if len(x.ValidatorsMap) > 0 {
-			SiZeMaP := func(k string, v int64) {
-				mapEntrySize := 1 + len(k) + runtime.Sov(uint64(len(k))) + 1 + runtime.Sov(uint64(v))
-				n += mapEntrySize + 1 + runtime.Sov(uint64(mapEntrySize))
-			}
-			if options.Deterministic {
-				sortme := make([]string, 0, len(x.ValidatorsMap))
-				for k := range x.ValidatorsMap {
-					sortme = append(sortme, k)
-				}
-				sort.Strings(sortme)
-				for _, k := range sortme {
-					v := x.ValidatorsMap[k]
-					SiZeMaP(k, v)
-				}
-			} else {
-				for k, v := range x.ValidatorsMap {
-					SiZeMaP(k, v)
-				}
-			}
-		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -2234,52 +2075,6 @@ func (x *fastReflection_ValidatorSet) ProtoMethods() *protoiface.Methods {
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
-		}
-		if len(x.ValidatorsMap) > 0 {
-			MaRsHaLmAp := func(k string, v int64) (protoiface.MarshalOutput, error) {
-				baseI := i
-				i = runtime.EncodeVarint(dAtA, i, uint64(v))
-				i--
-				dAtA[i] = 0x10
-				i -= len(k)
-				copy(dAtA[i:], k)
-				i = runtime.EncodeVarint(dAtA, i, uint64(len(k)))
-				i--
-				dAtA[i] = 0xa
-				i = runtime.EncodeVarint(dAtA, i, uint64(baseI-i))
-				i--
-				dAtA[i] = 0x22
-				return protoiface.MarshalOutput{}, nil
-			}
-			if options.Deterministic {
-				keysForValidatorsMap := make([]string, 0, len(x.ValidatorsMap))
-				for k := range x.ValidatorsMap {
-					keysForValidatorsMap = append(keysForValidatorsMap, string(k))
-				}
-				sort.Slice(keysForValidatorsMap, func(i, j int) bool {
-					return keysForValidatorsMap[i] < keysForValidatorsMap[j]
-				})
-				for iNdEx := len(keysForValidatorsMap) - 1; iNdEx >= 0; iNdEx-- {
-					v := x.ValidatorsMap[string(keysForValidatorsMap[iNdEx])]
-					out, err := MaRsHaLmAp(keysForValidatorsMap[iNdEx], v)
-					if err != nil {
-						return out, err
-					}
-				}
-			} else {
-				for k := range x.ValidatorsMap {
-					v := x.ValidatorsMap[k]
-					out, err := MaRsHaLmAp(k, v)
-					if err != nil {
-						return out, err
-					}
-				}
-			}
-		}
-		if x.TotalVotingPower != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.TotalVotingPower))
-			i--
-			dAtA[i] = 0x18
 		}
 		if x.Proposer != nil {
 			encoded, err := options.Marshal(x.Proposer)
@@ -2429,138 +2224,6 @@ func (x *fastReflection_ValidatorSet) ProtoMethods() *protoiface.Methods {
 				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Proposer); err != nil {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
-				iNdEx = postIndex
-			case 3:
-				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field TotalVotingPower", wireType)
-				}
-				x.TotalVotingPower = 0
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					x.TotalVotingPower |= int64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-			case 4:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ValidatorsMap", wireType)
-				}
-				var msglen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					msglen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if msglen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + msglen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				if x.ValidatorsMap == nil {
-					x.ValidatorsMap = make(map[string]int64)
-				}
-				var mapkey string
-				var mapvalue int64
-				for iNdEx < postIndex {
-					entryPreIndex := iNdEx
-					var wire uint64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-						}
-						if iNdEx >= l {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						wire |= uint64(b&0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					fieldNum := int32(wire >> 3)
-					if fieldNum == 1 {
-						var stringLenmapkey uint64
-						for shift := uint(0); ; shift += 7 {
-							if shift >= 64 {
-								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-							}
-							if iNdEx >= l {
-								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-							}
-							b := dAtA[iNdEx]
-							iNdEx++
-							stringLenmapkey |= uint64(b&0x7F) << shift
-							if b < 0x80 {
-								break
-							}
-						}
-						intStringLenmapkey := int(stringLenmapkey)
-						if intStringLenmapkey < 0 {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-						}
-						postStringIndexmapkey := iNdEx + intStringLenmapkey
-						if postStringIndexmapkey < 0 {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-						}
-						if postStringIndexmapkey > l {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-						}
-						mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
-						iNdEx = postStringIndexmapkey
-					} else if fieldNum == 2 {
-						for shift := uint(0); ; shift += 7 {
-							if shift >= 64 {
-								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-							}
-							if iNdEx >= l {
-								return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-							}
-							b := dAtA[iNdEx]
-							iNdEx++
-							mapvalue |= int64(b&0x7F) << shift
-							if b < 0x80 {
-								break
-							}
-						}
-					} else {
-						iNdEx = entryPreIndex
-						skippy, err := runtime.Skip(dAtA[iNdEx:])
-						if err != nil {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
-						}
-						if (skippy < 0) || (iNdEx+skippy) < 0 {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-						}
-						if (iNdEx + skippy) > postIndex {
-							return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-						}
-						iNdEx += skippy
-					}
-				}
-				x.ValidatorsMap[mapkey] = mapvalue
 				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
@@ -3302,9 +2965,6 @@ type ValidatorSet struct {
 
 	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
 	Proposer   *Validator   `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	// TODO HV2: do we even need these ?
-	TotalVotingPower int64            `protobuf:"varint,3,opt,name=total_voting_power,json=totalVotingPower,proto3" json:"total_voting_power,omitempty"`
-	ValidatorsMap    map[string]int64 `protobuf:"bytes,4,rep,name=validators_map,json=validatorsMap,proto3" json:"validators_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 }
 
 func (x *ValidatorSet) Reset() {
@@ -3337,20 +2997,6 @@ func (x *ValidatorSet) GetValidators() []*Validator {
 func (x *ValidatorSet) GetProposer() *Validator {
 	if x != nil {
 		return x.Proposer
-	}
-	return nil
-}
-
-func (x *ValidatorSet) GetTotalVotingPower() int64 {
-	if x != nil {
-		return x.TotalVotingPower
-	}
-	return 0
-}
-
-func (x *ValidatorSet) GetValidatorsMap() map[string]int64 {
-	if x != nil {
-		return x.ValidatorsMap
 	}
 	return nil
 }
@@ -3452,8 +3098,8 @@ var file_heimdallv2_bor_bor_proto_rawDesc = []byte{
 	0x6c, 0x65, 0x64, 0x18, 0x09, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x6a, 0x61, 0x69, 0x6c, 0x65,
 	0x64, 0x12, 0x2b, 0x0a, 0x11, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x5f, 0x70, 0x72,
 	0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x03, 0x52, 0x10, 0x70, 0x72,
-	0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x22, 0xc8,
-	0x02, 0x0a, 0x0c, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x12,
+	0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x50, 0x72, 0x69, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x22, 0x80,
+	0x01, 0x0a, 0x0c, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x12,
 	0x39, 0x0a, 0x0a, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x18, 0x01, 0x20,
 	0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
 	0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x0a,
@@ -3461,39 +3107,26 @@ var file_heimdallv2_bor_bor_proto_rawDesc = []byte{
 	0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x68,
 	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x56, 0x61,
 	0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65,
-	0x72, 0x12, 0x2c, 0x0a, 0x12, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x76, 0x6f, 0x74, 0x69, 0x6e,
-	0x67, 0x5f, 0x70, 0x6f, 0x77, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x10, 0x74,
-	0x6f, 0x74, 0x61, 0x6c, 0x56, 0x6f, 0x74, 0x69, 0x6e, 0x67, 0x50, 0x6f, 0x77, 0x65, 0x72, 0x12,
-	0x56, 0x0a, 0x0e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73, 0x5f, 0x6d, 0x61,
-	0x70, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x2f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
-	0x6f, 0x72, 0x53, 0x65, 0x74, 0x2e, 0x56, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x73,
-	0x4d, 0x61, 0x70, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x0d, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61,
-	0x74, 0x6f, 0x72, 0x73, 0x4d, 0x61, 0x70, 0x1a, 0x40, 0x0a, 0x12, 0x56, 0x61, 0x6c, 0x69, 0x64,
-	0x61, 0x74, 0x6f, 0x72, 0x73, 0x4d, 0x61, 0x70, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a,
-	0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12,
-	0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05,
-	0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x83, 0x01, 0x0a, 0x06, 0x50, 0x61,
-	0x72, 0x61, 0x6d, 0x73, 0x12, 0x27, 0x0a, 0x0f, 0x73, 0x70, 0x72, 0x69, 0x6e, 0x74, 0x5f, 0x64,
-	0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0e, 0x73,
-	0x70, 0x72, 0x69, 0x6e, 0x74, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x23, 0x0a,
-	0x0d, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x04, 0x52, 0x0c, 0x73, 0x70, 0x61, 0x6e, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69,
-	0x6f, 0x6e, 0x12, 0x25, 0x0a, 0x0e, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x5f, 0x63,
-	0x6f, 0x75, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0d, 0x70, 0x72, 0x6f, 0x64,
-	0x75, 0x63, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x3a, 0x04, 0xe8, 0xa0, 0x1f, 0x01, 0x42,
-	0xac, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x08, 0x42, 0x6f, 0x72, 0x50, 0x72, 0x6f, 0x74, 0x6f,
-	0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30,
-	0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58, 0xaa, 0x02, 0x0e,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72, 0xca, 0x02,
-	0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0xe2,
-	0x02, 0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72,
-	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72, 0x62, 0x06,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x72, 0x22, 0x83, 0x01, 0x0a, 0x06, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x27, 0x0a, 0x0f,
+	0x73, 0x70, 0x72, 0x69, 0x6e, 0x74, 0x5f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0e, 0x73, 0x70, 0x72, 0x69, 0x6e, 0x74, 0x44, 0x75, 0x72,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x23, 0x0a, 0x0d, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x64, 0x75,
+	0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0c, 0x73, 0x70,
+	0x61, 0x6e, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x25, 0x0a, 0x0e, 0x70, 0x72,
+	0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x04, 0x52, 0x0d, 0x70, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x72, 0x43, 0x6f, 0x75, 0x6e,
+	0x74, 0x3a, 0x04, 0xe8, 0xa0, 0x1f, 0x01, 0x42, 0xac, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x08,
+	0x42, 0x6f, 0x72, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2,
+	0x02, 0x03, 0x48, 0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -3508,25 +3141,23 @@ func file_heimdallv2_bor_bor_proto_rawDescGZIP() []byte {
 	return file_heimdallv2_bor_bor_proto_rawDescData
 }
 
-var file_heimdallv2_bor_bor_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_heimdallv2_bor_bor_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_heimdallv2_bor_bor_proto_goTypes = []interface{}{
 	(*Span)(nil),         // 0: heimdallv2.bor.Span
 	(*Validator)(nil),    // 1: heimdallv2.bor.Validator
 	(*ValidatorSet)(nil), // 2: heimdallv2.bor.ValidatorSet
 	(*Params)(nil),       // 3: heimdallv2.bor.Params
-	nil,                  // 4: heimdallv2.bor.ValidatorSet.ValidatorsMapEntry
 }
 var file_heimdallv2_bor_bor_proto_depIdxs = []int32{
 	2, // 0: heimdallv2.bor.Span.validator_set:type_name -> heimdallv2.bor.ValidatorSet
 	1, // 1: heimdallv2.bor.Span.selected_producers:type_name -> heimdallv2.bor.Validator
 	1, // 2: heimdallv2.bor.ValidatorSet.validators:type_name -> heimdallv2.bor.Validator
 	1, // 3: heimdallv2.bor.ValidatorSet.proposer:type_name -> heimdallv2.bor.Validator
-	4, // 4: heimdallv2.bor.ValidatorSet.validators_map:type_name -> heimdallv2.bor.ValidatorSet.ValidatorsMapEntry
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_bor_bor_proto_init() }
@@ -3590,7 +3221,7 @@ func file_heimdallv2_bor_bor_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_heimdallv2_bor_bor_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

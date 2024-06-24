@@ -1077,7 +1077,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgProposeSpan represents a message to propose a span.
+// MsgProposeSpanRequest represents a message to propose a span.
 type MsgProposeSpanRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

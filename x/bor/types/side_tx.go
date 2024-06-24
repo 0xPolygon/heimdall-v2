@@ -19,7 +19,7 @@ type SideMsgServer interface {
 	PostTxHandler(methodName string) hModule.PostTxHandler
 }
 
-// RegisterSideMsgServer registers server methods for the x/topup module handlers, based on the sideCfg.
+// RegisterSideMsgServer registers server methods for the x/bor module handlers, based on the sideCfg.
 func RegisterSideMsgServer(sideCfg hModule.SideTxConfigurator, srv SideMsgServer) {
 	serviceDesc := _Msg_serviceDesc
 

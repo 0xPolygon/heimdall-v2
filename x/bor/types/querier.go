@@ -1,7 +1,8 @@
 package types
 
-// query endpoints supported by the bor
+// query endpoints supported by the bor module
 const (
-	QueryParams       = "params"
-	QueryNextSpanSeed = "next-span-seed"
+	QueryParams   = "params"
+	QuerySpan     = "span"
+	QuerySpanSeed = "seed"
 )

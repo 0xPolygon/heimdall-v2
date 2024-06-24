@@ -13,7 +13,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 	require := suite.Require()
 
 	testChainParams := chainmanagertypes.DefaultParams()
-	suite.chainManagerKeeper.EXPECT().GetParams(suite.ctx).Return(testChainParams, nil).AnyTimes()
+	suite.chainManagerKeeper.EXPECT().GetParams(suite.ctx).Return(testChainParams, nil).Times(1)
 
 	testSpan := suite.genTestSpans(1)[0]
 	err := suite.borKeeper.AddNewSpan(suite.ctx, testSpan)
@@ -97,6 +97,19 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Proposer:   common.HexToAddress("someproposer").String(),
 				StartBlock: 102,
 				EndBlock:   100,
+				ChainId:    testChainParams.ChainParams.BorChainId,
+				Seed:       common.HexToHash("testseed1").Bytes(),
+			},
+			expRes: nil,
+			expErr: types.ErrInvalidSpan,
+		},
+		{
+			name: "end block equal to start block",
+			span: types.MsgProposeSpanRequest{
+				SpanId:     2,
+				Proposer:   common.HexToAddress("someproposer").String(),
+				StartBlock: 102,
+				EndBlock:   102,
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},

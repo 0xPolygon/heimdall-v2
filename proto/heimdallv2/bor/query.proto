@@ -3,6 +3,7 @@ package heimdallv2.bor;
 
 import "gogoproto/gogo.proto";
 import "cosmos/query/v1/query.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/bor/bor.proto";
 
@@ -11,33 +12,33 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 // Query defines the gRPC querier service.
 service Query {
 
-  rpc SpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
+  rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/span/{span_id}";
+    option (google.api.http).get = "/heimdallv2/bor/span/{id}";
   }
 
-  rpc SpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
+  rpc GetSpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/heimdallv2/bor/span/list";
   }
 
-  rpc LatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
+  rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/latest-span";
+    option (google.api.http).get = "/heimdallv2/bor/span/latest";
   }
 
-  rpc NextSpanSeed(QueryNextSpanSeedRequest)
+  rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
       returns (QueryNextSpanSeedResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/next-span-seed";
+    option (google.api.http).get = "/heimdallv2/bor/span/seed";
   }
 
-  rpc NextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
+  rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/prepare-next-span";
+    option (google.api.http).get = "/heimdallv2/bor/span/prepare";
   }
 
-  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+  rpc GetParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/heimdallv2/bor/params";
   }
@@ -45,27 +46,23 @@ service Query {
 
 // QuerySpanByIdRequest defines the gRPC request structure for querying
 // a bor span by span id.
-message QuerySpanByIdRequest { string span_id = 1; }
+message QuerySpanByIdRequest { string id = 1; }
 
 // QuerySpanByIdResponse defines the gRPC response structure for querying
 // a bor span by span id.
-message QuerySpanByIdResponse {
-  string height = 1;
-  Span span = 2;
-}
+message QuerySpanByIdResponse { Span span = 1; }
 
 // QuerySpanListRequest defines the gRPC request structure for querying
 // a list of bor spans.
 message QuerySpanListRequest {
-  uint64 page = 1;
-  uint64 limit = 2;
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
 }
 
 // QuerySpanListResponse defines the gRPC response structure for querying
 // a list of bor spans.
 message QuerySpanListResponse {
-  string height = 1;
-  repeated Span span_list = 2 [ (gogoproto.nullable) = false ];
+  repeated Span span_list = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }
 
 // QueryLatestSpanResponse defines the gRPC response structure for querying
@@ -74,10 +71,7 @@ message QueryLatestSpanRequest {}
 
 // QueryLatestSpanResponse defines the gRPC response structure for querying
 // the latest bor span.
-message QueryLatestSpanResponse {
-  string height = 1;
-  Span span = 2;
-}
+message QueryLatestSpanResponse { Span span = 1; }
 
 // QueryNextSpanSeedRequest defines the gRPC request structure for querying
 // the next bor span seed.
@@ -85,12 +79,9 @@ message QueryNextSpanSeedRequest {}
 
 // QueryNextSpanSeedResponse defines the gRPC response structure for querying
 // the next bor span seed.
-message QueryNextSpanSeedResponse {
-  string height = 1;
-  string seed = 2;
-}
+message QueryNextSpanSeedResponse { string seed = 1; }
 
-// QueryPrepareNextSpanRequest defines the gRPC request structure for querying
+// QueryNextSpanRequest defines the gRPC request structure for querying
 // the next bor span.
 message QueryNextSpanRequest {
   uint64 span_id = 1;
@@ -98,12 +89,9 @@ message QueryNextSpanRequest {
   string bor_chain_id = 3;
 }
 
-// QueryPrepareNextSpanResponse defines the gRPC response structure for querying
+// QueryNextSpanResponse defines the gRPC response structure for querying
 // the next bor span.
-message QueryNextSpanResponse {
-  string height = 1;
-  Span span = 2;
-}
+message QueryNextSpanResponse { Span span = 1; }
 
 // QueryParamsRequest defines the gRPC request structure for querying
 // the bor module parameters.
@@ -111,7 +99,4 @@ message QueryParamsRequest {}
 
 // QueryParamsResponse defines the gRPC response structure for querying
 // the bor module parameters.
-message QueryParamsResponse {
-  string height = 1;
-  Params params = 2;
-}
+message QueryParamsResponse { Params params = 1; }

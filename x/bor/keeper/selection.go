@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// SelectNextProducers selects producers for next span
+// selectNextProducers selects producers for next span
 func selectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Validator, producerCount uint64) ([]uint64, error) {
 	selectedProducers := make([]uint64, 0)
 
@@ -24,8 +24,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Val
 	// extract seed from hash
 	seedBytes := toBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
-	// nolint: staticcheck
-	rand := rand.New(rand.NewSource(seed))
+	r := rand.New(rand.NewSource(seed))
 
 	// weighted range from validators' voting power
 	votingPower := make([]uint64, len(spanEligibleValidators))
@@ -42,7 +41,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Val
 			Weighted range will look like (1, 2)
 			Rolling inclusive will have a range of 0 - 2, making validator with staking power 1 chance of selection = 66%
 		*/
-		targetWeight := randomRangeInclusive(1, totalVotingPower, rand)
+		targetWeight := randomRangeInclusive(1, totalVotingPower, r)
 		index := binarySearch(weightedRanges, targetWeight)
 		selectedProducers = append(selectedProducers, spanEligibleValidators[index].Id)
 	}

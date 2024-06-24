@@ -4,7 +4,7 @@ package bor
 import (
 	fmt "fmt"
 	runtime "github.com/cosmos/cosmos-proto/runtime"
-	_ "github.com/cosmos/cosmos-sdk/types/query"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -16,14 +16,14 @@ import (
 )
 
 var (
-	md_QuerySpanByIdRequest         protoreflect.MessageDescriptor
-	fd_QuerySpanByIdRequest_span_id protoreflect.FieldDescriptor
+	md_QuerySpanByIdRequest    protoreflect.MessageDescriptor
+	fd_QuerySpanByIdRequest_id protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QuerySpanByIdRequest = File_heimdallv2_bor_query_proto.Messages().ByName("QuerySpanByIdRequest")
-	fd_QuerySpanByIdRequest_span_id = md_QuerySpanByIdRequest.Fields().ByName("span_id")
+	fd_QuerySpanByIdRequest_id = md_QuerySpanByIdRequest.Fields().ByName("id")
 }
 
 var _ protoreflect.Message = (*fastReflection_QuerySpanByIdRequest)(nil)
@@ -91,9 +91,9 @@ func (x *fastReflection_QuerySpanByIdRequest) Interface() protoreflect.ProtoMess
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QuerySpanByIdRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.SpanId != "" {
-		value := protoreflect.ValueOfString(x.SpanId)
-		if !f(fd_QuerySpanByIdRequest_span_id, value) {
+	if x.Id != "" {
+		value := protoreflect.ValueOfString(x.Id)
+		if !f(fd_QuerySpanByIdRequest_id, value) {
 			return
 		}
 	}
@@ -112,8 +112,8 @@ func (x *fastReflection_QuerySpanByIdRequest) Range(f func(protoreflect.FieldDes
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QuerySpanByIdRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdRequest.span_id":
-		return x.SpanId != ""
+	case "heimdallv2.bor.QuerySpanByIdRequest.id":
+		return x.Id != ""
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanByIdRequest"))
@@ -130,8 +130,8 @@ func (x *fastReflection_QuerySpanByIdRequest) Has(fd protoreflect.FieldDescripto
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanByIdRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdRequest.span_id":
-		x.SpanId = ""
+	case "heimdallv2.bor.QuerySpanByIdRequest.id":
+		x.Id = ""
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanByIdRequest"))
@@ -148,8 +148,8 @@ func (x *fastReflection_QuerySpanByIdRequest) Clear(fd protoreflect.FieldDescrip
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QuerySpanByIdRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdRequest.span_id":
-		value := x.SpanId
+	case "heimdallv2.bor.QuerySpanByIdRequest.id":
+		value := x.Id
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
@@ -171,8 +171,8 @@ func (x *fastReflection_QuerySpanByIdRequest) Get(descriptor protoreflect.FieldD
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanByIdRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdRequest.span_id":
-		x.SpanId = value.Interface().(string)
+	case "heimdallv2.bor.QuerySpanByIdRequest.id":
+		x.Id = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanByIdRequest"))
@@ -193,8 +193,8 @@ func (x *fastReflection_QuerySpanByIdRequest) Set(fd protoreflect.FieldDescripto
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanByIdRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdRequest.span_id":
-		panic(fmt.Errorf("field span_id of message heimdallv2.bor.QuerySpanByIdRequest is not mutable"))
+	case "heimdallv2.bor.QuerySpanByIdRequest.id":
+		panic(fmt.Errorf("field id of message heimdallv2.bor.QuerySpanByIdRequest is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanByIdRequest"))
@@ -208,7 +208,7 @@ func (x *fastReflection_QuerySpanByIdRequest) Mutable(fd protoreflect.FieldDescr
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QuerySpanByIdRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdRequest.span_id":
+	case "heimdallv2.bor.QuerySpanByIdRequest.id":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
@@ -279,7 +279,7 @@ func (x *fastReflection_QuerySpanByIdRequest) ProtoMethods() *protoiface.Methods
 		var n int
 		var l int
 		_ = l
-		l = len(x.SpanId)
+		l = len(x.Id)
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
@@ -312,10 +312,10 @@ func (x *fastReflection_QuerySpanByIdRequest) ProtoMethods() *protoiface.Methods
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if len(x.SpanId) > 0 {
-			i -= len(x.SpanId)
-			copy(dAtA[i:], x.SpanId)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.SpanId)))
+		if len(x.Id) > 0 {
+			i -= len(x.Id)
+			copy(dAtA[i:], x.Id)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Id)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -370,7 +370,7 @@ func (x *fastReflection_QuerySpanByIdRequest) ProtoMethods() *protoiface.Methods
 			switch fieldNum {
 			case 1:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
 				}
 				var stringLen uint64
 				for shift := uint(0); ; shift += 7 {
@@ -398,7 +398,7 @@ func (x *fastReflection_QuerySpanByIdRequest) ProtoMethods() *protoiface.Methods
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				x.SpanId = string(dAtA[iNdEx:postIndex])
+				x.Id = string(dAtA[iNdEx:postIndex])
 				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
@@ -436,15 +436,13 @@ func (x *fastReflection_QuerySpanByIdRequest) ProtoMethods() *protoiface.Methods
 }
 
 var (
-	md_QuerySpanByIdResponse        protoreflect.MessageDescriptor
-	fd_QuerySpanByIdResponse_height protoreflect.FieldDescriptor
-	fd_QuerySpanByIdResponse_span   protoreflect.FieldDescriptor
+	md_QuerySpanByIdResponse      protoreflect.MessageDescriptor
+	fd_QuerySpanByIdResponse_span protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QuerySpanByIdResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QuerySpanByIdResponse")
-	fd_QuerySpanByIdResponse_height = md_QuerySpanByIdResponse.Fields().ByName("height")
 	fd_QuerySpanByIdResponse_span = md_QuerySpanByIdResponse.Fields().ByName("span")
 }
 
@@ -513,12 +511,6 @@ func (x *fastReflection_QuerySpanByIdResponse) Interface() protoreflect.ProtoMes
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QuerySpanByIdResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Height != "" {
-		value := protoreflect.ValueOfString(x.Height)
-		if !f(fd_QuerySpanByIdResponse_height, value) {
-			return
-		}
-	}
 	if x.Span != nil {
 		value := protoreflect.ValueOfMessage(x.Span.ProtoReflect())
 		if !f(fd_QuerySpanByIdResponse_span, value) {
@@ -540,8 +532,6 @@ func (x *fastReflection_QuerySpanByIdResponse) Range(f func(protoreflect.FieldDe
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QuerySpanByIdResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdResponse.height":
-		return x.Height != ""
 	case "heimdallv2.bor.QuerySpanByIdResponse.span":
 		return x.Span != nil
 	default:
@@ -560,8 +550,6 @@ func (x *fastReflection_QuerySpanByIdResponse) Has(fd protoreflect.FieldDescript
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanByIdResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdResponse.height":
-		x.Height = ""
 	case "heimdallv2.bor.QuerySpanByIdResponse.span":
 		x.Span = nil
 	default:
@@ -580,9 +568,6 @@ func (x *fastReflection_QuerySpanByIdResponse) Clear(fd protoreflect.FieldDescri
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QuerySpanByIdResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdResponse.height":
-		value := x.Height
-		return protoreflect.ValueOfString(value)
 	case "heimdallv2.bor.QuerySpanByIdResponse.span":
 		value := x.Span
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
@@ -606,8 +591,6 @@ func (x *fastReflection_QuerySpanByIdResponse) Get(descriptor protoreflect.Field
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanByIdResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdResponse.height":
-		x.Height = value.Interface().(string)
 	case "heimdallv2.bor.QuerySpanByIdResponse.span":
 		x.Span = value.Message().Interface().(*Span)
 	default:
@@ -635,8 +618,6 @@ func (x *fastReflection_QuerySpanByIdResponse) Mutable(fd protoreflect.FieldDesc
 			x.Span = new(Span)
 		}
 		return protoreflect.ValueOfMessage(x.Span.ProtoReflect())
-	case "heimdallv2.bor.QuerySpanByIdResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.bor.QuerySpanByIdResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanByIdResponse"))
@@ -650,8 +631,6 @@ func (x *fastReflection_QuerySpanByIdResponse) Mutable(fd protoreflect.FieldDesc
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QuerySpanByIdResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanByIdResponse.height":
-		return protoreflect.ValueOfString("")
 	case "heimdallv2.bor.QuerySpanByIdResponse.span":
 		m := new(Span)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
@@ -724,10 +703,6 @@ func (x *fastReflection_QuerySpanByIdResponse) ProtoMethods() *protoiface.Method
 		var n int
 		var l int
 		_ = l
-		l = len(x.Height)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
 		if x.Span != nil {
 			l = options.Size(x.Span)
 			n += 1 + l + runtime.Sov(uint64(l))
@@ -772,13 +747,6 @@ func (x *fastReflection_QuerySpanByIdResponse) ProtoMethods() *protoiface.Method
 			i -= len(encoded)
 			copy(dAtA[i:], encoded)
 			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
-			i--
-			dAtA[i] = 0x12
-		}
-		if len(x.Height) > 0 {
-			i -= len(x.Height)
-			copy(dAtA[i:], x.Height)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Height)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -832,38 +800,6 @@ func (x *fastReflection_QuerySpanByIdResponse) ProtoMethods() *protoiface.Method
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.Height = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 2:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
 				}
@@ -935,16 +871,14 @@ func (x *fastReflection_QuerySpanByIdResponse) ProtoMethods() *protoiface.Method
 }
 
 var (
-	md_QuerySpanListRequest       protoreflect.MessageDescriptor
-	fd_QuerySpanListRequest_page  protoreflect.FieldDescriptor
-	fd_QuerySpanListRequest_limit protoreflect.FieldDescriptor
+	md_QuerySpanListRequest            protoreflect.MessageDescriptor
+	fd_QuerySpanListRequest_pagination protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QuerySpanListRequest = File_heimdallv2_bor_query_proto.Messages().ByName("QuerySpanListRequest")
-	fd_QuerySpanListRequest_page = md_QuerySpanListRequest.Fields().ByName("page")
-	fd_QuerySpanListRequest_limit = md_QuerySpanListRequest.Fields().ByName("limit")
+	fd_QuerySpanListRequest_pagination = md_QuerySpanListRequest.Fields().ByName("pagination")
 }
 
 var _ protoreflect.Message = (*fastReflection_QuerySpanListRequest)(nil)
@@ -1012,15 +946,9 @@ func (x *fastReflection_QuerySpanListRequest) Interface() protoreflect.ProtoMess
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QuerySpanListRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Page != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.Page)
-		if !f(fd_QuerySpanListRequest_page, value) {
-			return
-		}
-	}
-	if x.Limit != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.Limit)
-		if !f(fd_QuerySpanListRequest_limit, value) {
+	if x.Pagination != nil {
+		value := protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
+		if !f(fd_QuerySpanListRequest_pagination, value) {
 			return
 		}
 	}
@@ -1039,10 +967,8 @@ func (x *fastReflection_QuerySpanListRequest) Range(f func(protoreflect.FieldDes
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QuerySpanListRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListRequest.page":
-		return x.Page != uint64(0)
-	case "heimdallv2.bor.QuerySpanListRequest.limit":
-		return x.Limit != uint64(0)
+	case "heimdallv2.bor.QuerySpanListRequest.pagination":
+		return x.Pagination != nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListRequest"))
@@ -1059,10 +985,8 @@ func (x *fastReflection_QuerySpanListRequest) Has(fd protoreflect.FieldDescripto
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanListRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListRequest.page":
-		x.Page = uint64(0)
-	case "heimdallv2.bor.QuerySpanListRequest.limit":
-		x.Limit = uint64(0)
+	case "heimdallv2.bor.QuerySpanListRequest.pagination":
+		x.Pagination = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListRequest"))
@@ -1079,12 +1003,9 @@ func (x *fastReflection_QuerySpanListRequest) Clear(fd protoreflect.FieldDescrip
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QuerySpanListRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QuerySpanListRequest.page":
-		value := x.Page
-		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.bor.QuerySpanListRequest.limit":
-		value := x.Limit
-		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.bor.QuerySpanListRequest.pagination":
+		value := x.Pagination
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListRequest"))
@@ -1105,10 +1026,8 @@ func (x *fastReflection_QuerySpanListRequest) Get(descriptor protoreflect.FieldD
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanListRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListRequest.page":
-		x.Page = value.Uint()
-	case "heimdallv2.bor.QuerySpanListRequest.limit":
-		x.Limit = value.Uint()
+	case "heimdallv2.bor.QuerySpanListRequest.pagination":
+		x.Pagination = value.Message().Interface().(*query.PageRequest)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListRequest"))
@@ -1129,10 +1048,11 @@ func (x *fastReflection_QuerySpanListRequest) Set(fd protoreflect.FieldDescripto
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanListRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListRequest.page":
-		panic(fmt.Errorf("field page of message heimdallv2.bor.QuerySpanListRequest is not mutable"))
-	case "heimdallv2.bor.QuerySpanListRequest.limit":
-		panic(fmt.Errorf("field limit of message heimdallv2.bor.QuerySpanListRequest is not mutable"))
+	case "heimdallv2.bor.QuerySpanListRequest.pagination":
+		if x.Pagination == nil {
+			x.Pagination = new(query.PageRequest)
+		}
+		return protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListRequest"))
@@ -1146,10 +1066,9 @@ func (x *fastReflection_QuerySpanListRequest) Mutable(fd protoreflect.FieldDescr
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QuerySpanListRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListRequest.page":
-		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.bor.QuerySpanListRequest.limit":
-		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.bor.QuerySpanListRequest.pagination":
+		m := new(query.PageRequest)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListRequest"))
@@ -1219,11 +1138,9 @@ func (x *fastReflection_QuerySpanListRequest) ProtoMethods() *protoiface.Methods
 		var n int
 		var l int
 		_ = l
-		if x.Page != 0 {
-			n += 1 + runtime.Sov(uint64(x.Page))
-		}
-		if x.Limit != 0 {
-			n += 1 + runtime.Sov(uint64(x.Limit))
+		if x.Pagination != nil {
+			l = options.Size(x.Pagination)
+			n += 1 + l + runtime.Sov(uint64(l))
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -1254,15 +1171,19 @@ func (x *fastReflection_QuerySpanListRequest) ProtoMethods() *protoiface.Methods
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.Limit != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.Limit))
+		if x.Pagination != nil {
+			encoded, err := options.Marshal(x.Pagination)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
 			i--
-			dAtA[i] = 0x10
-		}
-		if x.Page != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.Page))
-			i--
-			dAtA[i] = 0x8
+			dAtA[i] = 0xa
 		}
 		if input.Buf != nil {
 			input.Buf = append(input.Buf, dAtA...)
@@ -1314,10 +1235,10 @@ func (x *fastReflection_QuerySpanListRequest) ProtoMethods() *protoiface.Methods
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
 				}
-				x.Page = 0
+				var msglen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -1327,30 +1248,28 @@ func (x *fastReflection_QuerySpanListRequest) ProtoMethods() *protoiface.Methods
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					x.Page |= uint64(b&0x7F) << shift
+					msglen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
 				}
-			case 2:
-				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
 				}
-				x.Limit = 0
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					x.Limit |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
 				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.Pagination == nil {
+					x.Pagination = &query.PageRequest{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Pagination); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -1386,68 +1305,68 @@ func (x *fastReflection_QuerySpanListRequest) ProtoMethods() *protoiface.Methods
 	}
 }
 
-var _ protoreflect.List = (*_QuerySpanListResponse_2_list)(nil)
+var _ protoreflect.List = (*_QuerySpanListResponse_1_list)(nil)
 
-type _QuerySpanListResponse_2_list struct {
+type _QuerySpanListResponse_1_list struct {
 	list *[]*Span
 }
 
-func (x *_QuerySpanListResponse_2_list) Len() int {
+func (x *_QuerySpanListResponse_1_list) Len() int {
 	if x.list == nil {
 		return 0
 	}
 	return len(*x.list)
 }
 
-func (x *_QuerySpanListResponse_2_list) Get(i int) protoreflect.Value {
+func (x *_QuerySpanListResponse_1_list) Get(i int) protoreflect.Value {
 	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
 }
 
-func (x *_QuerySpanListResponse_2_list) Set(i int, value protoreflect.Value) {
+func (x *_QuerySpanListResponse_1_list) Set(i int, value protoreflect.Value) {
 	valueUnwrapped := value.Message()
 	concreteValue := valueUnwrapped.Interface().(*Span)
 	(*x.list)[i] = concreteValue
 }
 
-func (x *_QuerySpanListResponse_2_list) Append(value protoreflect.Value) {
+func (x *_QuerySpanListResponse_1_list) Append(value protoreflect.Value) {
 	valueUnwrapped := value.Message()
 	concreteValue := valueUnwrapped.Interface().(*Span)
 	*x.list = append(*x.list, concreteValue)
 }
 
-func (x *_QuerySpanListResponse_2_list) AppendMutable() protoreflect.Value {
+func (x *_QuerySpanListResponse_1_list) AppendMutable() protoreflect.Value {
 	v := new(Span)
 	*x.list = append(*x.list, v)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
-func (x *_QuerySpanListResponse_2_list) Truncate(n int) {
+func (x *_QuerySpanListResponse_1_list) Truncate(n int) {
 	for i := n; i < len(*x.list); i++ {
 		(*x.list)[i] = nil
 	}
 	*x.list = (*x.list)[:n]
 }
 
-func (x *_QuerySpanListResponse_2_list) NewElement() protoreflect.Value {
+func (x *_QuerySpanListResponse_1_list) NewElement() protoreflect.Value {
 	v := new(Span)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
-func (x *_QuerySpanListResponse_2_list) IsValid() bool {
+func (x *_QuerySpanListResponse_1_list) IsValid() bool {
 	return x.list != nil
 }
 
 var (
-	md_QuerySpanListResponse           protoreflect.MessageDescriptor
-	fd_QuerySpanListResponse_height    protoreflect.FieldDescriptor
-	fd_QuerySpanListResponse_span_list protoreflect.FieldDescriptor
+	md_QuerySpanListResponse            protoreflect.MessageDescriptor
+	fd_QuerySpanListResponse_span_list  protoreflect.FieldDescriptor
+	fd_QuerySpanListResponse_pagination protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QuerySpanListResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QuerySpanListResponse")
-	fd_QuerySpanListResponse_height = md_QuerySpanListResponse.Fields().ByName("height")
 	fd_QuerySpanListResponse_span_list = md_QuerySpanListResponse.Fields().ByName("span_list")
+	fd_QuerySpanListResponse_pagination = md_QuerySpanListResponse.Fields().ByName("pagination")
 }
 
 var _ protoreflect.Message = (*fastReflection_QuerySpanListResponse)(nil)
@@ -1515,15 +1434,15 @@ func (x *fastReflection_QuerySpanListResponse) Interface() protoreflect.ProtoMes
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QuerySpanListResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Height != "" {
-		value := protoreflect.ValueOfString(x.Height)
-		if !f(fd_QuerySpanListResponse_height, value) {
+	if len(x.SpanList) != 0 {
+		value := protoreflect.ValueOfList(&_QuerySpanListResponse_1_list{list: &x.SpanList})
+		if !f(fd_QuerySpanListResponse_span_list, value) {
 			return
 		}
 	}
-	if len(x.SpanList) != 0 {
-		value := protoreflect.ValueOfList(&_QuerySpanListResponse_2_list{list: &x.SpanList})
-		if !f(fd_QuerySpanListResponse_span_list, value) {
+	if x.Pagination != nil {
+		value := protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
+		if !f(fd_QuerySpanListResponse_pagination, value) {
 			return
 		}
 	}
@@ -1542,10 +1461,10 @@ func (x *fastReflection_QuerySpanListResponse) Range(f func(protoreflect.FieldDe
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QuerySpanListResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListResponse.height":
-		return x.Height != ""
 	case "heimdallv2.bor.QuerySpanListResponse.span_list":
 		return len(x.SpanList) != 0
+	case "heimdallv2.bor.QuerySpanListResponse.pagination":
+		return x.Pagination != nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListResponse"))
@@ -1562,10 +1481,10 @@ func (x *fastReflection_QuerySpanListResponse) Has(fd protoreflect.FieldDescript
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanListResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListResponse.height":
-		x.Height = ""
 	case "heimdallv2.bor.QuerySpanListResponse.span_list":
 		x.SpanList = nil
+	case "heimdallv2.bor.QuerySpanListResponse.pagination":
+		x.Pagination = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListResponse"))
@@ -1582,15 +1501,15 @@ func (x *fastReflection_QuerySpanListResponse) Clear(fd protoreflect.FieldDescri
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QuerySpanListResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QuerySpanListResponse.height":
-		value := x.Height
-		return protoreflect.ValueOfString(value)
 	case "heimdallv2.bor.QuerySpanListResponse.span_list":
 		if len(x.SpanList) == 0 {
-			return protoreflect.ValueOfList(&_QuerySpanListResponse_2_list{})
+			return protoreflect.ValueOfList(&_QuerySpanListResponse_1_list{})
 		}
-		listValue := &_QuerySpanListResponse_2_list{list: &x.SpanList}
+		listValue := &_QuerySpanListResponse_1_list{list: &x.SpanList}
 		return protoreflect.ValueOfList(listValue)
+	case "heimdallv2.bor.QuerySpanListResponse.pagination":
+		value := x.Pagination
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListResponse"))
@@ -1611,12 +1530,12 @@ func (x *fastReflection_QuerySpanListResponse) Get(descriptor protoreflect.Field
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QuerySpanListResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListResponse.height":
-		x.Height = value.Interface().(string)
 	case "heimdallv2.bor.QuerySpanListResponse.span_list":
 		lv := value.List()
-		clv := lv.(*_QuerySpanListResponse_2_list)
+		clv := lv.(*_QuerySpanListResponse_1_list)
 		x.SpanList = *clv.list
+	case "heimdallv2.bor.QuerySpanListResponse.pagination":
+		x.Pagination = value.Message().Interface().(*query.PageResponse)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListResponse"))
@@ -1641,10 +1560,13 @@ func (x *fastReflection_QuerySpanListResponse) Mutable(fd protoreflect.FieldDesc
 		if x.SpanList == nil {
 			x.SpanList = []*Span{}
 		}
-		value := &_QuerySpanListResponse_2_list{list: &x.SpanList}
+		value := &_QuerySpanListResponse_1_list{list: &x.SpanList}
 		return protoreflect.ValueOfList(value)
-	case "heimdallv2.bor.QuerySpanListResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.bor.QuerySpanListResponse is not mutable"))
+	case "heimdallv2.bor.QuerySpanListResponse.pagination":
+		if x.Pagination == nil {
+			x.Pagination = new(query.PageResponse)
+		}
+		return protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListResponse"))
@@ -1658,11 +1580,12 @@ func (x *fastReflection_QuerySpanListResponse) Mutable(fd protoreflect.FieldDesc
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QuerySpanListResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QuerySpanListResponse.height":
-		return protoreflect.ValueOfString("")
 	case "heimdallv2.bor.QuerySpanListResponse.span_list":
 		list := []*Span{}
-		return protoreflect.ValueOfList(&_QuerySpanListResponse_2_list{list: &list})
+		return protoreflect.ValueOfList(&_QuerySpanListResponse_1_list{list: &list})
+	case "heimdallv2.bor.QuerySpanListResponse.pagination":
+		m := new(query.PageResponse)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListResponse"))
@@ -1732,15 +1655,15 @@ func (x *fastReflection_QuerySpanListResponse) ProtoMethods() *protoiface.Method
 		var n int
 		var l int
 		_ = l
-		l = len(x.Height)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
 		if len(x.SpanList) > 0 {
 			for _, e := range x.SpanList {
 				l = options.Size(e)
 				n += 1 + l + runtime.Sov(uint64(l))
 			}
+		}
+		if x.Pagination != nil {
+			l = options.Size(x.Pagination)
+			n += 1 + l + runtime.Sov(uint64(l))
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -1771,6 +1694,20 @@ func (x *fastReflection_QuerySpanListResponse) ProtoMethods() *protoiface.Method
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
+		if x.Pagination != nil {
+			encoded, err := options.Marshal(x.Pagination)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x12
+		}
 		if len(x.SpanList) > 0 {
 			for iNdEx := len(x.SpanList) - 1; iNdEx >= 0; iNdEx-- {
 				encoded, err := options.Marshal(x.SpanList[iNdEx])
@@ -1784,15 +1721,8 @@ func (x *fastReflection_QuerySpanListResponse) ProtoMethods() *protoiface.Method
 				copy(dAtA[i:], encoded)
 				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
 				i--
-				dAtA[i] = 0x12
+				dAtA[i] = 0xa
 			}
-		}
-		if len(x.Height) > 0 {
-			i -= len(x.Height)
-			copy(dAtA[i:], x.Height)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Height)))
-			i--
-			dAtA[i] = 0xa
 		}
 		if input.Buf != nil {
 			input.Buf = append(input.Buf, dAtA...)
@@ -1845,38 +1775,6 @@ func (x *fastReflection_QuerySpanListResponse) ProtoMethods() *protoiface.Method
 			switch fieldNum {
 			case 1:
 				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.Height = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 2:
-				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field SpanList", wireType)
 				}
 				var msglen int
@@ -1906,6 +1804,42 @@ func (x *fastReflection_QuerySpanListResponse) ProtoMethods() *protoiface.Method
 				}
 				x.SpanList = append(x.SpanList, &Span{})
 				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.SpanList[len(x.SpanList)-1]); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 2:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.Pagination == nil {
+					x.Pagination = &query.PageResponse{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Pagination); err != nil {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
 				}
 				iNdEx = postIndex
@@ -2301,15 +2235,13 @@ func (x *fastReflection_QueryLatestSpanRequest) ProtoMethods() *protoiface.Metho
 }
 
 var (
-	md_QueryLatestSpanResponse        protoreflect.MessageDescriptor
-	fd_QueryLatestSpanResponse_height protoreflect.FieldDescriptor
-	fd_QueryLatestSpanResponse_span   protoreflect.FieldDescriptor
+	md_QueryLatestSpanResponse      protoreflect.MessageDescriptor
+	fd_QueryLatestSpanResponse_span protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QueryLatestSpanResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QueryLatestSpanResponse")
-	fd_QueryLatestSpanResponse_height = md_QueryLatestSpanResponse.Fields().ByName("height")
 	fd_QueryLatestSpanResponse_span = md_QueryLatestSpanResponse.Fields().ByName("span")
 }
 
@@ -2378,12 +2310,6 @@ func (x *fastReflection_QueryLatestSpanResponse) Interface() protoreflect.ProtoM
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QueryLatestSpanResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Height != "" {
-		value := protoreflect.ValueOfString(x.Height)
-		if !f(fd_QueryLatestSpanResponse_height, value) {
-			return
-		}
-	}
 	if x.Span != nil {
 		value := protoreflect.ValueOfMessage(x.Span.ProtoReflect())
 		if !f(fd_QueryLatestSpanResponse_span, value) {
@@ -2405,8 +2331,6 @@ func (x *fastReflection_QueryLatestSpanResponse) Range(f func(protoreflect.Field
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QueryLatestSpanResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryLatestSpanResponse.height":
-		return x.Height != ""
 	case "heimdallv2.bor.QueryLatestSpanResponse.span":
 		return x.Span != nil
 	default:
@@ -2425,8 +2349,6 @@ func (x *fastReflection_QueryLatestSpanResponse) Has(fd protoreflect.FieldDescri
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryLatestSpanResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryLatestSpanResponse.height":
-		x.Height = ""
 	case "heimdallv2.bor.QueryLatestSpanResponse.span":
 		x.Span = nil
 	default:
@@ -2445,9 +2367,6 @@ func (x *fastReflection_QueryLatestSpanResponse) Clear(fd protoreflect.FieldDesc
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QueryLatestSpanResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QueryLatestSpanResponse.height":
-		value := x.Height
-		return protoreflect.ValueOfString(value)
 	case "heimdallv2.bor.QueryLatestSpanResponse.span":
 		value := x.Span
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
@@ -2471,8 +2390,6 @@ func (x *fastReflection_QueryLatestSpanResponse) Get(descriptor protoreflect.Fie
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryLatestSpanResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryLatestSpanResponse.height":
-		x.Height = value.Interface().(string)
 	case "heimdallv2.bor.QueryLatestSpanResponse.span":
 		x.Span = value.Message().Interface().(*Span)
 	default:
@@ -2500,8 +2417,6 @@ func (x *fastReflection_QueryLatestSpanResponse) Mutable(fd protoreflect.FieldDe
 			x.Span = new(Span)
 		}
 		return protoreflect.ValueOfMessage(x.Span.ProtoReflect())
-	case "heimdallv2.bor.QueryLatestSpanResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.bor.QueryLatestSpanResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryLatestSpanResponse"))
@@ -2515,8 +2430,6 @@ func (x *fastReflection_QueryLatestSpanResponse) Mutable(fd protoreflect.FieldDe
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QueryLatestSpanResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryLatestSpanResponse.height":
-		return protoreflect.ValueOfString("")
 	case "heimdallv2.bor.QueryLatestSpanResponse.span":
 		m := new(Span)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
@@ -2589,10 +2502,6 @@ func (x *fastReflection_QueryLatestSpanResponse) ProtoMethods() *protoiface.Meth
 		var n int
 		var l int
 		_ = l
-		l = len(x.Height)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
 		if x.Span != nil {
 			l = options.Size(x.Span)
 			n += 1 + l + runtime.Sov(uint64(l))
@@ -2637,13 +2546,6 @@ func (x *fastReflection_QueryLatestSpanResponse) ProtoMethods() *protoiface.Meth
 			i -= len(encoded)
 			copy(dAtA[i:], encoded)
 			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
-			i--
-			dAtA[i] = 0x12
-		}
-		if len(x.Height) > 0 {
-			i -= len(x.Height)
-			copy(dAtA[i:], x.Height)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Height)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -2697,38 +2599,6 @@ func (x *fastReflection_QueryLatestSpanResponse) ProtoMethods() *protoiface.Meth
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.Height = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 2:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
 				}
@@ -3156,15 +3026,13 @@ func (x *fastReflection_QueryNextSpanSeedRequest) ProtoMethods() *protoiface.Met
 }
 
 var (
-	md_QueryNextSpanSeedResponse        protoreflect.MessageDescriptor
-	fd_QueryNextSpanSeedResponse_height protoreflect.FieldDescriptor
-	fd_QueryNextSpanSeedResponse_seed   protoreflect.FieldDescriptor
+	md_QueryNextSpanSeedResponse      protoreflect.MessageDescriptor
+	fd_QueryNextSpanSeedResponse_seed protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QueryNextSpanSeedResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QueryNextSpanSeedResponse")
-	fd_QueryNextSpanSeedResponse_height = md_QueryNextSpanSeedResponse.Fields().ByName("height")
 	fd_QueryNextSpanSeedResponse_seed = md_QueryNextSpanSeedResponse.Fields().ByName("seed")
 }
 
@@ -3233,12 +3101,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) Interface() protoreflect.Prot
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QueryNextSpanSeedResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Height != "" {
-		value := protoreflect.ValueOfString(x.Height)
-		if !f(fd_QueryNextSpanSeedResponse_height, value) {
-			return
-		}
-	}
 	if x.Seed != "" {
 		value := protoreflect.ValueOfString(x.Seed)
 		if !f(fd_QueryNextSpanSeedResponse_seed, value) {
@@ -3260,8 +3122,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) Range(f func(protoreflect.Fie
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QueryNextSpanSeedResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanSeedResponse.height":
-		return x.Height != ""
 	case "heimdallv2.bor.QueryNextSpanSeedResponse.seed":
 		return x.Seed != ""
 	default:
@@ -3280,8 +3140,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) Has(fd protoreflect.FieldDesc
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryNextSpanSeedResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanSeedResponse.height":
-		x.Height = ""
 	case "heimdallv2.bor.QueryNextSpanSeedResponse.seed":
 		x.Seed = ""
 	default:
@@ -3300,9 +3158,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) Clear(fd protoreflect.FieldDe
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QueryNextSpanSeedResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QueryNextSpanSeedResponse.height":
-		value := x.Height
-		return protoreflect.ValueOfString(value)
 	case "heimdallv2.bor.QueryNextSpanSeedResponse.seed":
 		value := x.Seed
 		return protoreflect.ValueOfString(value)
@@ -3326,8 +3181,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) Get(descriptor protoreflect.F
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryNextSpanSeedResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanSeedResponse.height":
-		x.Height = value.Interface().(string)
 	case "heimdallv2.bor.QueryNextSpanSeedResponse.seed":
 		x.Seed = value.Interface().(string)
 	default:
@@ -3350,8 +3203,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) Set(fd protoreflect.FieldDesc
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryNextSpanSeedResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanSeedResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.bor.QueryNextSpanSeedResponse is not mutable"))
 	case "heimdallv2.bor.QueryNextSpanSeedResponse.seed":
 		panic(fmt.Errorf("field seed of message heimdallv2.bor.QueryNextSpanSeedResponse is not mutable"))
 	default:
@@ -3367,8 +3218,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) Mutable(fd protoreflect.Field
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QueryNextSpanSeedResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanSeedResponse.height":
-		return protoreflect.ValueOfString("")
 	case "heimdallv2.bor.QueryNextSpanSeedResponse.seed":
 		return protoreflect.ValueOfString("")
 	default:
@@ -3440,10 +3289,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) ProtoMethods() *protoiface.Me
 		var n int
 		var l int
 		_ = l
-		l = len(x.Height)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
 		l = len(x.Seed)
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
@@ -3481,13 +3326,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) ProtoMethods() *protoiface.Me
 			i -= len(x.Seed)
 			copy(dAtA[i:], x.Seed)
 			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Seed)))
-			i--
-			dAtA[i] = 0x12
-		}
-		if len(x.Height) > 0 {
-			i -= len(x.Height)
-			copy(dAtA[i:], x.Height)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Height)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -3541,38 +3379,6 @@ func (x *fastReflection_QueryNextSpanSeedResponse) ProtoMethods() *protoiface.Me
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.Height = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 2:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Seed", wireType)
 				}
@@ -4156,15 +3962,13 @@ func (x *fastReflection_QueryNextSpanRequest) ProtoMethods() *protoiface.Methods
 }
 
 var (
-	md_QueryNextSpanResponse        protoreflect.MessageDescriptor
-	fd_QueryNextSpanResponse_height protoreflect.FieldDescriptor
-	fd_QueryNextSpanResponse_span   protoreflect.FieldDescriptor
+	md_QueryNextSpanResponse      protoreflect.MessageDescriptor
+	fd_QueryNextSpanResponse_span protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QueryNextSpanResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QueryNextSpanResponse")
-	fd_QueryNextSpanResponse_height = md_QueryNextSpanResponse.Fields().ByName("height")
 	fd_QueryNextSpanResponse_span = md_QueryNextSpanResponse.Fields().ByName("span")
 }
 
@@ -4233,12 +4037,6 @@ func (x *fastReflection_QueryNextSpanResponse) Interface() protoreflect.ProtoMes
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QueryNextSpanResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Height != "" {
-		value := protoreflect.ValueOfString(x.Height)
-		if !f(fd_QueryNextSpanResponse_height, value) {
-			return
-		}
-	}
 	if x.Span != nil {
 		value := protoreflect.ValueOfMessage(x.Span.ProtoReflect())
 		if !f(fd_QueryNextSpanResponse_span, value) {
@@ -4260,8 +4058,6 @@ func (x *fastReflection_QueryNextSpanResponse) Range(f func(protoreflect.FieldDe
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QueryNextSpanResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanResponse.height":
-		return x.Height != ""
 	case "heimdallv2.bor.QueryNextSpanResponse.span":
 		return x.Span != nil
 	default:
@@ -4280,8 +4076,6 @@ func (x *fastReflection_QueryNextSpanResponse) Has(fd protoreflect.FieldDescript
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryNextSpanResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanResponse.height":
-		x.Height = ""
 	case "heimdallv2.bor.QueryNextSpanResponse.span":
 		x.Span = nil
 	default:
@@ -4300,9 +4094,6 @@ func (x *fastReflection_QueryNextSpanResponse) Clear(fd protoreflect.FieldDescri
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QueryNextSpanResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QueryNextSpanResponse.height":
-		value := x.Height
-		return protoreflect.ValueOfString(value)
 	case "heimdallv2.bor.QueryNextSpanResponse.span":
 		value := x.Span
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
@@ -4326,8 +4117,6 @@ func (x *fastReflection_QueryNextSpanResponse) Get(descriptor protoreflect.Field
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryNextSpanResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanResponse.height":
-		x.Height = value.Interface().(string)
 	case "heimdallv2.bor.QueryNextSpanResponse.span":
 		x.Span = value.Message().Interface().(*Span)
 	default:
@@ -4355,8 +4144,6 @@ func (x *fastReflection_QueryNextSpanResponse) Mutable(fd protoreflect.FieldDesc
 			x.Span = new(Span)
 		}
 		return protoreflect.ValueOfMessage(x.Span.ProtoReflect())
-	case "heimdallv2.bor.QueryNextSpanResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.bor.QueryNextSpanResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryNextSpanResponse"))
@@ -4370,8 +4157,6 @@ func (x *fastReflection_QueryNextSpanResponse) Mutable(fd protoreflect.FieldDesc
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QueryNextSpanResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryNextSpanResponse.height":
-		return protoreflect.ValueOfString("")
 	case "heimdallv2.bor.QueryNextSpanResponse.span":
 		m := new(Span)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
@@ -4444,10 +4229,6 @@ func (x *fastReflection_QueryNextSpanResponse) ProtoMethods() *protoiface.Method
 		var n int
 		var l int
 		_ = l
-		l = len(x.Height)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
 		if x.Span != nil {
 			l = options.Size(x.Span)
 			n += 1 + l + runtime.Sov(uint64(l))
@@ -4492,13 +4273,6 @@ func (x *fastReflection_QueryNextSpanResponse) ProtoMethods() *protoiface.Method
 			i -= len(encoded)
 			copy(dAtA[i:], encoded)
 			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
-			i--
-			dAtA[i] = 0x12
-		}
-		if len(x.Height) > 0 {
-			i -= len(x.Height)
-			copy(dAtA[i:], x.Height)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Height)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -4552,38 +4326,6 @@ func (x *fastReflection_QueryNextSpanResponse) ProtoMethods() *protoiface.Method
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.Height = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 2:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
 				}
@@ -5012,14 +4754,12 @@ func (x *fastReflection_QueryParamsRequest) ProtoMethods() *protoiface.Methods {
 
 var (
 	md_QueryParamsResponse        protoreflect.MessageDescriptor
-	fd_QueryParamsResponse_height protoreflect.FieldDescriptor
 	fd_QueryParamsResponse_params protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_query_proto_init()
 	md_QueryParamsResponse = File_heimdallv2_bor_query_proto.Messages().ByName("QueryParamsResponse")
-	fd_QueryParamsResponse_height = md_QueryParamsResponse.Fields().ByName("height")
 	fd_QueryParamsResponse_params = md_QueryParamsResponse.Fields().ByName("params")
 }
 
@@ -5088,12 +4828,6 @@ func (x *fastReflection_QueryParamsResponse) Interface() protoreflect.ProtoMessa
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_QueryParamsResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.Height != "" {
-		value := protoreflect.ValueOfString(x.Height)
-		if !f(fd_QueryParamsResponse_height, value) {
-			return
-		}
-	}
 	if x.Params != nil {
 		value := protoreflect.ValueOfMessage(x.Params.ProtoReflect())
 		if !f(fd_QueryParamsResponse_params, value) {
@@ -5115,8 +4849,6 @@ func (x *fastReflection_QueryParamsResponse) Range(f func(protoreflect.FieldDesc
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_QueryParamsResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryParamsResponse.height":
-		return x.Height != ""
 	case "heimdallv2.bor.QueryParamsResponse.params":
 		return x.Params != nil
 	default:
@@ -5135,8 +4867,6 @@ func (x *fastReflection_QueryParamsResponse) Has(fd protoreflect.FieldDescriptor
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryParamsResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryParamsResponse.height":
-		x.Height = ""
 	case "heimdallv2.bor.QueryParamsResponse.params":
 		x.Params = nil
 	default:
@@ -5155,9 +4885,6 @@ func (x *fastReflection_QueryParamsResponse) Clear(fd protoreflect.FieldDescript
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_QueryParamsResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.QueryParamsResponse.height":
-		value := x.Height
-		return protoreflect.ValueOfString(value)
 	case "heimdallv2.bor.QueryParamsResponse.params":
 		value := x.Params
 		return protoreflect.ValueOfMessage(value.ProtoReflect())
@@ -5181,8 +4908,6 @@ func (x *fastReflection_QueryParamsResponse) Get(descriptor protoreflect.FieldDe
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_QueryParamsResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryParamsResponse.height":
-		x.Height = value.Interface().(string)
 	case "heimdallv2.bor.QueryParamsResponse.params":
 		x.Params = value.Message().Interface().(*Params)
 	default:
@@ -5210,8 +4935,6 @@ func (x *fastReflection_QueryParamsResponse) Mutable(fd protoreflect.FieldDescri
 			x.Params = new(Params)
 		}
 		return protoreflect.ValueOfMessage(x.Params.ProtoReflect())
-	case "heimdallv2.bor.QueryParamsResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.bor.QueryParamsResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QueryParamsResponse"))
@@ -5225,8 +4948,6 @@ func (x *fastReflection_QueryParamsResponse) Mutable(fd protoreflect.FieldDescri
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_QueryParamsResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.QueryParamsResponse.height":
-		return protoreflect.ValueOfString("")
 	case "heimdallv2.bor.QueryParamsResponse.params":
 		m := new(Params)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
@@ -5299,10 +5020,6 @@ func (x *fastReflection_QueryParamsResponse) ProtoMethods() *protoiface.Methods 
 		var n int
 		var l int
 		_ = l
-		l = len(x.Height)
-		if l > 0 {
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
 		if x.Params != nil {
 			l = options.Size(x.Params)
 			n += 1 + l + runtime.Sov(uint64(l))
@@ -5347,13 +5064,6 @@ func (x *fastReflection_QueryParamsResponse) ProtoMethods() *protoiface.Methods 
 			i -= len(encoded)
 			copy(dAtA[i:], encoded)
 			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
-			i--
-			dAtA[i] = 0x12
-		}
-		if len(x.Height) > 0 {
-			i -= len(x.Height)
-			copy(dAtA[i:], x.Height)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.Height)))
 			i--
 			dAtA[i] = 0xa
 		}
@@ -5407,38 +5117,6 @@ func (x *fastReflection_QueryParamsResponse) ProtoMethods() *protoiface.Methods 
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-				}
-				var stringLen uint64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + intStringLen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.Height = string(dAtA[iNdEx:postIndex])
-				iNdEx = postIndex
-			case 2:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
 				}
@@ -5529,7 +5207,7 @@ type QuerySpanByIdRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SpanId string `protobuf:"bytes,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (x *QuerySpanByIdRequest) Reset() {
@@ -5552,9 +5230,9 @@ func (*QuerySpanByIdRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *QuerySpanByIdRequest) GetSpanId() string {
+func (x *QuerySpanByIdRequest) GetId() string {
 	if x != nil {
-		return x.SpanId
+		return x.Id
 	}
 	return ""
 }
@@ -5566,8 +5244,7 @@ type QuerySpanByIdResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Span   *Span  `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
+	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
 func (x *QuerySpanByIdResponse) Reset() {
@@ -5590,13 +5267,6 @@ func (*QuerySpanByIdResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *QuerySpanByIdResponse) GetHeight() string {
-	if x != nil {
-		return x.Height
-	}
-	return ""
-}
-
 func (x *QuerySpanByIdResponse) GetSpan() *Span {
 	if x != nil {
 		return x.Span
@@ -5611,8 +5281,7 @@ type QuerySpanListRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Page  uint64 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
-	Limit uint64 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (x *QuerySpanListRequest) Reset() {
@@ -5635,18 +5304,11 @@ func (*QuerySpanListRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *QuerySpanListRequest) GetPage() uint64 {
+func (x *QuerySpanListRequest) GetPagination() *query.PageRequest {
 	if x != nil {
-		return x.Page
+		return x.Pagination
 	}
-	return 0
-}
-
-func (x *QuerySpanListRequest) GetLimit() uint64 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
+	return nil
 }
 
 // QuerySpanListResponse defines the gRPC response structure for querying
@@ -5656,8 +5318,8 @@ type QuerySpanListResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Height   string  `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	SpanList []*Span `protobuf:"bytes,2,rep,name=span_list,json=spanList,proto3" json:"span_list,omitempty"`
+	SpanList   []*Span             `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list,omitempty"`
+	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (x *QuerySpanListResponse) Reset() {
@@ -5680,16 +5342,16 @@ func (*QuerySpanListResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *QuerySpanListResponse) GetHeight() string {
-	if x != nil {
-		return x.Height
-	}
-	return ""
-}
-
 func (x *QuerySpanListResponse) GetSpanList() []*Span {
 	if x != nil {
 		return x.SpanList
+	}
+	return nil
+}
+
+func (x *QuerySpanListResponse) GetPagination() *query.PageResponse {
+	if x != nil {
+		return x.Pagination
 	}
 	return nil
 }
@@ -5729,8 +5391,7 @@ type QueryLatestSpanResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Span   *Span  `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
+	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
 func (x *QueryLatestSpanResponse) Reset() {
@@ -5751,13 +5412,6 @@ func (*QueryLatestSpanResponse) ProtoMessage() {}
 // Deprecated: Use QueryLatestSpanResponse.ProtoReflect.Descriptor instead.
 func (*QueryLatestSpanResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *QueryLatestSpanResponse) GetHeight() string {
-	if x != nil {
-		return x.Height
-	}
-	return ""
 }
 
 func (x *QueryLatestSpanResponse) GetSpan() *Span {
@@ -5802,8 +5456,7 @@ type QueryNextSpanSeedResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Seed   string `protobuf:"bytes,2,opt,name=seed,proto3" json:"seed,omitempty"`
+	Seed string `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
 }
 
 func (x *QueryNextSpanSeedResponse) Reset() {
@@ -5826,13 +5479,6 @@ func (*QueryNextSpanSeedResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *QueryNextSpanSeedResponse) GetHeight() string {
-	if x != nil {
-		return x.Height
-	}
-	return ""
-}
-
 func (x *QueryNextSpanSeedResponse) GetSeed() string {
 	if x != nil {
 		return x.Seed
@@ -5840,7 +5486,7 @@ func (x *QueryNextSpanSeedResponse) GetSeed() string {
 	return ""
 }
 
-// QueryPrepareNextSpanRequest defines the gRPC request structure for querying
+// QueryNextSpanRequest defines the gRPC request structure for querying
 // the next bor span.
 type QueryNextSpanRequest struct {
 	state         protoimpl.MessageState
@@ -5893,15 +5539,14 @@ func (x *QueryNextSpanRequest) GetBorChainId() string {
 	return ""
 }
 
-// QueryPrepareNextSpanResponse defines the gRPC response structure for querying
+// QueryNextSpanResponse defines the gRPC response structure for querying
 // the next bor span.
 type QueryNextSpanResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Span   *Span  `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
+	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
 func (x *QueryNextSpanResponse) Reset() {
@@ -5922,13 +5567,6 @@ func (*QueryNextSpanResponse) ProtoMessage() {}
 // Deprecated: Use QueryNextSpanResponse.ProtoReflect.Descriptor instead.
 func (*QueryNextSpanResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *QueryNextSpanResponse) GetHeight() string {
-	if x != nil {
-		return x.Height
-	}
-	return ""
 }
 
 func (x *QueryNextSpanResponse) GetSpan() *Span {
@@ -5973,8 +5611,7 @@ type QueryParamsResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Height string  `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *QueryParamsResponse) Reset() {
@@ -5997,13 +5634,6 @@ func (*QueryParamsResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{11}
 }
 
-func (x *QueryParamsResponse) GetHeight() string {
-	if x != nil {
-		return x.Height
-	}
-	return ""
-}
-
 func (x *QueryParamsResponse) GetParams() *Params {
 	if x != nil {
 		return x.Params
@@ -6020,81 +5650,81 @@ var file_heimdallv2_bor_query_proto_rawDesc = []byte{
 	0x67, 0x6f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x1a, 0x1b, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79,
 	0x2f, 0x76, 0x31, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a,
-	0x1c, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x6e, 0x6e, 0x6f,
-	0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x18, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x62, 0x6f,
-	0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x2f, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12,
-	0x17, 0x0a, 0x07, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x06, 0x73, 0x70, 0x61, 0x6e, 0x49, 0x64, 0x22, 0x59, 0x0a, 0x15, 0x51, 0x75, 0x65, 0x72,
+	0x2a, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x62, 0x61, 0x73, 0x65, 0x2f, 0x71, 0x75, 0x65,
+	0x72, 0x79, 0x2f, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2f, 0x70, 0x61, 0x67, 0x69, 0x6e,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f, 0x6f,
+	0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x18, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x62, 0x6f, 0x72, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x22, 0x26, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e,
+	0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x0e, 0x0a, 0x02, 0x69,
+	0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x41, 0x0a, 0x15, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x28, 0x0a, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x14, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x62, 0x6f, 0x72, 0x2e, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x22, 0x5e,
+	0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x46, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x63, 0x6f, 0x73,
+	0x6d, 0x6f, 0x73, 0x2e, 0x62, 0x61, 0x73, 0x65, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x76,
+	0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e, 0x50, 0x61, 0x67, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x99,
+	0x01, 0x0a, 0x15, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x37, 0x0a, 0x09, 0x73, 0x70, 0x61, 0x6e,
+	0x5f, 0x6c, 0x69, 0x73, 0x74, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x53, 0x70, 0x61,
+	0x6e, 0x42, 0x04, 0xc8, 0xde, 0x1f, 0x00, 0x52, 0x08, 0x73, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73,
+	0x74, 0x12, 0x47, 0x0a, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x62,
+	0x61, 0x73, 0x65, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61,
+	0x31, 0x2e, 0x50, 0x61, 0x67, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x0a,
+	0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0x18, 0x0a, 0x16, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x22, 0x43, 0x0a, 0x17, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61, 0x74,
+	0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
+	0x28, 0x0a, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x53,
+	0x70, 0x61, 0x6e, 0x52, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x22, 0x1a, 0x0a, 0x18, 0x51, 0x75, 0x65,
+	0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x2f, 0x0a, 0x19, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65,
+	0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x65, 0x65, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x04, 0x73, 0x65, 0x65, 0x64, 0x22, 0x72, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e,
+	0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17,
+	0x0a, 0x07, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52,
+	0x06, 0x73, 0x70, 0x61, 0x6e, 0x49, 0x64, 0x12, 0x1f, 0x0a, 0x0b, 0x73, 0x74, 0x61, 0x72, 0x74,
+	0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x73, 0x74,
+	0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x20, 0x0a, 0x0c, 0x62, 0x6f, 0x72, 0x5f,
+	0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a,
+	0x62, 0x6f, 0x72, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x22, 0x41, 0x0a, 0x15, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f,
+	0x6e, 0x73, 0x65, 0x12, 0x28, 0x0a, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x14, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62,
+	0x6f, 0x72, 0x2e, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x22, 0x14, 0x0a,
+	0x12, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75,
+	0x65, 0x73, 0x74, 0x22, 0x45, 0x0a, 0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61,
+	0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2e, 0x0a, 0x06, 0x70, 0x61,
+	0x72, 0x61, 0x6d, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x50, 0x61, 0x72, 0x61,
+	0x6d, 0x73, 0x52, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x32, 0xb2, 0x06, 0x0a, 0x05, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x12, 0x82, 0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x53, 0x70, 0x61, 0x6e,
+	0x42, 0x79, 0x49, 0x64, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42,
+	0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72,
 	0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x28, 0x0a, 0x04, 0x73, 0x70, 0x61,
-	0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x04, 0x73,
-	0x70, 0x61, 0x6e, 0x22, 0x40, 0x0a, 0x14, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e,
-	0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x70,
-	0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x04, 0x70, 0x61, 0x67, 0x65, 0x12,
-	0x14, 0x0a, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x05,
-	0x6c, 0x69, 0x6d, 0x69, 0x74, 0x22, 0x68, 0x0a, 0x15, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70,
-	0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16,
-	0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06,
-	0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x37, 0x0a, 0x09, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x6c,
-	0x69, 0x73, 0x74, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x53, 0x70, 0x61, 0x6e, 0x42,
-	0x04, 0xc8, 0xde, 0x1f, 0x00, 0x52, 0x08, 0x73, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x22,
-	0x18, 0x0a, 0x16, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70,
-	0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x5b, 0x0a, 0x17, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x28, 0x0a, 0x04,
-	0x73, 0x70, 0x61, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x53, 0x70, 0x61, 0x6e,
-	0x52, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x22, 0x1a, 0x0a, 0x18, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e,
-	0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x22, 0x47, 0x0a, 0x19, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53,
-	0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x65, 0x65, 0x64, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x73, 0x65, 0x65, 0x64, 0x22, 0x72, 0x0a, 0x14, 0x51,
-	0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x73, 0x70, 0x61, 0x6e, 0x49, 0x64, 0x12, 0x1f, 0x0a, 0x0b,
-	0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x04, 0x52, 0x0a, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x20, 0x0a,
-	0x0c, 0x62, 0x6f, 0x72, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x0a, 0x62, 0x6f, 0x72, 0x43, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x22,
-	0x59, 0x0a, 0x15, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67,
-	0x68, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74,
-	0x12, 0x28, 0x0a, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
-	0x53, 0x70, 0x61, 0x6e, 0x52, 0x04, 0x73, 0x70, 0x61, 0x6e, 0x22, 0x14, 0x0a, 0x12, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x22, 0x5d, 0x0a, 0x13, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68,
-	0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12,
-	0x2e, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x16, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
-	0x2e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x32,
-	0xae, 0x06, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x84, 0x01, 0x0a, 0x08, 0x53, 0x70,
-	0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61,
-	0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x42, 0x79, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0x2b, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x20,
-	0x12, 0x1e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f,
-	0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x2f, 0x7b, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x69, 0x64, 0x7d,
-	0x12, 0x7f, 0x0a, 0x08, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x24, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73,
-	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x2f, 0x6c, 0x69, 0x73,
-	0x74, 0x12, 0x87, 0x01, 0x0a, 0x0a, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e,
+	0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
+	0x73, 0x70, 0x61, 0x6e, 0x2f, 0x7b, 0x69, 0x64, 0x7d, 0x12, 0x82, 0x01, 0x0a, 0x0b, 0x47, 0x65,
+	0x74, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x53, 0x70, 0x61, 0x6e, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4,
+	0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x12, 0x8a,
+	0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e,
 	0x12, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f,
 	0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61,
 	0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
@@ -6102,44 +5732,44 @@ var file_heimdallv2_bor_query_proto_rawDesc = []byte{
 	0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
 	0x65, 0x22, 0x28, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1d, 0x12, 0x1b,
 	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
-	0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x2d, 0x73, 0x70, 0x61, 0x6e, 0x12, 0x90, 0x01, 0x0a, 0x0c,
-	0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x12, 0x28, 0x2e, 0x68,
+	0x73, 0x70, 0x61, 0x6e, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x12, 0x8e, 0x01, 0x0a, 0x0f,
+	0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x12,
+	0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
+	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65,
+	0x65, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x1b, 0x12, 0x19, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62,
+	0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x2f, 0x73, 0x65, 0x65, 0x64, 0x12, 0x85, 0x01, 0x0a,
+	0x0b, 0x47, 0x65, 0x74, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x24, 0x2e, 0x68,
 	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78,
-	0x74, 0x53, 0x70, 0x61, 0x6e, 0x53, 0x65, 0x65, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x2b, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x20, 0x12, 0x1e,
-	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f,
-	0x6e, 0x65, 0x78, 0x74, 0x2d, 0x73, 0x70, 0x61, 0x6e, 0x2d, 0x73, 0x65, 0x65, 0x64, 0x12, 0x87,
-	0x01, 0x0a, 0x08, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x24, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65,
-	0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
-	0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62,
-	0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e,
-	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2e, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
-	0xd3, 0xe4, 0x93, 0x02, 0x23, 0x12, 0x21, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x2d, 0x6e,
-	0x65, 0x78, 0x74, 0x2d, 0x73, 0x70, 0x61, 0x6e, 0x12, 0x76, 0x0a, 0x06, 0x50, 0x61, 0x72, 0x61,
-	0x6d, 0x73, 0x12, 0x22, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52,
-	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x23, 0x88, 0xe7, 0xb0,
-	0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x18, 0x12, 0x16, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73,
-	0x42, 0xae, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72,
-	0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58,
-	0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f,
-	0x72, 0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42,
-	0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c,
-	0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea,
-	0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f,
-	0x72, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x25, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x53, 0x70, 0x61,
+	0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x29, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
+	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1e, 0x12, 0x1c, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x73, 0x70, 0x61, 0x6e, 0x2f, 0x70, 0x72, 0x65,
+	0x70, 0x61, 0x72, 0x65, 0x12, 0x79, 0x0a, 0x09, 0x47, 0x65, 0x74, 0x50, 0x61, 0x72, 0x61, 0x6d,
+	0x73, 0x12, 0x22, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62,
+	0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x23, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61,
+	0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x23, 0x88, 0xe7, 0xb0, 0x2a,
+	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x18, 0x12, 0x16, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42,
+	0xae, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f,
+	0x74, 0x6f, 0x50, 0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
+	0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58, 0xaa,
+	0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72,
+	0xca, 0x02, 0x0e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f,
+	0x72, 0xe2, 0x02, 0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42,
+	0x6f, 0x72, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02,
+	0x0f, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -6169,31 +5799,35 @@ var file_heimdallv2_bor_query_proto_goTypes = []interface{}{
 	(*QueryParamsRequest)(nil),        // 10: heimdallv2.bor.QueryParamsRequest
 	(*QueryParamsResponse)(nil),       // 11: heimdallv2.bor.QueryParamsResponse
 	(*Span)(nil),                      // 12: heimdallv2.bor.Span
-	(*Params)(nil),                    // 13: heimdallv2.bor.Params
+	(*query.PageRequest)(nil),         // 13: cosmos.base.query.v1beta1.PageRequest
+	(*query.PageResponse)(nil),        // 14: cosmos.base.query.v1beta1.PageResponse
+	(*Params)(nil),                    // 15: heimdallv2.bor.Params
 }
 var file_heimdallv2_bor_query_proto_depIdxs = []int32{
 	12, // 0: heimdallv2.bor.QuerySpanByIdResponse.span:type_name -> heimdallv2.bor.Span
-	12, // 1: heimdallv2.bor.QuerySpanListResponse.span_list:type_name -> heimdallv2.bor.Span
-	12, // 2: heimdallv2.bor.QueryLatestSpanResponse.span:type_name -> heimdallv2.bor.Span
-	12, // 3: heimdallv2.bor.QueryNextSpanResponse.span:type_name -> heimdallv2.bor.Span
-	13, // 4: heimdallv2.bor.QueryParamsResponse.params:type_name -> heimdallv2.bor.Params
-	0,  // 5: heimdallv2.bor.Query.SpanById:input_type -> heimdallv2.bor.QuerySpanByIdRequest
-	2,  // 6: heimdallv2.bor.Query.SpanList:input_type -> heimdallv2.bor.QuerySpanListRequest
-	4,  // 7: heimdallv2.bor.Query.LatestSpan:input_type -> heimdallv2.bor.QueryLatestSpanRequest
-	6,  // 8: heimdallv2.bor.Query.NextSpanSeed:input_type -> heimdallv2.bor.QueryNextSpanSeedRequest
-	8,  // 9: heimdallv2.bor.Query.NextSpan:input_type -> heimdallv2.bor.QueryNextSpanRequest
-	10, // 10: heimdallv2.bor.Query.Params:input_type -> heimdallv2.bor.QueryParamsRequest
-	1,  // 11: heimdallv2.bor.Query.SpanById:output_type -> heimdallv2.bor.QuerySpanByIdResponse
-	3,  // 12: heimdallv2.bor.Query.SpanList:output_type -> heimdallv2.bor.QuerySpanListResponse
-	5,  // 13: heimdallv2.bor.Query.LatestSpan:output_type -> heimdallv2.bor.QueryLatestSpanResponse
-	7,  // 14: heimdallv2.bor.Query.NextSpanSeed:output_type -> heimdallv2.bor.QueryNextSpanSeedResponse
-	9,  // 15: heimdallv2.bor.Query.NextSpan:output_type -> heimdallv2.bor.QueryNextSpanResponse
-	11, // 16: heimdallv2.bor.Query.Params:output_type -> heimdallv2.bor.QueryParamsResponse
-	11, // [11:17] is the sub-list for method output_type
-	5,  // [5:11] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	13, // 1: heimdallv2.bor.QuerySpanListRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	12, // 2: heimdallv2.bor.QuerySpanListResponse.span_list:type_name -> heimdallv2.bor.Span
+	14, // 3: heimdallv2.bor.QuerySpanListResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	12, // 4: heimdallv2.bor.QueryLatestSpanResponse.span:type_name -> heimdallv2.bor.Span
+	12, // 5: heimdallv2.bor.QueryNextSpanResponse.span:type_name -> heimdallv2.bor.Span
+	15, // 6: heimdallv2.bor.QueryParamsResponse.params:type_name -> heimdallv2.bor.Params
+	0,  // 7: heimdallv2.bor.Query.GetSpanById:input_type -> heimdallv2.bor.QuerySpanByIdRequest
+	2,  // 8: heimdallv2.bor.Query.GetSpanList:input_type -> heimdallv2.bor.QuerySpanListRequest
+	4,  // 9: heimdallv2.bor.Query.GetLatestSpan:input_type -> heimdallv2.bor.QueryLatestSpanRequest
+	6,  // 10: heimdallv2.bor.Query.GetNextSpanSeed:input_type -> heimdallv2.bor.QueryNextSpanSeedRequest
+	8,  // 11: heimdallv2.bor.Query.GetNextSpan:input_type -> heimdallv2.bor.QueryNextSpanRequest
+	10, // 12: heimdallv2.bor.Query.GetParams:input_type -> heimdallv2.bor.QueryParamsRequest
+	1,  // 13: heimdallv2.bor.Query.GetSpanById:output_type -> heimdallv2.bor.QuerySpanByIdResponse
+	3,  // 14: heimdallv2.bor.Query.GetSpanList:output_type -> heimdallv2.bor.QuerySpanListResponse
+	5,  // 15: heimdallv2.bor.Query.GetLatestSpan:output_type -> heimdallv2.bor.QueryLatestSpanResponse
+	7,  // 16: heimdallv2.bor.Query.GetNextSpanSeed:output_type -> heimdallv2.bor.QueryNextSpanSeedResponse
+	9,  // 17: heimdallv2.bor.Query.GetNextSpan:output_type -> heimdallv2.bor.QueryNextSpanResponse
+	11, // 18: heimdallv2.bor.Query.GetParams:output_type -> heimdallv2.bor.QueryParamsResponse
+	13, // [13:19] is the sub-list for method output_type
+	7,  // [7:13] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_bor_query_proto_init() }

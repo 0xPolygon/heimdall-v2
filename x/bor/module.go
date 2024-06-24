@@ -32,14 +32,6 @@ var (
 	_ hmModule.HasSideMsgServices = AppModule{}
 )
 
-// TODO HV2: what should this value be ?
-
-// ConsensusVersion defines the current x/bor module consensus version.
-const ConsensusVersion = 1
-
-// AppModuleBasic defines the basic application module used by the bor module.
-// type AppModuleBasic struct{}
-
 // Name returns the bor module's name.
 func (AppModule) Name() string { return types.ModuleName }
 
@@ -104,7 +96,7 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQuerier(am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 }
 
@@ -141,6 +133,3 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	gs := am.keeper.ExportGenesis(ctx)
 	return cdc.MustMarshalJSON(gs)
 }
-
-// ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
