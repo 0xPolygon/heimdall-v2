@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const chainmanagerEndpoint = "/chainmanager/params"
+const chainManagerEndpoint = "/chainmanager/params"
 
 // StakeCmd stakes for a validator
 func StakeCmd() *cobra.Command {
@@ -49,7 +49,7 @@ func StakeCmd() *cobra.Command {
 					return err
 				}
 
-				params, err := GetChainmanagerParams(cliCtx)
+				params, err := GetChainManagerParams(cliCtx)
 				if err != nil {
 					return err
 				}
@@ -115,7 +115,7 @@ func ApproveCmd() *cobra.Command {
 					return err
 				}
 
-				params, err := GetChainmanagerParams(cliCtx)
+				params, err := GetChainManagerParams(cliCtx)
 				if err != nil {
 					return err
 				}
@@ -145,8 +145,8 @@ func ApproveCmd() *cobra.Command {
 
 // TODO HV2 - uncomment when we have FetchFromAPI uncommented in helper
 /*
-// GetChainmanagerParams return configManager params
-func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
+// GetChainManagerParams return configManager params
+func GetChainManagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
 	response, err := helper.FetchFromAPI(
 		cliCtx,
 		helper.GetHeimdallServerEndpoint(chainmanagerEndpoint),

@@ -125,7 +125,7 @@ func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) Va
 }
 
 // initCometBFTConfig helps to override default CometBFT Config values.
-// It return cmtcfg.DefaultConfig if no custom configuration is required for the application.
+// It returns cmtcfg.DefaultConfig if no custom configuration is required for the application.
 func initCometBFTConfig() *cmtcfg.Config {
 	return cmtcfg.DefaultConfig()
 }
