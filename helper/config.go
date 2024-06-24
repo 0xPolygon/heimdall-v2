@@ -369,7 +369,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	GenesisDoc = *genDoc
 
-	// load pv file, unmarshall and set to privObject
+	// load pv file, unmarshall and set to privKeyObject
 	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
 	if err != nil {
 		Logger.Error(err.Error())

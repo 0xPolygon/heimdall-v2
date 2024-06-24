@@ -113,15 +113,15 @@ func CryptoKeyToPubKey(key crypto.PubKey) secp256k1.PubKey {
 }
 
 // GetSignerInfo returns signer information
-func GetSignerInfo(pub crypto.PubKey, priv []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
-	var privObject secp256k1.PrivKey
+func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
+	var privKeyObject secp256k1.PrivKey
 
-	cdc.MustUnmarshal(priv, &privObject)
+	cdc.MustUnmarshal(privKey, &privKeyObject)
 
 	return ValidatorAccountFormatter{
 		Address: ethCommon.BytesToAddress(pub.Address().Bytes()).String(),
 		PubKey:  CryptoKeyToPubKey(pub).String(),
-		PrivKey: "0x" + hex.EncodeToString(privObject[:]),
+		PrivKey: "0x" + hex.EncodeToString(privKeyObject[:]),
 	}
 }
 
@@ -401,14 +401,14 @@ func generateValidatorKey() *cobra.Command {
 			}
 
 			// set private object
-			var privObject secp256k1.PrivKey
-			copy(privObject[:], ds)
+			var privKeyObject secp256k1.PrivKey
+			copy(privKeyObject[:], ds)
 
 			// node key
 			nodeKey := privval.FilePVKey{
-				Address: privObject.PubKey().Address(),
-				PubKey:  privObject.PubKey(),
-				PrivKey: privObject,
+				Address: privKeyObject.PubKey().Address(),
+				PubKey:  privKeyObject.PubKey(),
+				PrivKey: privKeyObject,
 			}
 
 			jsonBytes, err := cdc.MarshalJSONIndent(nodeKey, "", "  ")
@@ -437,10 +437,10 @@ func showPrivateKeyCmd() *cobra.Command {
 			helper.InitHeimdallConfig("")
 
 			// get private and public keys
-			privObject := helper.GetPrivKey()
+			privKeyObject := helper.GetPrivKey()
 
 			account := &ValidatorAccountFormatter{
-				PrivKey: "0x" + hex.EncodeToString(privObject[:]),
+				PrivKey: "0x" + hex.EncodeToString(privKeyObject[:]),
 			}
 
 			b, err := json.MarshalIndent(account, "", "    ")
