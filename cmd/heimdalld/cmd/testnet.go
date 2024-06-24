@@ -22,7 +22,7 @@ import (
 
 // TODO HV2 - this function was heavily modified, review carefully
 // testnetCmd initialises files required to start heimdall testnet
-func testnetCmd(ctx *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
+func testnetCmd(_ *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create-testnet",
 		Short: "Initialize files for a Heimdall testnet",
