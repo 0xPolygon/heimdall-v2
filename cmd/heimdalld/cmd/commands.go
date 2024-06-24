@@ -387,7 +387,7 @@ func generateKeystore() *cobra.Command {
 func generateValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
 	cmd := &cobra.Command{
-		Use:   "generate-validatorkey <private-key>",
+		Use:   "generate-validator-key <private-key>",
 		Short: "Generate validator key file using private key",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -427,7 +427,7 @@ func generateValidatorKey() *cobra.Command {
 
 func showPrivateKeyCmd() *cobra.Command {
 	return &cobra.Command{
-		Use:   "show-privatekey",
+		Use:   "show-private-key",
 		Short: "Print the account's private key",
 		Run: func(cmd *cobra.Command, args []string) {
 			// init heimdall config
