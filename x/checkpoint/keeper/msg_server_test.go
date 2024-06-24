@@ -3,10 +3,10 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 
@@ -23,7 +23,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	maxSize := uint64(256)
 	borChainId := "1234"
 	params, _ := keeper.GetParams(ctx)
-	dividendAccounts := s.moduleCommunicator.GetAllDividendAccounts(ctx)
+	dividendAccounts := s.topupKeeper.GetAllDividendAccounts(ctx)
 
 	// check valid checkpoint
 	// generate proposer for validator set
@@ -78,8 +78,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		msgCheckpoint.Type()
-
 		// send checkpoint to handler
 		_, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
 		require.Error(err)
@@ -95,7 +93,9 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		_, err = keeper.GetCheckpointByNumber(ctx, headerId)
 		require.NoError(err)
 
-		keeper.UpdateACKCount(ctx)
+		err = keeper.UpdateACKCount(ctx)
+		require.NoError(err)
+
 		lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.NoError(err)
 
@@ -120,62 +120,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	})
 }
 
-func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustCheckpointBuffer() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
-
-	checkpoint := types.Checkpoint{
-		Proposer:   common.Address{}.String(),
-		StartBlock: 0,
-		EndBlock:   256,
-		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
-		BorChainID: "testchainid",
-		TimeStamp:  1,
-	}
-
-	err := keeper.SetCheckpointBuffer(ctx, checkpoint)
-	require.NoError(err)
-
-	checkpointAdjust := types.MsgCheckpointAdjust{
-		HeaderIndex: 1,
-		Proposer:    common.Address([]byte("DifferentProposer123")).String(),
-		StartBlock:  0,
-		EndBlock:    512,
-		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
-	}
-
-	_, err = msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
-	require.Error(err)
-}
-
-func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsMsg() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
-
-	checkpoint := types.Checkpoint{
-		Proposer:   common.Address{}.String(),
-		StartBlock: 0,
-		EndBlock:   256,
-		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
-		BorChainID: "testchainid",
-		TimeStamp:  1,
-	}
-
-	err := keeper.AddCheckpoint(ctx, 1, checkpoint)
-	require.NoError(err)
-
-	checkpointAdjust := types.MsgCheckpointAdjust{
-		HeaderIndex: 1,
-		Proposer:    common.Address{}.String(),
-		StartBlock:  0,
-		EndBlock:    256,
-		rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()},
-	}
-
-	_, err = msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
-	require.Error(err)
-}
-
 func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
 	require := s.Require()
@@ -186,7 +130,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	params, err := keeper.GetParams(ctx)
 	require.NoError(err)
 	checkpointBufferTime := params.CheckpointBufferTime
-	dividendAccounts := s.moduleCommunicator.GetAllDividendAccounts(ctx)
+	dividendAccounts := s.topupKeeper.GetAllDividendAccounts(ctx)
 
 	// generate proposer for validator set
 	stakeSim.LoadValidatorSet(require, 2, stakeKeeper, ctx, false, 10)
@@ -221,7 +165,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
 	require.NoError(err)
 
-	err=keeper.SetCheckpointBuffer(ctx, header)
+	err = keeper.SetCheckpointBuffer(ctx, header)
 	require.NoError(err)
 
 	checkpointBuffer, err := keeper.GetCheckpointFromBuffer(ctx)
@@ -248,7 +192,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	borChainId := "1234"
 
 	require.NoError(err)
-	dividendAccounts := s.moduleCommunicator.GetAllDividendAccounts(ctx)
+	dividendAccounts := s.topupKeeper.GetAllDividendAccounts(ctx)
 
 	stakeSim.LoadValidatorSet(require, 2, stakeKeeper, ctx, false, 10)
 	stakeKeeper.IncrementAccum(ctx, 1)
@@ -282,7 +226,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
 	require.NoError(err)
 
-	err=keeper.SetCheckpointBuffer(ctx, header)
+	err = keeper.SetCheckpointBuffer(ctx, header)
 	require.NoError(err)
 
 	// send checkpoint to handler

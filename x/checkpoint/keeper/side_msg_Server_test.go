@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 	"github.com/ethereum/go-ethereum/common"
-	borCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -26,111 +25,6 @@ func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModul
 	cfg := s.sideMsgCfg
 
 	cfg.PostHandler(msg)(ctx, msg, vote)
-}
-
-//
-// Test cases
-//
-
-// test handler for message
-func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSuccess() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
-
-	checkpoint := types.Checkpoint{
-		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
-		StartBlock: 0,
-		EndBlock:   256,
-		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
-		BorChainID: "testchainid",
-		TimeStamp:  1,
-	}
-	err := keeper.AddCheckpoint(ctx, 1, checkpoint)
-	require.NoError(err)
-
-	checkpointAdjust := types.MsgCheckpointAdjust{
-		HeaderIndex: 1,
-		Proposer:    common.HexToAddress("0xdummyAddress456").String(),
-		StartBlock:  0,
-		EndBlock:    512,
-		RootHash:    hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
-	}
-
-	rootchainInstance := &rootchain.Rootchain{}
-	s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
-	s.contractCaller.On("GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything).Return(borCommon.HexToHash("456"), uint64(0), uint64(512), uint64(1), common.HexToAddress("0xdummyAddress456").String(), nil)
-
-	msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
-	sideResult := s.sideHandler(ctx, &checkpointAdjust)
-
-	s.postHandler(ctx, &checkpointAdjust, sideResult)
-
-	responseCheckpoint, _ := keeper.GetCheckpointByNumber(ctx, 1)
-	require.Equal(responseCheckpoint.EndBlock, uint64(512))
-	require.Equal(responseCheckpoint.Proposer, common.HexToAddress("0xdummyAddress456").String())
-	require.Equal(responseCheckpoint.RootHash, hmTypes.HeimdallHash{testutil.RandomBytes()})
-}
-
-func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustSameCheckpointAsRootChain() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
-
-	checkpoint := types.Checkpoint{
-		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
-		StartBlock: 0,
-		EndBlock:   256,
-		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
-		BorChainID: "testchainid",
-		TimeStamp:  1,
-	}
-	err := keeper.AddCheckpoint(ctx, 1, checkpoint)
-	require.NoError(err)
-
-	checkpointAdjust := types.MsgCheckpointAdjust{
-		HeaderIndex: 1,
-		Proposer:    common.HexToAddress("0xdummyAddress123").String(),
-		StartBlock:  0,
-		EndBlock:    256,
-		RootHash:    hmTypes.HeimdallHash{testutil.RandomBytes()},
-	}
-	rootchainInstance := &rootchain.Rootchain{}
-	s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
-	s.contractCaller.On("GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything).Return(borCommon.HexToHash("123"), uint64(0), uint64(256), uint64(1), common.HexToAddress("0xdummyAddress123").String(), nil)
-
-	msgServer.CheckpointAdjust(ctx, &checkpointAdjust)
-	sideResult := s.sideHandler(ctx, &checkpointAdjust)
-	require.Equal(sideResult, hmModule.Vote_VOTE_NO)
-}
-
-func (s *KeeperTestSuite) TestHandleMsgCheckpointAdjustNotSameCheckpointAsRootChain() {
-	ctx, keeper := s.ctx, s.checkpointKeeper
-	require := s.Require()
-
-	checkpoint := types.Checkpoint{
-		Proposer:   common.HexToAddress("0xdummyAddress123").String(),
-		StartBlock: 0,
-		EndBlock:   256,
-		RootHash:   hmTypes.HeimdallHash{testutil.RandomBytes()},
-		BorChainID: "testchainid",
-		TimeStamp:  1,
-	}
-	err := keeper.AddCheckpoint(ctx, 1, checkpoint)
-	require.NoError(err)
-
-	checkpointAdjust := types.MsgCheckpointAdjust{
-		HeaderIndex: 1,
-		Proposer:    common.HexToAddress("0xdummyAddress123").String(),
-		StartBlock:  0,
-		EndBlock:    256,
-		RootHash:    hmTypes.HeimdallHash{testutil.RandomBytes()},
-	}
-
-	rootchainInstance := &rootchain.Rootchain{}
-	s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
-	s.contractCaller.On("GetHeaderInfo", mock.Anything, mock.Anything, mock.Anything).Return(borCommon.HexToHash("222"), uint64(0), uint64(256), uint64(1), common.HexToAddress("0xdummyAddress123").String(), nil)
-
-	sideResult := s.sideHandler(ctx, &checkpointAdjust)
-	require.Equal(sideResult, hmModule.Vote_VOTE_NO)
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {

@@ -36,15 +36,15 @@ import (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx                sdk.Context
-	checkpointKeeper   *checkpointKeeper.Keeper
-	stakeKeeper        *stakekeeper.Keeper
-	contractCaller     *mocks.IContractCaller
-	moduleCommunicator *testutil.
-	cmKeeper           *cmKeeper.Keeper
-	queryClient        checkpointTypes.QueryClient
-	msgServer          checkpointTypes.MsgServer
-	sideMsgCfg         hmModule.SideTxConfigurator
+	ctx              sdk.Context
+	checkpointKeeper *checkpointKeeper.Keeper
+	stakeKeeper      *stakekeeper.Keeper
+	contractCaller   *mocks.IContractCaller
+	topupKeeper      *testutil.MockTopupKeeper
+	cmKeeper         *cmKeeper.Keeper
+	queryClient      checkpointTypes.QueryClient
+	msgServer        checkpointTypes.MsgServer
+	sideMsgCfg       hmModule.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) Run(testname string, fn func()) {
@@ -123,7 +123,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 
-	Checkpoint := types.CreateCheckpoint(
+	checkpoint := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
@@ -131,35 +131,20 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 		borChainId,
 		timestamp,
 	)
-	err := keeper.AddCheckpoint(ctx, headerBlockNumber, Checkpoint)
+	err := keeper.AddCheckpoint(ctx, headerBlockNumber, checkpoint)
 	require.NoError(err)
 
 	result, err := keeper.GetCheckpointByNumber(ctx, headerBlockNumber)
 	require.NoError(err)
-	require.Equal(startBlock, result.StartBlock)
-	require.Equal(endBlock, result.EndBlock)
-	require.Equal(rootHash, result.RootHash)
-	require.Equal(borChainId, result.BorChainID)
-	require.Equal(proposerAddress, result.Proposer)
-	require.Equal(timestamp, result.TimeStamp)
-}
-
-func (s *KeeperTestSuite) TestHasStoreValue() {
-	ctx, keeper := s.ctx, s.checkpointKeeper
-	require := s.Require()
-	key := checkpointTypes.ACKCountKey
-	result := keeper.HasStoreValue(ctx, key)
-	require.True(result)
+	require.True(checkpoint.Equal(result))
 }
 
 func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {
 	ctx, keeper := s.ctx, s.checkpointKeeper
-
 	require := s.Require()
-	key := checkpointTypes.BufferCheckpointKey
 
 	keeper.FlushCheckpointBuffer(ctx)
 
-	result := keeper.HasStoreValue(ctx, key)
-	require.False(result)
+	result := keeper.
+		require.False(result)
 }

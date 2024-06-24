@@ -28,63 +28,27 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// CheckpointAdjust used for adjusting the checkpoint
-func (k msgServer) CheckpointAdjust(ctx context.Context, msg *types.MsgCheckpointAdjust) (*types.MsgCheckpointAdjustResponse, error) {
-	logger := k.Logger(ctx)
-
-	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
-	if checkpointBuffer != nil {
-		logger.Error("checkpoint already exists in buffer", "error", err)
-		return nil, errorsmod.Wrap(types.ErrCheckpointBufferFound, "checkpoint buffer not found")
-	}
-
-	checkpointObj, err := k.GetCheckpointByNumber(ctx, msg.HeaderIndex)
-	if err != nil {
-		logger.Error("unable to get checkpoint from db", "header index", msg.HeaderIndex, "error", err)
-		return nil, errorsmod.Wrap(types.ErrNoCheckpointFound, "checkpoint not found in db")
-	}
-
-	if checkpointObj.EndBlock == msg.EndBlock && checkpointObj.StartBlock == msg.StartBlock && bytes.Equal(checkpointObj.RootHash.Bytes(), msg.RootHash.Bytes()) && strings.EqualFold(checkpointObj.Proposer, msg.Proposer) {
-		logger.Error("same checkpoint in db")
-		return nil, errorsmod.Wrap(types.ErrCheckpointAlreadyExists, "checkpoint already exist in db")
-	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			types.EventTypeCheckpointAdjust,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.HeaderIndex, 10)),
-			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
-			sdk.NewAttribute(types.AttributeKeyRootHash, msg.RootHash.String()),
-		),
-	})
-
-	return &types.MsgCheckpointAdjustResponse{}, nil
-}
-
+// TODO HV2: split this function in 4 different utilities methods (getCheckpoint, IsValidCheckpoint, validatAccountHash, validateProposer).
 // Checkpoint function handles the checkpoint msg
-func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
-	logger := k.Logger(ctx)
+func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
+	logger := srv.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	timeStamp := uint64(sdkCtx.BlockTime().Unix())
 
-	params, err := k.GetParams(ctx)
+	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in fetching checkpoint parameter")
 		return nil, errorsmod.Wrap(types.ErrCheckpointParams, "error in fetching checkpoint parameter")
 	}
 
-	checkpointBuffer, err := k.GetCheckpointFromBuffer(ctx)
+	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if err == nil {
 		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())
 
 		if checkpointBuffer.TimeStamp == 0 || ((timeStamp > checkpointBuffer.TimeStamp) && (timeStamp-checkpointBuffer.TimeStamp) >= checkpointBufferTime) {
 			logger.Debug("checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.TimeStamp)
-			k.FlushCheckpointBuffer(ctx)
+			srv.FlushCheckpointBuffer(ctx)
 		} else {
 			expiryTime := checkpointBuffer.TimeStamp + checkpointBufferTime
 			logger.Error("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime)
@@ -93,7 +57,7 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	}
 
 	// fetch last checkpoint from store
-	if lastCheckpoint, err := k.GetLastCheckpoint(ctx); err == nil {
+	if lastCheckpoint, err := srv.GetLastCheckpoint(ctx); err == nil {
 		// make sure new checkpoint is after tip
 		if lastCheckpoint.EndBlock > msg.StartBlock {
 			logger.Error("checkpoint already exists",
@@ -119,7 +83,7 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 
 	// Make sure latest AccountRootHash matches
 	// Calculate new account root hash
-	dividendAccounts := k.topupKeeper.GetAllDividendAccounts(ctx)
+	dividendAccounts := srv.topupKeeper.GetAllDividendAccounts(ctx)
 	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
 
 	// Get account root hash from dividend accounts
@@ -144,7 +108,7 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	}
 
 	// Check proposer in message
-	validatorSet := k.sk.GetValidatorSet(ctx)
+	validatorSet := srv.sk.GetValidatorSet(ctx)
 	if validatorSet.Proposer == nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer in stored validator set"))
@@ -177,11 +141,11 @@ func (k msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 }
 
 // CheckpointAck function handles the checkpoint ack msg
-func (k msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAck) (*types.MsgCheckpointAckResponse, error) {
-	logger := k.Logger(ctx)
+func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAck) (*types.MsgCheckpointAckResponse, error) {
+	logger := srv.Logger(ctx)
 
 	// get last checkpoint from buffer
-	headerBlock, err := k.GetCheckpointFromBuffer(ctx)
+	headerBlock, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("unable to get checkpoint"))
@@ -220,8 +184,8 @@ func (k msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAc
 }
 
 // CheckpointNoAck function handles checkpoint no-ack msg
-func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpointNoAck) (*types.MsgCheckpointNoAckResponse, error) {
-	logger := k.Logger(ctx)
+func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpointNoAck) (*types.MsgCheckpointNoAckResponse, error) {
+	logger := srv.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -229,7 +193,7 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 	currentTime := sdkCtx.BlockTime()
 
 	// Get buffer time from params
-	params, err := k.GetParams(ctx)
+	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in fetching checkpoint parameter")
 		return nil, errorsmod.Wrap(types.ErrCheckpointParams, "error in fetching checkpoint parameter")
@@ -239,7 +203,7 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 	bufferTime := params.CheckpointBufferTime
 
 	// Fetch last checkpoint from store
-	lastCheckpoint, err := k.GetLastCheckpoint(ctx)
+	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(types.ErrInvalidNoACK, "no checkpoint exist in db still now")
 	}
@@ -262,7 +226,11 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 
 	var isProposer bool = false
 
-	currentValidatorSet := k.sk.GetValidatorSet(ctx)
+	currentValidatorSet, err := srv.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "error in fetching validator set")
+	}
+
 	currentValidatorSet.IncrementProposerPriority(1)
 
 	for i := 0; i < int(count); i++ {
@@ -280,7 +248,11 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 	}
 
 	// Check last no ack - prevents repetitive no-ack
-	lastNoAck := k.GetLastNoAck(ctx)
+	lastNoAck, err := srv.GetLastNoAck(ctx)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "error in fetching last no ack")
+	}
+
 	if lastNoAck > math.MaxInt64 {
 		return nil, errorsmod.Wrap(types.ErrInvalidNoACK, "last no-ack timestamp is too large")
 	}
@@ -296,14 +268,19 @@ func (k msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 
 	// Set new last no-ack
 	newLastNoAck := uint64(currentTime.Unix())
-	k.SetLastNoAck(ctx, newLastNoAck)
+	srv.SetLastNoAck(ctx, newLastNoAck)
 	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
 
 	// Increment accum (selects new proposer)
-	k.sk.IncrementAccum(ctx, 1)
+	srv.sk.IncrementAccum(ctx, 1)
 
 	// Get new proposer
-	vs := k.sk.GetValidatorSet(ctx)
+	vs, err := srv.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
+
+	}
+
 	newProposer := vs.GetProposer()
 	logger.Debug(
 		"New proposer selected",
