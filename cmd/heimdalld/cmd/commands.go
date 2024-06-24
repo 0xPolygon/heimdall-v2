@@ -132,7 +132,7 @@ func initCometBFTConfig() *cmtcfg.Config {
 }
 
 // initAppConfig helps to override default appConfig template and configs.
-// It returns '"", nil” if no custom configuration is required for the application.
+// It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
 	return "", nil
 }
