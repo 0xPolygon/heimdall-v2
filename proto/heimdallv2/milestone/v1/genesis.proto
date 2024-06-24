@@ -3,5 +3,5 @@ package heimdallv2.milestone.v1;
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
-// GenesisState defines the staking module's genesis state.
+// GenesisState defines the milestone module's genesis state.
 message GenesisState {}

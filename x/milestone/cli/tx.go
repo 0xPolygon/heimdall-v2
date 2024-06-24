@@ -15,13 +15,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/tx"
 )
 
-var logger = helper.Logger.With("module", "milestone/client/cli")
+var logger = helper.Logger.With("module", "x/milestone")
 
 // NewTxCmd returns a root CLI command handler for all x/milestone transaction commands.
 func NewTxCmd(valAddrCodec, ac address.Codec) *cobra.Command {
 	milestoneTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
-		Short:                      "Staking transaction subcommands",
+		Short:                      "milestone transaction subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
@@ -39,14 +39,13 @@ func NewTxCmd(valAddrCodec, ac address.Codec) *cobra.Command {
 func MilestoneCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-milestone",
-		Short: "send milestone to tendermint ",
+		Short: "propose a milestone on heimdall",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
 			}
 
-			// bor chain id
 			borChainID, err := cmd.Flags().GetString(FlagBorChainID)
 			if err != nil {
 				return err
@@ -56,7 +55,6 @@ func MilestoneCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("bor chain id cannot be empty")
 			}
 
-			// milestone id
 			milestoneID, err := cmd.Flags().GetString(FlagMilestoneID)
 			if err != nil {
 				return err
@@ -66,7 +64,6 @@ func MilestoneCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("milestone ID cannot be empty")
 			}
 
-			// get proposer
 			proposer, err := cmd.Flags().GetString(FlagProposerAddress)
 			if err != nil {
 				return err
@@ -82,13 +79,11 @@ func MilestoneCmd(ac address.Codec) *cobra.Command {
 				return err
 			}
 
-			//	end block
 			endBlock, err := cmd.Flags().GetUint64(FlagEndBlock)
 			if err != nil {
 				return err
 			}
 
-			// hash
 			hashStr, err := cmd.Flags().GetString(FlagHash)
 			if err != nil {
 				return err

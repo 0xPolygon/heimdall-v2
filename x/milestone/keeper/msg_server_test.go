@@ -18,7 +18,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	borChainId := "1234"
 	milestoneID := "0000"
 	params := types.DefaultParams()
-	keeper.SetParams(ctx, params)
+	err := keeper.SetParams(ctx, params)
+	require.NoError(err)
 
 	milestoneLength := params.MinMilestoneLength
 
@@ -37,7 +38,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	ctx = ctx.WithBlockHeight(3)
 
-	//Test1- When milestone is proposed by wrong proposer
 	s.Run("Invalid Proposer", func() {
 		header.Proposer = common.HexToAddress("1234").String()
 		msgMilestone := types.NewMsgMilestoneBlock(
@@ -58,7 +58,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	// add current proposer to header
 	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
 
-	//Test2- When milestone is proposed of length shorter than configured minimum length
 	s.Run("Invalid msg based on milestone length", func() {
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
@@ -78,7 +77,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	// add current proposer to header
 	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
 
-	//Test3- When the first milestone is composed of incorrect start number
 	s.Run("Failure-Invalid Start Block Number", func() {
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
@@ -97,7 +95,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
 
-	//Test4- When the correct milestone is proposed
 	s.Run("Success", func() {
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
@@ -122,7 +119,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	ctx = ctx.WithBlockHeight(int64(4))
 
-	//Test5- When previous milestone is still in voting phase
 	s.Run("Previous milestone is still in voting phase", func() {
 
 		msgMilestone := types.NewMsgMilestoneBlock(
@@ -144,7 +140,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	ctx = ctx.WithBlockHeight(int64(6))
 
-	//Test5- When milestone is not in continuity
 	s.Run("Milestone not in countinuity", func() {
 
 		err := keeper.AddMilestone(ctx, header)
@@ -176,7 +171,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
 
-	//Test6- When milestone is not in continuity
 	s.Run("Milestone not in countinuity", func() {
 
 		_, err = keeper.GetLastMilestone(ctx)
@@ -204,7 +198,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	})
 }
 
-// Test to check that passed milestone should be in the store
 func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
 	require := s.Require()

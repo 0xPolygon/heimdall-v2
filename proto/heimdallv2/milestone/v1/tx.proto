@@ -11,14 +11,16 @@ import "heimdallv2/milestone/v1/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
-// Msg defines the staking Msg service.
+// Msg defines the milestone Msg service.
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  // Milestone defines a method for milestone
+  // Milestone defines a method for sending a milestone which
+  // finalizes a range of bor blocks
   rpc Milestone(MsgMilestone) returns (MsgMilestoneResponse);
 
-  // MilestoneTimeout defines a method for MilestoneTimeout
+  // MilestoneTimeout defines a method to indicate that no milestone
+  // was proposed within the timeout period
   rpc MilestoneTimeout(MsgMilestoneTimeout)
       returns (MsgMilestoneTimeoutResponse);
 
@@ -54,7 +56,8 @@ message MsgMilestone {
 // MsgMilestoneResponse defines the Msg/Milestone response type.
 message MsgMilestoneResponse {}
 
-// MsgMilestoneTimeout defines a SDK message for creating a milestone
+// MsgMilestoneTimeout defines a SDK message to indicate that no milestone
+// was proposed within the timeout period
 message MsgMilestoneTimeout {
   option (amino.name) = "heimdall-v2/MsgMilestoneTimeout";
 
@@ -78,8 +81,7 @@ message MsgUpdateParams {
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).
   string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  // params defines the x/staking parameters to update.
-  //
+  // params defines the x/milestone parameters to update.
   // NOTE: All parameters must be supplied.
   Params params = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
@@ -87,6 +89,4 @@ message MsgUpdateParams {
 
 // MsgUpdateParamsResponse defines the response structure for executing a
 // MsgUpdateParams message.
-//
-// Since: cosmos-sdk 0.47
 message MsgUpdateParamsResponse {};

@@ -8,9 +8,10 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
-// AddMilestone adds milestone in the store
+// AddMilestone adds milestone to the store
 func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) error {
-	milestoneNumber := k.GetMilestoneCount(ctx) + 1 //GetCount gives the number of previous milestone
+	// GetMilestoneCount gives the number of previous milestone
+	milestoneNumber := k.GetMilestoneCount(ctx) + 1
 
 	key := types.GetMilestoneKey(milestoneNumber)
 	if err := k.addMilestone(ctx, key, milestone); err != nil {
@@ -18,7 +19,7 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 	}
 
 	k.SetMilestoneCount(ctx, milestoneNumber)
-	k.Logger(ctx).Info("Adding good milestone to state", "milestone", milestone, "milestoneNumber", milestoneNumber)
+	k.Logger(ctx).Info("adding good milestone to state", "milestone", milestone, "milestoneNumber", milestoneNumber)
 
 	return nil
 }
@@ -27,15 +28,16 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 func (k *Keeper) addMilestone(ctx context.Context, key []byte, milestone types.Milestone) error {
 	store := k.storeService.OpenKVStore(ctx)
 
-	// marshal milestone
 	out, err := k.cdc.Marshal(&milestone)
 	if err != nil {
-		k.Logger(ctx).Error("Error marshalling milestone", "error", err)
+		k.Logger(ctx).Error("error marshalling milestone", "error", err)
 		return err
 	}
 
-	// store in key provided
-	store.Set(key, out)
+	if err = store.Set(key, out); err != nil {
+		k.Logger(ctx).Error("error setting milestone in the store", "error", err)
+		return err
+	}
 
 	return nil
 }
@@ -126,12 +128,15 @@ func (k *Keeper) GetMilestoneCount(ctx context.Context) uint64 {
 }
 
 // SetMilestoneBlockNumber set the block number when the latest milestone enter the handler
-func (k *Keeper) SetMilestoneBlockNumber(ctx context.Context, number int64) {
+func (k *Keeper) SetMilestoneBlockNumber(ctx context.Context, number int64) error {
 	store := k.storeService.OpenKVStore(ctx)
-	// convert block number to bytes
 	value := []byte(strconv.FormatInt(number, 10))
-	// set
-	store.Set(types.BlockNumberKey, value)
+	if err := store.Set(types.BlockNumberKey, value); err != nil {
+		k.Logger(ctx).Error("error setting milestone block number in the store", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // GetMilestoneBlockNumber returns the block number when the latest milestone enter the handler
@@ -196,19 +201,21 @@ func (k *Keeper) GetNoAckMilestone(ctx context.Context, milestoneId string) bool
 }
 
 // SetLastMilestoneTimeout set lastMilestone timeout time
-func (k *Keeper) SetLastMilestoneTimeout(ctx context.Context, timestamp uint64) {
+func (k *Keeper) SetLastMilestoneTimeout(ctx context.Context, timestamp uint64) error {
 	store := k.storeService.OpenKVStore(ctx)
 	// convert timestamp to bytes
 	value := []byte(strconv.FormatUint(timestamp, 10))
-	// set no-ack
-	store.Set(types.LastMilestoneTimeout, value)
+	if err := store.Set(types.LastMilestoneTimeout, value); err != nil {
+		k.Logger(ctx).Error("error setting last milestone timeout in the store", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // GetLastMilestoneTimeout returns lastMilestone timeout time
 func (k *Keeper) GetLastMilestoneTimeout(ctx context.Context) uint64 {
 	store := k.storeService.OpenKVStore(ctx)
-	//check if lastMilestoneTimeout key exists
-
 	lastMilestoneBytes, err := store.Get(types.LastMilestoneTimeout)
 
 	if err != nil {

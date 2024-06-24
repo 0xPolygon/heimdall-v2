@@ -10,7 +10,7 @@ import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
-// Milestone representes the milestone struct
+// Milestone represents the milestone struct
 message Milestone {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
@@ -34,7 +34,7 @@ message Milestone {
   uint64 time_stamp = 7 [ (amino.dont_omitempty) = true ];
 }
 
-// Params represents the milestone paramters
+// Params represents the milestone parameters
 message Params {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;

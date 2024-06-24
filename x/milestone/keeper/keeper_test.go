@@ -83,7 +83,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	milestoneGenesis := types.DefaultGenesisState()
 
-	keeper.InitGenesis(ctx, milestoneGenesisGenesis)
+	keeper.InitGenesis(ctx, milestoneGenesis)
 
 	milestoneTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)

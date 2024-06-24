@@ -10,7 +10,7 @@ import (
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {
-	ctx, _, queryClient := s.ctx, s.milestoneKeeper, s.queryClient
+	ctx, queryClient := s.ctx, s.queryClient
 	require := s.Require()
 
 	req := &types.QueryParamsRequest{}
@@ -68,8 +68,8 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	require.Error(err)
 	require.Nil(res)
 
-	errNew := keeper.AddMilestone(ctx, milestoneBlock)
-	require.NoError(errNew)
+	err = keeper.AddMilestone(ctx, milestoneBlock)
+	require.NoError(err)
 
 	res, err = queryClient.LatestMilestone(ctx, reqLatest)
 
@@ -155,7 +155,7 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
-	ctx, _, queryClient := s.ctx, s.milestoneKeeper, s.queryClient
+	ctx, queryClient := s.ctx, s.queryClient
 	require := s.Require()
 
 	stakingKeeper := s.stakeKeeper
@@ -168,6 +168,5 @@ func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
 	require.NotNil(res)
 	require.Nil(err)
 
-	//Check val
 	require.Equal(res.Proposers[0].Signer, validatorSet.Proposer.Signer)
 }
