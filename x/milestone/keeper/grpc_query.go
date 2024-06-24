@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// Querier is used as Keeper will have duplicate methods if used directly, and gRPC names take precedence over keeper
 type QueryServer struct {
 	*Keeper
 }
@@ -21,7 +20,7 @@ func NewQueryServer(keeper *Keeper) QueryServer {
 }
 
 // Params fetches the parameters of the milestone module
-func (q QueryServer) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (q QueryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
 	params, err := q.GetParams(ctx)
 	if err != nil {
@@ -64,7 +63,7 @@ func (q QueryServer) Milestone(ctx context.Context, req *types.QueryMilestoneReq
 	return &types.QueryMilestoneResponse{Milestone: *milestone}, nil
 }
 
-// NoAckMilestoneByID gives the result by ID number
+// LatestNoAckMilestone fetches the latest no-ack milestone
 func (q QueryServer) LatestNoAckMilestone(ctx context.Context, req *types.QueryLatestNoAckMilestoneRequest) (*types.QueryLatestNoAckMilestoneResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")

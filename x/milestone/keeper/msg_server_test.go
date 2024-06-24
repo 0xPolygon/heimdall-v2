@@ -109,7 +109,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		res, err := msgServer.Milestone(ctx, &msgMilestone)
 		require.NotNil(res)
 		require.NoError(err)
-		bufferedHeader, _ := keeper.GetLastMilestone(ctx)
+		bufferedHeader, err := keeper.GetLastMilestone(ctx)
+		require.NoError(err)
 		require.Empty(bufferedHeader, "Should not store state")
 		milestoneBlockNumber := keeper.GetMilestoneBlockNumber(ctx)
 		require.Equal(int64(3), milestoneBlockNumber, "Mismatch in milestoneBlockNumber")
@@ -140,7 +141,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	ctx = ctx.WithBlockHeight(int64(6))
 
-	s.Run("Milestone not in countinuity", func() {
+	s.Run("Milestone not in continuity", func() {
 
 		err := keeper.AddMilestone(ctx, header)
 		require.NoError(err)
@@ -151,7 +152,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		if err == nil {
 			// pass wrong start
-			start = start + lastMilestone.EndBlock + 2 //Start block is 2 more than last milestone's end block
+			start = start + lastMilestone.EndBlock + 2 // StartBlock is 2 more than last milestone's EndBlock
 		}
 
 		msgMilestone := types.NewMsgMilestoneBlock(
@@ -171,7 +172,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
 
-	s.Run("Milestone not in countinuity", func() {
+	s.Run("Milestone not in continuity", func() {
 
 		_, err = keeper.GetLastMilestone(ctx)
 		require.NoError(err)
@@ -179,7 +180,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		if err == nil {
 			// pass wrong start
-			start = start + lastMilestone.EndBlock - 2 //Start block is 2 less than last milestone's end block
+			start = start + lastMilestone.EndBlock - 2 // StartBlock is 2 less than last milestone's EndBlock
 		}
 
 		msgMilestone := types.NewMsgMilestoneBlock(
@@ -241,7 +242,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	ctx = ctx.WithBlockHeight(int64(6))
 
 	// Add the milestone in the db
-	keeper.AddMilestone(ctx, header)
+	err = keeper.AddMilestone(ctx, header)
+	require.NoError(err)
 
 	// send milestone to handler
 	res, err = msgServer.Milestone(ctx, &msgMilestone)
@@ -288,7 +290,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 		milestoneID,
 		timestamp,
 	)
-	_ = keeper.AddMilestone(ctx, milestone)
+	err := keeper.AddMilestone(ctx, milestone)
+	require.NoError(err)
 
 	newTime := milestone.TimeStamp + uint64(params.MilestoneBufferTime) - 1
 	ctx = ctx.WithBlockTime(time.Unix(0, int64(newTime)))

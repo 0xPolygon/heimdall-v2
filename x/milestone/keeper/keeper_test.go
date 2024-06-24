@@ -59,7 +59,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.contractCaller = &mocks.IContractCaller{}
 
-	stakekeeper := stakekeeper.NewKeeper(
+	sKeeper := stakekeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -73,13 +73,13 @@ func (s *KeeperTestSuite) SetupTest() {
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		*stakekeeper,
+		*sKeeper,
 		s.contractCaller,
 	)
 
 	s.ctx = ctx
 	s.milestoneKeeper = keeper
-	s.stakeKeeper = stakekeeper
+	s.stakeKeeper = sKeeper
 
 	milestoneGenesis := types.DefaultGenesisState()
 
@@ -189,7 +189,7 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 
 	keeper.SetNoAckMilestone(ctx, milestoneID)
 
-	val := keeper.GetNoAckMilestone(ctx, "0000")
+	val := keeper.GetNoAckMilestone(ctx, milestoneID)
 	require.True(val)
 
 	val = keeper.GetNoAckMilestone(ctx, "00001")
@@ -204,7 +204,7 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 	val = keeper.GetNoAckMilestone(ctx, "0001")
 	require.True(val)
 
-	val = keeper.GetNoAckMilestone(ctx, "0000")
+	val = keeper.GetNoAckMilestone(ctx, milestoneID)
 	require.True(val)
 }
 
@@ -240,7 +240,8 @@ func (s *KeeperTestSuite) TestGetMilestoneTimout() {
 	val := keeper.GetLastMilestoneTimeout(ctx)
 	require.Zero(val)
 
-	keeper.SetLastMilestoneTimeout(ctx, uint64(21))
+	err := keeper.SetLastMilestoneTimeout(ctx, uint64(21))
+	require.NoError(err)
 
 	val = keeper.GetLastMilestoneTimeout(ctx)
 	require.Equal(uint64(21), val)
