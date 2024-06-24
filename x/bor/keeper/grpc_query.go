@@ -5,54 +5,76 @@ import (
 	"strconv"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
-type Querier struct {
+type QueryServer struct {
 	Keeper
 }
 
-var _ types.QueryServer = Querier{}
+var _ types.QueryServer = QueryServer{}
 
-func NewQuerier(keeper Keeper) Querier {
-	return Querier{Keeper: keeper}
+func NewQueryServer(keeper Keeper) QueryServer {
+	return QueryServer{Keeper: keeper}
 }
 
-func (k Querier) LatestSpan(ctx context.Context, req *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
+func (q QueryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
 
-	var emptySpan *types.Span
+	spans, err := q.GetAllSpans(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	spans := k.GetAllSpans(ctx)
 	if len(spans) == 0 {
-		return &types.QueryLatestSpanResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), Span: emptySpan}, nil
+		return nil, nil
 	}
 
 	latestSpan := spans[len(spans)-1]
-	return &types.QueryLatestSpanResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), Span: latestSpan}, nil
+	return &types.QueryLatestSpanResponse{Span: latestSpan}, nil
 }
 
-func (k Querier) NextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+func (q QueryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	lastSpan, err := q.GetLastSpan(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if req.SpanId != lastSpan.Id+1 {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid span id")
+	}
+
+	if req.StartBlock != lastSpan.EndBlock+1 {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid start block")
+	}
+
+	if req.BorChainId != lastSpan.ChainId {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid chain id")
+	}
 
 	// fetch params
-	params, err := k.GetParams(ctx)
+	params, err := q.FetchParams(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	// fetch current validator set
-	validatorSet := k.sk.GetValidatorSet(ctx)
+	validatorSet := q.sk.GetValidatorSet(ctx)
 
 	// fetch next selected block producers
-	nextSpanSeed, err := k.GetNextSpanSeed(ctx)
+	nextSpanSeed, err := q.FetchNextSpanSeed(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	selectedProducers, err := k.SelectNextProducers(ctx, nextSpanSeed)
+	selectedProducers, err := q.SelectNextProducers(ctx, nextSpanSeed)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	// TODO HV2: uncomment when helper is merged
@@ -68,55 +90,73 @@ func (k Querier) NextSpan(ctx context.Context, req *types.QueryNextSpanRequest) 
 		ChainId:           req.BorChainId,
 	}
 
-	return &types.QueryNextSpanResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), Span: nextSpan}, nil
+	return &types.QueryNextSpanResponse{Span: nextSpan}, nil
 }
 
-func (k Querier) NextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+func (q QueryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
 
 	// fetch next span seed
-	nextSpanSeed, err := k.GetNextSpanSeed(ctx)
+	nextSpanSeed, err := q.FetchNextSpanSeed(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &types.QueryNextSpanSeedResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), Seed: nextSpanSeed.String()}, nil
+	return &types.QueryNextSpanSeedResponse{Seed: nextSpanSeed.String()}, nil
 }
 
-func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
+func (q QueryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 
-	params, err := k.GetParams(ctx)
+	params, err := q.FetchParams(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &types.QueryParamsResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), Params: &params}, nil
+	return &types.QueryParamsResponse{Params: &params}, nil
 }
 
-func (k Querier) SpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	spanId, err := strconv.Atoi(req.SpanId)
-	if err != nil {
-		return nil, err
+func (q QueryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	span, err := k.GetSpan(ctx, uint64(spanId))
+	spanId, err := strconv.Atoi(req.Id)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &types.QuerySpanByIdResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), Span: span}, nil
+	span, err := q.GetSpan(ctx, uint64(spanId))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	return &types.QuerySpanByIdResponse{Span: span}, nil
 }
 
-func (k Querier) SpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	spansList, err := k.GetSpanList(ctx, req.Page, req.Limit)
-	if err != nil {
-		return nil, err
+func (q QueryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	return &types.QuerySpanListResponse{Height: strconv.FormatInt(sdkCtx.BlockHeight(), 10), SpanList: spansList}, nil
+	// spansList, err := q.FetchSpanList(ctx, req.Page, req.Limit)
+	// if err != nil {
+	// 	return nil, status.Errorf(codes.Internal, err.Error())
+	// }
+
+	spans, pageRes, err := query.CollectionPaginate(
+		ctx,
+		q.spans,
+		req.Pagination,
+		func(_ uint64, _ *types.Span) ([]*types.Span, error) {
+			spans, err := q.GetAllSpans(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return spans, nil
+		},
+	)
+
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+	}
+	return &types.QuerySpanListResponse{SpanList: spans, Pagination: pageRes}, nil
 }

@@ -57,7 +57,7 @@ message MsgProposeSpanRequest {
 }
 ```
 
-Upon broadcasting the message, it is initially checked by `ProposeSpan` handler for basic sanity (verify whether the proposed span is in continuity, appropriate span duration, correct chain ID, etc.). Since this is a side-transaction, the validators then vote on the data present in `MsgProposeSpanRequest` on the basis of its correctness. All these checks are done in `SideHandleMsgSpan` (verifying `seed`, span continuity, etc) and if correct, the validator would vote `YES`.
+The msg is generally constructed and broadcasted by the validator's bridge process periodically, but the CLI can also be leveraged to do the same manually (see [below](#how-does-it-work)). Upon broadcasting the message, it is initially checked by `ProposeSpan` handler for basic sanity (verify whether the proposed span is in continuity, appropriate span duration, correct chain ID, etc.). Since this is a side-transaction, the validators then vote on the data present in `MsgProposeSpanRequest` on the basis of its correctness. All these checks are done in `SideHandleMsgSpan` (verifying `seed`, span continuity, etc) and if correct, the validator would vote `YES`.
 Finally, if there are 2/3+ `YES` votes, the `PostHandleMsgSpan` persists the proposed span in the state via the keeper :  
 
 ```
@@ -101,13 +101,7 @@ return k.AddNewSpan(ctx, newSpan)
 A validator can leverage the CLI to propose a span like so :
 
 ```
-heimdallcli tx bor propose-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
-```
-
-Or the REST server :
-
-```
-curl -X POST "localhost:1317/bor/propose-span?bor-chain-id=<BOR_CHAIN_ID>&start-block=<BOR_START_BLOCK>&span-id=<SPAN_ID>"
+heimdallcli tx bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
 ## Query commands
@@ -144,7 +138,7 @@ heimdallcli query bor next-span-seed
 ```
 
 ```
-heimdallcli query bor propose-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+heimdallcli query bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
 ### REST endpoints
@@ -154,7 +148,7 @@ curl localhost:1317/bor/span/<SPAN_ID>
 ```
 
 ```
-curl localhost:1317/bor/latest-span
+curl localhost:1317/bor/span/latest
 ```
 
 ```
@@ -162,9 +156,9 @@ curl localhost:1317/bor/params
 ```
 
 ```
-curl localhost:1317/bor/next-span-seed
+curl localhost:1317/bor/span/seed
 ```
 
 ```
-curl "localhost:1317/bor/prepare-next-span?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&chain_id="<BOR_CHAIN_ID>""
+curl "localhost:1317/bor/span/prepare?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&chain_id="<BOR_CHAIN_ID>""
 ```

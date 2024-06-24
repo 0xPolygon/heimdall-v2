@@ -5,6 +5,4 @@ const (
 	FlagBorChainId      = "bor-chain-id"
 	FlagStartBlock      = "start-block"
 	FlagSpanId          = "span-id"
-	FlagLimit           = "limit"
-	FlagPage            = "page"
 )

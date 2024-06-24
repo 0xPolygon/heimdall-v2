@@ -101,8 +101,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 func (suite *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 	require := suite.Require()
 
-	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).AnyTimes()
-	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).AnyTimes()
+	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).Times(1)
+	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).Times(1)
 	suite.stakeKeeper.EXPECT().GetValidatorFromValID(suite.ctx, gomock.Any()).AnyTimes()
 
 	borParams := types.DefaultParams()

@@ -1,58 +1,52 @@
 package keeper_test
 
 import (
-	"strconv"
-
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/golang/mock/gomock"
 )
 
-func (suite *KeeperTestSuite) TestLatestSpan() {
+func (suite *KeeperTestSuite) TestGetLatestSpan() {
 	require := suite.Require()
-
-	sdkCtx := sdk.UnwrapSDKContext(suite.ctx)
-	height := strconv.FormatInt(sdkCtx.BlockHeight(), 10)
-	var emptySpan *types.Span
-	res, err := suite.queryClient.LatestSpan(suite.ctx, &types.QueryLatestSpanRequest{})
-	expRes := &types.QueryLatestSpanResponse{Height: height, Span: emptySpan}
+	ctx := suite.ctx
+	res, err := suite.queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
 	require.NoError(err)
-	require.Equal(expRes, res)
+	require.Nil(res)
 
 	spans := suite.genTestSpans(5)
 	for _, span := range spans {
-		err := suite.borKeeper.AddNewSpan(suite.ctx, span)
+		err := suite.borKeeper.AddNewSpan(ctx, span)
 		require.NoError(err)
 	}
 
-	res, err = suite.queryClient.LatestSpan(suite.ctx, &types.QueryLatestSpanRequest{})
-	expRes = &types.QueryLatestSpanResponse{Height: height, Span: spans[len(spans)-1]}
+	res, err = suite.queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
+	expRes := &types.QueryLatestSpanResponse{Span: spans[len(spans)-1]}
 	require.NoError(err)
 	require.Equal(expRes, res)
 }
 
-func (suite *KeeperTestSuite) TestNextSpan() {
+func (suite *KeeperTestSuite) TestGetNextSpan() {
 	require := suite.Require()
+	ctx := suite.ctx
 
-	sdkCtx := sdk.UnwrapSDKContext(suite.ctx)
-	height := strconv.FormatInt(sdkCtx.BlockHeight(), 10)
-
-	valset, vals := suite.genTestValidators()
+	valSet, vals := suite.genTestValidators()
 	params := types.DefaultParams()
 	params.ProducerCount = 5
-	err := suite.borKeeper.SetParams(suite.ctx, params)
+	err := suite.borKeeper.SetParams(ctx, params)
+	require.NoError(err)
+
+	firstSpan := suite.genTestSpans(1)
+	err = suite.borKeeper.AddNewSpan(ctx, firstSpan[0])
 	require.NoError(err)
 
 	// TODO HV2: uncomment when contract caller is merged
-	// lastEthBlock, err := suite.borKeeper.GetLastEthBlock(suite.ctx)
+	// lastEthBlock, err := suite.borKeeper.GetLastEthBlock(ctx)
 	// require.NoError(err)
 	// suite.contractCaller.EXPECT().GetMainChainBlock(gomock.Any()).Return(lastEthBlock.Add(lastEthBlock, big.NewInt(1)), nil).AnyTimes()
 
-	suite.chainManagerKeeper.EXPECT().GetParams(suite.ctx).Return(chainmanagertypes.DefaultParams(), nil).AnyTimes()
-	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).Return(valset).AnyTimes()
-	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).Return(vals).AnyTimes()
-	suite.stakeKeeper.EXPECT().GetValidatorFromValID(suite.ctx, gomock.Any()).AnyTimes()
+	// suite.chainManagerKeeper.EXPECT().GetParams(ctx).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
+	suite.stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet).Times(1)
+	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
+	suite.stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).Times(1)
 
 	req := &types.QueryNextSpanRequest{
 		SpanId:     1,
@@ -60,16 +54,15 @@ func (suite *KeeperTestSuite) TestNextSpan() {
 		BorChainId: "test-chain-id",
 	}
 
-	res, err := suite.queryClient.NextSpan(suite.ctx, req)
+	res, err := suite.queryClient.GetNextSpan(ctx, req)
 	require.NoError(err)
 
 	expRes := &types.QueryNextSpanResponse{
-		Height: height,
 		Span: &types.Span{
 			Id:                req.SpanId,
 			StartBlock:        req.StartBlock,
 			EndBlock:          req.StartBlock + params.SpanDuration - 1,
-			ValidatorSet:      valset,
+			ValidatorSet:      valSet,
 			SelectedProducers: vals,
 			ChainId:           req.BorChainId,
 		},
@@ -78,74 +71,71 @@ func (suite *KeeperTestSuite) TestNextSpan() {
 	require.Equal(expRes, res)
 }
 
-func (suite *KeeperTestSuite) TestNextSpanSeed() {
+func (suite *KeeperTestSuite) TestGetNextSpanSeed() {
 	require := suite.Require()
+	ctx := suite.ctx
 
 	/*
 		TODO HV2: uncomment when contract caller is merged
-		lastEthBlock, err := suite.borKeeper.GetLastEthBlock(suite.ctx)
+		lastEthBlock, err := suite.borKeeper.GetLastEthBlock(ctx)
 		require.NoError(err)
 		incEthBlock := lastEthBlock.Add(lastEthBlock, big.NewInt(1))
 		suite.contractCaller.EXPECT().GetMainChainBlock(gomock.Any()).Return(incEthBlock), nil).AnyTimes()
 	*/
 
-	// sdkCtx := sdk.UnwrapSDKContext(suite.ctx)
-	// height := strconv.FormatInt(sdkCtx.BlockHeight(), 10)
+	// height := strconv.FormatInt(ctx.BlockHeight(), 10)
 
-	_, err := suite.queryClient.NextSpanSeed(suite.ctx, &types.QueryNextSpanSeedRequest{})
+	_, err := suite.queryClient.GetNextSpanSeed(ctx, &types.QueryNextSpanSeedRequest{})
 	require.NoError(err)
 
 	// TODO HV2: uncomment when contract caller is merged
 	// require.Equal(&types.QueryNextSpanSeedResponse{Height: height, Seed: incEthBlock.Hash().String()}, res)
 }
 
-func (suite *KeeperTestSuite) TestParams() {
+func (suite *KeeperTestSuite) TestGetParams() {
 	require := suite.Require()
-	sdkCtx := sdk.UnwrapSDKContext(suite.ctx)
-	height := strconv.FormatInt(sdkCtx.BlockHeight(), 10)
+	ctx := suite.ctx
 
 	params := types.DefaultParams()
-	err := suite.borKeeper.SetParams(suite.ctx, params)
+	err := suite.borKeeper.SetParams(ctx, params)
 	require.NoError(err)
 
-	res, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
+	res, err := suite.queryClient.GetParams(ctx, &types.QueryParamsRequest{})
 	require.NoError(err)
-	require.Equal(&types.QueryParamsResponse{Height: height, Params: &params}, res)
+	require.Equal(&types.QueryParamsResponse{Params: &params}, res)
 }
 
-func (suite *KeeperTestSuite) TestSpanById() {
+func (suite *KeeperTestSuite) TestGetSpanById() {
 	require := suite.Require()
-	sdkCtx := sdk.UnwrapSDKContext(suite.ctx)
-	height := strconv.FormatInt(sdkCtx.BlockHeight(), 10)
+	ctx := suite.ctx
 
 	spans := suite.genTestSpans(1)
-	err := suite.borKeeper.AddNewSpan(suite.ctx, spans[0])
+	err := suite.borKeeper.AddNewSpan(ctx, spans[0])
 	require.NoError(err)
 
-	req := &types.QuerySpanByIdRequest{SpanId: "1"}
-	res, err := suite.queryClient.SpanById(suite.ctx, req)
+	req := &types.QuerySpanByIdRequest{Id: "1"}
+	res, err := suite.queryClient.GetSpanById(ctx, req)
 	require.NoError(err)
-	require.Equal(&types.QuerySpanByIdResponse{Height: height, Span: spans[0]}, res)
+	require.Equal(&types.QuerySpanByIdResponse{Span: spans[0]}, res)
 }
 
-func (suite *KeeperTestSuite) TestSpanList() {
+func (suite *KeeperTestSuite) TestGetSpanList() {
 	require := suite.Require()
-	sdkCtx := sdk.UnwrapSDKContext(suite.ctx)
-	height := strconv.FormatInt(sdkCtx.BlockHeight(), 10)
+	ctx := suite.ctx
 
 	spans := suite.genTestSpans(5)
 	expSpans := make([]types.Span, 0, len(spans))
 	for _, span := range spans {
 		expSpans = append(expSpans, *span)
-		err := suite.borKeeper.AddNewSpan(suite.ctx, span)
+		err := suite.borKeeper.AddNewSpan(ctx, span)
 		require.NoError(err)
 	}
 
-	res, err := suite.queryClient.SpanList(suite.ctx, &types.QuerySpanListRequest{Page: 1, Limit: 5})
+	res, err := suite.queryClient.GetSpanList(ctx, &types.QuerySpanListRequest{Page: 1, Limit: 5})
 	require.NoError(err)
-	require.Equal(&types.QuerySpanListResponse{Height: height, SpanList: expSpans}, res)
+	require.Equal(&types.QuerySpanListResponse{SpanList: expSpans}, res)
 
-	res, err = suite.queryClient.SpanList(suite.ctx, &types.QuerySpanListRequest{Page: 1, Limit: 2})
+	res, err = suite.queryClient.GetSpanList(ctx, &types.QuerySpanListRequest{Page: 1, Limit: 2})
 	require.NoError(err)
-	require.Equal(&types.QuerySpanListResponse{Height: height, SpanList: expSpans[:2]}, res)
+	require.Equal(&types.QuerySpanListResponse{SpanList: expSpans[:2]}, res)
 }

@@ -118,5 +118,5 @@ help:
 
 mockgen:
 	mockgen -source=x/bor/types/expected_keepers.go -package testutil -destination x/bor/testutil/expected_keepers_mocks.go 
-	# TODO HV2: add mockgen for contract caller
+	# TODO HV2: add mockgen for contract caller and other modules
 

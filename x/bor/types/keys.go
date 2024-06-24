@@ -16,8 +16,8 @@ const (
 var (
 	// Keys for store prefixes
 
-	LastSpanIDKey         = []byte{0x35}                // Key to store last span start block
-	SpanPrefixKey         = []byte{0x36}                // Key to store span start block
-	LastProcessedEthBlock = []byte{0x38}                // key to store last processed eth block for seed
+	LastSpanIDKey         = collections.NewPrefix(0x35) // Key to store last span
+	SpanPrefixKey         = collections.NewPrefix(0x36) // Prefix key to store span
+	LastProcessedEthBlock = collections.NewPrefix(0x38) // key to store last processed eth block for seed
 	ParamsKey             = collections.NewPrefix(0x39) // ParamsKey is the key to store the params in the store
 )

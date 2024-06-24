@@ -53,6 +53,11 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 				proposer = clientCtx.GetFromAddress().String()
 			}
 
+			_, err = ac.StringToBytes(proposer)
+			if err != nil {
+				return fmt.Errorf("proposer address is invalid: %v", err)
+			}
+
 			// get start block
 			startBlockStr := viper.GetString(FlagStartBlock)
 			if startBlockStr == "" {
@@ -67,7 +72,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			// get span id
 			spanIDStr := viper.GetString(FlagSpanId)
 			if spanIDStr == "" {
-				return fmt.Errorf("span Id cannot be empty")
+				return fmt.Errorf("span id cannot be empty")
 			}
 
 			spanID, err := strconv.ParseUint(spanIDStr, 10, 64)
@@ -96,7 +101,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			spanDuration := params.SpanDuration
 
 			// fetch next span seed
-			res, _, err = clientCtx.QueryWithData(fmt.Sprintf("custom/%s/%s", types.ModuleName, types.QueryNextSpanSeed), nil)
+			res, _, err = clientCtx.QueryWithData(fmt.Sprintf("custom/%s/%s/%s", types.ModuleName, types.QuerySpan, types.QuerySpanSeed), nil)
 			if err != nil {
 				return err
 			}
@@ -122,11 +127,11 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 	cmd.Flags().String(FlagStartBlock, "", "--start-block=<start-block-number>")
 
 	if err := cmd.MarkFlagRequired(FlagBorChainId); err != nil {
-		fmt.Errorf(fmt.Sprintf("PostSendProposeSpanTx | MarkFlagRequired | FlagBorChainId Error: %v", err))
+		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagBorChainId Error: %v", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagStartBlock); err != nil {
-		fmt.Errorf("PostSendProposeSpanTx | MarkFlagRequired | FlagStartBlock Error: %v", err)
+		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagStartBlock Error: %v", err)
 	}
 
 	return cmd

@@ -74,7 +74,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	types.RegisterQueryServer(queryHelper, keeper.Querier{Keeper: suite.borKeeper})
+	types.RegisterQueryServer(queryHelper, keeper.QueryServer{Keeper: suite.borKeeper})
 	queryClient := types.NewQueryClient(queryHelper)
 
 	suite.queryClient = queryClient
@@ -187,11 +187,12 @@ func (suite *KeeperTestSuite) TestGetAllSpans() {
 		require.NoError(err)
 	}
 
-	resSpans := suite.borKeeper.GetAllSpans(suite.ctx)
+	resSpans, err := suite.borKeeper.GetAllSpans(suite.ctx)
+	require.NoError(err)
 	require.Equal(spans, resSpans)
 }
 
-func (suite *KeeperTestSuite) TestGetSpanList() {
+func (suite *KeeperTestSuite) TestFetchSpanList() {
 	require := suite.Require()
 	spans := suite.genTestSpans(30)
 
@@ -224,7 +225,7 @@ func (suite *KeeperTestSuite) TestGetSpanList() {
 
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			resSpanLists, err := suite.borKeeper.GetSpanList(suite.ctx, tc.page, tc.limit)
+			resSpanLists, err := suite.borKeeper.FetchSpanList(suite.ctx, tc.page, tc.limit)
 			require.NoError(err)
 
 			require.Equal(tc.expSpanLists, resSpanLists)
@@ -235,9 +236,9 @@ func (suite *KeeperTestSuite) TestGetSpanList() {
 func (suite *KeeperTestSuite) TestFreezeSet() {
 	require := suite.Require()
 
-	valset, vals := suite.genTestValidators()
-	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).Return(vals).AnyTimes()
-	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).Return(valset).AnyTimes()
+	valSet, vals := suite.genTestValidators()
+	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).Return(vals).Times(1)
+	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).Return(valSet).Times(1)
 	suite.stakeKeeper.EXPECT().GetValidatorFromValID(suite.ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (types.Validator, bool) {
 		for _, v := range vals {
 			if v.Id == valID {
@@ -245,7 +246,7 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 			}
 		}
 		return types.Validator{}, false
-	}).AnyTimes()
+	}).Times(len(vals))
 
 	params := types.DefaultParams()
 
@@ -266,7 +267,7 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 			startBlock:      1,
 			endBlock:        100,
 			seed:            common.HexToHash("testseed1"),
-			expValSet:       valset,
+			expValSet:       valSet,
 			expLastEthBlock: big.NewInt(0),
 		},
 		{
@@ -276,7 +277,7 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 			startBlock:      101,
 			endBlock:        200,
 			seed:            common.HexToHash("testseed2"),
-			expValSet:       valset,
+			expValSet:       valSet,
 			expLastEthBlock: big.NewInt(1),
 		},
 	}
@@ -389,25 +390,25 @@ func (suite *KeeperTestSuite) TestIncrementLastEthBlock() {
 }
 
 // TODO HV2: blocked by contract caller
-func (suite *KeeperTestSuite) TestGetNextSpanSeed() {}
+func (suite *KeeperTestSuite) TestFetchNextSpanSeed() {}
 
-func (s *KeeperTestSuite) TestParamsGetterSetter() {
-	ctx, keeper := s.ctx, s.borKeeper
-	require := s.Require()
+func (suite *KeeperTestSuite) TestParamsGetterSetter() {
+	ctx, borKeeper := suite.ctx, suite.borKeeper
+	require := suite.Require()
 
 	expParams := types.DefaultParams()
 	expParams.ProducerCount = 66
 	expParams.SpanDuration = 100
 	expParams.SprintDuration = 64
-	require.NoError(keeper.SetParams(ctx, expParams))
-	resParams, err := keeper.GetParams(ctx)
+	require.NoError(borKeeper.SetParams(ctx, expParams))
+	resParams, err := borKeeper.FetchParams(ctx)
 	require.NoError(err)
 	require.True(expParams.Equal(resParams))
 }
 
 func (suite *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
 	suite.T().Helper()
-	valset, vals := suite.genTestValidators()
+	valSet, vals := suite.genTestValidators()
 
 	spans := make([]*types.Span, 0, num)
 	startBlock, endBlock := uint64(0), uint64(0)
@@ -419,7 +420,7 @@ func (suite *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
 			Id:                i + 1,
 			StartBlock:        startBlock,
 			EndBlock:          endBlock,
-			ValidatorSet:      valset,
+			ValidatorSet:      valSet,
 			SelectedProducers: vals,
 			ChainId:           "test-chain",
 		}
@@ -436,7 +437,7 @@ func (suite *KeeperTestSuite) genTestValidators() (types.ValidatorSet, []types.V
 	suite.Require().NoError(err)
 	suite.Require().Equal(5, len(validators), "Total validators should be 5")
 
-	valset := types.ValidatorSet{
+	valSet := types.ValidatorSet{
 		Validators: validators,
 	}
 
@@ -445,6 +446,6 @@ func (suite *KeeperTestSuite) genTestValidators() (types.ValidatorSet, []types.V
 		vals = append(vals, *v)
 	}
 
-	return valset, vals
+	return valSet, vals
 
 }

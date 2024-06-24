@@ -29,7 +29,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgProposeSpan represents a message to propose a span.
+// MsgProposeSpanRequest represents a message to propose a span.
 type MsgProposeSpanRequest struct {
 	SpanId     uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
 	Proposer   string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`

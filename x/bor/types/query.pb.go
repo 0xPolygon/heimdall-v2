@@ -6,7 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	_ "github.com/cosmos/cosmos-sdk/types/query"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
@@ -33,7 +33,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // QuerySpanByIdRequest defines the gRPC request structure for querying
 // a bor span by span id.
 type QuerySpanByIdRequest struct {
-	SpanId string `protobuf:"bytes,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
 func (m *QuerySpanByIdRequest) Reset()         { *m = QuerySpanByIdRequest{} }
@@ -69,9 +69,9 @@ func (m *QuerySpanByIdRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QuerySpanByIdRequest proto.InternalMessageInfo
 
-func (m *QuerySpanByIdRequest) GetSpanId() string {
+func (m *QuerySpanByIdRequest) GetId() string {
 	if m != nil {
-		return m.SpanId
+		return m.Id
 	}
 	return ""
 }
@@ -79,8 +79,7 @@ func (m *QuerySpanByIdRequest) GetSpanId() string {
 // QuerySpanByIdResponse defines the gRPC response structure for querying
 // a bor span by span id.
 type QuerySpanByIdResponse struct {
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Span   *Span  `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
+	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
 func (m *QuerySpanByIdResponse) Reset()         { *m = QuerySpanByIdResponse{} }
@@ -116,13 +115,6 @@ func (m *QuerySpanByIdResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QuerySpanByIdResponse proto.InternalMessageInfo
 
-func (m *QuerySpanByIdResponse) GetHeight() string {
-	if m != nil {
-		return m.Height
-	}
-	return ""
-}
-
 func (m *QuerySpanByIdResponse) GetSpan() *Span {
 	if m != nil {
 		return m.Span
@@ -133,8 +125,9 @@ func (m *QuerySpanByIdResponse) GetSpan() *Span {
 // QuerySpanListRequest defines the gRPC request structure for querying
 // a list of bor spans.
 type QuerySpanListRequest struct {
-	Page  uint64 `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
-	Limit uint64 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
+	// uint64 page = 1;
+	// uint64 limit = 2;
+	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QuerySpanListRequest) Reset()         { *m = QuerySpanListRequest{} }
@@ -170,25 +163,18 @@ func (m *QuerySpanListRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QuerySpanListRequest proto.InternalMessageInfo
 
-func (m *QuerySpanListRequest) GetPage() uint64 {
+func (m *QuerySpanListRequest) GetPagination() *query.PageRequest {
 	if m != nil {
-		return m.Page
+		return m.Pagination
 	}
-	return 0
-}
-
-func (m *QuerySpanListRequest) GetLimit() uint64 {
-	if m != nil {
-		return m.Limit
-	}
-	return 0
+	return nil
 }
 
 // QuerySpanListResponse defines the gRPC response structure for querying
 // a list of bor spans.
 type QuerySpanListResponse struct {
-	Height   string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	SpanList []Span `protobuf:"bytes,2,rep,name=span_list,json=spanList,proto3" json:"span_list"`
+	SpanList   []Span              `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list"`
+	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (m *QuerySpanListResponse) Reset()         { *m = QuerySpanListResponse{} }
@@ -224,16 +210,16 @@ func (m *QuerySpanListResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QuerySpanListResponse proto.InternalMessageInfo
 
-func (m *QuerySpanListResponse) GetHeight() string {
-	if m != nil {
-		return m.Height
-	}
-	return ""
-}
-
 func (m *QuerySpanListResponse) GetSpanList() []Span {
 	if m != nil {
 		return m.SpanList
+	}
+	return nil
+}
+
+func (m *QuerySpanListResponse) GetPagination() *query.PageResponse {
+	if m != nil {
+		return m.Pagination
 	}
 	return nil
 }
@@ -279,8 +265,7 @@ var xxx_messageInfo_QueryLatestSpanRequest proto.InternalMessageInfo
 // QueryLatestSpanResponse defines the gRPC response structure for querying
 // the latest bor span.
 type QueryLatestSpanResponse struct {
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Span   *Span  `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
+	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
 func (m *QueryLatestSpanResponse) Reset()         { *m = QueryLatestSpanResponse{} }
@@ -315,13 +300,6 @@ func (m *QueryLatestSpanResponse) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_QueryLatestSpanResponse proto.InternalMessageInfo
-
-func (m *QueryLatestSpanResponse) GetHeight() string {
-	if m != nil {
-		return m.Height
-	}
-	return ""
-}
 
 func (m *QueryLatestSpanResponse) GetSpan() *Span {
 	if m != nil {
@@ -371,8 +349,7 @@ var xxx_messageInfo_QueryNextSpanSeedRequest proto.InternalMessageInfo
 // QueryNextSpanSeedResponse defines the gRPC response structure for querying
 // the next bor span seed.
 type QueryNextSpanSeedResponse struct {
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Seed   string `protobuf:"bytes,2,opt,name=seed,proto3" json:"seed,omitempty"`
+	Seed string `protobuf:"bytes,1,opt,name=seed,proto3" json:"seed,omitempty"`
 }
 
 func (m *QueryNextSpanSeedResponse) Reset()         { *m = QueryNextSpanSeedResponse{} }
@@ -408,13 +385,6 @@ func (m *QueryNextSpanSeedResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryNextSpanSeedResponse proto.InternalMessageInfo
 
-func (m *QueryNextSpanSeedResponse) GetHeight() string {
-	if m != nil {
-		return m.Height
-	}
-	return ""
-}
-
 func (m *QueryNextSpanSeedResponse) GetSeed() string {
 	if m != nil {
 		return m.Seed
@@ -422,7 +392,7 @@ func (m *QueryNextSpanSeedResponse) GetSeed() string {
 	return ""
 }
 
-// QueryPrepareNextSpanRequest defines the gRPC request structure for querying
+// QueryNextSpanRequest defines the gRPC request structure for querying
 // the next bor span.
 type QueryNextSpanRequest struct {
 	SpanId     uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
@@ -484,11 +454,10 @@ func (m *QueryNextSpanRequest) GetBorChainId() string {
 	return ""
 }
 
-// QueryPrepareNextSpanResponse defines the gRPC response structure for querying
+// QueryNextSpanResponse defines the gRPC response structure for querying
 // the next bor span.
 type QueryNextSpanResponse struct {
-	Height string `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Span   *Span  `protobuf:"bytes,2,opt,name=span,proto3" json:"span,omitempty"`
+	Span *Span `protobuf:"bytes,1,opt,name=span,proto3" json:"span,omitempty"`
 }
 
 func (m *QueryNextSpanResponse) Reset()         { *m = QueryNextSpanResponse{} }
@@ -523,13 +492,6 @@ func (m *QueryNextSpanResponse) XXX_DiscardUnknown() {
 }
 
 var xxx_messageInfo_QueryNextSpanResponse proto.InternalMessageInfo
-
-func (m *QueryNextSpanResponse) GetHeight() string {
-	if m != nil {
-		return m.Height
-	}
-	return ""
-}
 
 func (m *QueryNextSpanResponse) GetSpan() *Span {
 	if m != nil {
@@ -579,8 +541,7 @@ var xxx_messageInfo_QueryParamsRequest proto.InternalMessageInfo
 // QueryParamsResponse defines the gRPC response structure for querying
 // the bor module parameters.
 type QueryParamsResponse struct {
-	Height string  `protobuf:"bytes,1,opt,name=height,proto3" json:"height,omitempty"`
-	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	Params *Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (m *QueryParamsResponse) Reset()         { *m = QueryParamsResponse{} }
@@ -616,13 +577,6 @@ func (m *QueryParamsResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryParamsResponse proto.InternalMessageInfo
 
-func (m *QueryParamsResponse) GetHeight() string {
-	if m != nil {
-		return m.Height
-	}
-	return ""
-}
-
 func (m *QueryParamsResponse) GetParams() *Params {
 	if m != nil {
 		return m.Params
@@ -648,51 +602,53 @@ func init() {
 func init() { proto.RegisterFile("heimdallv2/bor/query.proto", fileDescriptor_75b3050b896ec07f) }
 
 var fileDescriptor_75b3050b896ec07f = []byte{
-	// 700 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x95, 0xcf, 0x6b, 0xd4, 0x40,
-	0x14, 0xc7, 0x37, 0x6d, 0xba, 0xb6, 0xaf, 0xc5, 0xc3, 0xb8, 0x6e, 0xb7, 0xa9, 0xa6, 0x6b, 0xaa,
-	0x75, 0xfd, 0xb1, 0x89, 0xae, 0x07, 0xaf, 0xb2, 0x82, 0x52, 0x28, 0x52, 0xd3, 0x93, 0x8a, 0x94,
-	0x64, 0x77, 0xc8, 0x06, 0xb3, 0x99, 0x34, 0x33, 0x5d, 0x76, 0x11, 0x11, 0x44, 0xd0, 0x63, 0xc1,
-	0xff, 0x43, 0xfc, 0x33, 0x7a, 0x2c, 0x78, 0xf1, 0x24, 0xd2, 0x0a, 0xfe, 0x1b, 0x32, 0x93, 0xa4,
-	0x49, 0xd3, 0x6c, 0xb7, 0x87, 0xde, 0x32, 0xf3, 0xde, 0xfb, 0xbe, 0xcf, 0xcc, 0x9b, 0x2f, 0x01,
-	0xa5, 0x87, 0xdd, 0x7e, 0xd7, 0xf2, 0xbc, 0x41, 0xcb, 0xb0, 0x49, 0x68, 0xec, 0xec, 0xe2, 0x70,
-	0xa4, 0x07, 0x21, 0x61, 0x04, 0x5d, 0x4e, 0x63, 0xba, 0x4d, 0x42, 0xa5, 0xe2, 0x10, 0x87, 0x88,
-	0x90, 0xc1, 0xbf, 0xa2, 0x2c, 0x65, 0xb9, 0x43, 0x68, 0x9f, 0xd0, 0xa8, 0xd2, 0x18, 0x3c, 0xcc,
-	0x4a, 0x28, 0xd7, 0x1c, 0x42, 0x1c, 0x0f, 0x1b, 0x56, 0xe0, 0x1a, 0x96, 0xef, 0x13, 0x66, 0x31,
-	0x97, 0xf8, 0x34, 0x8e, 0xd6, 0x72, 0xcd, 0x6d, 0x12, 0x46, 0x11, 0xcd, 0x80, 0xca, 0x4b, 0x2e,
-	0xb3, 0x15, 0x58, 0x7e, 0x7b, 0xb4, 0xde, 0x35, 0xf1, 0xce, 0x2e, 0xa6, 0x0c, 0x2d, 0xc2, 0x25,
-	0x1a, 0x58, 0xfe, 0xb6, 0xdb, 0xad, 0x49, 0x75, 0xa9, 0x31, 0x67, 0x96, 0xf9, 0x72, 0xbd, 0xab,
-	0xbd, 0x82, 0xab, 0xb9, 0x02, 0x1a, 0x10, 0x9f, 0x62, 0x54, 0x85, 0x72, 0x0f, 0xbb, 0x4e, 0x8f,
-	0x25, 0x05, 0xd1, 0x0a, 0x35, 0x40, 0xe6, 0xa5, 0xb5, 0xa9, 0xba, 0xd4, 0x98, 0x6f, 0x55, 0xf4,
-	0x93, 0x67, 0xd5, 0xb9, 0x8e, 0x29, 0x32, 0xb4, 0x27, 0x19, 0x96, 0x0d, 0x97, 0xb2, 0x84, 0x05,
-	0x81, 0x1c, 0x58, 0x0e, 0x16, 0xba, 0xb2, 0x29, 0xbe, 0x51, 0x05, 0x66, 0x3c, 0xb7, 0xef, 0x32,
-	0x21, 0x2b, 0x9b, 0xd1, 0x42, 0xeb, 0x65, 0xe0, 0x22, 0x85, 0x09, 0x70, 0x8f, 0x61, 0x4e, 0x1c,
-	0xd3, 0x73, 0x29, 0x97, 0x9a, 0x1e, 0x47, 0xd8, 0x96, 0xf7, 0x7f, 0xaf, 0x94, 0xcc, 0x59, 0x1a,
-	0x0b, 0x6b, 0x35, 0xa8, 0x8a, 0x4e, 0x1b, 0x16, 0xc3, 0x94, 0x89, 0x43, 0x44, 0xb4, 0xda, 0x1b,
-	0x58, 0x3c, 0x15, 0xb9, 0xb0, 0x2b, 0x52, 0xa0, 0x26, 0xc4, 0x5f, 0xe0, 0xa1, 0x90, 0xde, 0xc2,
-	0x38, 0x19, 0x99, 0xf6, 0x1c, 0x96, 0x0a, 0x62, 0x13, 0x5a, 0x23, 0x90, 0x29, 0xc6, 0x5d, 0xd1,
-	0x7a, 0xce, 0x14, 0xdf, 0x5a, 0x18, 0xcf, 0x21, 0x11, 0x1a, 0xf3, 0x26, 0xe4, 0xe4, 0x4d, 0xa0,
-	0x15, 0x98, 0xa7, 0xcc, 0x0a, 0xd9, 0xb6, 0xed, 0x91, 0xce, 0xbb, 0x78, 0x24, 0x20, 0xb6, 0xda,
-	0x7c, 0x07, 0xd5, 0x61, 0xc1, 0x26, 0xe1, 0x76, 0xa7, 0x67, 0xb9, 0xa2, 0x7c, 0x5a, 0x74, 0x03,
-	0x9b, 0x84, 0x4f, 0xf9, 0x56, 0xe6, 0x59, 0xa5, 0x3d, 0x2f, 0xec, 0xce, 0x2a, 0x80, 0x84, 0xf4,
-	0xa6, 0x15, 0x5a, 0x7d, 0x9a, 0xdc, 0xd6, 0x5b, 0xb8, 0x72, 0x62, 0x77, 0x42, 0x3b, 0x1d, 0xca,
-	0x81, 0xc8, 0x8c, 0x1b, 0x56, 0xf3, 0x0d, 0x63, 0x9d, 0x38, 0xab, 0xf5, 0xbd, 0x0c, 0x33, 0x42,
-	0x1f, 0x7d, 0x96, 0x60, 0x36, 0x31, 0x0b, 0xba, 0x99, 0x2f, 0x2b, 0x32, 0x9f, 0x72, 0x6b, 0x42,
-	0x56, 0xc4, 0xaa, 0xdd, 0xfb, 0xfa, 0xef, 0xc7, 0x5d, 0xe9, 0xd3, 0xcf, 0xbf, 0xdf, 0xa6, 0xea,
-	0x48, 0x35, 0x72, 0x1e, 0xe7, 0x67, 0x37, 0xde, 0xc7, 0x03, 0xfb, 0x80, 0x3e, 0x46, 0x14, 0xfc,
-	0xf1, 0x9e, 0x41, 0x91, 0xb1, 0xdd, 0x19, 0x14, 0x59, 0x6b, 0x69, 0x6b, 0x29, 0xc5, 0x32, 0x5a,
-	0x2a, 0xa4, 0xe0, 0xee, 0x42, 0x5f, 0x24, 0x80, 0xd4, 0x13, 0x68, 0xad, 0x50, 0xfd, 0x94, 0x9d,
-	0x94, 0xdb, 0x13, 0xf3, 0x62, 0x8e, 0x46, 0xca, 0x71, 0x1d, 0x2d, 0xe7, 0x39, 0x3c, 0x51, 0xd0,
-	0xe4, 0x38, 0x68, 0x4f, 0x82, 0x85, 0xac, 0x49, 0x50, 0xa3, 0xb0, 0x47, 0x81, 0xc7, 0x94, 0x3b,
-	0xe7, 0xc8, 0x3c, 0xd7, 0x74, 0x7c, 0x3c, 0x8c, 0x68, 0x9a, 0xdc, 0x72, 0xfc, 0x72, 0x66, 0x13,
-	0x95, 0x31, 0xe3, 0xc9, 0xb9, 0x71, 0xcc, 0x78, 0xf2, 0xfe, 0xd1, 0xf4, 0x14, 0x63, 0x15, 0xdd,
-	0xc8, 0x63, 0x04, 0x21, 0x0e, 0xac, 0x10, 0x37, 0x8f, 0x71, 0xd0, 0x00, 0xca, 0xd1, 0x53, 0x46,
-	0x5a, 0x61, 0x83, 0x13, 0x2e, 0x52, 0x56, 0xcf, 0xcc, 0x89, 0x11, 0x56, 0x53, 0x84, 0x1a, 0xaa,
-	0x9e, 0x42, 0x10, 0xc9, 0xed, 0x67, 0xfb, 0x87, 0xaa, 0x74, 0x70, 0xa8, 0x4a, 0x7f, 0x0e, 0x55,
-	0x69, 0xef, 0x48, 0x2d, 0x1d, 0x1c, 0xa9, 0xa5, 0x5f, 0x47, 0x6a, 0xe9, 0xf5, 0x7d, 0xc7, 0x65,
-	0xbd, 0x5d, 0x5b, 0xef, 0x90, 0xbe, 0xf1, 0x60, 0xb8, 0x49, 0xbc, 0x91, 0x43, 0xfc, 0x63, 0x95,
-	0xe6, 0xa0, 0x65, 0x0c, 0x85, 0x10, 0x1b, 0x05, 0x98, 0xda, 0x65, 0xf1, 0x5f, 0x7b, 0xf4, 0x3f,
-	0x00, 0x00, 0xff, 0xff, 0x91, 0x5d, 0x2d, 0xc2, 0x70, 0x07, 0x00, 0x00,
+	// 721 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0x5f, 0x4f, 0xd3, 0x5e,
+	0x18, 0x5e, 0xc7, 0x7e, 0xfb, 0xc9, 0x8b, 0x62, 0x72, 0x9c, 0x30, 0x0a, 0x16, 0x52, 0x74, 0x0c,
+	0xa2, 0xad, 0xcc, 0x0b, 0xaf, 0x1d, 0x91, 0x85, 0x84, 0x18, 0x2c, 0x77, 0x5e, 0x48, 0x4e, 0xb7,
+	0x93, 0xd2, 0xb8, 0xf5, 0x94, 0x9e, 0x03, 0x61, 0x31, 0xde, 0x90, 0x98, 0x18, 0x2f, 0x8c, 0x89,
+	0x57, 0x7e, 0x0b, 0xe3, 0xa7, 0xe0, 0x92, 0xc4, 0x1b, 0xaf, 0x8c, 0x01, 0x13, 0xbf, 0x86, 0xe9,
+	0xe9, 0x29, 0xed, 0x4a, 0x07, 0xe3, 0xae, 0x3b, 0xef, 0xf3, 0x3e, 0xef, 0xf3, 0xfe, 0x79, 0x32,
+	0x50, 0x77, 0x89, 0xdb, 0xeb, 0xe0, 0x6e, 0xf7, 0xa0, 0x61, 0xda, 0x34, 0x30, 0xf7, 0xf6, 0x49,
+	0xd0, 0x37, 0xfc, 0x80, 0x72, 0x8a, 0x26, 0x93, 0x98, 0x61, 0xd3, 0x40, 0xad, 0x38, 0xd4, 0xa1,
+	0x22, 0x64, 0x86, 0x5f, 0x11, 0x4a, 0x9d, 0x6d, 0x53, 0xd6, 0xa3, 0x2c, 0xca, 0x34, 0x0f, 0x56,
+	0xd3, 0x14, 0xea, 0x8a, 0x0c, 0xda, 0x98, 0x91, 0x73, 0x84, 0x4d, 0x38, 0x5e, 0x35, 0x7d, 0xec,
+	0xb8, 0x1e, 0xe6, 0x2e, 0xf5, 0x24, 0x76, 0xce, 0xa1, 0xd4, 0xe9, 0x12, 0x13, 0xfb, 0xae, 0x89,
+	0x3d, 0x8f, 0x72, 0x11, 0x64, 0x32, 0x5a, 0xcd, 0x08, 0xb5, 0x69, 0x10, 0x45, 0xf4, 0x1a, 0x54,
+	0x5e, 0x86, 0xcc, 0xdb, 0x3e, 0xf6, 0x9a, 0xfd, 0x8d, 0x8e, 0x45, 0xf6, 0xf6, 0x09, 0xe3, 0x68,
+	0x12, 0x8a, 0x6e, 0xa7, 0xaa, 0x2c, 0x28, 0xf5, 0x71, 0xab, 0xe8, 0x76, 0xf4, 0x67, 0x70, 0x37,
+	0x83, 0x63, 0x3e, 0xf5, 0x18, 0x41, 0x75, 0x28, 0x31, 0x1f, 0x7b, 0x02, 0x3a, 0xd1, 0xa8, 0x18,
+	0x83, 0x6d, 0x1b, 0x21, 0xde, 0x12, 0x08, 0xfd, 0x75, 0xaa, 0xd4, 0xa6, 0xcb, 0x78, 0x5c, 0x6a,
+	0x1d, 0x20, 0x69, 0x47, 0xf2, 0xd4, 0x8c, 0xa8, 0x77, 0x23, 0xec, 0xdd, 0x88, 0x86, 0x22, 0x7b,
+	0x37, 0xb6, 0xb0, 0x43, 0x64, 0xae, 0x95, 0xca, 0xd4, 0xbf, 0x2a, 0x29, 0x8d, 0x51, 0x01, 0xa9,
+	0xf1, 0x29, 0x8c, 0x87, 0x0a, 0x76, 0xba, 0x2e, 0xe3, 0x55, 0x65, 0x61, 0x6c, 0x98, 0xd0, 0x66,
+	0xe9, 0xf8, 0xd7, 0x7c, 0xc1, 0xba, 0xc1, 0x24, 0x01, 0x6a, 0x0d, 0x48, 0x2b, 0x0a, 0x69, 0x4b,
+	0x57, 0x4a, 0x8b, 0xaa, 0x0e, 0x68, 0xab, 0xc2, 0x94, 0x90, 0xb6, 0x89, 0x39, 0x61, 0x5c, 0x0c,
+	0x25, 0xea, 0x40, 0x5f, 0x83, 0xe9, 0x0b, 0x91, 0x6b, 0x8f, 0x56, 0x85, 0xaa, 0x20, 0x79, 0x41,
+	0x0e, 0x05, 0xc5, 0x36, 0x21, 0xf1, 0x26, 0x75, 0x13, 0x66, 0x72, 0x62, 0xb2, 0x04, 0x82, 0x12,
+	0x23, 0x24, 0x5e, 0xb4, 0xf8, 0xd6, 0x03, 0xb9, 0xa7, 0x38, 0x21, 0xde, 0xd3, 0x34, 0xfc, 0x2f,
+	0xa6, 0x28, 0xef, 0xa2, 0x64, 0x95, 0xc3, 0x9f, 0x1b, 0x1d, 0x34, 0x0f, 0x13, 0x8c, 0xe3, 0x80,
+	0xef, 0xd8, 0x5d, 0xda, 0x7e, 0x23, 0xc6, 0x54, 0xb2, 0x40, 0x3c, 0x35, 0xc3, 0x17, 0xb4, 0x00,
+	0x37, 0x6d, 0x1a, 0xec, 0xb4, 0x77, 0xb1, 0x2b, 0xd2, 0xc7, 0x44, 0x35, 0xb0, 0x69, 0xb0, 0x16,
+	0x3e, 0x6d, 0x24, 0xe7, 0x95, 0xd4, 0xbc, 0xf6, 0x0c, 0x2a, 0x80, 0x04, 0xc5, 0x16, 0x0e, 0x70,
+	0x8f, 0xc5, 0xdd, 0x3f, 0x87, 0x3b, 0x03, 0xaf, 0x92, 0xd6, 0x80, 0xb2, 0x2f, 0x5e, 0x24, 0xf1,
+	0x54, 0x96, 0x58, 0xe2, 0x25, 0xaa, 0xf1, 0xbd, 0x0c, 0xff, 0x09, 0x1e, 0x74, 0xa4, 0xc0, 0x44,
+	0x8b, 0xf0, 0xd8, 0x07, 0xe8, 0x7e, 0x36, 0x33, 0xcf, 0x4e, 0xea, 0x83, 0x2b, 0x50, 0x91, 0x2c,
+	0xbd, 0xf6, 0xe1, 0xef, 0xb7, 0x15, 0xe5, 0xe8, 0xc7, 0x9f, 0x2f, 0xc5, 0x59, 0x34, 0x63, 0x66,
+	0x5c, 0x1b, 0xb6, 0x69, 0xbe, 0x75, 0x3b, 0xef, 0xd2, 0x22, 0xc4, 0x9d, 0x0e, 0x17, 0x91, 0x32,
+	0xda, 0x25, 0x22, 0xd2, 0x6e, 0x19, 0x45, 0x44, 0x68, 0x24, 0xf4, 0x51, 0x81, 0x5b, 0x2d, 0xc2,
+	0x93, 0xc3, 0x45, 0xb5, 0xdc, 0x02, 0x17, 0x6e, 0x5e, 0x5d, 0xba, 0x12, 0x27, 0xa5, 0xd4, 0x13,
+	0x29, 0xf7, 0xd0, 0x6c, 0xbe, 0x14, 0x91, 0x85, 0x3e, 0x29, 0x70, 0xbb, 0x45, 0x78, 0xfa, 0xc8,
+	0x51, 0x3d, 0xb7, 0x4c, 0x8e, 0x47, 0xd4, 0xe5, 0x11, 0x90, 0xa3, 0x4f, 0x27, 0x74, 0x11, 0x7a,
+	0x1f, 0xad, 0x28, 0xe6, 0x18, 0xb2, 0xa2, 0x8c, 0xc7, 0x86, 0xac, 0x28, 0xeb, 0x0a, 0x7d, 0x39,
+	0x11, 0xa1, 0xa1, 0xb9, 0x5c, 0x11, 0x7e, 0x40, 0x7c, 0x1c, 0x10, 0xd4, 0x87, 0xf1, 0x16, 0xe1,
+	0xd1, 0x39, 0x23, 0x3d, 0x97, 0x7e, 0xc0, 0x31, 0xea, 0xe2, 0xa5, 0x18, 0x29, 0x60, 0x31, 0x11,
+	0x50, 0x45, 0x53, 0x59, 0x01, 0x91, 0x69, 0x9a, 0xeb, 0xc7, 0xa7, 0x9a, 0x72, 0x72, 0xaa, 0x29,
+	0xbf, 0x4f, 0x35, 0xe5, 0xf3, 0x99, 0x56, 0x38, 0x39, 0xd3, 0x0a, 0x3f, 0xcf, 0xb4, 0xc2, 0xab,
+	0x87, 0x8e, 0xcb, 0x77, 0xf7, 0x6d, 0xa3, 0x4d, 0x7b, 0xe6, 0xe3, 0xc3, 0x2d, 0xda, 0xed, 0x3b,
+	0xd4, 0x3b, 0x67, 0x79, 0x74, 0xd0, 0x30, 0x0f, 0x05, 0x11, 0xef, 0xfb, 0x84, 0xd9, 0x65, 0xf1,
+	0x57, 0xf5, 0xe4, 0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x2b, 0x03, 0x7d, 0x9c, 0x6f, 0x07, 0x00,
+	0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -707,12 +663,12 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	SpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error)
-	SpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error)
-	LatestSpan(ctx context.Context, in *QueryLatestSpanRequest, opts ...grpc.CallOption) (*QueryLatestSpanResponse, error)
-	NextSpanSeed(ctx context.Context, in *QueryNextSpanSeedRequest, opts ...grpc.CallOption) (*QueryNextSpanSeedResponse, error)
-	NextSpan(ctx context.Context, in *QueryNextSpanRequest, opts ...grpc.CallOption) (*QueryNextSpanResponse, error)
-	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error)
+	GetSpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error)
+	GetLatestSpan(ctx context.Context, in *QueryLatestSpanRequest, opts ...grpc.CallOption) (*QueryLatestSpanResponse, error)
+	GetNextSpanSeed(ctx context.Context, in *QueryNextSpanSeedRequest, opts ...grpc.CallOption) (*QueryNextSpanSeedResponse, error)
+	GetNextSpan(ctx context.Context, in *QueryNextSpanRequest, opts ...grpc.CallOption) (*QueryNextSpanResponse, error)
+	GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 }
 
 type queryClient struct {
@@ -723,54 +679,54 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) SpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error) {
+func (c *queryClient) GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error) {
 	out := new(QuerySpanByIdResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/SpanById", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/GetSpanById", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) SpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error) {
+func (c *queryClient) GetSpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error) {
 	out := new(QuerySpanListResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/SpanList", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/GetSpanList", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) LatestSpan(ctx context.Context, in *QueryLatestSpanRequest, opts ...grpc.CallOption) (*QueryLatestSpanResponse, error) {
+func (c *queryClient) GetLatestSpan(ctx context.Context, in *QueryLatestSpanRequest, opts ...grpc.CallOption) (*QueryLatestSpanResponse, error) {
 	out := new(QueryLatestSpanResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/LatestSpan", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/GetLatestSpan", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) NextSpanSeed(ctx context.Context, in *QueryNextSpanSeedRequest, opts ...grpc.CallOption) (*QueryNextSpanSeedResponse, error) {
+func (c *queryClient) GetNextSpanSeed(ctx context.Context, in *QueryNextSpanSeedRequest, opts ...grpc.CallOption) (*QueryNextSpanSeedResponse, error) {
 	out := new(QueryNextSpanSeedResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/NextSpanSeed", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/GetNextSpanSeed", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) NextSpan(ctx context.Context, in *QueryNextSpanRequest, opts ...grpc.CallOption) (*QueryNextSpanResponse, error) {
+func (c *queryClient) GetNextSpan(ctx context.Context, in *QueryNextSpanRequest, opts ...grpc.CallOption) (*QueryNextSpanResponse, error) {
 	out := new(QueryNextSpanResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/NextSpan", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/GetNextSpan", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
+func (c *queryClient) GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/Params", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.bor.Query/GetParams", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -779,145 +735,145 @@ func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts .
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	SpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error)
-	SpanList(context.Context, *QuerySpanListRequest) (*QuerySpanListResponse, error)
-	LatestSpan(context.Context, *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error)
-	NextSpanSeed(context.Context, *QueryNextSpanSeedRequest) (*QueryNextSpanSeedResponse, error)
-	NextSpan(context.Context, *QueryNextSpanRequest) (*QueryNextSpanResponse, error)
-	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error)
+	GetSpanList(context.Context, *QuerySpanListRequest) (*QuerySpanListResponse, error)
+	GetLatestSpan(context.Context, *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error)
+	GetNextSpanSeed(context.Context, *QueryNextSpanSeedRequest) (*QueryNextSpanSeedResponse, error)
+	GetNextSpan(context.Context, *QueryNextSpanRequest) (*QueryNextSpanResponse, error)
+	GetParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
-func (*UnimplementedQueryServer) SpanById(ctx context.Context, req *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SpanById not implemented")
+func (*UnimplementedQueryServer) GetSpanById(ctx context.Context, req *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSpanById not implemented")
 }
-func (*UnimplementedQueryServer) SpanList(ctx context.Context, req *QuerySpanListRequest) (*QuerySpanListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SpanList not implemented")
+func (*UnimplementedQueryServer) GetSpanList(ctx context.Context, req *QuerySpanListRequest) (*QuerySpanListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSpanList not implemented")
 }
-func (*UnimplementedQueryServer) LatestSpan(ctx context.Context, req *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LatestSpan not implemented")
+func (*UnimplementedQueryServer) GetLatestSpan(ctx context.Context, req *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestSpan not implemented")
 }
-func (*UnimplementedQueryServer) NextSpanSeed(ctx context.Context, req *QueryNextSpanSeedRequest) (*QueryNextSpanSeedResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NextSpanSeed not implemented")
+func (*UnimplementedQueryServer) GetNextSpanSeed(ctx context.Context, req *QueryNextSpanSeedRequest) (*QueryNextSpanSeedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNextSpanSeed not implemented")
 }
-func (*UnimplementedQueryServer) NextSpan(ctx context.Context, req *QueryNextSpanRequest) (*QueryNextSpanResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NextSpan not implemented")
+func (*UnimplementedQueryServer) GetNextSpan(ctx context.Context, req *QueryNextSpanRequest) (*QueryNextSpanResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNextSpan not implemented")
 }
-func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
+func (*UnimplementedQueryServer) GetParams(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetParams not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
 }
 
-func _Query_SpanById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetSpanById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QuerySpanByIdRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).SpanById(ctx, in)
+		return srv.(QueryServer).GetSpanById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.bor.Query/SpanById",
+		FullMethod: "/heimdallv2.bor.Query/GetSpanById",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).SpanById(ctx, req.(*QuerySpanByIdRequest))
+		return srv.(QueryServer).GetSpanById(ctx, req.(*QuerySpanByIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_SpanList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetSpanList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QuerySpanListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).SpanList(ctx, in)
+		return srv.(QueryServer).GetSpanList(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.bor.Query/SpanList",
+		FullMethod: "/heimdallv2.bor.Query/GetSpanList",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).SpanList(ctx, req.(*QuerySpanListRequest))
+		return srv.(QueryServer).GetSpanList(ctx, req.(*QuerySpanListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_LatestSpan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetLatestSpan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryLatestSpanRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).LatestSpan(ctx, in)
+		return srv.(QueryServer).GetLatestSpan(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.bor.Query/LatestSpan",
+		FullMethod: "/heimdallv2.bor.Query/GetLatestSpan",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).LatestSpan(ctx, req.(*QueryLatestSpanRequest))
+		return srv.(QueryServer).GetLatestSpan(ctx, req.(*QueryLatestSpanRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_NextSpanSeed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetNextSpanSeed_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryNextSpanSeedRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).NextSpanSeed(ctx, in)
+		return srv.(QueryServer).GetNextSpanSeed(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.bor.Query/NextSpanSeed",
+		FullMethod: "/heimdallv2.bor.Query/GetNextSpanSeed",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).NextSpanSeed(ctx, req.(*QueryNextSpanSeedRequest))
+		return srv.(QueryServer).GetNextSpanSeed(ctx, req.(*QueryNextSpanSeedRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_NextSpan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetNextSpan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryNextSpanRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).NextSpan(ctx, in)
+		return srv.(QueryServer).GetNextSpan(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.bor.Query/NextSpan",
+		FullMethod: "/heimdallv2.bor.Query/GetNextSpan",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).NextSpan(ctx, req.(*QueryNextSpanRequest))
+		return srv.(QueryServer).GetNextSpan(ctx, req.(*QueryNextSpanRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryParamsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Params(ctx, in)
+		return srv.(QueryServer).GetParams(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.bor.Query/Params",
+		FullMethod: "/heimdallv2.bor.Query/GetParams",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Params(ctx, req.(*QueryParamsRequest))
+		return srv.(QueryServer).GetParams(ctx, req.(*QueryParamsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -927,28 +883,28 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "SpanById",
-			Handler:    _Query_SpanById_Handler,
+			MethodName: "GetSpanById",
+			Handler:    _Query_GetSpanById_Handler,
 		},
 		{
-			MethodName: "SpanList",
-			Handler:    _Query_SpanList_Handler,
+			MethodName: "GetSpanList",
+			Handler:    _Query_GetSpanList_Handler,
 		},
 		{
-			MethodName: "LatestSpan",
-			Handler:    _Query_LatestSpan_Handler,
+			MethodName: "GetLatestSpan",
+			Handler:    _Query_GetLatestSpan_Handler,
 		},
 		{
-			MethodName: "NextSpanSeed",
-			Handler:    _Query_NextSpanSeed_Handler,
+			MethodName: "GetNextSpanSeed",
+			Handler:    _Query_GetNextSpanSeed_Handler,
 		},
 		{
-			MethodName: "NextSpan",
-			Handler:    _Query_NextSpan_Handler,
+			MethodName: "GetNextSpan",
+			Handler:    _Query_GetNextSpan_Handler,
 		},
 		{
-			MethodName: "Params",
-			Handler:    _Query_Params_Handler,
+			MethodName: "GetParams",
+			Handler:    _Query_GetParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -975,10 +931,10 @@ func (m *QuerySpanByIdRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.SpanId) > 0 {
-		i -= len(m.SpanId)
-		copy(dAtA[i:], m.SpanId)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.SpanId)))
+	if len(m.Id) > 0 {
+		i -= len(m.Id)
+		copy(dAtA[i:], m.Id)
+		i = encodeVarintQuery(dAtA, i, uint64(len(m.Id)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1015,13 +971,6 @@ func (m *QuerySpanByIdResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintQuery(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Height) > 0 {
-		i -= len(m.Height)
-		copy(dAtA[i:], m.Height)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Height)))
-		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
@@ -1047,15 +996,17 @@ func (m *QuerySpanListRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.Limit != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Limit))
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
 		i--
-		dAtA[i] = 0x10
-	}
-	if m.Page != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1080,6 +1031,18 @@ func (m *QuerySpanListResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.Pagination != nil {
+		{
+			size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQuery(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
 	if len(m.SpanList) > 0 {
 		for iNdEx := len(m.SpanList) - 1; iNdEx >= 0; iNdEx-- {
 			{
@@ -1091,15 +1054,8 @@ func (m *QuerySpanListResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintQuery(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x12
+			dAtA[i] = 0xa
 		}
-	}
-	if len(m.Height) > 0 {
-		i -= len(m.Height)
-		copy(dAtA[i:], m.Height)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Height)))
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -1157,13 +1113,6 @@ func (m *QueryLatestSpanResponse) MarshalToSizedBuffer(dAtA []byte) (int, error)
 			i = encodeVarintQuery(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Height) > 0 {
-		i -= len(m.Height)
-		copy(dAtA[i:], m.Height)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Height)))
-		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
@@ -1216,13 +1165,6 @@ func (m *QueryNextSpanSeedResponse) MarshalToSizedBuffer(dAtA []byte) (int, erro
 		i -= len(m.Seed)
 		copy(dAtA[i:], m.Seed)
 		i = encodeVarintQuery(dAtA, i, uint64(len(m.Seed)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Height) > 0 {
-		i -= len(m.Height)
-		copy(dAtA[i:], m.Height)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Height)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -1299,13 +1241,6 @@ func (m *QueryNextSpanResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintQuery(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Height) > 0 {
-		i -= len(m.Height)
-		copy(dAtA[i:], m.Height)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Height)))
-		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
@@ -1364,13 +1299,6 @@ func (m *QueryParamsResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintQuery(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Height) > 0 {
-		i -= len(m.Height)
-		copy(dAtA[i:], m.Height)
-		i = encodeVarintQuery(dAtA, i, uint64(len(m.Height)))
-		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
@@ -1393,7 +1321,7 @@ func (m *QuerySpanByIdRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.SpanId)
+	l = len(m.Id)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
 	}
@@ -1406,10 +1334,6 @@ func (m *QuerySpanByIdResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Height)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
 	if m.Span != nil {
 		l = m.Span.Size()
 		n += 1 + l + sovQuery(uint64(l))
@@ -1423,11 +1347,9 @@ func (m *QuerySpanListRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.Page != 0 {
-		n += 1 + sovQuery(uint64(m.Page))
-	}
-	if m.Limit != 0 {
-		n += 1 + sovQuery(uint64(m.Limit))
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
@@ -1438,15 +1360,15 @@ func (m *QuerySpanListResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Height)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
 	if len(m.SpanList) > 0 {
 		for _, e := range m.SpanList {
 			l = e.Size()
 			n += 1 + l + sovQuery(uint64(l))
 		}
+	}
+	if m.Pagination != nil {
+		l = m.Pagination.Size()
+		n += 1 + l + sovQuery(uint64(l))
 	}
 	return n
 }
@@ -1466,10 +1388,6 @@ func (m *QueryLatestSpanResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Height)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
 	if m.Span != nil {
 		l = m.Span.Size()
 		n += 1 + l + sovQuery(uint64(l))
@@ -1492,10 +1410,6 @@ func (m *QueryNextSpanSeedResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Height)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
 	l = len(m.Seed)
 	if l > 0 {
 		n += 1 + l + sovQuery(uint64(l))
@@ -1528,10 +1442,6 @@ func (m *QueryNextSpanResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Height)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
 	if m.Span != nil {
 		l = m.Span.Size()
 		n += 1 + l + sovQuery(uint64(l))
@@ -1554,10 +1464,6 @@ func (m *QueryParamsResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Height)
-	if l > 0 {
-		n += 1 + l + sovQuery(uint64(l))
-	}
 	if m.Params != nil {
 		l = m.Params.Size()
 		n += 1 + l + sovQuery(uint64(l))
@@ -1602,7 +1508,7 @@ func (m *QuerySpanByIdRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SpanId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -1630,7 +1536,7 @@ func (m *QuerySpanByIdRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.SpanId = string(dAtA[iNdEx:postIndex])
+			m.Id = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -1683,38 +1589,6 @@ func (m *QuerySpanByIdResponse) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Height = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
 			}
@@ -1801,10 +1675,10 @@ func (m *QuerySpanListRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
 			}
-			m.Page = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowQuery
@@ -1814,30 +1688,28 @@ func (m *QuerySpanListRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Page |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
 			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
 			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageRequest{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -1890,38 +1762,6 @@ func (m *QuerySpanListResponse) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Height = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field SpanList", wireType)
 			}
 			var msglen int
@@ -1951,6 +1791,42 @@ func (m *QuerySpanListResponse) Unmarshal(dAtA []byte) error {
 			}
 			m.SpanList = append(m.SpanList, Span{})
 			if err := m.SpanList[len(m.SpanList)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Pagination == nil {
+				m.Pagination = &query.PageResponse{}
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -2055,38 +1931,6 @@ func (m *QueryLatestSpanResponse) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Height = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
 			}
@@ -2223,38 +2067,6 @@ func (m *QueryNextSpanSeedResponse) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Height = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Seed", wireType)
 			}
@@ -2458,38 +2270,6 @@ func (m *QueryNextSpanResponse) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Height = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Span", wireType)
 			}
 			var msglen int
@@ -2625,38 +2405,6 @@ func (m *QueryParamsResponse) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Height = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Params", wireType)
 			}
