@@ -37,7 +37,6 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 
 // UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
 func (g GenesisState) UnpackInterfaces(c codectypes.AnyUnpacker) error {
-	// TODO HV2: @Vaibhav is this needed? clarify with Sergio
 	for i := range g.Validators {
 		if err := g.Validators[i].UnpackInterfaces(c); err != nil {
 			return err

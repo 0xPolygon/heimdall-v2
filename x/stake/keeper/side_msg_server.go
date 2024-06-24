@@ -392,8 +392,6 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return hmModule.Vote_VOTE_NO
 	}
 
-	// TODO HV2: @Vaibhav these two are repeated over 2 or 3 handlers. Refactor it out into a helper function
-
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		s.k.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
 		return hmModule.Vote_VOTE_NO

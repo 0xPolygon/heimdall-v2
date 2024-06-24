@@ -96,8 +96,6 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.V
 
 func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error) {
 	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator cosmosTypes.ValidatorI) bool {
-		// TODO HV2: @Vaibhav will this result in inconsistent behaviour?
-		//  Given that we have our own validator definition, I think we ought to be using that and not what's defined in cosmos.
 		totalPower += validator.GetBondedTokens().Int64()
 		return true
 	})
