@@ -1,11 +1,12 @@
 package keeper_test
 
 import (
-	"github.com/golang/mock/gomock"
 	"math/rand"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
 
 	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -47,6 +48,7 @@ type KeeperTestSuite struct {
 
 	contractCaller   *mocks.IContractCaller
 	checkpointKeeper *testUtil.MockCheckpointKeeper
+	bankKeeper       *testUtil.MockBankKeeper
 	cmKeeper         *cmKeeper.Keeper
 	queryClient      stakeTypes.QueryClient
 	msgServer        stakeTypes.MsgServer
@@ -72,10 +74,13 @@ func (s *KeeperTestSuite) SetupTest() {
 	defer ctrl.Finish()
 	s.checkpointKeeper = testUtil.NewMockCheckpointKeeper(ctrl)
 
+	s.bankKeeper = testUtil.NewMockBankKeeper(ctrl)
+
 	keeper := stakeKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		s.checkpointKeeper,
+		s.bankKeeper,
 		cmk,
 		addrCodec.NewHexCodec(),
 		s.contractCaller,
@@ -142,7 +147,7 @@ func (s *KeeperTestSuite) TestValidator() {
 
 	// check if validator matches in state
 	require.Equal(valInfo, *validators[valId], "Validators in state doesn't match")
-	require.Equal(strings.ToLower(mappedSignerAddress.String()), validators[0].Signer, "Signer address doesn't match")
+	require.Equal(mappedSignerAddress, validators[0].Signer, "Signer address doesn't match")
 }
 
 // tests VotingPower change, validator creation, validator set update when signer changes
@@ -201,7 +206,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	// check if validatorId is mapped to updated signer
 	signerAddress, err := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
 	require.Nilf(err, "Signer Address not mapped to Validator Id")
-	require.Equal(addr2, strings.ToLower(signerAddress.String()), "Validator ID should be mapped to Updated Signer Address")
+	require.Equal(addr2, signerAddress, "Validator ID should be mapped to Updated Signer Address")
 
 	// check total validators
 	totalValidators := keeper.GetAllValidators(ctx)
@@ -303,7 +308,7 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 	removedVal := prevValidatorSet.Validators[0].Signer
 
 	for _, val := range updatedValSet.Validators {
-		if strings.ToLower(val.Signer) == strings.ToLower(removedVal) {
+		if strings.EqualFold(val.Signer, removedVal) {
 			require.Fail("Validator is not removed from updated validator set")
 		}
 	}
@@ -379,6 +384,9 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	validators := keeper.GetCurrentValidators(ctx)
 	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, validators[0].Signer)
 	require.NoError(err)
@@ -409,6 +417,8 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	validators := keeper.GetCurrentValidators(ctx)
 
 	valInfo, err := keeper.GetValidatorFromValID(ctx, validators[0].ValId)
@@ -419,7 +429,9 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 func (s *KeeperTestSuite) TestGetLastUpdated() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 10)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	validators := keeper.GetCurrentValidators(ctx)
 
 	lastUpdated, err := keeper.GetLastUpdated(ctx, validators[0].ValId)

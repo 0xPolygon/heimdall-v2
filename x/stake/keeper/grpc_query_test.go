@@ -20,10 +20,10 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	req := &types.QueryCurrentValidatorSetRequest{}
 	res, err := queryClient.CurrentValidatorSet(ctx, req)
 
-	require.NoError(err)
-	require.Equal(len(res.ValidatorSet.Validators), 0)
+	require.Error(err)
 
 	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
 
 	req = &types.QueryCurrentValidatorSetRequest{}
 	res, err = queryClient.CurrentValidatorSet(ctx, req)
@@ -31,7 +31,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	require.NoError(err)
 
 	require.NotNil(res)
-	require.Equal(res.ValidatorSet, validatorSet)
+	require.True(res.ValidatorSet.Equal(validatorSet))
 }
 
 func (s *KeeperTestSuite) TestHandleQuerySigner() {
@@ -56,7 +56,7 @@ func (s *KeeperTestSuite) TestHandleQuerySigner() {
 	require.NoError(err)
 
 	// check response is not nil
-	require.Equal(res.Validator, validators[0])
+	require.True(res.Validator.Equal(validators[0]))
 }
 
 func (s *KeeperTestSuite) TestHandleQueryValidator() {
@@ -90,14 +90,15 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 
 	require.NoError(err)
 
-	// check response is not nil
-	require.Equal(res.Validator, validators[0])
+	require.True(res.Validator.Equal(validators[0]))
 }
 
 func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	validators := keeper.GetAllValidators(ctx)
 
 	req := &types.QueryValidatorStatusRequest{

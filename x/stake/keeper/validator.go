@@ -11,7 +11,6 @@ import (
 	addresscodec "cosmossdk.io/core/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -295,15 +294,20 @@ func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, s
 }
 
 // GetSignerFromValidatorID gets the signer address from the validator id
-func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (common.Address, error) {
+func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (string, error) {
 	signer, err := k.signer.Get(ctx, valID)
 	if err != nil {
 		k.Logger(ctx).Error("error while getting fetching signer address", "error", err)
-		return common.Address{}, err
+		return "", err
 	}
 
 	// return address from bytes
-	return common.Address(common.FromHex(signer)), nil
+	return signer, nil
+}
+
+// GetSignerFromValidatorID gets the signer address from the validator id
+func (k *Keeper) DoValIdExist(ctx context.Context, valID uint64) (bool, error) {
+	return k.signer.Has(ctx, valID)
 }
 
 // GetValidatorFromValID returns signer from validator ID
@@ -314,7 +318,7 @@ func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (valid
 	}
 
 	// query for validator signer address
-	validator, err = k.GetValidatorInfo(ctx, signerAddr.String())
+	validator, err = k.GetValidatorInfo(ctx, signerAddr)
 	if err != nil {
 		return validator, err
 	}

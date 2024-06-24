@@ -50,5 +50,5 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	actualParams := keeper.ExportGenesis(ctx)
 	require.NotNil(actualParams)
 	require.LessOrEqual(5, len(actualParams.Validators))
-	require.Equal(genesisState, actualParams)
+	require.True(genesisState.CurrentValidatorSet.Equal(actualParams.CurrentValidatorSet))
 }

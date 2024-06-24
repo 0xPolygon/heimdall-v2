@@ -74,6 +74,8 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -122,6 +124,8 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := common.Hex2Bytes(TxHash)
 

@@ -190,6 +190,7 @@ func (vals *ValidatorSet) getValWithMostPriority() *Validator {
 	for _, val := range vals.Validators {
 		if res == nil {
 			res = val
+			continue
 		}
 
 		res = res.CompareProposerPriority(val)
@@ -321,6 +322,7 @@ func (vals *ValidatorSet) findProposer() *Validator {
 	for _, val := range vals.Validators {
 		if proposer == nil {
 			proposer = val
+			continue
 		}
 
 		if !strings.EqualFold(val.Signer, proposer.Signer) {
