@@ -108,7 +108,7 @@ type ValidatorAccountFormatter struct {
 	PubKey  string `json:"pub_key,omitempty" yaml:"pub_key"`
 }
 
-func CryptoKeyToPubkey(key crypto.PubKey) secp256k1.PubKey {
+func CryptoKeyToPubKey(key crypto.PubKey) secp256k1.PubKey {
 	return helper.GetPubObjects(key)
 }
 
@@ -120,7 +120,7 @@ func GetSignerInfo(pub crypto.PubKey, priv []byte, cdc *codec.LegacyAmino) Valid
 
 	return ValidatorAccountFormatter{
 		Address: ethCommon.BytesToAddress(pub.Address().Bytes()).String(),
-		PubKey:  CryptoKeyToPubkey(pub).String(),
+		PubKey:  CryptoKeyToPubKey(pub).String(),
 		PrivKey: "0x" + hex.EncodeToString(privObject[:]),
 	}
 }
