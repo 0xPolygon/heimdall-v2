@@ -86,11 +86,6 @@ const (
 
 var ZeroIntString = big.NewInt(0).String()
 
-const (
-	FlagLoadLatest  = "load-latest"
-	DumpGenesosFile = "config/dump-genesis.json"
-)
-
 var tempDir = func() string {
 	dir, err := os.MkdirTemp("", "heimdall")
 	if err != nil {
