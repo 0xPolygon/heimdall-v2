@@ -1,7 +1,6 @@
-package main
+package heimdalld
 
 import (
-	client "github.com/cosmos/cosmos-sdk/client"
 
 	// TODO HV2 - uncomment when we have FetchFromAPI uncommented in helper
 	// chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
@@ -12,7 +11,7 @@ import (
 const chainmanagerEndpoint = "/chainmanager/params"
 
 // StakeCmd stakes for a validator
-func StakeCmd(cliCtx client.Context) *cobra.Command {
+func StakeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stake",
 		Short: "Stake matic tokens for your account",
@@ -86,7 +85,7 @@ func StakeCmd(cliCtx client.Context) *cobra.Command {
 }
 
 // ApproveCmd approves tokens for a validator
-func ApproveCmd(cliCtx client.Context) *cobra.Command {
+func ApproveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "approve",
 		Short: "Approve the tokens to stake",
