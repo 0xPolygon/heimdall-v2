@@ -111,7 +111,7 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.AddCommand(heimdallStart(tempApp))
 
-	initRootCmd(rootCmd, encodingConfig.TxConfig, encodingConfig.InterfaceRegistry, encodingConfig.Codec, tempApp.BasicManager, tempApp)
+	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp)
 
 	// add keyring to autocli opts
 	autoCliOpts := tempApp.AutoCliOpts()
