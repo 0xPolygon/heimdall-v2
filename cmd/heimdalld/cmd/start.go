@@ -285,7 +285,9 @@ func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator serverty
 		cpuProfileCleanup = func() {
 			ctx.Logger.Info("stopping CPU profiler", "profile", cpuProfile)
 			pprof.StopCPUProfile()
-			f.Close()
+			if err = f.Close(); err != nil {
+				ctx.Logger.Error("failed to close CPU profile", "error", err)
+			}
 		}
 	}
 
