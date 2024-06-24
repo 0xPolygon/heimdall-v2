@@ -91,7 +91,12 @@ var tempDir = func() string {
 	if err != nil {
 		dir = app.DefaultNodeHome
 	}
-	defer os.RemoveAll(dir)
+	defer func() {
+		err := os.RemoveAll(dir)
+		if err != nil {
+			fmt.Printf("Failed to remove directory %s: %v\n", dir, err)
+		}
+	}()
 
 	return dir
 }
