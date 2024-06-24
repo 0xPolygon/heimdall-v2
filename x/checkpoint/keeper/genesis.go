@@ -75,11 +75,23 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	}
 
 	bufferedCheckpoint, _ := k.GetCheckpointFromBuffer(ctx)
+	lastNoAck, err := k.GetLastNoAck(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in getting last no ack in export genesis call", "error", err)
+		return nil
+	}
+
+	ackCount, err := k.GetACKCount(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in getting ack count in export genesis call", "error", err)
+		return nil
+	}
+
 	return &types.GenesisState{
 		Params:             params,
 		BufferedCheckpoint: bufferedCheckpoint,
-		LastNoACK:          k.GetLastNoAck(ctx),
-		AckCount:           k.GetACKCount(ctx),
+		LastNoACK:          lastNoAck,
+		AckCount:           ackCount,
 		Checkpoints:        types.SortHeaders(checkpoints),
 	}
 }

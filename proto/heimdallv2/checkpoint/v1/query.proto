@@ -55,7 +55,7 @@ service Query {
   rpc GetNextCheckpoint(QueryNextCheckpointRequest)
       returns (QueryNextCheckpointResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoints/prepare";
+    option (google.api.http).get = "/checkpoints/prepare-next";
   }
 
   // GetCurrentProposer queries validator info for the current proposer
@@ -97,14 +97,15 @@ message QueryLastNoAckRequest {}
 // QueryLastNoAckResponse is response type for the last no ack count RPC
 // method
 message QueryLastNoAckResponse {
-  uint64 result = 1 [ (amino.dont_omitempty) = true ];
+  uint64 last_no_ack_i_d = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointBufferRequest is request type for the buffered checkpoint RPC method
+// QueryCheckpointBufferRequest is request type for the buffered checkpoint RPC
+// method
 message QueryCheckpointBufferRequest {}
 
-// QueryCheckpointBufferResponse is response type for the buffered checkpoint RPC
-// method
+// QueryCheckpointBufferResponse is response type for the buffered checkpoint
+// RPC method
 message QueryCheckpointBufferResponse {
   Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
@@ -139,7 +140,7 @@ message QueryCheckpointLatestResponse {
 message QueryNextCheckpointRequest { string bor_chain_i_d = 1; }
 
 // QueryNextCheckpointResponse is response type for the
-// Query/Checkpoints/prepare RPC method
+// Query/Checkpoints/prepare-next RPC method
 message QueryNextCheckpointResponse {
   MsgCheckpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];

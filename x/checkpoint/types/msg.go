@@ -13,67 +13,10 @@ import (
 )
 
 var (
-	_ sdk.Msg = &MsgCheckpointAdjust{}
 	_ sdk.Msg = &MsgCheckpoint{}
 	_ sdk.Msg = &MsgCheckpointAck{}
 	_ sdk.Msg = &MsgCheckpointNoAck{}
 )
-
-// NewMsgCheckpointAdjust adjust previous checkpoint
-func NewMsgCheckpointAdjust(
-	headerIndex uint64,
-	startBlock uint64,
-	endBlock uint64,
-	proposer string,
-	from string,
-	rootHash hmTypes.HeimdallHash,
-) MsgCheckpointAdjust {
-	return MsgCheckpointAdjust{
-		HeaderIndex: headerIndex,
-		StartBlock:  startBlock,
-		EndBlock:    endBlock,
-		Proposer:    proposer,
-		From:        from,
-		RootHash:    rootHash,
-	}
-}
-
-func (msg MsgCheckpointAdjust) GetSignBytes() []byte {
-	return nil
-}
-
-// Type returns message type
-func (msg MsgCheckpointAdjust) Type() string {
-	return EventTypeCheckpointAdjust
-}
-
-func (msg MsgCheckpointAdjust) ValidateBasic(ac address.Codec) error {
-	if bytes.Equal(msg.RootHash.Bytes(), hmTypes.ZeroHeimdallHash) {
-		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
-	}
-
-	addrBytes, err := ac.StringToBytes(msg.Proposer)
-	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
-	}
-
-	accAddr := sdk.AccAddress(addrBytes)
-
-	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
-	}
-
-	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
-		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%s,end block=%s", msg.StartBlock, msg.EndBlock)
-	}
-
-	return nil
-}
-
-// GetSideSignBytes returns side sign bytes
-func (msg MsgCheckpointAdjust) GetSideSignBytes() []byte {
-	return nil
-}
 
 // NewMsgCheckpointBlock creates new checkpoint message using mentioned arguments
 func NewMsgCheckpointBlock(
@@ -92,11 +35,6 @@ func NewMsgCheckpointBlock(
 		AccountRootHash: accountRootHash,
 		BorChainID:      borChainID,
 	}
-}
-
-// Type returns message type
-func (msg MsgCheckpoint) Type() string {
-	return EventTypeCheckpoint
 }
 
 func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
@@ -137,10 +75,6 @@ func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 	)
 }
 
-//
-// Msg Checkpoint Ack
-//
-
 var _ sdk.Msg = &MsgCheckpointAck{}
 
 func NewMsgCheckpointAck(
@@ -163,10 +97,6 @@ func NewMsgCheckpointAck(
 		TxHash:     txHash,
 		LogIndex:   logIndex,
 	}
-}
-
-func (msg MsgCheckpointAck) Type() string {
-	return EventTypeCheckpointAck
 }
 
 // ValidateBasic validate basic
@@ -211,10 +141,6 @@ func NewMsgCheckpointNoAck(from string) MsgCheckpointNoAck {
 	return MsgCheckpointNoAck{
 		From: from,
 	}
-}
-
-func (msg MsgCheckpointNoAck) Type() string {
-	return EventTypeCheckpointNoAck
 }
 
 func (msg MsgCheckpointNoAck) ValidateBasic(ac address.Codec) error {

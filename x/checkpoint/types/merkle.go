@@ -12,8 +12,8 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
-// ValidateCheckpoint - Validates if checkpoint rootHash matches or not
-func ValidateCheckpoint(start uint64, end uint64, rootHash hmTypes.HeimdallHash, checkpointLength uint64, contractCaller helper.IContractCaller, confirmations uint64) (bool, error) {
+// IsValidCheckpoint validates if checkpoint rootHash matches or not
+func IsValidCheckpoint(start uint64, end uint64, rootHash hmTypes.HeimdallHash, checkpointLength uint64, contractCaller helper.IContractCaller, confirmations uint64) (bool, error) {
 	// Check if blocks exist locally
 	if !contractCaller.CheckIfBlocksExist(end + confirmations) {
 		return false, errors.New("blocks not found locally")
@@ -94,6 +94,8 @@ func GetAccountProof(dividendAccounts []hmTypes.DividendAccount, userAddr string
 	return proof, index, err
 }
 
+// TODO HV2 Remove this when the global funtion is written in file package
+//
 //nolint:unparam
 func convertTo32(input []byte) (output [32]byte, err error) {
 	l := len(input)
@@ -102,7 +104,6 @@ func convertTo32(input []byte) (output [32]byte, err error) {
 	}
 
 	copy(output[32-l:], input[:])
-
 	return
 }
 
