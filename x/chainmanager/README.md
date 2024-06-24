@@ -44,7 +44,7 @@ One can run the following query commands from the chainmanager module :
 ### CLI commands
 
 ```
-heimdallcli query chainmanager params
+heimdalld query chainmanager params
 ```
 
 ### REST endpoints

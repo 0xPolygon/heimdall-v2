@@ -213,10 +213,6 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 		"Home directory of the node's daemon configuration",
 	)
 
-	cmd.Flags().String(flagNodeCliHome, "heimdallcli",
-		"Home directory of the node's cli configuration",
-	)
-
 	cmd.Flags().String(flagNodeHostPrefix, "node",
 		"Hostname prefix (node results in persistent peers list ID0@node0:26656, ID1@node1:26656, ...)")
 

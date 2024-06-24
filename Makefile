@@ -19,12 +19,10 @@ COMMIT := $(shell git log -1 --format='%H')
 
 ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
 		  -X github.com/0xPolygon/heimdall-v2/version.ServerName=heimdalld \
-		  -X github.com/0xPolygon/heimdall-v2/version.ClientName=heimdallcli \
 		  -X github.com/0xPolygon/heimdall-v2/version.Version=$(VERSION) \
 		  -X github.com/0xPolygon/heimdall-v2/version.Commit=$(COMMIT) \
 		  -X github.com/cosmos/cosmos-sdk/version.Name=heimdall \
 		  -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld \
-		  -X github.com/cosmos/cosmos-sdk/version.ClientName=heimdallcli \
 		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
 		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
 
@@ -37,7 +35,6 @@ clean:
 build: clean
 	mkdir -p build
 	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
-	go build $(BUILD_FLAGS) -o build/heimdallcli ./cmd/heimdallcli
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
 
 .PHONY: lint-deps

@@ -152,7 +152,7 @@ const (
 )
 
 var (
-	DefaultCLIHome  = os.ExpandEnv("$HOME/.heimdallcli")
+	DefaultCLIHome  = os.ExpandEnv("$HOME/.heimdalld")
 	DefaultNodeHome = os.ExpandEnv("$HOME/.heimdalld")
 	MinBalance      = big.NewInt(100000000000000000) // aka 0.1 Ether
 )
