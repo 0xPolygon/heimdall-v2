@@ -112,6 +112,8 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
 
+// AppModuleSimulation functions
+
 // GenerateGenesisState creates a randomized GenState of the x/topup module.
 func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 	topupSimulation.RandomizeGenState(simState)
