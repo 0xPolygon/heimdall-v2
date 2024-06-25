@@ -322,10 +322,8 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		logIndex := rand.Uint64()
 		blockNumber := rand.Uint64()
 
-		// TODO HV2: use the following line when implemented?
-		// hash := hTypes.HexToHeimdallHash("0x000000000000000000000000000000000000000000000000000000000001dead")
-		txHash := "0x000000000000000000000000000000000000000000000000000000000001dead"
-		hash := hTypes.TxHash{Hash: []byte(txHash)}
+		txHash := common.HexToHash("0x000000000000000000000000000000000000000000000000000000000001dead")
+		hash := hTypes.TxHash{Hash: txHash.Bytes()}
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)

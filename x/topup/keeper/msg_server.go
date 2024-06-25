@@ -26,7 +26,6 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
 	logger := m.k.Logger(ctx)
 
-	// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash when implemented?
 	txHash := common.BytesToHash(msg.TxHash.Hash)
 
 	logger.Debug("HandleTopupTx msg received",
