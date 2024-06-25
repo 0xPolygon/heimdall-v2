@@ -24,6 +24,7 @@ import (
 
 func TestHeimdallAppExport(t *testing.T) {
 	// TODO HV2: enable this test once modules implementation is completed
+	//  See https://polygon.atlassian.net/browse/POS-2626
 	t.Skip("to be enabled")
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
@@ -47,6 +48,7 @@ func TestHeimdallAppExport(t *testing.T) {
 //nolint:tparallel
 func TestRunMigrations(t *testing.T) {
 	// TODO HV2: enable this test once modules implementation is completed
+	//  See https://polygon.atlassian.net/browse/POS-2626
 	t.Skip("to be enabled")
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
@@ -188,6 +190,7 @@ func TestRunMigrations(t *testing.T) {
 
 func TestInitGenesisOnMigration(t *testing.T) {
 	// TODO HV2: enable this test once modules implementation is completed
+	//  See https://polygon.atlassian.net/browse/POS-2626
 	t.Skip("to be enabled")
 	t.Parallel()
 	app, _, _ := SetupApp(t, 1)
@@ -227,6 +230,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 
 func TestValidateGenesis(t *testing.T) {
 	// TODO HV2: enable this test once modules implementation is completed
+	//  See https://polygon.atlassian.net/browse/POS-2626
 	t.Skip("to be enabled")
 	t.Parallel()
 
@@ -246,6 +250,7 @@ func TestValidateGenesis(t *testing.T) {
 
 func TestGetMaccPerms(t *testing.T) {
 	// TODO HV2: enable this test once modules implementation is completed
+	//  See https://polygon.atlassian.net/browse/POS-2626
 	t.Skip("to be enabled")
 	t.Parallel()
 
