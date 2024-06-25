@@ -20,7 +20,7 @@ import (
 
 var allocs embed.FS
 
-func WriteGenesisFile(chain string, filePath string) (bool, error) {
+func WriteGenesisFile(chain string, filePath string) error {
 	switch chain {
 	case "amoy", "mumbai", "mainnet":
 		fn := fmt.Sprintf("allocs/%s.json", chain)
@@ -30,9 +30,9 @@ func WriteGenesisFile(chain string, filePath string) (bool, error) {
 			err = genDoc.SaveAs(filePath)
 		}
 
-		return err == nil, err
+		return err
 	default:
-		return false, nil
+		return errors.New("invalid chain name")
 	}
 }
 

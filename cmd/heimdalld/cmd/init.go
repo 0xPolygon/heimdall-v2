@@ -66,13 +66,10 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 	}
 
 	if writeGenesis {
-		genesisCreated, err := helper.WriteGenesisFile(initConfig.chain, config.GenesisFile())
+		err := helper.WriteGenesisFile(initConfig.chain, config.GenesisFile())
 		if err != nil {
 			return err
-		} else if genesisCreated {
-			return nil
 		}
-	} else {
 		return nil
 	}
 
