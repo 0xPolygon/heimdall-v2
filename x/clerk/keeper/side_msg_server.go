@@ -58,14 +58,17 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		"blockNumber", msg.BlockNumber,
 	)
 
-	// TODO HV2: uncomment when chainmanager is implemented and added into the Keeper
-	// chainManager params
-	/*
-		params := srv.chainKeeper.GetParams(ctx)
-		TODO HV2 - uncomment when contractCaller is implemented
-		chainParams := params.ChainParams
-		_ = params.ChainParams
-	*/
+	// TODO HV2 - uncomment when contractCaller is implemented
+	// // chainManager params
+	// params, err := srv.ChainKeeper.GetParams(ctx)
+	// if err != nil {
+	// 	srv.Logger(ctx).Error("failed to get chain manager params", "error", err)
+	// 	return hmModule.Vote_VOTE_NO
+	// }
+
+	// TODO HV2 - uncomment when contractCaller is implemented
+	// chainParams := params.ChainParams
+	// _ = params.ChainParams
 
 	// TODO HV2 - uncomment when contractCaller is implemented
 	// get confirmed tx receipt

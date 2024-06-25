@@ -66,7 +66,7 @@ func (s QueryServer) RecordSequence(ctx context.Context, request *types.RecordSe
 		if err := types.ModuleCdc.UnmarshalJSON(req.Data, &params); err != nil {
 			return nil, sdk.ErrInternal(fmt.Sprintf("failed to parse params: %s", err))
 		}
-		chainParams := keeper.chainKeeper.GetParams(ctx)
+		chainParams := keeper.ChainKeeper.GetParams(ctx)
 		// get main tx receipt
 		receipt, err := contractCallerObj.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(params.TxHash).EthHash(), chainParams.MainchainTxConfirmations)
 		if err != nil || receipt == nil {

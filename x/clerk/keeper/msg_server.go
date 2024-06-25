@@ -38,20 +38,21 @@ func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEvent
 		return nil, types.ErrEventRecordAlreadySynced
 	}
 
-	// TODO HV2: uncomment when chainmanager is implemented and added into the Keeper
 	// chainManager params
-	/*
-		params := k.chainKeeper.GetParams(ctx)
-		chainParams := params.ChainParams
-	*/
+	params, err := k.ChainKeeper.GetParams(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("failed to get chain manager params", "error", err)
+		return nil, err
+	}
+
+	chainParams := params.ChainParams
 
 	// check chain id
-	/*
-		if chainParams.BorChainID != msg.ChainID {
-			k.Logger(ctx).Error("Invalid Bor chain id", "msgChainID", msg.ChainID, "borChainId", chainParams.BorChainID)
-			return nil, hmTypes.ErrInvalidBorChainID(types.ModuleName)
-		}
-	*/
+
+	if chainParams.BorChainId != msg.ChainID {
+		k.Logger(ctx).Error("Invalid Bor chain id", "msgChainID", msg.ChainID, "borChainId", chainParams.BorChainId)
+		return nil, hmTypes.ErrInvalidBorChainID(types.ModuleName)
+	}
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)

@@ -21,9 +21,13 @@ import (
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 var Address1 = "0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"
@@ -68,9 +72,13 @@ func (suite *KeeperTestSuite) SetupTest() {
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
+	chainmanagerKeeper := chainmanagerkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	require.NoError(suite.T(), chainmanagerKeeper.SetParams(ctx, chainmanagertypes.DefaultParams()))
+
 	keeper := clerkKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
+		chainmanagerKeeper,
 	)
 
 	suite.ctx = ctx

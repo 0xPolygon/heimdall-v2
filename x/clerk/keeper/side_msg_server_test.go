@@ -69,8 +69,9 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
-	// TODO HV2 - uncomment when chainmanager is implemented
-	// chainParams := app.ChainKeeper.GetParams(suite.ctx)
+	// TODO HV2 - uncomment when mock contract caller is implemented
+	// chainParams, err := ck.ChainKeeper.GetParams(suite.ctx)
+	// require.NoError(t, err)
 
 	s := rand.NewSource(1)
 	r := rand.New(s)

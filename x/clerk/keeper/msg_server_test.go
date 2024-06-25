@@ -145,8 +145,6 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	// require.Equal(t, common.CodeOldTx, result.Code)
 }
 
-// TODO HV2 - uncomment when chainmanager is implemented and added into the Keeper
-/*
 func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
@@ -168,12 +166,12 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 
 	// wrong chain id
 	msg := types.NewMsgEventRecord(
-		sdk.AccAddress(addrBz1),
+		addrBz1,
 		hmTypes.HeimdallHash{Hash: txHashBz},
 		r.Uint64(),
 		r.Uint64(),
 		id,
-		sdk.AccAddress(addrBz2),
+		addrBz2,
 		hmTypes.HexBytes{
 			HexBytes: make([]byte, 0),
 		},
@@ -190,4 +188,3 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 	require.Nil(t, storedEventRecord)
 	require.Error(t, err)
 }
-*/
