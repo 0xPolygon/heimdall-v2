@@ -9,7 +9,6 @@ import (
 	hm2types "github.com/0xPolygon/heimdall-v2/types"
 )
 
-// TODO HV2 - how to handle conversation between sdk.AccAddress and string?
 // NewMsgEventRecord - construct state msg
 func NewMsgEventRecord(
 	from sdk.AccAddress,
@@ -69,12 +68,6 @@ func (msg MsgEventRecord) ValidateBasic() error {
 
 	return nil
 }
-
-// TODO HV2 - I don't think we need this
-// // GetSignBytes Implements Msg.
-// func (msg MsgEventRecord) GetSignBytes() []byte {
-// 	return sdk.MustSortJSON(ModuleCdc.MustMarshalJSON(msg))
-// }
 
 // GetSigners Implements Msg.
 func (msg MsgEventRecord) GetSigners() []sdk.AccAddress {
