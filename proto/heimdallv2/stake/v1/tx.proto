@@ -77,6 +77,10 @@ message MsgStakeUpdate {
   ];
   heimdallv2.types.TxHash tx_hash = 4
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  // TODO HV2: the following fields are repeated frequently in the messages.
+  //  Consider wrapping them in a separate proto message (see
+  //  https://polygon.atlassian.net/browse/POS-2615)
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
   uint64 nonce = 7 [ (amino.dont_omitempty) = true ];

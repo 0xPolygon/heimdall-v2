@@ -98,7 +98,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		s.k.Logger(ctx).Error("need for more ethereum blocks to fetch the confirmed tx receipt", "err", err)
+		s.k.Logger(ctx).Error("can't get confirmed tx receipt", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -180,6 +180,9 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 			"amountFromEvent", eventLog.Amount)
 		return hmModule.Vote_VOTE_NO
 	}
+
+	// TODO HV2: these checks are repeated in all handlers, can be moved to a common function
+	//  See https://polygon.atlassian.net/browse/POS-2615
 
 	// check BlockNumber
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {

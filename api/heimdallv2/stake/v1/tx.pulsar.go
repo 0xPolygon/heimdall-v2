@@ -4734,13 +4734,17 @@ type MsgStakeUpdate struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	From        string        `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	ValId       uint64        `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	NewAmount   string        `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3" json:"new_amount,omitempty"`
-	TxHash      *types.TxHash `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	LogIndex    uint64        `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber uint64        `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	Nonce       uint64        `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	From      string        `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId     uint64        `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
+	NewAmount string        `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3" json:"new_amount,omitempty"`
+	TxHash    *types.TxHash `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	// TODO HV2: the following fields are repeated frequently in the messages.
+	//
+	//	Consider wrapping them in a separate proto message (see
+	//	https://polygon.atlassian.net/browse/POS-2615)
+	LogIndex    uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	BlockNumber uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	Nonce       uint64 `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
 }
 
 func (x *MsgStakeUpdate) Reset() {

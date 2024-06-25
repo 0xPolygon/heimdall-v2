@@ -175,13 +175,17 @@ var xxx_messageInfo_MsgValidatorJoinResponse proto.InternalMessageInfo
 
 // MsgStakeUpdate defines a message for performing a stake update
 type MsgStakeUpdate struct {
-	From        string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	ValId       uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	NewAmount   cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3,customtype=cosmossdk.io/math.Int" json:"new_amount"`
-	TxHash      types1.TxHash         `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
-	LogIndex    uint64                `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber uint64                `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	Nonce       uint64                `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	From      string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId     uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
+	NewAmount cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3,customtype=cosmossdk.io/math.Int" json:"new_amount"`
+	TxHash    types1.TxHash         `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash"`
+	// TODO HV2: the following fields are repeated frequently in the messages.
+	//
+	//	Consider wrapping them in a separate proto message (see
+	//	https://polygon.atlassian.net/browse/POS-2615)
+	LogIndex    uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	BlockNumber uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	Nonce       uint64 `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
 }
 
 func (m *MsgStakeUpdate) Reset()         { *m = MsgStakeUpdate{} }
