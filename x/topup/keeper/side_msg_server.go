@@ -202,7 +202,6 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			types.EventTypeTopup,
 			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			// TODO HV2: replace common.BytesToHash with hmTypes.BytesToHeimdallHash once implemented
 			sdk.NewAttribute(types.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
 			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
