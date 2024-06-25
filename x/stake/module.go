@@ -21,6 +21,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeSimulation "github.com/0xPolygon/heimdall-v2/x/stake/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -137,8 +138,7 @@ func (am AppModule) EndBlock(ctx context.Context) ([]abci.ValidatorUpdate, error
 }
 
 func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
-	// TODO HV2: @Vaibhav implement stakeSimulation
-	// stakeSimulation.RandomizeGenState(simState)
+	stakeSimulation.RandomizedGenState(simState)
 }
 
 func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {}
