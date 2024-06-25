@@ -107,7 +107,6 @@ type HeimdallApp struct {
 	// keepers
 	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper    bankkeeper.Keeper
-	// StakingKeeper *stakingkeeper.Keeper
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	DistrKeeper           distrkeeper.Keeper
 	GovKeeper             govkeeper.Keeper
@@ -191,6 +190,7 @@ func NewHeimdallApp(
 	}
 
 	tKeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
+	// TODO HV2: are memKeys needed?
 	// memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, ibcmock.MemStoreKey)
 
 	app := &HeimdallApp{
@@ -258,8 +258,6 @@ func NewHeimdallApp(
 		logger,
 	)
 
-	// TODO HV2: initialise stake keeper here
-
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
@@ -306,16 +304,6 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
-	app.TopupKeeper = topupKeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
-		app.BankKeeper,
-		// TODO HV2: replace nil with stakeKeeper when implemented
-		nil,
-		app.ChainManagerKeeper,
-		&app.caller,
-	)
-
 	app.StakeKeeper = stakeKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[staketypes.StoreKey]),
@@ -327,8 +315,16 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		app.BankKeeper,
+		app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.caller,
+	)
+
 	app.mm = module.NewManager(
-		// TODO HV2: add stake keeper once implemented
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
@@ -361,23 +357,21 @@ func NewHeimdallApp(
 	app.mm.SetOrderBeginBlockers(
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distrtypes.ModuleName,
-		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
 		genutiltypes.ModuleName,
+		staketypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
 		govtypes.ModuleName,
-		// TODO HV2: replace with our stake module
-		// stakingtypes.ModuleName,
 		genutiltypes.ModuleName,
-
 		staketypes.ModuleName,
 	)
 
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		distrtypes.ModuleName, // TODO HV2: consider removing distribution module since rewards are distributed on L1
+		// TODO HV2: consider removing distribution module since rewards are distributed on L1
+		distrtypes.ModuleName,
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		consensusparamtypes.ModuleName,
@@ -492,7 +486,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
-	/* TODO HV2: uncomment when stake and checkpoint are implemented
+	/* TODO HV2: uncomment when checkpoint is implemented
 	stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
 	checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
 
@@ -525,7 +519,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
-	// TODO HV2: implement when BytesToHeimdallAddress is available
+	// TODO HV2: implement when BytesToHeimdallAddress is available, or simply replace with common.BytesToAddress(b)
 	// app.AccountKeeper.SetBlockProposer(ctx,types.BytesToHeimdallAddress(req.Header.GetProposerAddress()))
 	return app.mm.BeginBlock(ctx)
 }
@@ -533,8 +527,8 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// transfer fees to current proposer
-	// TODO HV2: enable when keepers are implemented
-	/*if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
+	/* TODO HV2: enable when keepers are implemented
+	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
 		amount := moduleAccount.GetCoins().AmountOf(authTypes.FeeToken)
 		if !amount.IsZero() {
@@ -589,7 +583,7 @@ func (app *HeimdallApp) GetTxConfig() client.TxConfig {
 
 // AutoCliOpts returns the autocli options for the app.
 func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
-	modules := make(map[string]appmodule.AppModule, 0)
+	modules := make(map[string]appmodule.AppModule)
 	for _, m := range app.mm.Modules {
 		if moduleWithName, ok := m.(module.HasName); ok {
 			moduleName := moduleWithName.Name()
