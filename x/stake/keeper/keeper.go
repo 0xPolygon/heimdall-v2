@@ -2,8 +2,6 @@ package keeper
 
 import (
 	"context"
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	"cosmossdk.io/collections"
 	addresscodec "cosmossdk.io/core/address"
 	storetypes "cosmossdk.io/core/store"
@@ -69,12 +67,6 @@ func NewKeeper(
 	k.schema = s
 
 	return k
-}
-
-func (k Keeper) ApplyAndReturnValidatorSetUpdates(_ context.Context) (updates []abci.ValidatorUpdate, err error) {
-	// TODO HV2: implement this function?
-	//  It is required by `genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig)` in app.go
-	panic("implement me")
 }
 
 // Logger returns a module-specific logger.
