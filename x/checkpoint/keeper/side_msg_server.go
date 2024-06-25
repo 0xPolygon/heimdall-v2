@@ -62,7 +62,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	msg, ok := sdkMsg.(*types.MsgCheckpoint)
 	if !ok {
-		logger.Error("msg type mismatched")
+		logger.Error("type mismatch for MsgCheckpoint")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -114,7 +114,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	msg, ok := sdkMsg.(*types.MsgCheckpointAck)
 	if !ok {
-		logger.Error("msg type mismatched")
+		logger.Error("type mismatch for MsgCheckpointAck")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -181,7 +181,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	msg, ok := sdkMsg.(*types.MsgCheckpoint)
 	if !ok {
-		logger.Error("msg type mismatched")
+		logger.Error("type mismatch for MsgCheckpoint")
 		return
 	}
 
@@ -285,7 +285,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	msg, ok := sdkMsg.(*types.MsgCheckpointAck)
 	if !ok {
-		logger.Error("msg type mismatched")
+		logger.Error("type mismatch for MsgCheckpointAck")
 		return
 	}
 

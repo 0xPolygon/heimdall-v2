@@ -41,13 +41,13 @@ func DefaultGenesisState() *GenesisState {
 }
 
 // ValidateGenesis validates the provided checkpoint data
-func ValidateGenesis(data *GenesisState) error {
-	if err := data.Params.Validate(); err != nil {
+func (gs GenesisState) ValidateGenesis() error {
+	if err := gs.Params.Validate(); err != nil {
 		return err
 	}
 
-	if len(data.Checkpoints) != 0 {
-		if int(data.AckCount) != len(data.Checkpoints) {
+	if len(gs.Checkpoints) != 0 {
+		if int(gs.AckCount) != len(gs.Checkpoints) {
 			return errors.New("incorrect state in state-dump , please Check")
 		}
 	}
