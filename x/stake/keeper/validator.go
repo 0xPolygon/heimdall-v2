@@ -418,7 +418,7 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
 func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
-	// TODO HV2: @Vaibhav check how to use the stop parameter here and eventually update/delete this comment
+	//TODO HV2: this function is imported from v1, we need to check how the stop function behaves
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)

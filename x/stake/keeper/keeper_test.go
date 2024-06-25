@@ -218,9 +218,18 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	require.LessOrEqual(5, len(currentValidators), "Current Validators should be five.")
 }
 
-// TODO HV2: @Vaibhav enable and fix this test (you can use the checkpoint mock from the suite)
-/*
 func (s *KeeperTestSuite) TestCurrentValidator() {
+
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	stakeKeeper := s.stakeKeeper
+
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	n := 5
+
+	accounts := simulation.RandomAccounts(r1, n)
+
 	type TestDataItem struct {
 		name        string
 		startblock  uint64
@@ -248,37 +257,24 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 			resultmsg:   "should not be current validator as start epoch greater than ackcount.",
 		},
 	}
-	ctx, keeper,require := s.ctx, s.stakeKeeper,s.Require()
-
-
-	stakeKeeper, checkpointKeeper := s.stakeKeeper, app.CheckpointKeeper
 
 	for i, item := range dataItems {
-		suite.Run(item.name, func() {
-			// Create a Validator [startEpoch, endEpoch, VotingPower]
-			privKep := secp256k1.GenPrivKey()
-			pubkey := types.NewPubKey(privKep.PubKey().Bytes())
-			newVal := types.Validator{
-				ID:               types.NewValidatorID(1 + uint64(i)),
-				StartEpoch:       item.startblock,
-				EndEpoch:         item.startblock,
-				Nonce:            0,
-				VotingPower:      item.VotingPower,
-				Signer:           types.HexToHeimdallAddress(pubkey.Address().String()),
-				PubKey:           pubkey,
-				ProposerPriority: 0,
-			}
-			// check current validator
-			err := stakeKeeper.AddValidator(ctx, newVal)
-			require.NoError(t, err)
-			checkpointKeeper.UpdateACKCountWithValue(ctx, item.ackcount)
+		s.Run(item.name, func() {
+			newVal, err := types.NewValidator(1+uint64(i), item.startblock, item.startblock, uint64(0), item.VotingPower, accounts[i].PubKey, accounts[i].Address.String())
 
-			isCurrentVal := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer.Bytes())
-			require.Equal(t, item.result, isCurrentVal, item.resultmsg)
+			require.NoError(err)
+
+			// check current validator
+			err = stakeKeeper.AddValidator(ctx, *newVal)
+			require.NoError(err)
+
+			s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(item.ackcount).Times(1)
+
+			isCurrentVal := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer)
+			require.Equal(item.result, isCurrentVal, item.resultmsg)
 		})
 	}
 }
-*/
 
 func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()

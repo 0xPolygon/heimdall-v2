@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/math"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
@@ -24,13 +25,35 @@ const (
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
-	pk1 := secp256k1.GenPrivKey().PubKey()
+	pk1 := ed25519.GenPrivKey().PubKey()
 	require.NotNil(pk1)
 
 	pubKey, err := codectypes.NewAnyWithValue(pk1)
 	require.NoError(err)
 
+	// Msg with wrong pub key
 	msgValJoin := stakingtypes.MsgValidatorJoin{
+		From:            pk1.Address().String(),
+		ValId:           uint64(1),
+		ActivationEpoch: uint64(1),
+		Amount:          math.NewInt(int64(1000000000000000000)),
+		SignerPubKey:    pubKey,
+		TxHash:          hmTypes.TxHash{},
+		LogIndex:        uint64(1),
+		BlockNumber:     uint64(0),
+		Nonce:           uint64(1),
+	}
+
+	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
+	require.Error(err)
+
+	pk1 = secp256k1.GenPrivKey().PubKey()
+	require.NotNil(pk1)
+
+	pubKey, err = codectypes.NewAnyWithValue(pk1)
+	require.NoError(err)
+
+	msgValJoin = stakingtypes.MsgValidatorJoin{
 		From:            pk1.Address().String(),
 		ValId:           uint64(1),
 		ActivationEpoch: uint64(1),
@@ -83,6 +106,27 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	newSigner := testutil.GenRandomVals(1, 0, 10, 10, false, 1)
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
+
+	//TODO HV2 Please look into this testcase, this should give error because
+	// old signer is equal to new signer but this is giving error because of interfacing
+	// issue which shouldn't be the case
+
+	/*
+		msgSignerUpdate := stakingtypes.MsgSignerUpdate{
+			From:            oldSigner.Signer,
+			ValId:           uint64(1),
+			NewSignerPubKey: oldSigner.GetPubKey(),
+			TxHash:          hmTypes.TxHash{},
+			LogIndex:        uint64(0),
+			BlockNumber:     uint64(0),
+			Nonce:           uint64(1),
+		}
+
+		result, err := msgServer.SignerUpdate(ctx, &msgSignerUpdate)
+
+
+		require.Error(err)
+	*/
 
 	msgSignerUpdate := stakingtypes.MsgSignerUpdate{
 		From:            newSigner[0].Signer,

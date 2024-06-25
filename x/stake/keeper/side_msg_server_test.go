@@ -41,10 +41,6 @@ func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModul
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
-// TODO HV2: @Vaibhav maybe add testcases based on type of keys and ensure that only eth keys pass? For example:
-//  1. Compressed & Uncompressed (i.e Eth) format. The former should fail.
-//  2. Different key implementations of cryptotypes.PubKey (e.g. ed25519).
-//     (because of this type assertion: pubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey))
 func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	ctx, require := s.ctx, s.Require()
 

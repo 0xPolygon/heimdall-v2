@@ -1,69 +1,15 @@
 package types
 
-/* TODO HV2: @Vaibhav enable and fix the tests
-
 import (
-	"fmt"
+	fmt "fmt"
+	"math/rand"
 	"testing"
+	"time"
 
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/stretchr/testify/assert"
 )
-
-// valInput struct is used to seed data for testing
-// if the need arises it can be ported to the main build
-type valInput struct {
-	id         ValidatorID
-	startEpoch uint64
-	endEpoch   uint64
-	power      int64
-	nonce      uint64
-	pubKey     PubKey
-	signer     HeimdallAddress
-}
-
-func TestNewValidator(t *testing.T) {
-	t.Parallel()
-
-	// valCase created so as to pass it to assertPanics func,
-	// ideally would like to get rid of this and pass the function directly
-	tc := []struct {
-		in  valInput
-		out *Validator
-		msg string
-	}{
-		{
-			in: valInput{
-				id:     ValidatorID{uint64(0)},
-				signer: BytesToHeimdallAddress([]byte("12345678909876543210")),
-				nonce:  uint64(0),
-			},
-			out: &Validator{Signer: BytesToHeimdallAddress([]byte("12345678909876543210")), Nonce: uint64(0)},
-			msg: "testing for exact HeimdallAddress",
-		},
-		{
-			in: valInput{
-				id:     ValidatorID{uint64(0)},
-				signer: BytesToHeimdallAddress([]byte("1")),
-				nonce:  uint64(1),
-			},
-			out: &Validator{Signer: BytesToHeimdallAddress([]byte("1")), Nonce: uint64(1)},
-			msg: "testing for small HeimdallAddress",
-		},
-		{
-			in: valInput{
-				id:     ValidatorID{uint64(0)},
-				signer: BytesToHeimdallAddress([]byte("123456789098765432101")),
-				nonce:  uint64(32),
-			},
-			out: &Validator{Signer: BytesToHeimdallAddress([]byte("123456789098765432101")), Nonce: uint64(32)},
-			msg: "testing for excessively long HeimdallAddress, max length is supposed to be 20",
-		},
-	}
-	for _, c := range tc {
-		out := NewValidator(c.in.id, c.in.startEpoch, c.in.endEpoch, c.in.nonce, c.in.power, c.in.pubKey, c.in.signer)
-		assert.Equal(t, c.out, out)
-	}
-}
 
 // TestSortValidatorByAddress am populating only the signer as that is the only value used in sorting
 func TestSortValidatorByAddress(t *testing.T) {
@@ -76,14 +22,14 @@ func TestSortValidatorByAddress(t *testing.T) {
 	}{
 		{
 			in: []Validator{
-				{Signer: BytesToHeimdallAddress([]byte("3"))},
-				{Signer: BytesToHeimdallAddress([]byte("2"))},
-				{Signer: BytesToHeimdallAddress([]byte("1"))},
+				{Signer: "dummyAddress3"},
+				{Signer: "dummyAddress2"},
+				{Signer: "dummyAddress1"},
 			},
 			out: []Validator{
-				{Signer: BytesToHeimdallAddress([]byte("1"))},
-				{Signer: BytesToHeimdallAddress([]byte("2"))},
-				{Signer: BytesToHeimdallAddress([]byte("3"))},
+				{Signer: "dummyAddress1"},
+				{Signer: "dummyAddress2"},
+				{Signer: "dummyAddress3"},
 			},
 			msg: "reverse sorting of validator objects",
 		},
@@ -97,42 +43,43 @@ func TestSortValidatorByAddress(t *testing.T) {
 func TestValidateBasic(t *testing.T) {
 	t.Parallel()
 
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	n := 5
+
+	accounts := simulation.RandomAccounts(r1, n)
+
+	pks := make([]*codectypes.Any, n)
+	for i, acc := range accounts {
+		pkAny, err := codectypes.NewAnyWithValue(acc.PubKey)
+		if err != nil {
+			t.Error()
+		}
+
+		pks[i] = pkAny
+	}
+
 	tc := []struct {
 		in  Validator
 		out bool
 		msg string
 	}{
 		{
-			in:  Validator{StartEpoch: 1, EndEpoch: 5, Nonce: 0, PubKey: NewPubKey([]byte("nonZeroTestPubKey")), Signer: BytesToHeimdallAddress([]byte("3"))},
+			in:  Validator{StartEpoch: 1, EndEpoch: 5, Nonce: 0, PubKey: pks[0], Signer: accounts[0].PubKey.Address().String()},
 			out: true,
 			msg: "Valid basic validator test",
 		},
 		{
-			in:  Validator{StartEpoch: 1, EndEpoch: 5, Nonce: 0, PubKey: NewPubKey([]byte("")), Signer: BytesToHeimdallAddress([]byte("3"))},
-			out: false,
-			msg: "Invalid PubKey \"\"",
-		},
-		{
-			in:  Validator{StartEpoch: 1, EndEpoch: 5, Nonce: 0, PubKey: ZeroPubKey, Signer: BytesToHeimdallAddress([]byte("3"))},
-			out: false,
-			msg: "Invalid PubKey",
-		},
-		{
-			in:  Validator{StartEpoch: 1, EndEpoch: 1, Nonce: 0, PubKey: NewPubKey([]byte("nonZeroTestPubKey")), Signer: BytesToHeimdallAddress([]byte(""))},
+			in:  Validator{StartEpoch: 1, EndEpoch: 1, Nonce: 0, PubKey: pks[3], Signer: ""},
 			out: false,
 			msg: "Invalid Signer",
-		},
-		{
-			in:  Validator{},
-			out: false,
-			msg: "Invalid basic validator test",
 		},
 	}
 
 	for _, c := range tc {
+		fmt.Println(c.in.Signer)
 		out := c.in.ValidateBasic()
 		assert.Equal(t, c.out, out, c.msg)
+		fmt.Println("done")
 	}
 }
-
-*/

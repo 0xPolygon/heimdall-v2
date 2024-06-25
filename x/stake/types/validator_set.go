@@ -510,8 +510,6 @@ func verifyRemovals(deletes []*Validator, vals *ValidatorSet) error {
 	return nil
 }
 
-// TODO HV2: @Vaibhav Write a test case for this function
-
 // applyRemovals removes the validators specified in 'deletes' from validator set 'vals'.
 // Should not fail as verification has been done before.
 func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
