@@ -31,12 +31,12 @@ func RandomizeGenState(simState *module.SimulationState) {
 	accounts := simulation.RandomAccounts(r1, numAccounts)
 
 	var (
-		sequences        = make([]string, 5)
-		dividendAccounts = make([]types.DividendAccount, 5)
+		sequences        = make([]string, numAccounts)
+		dividendAccounts = make([]types.DividendAccount, numAccounts)
 		sequenceNumber   string
 	)
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < numAccounts; i++ {
 
 		simState.AppParams.GetOrGenerate(SequenceNumber, &sequenceNumber, simState.Rand, func(r *rand.Rand) {
 			sequenceNumber = genSequenceNumber(r)
