@@ -73,7 +73,7 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 // AppModule implements an application module for the chainmanager module.
 type AppModule struct {
 	keeper keeper.Keeper
-	// contractCaller helper.IContractCaller
+	// contractCaller helper.contractCaller
 
 }
 
@@ -88,7 +88,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	keeper keeper.Keeper,
-	// contractCaller helper.IContractCaller,
+	// contractCaller helper.contractCaller,
 ) AppModule {
 	return AppModule{
 		keeper: keeper,

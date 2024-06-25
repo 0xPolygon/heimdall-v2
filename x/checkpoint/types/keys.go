@@ -1,6 +1,10 @@
 package types
 
-import "cosmossdk.io/collections"
+import (
+	"cosmossdk.io/collections"
+	types "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/ethereum/go-ethereum/common"
+)
 
 const (
 	// ModuleName is the name of the staking module
@@ -28,3 +32,6 @@ var (
 	// LastNoAckPrefixKey represents the prefix for last no ack
 	LastNoAckPrefixKey = collections.NewPrefix([]byte{0x84})
 )
+
+// ZeroHeimdallHash represents empty pub key
+var ZeroHeimdallHash = types.HeimdallHash{Hash: common.Hash{}.Bytes()}

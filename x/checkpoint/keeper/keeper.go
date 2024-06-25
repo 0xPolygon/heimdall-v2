@@ -10,9 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
 // Keeper of the x/checkpoint store
@@ -22,8 +20,8 @@ type Keeper struct {
 	schema       collections.Schema
 
 	authority       string
-	sk              stakeKeeper.Keeper
-	ck              cmKeeper.Keeper
+	sk              types.StakeKeeper
+	ck              types.ChainManagerKeeper
 	topupKeeper     types.TopupKeeper
 	IContractCaller helper.IContractCaller
 
@@ -39,8 +37,8 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
 	authority string,
-	stakingKeeper stakeKeeper.Keeper,
-	cmKeeper cmKeeper.Keeper,
+	stakingKeeper types.StakeKeeper,
+	cmKeeper types.ChainManagerKeeper,
 	topupKeeper types.TopupKeeper,
 	contractCaller helper.IContractCaller,
 
@@ -58,6 +56,9 @@ func NewKeeper(
 
 		bufferedCheckpoint: collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
 		checkpoint:         collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoint", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
+		params:             collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		lastNoAck:          collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
+		ackCount:           collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
 	}
 
 	// build the schema and set it in the keeper
@@ -167,6 +168,17 @@ func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint,
 	}
 
 	return checkpoint, nil
+}
+
+// GetCheckpointFromBuffer gets the buffered checkpoint from store
+func (k *Keeper) HasCheckpointInBuffer(ctx context.Context) (bool, error) {
+	res, err := k.bufferedCheckpoint.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the buffered checkpoint from store", "err", err)
+		return false, err
+	}
+
+	return res, nil
 }
 
 // SetLastNoAck sets the last no-ack object

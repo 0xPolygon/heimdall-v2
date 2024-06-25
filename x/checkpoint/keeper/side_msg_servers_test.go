@@ -3,6 +3,7 @@ package keeper_test
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
@@ -16,13 +17,12 @@ import (
 
 func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
 	cfg := s.sideMsgCfg
-	return cfg.SideHandler(msg)(ctx, msg)
+	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
 func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
 	cfg := s.sideMsgCfg
-
-	cfg.PostHandler(msg)(ctx, msg, vote)
+	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
@@ -31,11 +31,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 
 	start := uint64(0)
 	maxSize := uint64(256)
-	params, err := keeper.GetParams(ctx)
-	require.NoError(err)
 
-	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
-	require.NoError(err)
+	header := chSim.GenRandCheckpoint(start, maxSize)
 
 	borChainId := "1234"
 
@@ -58,12 +55,12 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", header.EndBlock+maticTxConfirmations).Return(true)
-		s.contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash.Bytes(), nil)
+		s.contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash.GetHash(), nil)
 
 		result := s.sideHandler(ctx, &msgCheckpoint)
 		require.Equal(result, hmModule.Vote_VOTE_YES)
 
-		bufferedHeader, err = keeper.GetCheckpointFromBuffer(ctx)
+		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
 		require.NoError(err)
 
 		require.Nil(bufferedHeader, "Should not store state")
@@ -122,7 +119,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 	params, err := keeper.GetParams(ctx)
 	require.NoError(err)
 
-	header, _ := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
+	header := chSim.GenRandCheckpoint(start, maxSize)
 	headerId := uint64(1)
 
 	s.Run("Success", func() {
@@ -142,7 +139,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 		rootchainInstance := &rootchain.Rootchain{}
 
 		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
-		s.contractCaller.On("GetHeaderInfo", headerId, rootchainInstance, params.ChildBlockInterval).Return(header.RootHash.EthHash(), header.StartBlock, header.EndBlock, header.TimeStamp, header.Proposer, nil)
+		s.contractCaller.On("GetHeaderInfo", headerId, rootchainInstance, params.ChildBlockInterval).Return(header.RootHash.GetHash(), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := s.sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should pass")
@@ -166,7 +163,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 		rootchainInstance := &rootchain.Rootchain{}
 
 		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
-		s.contractCaller.On("GetHeaderInfo", headerId, rootchainInstance, params.ChildBlockInterval).Return(nil, header.StartBlock, header.EndBlock, header.TimeStamp, header.Proposer, nil)
+		s.contractCaller.On("GetHeaderInfo", headerId, rootchainInstance, params.ChildBlockInterval).Return(nil, header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := s.sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -177,28 +174,23 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
-	stakingKeeper := s.stakeKeeper
 
 	start := uint64(0)
 	maxSize := uint64(256)
-	params, err := keeper.GetParams(ctx)
-	require.NoError(err)
 
-	// check valid checkpoint
-	// generate proposer for validator set
-	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
-	stakingKeeper.IncrementAccum(ctx, 1)
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
 
-	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
-	require.NoError(err)
+	header := chSim.GenRandCheckpoint(start, maxSize)
 
 	// add current proposer to header
-	header.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
+	header.Proposer = validatorSet.Proposer.Signer
 
 	borChainId := "1234"
 
@@ -249,13 +241,13 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 	start := uint64(0)
 	maxSize := uint64(256)
-	params, err := keeper.GetParams(ctx)
-	require.NoError(err)
 
-	header, _ := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
-	// generate proposer for validator set
-	stakeSim.LoadValidatorSet(require, 2, s.stakeKeeper, ctx, false, 10)
-	s.stakeKeeper.IncrementAccum(ctx, 1)
+	header := chSim.GenRandCheckpoint(start, maxSize)
+
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().IncrementAccum(ctx, gomock.Any()).AnyTimes().Return(nil)
 
 	// send ack
 	checkpointNumber := uint64(1)
@@ -327,7 +319,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 	})
 
 	s.Run("InvalidEndBlock", func() {
-		header2, _ := chSim.GenRandCheckpoint(header.EndBlock+1, maxSize, params.MaxCheckpointLength)
+		header2 := chSim.GenRandCheckpoint(header.EndBlock+1, maxSize)
 		checkpointNumber = checkpointNumber + 1
 		msgCheckpoint := types.NewMsgCheckpointBlock(
 			header2.Proposer,
@@ -361,7 +353,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 		latestCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
 
-		header5, _ := chSim.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize, params.MaxCheckpointLength)
+		header5 := chSim.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
 		checkpointNumber = checkpointNumber + 1
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(
@@ -403,7 +395,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 		latestCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
 
-		header6, _ := chSim.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize, params.MaxCheckpointLength)
+		header6 := chSim.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
 		checkpointNumber = checkpointNumber + 1
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(

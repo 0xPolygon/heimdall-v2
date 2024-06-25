@@ -13,6 +13,7 @@ require (
 	cosmossdk.io/store v1.0.1
 	cosmossdk.io/x/tx v0.12.0
 	github.com/bufbuild/buf v1.29.0
+	github.com/cbergoon/merkletree v0.2.0
 	github.com/cometbft/cometbft v0.38.2
 	github.com/cosmos/cosmos-db v1.0.0
 	github.com/cosmos/cosmos-proto v1.0.0-beta.3
@@ -28,6 +29,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
+	github.com/tendermint/crypto v0.0.0-20191022145703-50d29ede1e15
 	github.com/tendermint/go-amino v0.16.0
 	go.opentelemetry.io/otel v1.24.0
 	go.opentelemetry.io/otel/trace v1.24.0

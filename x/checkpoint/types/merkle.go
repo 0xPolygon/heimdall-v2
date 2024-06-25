@@ -24,7 +24,7 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash hmTypes.HeimdallHash, 
 		return false, err
 	}
 
-	if bytes.Equal(root, rootHash.Bytes()) {
+	if bytes.Equal(root, rootHash.GetHash()) {
 		return true, nil
 	}
 
@@ -32,7 +32,7 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash hmTypes.HeimdallHash, 
 }
 
 // GetAccountRootHash returns rootHash of Validator Account State Tree
-func GetAccountRootHash(dividendAccounts []hmTypes.DividendAccount) ([]byte, error) {
+func GetAccountRootHash(dividendAccounts []*hmTypes.DividendAccount) ([]byte, error) {
 	tree, err := GetAccountTree(dividendAccounts)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func GetAccountRootHash(dividendAccounts []hmTypes.DividendAccount) ([]byte, err
 }
 
 // GetAccountTree returns roothash of Validator Account State Tree
-func GetAccountTree(dividendAccounts []hmTypes.DividendAccount) (*merkletree.MerkleTree, error) {
+func GetAccountTree(dividendAccounts []*hmTypes.DividendAccount) (*merkletree.MerkleTree, error) {
 	// Sort the dividendAccounts by ID
 	dividendAccounts = hmTypes.SortDividendAccountByAddress(dividendAccounts)
 	list := make([]merkletree.Content, len(dividendAccounts))

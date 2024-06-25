@@ -27,7 +27,7 @@ func NewGenesisState(
 	return GenesisState{
 		Params:             params,
 		BufferedCheckpoint: bufferedCheckpoint,
-		LastNoACK:          lastNoACK,
+		LastNoAck:          lastNoACK,
 		AckCount:           ackCount,
 		Checkpoints:        checkpoints,
 	}

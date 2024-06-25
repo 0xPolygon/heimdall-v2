@@ -8,26 +8,23 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	dbTestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
-	testUtil "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	stakekeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
 const (
@@ -40,10 +37,10 @@ type KeeperTestSuite struct {
 
 	ctx              sdk.Context
 	checkpointKeeper *checkpointKeeper.Keeper
-	stakeKeeper      *stakekeeper.Keeper
+	stakeKeeper      *testutil.MockStakeKeeper
 	contractCaller   *mocks.IContractCaller
 	topupKeeper      *testutil.MockTopupKeeper
-	cmKeeper         *cmKeeper.Keeper
+	cmKeeper         *testutil.MockChainManagerKeeper
 	queryClient      checkpointTypes.QueryClient
 	msgServer        checkpointTypes.MsgServer
 	sideMsgCfg       hmModule.SideTxConfigurator
@@ -57,44 +54,29 @@ func (s *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(checkpointTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
 
-	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := dbTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
 	s.contractCaller = &mocks.IContractCaller{}
 
-	moduleCommunicator := testUtil.ModuleCommunicatorMock{}
+	ctrl := gomock.NewController(s.T())
+	defer ctrl.Finish()
 
-	chainManagerKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService)
-
-	cmParams := cmTypes.DefaultParams()
-	chainManagerKeeper.SetParams(ctx, cmParams)
-
-	stakeKeeper := stakekeeper.NewKeeper(
-		encCfg.Codec,
-		storeService,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		nil,
-		&chainManagerKeeper,
-		addrCodec.NewHexCodec(),
-		s.contractCaller,
-	)
+	s.ctx = ctx
+	s.cmKeeper = testutil.NewMockChainManagerKeeper(ctrl)
+	s.stakeKeeper = testutil.NewMockStakeKeeper(ctrl)
+	s.topupKeeper = testutil.NewMockTopupKeeper(ctrl)
 
 	keeper := checkpointKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		*stakeKeeper,
-		chainManagerKeeper,
-		moduleCommunicator,
+		s.stakeKeeper,
+		s.cmKeeper,
+		s.topupKeeper,
 		s.contractCaller,
 	)
-
-	s.ctx = ctx
-	s.checkpointKeeper = keeper
-	s.stakeKeeper = stakeKeeper
-	s.cmKeeper = &chainManagerKeeper
-	s.moduleCommunicator = &moduleCommunicator
 
 	checkpointGenesis := types.DefaultGenesisState()
 
@@ -102,7 +84,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	checkpointTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	checkpointTypes.RegisterQueryServer(queryHelper, checkpointKeeper.Querier{Keeper: keeper})
+	checkpointTypes.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(keeper))
 	s.queryClient = checkpointTypes.NewQueryClient(queryHelper)
 	s.msgServer = checkpointKeeper.NewMsgServerImpl(keeper)
 

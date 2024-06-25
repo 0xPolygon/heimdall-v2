@@ -19,19 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Msg_CheckpointAdjust_FullMethodName = "/heimdallv2.checkpoint.v1.Msg/CheckpointAdjust"
-	Msg_Checkpoint_FullMethodName       = "/heimdallv2.checkpoint.v1.Msg/Checkpoint"
-	Msg_CheckpointAck_FullMethodName    = "/heimdallv2.checkpoint.v1.Msg/CheckpointAck"
-	Msg_CheckpointNoAck_FullMethodName  = "/heimdallv2.checkpoint.v1.Msg/CheckpointNoAck"
+	Msg_Checkpoint_FullMethodName      = "/heimdallv2.checkpoint.v1.Msg/Checkpoint"
+	Msg_CheckpointAck_FullMethodName   = "/heimdallv2.checkpoint.v1.Msg/CheckpointAck"
+	Msg_CheckpointNoAck_FullMethodName = "/heimdallv2.checkpoint.v1.Msg/CheckpointNoAck"
 )
 
 // MsgClient is the client API for Msg service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// CheckpointAdjust defines a method for checkpointAdjust
-	CheckpointAdjust(ctx context.Context, in *MsgCheckpointAdjust, opts ...grpc.CallOption) (*MsgCheckpointAdjustResponse, error)
-	// Checkpoint defines a method for checkpoint
+	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
 	CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opts ...grpc.CallOption) (*MsgCheckpointAckResponse, error)
@@ -45,15 +42,6 @@ type msgClient struct {
 
 func NewMsgClient(cc grpc.ClientConnInterface) MsgClient {
 	return &msgClient{cc}
-}
-
-func (c *msgClient) CheckpointAdjust(ctx context.Context, in *MsgCheckpointAdjust, opts ...grpc.CallOption) (*MsgCheckpointAdjustResponse, error) {
-	out := new(MsgCheckpointAdjustResponse)
-	err := c.cc.Invoke(ctx, Msg_CheckpointAdjust_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *msgClient) Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error) {
@@ -87,9 +75,7 @@ func (c *msgClient) CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck,
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// CheckpointAdjust defines a method for checkpointAdjust
-	CheckpointAdjust(context.Context, *MsgCheckpointAdjust) (*MsgCheckpointAdjustResponse, error)
-	// Checkpoint defines a method for checkpoint
+	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
 	CheckpointAck(context.Context, *MsgCheckpointAck) (*MsgCheckpointAckResponse, error)
@@ -102,9 +88,6 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (UnimplementedMsgServer) CheckpointAdjust(context.Context, *MsgCheckpointAdjust) (*MsgCheckpointAdjustResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CheckpointAdjust not implemented")
-}
 func (UnimplementedMsgServer) Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Checkpoint not implemented")
 }
@@ -125,24 +108,6 @@ type UnsafeMsgServer interface {
 
 func RegisterMsgServer(s grpc.ServiceRegistrar, srv MsgServer) {
 	s.RegisterService(&Msg_ServiceDesc, srv)
-}
-
-func _Msg_CheckpointAdjust_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgCheckpointAdjust)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).CheckpointAdjust(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Msg_CheckpointAdjust_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CheckpointAdjust(ctx, req.(*MsgCheckpointAdjust))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Msg_Checkpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -206,10 +171,6 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "heimdallv2.checkpoint.v1.Msg",
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "CheckpointAdjust",
-			Handler:    _Msg_CheckpointAdjust_Handler,
-		},
 		{
 			MethodName: "Checkpoint",
 			Handler:    _Msg_Checkpoint_Handler,

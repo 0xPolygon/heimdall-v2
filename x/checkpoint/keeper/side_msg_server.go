@@ -155,7 +155,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	if msg.StartBlock != start ||
 		msg.EndBlock != end ||
 		strings.ToLower(msg.Proposer) != strings.ToLower(proposer) ||
-		!bytes.Equal(msg.RootHash.Bytes(), root.Bytes()) {
+		!bytes.Equal(msg.RootHash.Hash, root.Bytes()) {
 		logger.Error("invalid message as it doesn't match with contract state",
 			"checkpointNumber", msg.Number,
 			"message start block", msg.StartBlock,
@@ -216,17 +216,24 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return
 	}
 
+	doExist, err := srv.HasCheckpointInBuffer(ctx)
+	if err != nil {
+		logger.Error("error in checking the checkpoing in buffer", "error", err)
+		return
+	}
+
 	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
-	if err == nil && checkpointBuffer != nil {
+	if err == nil && doExist {
 		logger.Debug("checkpoint already exists in buffer")
 
 		// get checkpoint buffer time from params
 		params, err := srv.GetParams(ctx)
 		if err != nil {
 			logger.Error("checkpoint params not found", "error", err)
+			return
 		}
 
-		expiryTime := checkpointBuffer.TimeStamp + uint64(params.CheckpointBufferTime.Seconds())
+		expiryTime := checkpointBuffer.Timestamp + uint64(params.CheckpointBufferTime.Seconds())
 
 		logger.Error(fmt.Sprintf("checkpoint already exists in buffer, ack expected, expires at %s", strconv.FormatUint(expiryTime, 10)))
 
@@ -242,7 +249,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		RootHash:   msg.RootHash,
 		Proposer:   msg.Proposer,
 		BorChainID: msg.BorChainID,
-		TimeStamp:  timeStamp,
+		Timestamp:  timeStamp,
 	}); err != nil {
 		logger.Error("failed to set checkpoint buffer", "Error", err)
 	}
@@ -302,7 +309,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// return err if start and end matches but contract root hash doesn't match
-	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !msg.RootHash.Equals(checkpointObj.RootHash) {
+	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !msg.RootHash.Equal(checkpointObj.RootHash) {
 		logger.Error("invalid ACK",
 			"startExpected", checkpointObj.StartBlock,
 			"startReceived", msg.StartBlock,
@@ -325,7 +332,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// add checkpoint to store
-	if err = srv.AddCheckpoint(ctx, msg.Number, *checkpointObj); err != nil {
+	if err = srv.AddCheckpoint(ctx, msg.Number, checkpointObj); err != nil {
 		logger.Error("error while adding checkpoint into store", "checkpointNumber", msg.Number)
 		return
 	}

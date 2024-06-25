@@ -19,6 +19,9 @@ GOLANG_CROSS_VERSION  ?= v1.21.0
 clean:
 	rm -rf build
 
+test:
+	go test  -v ./...
+
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
@@ -121,6 +124,7 @@ help:
 	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
 	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
 	@echo "  clean               	- Delete build folder."
+	@echo "  test               	- Run the tests."
 	@echo "  mock                	- Generate mocks."
 	@echo "  proto-all           	- Format, lint and generate proto files."
 	@echo "  proto-format        	- Format proto files."

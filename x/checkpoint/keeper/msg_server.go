@@ -11,8 +11,8 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
@@ -47,15 +47,15 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	if err == nil {
 		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())
 
-		if checkpointBuffer.TimeStamp == 0 || ((timeStamp > checkpointBuffer.TimeStamp) && (timeStamp-checkpointBuffer.TimeStamp) >= checkpointBufferTime) {
-			logger.Debug("checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.TimeStamp)
+		if checkpointBuffer.Timestamp == 0 || ((timeStamp > checkpointBuffer.Timestamp) && (timeStamp-checkpointBuffer.Timestamp) >= checkpointBufferTime) {
+			logger.Debug("checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.Timestamp)
 			err := srv.FlushCheckpointBuffer(ctx)
 			if err != nil {
 				logger.Error("error in flushing the checkpoint buffer")
 				return nil, types.ErrBufferFlush
 			}
 		} else {
-			expiryTime := checkpointBuffer.TimeStamp + checkpointBufferTime
+			expiryTime := checkpointBuffer.Timestamp + checkpointBufferTime
 			logger.Error("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime)
 			return nil, errorsmod.Wrap(types.ErrNoAck, fmt.Sprint("checkpoint already exits in buffer", "checkpoint", checkpointBuffer.String(), "expires", expiryTime))
 		}
@@ -88,7 +88,12 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 
 	// Make sure latest AccountRootHash matches
 	// Calculate new account root hash
-	dividendAccounts := srv.topupKeeper.GetAllDividendAccounts(ctx)
+	dividendAccounts, err := srv.topupKeeper.GetAllDividendAccounts(ctx)
+	if err != nil {
+		logger.Error("error while fetching dividends accounts", "error", err)
+		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("error while fetching dividends accounts"))
+	}
+
 	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
 
 	// Get account root hash from dividend accounts
@@ -98,20 +103,25 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("error while fetching account root hash"))
 	}
 
-	logger.Debug("Validator account root hash generated", "accountRootHash", hmTypes.BytesToHeimdallHash(accountRoot).HexString())
+	logger.Debug("Validator account root hash generated", "accountRootHash", common.Bytes2Hex(accountRoot))
 
 	// Compare stored root hash to msg root hash
-	if !bytes.Equal(accountRoot, msg.AccountRootHash.Bytes()) {
+	if !bytes.Equal(accountRoot, msg.AccountRootHash.GetHash()) {
 		logger.Error(
 			"AccountRootHash of current state doesn't match from msg",
-			"hash", hmTypes.BytesToHeimdallHash(accountRoot).HexString(),
+			"hash", common.Bytes2Hex(accountRoot),
 			"msgHash", msg.AccountRootHash,
 		)
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("accountRootHash of current state doesn't match from msg"))
 	}
 
 	// Check proposer in message
-	validatorSet := srv.sk.GetValidatorSet(ctx)
+	validatorSet, err := srv.sk.GetValidatorSet(ctx)
+	if err != nil {
+		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
+	}
+
 	if validatorSet.Proposer == nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
@@ -206,10 +216,10 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 
 	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err != nil {
-		return nil, types.ErrInvalidNoAck)
+		return nil, types.ErrInvalidNoAck
 	}
 
-	lastCheckpointTime := time.Unix(int64(lastCheckpoint.TimeStamp), 0)
+	lastCheckpointTime := time.Unix(int64(lastCheckpoint.Timestamp), 0)
 
 	// If last checkpoint is not present or last checkpoint happens before checkpoint buffer time,throw an error
 	if lastCheckpointTime.After(currentTime) || (currentTime.Sub(lastCheckpointTime) < bufferTime) {

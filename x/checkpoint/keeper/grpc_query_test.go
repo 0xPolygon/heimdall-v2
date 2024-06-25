@@ -17,7 +17,7 @@ func (s *KeeperTestSuite) TestQueryParams() {
 	req := &types.QueryParamsRequest{}
 	defaultParams := types.DefaultParams()
 
-	res, err := queryClient.Params(ctx, req)
+	res, err := queryClient.GetParams(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 	require.True(defaultParams.Equal(res.Params))
@@ -32,11 +32,11 @@ func (s *KeeperTestSuite) TestQueryAckCount() {
 	err := keeper.UpdateAckCountWithValue(ctx, ackCount)
 	require.NoError(err)
 
-	res, err := queryClient.AckCount(ctx, req)
+	res, err := queryClient.GetAckCount(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
-	actualAckCount := res.GetCount()
+	actualAckCount := res.GetAckCount()
 	require.Equal(actualAckCount, ackCount)
 }
 
@@ -45,7 +45,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 
 	req := &types.QueryCheckpointRequest{Number: uint64(1)}
 
-	res, err := queryClient.Checkpoint(ctx, req)
+	res, err := queryClient.GetCheckpoint(ctx, req)
 	require.NotNil(err)
 	require.Nil(res)
 
@@ -68,7 +68,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	err = keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
 	require.NoError(err)
 
-	res, err = queryClient.Checkpoint(ctx, req)
+	res, err = queryClient.GetCheckpoint(ctx, req)
 	require.NoError(err)
 
 	require.NotNil(res)
@@ -81,7 +81,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 
 	req := &types.QueryCheckpointBufferRequest{}
 
-	res, err := queryClient.CheckpointBuffer(ctx, req)
+	res, err := queryClient.GetCheckpointBuffer(ctx, req)
 	require.NotNil(err)
 	require.Nil(res)
 
@@ -102,7 +102,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	err = keeper.SetCheckpointBuffer(ctx, checkpointBlock)
 	require.NoError(err)
 
-	res, err = queryClient.CheckpointBuffer(ctx, req)
+	res, err = queryClient.GetCheckpointBuffer(ctx, req)
 
 	require.NoError(err)
 	require.NotNil(res)
@@ -120,18 +120,18 @@ func (s *KeeperTestSuite) TestQueryLastNoAck() {
 
 	req := &types.QueryLastNoAckRequest{}
 
-	res, err := queryClient.LastNoAck(ctx, req)
+	res, err := queryClient.GetLastNoAck(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
-	require.Equal(res.Result, noAck)
+	require.Equal(res.LastNoAckID, noAck)
 }
 
 func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
 	require := s.Require()
 
-	stakeSim.LoadValidatorSet(require, 2, s.stakeKeeper, ctx, false, 10)
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
 
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
@@ -149,13 +149,14 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 		timestamp,
 	)
 
-	s.contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash.Bytes(), nil)
+	s.contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
 	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
 	require.NoError(err)
 
-	req := types.QueryNextCheckpointRequest{BorChainId: BorChainID}
+	req := types.QueryNextCheckpointRequest{BorChainID: BorChainID}
 
-	res, err := queryClient.NextCheckpoint(ctx, &req)
+	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
+	res, err := queryClient.GetNextCheckpoint(ctx, &req)
 	require.NoError(err)
 
 	require.Equal(checkpointBlock.StartBlock, res.Checkpoint.StartBlock)
@@ -165,14 +166,15 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
-	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
+	ctx, queryClient := s.ctx, s.queryClient
 	require := s.Require()
-	validatorSet := stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	require.NotNil(validatorSet)
 
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+
+	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
 	req := &types.QueryCurrentProposerRequest{}
 
-	res, err := queryClient.CurrentProposer(ctx, req)
+	res, err := queryClient.GetCurrentProposer(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
@@ -180,14 +182,15 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryProposer() {
-	ctx, keeper, queryClient := s.ctx, s.stakeKeeper, s.queryClient
+	ctx, queryClient := s.ctx, s.queryClient
 	require := s.Require()
-	validatorSet := stakeSim.LoadValidatorSet(require, 4, keeper, ctx, false, 10)
-	require.NotNil(validatorSet)
 
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+
+	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
 	req := &types.QueryProposerRequest{Times: 2}
 
-	res, err := queryClient.Proposer(ctx, req)
+	res, err := queryClient.GetProposer(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
