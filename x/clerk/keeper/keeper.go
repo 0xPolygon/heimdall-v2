@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -34,7 +35,9 @@ var (
 type Keeper struct {
 	storeService storetypes.KVStoreService
 	cdc          codec.BinaryCodec
-	ChainKeeper  chainmanagerkeeper.Keeper
+
+	ChainKeeper    chainmanagerkeeper.Keeper
+	contractCaller helper.IContractCaller
 
 	RecordsWithID collections.Map[uint64, types.EventRecord]
 	// TODO HV2 - is this needed? We can regenerate this from RecordsWithID
@@ -48,12 +51,14 @@ func NewKeeper(
 	// TODO HV2: As we are not using the migrator, I believe we do not need this
 	storeService storetypes.KVStoreService,
 	ChainKeeper chainmanagerkeeper.Keeper,
+	contractCaller helper.IContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 	keeper := Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
 		ChainKeeper:     ChainKeeper,
+		contractCaller:  contractCaller,
 		RecordsWithID:   collections.NewMap(sb, types.RecordsWithIDKeyPrefix, "recordsWithID", collections.Uint64Key, codec.CollValue[types.EventRecord](cdc)),
 		RecordsWithTime: collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
 		RecordSequences: collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),

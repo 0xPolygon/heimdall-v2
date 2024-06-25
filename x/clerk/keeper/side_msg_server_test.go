@@ -5,12 +5,16 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -66,12 +70,12 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	require.Equal(t, hmModule.Vote_VOTE_YES, result)
 }
 
+// TODO HV2 - why do I get `no tests to run?` when running this test?
 func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
-	// TODO HV2 - uncomment when mock contract caller is implemented
-	// chainParams, err := ck.ChainKeeper.GetParams(suite.ctx)
-	// require.NoError(t, err)
+	chainParams, err := ck.ChainKeeper.GetParams(suite.ctx)
+	require.NoError(t, err)
 
 	s := rand.NewSource(1)
 	r := rand.New(s)
@@ -87,14 +91,13 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	id := r.Uint64()
 
 	t.Run("Success", func(t *testing.T) {
-		// TODO HV2 - uncomment when mock contract caller is implemented
-		// suite.contractCaller = mocks.IContractCaller{}
+		suite.contractCaller = mocks.IContractCaller{}
 
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
-		// txReceipt := &ethTypes.Receipt{
-		// 	BlockNumber: new(big.Int).SetUint64(blockNumber),
-		// }
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
+		}
 		txHash := hmTypes.HeimdallHash{
 			Hash: []byte("success hash"),
 		}
@@ -112,17 +115,14 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			suite.chainID,
 		)
 
-		// TODO HV2 - uncomment when mock contract caller is implemented
 		// mock external calls
-		/*
-			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-			event := &statesender.StatesenderStateSynced{
-				Id:              new(big.Int).SetUint64(msg.ID),
-				ContractAddress: msg.ContractAddress.EthAddress(),
-				Data:            msg.Data,
-			}
-			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
-		*/
+		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
+		event := &statesender.StatesenderStateSynced{
+			Id:              new(big.Int).SetUint64(msg.ID),
+			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
+			Data:            msg.Data.HexBytes,
+		}
+		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
 
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
@@ -134,88 +134,79 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		require.Error(t, err)
 	})
 
-	/*
-		t.Run("NoReceipt", func(t *testing.T) {
-			// TODO HV2 - uncomment when mock contract caller is implemented
-			// suite.contractCaller = mocks.IContractCaller{}
+	t.Run("NoReceipt", func(t *testing.T) {
+		suite.contractCaller = mocks.IContractCaller{}
 
-			logIndex := uint64(200)
-			blockNumber := uint64(51)
-			txHash := hmTypes.HeimdallHash{
-				Hash: []byte("no receipt hash"),
-			}
+		logIndex := uint64(200)
+		blockNumber := uint64(51)
+		txHash := hmTypes.HeimdallHash{
+			Hash: []byte("no receipt hash"),
+		}
 
-			msg := types.NewMsgEventRecord(
-				addrBz1,
-				txHash,
-				logIndex,
-				blockNumber,
-				id,
-				addrBz2,
-				hmTypes.HexBytes{
-					HexBytes: make([]byte, 0),
-				},
-				suite.chainID,
-			)
+		msg := types.NewMsgEventRecord(
+			addrBz1,
+			txHash,
+			logIndex,
+			blockNumber,
+			id,
+			addrBz2,
+			hmTypes.HexBytes{
+				HexBytes: make([]byte, 0),
+			},
+			suite.chainID,
+		)
 
-			// TODO HV2 - uncomment when mock contract caller is implemented
-			// mock external calls -- no receipt
-			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(nil, nil)
-			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), nil, logIndex).Return(nil, nil)
+		// mock external calls -- no receipt
+		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(nil, nil)
+		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, nil, logIndex).Return(nil, nil)
 
-			// execute handler
-			result := suite.sideHandler(ctx, &msg)
-			require.Equal(t, hmModule.Vote_VOTE_SKIP, result)
-		})
-	*/
+		// execute handler
+		result := suite.sideHandler(ctx, &msg)
+		require.Equal(t, hmModule.Vote_VOTE_SKIP, result)
+	})
 
-	/*
-		t.Run("NoLog", func(t *testing.T) {
-			// TODO HV2 - uncomment when mock contract caller is implemented
-			// suite.contractCaller = mocks.IContractCaller{}
+	t.Run("NoLog", func(t *testing.T) {
+		suite.contractCaller = mocks.IContractCaller{}
 
-			logIndex := uint64(100)
-			blockNumber := uint64(510)
-			// txReceipt := &ethTypes.Receipt{
-			// 	BlockNumber: new(big.Int).SetUint64(blockNumber),
-			// }
-			txHash := hmTypes.HeimdallHash{
-				Hash: []byte("no log hash"),
-			}
+		logIndex := uint64(100)
+		blockNumber := uint64(510)
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
+		}
+		txHash := hmTypes.HeimdallHash{
+			Hash: []byte("no log hash"),
+		}
 
-			msg := types.NewMsgEventRecord(
-				addrBz1,
-				txHash,
-				logIndex,
-				blockNumber,
-				id,
-				addrBz2,
-				hmTypes.HexBytes{
-					HexBytes: make([]byte, 0),
-				},
-				suite.chainID,
-			)
+		msg := types.NewMsgEventRecord(
+			addrBz1,
+			txHash,
+			logIndex,
+			blockNumber,
+			id,
+			addrBz2,
+			hmTypes.HexBytes{
+				HexBytes: make([]byte, 0),
+			},
+			suite.chainID,
+		)
 
-			// TODO HV2 - uncomment when mock contract caller is implemented
-			// mock external calls -- no receipt
-			// suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-			// suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(nil, nil)
+		// mock external calls -- no receipt
+		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
+		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(nil, nil)
 
-			// execute handler
-			result := suite.sideHandler(ctx, &msg)
-			require.Equal(t, hmModule.Vote_VOTE_SKIP, result)
-		})
-	*/
+		// execute handler
+		result := suite.sideHandler(ctx, &msg)
+		require.Equal(t, hmModule.Vote_VOTE_SKIP, result)
+	})
 
 	t.Run("EventDataExceed", func(t *testing.T) {
-		// TODO HV2 - uncomment when mock contract caller is implemented
-		// suite.contractCaller = mocks.IContractCaller{}
+		suite.contractCaller = mocks.IContractCaller{}
 		id := uint64(111)
 		logIndex := uint64(1)
 		blockNumber := uint64(1000)
-		// txReceipt := &ethTypes.Receipt{
-		// 	BlockNumber: new(big.Int).SetUint64(blockNumber),
-		// }
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber),
+		}
 		txHash := hmTypes.HeimdallHash{
 			Hash: []byte("success hash"),
 		}
@@ -240,18 +231,14 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			suite.chainID,
 		)
 
-		// TODO HV2 - uncomment when mock contract caller is implemented
 		// mock external calls
-
-		/*
-			suite.contractCaller.On("GetConfirmedTxReceipt", txHash.EthHash(), chainParams.MainchainTxConfirmations).Return(txReceipt, nil)
-			event := &statesender.StatesenderStateSynced{
-				Id:              new(big.Int).SetUint64(msg.ID),
-				ContractAddress: msg.ContractAddress.EthAddress(),
-				Data:            b,
-			}
-			suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress.EthAddress(), txReceipt, logIndex).Return(event, nil)
-		*/
+		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
+		event := &statesender.StatesenderStateSynced{
+			Id:              new(big.Int).SetUint64(msg.ID),
+			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
+			Data:            b,
+		}
+		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
 
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)

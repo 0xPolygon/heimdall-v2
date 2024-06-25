@@ -16,9 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
-	// TODO HV2 - uncomment when contractCaller is implemented
-	// "github.com/0xPolygon/heimdall-v2/helper/mocks"
-
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
@@ -52,12 +50,11 @@ type KeeperTestSuite struct {
 	ctx    sdk.Context
 	keeper clerkKeeper.Keeper
 	// app        *app.HeimdallApp
-	chainID     string
-	msgServer   types.MsgServer
-	sideMsgCfg  hmModule.SideTxConfigurator
-	queryClient types.QueryClient
-	// TODO HV2 - uncomment when contractCaller is implemented
-	// contractCaller mocks.IContractCaller
+	chainID        string
+	msgServer      types.MsgServer
+	sideMsgCfg     hmModule.SideTxConfigurator
+	queryClient    types.QueryClient
+	contractCaller mocks.IContractCaller
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -75,10 +72,13 @@ func (suite *KeeperTestSuite) SetupTest() {
 	chainmanagerKeeper := chainmanagerkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	require.NoError(suite.T(), chainmanagerKeeper.SetParams(ctx, chainmanagertypes.DefaultParams()))
 
+	suite.contractCaller = mocks.IContractCaller{}
+
 	keeper := clerkKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		chainmanagerKeeper,
+		&suite.contractCaller,
 	)
 
 	suite.ctx = ctx

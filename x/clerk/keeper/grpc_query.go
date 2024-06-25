@@ -2,8 +2,12 @@ package keeper
 
 import (
 	"context"
+	"errors"
+	"math/big"
 
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // query endpoints supported by the auth querier
@@ -60,31 +64,25 @@ func (s QueryServer) RecordListWithTime(ctx context.Context, request *types.Reco
 }
 
 func (s QueryServer) RecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
-	// TODO HV2 - implement after contractCallerObj is available
-	/*
-		var params types.QueryRecordSequenceParams
-		if err := types.ModuleCdc.UnmarshalJSON(req.Data, &params); err != nil {
-			return nil, sdk.ErrInternal(fmt.Sprintf("failed to parse params: %s", err))
-		}
-		chainParams := keeper.ChainKeeper.GetParams(ctx)
-		// get main tx receipt
-		receipt, err := contractCallerObj.GetConfirmedTxReceipt(hmTypes.HexToHeimdallHash(params.TxHash).EthHash(), chainParams.MainchainTxConfirmations)
-		if err != nil || receipt == nil {
-			return nil, sdk.ErrInternal("Transaction is not confirmed yet. Please wait for sometime and try again")
-		}
-		// sequence id
-		sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
-		sequence.Add(sequence, new(big.Int).SetUint64(params.LogIndex))
-		// check if incoming tx already exists
-		if !keeper.HasRecordSequence(ctx, sequence.String()) {
-			return nil, nil
-		}
-		bz, err := codec.MarshalJSONIndent(types.ModuleCdc, sequence)
-		if err != nil {
-			return nil, sdk.ErrInternal(sdk.AppendMsgToErr("could not marshal result to JSON", err.Error()))
-		}
-		return bz, nil
-	*/
+	chainParams, err := s.K.ChainKeeper.GetParams(ctx)
+	if err != nil {
+		return nil, errors.New("failed to get chain manager params")
+	}
 
-	return &types.RecordSequenceResponse{}, nil
+	// get main tx receipt
+	txHash := heimdallTypes.TxHash{Hash: common.FromHex(request.TxHash)}
+	receipt, err := s.K.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash.Hash), chainParams.GetMainChainTxConfirmations())
+	if err != nil || receipt == nil {
+		return nil, errors.New("transaction is not confirmed yet. please wait for sometime and try again")
+	}
+
+	// sequence id
+	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
+	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
+	// check if incoming tx already exists
+	if !s.K.HasRecordSequence(ctx, sequence.String()) {
+		return nil, nil
+	}
+
+	return &types.RecordSequenceResponse{Sequence: sequence.Uint64()}, nil
 }

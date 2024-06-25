@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -84,8 +85,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	})
 
 	t.Run("EventSizeExceed", func(t *testing.T) {
-		// TODO HV2 - uncomment when mock contract caller is implemented
-		// suite.contractCaller = mocks.IContractCaller{}
+		suite.contractCaller = mocks.IContractCaller{}
 
 		const letterBytes = "abcdefABCDEF"
 		b := hmTypes.HexBytes{

@@ -1,11 +1,15 @@
 package keeper
 
 import (
+	"bytes"
+	"encoding/hex"
 	"math/big"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	type2 "github.com/0xPolygon/heimdall-v2/types"
 	types "github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -58,84 +62,76 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		"blockNumber", msg.BlockNumber,
 	)
 
-	// TODO HV2 - uncomment when contractCaller is implemented
-	// // chainManager params
-	// params, err := srv.ChainKeeper.GetParams(ctx)
-	// if err != nil {
-	// 	srv.Logger(ctx).Error("failed to get chain manager params", "error", err)
-	// 	return hmModule.Vote_VOTE_NO
-	// }
+	// chainManager params
+	params, err := srv.ChainKeeper.GetParams(ctx)
+	if err != nil {
+		srv.Logger(ctx).Error("failed to get chain manager params", "error", err)
+		return hmModule.Vote_VOTE_NO
+	}
 
-	// TODO HV2 - uncomment when contractCaller is implemented
-	// chainParams := params.ChainParams
-	// _ = params.ChainParams
+	chainParams := params.ChainParams
+	_ = params.ChainParams
 
-	// TODO HV2 - uncomment when contractCaller is implemented
 	// get confirmed tx receipt
-	/*
-		receipt, err := contractCaller.GetConfirmedTxReceipt(msg.TxHash, params.MainchainTxConfirmations)
-		if receipt == nil || err != nil {
-			return hmModule.Vote_VOTE_NO
-		}
-	*/
+	receipt, err := srv.Keeper.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.GetMainChainTxConfirmations())
+	if receipt == nil || err != nil {
+		return hmModule.Vote_VOTE_NO
+	}
 
-	// TODO HV2 - uncomment when contractCaller is implemented
 	// get event log for topup
-	/*
-		eventLog, err := contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress.EthAddress(), receipt, msg.LogIndex)
-		if err != nil || eventLog == nil {
-			srv.Logger(ctx).Error("Error fetching log from txhash")
-			return hmModule.Vote_VOTE_NO
-		}
-	*/
+	eventLog, err := srv.Keeper.contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress, receipt, msg.LogIndex)
+	if err != nil || eventLog == nil {
+		srv.Logger(ctx).Error("Error fetching log from txhash")
+		return hmModule.Vote_VOTE_NO
+	}
 
-	// TODO HV2 - the following commented code depends on the results of the above code, uncomment when contractCaller is implemented
-	/*
-		if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-			srv.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
-			return hmModule.Vote_VOTE_NO
-		}
+	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
+		srv.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
+		return hmModule.Vote_VOTE_NO
+	}
 
-		// check if message and event log matches
-		if eventLog.Id.Uint64() != msg.ID {
-			srv.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ID, "stateIdFromTx", eventLog.Id)
-			return hmModule.Vote_VOTE_NO
-		}
+	// check if message and event log matches
+	if eventLog.Id.Uint64() != msg.ID {
+		srv.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ID, "stateIdFromTx", eventLog.Id)
+		return hmModule.Vote_VOTE_NO
+	}
 
-		if !bytes.Equal(eventLog.ContractAddress.Bytes(), msg.ContractAddress.Bytes()) {
-			srv.Logger(ctx).Error(
-				"ContractAddress from event does not match with Msg ContractAddress",
-				"EventContractAddress", eventLog.ContractAddress.String(),
-				"MsgContractAddress", msg.ContractAddress,
-			)
+	if !bytes.Equal(eventLog.ContractAddress.Bytes(), []byte(msg.ContractAddress)) {
+		srv.Logger(ctx).Error(
+			"ContractAddress from event does not match with Msg ContractAddress",
+			"EventContractAddress", eventLog.ContractAddress.String(),
+			"MsgContractAddress", msg.ContractAddress,
+		)
 
-			return hmModule.Vote_VOTE_NO
-		}
+		return hmModule.Vote_VOTE_NO
+	}
 
-		if !bytes.Equal(eventLog.Data, msg.Data.GetHexBytes()) {
+	if !bytes.Equal(eventLog.Data, msg.Data.GetHexBytes()) {
+		// TODO HV2 - Do we need this GetSpanOverrideHeight() check?
+		/*
 			if ctx.BlockHeight() > helper.GetSpanOverrideHeight() {
-				if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.GetHexBytes(), hmModule.HexToHexBytes(""))) {
+				if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.HexBytes, []byte(""))) {
 					srv.Logger(ctx).Error(
 						"Data from event does not match with Msg Data",
-						"EventData", hmModule.BytesToHexBytes(eventLog.Data),
-						"MsgData", hmModule.BytesToHexBytes(msg.Data),
-					)
-
-					return hmModule.Vote_VOTE_NO
-				}
-			} else {
-				if !(len(eventLog.Data) > helper.LegacyMaxStateSyncSize && bytes.Equal(msg.Data, hmModule.HexToHexBytes(""))) {
-					srv.Logger(ctx).Error(
-						"Data from event does not match with Msg Data",
-						"EventData", hmModule.BytesToHexBytes(eventLog.Data),
-						"MsgData", hmModule.BytesToHexBytes(msg.Data),
+						"EventData", hex.EncodeToString(eventLog.Data),
+						"MsgData", msg.Data.String(),
 					)
 
 					return hmModule.Vote_VOTE_NO
 				}
 			}
+			else {
+		*/
+		if !(len(eventLog.Data) > helper.LegacyMaxStateSyncSize && bytes.Equal(msg.Data.HexBytes, []byte(""))) {
+			srv.Logger(ctx).Error(
+				"Data from event does not match with Msg Data",
+				"EventData", hex.EncodeToString(eventLog.Data),
+				"MsgData", msg.Data.String(),
+			)
+
+			return hmModule.Vote_VOTE_NO
 		}
-	*/
+	}
 
 	return hmModule.Vote_VOTE_YES
 }
