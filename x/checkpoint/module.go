@@ -5,19 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-
 	"cosmossdk.io/core/appmodule"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
-
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 var (

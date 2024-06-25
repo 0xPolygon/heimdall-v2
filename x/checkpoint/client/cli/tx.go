@@ -3,16 +3,15 @@ package cli
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"cosmossdk.io/core/address"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/spf13/cobra"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 )
 
 var logger = helper.Logger.With("module", "x/", types.ModuleName, "/client/cli")

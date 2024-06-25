@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	"cosmossdk.io/core/address"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	types "github.com/0xPolygon/heimdall-v2/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/types"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 var (
@@ -23,7 +23,7 @@ func NewMsgCheckpointBlock(
 	proposer string,
 	startBlock uint64,
 	endBlock uint64,
-	roothash hmTypes.HeimdallHash,
+	rootHash hmTypes.HeimdallHash,
 	accountRootHash hmTypes.HeimdallHash,
 	borChainID string,
 ) MsgCheckpoint {
@@ -31,7 +31,7 @@ func NewMsgCheckpointBlock(
 		Proposer:        proposer,
 		StartBlock:      startBlock,
 		EndBlock:        endBlock,
-		RootHash:        roothash,
+		RootHash:        rootHash,
 		AccountRootHash: accountRootHash,
 		BorChainID:      borChainID,
 	}
@@ -54,7 +54,7 @@ func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
 	}
 
 	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
-		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%s,end block=%s", msg.StartBlock, msg.EndBlock)
+		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%d,end block=%d", msg.StartBlock, msg.EndBlock)
 	}
 
 	return nil
@@ -116,8 +116,6 @@ func (msg MsgCheckpointAck) ValidateBasic(ac address.Codec) error {
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
-
-	accAddr = sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)

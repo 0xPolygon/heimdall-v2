@@ -6,13 +6,12 @@ import (
 	"strconv"
 	"strings"
 
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	"github.com/maticnetwork/bor/common"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 type sideMsgServer struct {
@@ -20,8 +19,8 @@ type sideMsgServer struct {
 }
 
 var (
-	checkpoint    = sdk.MsgTypeURL(&types.MsgCheckpoint{})
-	checkpointAck = sdk.MsgTypeURL(&types.MsgCheckpointAck{})
+	checkpointTypeUrl    = sdk.MsgTypeURL(&types.MsgCheckpoint{})
+	checkpointAckTypeUrl = sdk.MsgTypeURL(&types.MsgCheckpointAck{})
 )
 
 // NewSideMsgServerImpl returns an implementation of the checkpoint sideMsgServer interface
@@ -34,9 +33,9 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 
 	switch methodName {
-	case checkpoint:
+	case checkpointTypeUrl:
 		return srv.SideHandleMsgCheckpoint
-	case checkpointAck:
+	case checkpointAckTypeUrl:
 		return srv.SideHandleMsgCheckpointAck
 	default:
 		return nil
@@ -47,9 +46,9 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandle
 func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler {
 
 	switch methodName {
-	case checkpoint:
+	case checkpointTypeUrl:
 		return srv.PostHandleMsgCheckpoint
-	case checkpointAck:
+	case checkpointAckTypeUrl:
 		return srv.PostHandleMsgCheckpointAck
 	default:
 		return nil
@@ -173,7 +172,6 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return hmModule.Vote_VOTE_NO
 	}
 
-	// say `yes`
 	return hmModule.Vote_VOTE_YES
 }
 
@@ -192,10 +190,6 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		logger.Debug("skipping stake update since side-tx didn't get yes votes")
 		return
 	}
-
-	//
-	// Validate last checkpoint
-	//
 
 	// fetch last checkpoint from store
 	if lastCheckpoint, err := srv.GetLastCheckpoint(ctx); err == nil {
@@ -222,10 +216,6 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return
 	}
 
-	//
-	// Save checkpoint to buffer store
-	//
-
 	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
 	if err == nil && checkpointBuffer != nil {
 		logger.Debug("checkpoint already exists in buffer")
@@ -245,7 +235,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	timeStamp := uint64(ctx.BlockTime().Unix())
 
-	// Add checkpoint to buffer with root hash and account hash
+	// add checkpoint to buffer with root hash and account hash
 	if err = srv.SetCheckpointBuffer(ctx, types.Checkpoint{
 		StartBlock: msg.StartBlock,
 		EndBlock:   msg.EndBlock,
@@ -292,7 +282,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return
 	}
 
-	// Skip handler if stakeUpdate is not approved
+	// skip handler if stakeUpdate is not approved
 	if sideTxResult != hmModule.Vote_VOTE_YES {
 		logger.Debug("skipping stake update since side-tx didn't get yes votes")
 		return
@@ -311,7 +301,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return
 	}
 
-	// return err if start and end matche but contract root hash doesn't match
+	// return err if start and end matches but contract root hash doesn't match
 	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !msg.RootHash.Equals(checkpointObj.RootHash) {
 		logger.Error("invalid ACK",
 			"startExpected", checkpointObj.StartBlock,
@@ -334,11 +324,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		checkpointObj.Proposer = msg.Proposer
 	}
 
-	//
-	// Update checkpoint state
-	//
-
-	// Add checkpoint to store
+	// add checkpoint to store
 	if err = srv.AddCheckpoint(ctx, msg.Number, *checkpointObj); err != nil {
 		logger.Error("error while adding checkpoint into store", "checkpointNumber", msg.Number)
 		return
@@ -346,22 +332,25 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	logger.Debug("checkpoint added to store", "checkpointNumber", msg.Number)
 
-	// Flush buffer
-	srv.FlushCheckpointBuffer(ctx)
+	// flush buffer
+	err = srv.FlushCheckpointBuffer(ctx)
+	if err != nil {
+		logger.Error("error while flushing buffer", "error", err)
+		return
+	}
 
 	logger.Debug("checkpoint buffer flushed after receiving checkpoint ack")
 
-	// Update ack count in staking module
-	err = srv.UpdateACKCount(ctx)
+	// update ack count in staking module
+	err = srv.IncrementAckCount(ctx)
 	if err != nil {
 		logger.Error("error while updating the ack count", "err", err)
 		return
 	}
 
-	// Increment accum (selects new proposer)
+	// increment accum (selects new proposer)
 	srv.sk.IncrementAccum(ctx, 1)
 
-	// TX bytes
 	txBytes := ctx.TxBytes()
 
 	// Emit event for checkpoints

@@ -4,11 +4,12 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/ethereum/go-ethereum/common"
+
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func (s *KeeperTestSuite) TestInitExportGenesis() {
@@ -22,7 +23,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	ackCount := simulation.RandIntBetween(r1, 1, 5)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
+	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
 
 	proposerAddress := common.Address{}.String()
 	timestamp := uint64(time.Now().Unix())
@@ -37,11 +38,8 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 		timestamp,
 	)
 
-	checkpoints := make([]types.Checkpoint, ackCount)
-
-	for i := range checkpoints {
-		checkpoints[i] = bufferedCheckpoint
-	}
+	checkpoints := make([]types.Checkpoint, 0, ackCount)
+	checkpoints = append(checkpoints, bufferedCheckpoint)
 
 	params := types.DefaultParams()
 	genesisState := types.NewGenesisState(
