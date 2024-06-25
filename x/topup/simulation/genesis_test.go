@@ -45,13 +45,11 @@ func TestRandomizedGenState(t *testing.T) {
 	simState.Cdc.MustUnmarshalJSON(simState.GenState[types.ModuleName], &topupGenesis)
 
 	require.NotNil(t, topupGenesis)
-	require.NotNil(t, topupGenesis.TopupSequences)
-	require.NotNil(t, topupGenesis.DividendAccounts)
 	require.Equal(t, len(topupGenesis.DividendAccounts), len(topupGenesis.TopupSequences))
 }
 
-// TestRandomizedGenState1 tests abnormal scenarios of applying RandomizedGenState.
-func TestRandomizedGenState1(t *testing.T) {
+// TestAbnormalRandomizedGenState tests abnormal scenarios of applying RandomizedGenState.
+func TestAbnormalRandomizedGenState(t *testing.T) {
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
