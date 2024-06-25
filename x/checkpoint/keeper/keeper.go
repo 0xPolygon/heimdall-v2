@@ -33,8 +33,6 @@ type Keeper struct {
 	params             collections.Item[types.Params]
 	lastNoAck          collections.Item[uint64]
 	ackCount           collections.Item[uint64]
-
-	sequences collections.Map[string, bool]
 }
 
 // NewKeeper creates a new checkpoint Keeper instance
@@ -48,7 +46,9 @@ func NewKeeper(
 	contractCaller helper.IContractCaller,
 
 ) *Keeper {
-	return &Keeper{
+	sb := collections.NewSchemaBuilder(storeService)
+
+	k := &Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
 		authority:       authority,
@@ -56,6 +56,9 @@ func NewKeeper(
 		ck:              cmKeeper,
 		topupKeeper:     topupKeeper,
 		IContractCaller: contractCaller,
+
+		bufferedCheckpoint: collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
+		checkpoint:         collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoint", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
 	}
 }
 
