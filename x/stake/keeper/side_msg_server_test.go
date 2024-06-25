@@ -3,11 +3,12 @@ package keeper_test
 import (
 	"encoding/json"
 	"errors"
-	"github.com/golang/mock/gomock"
 	"math/big"
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
 
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -18,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -36,7 +38,6 @@ func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vot
 
 func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
 	cfg := s.sideMsgCfg
-
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
@@ -66,7 +67,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	blockNumber := big.NewInt(10)
 	nonce := big.NewInt(3)
 
+	s.contractCaller.Mock = mock.Mock{}
+
 	s.Run("Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
+
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -103,6 +108,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("No receipt", func() {
+		s.contractCaller.Mock = mock.Mock{}
+
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -140,6 +147,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("No EventLog", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -166,6 +174,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid Signer pubKey", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -202,6 +211,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid Signer addr", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -238,6 +248,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid Validator Id", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -275,6 +286,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid Activation Epoch", func() {
+		s.contractCaller.Mock = mock.Mock{}
+
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -311,6 +324,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid Amount", func() {
+		s.contractCaller.Mock = mock.Mock{}
+
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -347,6 +362,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid Block Number", func() {
+		s.contractCaller.Mock = mock.Mock{}
+
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -383,6 +400,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid nonce", func() {
+		s.contractCaller.Mock = mock.Mock{}
+
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -424,6 +443,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -457,6 +478,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
 
 	s.Run("Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
+
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
@@ -478,6 +501,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	})
 
 	s.Run("No event log", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
@@ -493,6 +517,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	})
 
 	s.Run("Invalid BlockNumber", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(
 			newSigner[0].Signer,
 			oldSigner.ValId,
@@ -522,6 +547,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	})
 
 	s.Run("Invalid validator", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, uint64(6), newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
@@ -542,6 +568,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	})
 
 	s.Run("Invalid signer pubKey", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner1Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
@@ -562,6 +589,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	})
 
 	s.Run("Invalid new signer address", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(common.Address{}.Hex(), oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
@@ -582,6 +610,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	})
 
 	s.Run("Invalid nonce", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), uint64(12))
 		require.NoError(err)
 
@@ -607,6 +636,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
 	chainParams, err := s.cmKeeper.GetParams(ctx)
@@ -621,6 +652,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	validator0Address := common.BytesToAddress(validator0Bytes)
 
 	s.Run("Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -655,6 +687,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	})
 
 	s.Run("No Receipt", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -691,6 +724,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	})
 
 	s.Run("No event log", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -717,6 +751,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	})
 
 	s.Run("Invalid BlockNumber", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 
 		txReceipt := &ethTypes.Receipt{
@@ -752,6 +787,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	})
 
 	s.Run("Invalid validatorId", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -786,6 +822,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	})
 
 	s.Run("Invalid DeactivationEpoch", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -819,6 +856,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	})
 
 	s.Run("Invalid Nonce", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: blockNumber,
 		}
@@ -858,6 +896,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -871,6 +911,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	nonce := big.NewInt(1)
 
 	s.Run("Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
@@ -896,6 +937,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	})
 
 	s.Run("No Receipt", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
@@ -921,6 +963,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	})
 
 	s.Run("No event log", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
@@ -941,6 +984,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	})
 
 	s.Run("Invalid BlockNumber", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
@@ -966,6 +1010,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	})
 
 	s.Run("Invalid ValidatorID", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			uint64(13),
@@ -992,6 +1037,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	})
 
 	s.Run("Invalid Amount", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
@@ -1018,6 +1064,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	})
 
 	s.Run("Invalid Nonce", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
@@ -1060,6 +1107,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 	nonce := big.NewInt(3)
 
 	s.Run("No Result", func() {
+		s.contractCaller.Mock = mock.Mock{}
 
 		msgValJoin, err := types.NewMsgValidatorJoin(
 			addr.String(),
@@ -1081,6 +1129,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msgValJoin, err := types.NewMsgValidatorJoin(
 			addr.String(),
 			validatorId,
@@ -1103,6 +1152,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Replay", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		blockNumber := big.NewInt(11)
 
 		msgValJoin, err := types.NewMsgValidatorJoin(
@@ -1128,6 +1178,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 	})
 
 	s.Run("Invalid Power", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msgValJoin, err := types.NewMsgValidatorJoin(
 			addr.String(),
 			validatorId,
@@ -1150,6 +1201,18 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
+	amount := math.NewInt(1)
+
+	coin := sdk.Coin{
+		Denom:  "matic",
+		Amount: amount,
+	}
+
+	s.bankKeeper.EXPECT().GetBalance(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(coin)
+	s.bankKeeper.EXPECT().SendCoins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -1167,6 +1230,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	require.True(ok)
 
 	s.Run("No Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
@@ -1174,6 +1238,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	})
 
 	s.Run("Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 
 		s.postHandler(ctx, msg, hmModule.Vote_VOTE_YES)
@@ -1203,6 +1268,18 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).Times(2).Return(uint64(1))
+
+	amount := math.NewInt(1)
+
+	coin := sdk.Coin{
+		Denom:  "matic",
+		Amount: amount,
+	}
+
+	s.bankKeeper.EXPECT().GetBalance(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(coin)
+	s.bankKeeper.EXPECT().SendCoins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
 	blockNumber := big.NewInt(10)
@@ -1242,11 +1319,11 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 		s.postHandler(ctx, msg, hmModule.Vote_VOTE_YES)
 
 		currentVals := keeper.GetCurrentValidators(ctx)
-		require.Equal(4, len(currentVals), "No of current validators should exist before epoch passes")
+		require.Equal(4, len(currentVals), "Number of current validators should exist before epoch passes")
 
 		s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(20)).Times(1)
 		currentVals = keeper.GetCurrentValidators(ctx)
-		require.Equal(3, len(currentVals), "No of current validators should reduce after epoch passes")
+		require.Equal(3, len(currentVals), "Number of current validators should reduce after epoch passes")
 	})
 }
 
@@ -1255,6 +1332,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -1266,6 +1345,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 	newAmount := new(big.Int).SetInt64(2000000000000000000)
 
 	s.Run("No result", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
@@ -1287,6 +1367,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 	})
 
 	s.Run("Success", func() {
+		s.contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgStakeUpdate(
 			oldVal.Signer,
 			oldVal.ValId,
