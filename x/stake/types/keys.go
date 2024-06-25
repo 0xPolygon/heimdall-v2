@@ -1,5 +1,9 @@
 package types
 
+import (
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+)
+
 const (
 	// ModuleName is the name of the staking module
 	ModuleName = "stake"
@@ -22,3 +26,5 @@ type PubKey [65]byte
 
 // ZeroPubKey represents empty pub key
 var ZeroPubKey = PubKey{}
+
+var Secp256k1Type = secp256k1.GenPrivKey().PubKey().Type()

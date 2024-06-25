@@ -453,7 +453,12 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return
 	}
 
-	signer := pubKey.Address().String()
+	if pubKey.Type() != types.Secp256k1Type {
+		s.k.Logger(ctx).Error("public key is invalid")
+		return
+	}
+
+	signer := strings.ToLower(pubKey.Address().String())
 
 	// get voting power from amount
 	votingPower, err := helper.GetPowerFromAmount(msg.Amount.BigInt())
@@ -470,7 +475,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		Nonce:       msg.Nonce,
 		VotingPower: votingPower.Int64(),
 		PubKey:      anyPk,
-		Signer:      strings.ToLower(signer),
+		Signer:      signer,
 		LastUpdated: sequence.String(),
 	}
 
@@ -484,14 +489,6 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	// Add Validator signing info. It is required for slashing module
 	s.k.Logger(ctx).Debug("adding signing info for new validator")
-
-	/* TODO HV2: @Vaibhav check whether we need the following code or not (it belongs to slashing in v1). If not, remove
-	valSigningInfo := hmTypes.NewValidatorSigningInfo(newValidator.ID, ctx.BlockHeight(), int64(0), int64(0))
-	if err = s.k.AddValidatorSigningInfo(ctx, newValidator.ID, valSigningInfo); err != nil {
-		s.k.Logger(ctx).Error("Unable to add validator signing info to state", "valSigningInfo", valSigningInfo.String(), "error", err)
-		return hmCommon.ErrValidatorSigningInfoSave(s.k.Codespace()).Result()
-	}
-	*/
 
 	// save staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
@@ -622,6 +619,11 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	newPubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		s.k.Logger(ctx).Error("error in interfacing out pub key")
+		return
+	}
+
+	if newPubKey.Type() != types.Secp256k1Type {
+		s.k.Logger(ctx).Error("public key is invalid")
 		return
 	}
 

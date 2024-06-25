@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	errorsmod "cosmossdk.io/errors"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
@@ -43,6 +44,10 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	pk, ok := pubKey.GetCachedValue().(cryptotypes.PubKey)
 	if !ok {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "error in interfacing out pub key")
+	}
+
+	if pk.Type() != types.Secp256k1Type {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "pub key is invalid")
 	}
 
 	// TODO HV2: is any attack possible here?
@@ -170,7 +175,12 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "error in interfacing out pub key")
 	}
 
+	if pk.Type() != types.Secp256k1Type {
+		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "pub key is invalid")
+	}
+
 	newSigner, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
+
 	if err != nil {
 		m.k.Logger(ctx).Error("signer is invalid", "error", err)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid")
@@ -195,7 +205,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	}
 
 	// check if new signer address is same as existing signer
-	if newSigner == validator.Signer {
+	if strings.EqualFold(newSigner, validator.Signer) {
 		// No signer change
 		m.k.Logger(ctx).Error("new signer is the same as old signer")
 		return nil, errorsmod.Wrap(types.ErrNoSignerChange, "newSigner same as oldSigner")

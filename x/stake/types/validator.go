@@ -16,7 +16,6 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // NewValidator func creates a new validator
@@ -66,15 +65,19 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 // ValidateBasic validates a validator struct
 func (v *Validator) ValidateBasic() bool {
 	pk, ok := v.PubKey.GetCachedValue().(cryptotypes.PubKey)
-
 	if !ok {
 		return false
 	}
+
+	if pk.Type() != Secp256k1Type {
+		return false
+	}
+
 	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
 		return false
 	}
 
-	if strings.Compare(strings.ToLower(v.Signer), strings.ToLower(common.Address{}.String())) == 0 {
+	if v.Signer != pk.Address().String() {
 		return false
 	}
 
