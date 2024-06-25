@@ -61,6 +61,7 @@ mock:
 	# TODO HV2: enrich the mockgen command with all other modules' mocks
 	go install github.com/golang/mock/mockgen@latest
 	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
+	mockgen -source=x/checkpoint/types/expected_keepers.go -destination=x/checkpoint/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -destination=helper/mocks/mock_http_client.go.go -package=mocks --source=./helper/util.go HTTPClient
 	go install github.com/vektra/mockery/v2/...@latest
 	cd helper && mockery --name IContractCaller  --output ./mocks --filename=mock_contract_caller.go
