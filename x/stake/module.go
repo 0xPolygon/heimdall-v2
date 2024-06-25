@@ -94,7 +94,7 @@ func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwrunt
 // GetTxCmd returns the root tx command for the stake module.
 func (am AppModule) GetTxCmd() *cobra.Command {
 	return nil
-	// TODO HV2: @Vaibhav implement the cli
+	// TODO HV2: implement the cli
 	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 

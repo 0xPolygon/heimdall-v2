@@ -271,12 +271,12 @@ func (*Validator) IsUnbonding() bool {
 }
 
 // SharesFromTokens implements types.ValidatorI.
-func (*Validator) SharesFromTokens(amt math.Int) (math.LegacyDec, error) {
+func (*Validator) SharesFromTokens(_ math.Int) (math.LegacyDec, error) {
 	panic("unimplemented")
 }
 
 // SharesFromTokensTruncated implements types.ValidatorI.
-func (*Validator) SharesFromTokensTruncated(amt math.Int) (math.LegacyDec, error) {
+func (*Validator) SharesFromTokensTruncated(_ math.Int) (math.LegacyDec, error) {
 	panic("unimplemented")
 }
 

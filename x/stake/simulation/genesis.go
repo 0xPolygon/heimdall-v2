@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"time"
 
-	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	//"github.com/0xPolygon/heimdall-v2/types"
+
+	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func RandomizedGenState(simState *module.SimulationState) {

@@ -47,7 +47,7 @@ func NewMsgValidatorJoin(
 	}, nil
 }
 
-// This fn validates the validator join msg before it is executed
+// Validate validates the validator join msg before it is executed
 func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
@@ -102,7 +102,7 @@ func NewMsgStakeUpdate(from string, id uint64,
 	}, nil
 }
 
-// This fn validates the stake update msg before it is executed
+// Validate validates the stake update msg before it is executed
 func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
@@ -145,7 +145,7 @@ func NewMsgSignerUpdate(from string, id uint64,
 	}, nil
 }
 
-// This fn validates the signer update msg before it is executed
+// Validate validates the signer update msg before it is executed
 func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
@@ -196,7 +196,7 @@ func NewMsgValidatorExit(
 	}, nil
 }
 
-// This fn validates the validator exit msg before it is executed
+// Validate validates the validator exit msg before it is executed
 func (msg MsgValidatorExit) Validate(ac address.Codec) error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)

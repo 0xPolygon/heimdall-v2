@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"cosmossdk.io/collections"
-
 	addresscodec "cosmossdk.io/core/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -303,8 +302,8 @@ func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (st
 	return signer, nil
 }
 
-// GetSignerFromValidatorID gets the signer address from the validator id
-func (k *Keeper) DoValIdExist(ctx context.Context, valID uint64) (bool, error) {
+// DoesValIdExist checks if validator ID exists in store
+func (k *Keeper) DoesValIdExist(ctx context.Context, valID uint64) (bool, error) {
 	return k.signer.Has(ctx, valID)
 }
 

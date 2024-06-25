@@ -1,6 +1,6 @@
 package cli
 
-/* TODO HV2: @Vaibhav implement this
+/* TODO HV2: implement autocli
 import (
 	"errors"
 	"fmt"

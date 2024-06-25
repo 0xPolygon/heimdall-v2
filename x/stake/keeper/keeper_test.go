@@ -222,7 +222,7 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	stakeKeeper := s.stakeKeeper
+	sKeeper := s.stakeKeeper
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
@@ -265,7 +265,7 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 			require.NoError(err)
 
 			// check current validator
-			err = stakeKeeper.AddValidator(ctx, *newVal)
+			err = sKeeper.AddValidator(ctx, *newVal)
 			require.NoError(err)
 
 			s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(item.ackcount).Times(1)

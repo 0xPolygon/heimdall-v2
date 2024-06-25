@@ -5,9 +5,13 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
+
+	stakingKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // GenRandomVals generate random validators
@@ -39,6 +43,30 @@ func GenRandomVals(count int, startBlock uint64, power int64, timeAlive uint64, 
 	}
 
 	return
+}
+
+// LoadRandomValidatorSet loads random validator set
+func LoadRandomValidatorSet(require *require.Assertions, count int, keeper *stakingKeeper.Keeper, ctx sdk.Context, randomise bool, timeAlive int) types.ValidatorSet {
+	var valSet types.ValidatorSet
+
+	validators := GenRandomVals(count, 0, 10, uint64(timeAlive), randomise, 1)
+	for _, validator := range validators {
+		err := keeper.AddValidator(ctx, validator)
+		require.NoError(err, "Unable to set validator, Error: %v", err)
+
+		err = valSet.UpdateWithChangeSet([]*types.Validator{&validator})
+		require.NoError(err)
+	}
+
+	valSet.IncrementProposerPriority(1)
+
+	err := keeper.UpdateValidatorSetInStore(ctx, valSet)
+	require.NoError(err, "Unable to update validator set")
+
+	vals := keeper.GetAllValidators(ctx)
+	require.NotNil(vals)
+
+	return valSet
 }
 
 func generateRandNumber(max int64) uint64 {

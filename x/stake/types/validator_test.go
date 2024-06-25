@@ -1,7 +1,7 @@
 package types
 
 import (
-	fmt "fmt"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestSortValidatorByAddress am populating only the signer as that is the only value used in sorting
+// TestSortValidatorByAddress populates only the signer as that is the only value used in sorting
 func TestSortValidatorByAddress(t *testing.T) {
 	t.Parallel()
 

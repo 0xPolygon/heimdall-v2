@@ -42,17 +42,17 @@ var (
 // NOTE: All get/set to validators should copy the value for safety.
 
 // NewValidatorSet initializes a ValidatorSet by copying over the
-// values from `valz`, a list of Validators. If valz is nil or empty,
+// values from `validators`, a list of Validators. If validators is nil or empty,
 // the new ValidatorSet will have an empty list of Validators.
-// The addresses of validators in `valz` must be unique otherwise the
+// The addresses of validators in `validators` must be unique otherwise the
 // function panics.
-func NewValidatorSet(valz []*Validator) *ValidatorSet {
+func NewValidatorSet(validators []*Validator) *ValidatorSet {
 	vals := &ValidatorSet{}
-	if err := vals.updateWithChangeSet(valz, false); err != nil {
+	if err := vals.updateWithChangeSet(validators, false); err != nil {
 		panic(fmt.Sprintf("cannot create validator set: %s", err.Error()))
 	}
 
-	if len(valz) > 0 {
+	if len(validators) > 0 {
 		vals.IncrementProposerPriority(1)
 	}
 
@@ -405,7 +405,7 @@ func verifyUpdates(updates []*Validator, vals *ValidatorSet) (updatedTotalVoting
 
 		_, val := vals.GetByAddress(address)
 		if val == nil {
-			// New validator, add its voting power the the total.
+			// New validator, add its voting power the total.
 			updatedTotalVotingPower += valUpdate.VotingPower
 			numNewValidators++
 		} else {
