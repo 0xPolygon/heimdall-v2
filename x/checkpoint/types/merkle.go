@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/cbergoon/merkletree"
-
 	"github.com/tendermint/crypto/sha3"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -32,7 +31,7 @@ func IsValidCheckpoint(start uint64, end uint64, rootHash hmTypes.HeimdallHash, 
 	return false, nil
 }
 
-// GetAccountRootHash returns roothash of Validator Account State Tree
+// GetAccountRootHash returns rootHash of Validator Account State Tree
 func GetAccountRootHash(dividendAccounts []hmTypes.DividendAccount) ([]byte, error) {
 	tree, err := GetAccountTree(dividendAccounts)
 	if err != nil {
@@ -94,7 +93,7 @@ func GetAccountProof(dividendAccounts []hmTypes.DividendAccount, userAddr string
 	return proof, index, err
 }
 
-// TODO HV2 Remove this when the global funtion is written in file package
+// TODO HV2 Remove this when the global function is written in file package
 //
 //nolint:unparam
 func convertTo32(input []byte) (output [32]byte, err error) {

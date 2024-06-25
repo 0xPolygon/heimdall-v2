@@ -539,6 +539,54 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		// remove block proposer
 		app.AccountKeeper.RemoveBlockProposer(ctx)
 	}
+
+	var tmValUpdates []abci.ValidatorUpdate
+
+	// Start updating new validators
+	currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)
+	allValidators := app.StakingKeeper.GetAllValidators(ctx)
+	ackCount := app.CheckpointKeeper.GetAckCount(ctx)
+
+	// get validator updates
+	setUpdates := helper.GetUpdatedValidators(
+		&currentValidatorSet, // pointer to current validator set -- UpdateValidators will modify it
+		allValidators,        // All validators
+		ackCount,             // ack count
+	)
+
+	if len(setUpdates) > 0 {
+		// create new validator set
+		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
+			// return with nothing
+			logger.Error("Unable to update current validator set", "Error", err)
+			return abci.ResponseEndBlock{}
+		}
+
+		// TODO HV2: this should not be needed
+		// Hardfork to remove the rotation of validator list on stake update
+		if ctx.BlockHeight() < helper.GetAalborgHardForkHeight() {
+			// increment proposer priority
+			currentValidatorSet.IncrementProposerPriority(1)
+		}
+
+		// validator set change
+		logger.Debug("[ENDBLOCK] Updated current validator set", "proposer", currentValidatorSet.GetProposer())
+
+		// save set in store
+		if err := app.StakingKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
+			// return with nothing
+			logger.Error("Unable to update current validator set in state", "Error", err)
+			return abci.ResponseEndBlock{}
+		}
+
+		// convert updates from map to array
+		for _, v := range setUpdates {
+			tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
+				Power:  v.VotingPower,
+				PubKey: v.PubKey.ABCIPubKey(),
+			})
+		}
+	}
 	*/
 
 	return app.mm.EndBlock(ctx)

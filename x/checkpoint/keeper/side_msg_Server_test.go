@@ -1,19 +1,17 @@
 package keeper_test
 
 import (
-	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
-	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
 
 func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {

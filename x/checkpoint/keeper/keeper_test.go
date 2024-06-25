@@ -4,15 +4,22 @@ import (
 	"testing"
 	"time"
 
+	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/runtime"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/suite"
 
-	storetypes "cosmossdk.io/store/types"
-
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
@@ -21,16 +28,11 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakekeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+)
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-
-	"github.com/cosmos/cosmos-sdk/baseapp"
-	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/cosmos/cosmos-sdk/runtime"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+const (
+	AccountHash = "0x000000000000000000000000000000000000dEaD"
+	BorChainID  = "1234"
 )
 
 type KeeperTestSuite struct {
@@ -63,17 +65,17 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	moduleCommunicator := testUtil.ModuleCommunicatorMock{}
 
-	cmKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService)
+	chainManagerKeeper := cmKeeper.NewKeeper(encCfg.Codec, storeService)
 
 	cmParams := cmTypes.DefaultParams()
-	cmKeeper.SetParams(ctx, cmParams)
+	chainManagerKeeper.SetParams(ctx, cmParams)
 
-	stakekeeper := stakekeeper.NewKeeper(
+	stakeKeeper := stakekeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		nil,
-		&cmKeeper,
+		&chainManagerKeeper,
 		addrCodec.NewHexCodec(),
 		s.contractCaller,
 	)
@@ -82,16 +84,16 @@ func (s *KeeperTestSuite) SetupTest() {
 		encCfg.Codec,
 		storeService,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		*stakekeeper,
-		cmKeeper,
+		*stakeKeeper,
+		chainManagerKeeper,
 		moduleCommunicator,
 		s.contractCaller,
 	)
 
 	s.ctx = ctx
 	s.checkpointKeeper = keeper
-	s.stakeKeeper = stakekeeper
-	s.cmKeeper = &cmKeeper
+	s.stakeKeeper = stakeKeeper
+	s.cmKeeper = &chainManagerKeeper
 	s.moduleCommunicator = &moduleCommunicator
 
 	checkpointGenesis := types.DefaultGenesisState()
@@ -143,8 +145,10 @@ func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {
 	ctx, keeper := s.ctx, s.checkpointKeeper
 	require := s.Require()
 
-	keeper.FlushCheckpointBuffer(ctx)
+	err := keeper.FlushCheckpointBuffer(ctx)
+	require.Nil(err)
 
-	result := keeper.
-		require.False(result)
+	buffer, err := keeper.GetCheckpointFromBuffer(ctx)
+	require.Nil(err)
+	require.Nil(buffer)
 }

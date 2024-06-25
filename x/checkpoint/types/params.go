@@ -1,6 +1,6 @@
 package types
 
-import fmt "fmt"
+import "fmt"
 
 func (p Params) Validate() error {
 	if p.MaxCheckpointLength == 0 {
