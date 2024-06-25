@@ -1,0 +1,14 @@
+syntax = "proto3";
+package heimdallv2.topup.v1;
+
+import "gogoproto/gogo.proto";
+import "heimdallv2/types/dividend_account.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
+
+// GenesisState is the topup state that must be provided at genesis
+message GenesisState {
+  repeated string topup_sequences = 1;
+  repeated heimdallv2.types.DividendAccount dividend_accounts = 2
+      [ (gogoproto.nullable) = false ];
+}

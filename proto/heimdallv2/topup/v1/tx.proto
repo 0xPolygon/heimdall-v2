@@ -1,0 +1,42 @@
+syntax = "proto3";
+package heimdallv2.topup.v1;
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "gogoproto/gogo.proto";
+import "heimdallv2/types/hash.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
+
+// Msg defines the topup Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+  // HandleTopupTx defines a RPC method for handling a topup tx for a validator
+  rpc HandleTopupTx(MsgTopupTx) returns (MsgTopupTxResponse);
+  // WithdrawFeeTx defines a RPC method for withdrawing the fees for a validator
+  rpc WithdrawFeeTx(MsgWithdrawFeeTx) returns (MsgWithdrawFeeTxResponse);
+}
+
+message MsgTopupTx {
+  string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string user = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string fee = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+  heimdallv2.types.TxHash tx_hash = 4 [ (gogoproto.nullable) = false ];
+  uint64 log_index = 5;
+  uint64 block_number = 6;
+}
+
+message MsgWithdrawFeeTx {
+  string proposer = 1;
+  string amount = 3 [
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (gogoproto.nullable) = false
+  ];
+}
+
+message MsgTopupTxResponse {}
+
+message MsgWithdrawFeeTxResponse {}
