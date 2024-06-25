@@ -77,3 +77,13 @@ func generateRandNumber(max int64) uint64 {
 
 	return nBig.Uint64()
 }
+
+func GetRandomValidatorSet(count int) types.ValidatorSet {
+	randValidators := GenRandomVals(count, 1, 1, 5, false, 0)
+	validators := make([]*types.Validator, len(randValidators))
+	for i := range len(randValidators) {
+		validators[i] = &randValidators[i]
+	}
+	validatorSet := types.NewValidatorSet(validators)
+	return *validatorSet
+}
