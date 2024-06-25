@@ -2,14 +2,13 @@ package keeper
 
 import (
 	"context"
-	"errors"
-	"fmt"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var _ types.QueryServer = queryServer{}
@@ -18,7 +17,7 @@ type queryServer struct {
 	k *Keeper
 }
 
-// NewQueryServer creates a new querier for checkpoint clients.
+// NewQueryServer creates a new querier for the checkpoint client.
 // It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
@@ -27,11 +26,11 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 }
 
 // Params gives the params
-func (q queryServer) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &types.QueryParamsResponse{
@@ -39,28 +38,31 @@ func (q queryServer) Params(ctx context.Context, req *types.QueryParamsRequest) 
 	}, nil
 }
 
-// AckCount gives the checkpoint count
-func (q queryServer) AckCount(ctx context.Context, req *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
-	count, err := q.k.GetACKCount(ctx)
+// AckCount gives the checkpoint ack count
+func (q queryServer) AckCount(ctx context.Context, _ *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
+	count, err := q.k.GetAckCount(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return &types.QueryAckCountResponse{Count: count}, err
 }
 
-// Checkpoint gives the checkpoint based on number
+// Checkpoint gives the checkpoint based on its number
 func (q queryServer) Checkpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
 	checkpoint, err := q.k.GetCheckpointByNumber(ctx, req.Number)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCheckpointResponse{Checkpoint: checkpoint}, nil
 }
 
 // CheckpointLatest gives the latest checkpoint
-func (q queryServer) CheckpointLatest(ctx context.Context, req *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
+func (q queryServer) CheckpointLatest(ctx context.Context, _ *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
 	checkpoint, err := q.k.GetLastCheckpoint(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCheckpointLatestResponse{Checkpoint: checkpoint}, nil
@@ -70,15 +72,18 @@ func (q queryServer) CheckpointLatest(ctx context.Context, req *types.QueryCheck
 func (q queryServer) CheckpointBuffer(ctx context.Context, req *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
 	checkpoint, err := q.k.GetCheckpointFromBuffer(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCheckpointBufferResponse{Checkpoint: *checkpoint}, nil
 }
 
 // LastNoAck gives the last no ack
-func (q queryServer) LastNoAck(ctx context.Context, req *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
+func (q queryServer) LastNoAck(ctx context.Context, _ *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
 	noAck, err := q.k.GetLastNoAck(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return &types.QueryLastNoAckResponse{Result: noAck}, err
 }
@@ -92,18 +97,18 @@ func (q queryServer) NextCheckpoint(ctx context.Context, req *types.QueryNextChe
 	// get validator set
 	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	proposer := validatorSet.GetProposer()
-	ackCount, err := q.k.GetACKCount(ctx)
+	ackCount, err := q.k.GetAckCount(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	var start uint64
@@ -113,7 +118,7 @@ func (q queryServer) NextCheckpoint(ctx context.Context, req *types.QueryNextChe
 
 		lastCheckpoint, err := q.k.GetCheckpointByNumber(ctx, checkpointNumber)
 		if err != nil {
-			return nil, err
+			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 
 		start = lastCheckpoint.EndBlock + 1
@@ -125,14 +130,16 @@ func (q queryServer) NextCheckpoint(ctx context.Context, req *types.QueryNextChe
 
 	rootHash, err := contractCaller.GetRootHash(start, endBlockNumber, params.MaxCheckpointLength)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("could not fetch roothash for start:%v end:%v error:%v", start, end, err.Error()))
+		q.k.Logger(ctx).Error("could not fetch rootHash", "start", start, "end", endBlockNumber, "error", err)
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	accs := q.k.topupKeeper.GetAllDividendAccounts(ctx)
+	dividendAccounts := q.k.topupKeeper.GetAllDividendAccounts(ctx)
 
-	accRootHash, err := types.GetAccountRootHash(accs)
+	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("could not get generate account root hash. Error:%v", err.Error()))
+		q.k.Logger(ctx).Error("could not get generate account root hash", "error", err)
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	checkpointMsg := types.MsgCheckpoint{
@@ -148,7 +155,7 @@ func (q queryServer) NextCheckpoint(ctx context.Context, req *types.QueryNextChe
 }
 
 // CurrentProposer queries validator info for the current proposer
-func (q queryServer) CurrentProposer(ctx context.Context, req *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
+func (q queryServer) CurrentProposer(ctx context.Context, _ *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
 	proposer := q.k.sk.GetCurrentProposer(ctx)
 
 	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
@@ -162,7 +169,8 @@ func (q queryServer) Proposer(ctx context.Context, req *types.QueryProposerReque
 	// get validator set
 	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
 	if err != nil {
-		return nil, err
+		q.k.Logger(ctx).Error("could not get get validators set", "error", err)
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	times := int(req.Times)
@@ -170,12 +178,9 @@ func (q queryServer) Proposer(ctx context.Context, req *types.QueryProposerReque
 		times = len(validatorSet.Validators)
 	}
 
-	// init proposers
 	proposers := make([]stakeTypes.Validator, times)
-
-	// get proposers
-	for index := 0; index < times; index++ {
-		proposers[index] = *(validatorSet.GetProposer())
+	for i := 0; i < times; i++ {
+		proposers[i] = *(validatorSet.GetProposer())
 		validatorSet.IncrementProposerPriority(1)
 	}
 

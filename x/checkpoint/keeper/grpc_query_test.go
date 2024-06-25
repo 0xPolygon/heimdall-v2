@@ -3,36 +3,34 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {
-	ctx, queryClient := s.ctx, s.queryClient
-	require := s.Require()
+	ctx, queryClient, require := s.ctx, s.queryClient, s.Require()
 
 	req := &types.QueryParamsRequest{}
-
 	defaultParams := types.DefaultParams()
 
 	res, err := queryClient.Params(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
-
 	require.True(defaultParams.Equal(res.Params))
 }
 
 func (s *KeeperTestSuite) TestQueryAckCount() {
-	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
-	require := s.Require()
+	ctx, keeper, queryClient, require := s.ctx, s.checkpointKeeper, s.queryClient, s.Require()
 
 	req := &types.QueryAckCountRequest{}
-
 	ackCount := uint64(1)
-	keeper.UpdateACKCountWithValue(ctx, ackCount)
+
+	err := keeper.UpdateAckCountWithValue(ctx, ackCount)
+	require.NoError(err)
 
 	res, err := queryClient.AckCount(ctx, req)
 	require.NoError(err)
@@ -43,8 +41,7 @@ func (s *KeeperTestSuite) TestQueryAckCount() {
 }
 
 func (s *KeeperTestSuite) TestQueryCheckpoint() {
-	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
-	require := s.Require()
+	ctx, keeper, queryClient, require := s.ctx, s.checkpointKeeper, s.queryClient, s.Require()
 
 	req := &types.QueryCheckpointRequest{Number: uint64(1)}
 
@@ -55,17 +52,16 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
-	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
+	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
-	borChainId := "1234"
 
 	checkpointBlock := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
 		proposerAddress,
-		borChainId,
+		BorChainID,
 		timestamp,
 	)
 
@@ -91,17 +87,16 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
-	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
+	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
-	borChainId := "1234"
 
 	checkpointBlock := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
 		proposerAddress,
-		borChainId,
+		BorChainID,
 		timestamp,
 	)
 	err = keeper.SetCheckpointBuffer(ctx, checkpointBlock)
@@ -120,7 +115,8 @@ func (s *KeeperTestSuite) TestQueryLastNoAck() {
 	require := s.Require()
 
 	noAck := uint64(time.Now().Unix())
-	keeper.SetLastNoAck(ctx, noAck)
+	err := keeper.SetLastNoAck(ctx, noAck)
+	require.NoError(err)
 
 	req := &types.QueryLastNoAckRequest{}
 
@@ -140,17 +136,16 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
-	proposerAddress := common.HexToAddress("0xdummyAddress123").String()
+	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
-	borChainId := "1234"
 
 	checkpointBlock := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
 		proposerAddress,
-		borChainId,
+		BorChainID,
 		timestamp,
 	)
 
@@ -158,7 +153,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
 	require.NoError(err)
 
-	req := types.QueryNextCheckpointRequest{BorChainId: borChainId}
+	req := types.QueryNextCheckpointRequest{BorChainId: BorChainID}
 
 	res, err := queryClient.NextCheckpoint(ctx, &req)
 	require.NoError(err)
@@ -178,7 +173,6 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 	req := &types.QueryCurrentProposerRequest{}
 
 	res, err := queryClient.CurrentProposer(ctx, req)
-	// check no error found
 	require.NoError(err)
 	require.NotNil(res)
 
@@ -194,7 +188,6 @@ func (s *KeeperTestSuite) TestHandleQueryProposer() {
 	req := &types.QueryProposerRequest{Times: 2}
 
 	res, err := queryClient.Proposer(ctx, req)
-	// check no error found
 	require.NoError(err)
 	require.NotNil(res)
 

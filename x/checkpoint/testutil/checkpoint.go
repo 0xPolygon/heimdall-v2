@@ -13,7 +13,7 @@ import (
 func GenRandCheckpoint(start uint64, headerSize uint64) (headerBlock types.Checkpoint) {
 	end := start + headerSize
 	borChainID := "1234"
-	rootHash := hmTypes.HeimdallHash{RandomBytes()}
+	rootHash := hmTypes.HeimdallHash{Hash: RandomBytes()}
 	proposer := common.Address{}.String()
 
 	headerBlock = types.CreateCheckpoint(
