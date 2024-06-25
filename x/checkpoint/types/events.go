@@ -15,6 +15,5 @@ var (
 	AttributeKeyRootHash    = "root-hash"
 	AttributeKeyAccountHash = "account-hash"
 	AttributeKeyHash        = "hash"
-
-	AttributeValueCategory = ModuleName
+	AttributeValueCategory  = ModuleName
 )

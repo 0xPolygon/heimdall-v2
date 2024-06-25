@@ -538,7 +538,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	// Start updating new validators
 	currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)
 	allValidators := app.StakingKeeper.GetAllValidators(ctx)
-	ackCount := app.CheckpointKeeper.GetACKCount(ctx)
+	ackCount := app.CheckpointKeeper.GetAckCount(ctx)
 
 	// get validator updates
 	setUpdates := helper.GetUpdatedValidators(

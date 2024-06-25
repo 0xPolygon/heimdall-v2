@@ -2,25 +2,26 @@ package keeper
 
 import (
 	"context"
-	"errors"
-	"fmt"
+
+	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // InitGenesis sets initial state for checkpoint module
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	err := k.SetParams(ctx, data.Params)
 	if err != nil {
-		panic(errors.New(fmt.Sprintf("error in setting checkpoint params during init genesis", "err", err)))
+		k.Logger(ctx).Error("error in setting checkpoint params during init genesis", "error", err)
+		panic(err)
 	}
 
 	// Set last no-ack
 	if data.LastNoACK > 0 {
 		err = k.SetLastNoAck(ctx, data.LastNoACK)
 		if err != nil {
-			panic(errors.New(fmt.Sprintf("error in setting last ack count during init genesis", "err", err)))
+			k.Logger(ctx).Error("error in setting last no ack during init genesis", "error", err)
+			panic(err)
 		}
 	}
 
@@ -28,7 +29,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	if len(data.Checkpoints) != 0 {
 		// check if we are provided all the headers
 		if int(data.AckCount) != len(data.Checkpoints) {
-			panic(errors.New(fmt.Sprintf("incorrect state in state-dump , please Check", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)))
+			k.Logger(ctx).Error("incorrect state in state-dump", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)
+			panic(err)
 		}
 		// sort headers before loading to state
 		data.Checkpoints = types.SortHeaders(data.Checkpoints)
@@ -44,17 +46,18 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		}
 	}
 
-	// Add checkpoint in buffer
+	// add checkpoint in buffer
 	if data.BufferedCheckpoint != nil {
 		if err := k.SetCheckpointBuffer(ctx, *data.BufferedCheckpoint); err != nil {
 			k.Logger(ctx).Error("error while setting the checkpoint in buffer", "error", err)
 		}
 	}
 
-	// Set initial ack count
-	err = k.UpdateACKCountWithValue(ctx, data.AckCount)
+	// set initial ack count
+	err = k.UpdateAckCountWithValue(ctx, data.AckCount)
 	if err != nil {
-		panic(errors.New(fmt.Sprintf("error while updating the ack value in store", "error", err)))
+		k.Logger(ctx).Error("error in updating the ack count value in store", "error", err)
+		panic(err)
 	}
 }
 
@@ -64,7 +67,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 	params, err := k.GetParams(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error in getting checkpoint params in export genesis call", "error", err)
-
 		return nil
 	}
 
@@ -81,7 +83,7 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return nil
 	}
 
-	ackCount, err := k.GetACKCount(ctx)
+	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error in getting ack count in export genesis call", "error", err)
 		return nil
