@@ -240,8 +240,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	stakingKeeper := s.stakeKeeper
 	start := uint64(0)
 	maxSize := uint64(256)
-	params, err := keeper.GetParams(ctx)
-	require.NoError(err)
 
 	// check valid checkpoint
 	// generate proposer for validator set
@@ -253,11 +251,13 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
 
-	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
+	header := chSim.GenRandCheckpoint(start, maxSize)
+
+	validatorSet, err := stakingKeeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
 	// add current proposer to header
-	header.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
+	header.Proposer = validatorSet.Proposer.Signer
 
 	headerId := uint64(1)
 
@@ -353,20 +353,23 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
 
-	header, err := chSim.GenRandCheckpoint(start, maxSize, params.MaxCheckpointLength)
-	require.NoError(err)
+	header := chSim.GenRandCheckpoint(start, maxSize)
 
+	validatorSet, err := stakeKeeper.GetValidatorSet(ctx)
+	require.NoError(err)
 	// add current proposer to header
-	header.Proposer = stakeKeeper.GetValidatorSet(ctx).Proposer.Signer
+	header.Proposer = validatorSet.Proposer.Signer
 
 	keeper.AddCheckpoint(ctx, uint64(1), header)
-	ackCount := keeper.GetACKCount(ctx)
+	ackCount, err := keeper.GetACKCount(ctx)
+	require.NoError(err)
 
 	// set time lastCheckpoint timestamp + checkpointBufferTime-10
 	newTime := lastCheckpoint.TimeStamp + uint64(checkpointBufferTime.Seconds()) - uint64(5)
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
-	validatorSet := stakeKeeper.GetValidatorSet(ctx)
+	validatorSet, err = stakeKeeper.GetValidatorSet(ctx)
+	require.NoError(err)
 
 	//Rotate the list to get the next proposer in line
 	validatorSet.IncrementProposerPriority(1)
@@ -379,7 +382,9 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
 	require.ErrorContains(err, types.ErrInvalidNoACK.Error())
 
-	updatedAckCount := keeper.GetACKCount(ctx)
+	updatedAckCount, err := keeper.GetACKCount(ctx)
+	require.NoError(err)
+
 	require.Equal(ackCount, updatedAckCount, "Should not update state")
 
 	// set time lastCheckpoint timestamp + noAckWaitTime
@@ -393,7 +398,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
 	require.ErrorContains(err, types.ErrInvalidNoACK.Error())
 
-	updatedAckCount = keeper.GetACKCount(ctx)
+	updatedAckCount, err = keeper.GetACKCount(ctx)
+	require.NoError(err)
 	require.Equal(ackCount, updatedAckCount, "Should not update state")
 
 	msgNoAck = types.MsgCheckpointNoAck{
@@ -403,6 +409,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
 	require.NoError(err)
 
-	updatedAckCount = keeper.GetACKCount(ctx)
+	updatedAckCount, err = keeper.GetACKCount(ctx)
+	require.NoError(err)
+
 	require.Equal(ackCount, updatedAckCount, "Should not update state")
 }
