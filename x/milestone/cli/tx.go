@@ -133,9 +133,6 @@ func MilestoneCmd(ac address.Codec) *cobra.Command {
 		logger.Error("SendMilestoneTx | MarkFlagRequired | FlagMilestoneID", "Error", err)
 	}
 
-	if err := cmd.MarkFlagRequired(FlagBorChainID); err != nil {
-		logger.Error("SendMilestoneTx | MarkFlagRequired | FlagBorChainID", "Error", err)
-	}
 
 	flags.AddTxFlagsToCmd(cmd)
 
