@@ -68,6 +68,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
+	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -120,7 +123,7 @@ type HeimdallApp struct {
 	// TODO HV2: uncomment when the keepers are implemented
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
-	// CheckpointKeeper checkpointkeeper.Keeper
+	CheckpointKeeper checkpointKeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
@@ -179,7 +182,7 @@ func NewHeimdallApp(
 		// TODO HV2: uncomment when modules are implemented
 		// bortypes.StoreKey,
 		// clerktypes.StoreKey,
-		// checkpointtypes.StoreKey,
+		checkpointTypes.StoreKey,
 		topupTypes.StoreKey,
 		chainmanagertypes.StoreKey,
 	)
@@ -323,6 +326,15 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[checkpointTypes.StoreKey]),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		&app.caller,
+	)
+
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
@@ -336,6 +348,7 @@ func NewHeimdallApp(
 		// TODO HV2: add custom modules
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
+		checkpoint.NewAppModule(&app.CheckpointKeeper),
 	)
 
 	// Basic manager
@@ -378,7 +391,7 @@ func NewHeimdallApp(
 		topupTypes.ModuleName,
 		staketypes.ModuleName,
 		// TODO HV2: uncomment when modules are implemented
-		// checkpointtypes.ModuleName,
+		checkpointTypes.ModuleName,
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
 	}
