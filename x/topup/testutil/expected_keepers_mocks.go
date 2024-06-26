@@ -134,29 +134,6 @@ func (mr *MockBankKeeperMockRecorder) SpendableCoin(ctx, addr, denom interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SpendableCoin", reflect.TypeOf((*MockBankKeeper)(nil).SpendableCoin), ctx, addr, denom)
 }
 
-// MockStakeKeeper is a mock of StakeKeeper interface.
-type MockStakeKeeper struct {
-	ctrl     *gomock.Controller
-	recorder *MockStakeKeeperMockRecorder
-}
-
-// MockStakeKeeperMockRecorder is the mock recorder for MockStakeKeeper.
-type MockStakeKeeperMockRecorder struct {
-	mock *MockStakeKeeper
-}
-
-// NewMockStakeKeeper creates a new mock instance.
-func NewMockStakeKeeper(ctrl *gomock.Controller) *MockStakeKeeper {
-	mock := &MockStakeKeeper{ctrl: ctrl}
-	mock.recorder = &MockStakeKeeperMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStakeKeeper) EXPECT() *MockStakeKeeperMockRecorder {
-	return m.recorder
-}
-
 // MockChainKeeper is a mock of ChainKeeper interface.
 type MockChainKeeper struct {
 	ctrl     *gomock.Controller

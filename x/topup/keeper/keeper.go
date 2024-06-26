@@ -23,7 +23,6 @@ type Keeper struct {
 	schema       collections.Schema
 
 	BankKeeper     types.BankKeeper
-	stakeKeeper    types.StakeKeeper
 	ChainKeeper    types.ChainKeeper
 	contractCaller helper.IContractCaller
 
@@ -36,7 +35,6 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	bankKeeper types.BankKeeper,
-	stakeKeeper types.StakeKeeper,
 	chainKeeper types.ChainKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
@@ -46,7 +44,6 @@ func NewKeeper(
 		cdc:            cdc,
 		storeService:   storeService,
 		BankKeeper:     bankKeeper,
-		stakeKeeper:    stakeKeeper,
 		ChainKeeper:    chainKeeper,
 		contractCaller: contractCaller,
 
