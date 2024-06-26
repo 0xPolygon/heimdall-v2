@@ -249,7 +249,7 @@ func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator serverty
 	cmtApp := server.NewCometABCIWrapper(appc)
 
 	// create & start cometbft node
-	tmNode, err := node.NewNode(
+	cmtNode, err := node.NewNode(
 		cfg,
 		privval.LoadOrGenFilePV(cfg.PrivValidatorKeyFile(), cfg.PrivValidatorStateFile()),
 		nodeKey,
@@ -264,7 +264,7 @@ func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator serverty
 	}
 
 	// start CometBFT node here
-	if err = tmNode.Start(); err != nil {
+	if err = cmtNode.Start(); err != nil {
 		return fmt.Errorf("failed to start cometbft node: %s", err)
 	}
 
@@ -339,8 +339,8 @@ func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator serverty
 		if cpuProfileCleanup != nil {
 			cpuProfileCleanup()
 		}
-		if tmNode.IsRunning() {
-			return tmNode.Stop()
+		if cmtNode.IsRunning() {
+			return cmtNode.Stop()
 		}
 
 		err = db.Close()
