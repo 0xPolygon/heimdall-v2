@@ -10,12 +10,6 @@ import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
-/* TODO HV2: requests/responses and their json representations,
-    together with API paths might have changed.
-    Also, requests' bodies and path variables param should be ok,
-    check for correct functioning of query params
-*/
-
 // Query defines the gRPC querier service.
 service Query {
   // IsTopupTxOld queries for a specific topup tx to check its status (old

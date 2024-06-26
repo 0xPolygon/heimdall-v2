@@ -9,11 +9,12 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/golang/mock/gomock"
 
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/testutil" //nolint:typecheck
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -66,10 +67,9 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 	_, _, addr := testdata.KeyTestPubAddr()
 
 	t.Run("success full amount", func(t *testing.T) {
-		// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
+
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(coins[0]).Times(1)
@@ -82,10 +82,8 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 	})
 
 	t.Run("success partial amount", func(t *testing.T) {
-		// TODO HV2: replace the following lines with `coins := simulation.RandomFeeCoins()` when simulation types are implemented
-		base, _ := big.NewInt(0).SetString("1000000000000000000", 10)
-		amount := big.NewInt(0).Mul(big.NewInt(0).SetInt64(int64(rand.Intn(1000000))), base)
-		coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(amount)}}
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+		require.NoError(err)
 
 		amt, _ := math.NewIntFromString("2")
 		coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
