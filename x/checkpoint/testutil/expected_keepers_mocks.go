@@ -9,6 +9,8 @@ import (
 	reflect "reflect"
 
 	types "github.com/0xPolygon/heimdall-v2/types"
+	types0 "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	types1 "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -36,15 +38,120 @@ func (m *MockTopupKeeper) EXPECT() *MockTopupKeeperMockRecorder {
 }
 
 // GetAllDividendAccounts mocks base method.
-func (m *MockTopupKeeper) GetAllDividendAccounts(ctx context.Context) []types.DividendAccount {
+func (m *MockTopupKeeper) GetAllDividendAccounts(ctx context.Context) ([]*types.DividendAccount, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllDividendAccounts", ctx)
-	ret0, _ := ret[0].([]types.DividendAccount)
-	return ret0
+	ret0, _ := ret[0].([]*types.DividendAccount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetAllDividendAccounts indicates an expected call of GetAllDividendAccounts.
 func (mr *MockTopupKeeperMockRecorder) GetAllDividendAccounts(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllDividendAccounts", reflect.TypeOf((*MockTopupKeeper)(nil).GetAllDividendAccounts), ctx)
+}
+
+// MockStakeKeeper is a mock of StakeKeeper interface.
+type MockStakeKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockStakeKeeperMockRecorder
+}
+
+// MockStakeKeeperMockRecorder is the mock recorder for MockStakeKeeper.
+type MockStakeKeeperMockRecorder struct {
+	mock *MockStakeKeeper
+}
+
+// NewMockStakeKeeper creates a new mock instance.
+func NewMockStakeKeeper(ctrl *gomock.Controller) *MockStakeKeeper {
+	mock := &MockStakeKeeper{ctrl: ctrl}
+	mock.recorder = &MockStakeKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockStakeKeeper) EXPECT() *MockStakeKeeperMockRecorder {
+	return m.recorder
+}
+
+// GetCurrentProposer mocks base method.
+func (m *MockStakeKeeper) GetCurrentProposer(ctx context.Context) *types1.Validator {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentProposer", ctx)
+	ret0, _ := ret[0].(*types1.Validator)
+	return ret0
+}
+
+// GetCurrentProposer indicates an expected call of GetCurrentProposer.
+func (mr *MockStakeKeeperMockRecorder) GetCurrentProposer(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentProposer", reflect.TypeOf((*MockStakeKeeper)(nil).GetCurrentProposer), ctx)
+}
+
+// GetValidatorSet mocks base method.
+func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) (types1.ValidatorSet, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetValidatorSet", ctx)
+	ret0, _ := ret[0].(types1.ValidatorSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetValidatorSet indicates an expected call of GetValidatorSet.
+func (mr *MockStakeKeeperMockRecorder) GetValidatorSet(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetValidatorSet", reflect.TypeOf((*MockStakeKeeper)(nil).GetValidatorSet), ctx)
+}
+
+// IncrementAccum mocks base method.
+func (m *MockStakeKeeper) IncrementAccum(ctx context.Context, times int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IncrementAccum", ctx, times)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// IncrementAccum indicates an expected call of IncrementAccum.
+func (mr *MockStakeKeeperMockRecorder) IncrementAccum(ctx, times interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IncrementAccum", reflect.TypeOf((*MockStakeKeeper)(nil).IncrementAccum), ctx, times)
+}
+
+// MockChainManagerKeeper is a mock of ChainManagerKeeper interface.
+type MockChainManagerKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockChainManagerKeeperMockRecorder
+}
+
+// MockChainManagerKeeperMockRecorder is the mock recorder for MockChainManagerKeeper.
+type MockChainManagerKeeperMockRecorder struct {
+	mock *MockChainManagerKeeper
+}
+
+// NewMockChainManagerKeeper creates a new mock instance.
+func NewMockChainManagerKeeper(ctrl *gomock.Controller) *MockChainManagerKeeper {
+	mock := &MockChainManagerKeeper{ctrl: ctrl}
+	mock.recorder = &MockChainManagerKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockChainManagerKeeper) EXPECT() *MockChainManagerKeeperMockRecorder {
+	return m.recorder
+}
+
+// GetParams mocks base method.
+func (m *MockChainManagerKeeper) GetParams(ctx context.Context) (types0.Params, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetParams", ctx)
+	ret0, _ := ret[0].(types0.Params)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetParams indicates an expected call of GetParams.
+func (mr *MockChainManagerKeeperMockRecorder) GetParams(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetParams", reflect.TypeOf((*MockChainManagerKeeper)(nil).GetParams), ctx)
 }

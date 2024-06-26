@@ -1,6 +1,8 @@
 package testutil
 
-import "crypto/rand"
+import (
+	"crypto/rand"
+)
 
 func RandomBytes() []byte {
 	b := make([]byte, 32)

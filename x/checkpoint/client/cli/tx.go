@@ -1,5 +1,6 @@
 package cli
 
+/*
 import (
 	"fmt"
 
@@ -239,7 +240,7 @@ func CheckpointAckCmd(ac address.Codec) *cobra.Command {
 	return cmd
 }
 
-*/
+
 
 // CheckpointNoAckCmd returns a CLI command handler for creating a Msg
 func CheckpointNoAckCmd() *cobra.Command {
@@ -265,3 +266,5 @@ func CheckpointNoAckCmd() *cobra.Command {
 
 	return cmd
 }
+
+*/
