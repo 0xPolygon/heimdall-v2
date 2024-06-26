@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"math"
 	"strconv"
 	"time"
 
@@ -162,6 +163,10 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 
 	// Check last no ack - prevents repetitive no-ack
 	lastMilestoneTimeout := m.GetLastMilestoneTimeout(ctx)
+	if lastMilestoneTimeout > uint64(math.MaxInt64) {
+		// handle the error appropriately, for example by returning an error
+		return nil, errorsmod.Wrap(types.ErrInvalidMilestoneTimeout, "lastMilestoneTimeout is too large")
+	}
 	lastMilestoneTimeoutTime := time.Unix(int64(lastMilestoneTimeout), 0)
 
 	if lastMilestoneTimeoutTime.After(currentTime) || (currentTime.Sub(lastMilestoneTimeoutTime) < bufferTime) {
