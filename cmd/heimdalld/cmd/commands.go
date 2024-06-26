@@ -156,6 +156,7 @@ func initRootCmd(
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
 		snapshot.Cmd(newApp),
+		server.NewRollbackCmd(newApp, app.DefaultNodeHome),
 	)
 
 	server.AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
@@ -204,9 +205,6 @@ func initRootCmd(
 	// rootCmd.AddCommand(initCmd(ctx, cdc, hApp.BasicManager))
 
 	rootCmd.AddCommand(testnetCmd(ctx, cdc, hApp.BasicManager))
-
-	// rollback cmd
-	rootCmd.AddCommand(rollbackCmd(newApp))
 
 	// pruning cmd
 	pruning.Cmd(newApp, app.DefaultNodeHome)
