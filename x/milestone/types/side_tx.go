@@ -10,10 +10,10 @@ import (
 )
 
 type SideMsgServer interface {
-	//SideHandler to register specific sideHandler based on methodName
+	//SideTxHandler to register specific sideHandler based on methodName
 	SideTxHandler(methodName string) hmModule.SideTxHandler
 
-	//PostHandler to register specific postHandler based on methodName
+	//PostTxHandler to register specific postHandler based on methodName
 	PostTxHandler(methodName string) hmModule.PostTxHandler
 }
 
@@ -48,8 +48,15 @@ func RegisterSideMsgServer(sideCfg hmModule.SideTxConfigurator, srv SideMsgServe
 			continue
 		}
 
-		sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
+		err := sideCfg.RegisterSideHandler(requestTypeName, sideHandler)
+		if err != nil {
+			panic(fmt.Errorf("error while registering the sideHandler", "err", err))
+		}
+
 		sideCfg.RegisterPostHandler(requestTypeName, postHandler)
+		if err != nil {
+			panic(fmt.Errorf("error while registering the postHandler", "err", err))
+		}
 	}
 }
 
