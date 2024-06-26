@@ -37,14 +37,8 @@ type AppModule struct {
 	contractCaller helper.ContractCaller
 }
 
-<<<<<<< HEAD
 // NewAppModule creates a new AppModule object
 func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
-||||||| parent of ad324e6 (chg: use contract caller in app)
-func NewAppModule(keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
-=======
-func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
->>>>>>> ad324e6 (chg: use contract caller in app)
 	return AppModule{
 		keeper:         keeper,
 		contractCaller: contractCaller,
