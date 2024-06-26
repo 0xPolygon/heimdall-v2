@@ -66,7 +66,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		require.Nil(bufferedHeader, "Should not store state")
 	})
 
-	s.Run("No Roothash", func() {
+	s.Run("No rootHash", func() {
 		s.contractCaller.Mock = mock.Mock{}
 
 		// create checkpoint msg
@@ -90,7 +90,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		require.Nil(bufferedHeader, "Should not store state")
 	})
 
-	s.Run("invalid roothash", func() {
+	s.Run("invalid rootHash", func() {
 		s.contractCaller.Mock = mock.Mock{}
 
 		// create checkpoint msg
@@ -133,13 +133,13 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 			uint64(1),
 		)
-		rootchainInstance := &rootchain.Rootchain{}
+		rootChainInstance := &rootchain.Rootchain{}
 
-		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
-		s.contractCaller.On("GetHeaderInfo", headerId, rootchainInstance, params.ChildBlockInterval).Return(header.RootHash.GetHash(), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
+		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
+		s.contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(header.RootHash.GetHash(), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := s.sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should pass")
@@ -156,14 +156,14 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 			uint64(1),
 		)
-		rootchainInstance := &rootchain.Rootchain{}
+		rootChainInstance := &rootchain.Rootchain{}
 
-		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootchainInstance, nil)
-		s.contractCaller.On("GetHeaderInfo", headerId, rootchainInstance, params.ChildBlockInterval).Return(nil, header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
+		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
+		s.contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(nil, header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := s.sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -260,7 +260,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -289,7 +289,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 
 			uint64(1),
 		)
@@ -308,7 +308,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -339,7 +339,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header2.StartBlock,
 			header2.EndBlock,
 			header2.RootHash,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -376,7 +376,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header5.StartBlock,
 			header5.EndBlock-1,
 			header5.RootHash,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 			uint64(1),
 		)
 
@@ -418,7 +418,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header6.StartBlock,
 			header6.EndBlock+1,
 			header6.RootHash,
-			hmTypes.HeimdallHash{testutil.RandomBytes()},
+			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
 			uint64(1),
 		)
 

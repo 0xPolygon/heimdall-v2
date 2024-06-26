@@ -288,7 +288,11 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
 
 	// increment accum (selects new proposer)
-	srv.sk.IncrementAccum(ctx, 1)
+	err = srv.sk.IncrementAccum(ctx, 1)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
+
+	}
 
 	// get new proposer
 	vs, err := srv.sk.GetValidatorSet(ctx)

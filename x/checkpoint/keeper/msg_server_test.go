@@ -40,7 +40,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	accountRoot := hmTypes.HeimdallHash{accRootHash}
+	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
 
 	s.Run("Success", func() {
 		msgCheckpoint := types.NewMsgCheckpointBlock(
@@ -147,7 +147,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	accountRoot := hmTypes.HeimdallHash{accRootHash}
+	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
 
 	msgCheckpoint := types.NewMsgCheckpointBlock(
 		header.Proposer,
@@ -207,7 +207,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	accountRoot := hmTypes.HeimdallHash{accRootHash}
+	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
 
 	msgCheckpoint := types.NewMsgCheckpointBlock(
 		header.Proposer,

@@ -10,7 +10,8 @@ import (
 
 // Default parameter values
 const (
-	DefaultCheckpointBufferTime        = 1000 * time.Second // Time checkpoint is allowed to stay in buffer (1000 seconds ~ 17 mins)
+	// DefaultCheckpointBufferTime represents the time a checkpoint is allowed to stay in the buffer (1000s ~ 17m)
+	DefaultCheckpointBufferTime        = 1000 * time.Second
 	DefaultAvgCheckpointLength  uint64 = 256
 	DefaultMaxCheckpointLength  uint64 = 1024
 	DefaultChildBlockInterval   uint64 = 10000

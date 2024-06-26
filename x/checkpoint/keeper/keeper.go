@@ -19,7 +19,6 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	schema       collections.Schema
 
-	authority       string
 	sk              types.StakeKeeper
 	ck              types.ChainManagerKeeper
 	topupKeeper     types.TopupKeeper
@@ -36,7 +35,6 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
-	authority string,
 	stakingKeeper types.StakeKeeper,
 	cmKeeper types.ChainManagerKeeper,
 	topupKeeper types.TopupKeeper,
@@ -48,7 +46,6 @@ func NewKeeper(
 	k := &Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
-		authority:       authority,
 		sk:              stakingKeeper,
 		ck:              cmKeeper,
 		topupKeeper:     topupKeeper,
@@ -170,7 +167,7 @@ func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint,
 	return checkpoint, nil
 }
 
-// GetCheckpointFromBuffer gets the buffered checkpoint from store
+// HasCheckpointInBuffer checks if the buffered checkpoint exists in the store
 func (k *Keeper) HasCheckpointInBuffer(ctx context.Context) (bool, error) {
 	res, err := k.bufferedCheckpoint.Has(ctx)
 	if err != nil {

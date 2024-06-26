@@ -41,7 +41,7 @@ func GetAccountRootHash(dividendAccounts []*hmTypes.DividendAccount) ([]byte, er
 	return tree.Root.Hash, nil
 }
 
-// GetAccountTree returns roothash of Validator Account State Tree
+// GetAccountTree returns rootHash of Validator Account State Tree
 func GetAccountTree(dividendAccounts []*hmTypes.DividendAccount) (*merkletree.MerkleTree, error) {
 	// Sort the dividendAccounts by ID
 	dividendAccounts = hmTypes.SortDividendAccountByAddress(dividendAccounts)

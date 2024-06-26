@@ -1,5 +1,7 @@
 package cli
 
+// TODO HV2: implement autocli for checkpoint module
+
 /*
 import (
 	"fmt"

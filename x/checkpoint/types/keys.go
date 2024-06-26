@@ -2,8 +2,9 @@ package types
 
 import (
 	"cosmossdk.io/collections"
-	types "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/0xPolygon/heimdall-v2/types"
 )
 
 const (

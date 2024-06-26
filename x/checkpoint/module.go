@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	// TODO HV2 implement this later
+	// TODO HV2 implement checkpoint simulation
 	//_ module.AppModuleSimulation = AppModule{}
 	_ module.HasServices = AppModule{}
 

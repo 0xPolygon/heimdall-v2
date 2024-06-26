@@ -25,7 +25,7 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-// Params gives the params
+// GetParams returns the checkpoint params
 func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
 	params, err := q.k.GetParams(ctx)
@@ -38,7 +38,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 	}, nil
 }
 
-// AckCount gives the checkpoint ack count
+// GetAckCount returns the checkpoint ack count
 func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
 	count, err := q.k.GetAckCount(ctx)
 	if err != nil {
@@ -48,7 +48,7 @@ func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequ
 	return &types.QueryAckCountResponse{AckCount: count}, err
 }
 
-// Checkpoint gives the checkpoint based on its number
+// GetCheckpoint returns the checkpoint based on its number
 func (q queryServer) GetCheckpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
 	checkpoint, err := q.k.GetCheckpointByNumber(ctx, req.Number)
 	if err != nil {
@@ -58,7 +58,7 @@ func (q queryServer) GetCheckpoint(ctx context.Context, req *types.QueryCheckpoi
 	return &types.QueryCheckpointResponse{Checkpoint: checkpoint}, nil
 }
 
-// CheckpointLatest gives the latest checkpoint
+// GetCheckpointLatest returns the latest checkpoint
 func (q queryServer) GetCheckpointLatest(ctx context.Context, _ *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
 	checkpoint, err := q.k.GetLastCheckpoint(ctx)
 	if err != nil {
@@ -68,8 +68,8 @@ func (q queryServer) GetCheckpointLatest(ctx context.Context, _ *types.QueryChec
 	return &types.QueryCheckpointLatestResponse{Checkpoint: checkpoint}, nil
 }
 
-// CheckpointBuffer gives checkpoint from buffer
-func (q queryServer) GetCheckpointBuffer(ctx context.Context, req *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
+// GetCheckpointBuffer returns the checkpoint from buffer
+func (q queryServer) GetCheckpointBuffer(ctx context.Context, _ *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
 	checkpoint, err := q.k.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -78,7 +78,7 @@ func (q queryServer) GetCheckpointBuffer(ctx context.Context, req *types.QueryCh
 	return &types.QueryCheckpointBufferResponse{Checkpoint: checkpoint}, nil
 }
 
-// LastNoAck gives the last no ack
+// GetLastNoAck returns the last no ack
 func (q queryServer) GetLastNoAck(ctx context.Context, _ *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
 	noAck, err := q.k.GetLastNoAck(ctx)
 	if err != nil {
@@ -88,7 +88,7 @@ func (q queryServer) GetLastNoAck(ctx context.Context, _ *types.QueryLastNoAckRe
 	return &types.QueryLastNoAckResponse{LastNoAckID: noAck}, err
 }
 
-// NextCheckpoint gives next expected checkpoint
+// GetNextCheckpoint returns the next expected checkpoint
 func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNextCheckpointRequest) (*types.QueryNextCheckpointResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
@@ -158,7 +158,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	return &types.QueryNextCheckpointResponse{Checkpoint: checkpointMsg}, nil
 }
 
-// CurrentProposer queries validator info for the current proposer
+// GetCurrentProposer queries validator info for the current proposer
 func (q queryServer) GetCurrentProposer(ctx context.Context, _ *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
 	proposer := q.k.sk.GetCurrentProposer(ctx)
 

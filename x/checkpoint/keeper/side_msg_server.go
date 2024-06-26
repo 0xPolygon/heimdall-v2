@@ -29,7 +29,7 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
-// SideTxHandler returns a side handler for "checkpoin" type messages.
+// SideTxHandler returns a side handler for "checkpoint" type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 
 	switch methodName {
@@ -137,7 +137,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	rootChainInstance, err := contractCaller.GetRootChainInstance(rootChainAddress)
 	if err != nil {
-		logger.Error("unable to fetch rootchain contract instance",
+		logger.Error("unable to fetch rootChain contract instance",
 			"eth address", rootChainAddress,
 			"error", err,
 		)
@@ -147,7 +147,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildBlockInterval)
 	if err != nil {
-		logger.Error("unable to fetch checkpoint from rootchain", "checkpointNumber", msg.Number, "error", err)
+		logger.Error("unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -159,13 +159,13 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		logger.Error("invalid message as it doesn't match with contract state",
 			"checkpointNumber", msg.Number,
 			"message start block", msg.StartBlock,
-			"Rootchain Checkpoint start block", start,
+			"rootChain checkpoint start block", start,
 			"message end block", msg.EndBlock,
-			"Rootchain Checkpointt end block", end,
+			"rootChain checkpoint end block", end,
 			"message proposer", msg.Proposer,
-			"Rootchain Checkpoint proposer", proposer,
+			"rootChain checkpoint proposer", proposer,
 			"message root hash", msg.RootHash,
-			"Rootchain Checkpoint root hash", root,
+			"rootChain checkpoint root hash", root,
 			"error", err,
 		)
 
@@ -218,7 +218,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	doExist, err := srv.HasCheckpointInBuffer(ctx)
 	if err != nil {
-		logger.Error("error in checking the checkpoing in buffer", "error", err)
+		logger.Error("error in checking the existence of checkpoint in buffer", "error", err)
 		return
 	}
 
@@ -356,7 +356,11 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// increment accum (selects new proposer)
-	srv.sk.IncrementAccum(ctx, 1)
+	err = srv.sk.IncrementAccum(ctx, 1)
+	if err != nil {
+		logger.Error("error while incrementing accum", "err", err)
+		return
+	}
 
 	txBytes := ctx.TxBytes()
 

@@ -6,6 +6,6 @@ import (
 
 func RandomBytes() []byte {
 	b := make([]byte, 32)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	return b
 }

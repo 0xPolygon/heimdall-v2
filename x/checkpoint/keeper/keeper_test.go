@@ -12,8 +12,6 @@ import (
 	dbTestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
@@ -46,7 +44,7 @@ type KeeperTestSuite struct {
 	sideMsgCfg       hmModule.SideTxConfigurator
 }
 
-func (s *KeeperTestSuite) Run(testname string, fn func()) {
+func (s *KeeperTestSuite) Run(_ string, fn func()) {
 	fn()
 }
 
@@ -71,7 +69,6 @@ func (s *KeeperTestSuite) SetupTest() {
 	keeper := checkpointKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.stakeKeeper,
 		s.cmKeeper,
 		s.topupKeeper,
@@ -102,17 +99,16 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	headerBlockNumber := uint64(2000)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HeimdallHash{testutil.RandomBytes()}
+	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
 	proposerAddress := common.Address{}.String()
 	timestamp := uint64(time.Now().Unix())
-	borChainId := "1234"
 
 	checkpoint := types.CreateCheckpoint(
 		startBlock,
 		endBlock,
 		rootHash,
 		proposerAddress,
-		borChainId,
+		BorChainID,
 		timestamp,
 	)
 	err := keeper.AddCheckpoint(ctx, headerBlockNumber, checkpoint)

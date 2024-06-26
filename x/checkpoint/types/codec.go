@@ -11,9 +11,9 @@ import (
 // RegisterLegacyAminoCodec registers the necessary x/checkpoint interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	legacy.RegisterAminoMsg(cdc, &MsgCheckpoint{}, "cosmos-sdk/MsgCheckpoint")
-	legacy.RegisterAminoMsg(cdc, &MsgCheckpointAck{}, "cosmos-sdk/MsgCheckpointAck")
-	legacy.RegisterAminoMsg(cdc, &MsgCheckpointNoAck{}, "cosmos-sdk/MsgCheckpointNoAck")
+	legacy.RegisterAminoMsg(cdc, &MsgCheckpoint{}, "heimdall-v2/MsgCheckpoint")
+	legacy.RegisterAminoMsg(cdc, &MsgCheckpointAck{}, "heimdall-v2/MsgCheckpointAck")
+	legacy.RegisterAminoMsg(cdc, &MsgCheckpointNoAck{}, "heimdall-v2/MsgCheckpointNoAck")
 
 }
 
