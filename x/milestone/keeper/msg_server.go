@@ -37,13 +37,13 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 		return nil, errorsmod.Wrap(types.ErrMilestoneParams, "error in fetching milestone parameter")
 	}
 
-	milestoneLength := params.MinMilestoneLength
+	minMilestoneLength := params.MinMilestoneLength
 
 	// Get the milestone proposer
 	validatorSet := m.sk.GetMilestoneValidatorSet(ctx)
 	if validatorSet.Proposer == nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
-		return nil, errorsmod.Wrap(types.ErrProposerNotFound, "milestone proposer not found ")
+		return nil, errorsmod.Wrap(types.ErrProposerNotFound, "")
 	}
 
 	// Validate proposer
@@ -66,7 +66,7 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 			"currentMilestoneBlock", sdkCtx.BlockHeight(),
 		)
 
-		return nil, errorsmod.Wrap(types.ErrPrevMilestoneInVoting, "previous milestone still in voting phase")
+		return nil, errorsmod.Wrap(types.ErrPrevMilestoneInVoting, "")
 	}
 
 	//Increment the priority in the milestone validator set
@@ -76,11 +76,11 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 	msgMilestoneLength := int64(msg.EndBlock) - int64(msg.StartBlock) + 1
 
 	//check for the minimum length of milestone
-	if msgMilestoneLength < int64(milestoneLength) {
+	if msgMilestoneLength < int64(minMilestoneLength) {
 		logger.Error("length of the milestone should be greater than configured minimum milestone length",
 			"StartBlock", msg.StartBlock,
 			"EndBlock", msg.EndBlock,
-			"Minimum Milestone Length", milestoneLength,
+			"Minimum Milestone Length", minMilestoneLength,
 		)
 
 		return nil, errorsmod.Wrap(types.ErrMilestoneInvalid, "milestone's length is less than permitted minimum milestone length")
@@ -142,12 +142,10 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 
 	bufferTime := params.MilestoneBufferTime
 
-	// Fetch last milestone from the store
-	// TODO HV2 figure out how to handle this error
 	lastMilestone, err := m.GetLastMilestone(ctx)
 	if err != nil {
 		logger.Error("didn't find the last milestone", "err", err)
-		return nil, errorsmod.Wrap(types.ErrNoMilestoneFound, "could fetch last milestone")
+		return nil, errorsmod.Wrap(types.ErrNoMilestoneFound, "")
 	}
 
 	lastMilestoneTime := time.Unix(int64(lastMilestone.TimeStamp), 0)
@@ -161,7 +159,6 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 		return nil, errorsmod.Wrap(types.ErrInvalidMilestoneTimeout, "msg is invalid as it came before the buffer time")
 	}
 
-	// Check last no ack - prevents repetitive no-ack
 	lastMilestoneTimeout := m.GetLastMilestoneTimeout(ctx)
 	if lastMilestoneTimeout > uint64(math.MaxInt64) {
 		// handle the error appropriately, for example by returning an error
@@ -200,7 +197,7 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 	// add events
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
-			types.EventTypeMilestone,
+			types.EventTypeMilestoneTimeout,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
 			sdk.NewAttribute(types.AttributeKeyNewProposer, newProposer.Signer),
 		),

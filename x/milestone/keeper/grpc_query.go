@@ -15,20 +15,23 @@ import (
 // "/milestone/ID/{id}" it has been removed
 // "/staking/milestoneProposer/{times}" -> "/milestone/proposer/{times}"
 
-type QueryServer struct {
-	*Keeper
+var _ types.QueryServer = queryServer{}
+
+type queryServer struct {
+	k *Keeper
 }
 
-var _ types.QueryServer = QueryServer{}
-
-func NewQueryServer(keeper *Keeper) QueryServer {
-	return QueryServer{Keeper: keeper}
+// NewQueryServer creates a new querier for milestone clients.
+func NewQueryServer(k *Keeper) types.QueryServer {
+	return queryServer{
+		k: k,
+	}
 }
 
 // Params fetches the parameters of the milestone module
-func (q QueryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
-	params, err := q.GetParams(ctx)
+	params, err := q.k.GetParams(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -39,15 +42,15 @@ func (q QueryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 }
 
 // Count gives the milestone count
-func (q QueryServer) Count(ctx context.Context, req *types.QueryCountRequest) (*types.QueryCountResponse, error) {
-	count := q.GetMilestoneCount(ctx)
+func (q queryServer) Count(ctx context.Context, req *types.QueryCountRequest) (*types.QueryCountResponse, error) {
+	count := q.k.GetMilestoneCount(ctx)
 
 	return &types.QueryCountResponse{Count: count}, nil
 }
 
 // LatestMilestone gives the latest milestone in the database
-func (q QueryServer) LatestMilestone(ctx context.Context, req *types.QueryLatestMilestoneRequest) (*types.QueryLatestMilestoneResponse, error) {
-	milestone, err := q.GetLastMilestone(ctx)
+func (q queryServer) LatestMilestone(ctx context.Context, req *types.QueryLatestMilestoneRequest) (*types.QueryLatestMilestoneResponse, error) {
+	milestone, err := q.k.GetLastMilestone(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,12 +59,12 @@ func (q QueryServer) LatestMilestone(ctx context.Context, req *types.QueryLatest
 }
 
 // Milestone return the milestone by number
-func (q QueryServer) Milestone(ctx context.Context, req *types.QueryMilestoneRequest) (*types.QueryMilestoneResponse, error) {
+func (q queryServer) Milestone(ctx context.Context, req *types.QueryMilestoneRequest) (*types.QueryMilestoneResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	milestone, err := q.GetMilestoneByNumber(ctx, req.Number)
+	milestone, err := q.k.GetMilestoneByNumber(ctx, req.Number)
 	if err != nil {
 		return nil, err
 	}
@@ -70,35 +73,35 @@ func (q QueryServer) Milestone(ctx context.Context, req *types.QueryMilestoneReq
 }
 
 // LatestNoAckMilestone fetches the latest no-ack milestone
-func (q QueryServer) LatestNoAckMilestone(ctx context.Context, req *types.QueryLatestNoAckMilestoneRequest) (*types.QueryLatestNoAckMilestoneResponse, error) {
+func (q queryServer) LatestNoAckMilestone(ctx context.Context, req *types.QueryLatestNoAckMilestoneRequest) (*types.QueryLatestNoAckMilestoneResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	res := q.GetLastNoAckMilestone(ctx)
+	res := q.k.GetLastNoAckMilestone(ctx)
 
 	return &types.QueryLatestNoAckMilestoneResponse{Result: res}, nil
 }
 
 // NoAckMilestoneByID gives the result by ID number
-func (q QueryServer) NoAckMilestoneByID(ctx context.Context, req *types.QueryNoAckMilestoneByIDRequest) (*types.QueryNoAckMilestoneByIDResponse, error) {
+func (q queryServer) NoAckMilestoneByID(ctx context.Context, req *types.QueryNoAckMilestoneByIDRequest) (*types.QueryNoAckMilestoneByIDResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	res := q.GetNoAckMilestone(ctx, req.Id)
+	res := q.k.GetNoAckMilestone(ctx, req.Id)
 
 	return &types.QueryNoAckMilestoneByIDResponse{Result: res}, nil
 }
 
 // MilestoneProposer queries for the milestone proposer
-func (q QueryServer) MilestoneProposer(ctx context.Context, req *types.QueryMilestoneProposerRequest) (*types.QueryMilestoneProposerResponse, error) {
+func (q queryServer) MilestoneProposer(ctx context.Context, req *types.QueryMilestoneProposerRequest) (*types.QueryMilestoneProposerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	// get validator set
-	validatorSet := q.sk.GetValidatorSet(ctx)
+	// get milestone validator set
+	validatorSet := q.k.sk.GetMilestoneValidatorSet(ctx)
 
 	times := int(req.Times)
 	if times > len(validatorSet.Validators) {

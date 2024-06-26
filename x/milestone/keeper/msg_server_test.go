@@ -21,7 +21,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	err := keeper.SetParams(ctx, params)
 	require.NoError(err)
 
-	milestoneLength := params.MinMilestoneLength
+	minMilestoneLength := params.MinMilestoneLength
 
 	// check valid milestone
 	// generate proposer for validator set
@@ -33,8 +33,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		start = start + lastMilestone.EndBlock + 1
 	}
 
-	header, err := milestoneSim.GenRandMilestone(start, milestoneLength)
-	require.NoError(err)
+	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
 	ctx = ctx.WithBlockHeight(3)
 
@@ -77,7 +76,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	// add current proposer to header
 	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
 
-	s.Run("Failure-Invalid Start Block Number", func() {
+	s.Run("Invalid msg based on start block number", func() {
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
 			uint64(1),
@@ -125,7 +124,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
 			start,
-			start+milestoneLength-1,
+			start+minMilestoneLength-1,
 			header.Hash,
 			borChainId,
 			milestoneID,
@@ -150,15 +149,14 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.NoError(err)
 
 		lastMilestone, err := keeper.GetLastMilestone(ctx)
-		if err == nil {
-			// pass wrong start
-			start = start + lastMilestone.EndBlock + 2 // StartBlock is 2 more than last milestone's EndBlock
-		}
+		require.NoError(err)
+
+		start = start + lastMilestone.EndBlock + 2
 
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
 			start,
-			start+milestoneLength-1,
+			start+minMilestoneLength-1,
 			header.Hash,
 			borChainId,
 			milestoneID,
@@ -168,32 +166,20 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		res, err := msgServer.Milestone(ctx, &msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneNotInContinuity.Error())
-	})
 
-	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
+		start = start + lastMilestone.EndBlock - 2
 
-	s.Run("Milestone not in continuity", func() {
-
-		_, err = keeper.GetLastMilestone(ctx)
-		require.NoError(err)
-
-		lastMilestone, err := keeper.GetLastMilestone(ctx)
-		if err == nil {
-			// pass wrong start
-			start = start + lastMilestone.EndBlock - 2 // StartBlock is 2 less than last milestone's EndBlock
-		}
-
-		msgMilestone := types.NewMsgMilestoneBlock(
+		msgMilestone = types.NewMsgMilestoneBlock(
 			header.Proposer,
 			start,
-			start+milestoneLength-1,
+			start+minMilestoneLength-1,
 			header.Hash,
 			borChainId,
 			milestoneID,
 		)
 
 		// send milestone to handler
-		res, err := msgServer.Milestone(ctx, &msgMilestone)
+		res, err = msgServer.Milestone(ctx, &msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneNotInContinuity.Error())
 	})
@@ -207,7 +193,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 
 	params := types.DefaultParams()
 
-	milestoneLength := params.MinMilestoneLength
+	minMilestoneLength := params.MinMilestoneLength
 
 	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
 	stakingKeeper.IncrementAccum(ctx, 1)
@@ -217,7 +203,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 		start = start + lastMilestone.EndBlock + 1
 	}
 
-	header, err := milestoneSim.GenRandMilestone(start, milestoneLength)
+	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 	require.NoError(err)
 
 	// add current proposer to header

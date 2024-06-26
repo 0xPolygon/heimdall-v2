@@ -23,15 +23,10 @@ import (
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-)
-
-var (
-	PKs = simtestutil.CreateTestPubKeys(500)
 )
 
 type KeeperTestSuite struct {
@@ -126,28 +121,18 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 
 	result, err := keeper.GetLastMilestone(ctx)
 	require.NoError(err)
-	require.Equal(startBlock, result.StartBlock)
-	require.Equal(endBlock, result.EndBlock)
-	require.Equal(hash, result.Hash)
-	require.Equal(borChainId, result.BorChainID)
-	require.Equal(proposerAddress, result.Proposer)
-	require.Equal(timestamp, result.TimeStamp)
+	require.True(milestone.Equal(result))
 
 	result, err = keeper.GetMilestoneByNumber(ctx, 1)
 	require.NoError(err)
-	require.Equal(startBlock, result.StartBlock)
-	require.Equal(endBlock, result.EndBlock)
-	require.Equal(hash, result.Hash)
-	require.Equal(borChainId, result.BorChainID)
-	require.Equal(proposerAddress, result.Proposer)
-	require.Equal(timestamp, result.TimeStamp)
+	require.True(milestone.Equal(result))
 
 	result, err = keeper.GetMilestoneByNumber(ctx, 2)
 	require.Nil(result)
 	require.Equal(err, types.ErrNoMilestoneFound)
 }
 
-func (s *KeeperTestSuite) TestGetCount() {
+func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 

@@ -21,10 +21,7 @@ func (s *KeeperTestSuite) TestQueryParams() {
 	require.NoError(err)
 	require.NotNil(res)
 
-	require.Equal(defaultParams.MilestoneTxConfirmations, res.Params.MilestoneTxConfirmations)
-	require.Equal(defaultParams.MilestoneBufferLength, res.Params.MilestoneBufferLength)
-	require.Equal(defaultParams.MilestoneBufferTime, res.Params.MilestoneBufferTime)
-	require.Equal(defaultParams.MinMilestoneLength, res.Params.MinMilestoneLength)
+	require.True(defaultParams.Equal(res.Params))
 }
 
 func (s *KeeperTestSuite) TestQueryLatestMilestone() {
@@ -88,7 +85,6 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	require.NoError(err)
 	require.NotNil(resCount)
 
-	require.NoError(errNew)
 	require.Equal(resCount.Count, uint64(1))
 }
 
@@ -99,6 +95,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 	req := &types.QueryLatestNoAckMilestoneRequest{}
 
 	res, err := queryClient.LatestNoAckMilestone(ctx, req)
+	require.NoError(err)
 	require.Equal(res.Result, "")
 	require.NotNil(res)
 

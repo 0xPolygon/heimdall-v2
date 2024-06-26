@@ -54,11 +54,6 @@ func (msg MsgMilestone) ValidateBasic(ac address.Codec) error {
 	return nil
 }
 
-// GetSideSignBytes returns side sign bytes
-func (msg MsgMilestone) GetSideSignBytes() []byte {
-	return nil
-}
-
 var _ sdk.Msg = &MsgMilestoneTimeout{}
 
 func NewMsgMilestoneTimeout(from string) MsgMilestoneTimeout {

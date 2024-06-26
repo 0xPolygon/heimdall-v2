@@ -5,7 +5,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -14,13 +13,13 @@ import (
 
 func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
 	cfg := s.sideMsgCfg
-	return cfg.SideHandler(msg)(ctx, msg)
+	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
 func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
 	cfg := s.sideMsgCfg
 
-	cfg.PostHandler(msg)(ctx, msg, vote)
+	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
 //
@@ -30,17 +29,17 @@ func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModul
 // test sideHandler for side messages
 
 func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.milestoneKeeper
+	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 
 	params := types.DefaultParams()
-	keeper.SetParams(ctx, params)
+	err := keeper.SetParams(ctx, params)
+	require.NoError(err)
 
 	start := uint64(0)
-	milestoneLength := helper.MilestoneLength
+	minMilestoneLength := params.MinMilestoneLength
 
-	milestone, err := milestoneSim.GenRandMilestone(start, milestoneLength)
-	require.NoError(err)
+	milestone := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
 	borChainId := "1234"
 
@@ -58,7 +57,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should succeed")
@@ -82,17 +81,17 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(false, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(false, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
 
-		Header, err := keeper.GetLastMilestone(ctx)
+		header, err := keeper.GetLastMilestone(ctx)
 		require.Error(err)
-		require.Nil(Header, "Should not store state")
+		require.Nil(header, "Should not store state")
 	})
 
-	s.Run("invalid milestone", func() {
+	s.Run("invalid milestone because of shorter length", func() {
 		s.contractCaller.Mock = mock.Mock{}
 
 		// create milestone msg
@@ -106,7 +105,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -129,7 +128,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -137,15 +136,16 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
-	ctx, _, keeper := s.ctx, s.msgServer, s.milestoneKeeper
+	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 	stakingKeeper := s.stakeKeeper
 
 	params := types.DefaultParams()
-	keeper.SetParams(ctx, params)
+	err := keeper.SetParams(ctx, params)
+	require.NoError(err)
 
 	start := uint64(0)
-	milestoneLength := helper.MilestoneLength
+	minMilestoneLength := params.MinMilestoneLength
 
 	// check valid milestone
 	// generate proposer for validator set
@@ -157,8 +157,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		start = start + lastMilestone.EndBlock + 1
 	}
 
-	milestone, err := milestoneSim.GenRandMilestone(start, milestoneLength)
-	require.NoError(err)
+	milestone := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
 	// add current proposer to header
 	milestone.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
@@ -233,11 +232,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
 
 		bufferedHeader, err := keeper.GetLastMilestone(ctx)
-		require.Equal(bufferedHeader.StartBlock, milestone.StartBlock)
-		require.Equal(bufferedHeader.EndBlock, milestone.EndBlock)
-		require.Equal(bufferedHeader.Hash, milestone.Hash)
-		require.Equal(bufferedHeader.Proposer, milestone.Proposer)
-		require.Equal(bufferedHeader.BorChainID, milestone.BorChainID)
+		require.True(bufferedHeader.Equal(milestone))
+
 		require.Empty(err, "Unable to set milestone, Error: %v", err)
 
 		lastNoAckMilestone := keeper.GetLastNoAckMilestone(ctx)

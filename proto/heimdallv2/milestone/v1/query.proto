@@ -135,7 +135,7 @@ message QueryNoAckMilestoneByIDResponse {
   bool result = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryCurrentMilestoneProposerRequest is request type for the
+// QueryMilestoneProposerRequest is request type for the
 // MilestoneProposer RPC method
 message QueryMilestoneProposerRequest {
   // times represents the number of subsequent milestone's proposers 

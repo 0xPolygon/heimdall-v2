@@ -11,8 +11,8 @@ import (
 )
 
 // GenRandMilestone creates and returns a random milestone
-func GenRandMilestone(start uint64, sprintLength uint64) (milestone types.Milestone) {
-	end := start + sprintLength - 1
+func GenRandMilestone(start uint64, milestoneLength uint64) (milestone types.Milestone) {
+	end := start + milestoneLength - 1
 	borChainID := "1234"
 	hash := common.Hash{}
 	proposer := common.Address{}.String()
@@ -28,4 +28,25 @@ func GenRandMilestone(start uint64, sprintLength uint64) (milestone types.Milest
 		uint64(time.Now().UTC().Unix()))
 
 	return milestone
+}
+
+// CreateMilestone generate new milestone
+func CreateMilestone(
+	start uint64,
+	end uint64,
+	hash hmTypes.HeimdallHash,
+	proposer string,
+	borChainID string,
+	milestoneID string,
+	timestamp uint64,
+) types.Milestone {
+	return types.Milestone{
+		StartBlock:  start,
+		EndBlock:    end,
+		Hash:        hash,
+		Proposer:    proposer,
+		BorChainID:  borChainID,
+		MilestoneID: milestoneID,
+		TimeStamp:   timestamp,
+	}
 }

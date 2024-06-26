@@ -58,26 +58,27 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 
 	params, err := srv.GetParams(ctx)
 	if err != nil {
-		logger.Error("Error in getting params", "error", err)
+		logger.Error("error in getting params", "error", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
-	milestoneLength := params.MinMilestoneLength
+	minMilestoneLength := params.MinMilestoneLength
 	borChainMilestoneTxConfirmations := params.MilestoneTxConfirmations
 
 	contractCaller := srv.IContractCaller
 
 	// Get the milestone count
 	count := srv.GetMilestoneCount(ctx)
+
 	lastMilestone, err := srv.GetLastMilestone(ctx)
 
 	if count != uint64(0) && err != nil {
-		logger.Error("Error while receiving the last milestone in the side handler")
+		logger.Error("error while receiving the last milestone in the side handler", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
 	if count != uint64(0) && msg.StartBlock != lastMilestone.EndBlock+1 {
-		logger.Error("Milestone is not in continuity to last stored milestone",
+		logger.Error("milestone is not in continuity to last stored milestone",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
 			"hash", msg.Hash,
@@ -88,9 +89,9 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 		return hmModule.Vote_VOTE_NO
 	}
 
-	validMilestone, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, milestoneLength, borChainMilestoneTxConfirmations)
+	validMilestone, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
 	if err != nil {
-		logger.Error("Error validating milestone",
+		logger.Error("error validating milestone",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
 			"hash", msg.Hash,
@@ -102,11 +103,12 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 	}
 
 	logger.Error(
-		"Hash is not valid",
+		"milestone is not valid",
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
 		"hash", msg.Hash,
 		"milestoneId", msg.MilestoneID,
+		"err", err,
 	)
 
 	return hmModule.Vote_VOTE_NO
@@ -124,7 +126,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 
 	if sideTxResult != hmModule.Vote_VOTE_YES {
 		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
-		logger.Debug("Skipping new validator-join since side-tx didn't get yes votes")
+		logger.Debug("skipping new validator-join since side-tx didn't get yes votes")
 		return
 	}
 
@@ -133,7 +135,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 	if lastMilestone, err := srv.GetLastMilestone(ctx); err == nil {
 		// make sure new milestone is after tip
 		if lastMilestone.EndBlock > msg.StartBlock {
-			logger.Error(" Milestone already exists",
+			logger.Error("milestone already exists",
 				"currentTip", lastMilestone.EndBlock,
 				"startBlock", msg.StartBlock,
 			)
@@ -154,7 +156,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 			return
 		}
 	} else if msg.StartBlock != uint64(0) {
-		logger.Error("First milestone to start from", "block", 0, "Error", err)
+		logger.Error("first milestone to start from", "block", 0, "Error", err)
 
 		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
 
@@ -172,7 +174,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 		TimeStamp:   timeStamp,
 	}); err != nil {
 		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
-		logger.Error("Failed to set milestone ", "Error", err)
+		logger.Error("failed to set milestone ", "Error", err)
 	}
 
 	// TX bytes
@@ -193,6 +195,4 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 			sdk.NewAttribute(types.AttributeKeyMilestoneID, msg.MilestoneID),
 		),
 	})
-
-	return
 }

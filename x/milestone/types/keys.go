@@ -1,7 +1,5 @@
 package types
 
-import "strconv"
-
 const (
 	// ModuleName is the name of the milestone module
 	ModuleName = "milestone"
@@ -23,12 +21,6 @@ var (
 
 	ParamsKey = []byte{0x16} // prefix for parameters
 )
-
-// GetMilestoneKey appends prefix to milestoneNumber
-func GetMilestoneKey(milestoneNumber uint64) []byte {
-	milestoneNumberBytes := []byte(strconv.FormatUint(milestoneNumber, 10))
-	return append(MilestoneKey, milestoneNumberBytes...)
-}
 
 // GetMilestoneNoAckKey appends prefix to milestoneId
 func GetMilestoneNoAckKey(milestoneId string) []byte {
