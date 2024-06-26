@@ -13,7 +13,7 @@ import (
 // "/milestone/lastNoAck" -> "/milestone/last-no-ack"
 // "/milestone/noAck/{id}"->"/milestone/no-ack/{id}"
 // "/milestone/ID/{id}" it has been removed
-// "/staking/milestoneProposer/{times}" -> "/milestone/proposer"
+// "/staking/milestoneProposer/{times}" -> "/milestone/proposer/{times}"
 
 type QueryServer struct {
 	*Keeper

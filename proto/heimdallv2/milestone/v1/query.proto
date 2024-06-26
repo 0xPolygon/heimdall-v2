@@ -56,57 +56,57 @@ service Query {
   rpc MilestoneProposer(QueryMilestoneProposerRequest)
       returns (QueryMilestoneProposerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/proposer";
+    option (google.api.http).get = "/milestone/proposer/{times}";
   }
 }
 
-// QueryParamsRequest is request type for Query/Params
+// QueryParamsRequest is request type for Params
 // RPC method.
 message QueryParamsRequest {}
 
-// QueryParamsResponse is response type for the Query/Params
+// QueryParamsResponse is response type for the Params
 // RPC method
 message QueryParamsResponse {
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryCountRequest is request type for the Query/Count RPC method
+// QueryCountRequest is request type for the Count RPC method
 message QueryCountRequest {}
 
-// QueryCountResponse is response type for the Query/Count RPC method
+// QueryCountResponse is response type for the Count RPC method
 message QueryCountResponse {
   uint64 count = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryLastNoAckRequest is response type for the Query/LastNoAckCount RPC
+// QueryLastNoAckRequest is request type for the LastNoAckCount RPC
 // method
 message QueryLastNoAckRequest {}
 
-// QueryLastNoAckResponse is response type for the Query/LastNoAckCount RPC
+// QueryLastNoAckResponse is response type for the LastNoAckCount RPC
 // method
 message QueryLastNoAckResponse {
   uint64 result = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryLatestMilestoneRequest is request type for the Query/LatestMilestone
+// QueryLatestMilestoneRequest is request type for the LatestMilestone
 // RPC method
 message QueryLatestMilestoneRequest {}
 
-// QueryLatestMilestoneResponse is response type for the Query/LatestMilestone
+// QueryLatestMilestoneResponse is response type for the LatestMilestone
 // RPC method
 message QueryLatestMilestoneResponse {
   Milestone milestone = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryMilestoneRequest is request type for the Query/Milestone/{number} RPC
+// QueryMilestoneRequest is request type for the Milestone  RPC
 // method
 message QueryMilestoneRequest {
   uint64 number = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryMilestoneResponse is response type for the Query/Milestone/{number}
+// QueryMilestoneResponse is response type for the Milestone 
 // RPC method
 message QueryMilestoneResponse {
   Milestone milestone = 1
@@ -114,30 +114,31 @@ message QueryMilestoneResponse {
 }
 
 // QueryLatestNoAckMilestoneRequest is request type for the
-// Query/LatestNoAckMilestone RPC method
+// LatestNoAckMilestone RPC method
 message QueryLatestNoAckMilestoneRequest {}
 
 // QueryLatestNoAckMilestoneResponse is response type for the
-// Query/LatestNoAckMilestone RPC method
+// LatestNoAckMilestone RPC method
 message QueryLatestNoAckMilestoneResponse {
   string result = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryNoAckMilestoneByIDRequest is request type for the
-// Query/NoAckMilestoneByID RPC method
+// NoAckMilestoneByID RPC method
 message QueryNoAckMilestoneByIDRequest {
   string id = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryNoAckMilestoneByIDResponse is response type for the
-// Query/NoAckMilestoneByID RPC method
+// NoAckMilestoneByID RPC method
 message QueryNoAckMilestoneByIDResponse {
   bool result = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryCurrentMilestoneProposerRequest is request type for the
-// Query/MilestoneProposer RPC method
+// MilestoneProposer RPC method
 message QueryMilestoneProposerRequest {
+  // times represents the number of subsequent milestone's proposers 
   uint64 times = 1 [ (amino.dont_omitempty) = true ];
 }
 

@@ -1,21 +1,23 @@
 package testutil
 
 import (
+	"fmt"
 	"time"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 )
 
-// GenRandMilestone return headers
-func GenRandMilestone(start uint64, sprintLength uint64) (milestone types.Milestone, err error) {
+// GenRandMilestone creates and returns a random milestone
+func GenRandMilestone(start uint64, sprintLength uint64) (milestone types.Milestone) {
 	end := start + sprintLength - 1
 	borChainID := "1234"
-	hash := hmTypes.HexToHeimdallHash("123")
+	hash := common.Hash{}
 	proposer := common.Address{}.String()
 
-	milestoneID := "00000"
+	milestoneID := fmt.Sprintf("%s - %s", uuid.NewRandom().String(), hmTypes.BytesToHeimdallAddress(hash[:]).String())
 	milestone = types.CreateMilestone(
 		start,
 		end,
@@ -25,5 +27,5 @@ func GenRandMilestone(start uint64, sprintLength uint64) (milestone types.Milest
 		milestoneID,
 		uint64(time.Now().UTC().Unix()))
 
-	return milestone, nil
+	return milestone
 }
