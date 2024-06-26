@@ -10,20 +10,13 @@ import (
 	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	cmtcfg "github.com/cometbft/cometbft/config"
-	"github.com/cometbft/cometbft/libs/cli"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
-
 	// TODO HV2 - uncomment once staking module is available
 	// stakingcli "github.com/0xPolygon/heimdall-v2/x/staking/client/cli"
-
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 type initHeimdallConfig struct {
@@ -118,10 +111,12 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 }
 
 /*
-TODO HV2 - check `func InitCmd(mbm module.BasicManager, defaultNodeHome string) *cobra.Command {}` in cosmos-sdk
-maybe we can use it
+TODO HV2 - I guess we are safe to remove this, as `genutilcli.InitCmd(basicManager, app.DefaultNodeHome)`
+already does the same thing
+commenting it out for now, will remove it later (after testing)
 */
 
+/*
 // InitCmd initialises files required to start heimdall
 func initCmd(ctx *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
@@ -154,3 +149,4 @@ func initCmd(ctx *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManage
 
 	return cmd
 }
+*/

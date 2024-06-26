@@ -197,7 +197,12 @@ func initRootCmd(
 	// TODO HV2 - uncomment when we have bridge implemented
 	// rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
-	rootCmd.AddCommand(initCmd(ctx, cdc, hApp.BasicManager))
+
+	// TODO HV2 - I guess we are safe to remove this, as `genutilcli.InitCmd(basicManager, app.DefaultNodeHome)`
+	// already does the same thing
+	// commenting it out for now, will remove it later (after testing)
+	// rootCmd.AddCommand(initCmd(ctx, cdc, hApp.BasicManager))
+
 	rootCmd.AddCommand(testnetCmd(ctx, cdc, hApp.BasicManager))
 
 	// rollback cmd
