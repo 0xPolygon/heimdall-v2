@@ -1,5 +1,10 @@
 package types
 
+import (
+	types "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/maticnetwork/bor/common"
+)
+
 const (
 	// ModuleName is the name of the milestone module
 	ModuleName = "milestone"
@@ -27,3 +32,6 @@ func GetMilestoneNoAckKey(milestoneId string) []byte {
 	milestoneNoAckBytes := []byte(milestoneId)
 	return append(MilestoneNoAckKey, milestoneNoAckBytes...)
 }
+
+// ZeroHeimdallHash represents empty pub key
+var ZeroHeimdallHash = types.HeimdallHash{Hash: common.Hash{}.Bytes()}

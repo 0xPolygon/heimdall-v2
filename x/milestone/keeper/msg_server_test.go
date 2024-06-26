@@ -4,9 +4,11 @@ import (
 	"time"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -25,7 +27,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	// check valid milestone
 	// generate proposer for validator set
-	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
+	stakeSim.LoadRandomValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
 	stakingKeeper.IncrementAccum(ctx, 1)
 
 	lastMilestone, err := keeper.GetLastMilestone(ctx)
@@ -246,8 +248,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HexToHeimdallHash("123")
-	proposerAddress := common.HexToAddress("123").String()
+	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(0)
 	borChainId := "1234"
 	milestoneID := "0000"

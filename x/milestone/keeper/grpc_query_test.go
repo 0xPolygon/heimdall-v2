@@ -4,9 +4,10 @@ import (
 	"time"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTestUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {
@@ -34,13 +35,13 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	hash := hmTypes.HexToHeimdallHash("123")
-	proposerAddress := common.HexToAddress("123").String()
+	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 	milestoneID := "00000"
 
-	milestoneBlock := types.CreateMilestone(
+	milestoneBlock := testutil.CreateMilestone(
 		startBlock,
 		endBlock,
 		hash,

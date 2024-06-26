@@ -6,7 +6,6 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/suite"
 
 	storetypes "cosmossdk.io/store/types"
@@ -19,10 +18,11 @@ import (
 	stakekeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -100,8 +100,8 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HexToHeimdallHash("123")
-	proposerAddress := common.HexToAddress("123").String()
+	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 	milestoneID := "0000"
@@ -141,8 +141,8 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HexToHeimdallHash("123")
-	proposerAddress := common.HexToAddress("123").String()
+	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 	milestoneID := "0000"

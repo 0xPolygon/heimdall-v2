@@ -1,12 +1,13 @@
 package testutil
 
 import (
+	"crypto/rand"
 	"fmt"
 	"time"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/google/uuid"
 )
 
@@ -14,11 +15,11 @@ import (
 func GenRandMilestone(start uint64, milestoneLength uint64) (milestone types.Milestone) {
 	end := start + milestoneLength - 1
 	borChainID := "1234"
-	hash := common.Hash{}
-	proposer := common.Address{}.String()
+	hash := hmTypes.HeimdallHash{Hash: RandomBytes()}
+	proposer := secp256k1.GenPrivKey().PubKey().Address().String()
 
 	milestoneID := fmt.Sprintf("%s - %s", uuid.NewRandom().String(), hmTypes.BytesToHeimdallAddress(hash[:]).String())
-	milestone = types.CreateMilestone(
+	milestone = CreateMilestone(
 		start,
 		end,
 		hash,
@@ -49,4 +50,10 @@ func CreateMilestone(
 		MilestoneID: milestoneID,
 		TimeStamp:   timestamp,
 	}
+}
+
+func RandomBytes() []byte {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return b
 }
