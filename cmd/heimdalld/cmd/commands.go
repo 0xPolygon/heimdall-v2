@@ -383,6 +383,7 @@ func generateKeystore() *cobra.Command {
 	return cmd
 }
 
+// TODO HV2 - consider changing the way we provide private key (make it more secure, POS-2627)
 // generateValidatorKey generate validator key
 func generateValidatorKey() *cobra.Command {
 	cdc := codec.NewLegacyAmino()
