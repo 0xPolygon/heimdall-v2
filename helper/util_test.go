@@ -1,6 +1,5 @@
 package helper
 
-// TODO HV2 Please implement it once authtype is finalised and recoverFromPubkey fn is made
 import (
 	"math/big"
 	"testing"

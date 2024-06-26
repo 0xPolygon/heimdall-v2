@@ -17,6 +17,9 @@ func SetTestConfig(_conf Configuration) {
 
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
+	// TODO HV2: fix this test as it currently depends on the config file
+	//  See https://polygon.atlassian.net/browse/POS-2626
+	t.Skip("to be enabled")
 	t.Parallel()
 
 	// cli context
