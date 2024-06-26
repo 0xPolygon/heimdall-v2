@@ -70,8 +70,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 		encCfg.Codec,
 		storeService,
 		bankKeeper,
-		// TODO HV2: replace nil with stakeKeeper mock once implemented
-		nil,
 		chainKeeper,
 		&suite.contractCaller,
 	)

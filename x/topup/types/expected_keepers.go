@@ -19,11 +19,6 @@ type BankKeeper interface {
 	MintCoins(ctx context.Context, moduleName string, amt sdk.Coins) error
 }
 
-// StakeKeeper defines the stake keeper contract used by x/topup module
-type StakeKeeper interface {
-	// TODO HV2: implement functions for StakeKeeper and generate its mocks
-}
-
 // ChainKeeper defines the chain keeper contract used by x/topup module
 type ChainKeeper interface {
 	GetParams(ctx context.Context) (chainmanagertypes.Params, error)
