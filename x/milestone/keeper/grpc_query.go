@@ -3,17 +3,12 @@ package keeper
 import (
 	"context"
 
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-)
 
-// HV2 Following path for API's has been changed
-// "/milestone/lastNoAck" -> "/milestone/last-no-ack"
-// "/milestone/noAck/{id}"->"/milestone/no-ack/{id}"
-// "/milestone/ID/{id}" it has been removed
-// "/staking/milestoneProposer/{times}" -> "/milestone/proposer/{times}"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+)
 
 var _ types.QueryServer = queryServer{}
 
@@ -33,7 +28,7 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 	// get validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &types.QueryParamsResponse{
@@ -41,18 +36,21 @@ func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*
 	}, nil
 }
 
-// Count gives the milestone count
-func (q queryServer) Count(ctx context.Context, req *types.QueryCountRequest) (*types.QueryCountResponse, error) {
-	count := q.k.GetMilestoneCount(ctx)
+// Count returns the milestone count
+func (q queryServer) Count(ctx context.Context, _ *types.QueryCountRequest) (*types.QueryCountResponse, error) {
+	count, err := q.k.GetMilestoneCount(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	return &types.QueryCountResponse{Count: count}, nil
 }
 
 // LatestMilestone gives the latest milestone in the database
-func (q queryServer) LatestMilestone(ctx context.Context, req *types.QueryLatestMilestoneRequest) (*types.QueryLatestMilestoneResponse, error) {
+func (q queryServer) LatestMilestone(ctx context.Context, _ *types.QueryLatestMilestoneRequest) (*types.QueryLatestMilestoneResponse, error) {
 	milestone, err := q.k.GetLastMilestone(ctx)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	return &types.QueryLatestMilestoneResponse{Milestone: *milestone}, nil
@@ -101,7 +99,10 @@ func (q queryServer) MilestoneProposer(ctx context.Context, req *types.QueryMile
 	}
 
 	// get milestone validator set
-	validatorSet := q.k.sk.GetMilestoneValidatorSet(ctx)
+	validatorSet, err := q.k.sk.GetMilestoneValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	times := int(req.Times)
 	if times > len(validatorSet.Validators) {

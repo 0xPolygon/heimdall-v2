@@ -3,11 +3,11 @@ package keeper
 import (
 	"strconv"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 type sideMsgServer struct {
@@ -68,7 +68,11 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 	contractCaller := srv.IContractCaller
 
 	// Get the milestone count
-	count := srv.GetMilestoneCount(ctx)
+	count, err := srv.GetMilestoneCount(ctx)
+	if err != nil {
+		logger.Error("error in fetching milestone count", "error", err)
+		return hmModule.Vote_VOTE_NO
+	}
 
 	lastMilestone, err := srv.GetLastMilestone(ctx)
 
@@ -77,7 +81,7 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 		return hmModule.Vote_VOTE_NO
 	}
 
-	if count != uint64(0) && msg.StartBlock != lastMilestone.EndBlock+1 {
+	if count != uint64(0) && lastMilestone != nil && msg.StartBlock != lastMilestone.EndBlock+1 {
 		logger.Error("milestone is not in continuity to last stored milestone",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
@@ -147,7 +151,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 
 		// check if new milestone's start block start from current tip
 		if lastMilestone.EndBlock+1 != msg.StartBlock {
-			logger.Error("milestone not in countinuity",
+			logger.Error("milestone not in continuity",
 				"currentTip", lastMilestone.EndBlock,
 				"startBlock", msg.StartBlock)
 
@@ -179,14 +183,14 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{txBytes}.Bytes()
+	hash := hmTypes.TxHash{Hash: txBytes}
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeMilestone,
 			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hmTypes.BytesToHeimdallHash(hash).Hex()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hash.String()),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),

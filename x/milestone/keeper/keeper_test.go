@@ -4,29 +4,25 @@ import (
 	"testing"
 	"time"
 
+	storetypes "cosmossdk.io/store/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/stretchr/testify/suite"
-
-	storetypes "cosmossdk.io/store/types"
-
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakekeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/stretchr/testify/suite"
+
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakekeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
 type KeeperTestSuite struct {
@@ -41,7 +37,7 @@ type KeeperTestSuite struct {
 	sideMsgCfg      hmModule.SideTxConfigurator
 }
 
-func (s *KeeperTestSuite) Run(testname string, fn func()) {
+func (s *KeeperTestSuite) Run(_ string, fn func()) {
 	fn()
 }
 
@@ -57,7 +53,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	sKeeper := stakekeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		nil,
 		nil,
 		nil,
 		addrCodec.NewHexCodec(),
@@ -67,14 +63,13 @@ func (s *KeeperTestSuite) SetupTest() {
 	keeper := milestoneKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		*sKeeper,
+		sKeeper,
 		s.contractCaller,
 	)
 
 	s.ctx = ctx
 	s.milestoneKeeper = keeper
-	s.stakeKeeper = sKeeper
+	s.stakeKeeper = &sKeeper
 
 	milestoneGenesis := types.DefaultGenesisState()
 
@@ -82,7 +77,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	milestoneTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	milestoneTypes.RegisterQueryServer(queryHelper, milestoneKeeper.Querier{Keeper: keeper})
+	milestoneTypes.RegisterQueryServer(queryHelper, milestoneKeeper.NewQueryServer(keeper))
 	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
 	s.msgServer = milestoneKeeper.NewMsgServerImpl(keeper)
 
@@ -103,7 +98,6 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
-	borChainId := "1234"
 	milestoneID := "0000"
 
 	milestone := types.CreateMilestone(
@@ -111,7 +105,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 		endBlock,
 		hash,
 		proposerAddress,
-		borChainId,
+		BorChainId,
 		milestoneID,
 		timestamp,
 	)
@@ -136,7 +130,8 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 
-	result := keeper.GetMilestoneCount(ctx)
+	result, err := keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
 	require.Equal(uint64(0), result)
 
 	startBlock := uint64(0)
@@ -144,7 +139,6 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
-	borChainId := "1234"
 	milestoneID := "0000"
 
 	milestone := types.CreateMilestone(
@@ -152,14 +146,15 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 		endBlock,
 		hash,
 		proposerAddress,
-		borChainId,
+		BorChainId,
 		milestoneID,
 		timestamp,
 	)
-	err := keeper.AddMilestone(ctx, milestone)
+	err = keeper.AddMilestone(ctx, milestone)
 	require.NoError(err)
 
-	result = keeper.GetMilestoneCount(ctx)
+	result, err = keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
 	require.Equal(uint64(1), result)
 }
 
@@ -167,7 +162,8 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 
-	result := keeper.GetMilestoneCount(ctx)
+	result, err := keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
 	require.Equal(uint64(0), result)
 
 	milestoneID := "0000"
@@ -197,7 +193,8 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 
-	result := keeper.GetMilestoneCount(ctx)
+	result, err := keeper.GetMilestoneCount(ctx)
+	require.NoError(err)
 	require.Equal(uint64(0), result)
 
 	milestoneID := "0000"
@@ -222,12 +219,14 @@ func (s *KeeperTestSuite) TestGetMilestoneTimout() {
 	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 
-	val := keeper.GetLastMilestoneTimeout(ctx)
+	val, err := keeper.GetLastMilestoneTimeout(ctx)
+	require.NoError(err)
 	require.Zero(val)
 
-	err := keeper.SetLastMilestoneTimeout(ctx, uint64(21))
+	err = keeper.SetLastMilestoneTimeout(ctx, uint64(21))
 	require.NoError(err)
 
-	val = keeper.GetLastMilestoneTimeout(ctx)
+	val, err = keeper.GetLastMilestoneTimeout(ctx)
+	require.NoError(err)
 	require.Equal(uint64(21), val)
 }

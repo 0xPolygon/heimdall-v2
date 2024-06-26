@@ -3,11 +3,12 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTestUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {
@@ -38,7 +39,6 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
-	borChainId := "1234"
 	milestoneID := "00000"
 
 	milestoneBlock := testutil.CreateMilestone(
@@ -46,7 +46,7 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 		endBlock,
 		hash,
 		proposerAddress,
-		borChainId,
+		BorChainId,
 		milestoneID,
 		timestamp,
 	)

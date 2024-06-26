@@ -7,10 +7,10 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
-
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 type msgServer struct {
@@ -40,7 +40,11 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 	minMilestoneLength := params.MinMilestoneLength
 
 	// Get the milestone proposer
-	validatorSet := m.sk.GetMilestoneValidatorSet(ctx)
+	validatorSet, err := m.sk.GetMilestoneValidatorSet(ctx)
+	if err != nil {
+		logger.Error("error in fetching milestone validator set", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "error in fetching milestone validator set")
+	}
 	if validatorSet.Proposer == nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrProposerNotFound, "")
@@ -59,17 +63,23 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 		return nil, errorsmod.Wrap(types.ErrProposerMismatch, "msg and expected milestone proposer mismatch")
 	}
 
-	if sdkCtx.BlockHeight()-m.GetMilestoneBlockNumber(ctx) < 2 {
+	mBlockNumber, err := m.GetMilestoneBlockNumber(ctx)
+	if err != nil {
+		logger.Error("error in fetching milestone block number", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "error in fetching milestone block number")
+	}
+
+	if sdkCtx.BlockHeight()-mBlockNumber < 2 {
 		logger.Error(
 			"previous milestone still in voting phase",
-			"previousMilestoneBlock", m.GetMilestoneBlockNumber(ctx),
+			"previousMilestoneBlock", mBlockNumber,
 			"currentMilestoneBlock", sdkCtx.BlockHeight(),
 		)
 
 		return nil, errorsmod.Wrap(types.ErrPrevMilestoneInVoting, "")
 	}
 
-	//Increment the priority in the milestone validator set
+	// increment the priority in the milestone validator set
 	m.sk.MilestoneIncrementAccum(ctx, 1)
 
 	// Calculate the milestone length
@@ -125,7 +135,7 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 }
 
 // MilestoneTimeout handles milestone timeout transaction
-func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestoneTimeout) (*types.MsgMilestoneTimeoutResponse, error) {
+func (m msgServer) MilestoneTimeout(ctx context.Context, _ *types.MsgMilestoneTimeout) (*types.MsgMilestoneTimeoutResponse, error) {
 	logger := m.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -159,11 +169,15 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 		return nil, errorsmod.Wrap(types.ErrInvalidMilestoneTimeout, "msg is invalid as it came before the buffer time")
 	}
 
-	lastMilestoneTimeout := m.GetLastMilestoneTimeout(ctx)
+	lastMilestoneTimeout, err := m.GetLastMilestoneTimeout(ctx)
+	if err != nil {
+		return nil, errorsmod.Wrap(err, "error while fetching last milestone timeout")
+	}
+
 	if lastMilestoneTimeout > uint64(math.MaxInt64) {
-		// handle the error appropriately, for example by returning an error
 		return nil, errorsmod.Wrap(types.ErrInvalidMilestoneTimeout, "lastMilestoneTimeout is too large")
 	}
+
 	lastMilestoneTimeoutTime := time.Unix(int64(lastMilestoneTimeout), 0)
 
 	if lastMilestoneTimeoutTime.After(currentTime) || (currentTime.Sub(lastMilestoneTimeoutTime) < bufferTime) {
@@ -173,7 +187,7 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 		return nil, errorsmod.Wrap(types.ErrTooManyMilestoneTimeout, "too many milestone timeout messages")
 	}
 
-	// Set new last milestone-timeout
+	// set new last milestone-timeout
 	newLastMilestoneTimeout := uint64(currentTime.Unix())
 	if err = m.SetLastMilestoneTimeout(ctx, newLastMilestoneTimeout); err != nil {
 		logger.Error("error in setting last milestone timeout", "error", err)
@@ -185,7 +199,11 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, msg *types.MsgMilestone
 	m.sk.MilestoneIncrementAccum(ctx, 1)
 
 	// Get new proposer
-	vs := m.sk.GetMilestoneValidatorSet(ctx)
+	vs, err := m.sk.GetMilestoneValidatorSet(ctx)
+	if err != nil {
+		logger.Error("error in fetching milestone validator set", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "error in fetching milestone validator set")
+	}
 
 	newProposer := vs.GetProposer()
 	logger.Debug(

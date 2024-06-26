@@ -3,22 +3,21 @@ package cli
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
-
 	"cosmossdk.io/core/address"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/spf13/cobra"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
+// TODO HV2: implement autocli
 var logger = helper.Logger.With("module", "x/milestone")
 
 // NewTxCmd returns a root CLI command handler for all x/milestone transaction commands.
-func NewTxCmd(valAddrCodec, ac address.Codec) *cobra.Command {
+func NewTxCmd(valAddrCodec address.Codec) *cobra.Command {
 	milestoneTxCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "milestone transaction subcommands",
@@ -132,7 +131,6 @@ func MilestoneCmd(ac address.Codec) *cobra.Command {
 	if err := cmd.MarkFlagRequired(FlagMilestoneID); err != nil {
 		logger.Error("SendMilestoneTx | MarkFlagRequired | FlagMilestoneID", "Error", err)
 	}
-
 
 	flags.AddTxFlagsToCmd(cmd)
 

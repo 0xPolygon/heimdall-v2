@@ -1,8 +1,8 @@
 package types
 
 import (
-	types "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/maticnetwork/bor/common"
+	"github.com/0xPolygon/heimdall-v2/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (

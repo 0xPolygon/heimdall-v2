@@ -2,11 +2,10 @@ package types
 
 import (
 	"bytes"
-
 	"cosmossdk.io/core/address"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 var _ sdk.Msg = &MsgMilestone{}
@@ -32,23 +31,23 @@ func NewMsgMilestoneBlock(
 }
 
 func (msg MsgMilestone) ValidateBasic(ac address.Codec) error {
-	if bytes.Equal(msg.Hash.GetHash(), hmTypes.ZeroHeimdallHash) {
-		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.Hash.String())
+	if bytes.Equal(msg.Hash.GetHash(), ZeroHeimdallHash.GetHash()) {
+		return ErrInvalidMsg.Wrapf("invalid roothash %v", msg.Hash.String())
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("invalid proposer %s", msg.Proposer)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
+		return ErrInvalidMsg.Wrapf("invalid proposer %s", msg.Proposer)
 	}
 
 	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
-		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%s,end block=%s", msg.StartBlock, msg.EndBlock)
+		return ErrInvalidMsg.Wrapf("end should be greater than to start block start block=%d,end block=%d", msg.StartBlock, msg.EndBlock)
 	}
 
 	return nil
@@ -65,13 +64,13 @@ func NewMsgMilestoneTimeout(from string) MsgMilestoneTimeout {
 func (msg MsgMilestoneTimeout) ValidateBasic(ac address.Codec) error {
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %s", msg.From)
 	}
 
 	accAddr := sdk.AccAddress(addrBytes)
 
 	if accAddr.Empty() {
-		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.From)
+		return ErrInvalidMsg.Wrapf("invalid proposer %s", msg.From)
 	}
 
 	return nil

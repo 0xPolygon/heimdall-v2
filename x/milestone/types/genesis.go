@@ -3,8 +3,9 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cosmos/cosmos-sdk/codec"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // NewGenesisState creates a new genesis state.

@@ -1,9 +1,8 @@
 package keeper_test
 
 import (
-	"github.com/stretchr/testify/mock"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/mock"
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
@@ -41,8 +40,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 
 	milestone := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
-	borChainId := "1234"
-
 	s.Run("Success", func() {
 		s.contractCaller.Mock = mock.Mock{}
 
@@ -52,7 +49,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			milestone.MilestoneID,
 		)
 
@@ -76,7 +73,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			milestone.MilestoneID,
 		)
 
@@ -100,7 +97,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock-1,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			milestone.MilestoneID,
 		)
 
@@ -123,7 +120,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			milestone.MilestoneID,
 		)
 
@@ -150,7 +147,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	// check valid milestone
 	// generate proposer for validator set
 	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
-	stakingKeeper.IncrementAccum(ctx, 1)
+	err = stakingKeeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
 
 	lastMilestone, err := keeper.GetLastMilestone(ctx)
 	if err == nil {
@@ -162,8 +160,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	// add current proposer to header
 	milestone.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
 
-	borChainId := "1234"
-
 	s.Run("Failure", func() {
 		// create milestone msg
 		msgMilestone := types.NewMsgMilestoneBlock(
@@ -171,7 +167,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			"00000",
 		)
 
@@ -199,7 +195,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.StartBlock+1,
 			milestone.EndBlock+1,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			"00000",
 		)
 
@@ -226,7 +222,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			"00001",
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
@@ -254,7 +250,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			"00002",
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
@@ -274,7 +270,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.StartBlock+64+1,
 			milestone.EndBlock+64+1,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			"00003",
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
@@ -294,7 +290,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.StartBlock,
 			milestone.EndBlock,
 			milestone.Hash,
-			borChainId,
+			BorChainId,
 			"00004",
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_NO)

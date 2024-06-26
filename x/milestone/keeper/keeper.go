@@ -6,16 +6,15 @@ import (
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
-// Keeper of the x/staking store
+// Keeper of the x/milestone store
 type Keeper struct {
 	storeService    storetypes.KVStoreService
 	cdc             codec.BinaryCodec
@@ -30,11 +29,10 @@ type Keeper struct {
 	timeout     collections.Item[uint64]
 }
 
-// NewKeeper creates a new staking Keeper instance
+// NewKeeper creates a new milestone Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
-	authority string,
 	stakingKeeper stakeKeeper.Keeper,
 	contractCaller helper.IContractCaller,
 
@@ -42,7 +40,6 @@ func NewKeeper(
 	return &Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
-		authority:       authority,
 		sk:              stakingKeeper,
 		IContractCaller: contractCaller,
 	}
@@ -118,7 +115,7 @@ func (k *Keeper) GetMilestoneByNumber(ctx context.Context, number uint64) (*type
 	return &milestone, nil
 }
 
-// GetLastMilestone gets last milestone, where number = GetCount()
+// DoLastMilestoneExist gets last milestone, where number = GetCount()
 func (k *Keeper) DoLastMilestoneExist(ctx context.Context) (bool, error) {
 	lastMilestoneNumber, err := k.GetMilestoneCount(ctx)
 	if err != nil {
@@ -201,8 +198,16 @@ func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) {
 	milestoneNoAckKey := types.GetMilestoneNoAckKey(milestoneId)
 	value := []byte(milestoneId)
 
-	store.Set(milestoneNoAckKey, value)
-	store.Set(types.MilestoneLastNoAckKey, value)
+	err := store.Set(milestoneNoAckKey, value)
+	if err != nil {
+		k.Logger(ctx).Error("error while setting no-ack milestone in store", "err", err)
+		return
+	}
+	err = store.Set(types.MilestoneLastNoAckKey, value)
+	if err != nil {
+		k.Logger(ctx).Error("error while setting last no-ack milestone in store", "err", err)
+		return
+	}
 }
 
 // GetLastNoAckMilestone returns the last no-ack milestone

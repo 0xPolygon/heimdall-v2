@@ -22,8 +22,8 @@ func ValidateMilestone(start uint64, end uint64, hash hmTypes.HeimdallHash, mile
 		return false, errors.New(fmt.Sprint("end block number with confirmation is not available in bor chain", "EndBlock", end, "confirmation", confirmations))
 	}
 
-	//Get the vote on hash of milestone from Bor
-	vote, err := contractCaller.GetVoteOnHash(start, end, minMilestoneLength, hash.String(), milestoneID)
+	// Get the vote on hash of milestone from Bor
+	vote, err := contractCaller.GetVoteOnHash(start, end, hash.String(), milestoneID)
 	if err != nil {
 		return false, err
 	}

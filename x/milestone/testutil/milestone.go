@@ -3,12 +3,14 @@ package testutil
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"time"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/google/uuid"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/google/uuid"
 )
 
 // GenRandMilestone creates and returns a random milestone
@@ -17,8 +19,9 @@ func GenRandMilestone(start uint64, milestoneLength uint64) (milestone types.Mil
 	borChainID := "1234"
 	hash := hmTypes.HeimdallHash{Hash: RandomBytes()}
 	proposer := secp256k1.GenPrivKey().PubKey().Address().String()
+	randN, _ := uuid.NewRandom()
 
-	milestoneID := fmt.Sprintf("%s - %s", uuid.NewRandom().String(), hmTypes.BytesToHeimdallAddress(hash[:]).String())
+	milestoneID := fmt.Sprintf("%s - %s", randN.String(), common.BytesToAddress(hash.GetHash()).String())
 	milestone = CreateMilestone(
 		start,
 		end,
@@ -54,6 +57,6 @@ func CreateMilestone(
 
 func RandomBytes() []byte {
 	b := make([]byte, 32)
-	rand.Read(b)
+	_, _ = rand.Read(b)
 	return b
 }

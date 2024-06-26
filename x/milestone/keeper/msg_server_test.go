@@ -3,13 +3,19 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/ethereum/go-ethereum/common"
+
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/ethereum/go-ethereum/common"
+)
+
+const (
+	AccountHash = "0x000000000000000000000000000000000000dEaD"
+	BorChainId  = "1234"
 )
 
 func (s *KeeperTestSuite) TestHandleMsgMilestone() {
@@ -17,7 +23,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	require := s.Require()
 	stakingKeeper := s.stakeKeeper
 	start := uint64(0)
-	borChainId := "1234"
 	milestoneID := "0000"
 	params := types.DefaultParams()
 	err := keeper.SetParams(ctx, params)
@@ -28,7 +33,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	// check valid milestone
 	// generate proposer for validator set
 	stakeSim.LoadRandomValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
-	stakingKeeper.IncrementAccum(ctx, 1)
+	err = stakingKeeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
 
 	lastMilestone, err := keeper.GetLastMilestone(ctx)
 	if err == nil {
@@ -40,13 +46,13 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	ctx = ctx.WithBlockHeight(3)
 
 	s.Run("Invalid Proposer", func() {
-		header.Proposer = common.HexToAddress("1234").String()
+		header.Proposer = common.HexToAddress(AccountHash).String()
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
 			header.Hash,
-			borChainId,
+			BorChainId,
 			milestoneID,
 		)
 
@@ -65,7 +71,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 			header.StartBlock,
 			header.EndBlock-1,
 			header.Hash,
-			borChainId,
+			BorChainId,
 			milestoneID,
 		)
 
@@ -84,7 +90,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 			uint64(1),
 			header.EndBlock+1,
 			header.Hash,
-			borChainId,
+			BorChainId,
 			milestoneID,
 		)
 
@@ -102,7 +108,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 			header.StartBlock,
 			header.EndBlock,
 			header.Hash,
-			borChainId,
+			BorChainId,
 			milestoneID,
 		)
 
@@ -113,7 +119,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		bufferedHeader, err := keeper.GetLastMilestone(ctx)
 		require.NoError(err)
 		require.Empty(bufferedHeader, "Should not store state")
-		milestoneBlockNumber := keeper.GetMilestoneBlockNumber(ctx)
+		milestoneBlockNumber, err := keeper.GetMilestoneBlockNumber(ctx)
+		require.NoError(err)
 		require.Equal(int64(3), milestoneBlockNumber, "Mismatch in milestoneBlockNumber")
 	})
 
@@ -128,7 +135,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 			start,
 			start+minMilestoneLength-1,
 			header.Hash,
-			borChainId,
+			BorChainId,
 			milestoneID,
 		)
 
@@ -160,7 +167,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 			start,
 			start+minMilestoneLength-1,
 			header.Hash,
-			borChainId,
+			BorChainId,
 			milestoneID,
 		)
 
@@ -176,7 +183,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 			start,
 			start+minMilestoneLength-1,
 			header.Hash,
-			borChainId,
+			BorChainId,
 			milestoneID,
 		)
 
@@ -198,7 +205,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	minMilestoneLength := params.MinMilestoneLength
 
 	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
-	stakingKeeper.IncrementAccum(ctx, 1)
+	err := stakingKeeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
 
 	lastMilestone, err := keeper.GetLastMilestone(ctx)
 	if err == nil {
@@ -251,7 +259,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(0)
-	borChainId := "1234"
 	milestoneID := "0000"
 
 	proposer := common.Address{}.String()
@@ -274,7 +281,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 		endBlock,
 		hash,
 		proposerAddress,
-		borChainId,
+		BorChainId,
 		milestoneID,
 		timestamp,
 	)

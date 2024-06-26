@@ -22,11 +22,5 @@ func RegisterInterfaces(registry types.InterfaceRegistry) {
 		&MsgMilestoneTimeout{},
 	)
 
-	//TODO HV2 Please check whether we need this
-	// registry.RegisterImplementations(
-	// 	(*authz.Authorization)(nil),
-	// 	&StakeAuthorization{},
-	// )
-
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)
 }

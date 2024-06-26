@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 // InitGenesis sets the milestone module's state from a given genesis state.
