@@ -76,6 +76,8 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
+// TEST
+
 var (
 	DefaultNodeHome string
 	// maccPerms represent the module accounts' permissions
