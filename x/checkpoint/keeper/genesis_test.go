@@ -56,7 +56,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 
 	require.Equal(genesisState.AckCount, actualParams.AckCount)
 	require.Equal(genesisState.BufferedCheckpoint, actualParams.BufferedCheckpoint)
-	require.Equal(genesisState.LastNoACK, actualParams.LastNoACK)
+	require.Equal(genesisState.LastNoAck, actualParams.LastNoAck)
 	require.Equal(genesisState.Params, actualParams.Params)
 	require.LessOrEqual(len(actualParams.Checkpoints), len(genesisState.Checkpoints))
 }

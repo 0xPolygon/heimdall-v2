@@ -38,8 +38,12 @@ func NewMsgCheckpointBlock(
 }
 
 func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
-	if bytes.Equal(msg.RootHash.Bytes(), hmTypes.ZeroHeimdallHash) {
+	if bytes.Equal(msg.RootHash.GetHash(), ZeroHeimdallHash.GetHash()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
+	}
+
+	if len(msg.RootHash.Hash) != types.HashLength {
+		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash.Hash))
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.Proposer)
@@ -69,8 +73,8 @@ func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 		[]byte(msg.Proposer),
 		new(big.Int).SetUint64(msg.StartBlock).Bytes(),
 		new(big.Int).SetUint64(msg.EndBlock).Bytes(),
-		msg.RootHash.Bytes(),
-		msg.AccountRootHash.Bytes(),
+		msg.RootHash.GetHash(),
+		msg.AccountRootHash.GetHash(),
 		new(big.Int).SetUint64(borChainID).Bytes(),
 	)
 }
@@ -121,7 +125,7 @@ func (msg MsgCheckpointAck) ValidateBasic(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
-	if bytes.Equal(msg.RootHash.Bytes(), hmTypes.ZeroHeimdallHash) {
+	if bytes.Equal(msg.RootHash.GetHash(), ZeroHeimdallHash.GetHash()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
 	}
 

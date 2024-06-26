@@ -32,128 +32,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgCheckpointAdjust defines a SDK message for adjusting the checkpoint
-type MsgCheckpointAdjust struct {
-	HeaderIndex uint64             `protobuf:"varint,1,opt,name=header_index,json=headerIndex,proto3" json:"header_index,omitempty"`
-	Proposer    string             `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
-	From        string             `protobuf:"bytes,3,opt,name=from,proto3" json:"from,omitempty"`
-	StartBlock  uint64             `protobuf:"varint,4,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
-	EndBlock    uint64             `protobuf:"varint,5,opt,name=end_block,json=endBlock,proto3" json:"end_block,omitempty"`
-	RootHash    types.HeimdallHash `protobuf:"bytes,6,opt,name=root_hash,json=rootHash,proto3" json:"root_hash"`
-}
-
-func (m *MsgCheckpointAdjust) Reset()         { *m = MsgCheckpointAdjust{} }
-func (m *MsgCheckpointAdjust) String() string { return proto.CompactTextString(m) }
-func (*MsgCheckpointAdjust) ProtoMessage()    {}
-func (*MsgCheckpointAdjust) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{0}
-}
-func (m *MsgCheckpointAdjust) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgCheckpointAdjust) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgCheckpointAdjust.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgCheckpointAdjust) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgCheckpointAdjust.Merge(m, src)
-}
-func (m *MsgCheckpointAdjust) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgCheckpointAdjust) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgCheckpointAdjust.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgCheckpointAdjust proto.InternalMessageInfo
-
-func (m *MsgCheckpointAdjust) GetHeaderIndex() uint64 {
-	if m != nil {
-		return m.HeaderIndex
-	}
-	return 0
-}
-
-func (m *MsgCheckpointAdjust) GetProposer() string {
-	if m != nil {
-		return m.Proposer
-	}
-	return ""
-}
-
-func (m *MsgCheckpointAdjust) GetFrom() string {
-	if m != nil {
-		return m.From
-	}
-	return ""
-}
-
-func (m *MsgCheckpointAdjust) GetStartBlock() uint64 {
-	if m != nil {
-		return m.StartBlock
-	}
-	return 0
-}
-
-func (m *MsgCheckpointAdjust) GetEndBlock() uint64 {
-	if m != nil {
-		return m.EndBlock
-	}
-	return 0
-}
-
-func (m *MsgCheckpointAdjust) GetRootHash() types.HeimdallHash {
-	if m != nil {
-		return m.RootHash
-	}
-	return types.HeimdallHash{}
-}
-
-// MsgCheckpointAdjustResponse defines the Msg/CheckpointAdjust response type.
-type MsgCheckpointAdjustResponse struct {
-}
-
-func (m *MsgCheckpointAdjustResponse) Reset()         { *m = MsgCheckpointAdjustResponse{} }
-func (m *MsgCheckpointAdjustResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgCheckpointAdjustResponse) ProtoMessage()    {}
-func (*MsgCheckpointAdjustResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{1}
-}
-func (m *MsgCheckpointAdjustResponse) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *MsgCheckpointAdjustResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_MsgCheckpointAdjustResponse.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *MsgCheckpointAdjustResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgCheckpointAdjustResponse.Merge(m, src)
-}
-func (m *MsgCheckpointAdjustResponse) XXX_Size() int {
-	return m.Size()
-}
-func (m *MsgCheckpointAdjustResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgCheckpointAdjustResponse.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_MsgCheckpointAdjustResponse proto.InternalMessageInfo
-
 // MsgCheckpoint defines a SDK message for creating the checkpoint
 type MsgCheckpoint struct {
 	Proposer        string             `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
@@ -168,7 +46,7 @@ func (m *MsgCheckpoint) Reset()         { *m = MsgCheckpoint{} }
 func (m *MsgCheckpoint) String() string { return proto.CompactTextString(m) }
 func (*MsgCheckpoint) ProtoMessage()    {}
 func (*MsgCheckpoint) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{2}
+	return fileDescriptor_690e34ffa803b8fb, []int{0}
 }
 func (m *MsgCheckpoint) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -247,7 +125,7 @@ func (m *MsgCheckpointResponse) Reset()         { *m = MsgCheckpointResponse{} }
 func (m *MsgCheckpointResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgCheckpointResponse) ProtoMessage()    {}
 func (*MsgCheckpointResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{3}
+	return fileDescriptor_690e34ffa803b8fb, []int{1}
 }
 func (m *MsgCheckpointResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -292,7 +170,7 @@ func (m *MsgCheckpointAck) Reset()         { *m = MsgCheckpointAck{} }
 func (m *MsgCheckpointAck) String() string { return proto.CompactTextString(m) }
 func (*MsgCheckpointAck) ProtoMessage()    {}
 func (*MsgCheckpointAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{4}
+	return fileDescriptor_690e34ffa803b8fb, []int{2}
 }
 func (m *MsgCheckpointAck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -377,7 +255,7 @@ func (m *MsgCheckpointAck) GetLogIndex() uint64 {
 	return 0
 }
 
-// MsgCheckpointAck defines the Msg/CheckpointAck response type.
+// MsgCheckpointAckResponse defines the Msg/CheckpointAck response type.
 type MsgCheckpointAckResponse struct {
 }
 
@@ -385,7 +263,7 @@ func (m *MsgCheckpointAckResponse) Reset()         { *m = MsgCheckpointAckRespon
 func (m *MsgCheckpointAckResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgCheckpointAckResponse) ProtoMessage()    {}
 func (*MsgCheckpointAckResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{5}
+	return fileDescriptor_690e34ffa803b8fb, []int{3}
 }
 func (m *MsgCheckpointAckResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -423,7 +301,7 @@ func (m *MsgCheckpointNoAck) Reset()         { *m = MsgCheckpointNoAck{} }
 func (m *MsgCheckpointNoAck) String() string { return proto.CompactTextString(m) }
 func (*MsgCheckpointNoAck) ProtoMessage()    {}
 func (*MsgCheckpointNoAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{6}
+	return fileDescriptor_690e34ffa803b8fb, []int{4}
 }
 func (m *MsgCheckpointNoAck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -459,7 +337,7 @@ func (m *MsgCheckpointNoAck) GetFrom() string {
 	return ""
 }
 
-// MsgCheckpointNoAck defines the Msg/CheckpointNoAck response type.
+// MsgCheckpointNoAckResponse defines the Msg/CheckpointNoAck response type.
 type MsgCheckpointNoAckResponse struct {
 }
 
@@ -467,7 +345,7 @@ func (m *MsgCheckpointNoAckResponse) Reset()         { *m = MsgCheckpointNoAckRe
 func (m *MsgCheckpointNoAckResponse) String() string { return proto.CompactTextString(m) }
 func (*MsgCheckpointNoAckResponse) ProtoMessage()    {}
 func (*MsgCheckpointNoAckResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_690e34ffa803b8fb, []int{7}
+	return fileDescriptor_690e34ffa803b8fb, []int{5}
 }
 func (m *MsgCheckpointNoAckResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -497,8 +375,6 @@ func (m *MsgCheckpointNoAckResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_MsgCheckpointNoAckResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*MsgCheckpointAdjust)(nil), "heimdallv2.checkpoint.v1.MsgCheckpointAdjust")
-	proto.RegisterType((*MsgCheckpointAdjustResponse)(nil), "heimdallv2.checkpoint.v1.MsgCheckpointAdjustResponse")
 	proto.RegisterType((*MsgCheckpoint)(nil), "heimdallv2.checkpoint.v1.MsgCheckpoint")
 	proto.RegisterType((*MsgCheckpointResponse)(nil), "heimdallv2.checkpoint.v1.MsgCheckpointResponse")
 	proto.RegisterType((*MsgCheckpointAck)(nil), "heimdallv2.checkpoint.v1.MsgCheckpointAck")
@@ -510,52 +386,48 @@ func init() {
 func init() { proto.RegisterFile("heimdallv2/checkpoint/v1/tx.proto", fileDescriptor_690e34ffa803b8fb) }
 
 var fileDescriptor_690e34ffa803b8fb = []byte{
-	// 719 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0x3f, 0x6f, 0xd3, 0x5e,
-	0x14, 0x8d, 0xeb, 0x24, 0x6d, 0x6e, 0x7f, 0x55, 0x5b, 0xff, 0x8a, 0x6a, 0x5c, 0xe2, 0x16, 0x4b,
-	0x40, 0x14, 0xa8, 0x4d, 0x53, 0x18, 0xc8, 0xd6, 0x14, 0xa1, 0x76, 0x28, 0x42, 0x45, 0x2c, 0x2c,
-	0x96, 0x63, 0xbb, 0xb6, 0x49, 0xec, 0x1b, 0xf9, 0x39, 0x91, 0xbb, 0x31, 0x21, 0xc4, 0xc4, 0x47,
-	0xe8, 0xc8, 0xd8, 0x81, 0xaf, 0x80, 0xd4, 0xb1, 0x62, 0x40, 0x4c, 0x08, 0xb5, 0x43, 0x99, 0xf8,
-	0x0c, 0xc8, 0x7f, 0xe2, 0xda, 0x6d, 0x23, 0x39, 0x65, 0x61, 0x89, 0xe2, 0x7b, 0xce, 0x3b, 0xef,
-	0xe6, 0x9c, 0x77, 0x9f, 0x03, 0xb7, 0x4d, 0xdd, 0xb2, 0x35, 0xa5, 0xdb, 0x1d, 0x34, 0x24, 0xd5,
-	0xd4, 0xd5, 0x4e, 0x0f, 0x2d, 0xc7, 0x93, 0x06, 0x6b, 0x92, 0xe7, 0x8b, 0x3d, 0x17, 0x3d, 0x64,
-	0xd8, 0x73, 0x8a, 0x78, 0x4e, 0x11, 0x07, 0x6b, 0xdc, 0x82, 0x81, 0x06, 0x86, 0x24, 0x29, 0xf8,
-	0x16, 0xf1, 0xb9, 0x9b, 0x2a, 0x12, 0x1b, 0x89, 0x1c, 0x01, 0xd1, 0x43, 0x0c, 0x2d, 0x46, 0x4f,
-	0x92, 0x4d, 0x8c, 0x60, 0x0b, 0x9b, 0x18, 0x31, 0x30, 0xaf, 0xd8, 0x96, 0x83, 0x52, 0xf8, 0x19,
-	0x97, 0x96, 0x52, 0x9d, 0x79, 0xfb, 0x3d, 0x9d, 0x48, 0xa6, 0x42, 0xcc, 0x08, 0x14, 0x7e, 0x4f,
-	0xc0, 0xff, 0x3b, 0xc4, 0xd8, 0x4c, 0xda, 0xd9, 0xd0, 0xde, 0xf4, 0x89, 0xc7, 0xd4, 0xe0, 0x3f,
-	0x53, 0x57, 0x34, 0xdd, 0x95, 0x2d, 0x47, 0xd3, 0x7d, 0x96, 0x5a, 0xa1, 0x6a, 0xc5, 0x56, 0xe9,
-	0xd3, 0xd9, 0x61, 0x9d, 0xda, 0x9d, 0x8e, 0xa0, 0xed, 0x00, 0x61, 0x9e, 0xc0, 0x54, 0xcf, 0xc5,
-	0x1e, 0x12, 0xdd, 0x65, 0x27, 0x56, 0xa8, 0x5a, 0xa5, 0x55, 0xfd, 0xfa, 0x79, 0x75, 0x21, 0x6e,
-	0x77, 0x43, 0xd3, 0x5c, 0x9d, 0x90, 0x97, 0x9e, 0x6b, 0x39, 0x46, 0xb4, 0x3a, 0xa1, 0x33, 0x6b,
-	0x50, 0xdc, 0x73, 0xd1, 0x66, 0xe9, 0x3c, 0xcb, 0x42, 0x2a, 0x73, 0x17, 0xa6, 0x89, 0xa7, 0xb8,
-	0x9e, 0xdc, 0xee, 0xa2, 0xda, 0x61, 0x8b, 0xe9, 0xb6, 0x20, 0x44, 0x5a, 0x01, 0xc0, 0x08, 0x50,
-	0xd1, 0x1d, 0x2d, 0x66, 0x95, 0xd2, 0xac, 0x29, 0xdd, 0xd1, 0x22, 0xce, 0x33, 0xa8, 0xb8, 0x88,
-	0x9e, 0x1c, 0xd8, 0xc1, 0x96, 0x57, 0xa8, 0xda, 0x74, 0x83, 0x17, 0x53, 0x19, 0x85, 0x66, 0x89,
-	0x5b, 0x71, 0x61, 0x4b, 0x21, 0x66, 0xab, 0x72, 0xf4, 0x63, 0xb9, 0x10, 0xeb, 0x04, 0x6b, 0x83,
-	0x62, 0xf3, 0xfe, 0xfb, 0x83, 0x65, 0xea, 0xd7, 0xc1, 0x72, 0xe1, 0xc3, 0xd9, 0x61, 0x9d, 0x4f,
-	0x85, 0x7f, 0x85, 0xb1, 0x42, 0x15, 0x96, 0xae, 0x28, 0xef, 0xea, 0xa4, 0x87, 0x0e, 0xd1, 0x85,
-	0x77, 0x34, 0xcc, 0x64, 0xf0, 0x8c, 0xbf, 0xd4, 0x78, 0xfe, 0x5e, 0x30, 0x6b, 0x22, 0x97, 0x59,
-	0x74, 0x0e, 0xb3, 0x8a, 0xd7, 0x36, 0x8b, 0x79, 0x05, 0xf3, 0x8a, 0xaa, 0x62, 0xdf, 0xf1, 0xe4,
-	0x73, 0xbd, 0xd2, 0xb8, 0x7a, 0xb3, 0xb1, 0xc6, 0xee, 0x50, 0xb6, 0x06, 0x33, 0x6d, 0x74, 0x65,
-	0xd5, 0x54, 0x2c, 0x47, 0xb6, 0x64, 0x2d, 0xcc, 0xb3, 0x92, 0xfc, 0xd8, 0x36, 0xba, 0x9b, 0x01,
-	0xb4, 0xfd, 0xb4, 0x79, 0x27, 0x4e, 0x8b, 0x0a, 0xd2, 0x62, 0x47, 0xa5, 0x25, 0x2c, 0xc2, 0x8d,
-	0x4c, 0x21, 0x49, 0xe8, 0x0b, 0x0d, 0x73, 0xd9, 0x04, 0xd5, 0x4e, 0x72, 0x92, 0xa9, 0xfc, 0x27,
-	0xb9, 0x0a, 0x65, 0xa7, 0x6f, 0xb7, 0xe3, 0xa9, 0x49, 0x1c, 0x8f, 0x8b, 0x99, 0xd8, 0xe9, 0xbf,
-	0x8a, 0xfd, 0x5f, 0x98, 0x11, 0xa6, 0x05, 0x93, 0x9e, 0x1f, 0xa9, 0x4c, 0x8e, 0xab, 0x52, 0xf6,
-	0xfc, 0x50, 0x43, 0x80, 0x4a, 0x17, 0x8d, 0xf8, 0x42, 0x9a, 0xca, 0xf4, 0xdb, 0x45, 0x23, 0xbc,
-	0x8d, 0x9a, 0xb5, 0xf4, 0x2c, 0x2e, 0x8d, 0x9c, 0x45, 0xb5, 0x23, 0x70, 0xc0, 0x5e, 0xac, 0x25,
-	0x19, 0x13, 0x60, 0x32, 0xd8, 0x73, 0xbc, 0x5e, 0xc8, 0xcd, 0x7a, 0xba, 0x9d, 0xea, 0xa8, 0x76,
-	0x42, 0x79, 0xe1, 0x16, 0x70, 0x97, 0xab, 0xc3, 0x96, 0x1a, 0xdf, 0x68, 0xa0, 0x77, 0x88, 0xc1,
-	0xf8, 0x30, 0x77, 0xe9, 0xb2, 0x5e, 0x15, 0x47, 0xbd, 0x59, 0xc4, 0x2b, 0xee, 0x1a, 0xee, 0xf1,
-	0x58, 0xf4, 0x61, 0x07, 0xcc, 0x1e, 0x40, 0xea, 0x5a, 0xba, 0x97, 0x53, 0x84, 0x93, 0x72, 0x12,
-	0x93, 0x7d, 0x10, 0x66, 0xb2, 0xc3, 0x55, 0xcf, 0xdb, 0xaf, 0xda, 0xe1, 0x1a, 0xf9, 0xb9, 0xc9,
-	0x86, 0x7d, 0x98, 0xbd, 0x18, 0xf5, 0x83, 0x9c, 0x32, 0x21, 0x9b, 0x7b, 0x34, 0x0e, 0x7b, 0xb8,
-	0x2d, 0x57, 0x7a, 0x1b, 0x1c, 0x94, 0xd6, 0xce, 0xd1, 0x09, 0x4f, 0x1d, 0x9f, 0xf0, 0xd4, 0xcf,
-	0x13, 0x9e, 0xfa, 0x78, 0xca, 0x17, 0x8e, 0x4f, 0xf9, 0xc2, 0xf7, 0x53, 0xbe, 0xf0, 0x7a, 0xdd,
-	0xb0, 0x3c, 0xb3, 0xdf, 0x16, 0x55, 0xb4, 0xa5, 0x87, 0xfe, 0x0b, 0xec, 0xee, 0x1b, 0xe8, 0x48,
-	0xc3, 0xad, 0x56, 0x07, 0x0d, 0xc9, 0x4f, 0xff, 0xd5, 0x08, 0x87, 0xa8, 0x5d, 0x0e, 0xdf, 0xeb,
-	0xeb, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x2b, 0x20, 0xfb, 0x09, 0x90, 0x08, 0x00, 0x00,
+	// 649 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0x4d, 0x4f, 0xd4, 0x50,
+	0x14, 0x9d, 0x32, 0x1f, 0x30, 0x8f, 0x10, 0xa4, 0xc1, 0x50, 0x8b, 0x14, 0xec, 0x42, 0x27, 0x13,
+	0x69, 0x9d, 0xc1, 0x8d, 0xec, 0xa6, 0x18, 0x03, 0x0b, 0x8c, 0xc1, 0xb8, 0x71, 0xd3, 0xf4, 0x8b,
+	0xb6, 0x99, 0xb6, 0xb7, 0xe9, 0x7b, 0x33, 0x29, 0x89, 0x0b, 0xe3, 0xca, 0xb8, 0x32, 0xf1, 0x0f,
+	0xb0, 0x74, 0xc9, 0xc2, 0x1f, 0xc1, 0xca, 0x10, 0x57, 0x2e, 0x8c, 0x31, 0xb0, 0xc0, 0x9f, 0x61,
+	0xfa, 0xda, 0x0e, 0x2d, 0x4a, 0x52, 0x70, 0x33, 0x99, 0x77, 0xcf, 0x99, 0x73, 0xef, 0xbb, 0xe7,
+	0xe4, 0x0d, 0xba, 0xe7, 0x58, 0xae, 0x6f, 0x6a, 0x9e, 0x37, 0xee, 0xcb, 0x86, 0x63, 0x19, 0xc3,
+	0x10, 0xdc, 0x80, 0xc8, 0xe3, 0x9e, 0x4c, 0x62, 0x29, 0x8c, 0x80, 0x00, 0xcb, 0x5d, 0x50, 0xa4,
+	0x0b, 0x8a, 0x34, 0xee, 0xf1, 0x8b, 0x36, 0xd8, 0x40, 0x49, 0x72, 0xf2, 0x2d, 0xe5, 0xf3, 0x77,
+	0x0c, 0xc0, 0x3e, 0x60, 0x35, 0x05, 0xd2, 0x43, 0x06, 0x2d, 0xa5, 0x27, 0xd9, 0xc7, 0x76, 0xd2,
+	0xc2, 0xc7, 0x76, 0x06, 0x2c, 0x68, 0xbe, 0x1b, 0x80, 0x4c, 0x3f, 0xb3, 0xd2, 0x72, 0x61, 0x32,
+	0x72, 0x10, 0x5a, 0x58, 0x76, 0x34, 0xec, 0xa4, 0xa0, 0xf8, 0xa9, 0x8e, 0xe6, 0x76, 0xb1, 0xbd,
+	0x35, 0x19, 0x87, 0x7d, 0x82, 0x66, 0xc2, 0x08, 0x42, 0xc0, 0x56, 0xc4, 0x31, 0x6b, 0x4c, 0xa7,
+	0xad, 0xac, 0x7c, 0xfb, 0xb2, 0xbe, 0x98, 0xb5, 0x1f, 0x98, 0x66, 0x64, 0x61, 0xfc, 0x92, 0x44,
+	0x6e, 0x60, 0x7f, 0x3e, 0x3f, 0xea, 0x32, 0x7b, 0x13, 0x3a, 0x7b, 0x1f, 0xcd, 0x62, 0xa2, 0x45,
+	0x44, 0xd5, 0x3d, 0x30, 0x86, 0xdc, 0xd4, 0x1a, 0xd3, 0x69, 0x28, 0xcd, 0x94, 0x85, 0x28, 0xa2,
+	0x24, 0x00, 0x2b, 0xa2, 0xb6, 0x15, 0x98, 0x19, 0xab, 0x5e, 0x64, 0xcd, 0x58, 0x81, 0x99, 0x72,
+	0x9e, 0xa1, 0x76, 0x04, 0x40, 0xd4, 0x64, 0x56, 0xae, 0xb1, 0xc6, 0x74, 0x66, 0xfb, 0x82, 0x54,
+	0x58, 0x20, 0xbd, 0x89, 0xb4, 0x9d, 0x15, 0xb6, 0x35, 0xec, 0x28, 0xed, 0xe3, 0x9f, 0xab, 0xb5,
+	0x4c, 0x27, 0xf9, 0x6d, 0x52, 0x64, 0x5f, 0xa1, 0x05, 0xcd, 0x30, 0x60, 0x14, 0x10, 0xf5, 0x42,
+	0xaf, 0x79, 0x5d, 0xbd, 0xf9, 0x4c, 0x63, 0x2f, 0x97, 0xed, 0xa0, 0x39, 0x1d, 0x22, 0xd5, 0x70,
+	0x34, 0x37, 0x50, 0x5d, 0xd5, 0xe4, 0x5a, 0x74, 0x55, 0xf9, 0x65, 0x75, 0x88, 0xb6, 0x12, 0x68,
+	0xe7, 0xe9, 0x66, 0xff, 0xfd, 0xe1, 0x2a, 0xf3, 0xfb, 0x70, 0x95, 0x79, 0x77, 0x7e, 0xd4, 0x9d,
+	0xec, 0xea, 0xc3, 0xf9, 0x51, 0x97, 0x2b, 0xe4, 0xa4, 0xe4, 0x81, 0xb8, 0x84, 0x6e, 0x97, 0x0a,
+	0x7b, 0x16, 0x0e, 0x21, 0xc0, 0x96, 0xf8, 0xb5, 0x8e, 0x6e, 0x95, 0x90, 0x81, 0x31, 0x64, 0x7b,
+	0xa8, 0xb1, 0x1f, 0x81, 0x5f, 0xcd, 0x2d, 0x4a, 0x65, 0x57, 0x50, 0x2b, 0x18, 0xf9, 0xba, 0x15,
+	0x95, 0x4d, 0xca, 0x8a, 0xa5, 0x0c, 0xd4, 0xff, 0x2b, 0x03, 0x8d, 0x4a, 0x19, 0x68, 0x56, 0xc8,
+	0x40, 0xeb, 0xe6, 0x19, 0x50, 0xd0, 0x34, 0x89, 0x53, 0x95, 0xe9, 0xeb, 0xaa, 0xb4, 0x48, 0x4c,
+	0x35, 0x44, 0xd4, 0xf6, 0xc0, 0x56, 0xdd, 0xc0, 0xb4, 0x62, 0x6e, 0xa6, 0x34, 0xaf, 0x07, 0xf6,
+	0x4e, 0x52, 0xde, 0xec, 0x65, 0x56, 0xd7, 0x12, 0xab, 0xe9, 0xa2, 0x13, 0x9b, 0x97, 0xaf, 0xb2,
+	0x79, 0x60, 0x0c, 0x45, 0x1e, 0x71, 0x97, 0x6b, 0x13, 0xb3, 0xdf, 0x20, 0xb6, 0x84, 0x3d, 0x87,
+	0x9b, 0xb9, 0xbd, 0xb9, 0xf1, 0xcf, 0xb9, 0x56, 0xae, 0x9a, 0x8b, 0xf6, 0x11, 0xef, 0x22, 0xfe,
+	0xef, 0x6a, 0x3e, 0x5b, 0xff, 0xc7, 0x14, 0xaa, 0xef, 0x62, 0x9b, 0xdd, 0x47, 0xa8, 0xf0, 0x76,
+	0x3c, 0x90, 0xae, 0x7a, 0xe2, 0xa4, 0x92, 0x16, 0x2f, 0x57, 0x24, 0xe6, 0xfd, 0x58, 0x40, 0x73,
+	0xe5, 0xd0, 0x77, 0x2b, 0x2a, 0x0c, 0x8c, 0x21, 0xdf, 0xaf, 0xce, 0x9d, 0x34, 0x1c, 0xa1, 0xf9,
+	0xcb, 0x9b, 0x7f, 0x58, 0x51, 0x86, 0xb2, 0xf9, 0xc7, 0xd7, 0x61, 0xe7, 0x6d, 0xf9, 0xe6, 0xdb,
+	0xc4, 0x37, 0x65, 0xf7, 0xf8, 0x54, 0x60, 0x4e, 0x4e, 0x05, 0xe6, 0xd7, 0xa9, 0xc0, 0x7c, 0x3c,
+	0x13, 0x6a, 0x27, 0x67, 0x42, 0xed, 0xfb, 0x99, 0x50, 0x7b, 0xbd, 0x61, 0xbb, 0xc4, 0x19, 0xe9,
+	0x92, 0x01, 0xbe, 0xfc, 0x28, 0x7e, 0x01, 0xde, 0x81, 0x0d, 0x81, 0x9c, 0xb7, 0x5a, 0x1f, 0xf7,
+	0xe5, 0xb8, 0xf8, 0xff, 0x43, 0xc3, 0xad, 0xb7, 0xe8, 0x63, 0xbf, 0xf1, 0x27, 0x00, 0x00, 0xff,
+	0xff, 0x01, 0x81, 0x9d, 0xca, 0xa5, 0x06, 0x00, 0x00,
 }
 
 func (this *MsgCheckpoint) Equal(that interface{}) bool {
@@ -610,9 +482,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MsgClient interface {
-	// CheckpointAdjust defines a method for checkpointAdjust
-	CheckpointAdjust(ctx context.Context, in *MsgCheckpointAdjust, opts ...grpc.CallOption) (*MsgCheckpointAdjustResponse, error)
-	// Checkpoint defines a method for checkpoint
+	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
 	CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opts ...grpc.CallOption) (*MsgCheckpointAckResponse, error)
@@ -626,15 +496,6 @@ type msgClient struct {
 
 func NewMsgClient(cc grpc1.ClientConn) MsgClient {
 	return &msgClient{cc}
-}
-
-func (c *msgClient) CheckpointAdjust(ctx context.Context, in *MsgCheckpointAdjust, opts ...grpc.CallOption) (*MsgCheckpointAdjustResponse, error) {
-	out := new(MsgCheckpointAdjustResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.checkpoint.v1.Msg/CheckpointAdjust", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *msgClient) Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error) {
@@ -666,9 +527,7 @@ func (c *msgClient) CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck,
 
 // MsgServer is the server API for Msg service.
 type MsgServer interface {
-	// CheckpointAdjust defines a method for checkpointAdjust
-	CheckpointAdjust(context.Context, *MsgCheckpointAdjust) (*MsgCheckpointAdjustResponse, error)
-	// Checkpoint defines a method for checkpoint
+	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
 	CheckpointAck(context.Context, *MsgCheckpointAck) (*MsgCheckpointAckResponse, error)
@@ -680,9 +539,6 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (*UnimplementedMsgServer) CheckpointAdjust(ctx context.Context, req *MsgCheckpointAdjust) (*MsgCheckpointAdjustResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CheckpointAdjust not implemented")
-}
 func (*UnimplementedMsgServer) Checkpoint(ctx context.Context, req *MsgCheckpoint) (*MsgCheckpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Checkpoint not implemented")
 }
@@ -695,24 +551,6 @@ func (*UnimplementedMsgServer) CheckpointNoAck(ctx context.Context, req *MsgChec
 
 func RegisterMsgServer(s grpc1.Server, srv MsgServer) {
 	s.RegisterService(&_Msg_serviceDesc, srv)
-}
-
-func _Msg_CheckpointAdjust_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgCheckpointAdjust)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MsgServer).CheckpointAdjust(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.checkpoint.v1.Msg/CheckpointAdjust",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CheckpointAdjust(ctx, req.(*MsgCheckpointAdjust))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Msg_Checkpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -774,10 +612,6 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*MsgServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CheckpointAdjust",
-			Handler:    _Msg_CheckpointAdjust_Handler,
-		},
-		{
 			MethodName: "Checkpoint",
 			Handler:    _Msg_Checkpoint_Handler,
 		},
@@ -792,91 +626,6 @@ var _Msg_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "heimdallv2/checkpoint/v1/tx.proto",
-}
-
-func (m *MsgCheckpointAdjust) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgCheckpointAdjust) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgCheckpointAdjust) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	{
-		size, err := m.RootHash.MarshalToSizedBuffer(dAtA[:i])
-		if err != nil {
-			return 0, err
-		}
-		i -= size
-		i = encodeVarintTx(dAtA, i, uint64(size))
-	}
-	i--
-	dAtA[i] = 0x32
-	if m.EndBlock != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.EndBlock))
-		i--
-		dAtA[i] = 0x28
-	}
-	if m.StartBlock != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.StartBlock))
-		i--
-		dAtA[i] = 0x20
-	}
-	if len(m.From) > 0 {
-		i -= len(m.From)
-		copy(dAtA[i:], m.From)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.From)))
-		i--
-		dAtA[i] = 0x1a
-	}
-	if len(m.Proposer) > 0 {
-		i -= len(m.Proposer)
-		copy(dAtA[i:], m.Proposer)
-		i = encodeVarintTx(dAtA, i, uint64(len(m.Proposer)))
-		i--
-		dAtA[i] = 0x12
-	}
-	if m.HeaderIndex != 0 {
-		i = encodeVarintTx(dAtA, i, uint64(m.HeaderIndex))
-		i--
-		dAtA[i] = 0x8
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *MsgCheckpointAdjustResponse) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *MsgCheckpointAdjustResponse) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *MsgCheckpointAdjustResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	return len(dAtA) - i, nil
 }
 
 func (m *MsgCheckpoint) Marshal() (dAtA []byte, err error) {
@@ -1133,43 +882,6 @@ func encodeVarintTx(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *MsgCheckpointAdjust) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.HeaderIndex != 0 {
-		n += 1 + sovTx(uint64(m.HeaderIndex))
-	}
-	l = len(m.Proposer)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	l = len(m.From)
-	if l > 0 {
-		n += 1 + l + sovTx(uint64(l))
-	}
-	if m.StartBlock != 0 {
-		n += 1 + sovTx(uint64(m.StartBlock))
-	}
-	if m.EndBlock != 0 {
-		n += 1 + sovTx(uint64(m.EndBlock))
-	}
-	l = m.RootHash.Size()
-	n += 1 + l + sovTx(uint64(l))
-	return n
-}
-
-func (m *MsgCheckpointAdjustResponse) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	return n
-}
-
 func (m *MsgCheckpoint) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1275,260 +987,6 @@ func sovTx(x uint64) (n int) {
 }
 func sozTx(x uint64) (n int) {
 	return sovTx(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (m *MsgCheckpointAdjust) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgCheckpointAdjust: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgCheckpointAdjust: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HeaderIndex", wireType)
-			}
-			m.HeaderIndex = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.HeaderIndex |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Proposer", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Proposer = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field From", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.From = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StartBlock", wireType)
-			}
-			m.StartBlock = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.StartBlock |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 5:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EndBlock", wireType)
-			}
-			m.EndBlock = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.EndBlock |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 6:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RootHash", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowTx
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthTx
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthTx
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.RootHash.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *MsgCheckpointAdjustResponse) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowTx
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MsgCheckpointAdjustResponse: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgCheckpointAdjustResponse: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		default:
-			iNdEx = preIndex
-			skippy, err := skipTx(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if (skippy < 0) || (iNdEx+skippy) < 0 {
-				return ErrInvalidLengthTx
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
 }
 func (m *MsgCheckpoint) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)

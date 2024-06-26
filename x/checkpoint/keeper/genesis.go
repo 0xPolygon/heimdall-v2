@@ -17,8 +17,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	}
 
 	// Set last no-ack
-	if data.LastNoACK > 0 {
-		err = k.SetLastNoAck(ctx, data.LastNoACK)
+	if data.LastNoAck > 0 {
+		err = k.SetLastNoAck(ctx, data.LastNoAck)
 		if err != nil {
 			k.Logger(ctx).Error("error in setting last no ack during init genesis", "error", err)
 			panic(err)
@@ -91,8 +91,8 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 
 	return &types.GenesisState{
 		Params:             params,
-		BufferedCheckpoint: bufferedCheckpoint,
-		LastNoACK:          lastNoAck,
+		BufferedCheckpoint: &bufferedCheckpoint,
+		LastNoAck:          lastNoAck,
 		AckCount:           ackCount,
 		Checkpoints:        types.SortHeaders(checkpoints),
 	}
