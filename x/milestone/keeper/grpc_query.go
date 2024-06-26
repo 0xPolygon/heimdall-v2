@@ -9,6 +9,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// HV2 Following path for API's has been changed
+// "/milestone/lastNoAck" -> "/milestone/last-no-ack"
+// "/milestone/noAck/{id}"->"/milestone/no-ack/{id}"
+// "/milestone/ID/{id}" it has been removed
+// "/staking/milestoneProposer/{times}" -> "/milestone/proposer"
+
 type QueryServer struct {
 	*Keeper
 }

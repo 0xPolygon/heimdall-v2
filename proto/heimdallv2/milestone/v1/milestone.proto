@@ -31,7 +31,7 @@ message Milestone {
 
   string milestone_i_d = 6 [ (amino.dont_omitempty) = true ];
 
-  uint64 time_stamp = 7 [ (amino.dont_omitempty) = true ];
+  uint64 timestamp = 7 [ (amino.dont_omitempty) = true ];
 }
 
 // Params represents the milestone parameters
