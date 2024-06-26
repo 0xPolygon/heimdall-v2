@@ -40,10 +40,10 @@ func NewKeeper(
 	topupKeeper types.TopupKeeper,
 	contractCaller helper.IContractCaller,
 
-) *Keeper {
+) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 
-	k := &Keeper{
+	k := Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
 		sk:              stakingKeeper,

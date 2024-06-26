@@ -9,7 +9,6 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	dbTestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,6 +22,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 )
 
 const (
@@ -52,7 +52,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(checkpointTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
 
-	testCtx := dbTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := cosmosTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
@@ -79,14 +79,16 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	keeper.InitGenesis(ctx, checkpointGenesis)
 
+	s.checkpointKeeper = &keeper
+
 	checkpointTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	checkpointTypes.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(keeper))
+	checkpointTypes.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(&keeper))
 	s.queryClient = checkpointTypes.NewQueryClient(queryHelper)
-	s.msgServer = checkpointKeeper.NewMsgServerImpl(keeper)
+	s.msgServer = checkpointKeeper.NewMsgServerImpl(&keeper)
 
 	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
-	types.RegisterSideMsgServer(s.sideMsgCfg, checkpointKeeper.NewSideMsgServerImpl(keeper))
+	types.RegisterSideMsgServer(s.sideMsgCfg, checkpointKeeper.NewSideMsgServerImpl(&keeper))
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -126,7 +128,10 @@ func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {
 	err := keeper.FlushCheckpointBuffer(ctx)
 	require.Nil(err)
 
-	buffer, err := keeper.GetCheckpointFromBuffer(ctx)
-	require.Nil(err)
-	require.Nil(buffer)
+	res, err := keeper.HasCheckpointInBuffer(ctx)
+	require.NoError(err)
+	require.False(res)
+
+	_, err = keeper.GetCheckpointFromBuffer(ctx)
+	require.NotNil(err)
 }

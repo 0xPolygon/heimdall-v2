@@ -38,10 +38,10 @@ func (m *MockTopupKeeper) EXPECT() *MockTopupKeeperMockRecorder {
 }
 
 // GetAllDividendAccounts mocks base method.
-func (m *MockTopupKeeper) GetAllDividendAccounts(ctx context.Context) ([]*types.DividendAccount, error) {
+func (m *MockTopupKeeper) GetAllDividendAccounts(ctx context.Context) ([]types.DividendAccount, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAllDividendAccounts", ctx)
-	ret0, _ := ret[0].([]*types.DividendAccount)
+	ret0, _ := ret[0].([]types.DividendAccount)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

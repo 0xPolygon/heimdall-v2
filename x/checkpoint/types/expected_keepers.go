@@ -9,7 +9,7 @@ import (
 )
 
 type TopupKeeper interface {
-	GetAllDividendAccounts(ctx context.Context) ([]*hmTypes.DividendAccount, error)
+	GetAllDividendAccounts(ctx context.Context) ([]hmTypes.DividendAccount, error)
 }
 
 type StakeKeeper interface {

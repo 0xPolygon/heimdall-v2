@@ -7,7 +7,7 @@ import "gogoproto/gogo.proto";
 import "amino/amino.proto";
 import "heimdallv2/checkpoint/v1/checkpoint.proto";
 
-// GenesisState defines the staking module's genesis state.
+// GenesisState defines the checkpoint module's genesis state.
 message GenesisState {
   // It defines the params
   Params params = 1

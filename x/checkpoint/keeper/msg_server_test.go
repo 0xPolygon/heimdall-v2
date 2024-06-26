@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
@@ -19,12 +20,14 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	start := uint64(0)
 	borChainId := "1234"
 	params, _ := keeper.GetParams(ctx)
+
+	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
 	dividendAccounts, err := s.topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -32,13 +35,11 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	}
 
 	header := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength)
-	require.NoError(err)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
 
-	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
-	require.NoError(err)
+	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 
 	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
 
@@ -54,12 +55,15 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 
 		// send checkpoint to handler
 		res, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
-		require.Nil(res)
+		require.NotNil(res)
 		require.NoError(err)
 
-		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
-		require.Empty(bufferedHeader, "Should not store state")
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 	})
 
 	s.Run("Invalid Proposer", func() {
@@ -126,13 +130,15 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	params, err := keeper.GetParams(ctx)
 	require.NoError(err)
 	checkpointBufferTime := params.CheckpointBufferTime
+
+	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
 	dividendAccounts, err := s.topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
 	// generate proposer for validator set
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -144,7 +150,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
 
-	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
+	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
 	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
@@ -187,12 +193,13 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 
 	borChainId := "1234"
 
+	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
 	dividendAccounts, err := s.topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -204,7 +211,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
 
-	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
+	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
 	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
@@ -238,8 +245,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	maxSize := uint64(256)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -328,16 +335,18 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
 	require := s.Require()
-	stakeKeeper := s.stakeKeeper
+	//stakeKeeper := s.stakeKeeper
 	start := uint64(0)
 	maxSize := uint64(256)
 	params, err := keeper.GetParams(ctx)
 	require.NoError(err)
 	checkpointBufferTime := params.CheckpointBufferTime
 
-	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	validatorSet := stakeSim.GetRandomValidatorSet(4)
+
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().IncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -359,12 +368,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	newTime := lastCheckpoint.Timestamp + uint64(checkpointBufferTime.Seconds()) - uint64(5)
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
-	validatorSet, err = stakeKeeper.GetValidatorSet(ctx)
-	require.NoError(err)
-
 	//Rotate the list to get the next proposer in line
-	validatorSet.IncrementProposerPriority(1)
-	noAckProposer := validatorSet.Proposer.Signer
+	dupValidatorSet := validatorSet.Copy()
+	dupValidatorSet.IncrementProposerPriority(1)
+	noAckProposer := dupValidatorSet.Proposer.Signer
 
 	msgNoAck := types.MsgCheckpointNoAck{
 		From: noAckProposer,
@@ -387,11 +394,15 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	}
 
 	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)
-	require.ErrorContains(err, types.ErrInvalidNoAck.Error())
+	require.ErrorContains(err, types.ErrInvalidNoAckProposer.Error())
 
 	updatedAckCount, err = keeper.GetAckCount(ctx)
 	require.NoError(err)
-	require.Equal(ackCount, updatedAckCount, "Should not update state")
+	require.Equal(ackCount, updatedAckCount, "should not update state")
+
+	dupValidatorSet = validatorSet.Copy()
+	dupValidatorSet.IncrementProposerPriority(1)
+	noAckProposer = dupValidatorSet.Proposer.Signer
 
 	msgNoAck = types.MsgCheckpointNoAck{
 		From: noAckProposer,

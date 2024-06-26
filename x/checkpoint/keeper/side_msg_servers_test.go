@@ -9,6 +9,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -31,6 +32,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 
 	start := uint64(0)
 	maxSize := uint64(256)
+
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
 	header := chSim.GenRandCheckpoint(start, maxSize)
 
@@ -60,10 +63,12 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		result := s.sideHandler(ctx, &msgCheckpoint)
 		require.Equal(result, hmModule.Vote_VOTE_YES)
 
-		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
+		require.False(doExist)
 
-		require.Nil(bufferedHeader, "Should not store state")
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 	})
 
 	s.Run("No rootHash", func() {
@@ -85,9 +90,12 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		result := s.sideHandler(ctx, &msgCheckpoint)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
 
-		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
 		require.Error(err)
-		require.Nil(bufferedHeader, "Should not store state")
 	})
 
 	s.Run("invalid rootHash", func() {
@@ -108,6 +116,13 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 
 		result := s.sideHandler(ctx, &msgCheckpoint)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
+
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 	})
 }
 
@@ -118,6 +133,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 	maxSize := uint64(256)
 	params, err := keeper.GetParams(ctx)
 	require.NoError(err)
+
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
 	header := chSim.GenRandCheckpoint(start, maxSize)
 	headerId := uint64(1)
@@ -139,7 +156,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 		rootChainInstance := &rootchain.Rootchain{}
 
 		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
-		s.contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(header.RootHash.GetHash(), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
+		s.contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(common.Hash(header.RootHash.GetHash()), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := s.sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should pass")
@@ -179,8 +196,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 	maxSize := uint64(256)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -207,8 +225,11 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 
 		s.postHandler(ctx, &msgCheckpoint, hmModule.Vote_VOTE_NO)
 
-		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
-		require.Nil(bufferedHeader)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
 		require.Error(err)
 	})
 
@@ -245,9 +266,10 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 	header := chSim.GenRandCheckpoint(start, maxSize)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
-	s.stakeKeeper.EXPECT().IncrementAccum(ctx, gomock.Any()).AnyTimes().Return(nil)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	s.stakeKeeper.EXPECT().IncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
 	// send ack
 	checkpointNumber := uint64(1)
@@ -266,8 +288,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		s.postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_NO)
 
-		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
-		require.Nil(afterAckBufferedCheckpoint)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 	})
 
 	s.Run("Success", func() {
@@ -296,8 +322,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		s.postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
 
-		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
-		require.Nil(afterAckBufferedCheckpoint)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 	})
 
 	s.Run("Replay", func() {
@@ -314,8 +344,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		s.postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
 
-		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
-		require.Nil(afterAckBufferedCheckpoint)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 	})
 
 	s.Run("InvalidEndBlock", func() {
@@ -345,8 +379,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		s.postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
 
-		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
-		require.Nil(afterAckBufferedCheckpoint)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 	})
 
 	s.Run("BufferCheckpoint more than Ack", func() {
@@ -382,8 +420,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		s.postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
 
-		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
-		require.Nil(afterAckBufferedCheckpoint)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 
 		latestCheckpoint, err = keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
@@ -424,8 +466,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		s.postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
 
-		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
-		require.Nil(afterAckBufferedCheckpoint)
+		doExist, err := keeper.HasCheckpointInBuffer(ctx)
+		require.NoError(err)
+		require.False(doExist)
+
+		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		require.Error(err)
 
 		latestCheckpoint, err = keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)

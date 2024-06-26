@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
@@ -97,10 +98,10 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
 
 	// Get account root hash from dividend accounts
-	accountRoot, err := types.GetAccountRootHash(dividendAccounts)
+	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		logger.Error("error while fetching account root hash", "error", err)
-		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("error while fetching account root hash"))
+		return nil, errorsmod.Wrap(types.ErrAccountHash, fmt.Sprint("error while fetching account root hash"))
 	}
 
 	logger.Debug("Validator account root hash generated", "accountRootHash", common.Bytes2Hex(accountRoot))
@@ -214,12 +215,14 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 
 	bufferTime := params.CheckpointBufferTime
 
+	var lastCheckpointTime time.Time
+
 	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err != nil {
-		return nil, types.ErrInvalidNoAck
+		lastCheckpointTime = time.Unix(0, 0)
+	} else {
+		lastCheckpointTime = time.Unix(int64(lastCheckpoint.Timestamp), 0)
 	}
-
-	lastCheckpointTime := time.Unix(int64(lastCheckpoint.Timestamp), 0)
 
 	// If last checkpoint is not present or last checkpoint happens before checkpoint buffer time,throw an error
 	if lastCheckpointTime.After(currentTime) || (currentTime.Sub(lastCheckpointTime) < bufferTime) {
@@ -245,7 +248,6 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 	}
 
 	currentValidatorSet.IncrementProposerPriority(1)
-
 	for i := 0; i < int(count); i++ {
 		if strings.ToLower(currentValidatorSet.Proposer.Signer) == strings.ToLower(msg.From) {
 			isProposer = true

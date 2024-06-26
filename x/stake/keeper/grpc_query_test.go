@@ -8,6 +8,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/golang/mock/gomock"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
@@ -23,7 +24,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	require.Error(err)
 
 	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).AnyTimes().Return(uint64(1))
 
 	req = &types.QueryCurrentValidatorSetRequest{}
 	res, err = queryClient.CurrentValidatorSet(ctx, req)
@@ -97,7 +98,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).AnyTimes().Return(uint64(1))
 
 	validators := keeper.GetAllValidators(ctx)
 

@@ -140,7 +140,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	accRootHash, err := types.GetAccountRootHash(dividendAccounts)
+	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		q.k.Logger(ctx).Error("could not get generate account root hash", "error", err)
 		return nil, status.Errorf(codes.Internal, err.Error())

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
@@ -105,8 +106,6 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	res, err = queryClient.GetCheckpointBuffer(ctx, req)
 
 	require.NoError(err)
-	require.NotNil(res)
-
 	require.Equal(res.Checkpoint, checkpointBlock)
 }
 
@@ -132,6 +131,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	require := s.Require()
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
 
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
@@ -149,13 +149,13 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 		timestamp,
 	)
 
-	s.contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
+	s.contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash.Hash, nil)
 	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
 	require.NoError(err)
 
 	req := types.QueryNextCheckpointRequest{BorChainID: BorChainID}
 
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	res, err := queryClient.GetNextCheckpoint(ctx, &req)
 	require.NoError(err)
 
@@ -187,7 +187,7 @@ func (s *KeeperTestSuite) TestHandleQueryProposer() {
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
 
-	s.stakeKeeper.EXPECT().GetValidatorSet(ctx).AnyTimes().Return(validatorSet)
+	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	req := &types.QueryProposerRequest{Times: 2}
 
 	res, err := queryClient.GetProposer(ctx, req)
