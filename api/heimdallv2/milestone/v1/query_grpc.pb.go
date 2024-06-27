@@ -34,7 +34,7 @@ const (
 type QueryClient interface {
 	// Params queries for the milestone parameters
 	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// Count queries for the mileston count
+	// Count queries for the milestone count
 	Count(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
 	// LatestMilestone queries for the latest milestone
 	LatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
@@ -125,7 +125,7 @@ func (c *queryClient) MilestoneProposer(ctx context.Context, in *QueryMilestoneP
 type QueryServer interface {
 	// Params queries for the milestone parameters
 	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// Count queries for the mileston count
+	// Count queries for the milestone count
 	Count(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
 	// LatestMilestone queries for the latest milestone
 	LatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)

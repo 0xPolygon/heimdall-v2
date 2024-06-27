@@ -31,6 +31,7 @@ service Msg {
 
 // MsgMilestone defines a SDK message for the milestone
 message MsgMilestone {
+  option (cosmos.msg.v1.signer) = "proposer";
   option (amino.name) = "heimdall-v2/MsgMilestone";
 
   option (gogoproto.equal) = true;
@@ -59,9 +60,9 @@ message MsgMilestoneResponse {}
 // MsgMilestoneTimeout defines a SDK message to indicate that no milestone
 // was proposed within the timeout period
 message MsgMilestoneTimeout {
-  option (cosmos.msg.v1.signer) = "from"
+  option (cosmos.msg.v1.signer) = "from";
   option (amino.name) = "heimdall-v2/MsgMilestoneTimeout";
-  
+
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 

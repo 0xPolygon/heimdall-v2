@@ -28,9 +28,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	// Milestone defines a method for milestone
+	// Milestone defines a method for sending a milestone which
+	// finalizes a range of bor blocks
 	Milestone(ctx context.Context, in *MsgMilestone, opts ...grpc.CallOption) (*MsgMilestoneResponse, error)
-	// MilestoneTimeout defines a method for MilestoneTimeout
+	// MilestoneTimeout defines a method to indicate that no milestone
+	// was proposed within the timeout period
 	MilestoneTimeout(ctx context.Context, in *MsgMilestoneTimeout, opts ...grpc.CallOption) (*MsgMilestoneTimeoutResponse, error)
 	// UpdateParams defines an operation for updating the x/milestone module
 	// parameters.
@@ -76,9 +78,11 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	// Milestone defines a method for milestone
+	// Milestone defines a method for sending a milestone which
+	// finalizes a range of bor blocks
 	Milestone(context.Context, *MsgMilestone) (*MsgMilestoneResponse, error)
-	// MilestoneTimeout defines a method for MilestoneTimeout
+	// MilestoneTimeout defines a method to indicate that no milestone
+	// was proposed within the timeout period
 	MilestoneTimeout(context.Context, *MsgMilestoneTimeout) (*MsgMilestoneTimeoutResponse, error)
 	// UpdateParams defines an operation for updating the x/milestone module
 	// parameters.
