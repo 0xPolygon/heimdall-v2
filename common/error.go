@@ -175,10 +175,6 @@ func ErrMilestoneInvalid(ModuleName string) error {
 	return errors.Register(ModuleName, CodeMilestoneInvalid, "milestone msg invalid")
 }
 
-func ErrOldMilestone(ModuleName string) error {
-	return errors.Register(ModuleName, CodeOldMilestone, "milestone already exists")
-}
-
 func ErrInvalidMilestoneTimeout(ModuleName string) error {
 	return errors.Register(ModuleName, CodeInvalidMilestoneTimeout, "invalid milestone Timeout msg ")
 }

@@ -101,7 +101,7 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 
 	}
 
-	validMilestone, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
+	_, err = ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
 	if err != nil {
 		logger.Error("error validating milestone",
 			"startBlock", msg.StartBlock,
@@ -110,20 +110,10 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 			"milestoneId", msg.MilestoneID,
 			"error", err,
 		)
-	} else if validMilestone {
-		return hmModule.Vote_VOTE_YES
+		return hmModule.Vote_VOTE_NO
 	}
 
-	logger.Error(
-		"milestone is not valid",
-		"startBlock", msg.StartBlock,
-		"endBlock", msg.EndBlock,
-		"hash", msg.Hash,
-		"milestoneId", msg.MilestoneID,
-		"err", err,
-	)
-
-	return hmModule.Vote_VOTE_NO
+	return hmModule.Vote_VOTE_YES
 }
 
 // PostHandleMsgMilestone handles the post side tx for a milestone
@@ -138,7 +128,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 
 	if sideTxResult != hmModule.Vote_VOTE_YES {
 		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
-		logger.Debug("skipping new validator-join since side-tx didn't get yes votes")
+		logger.Debug("skipping milestone handler since side-tx didn't get yes votes")
 		return
 	}
 
