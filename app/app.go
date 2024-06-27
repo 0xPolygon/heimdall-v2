@@ -68,12 +68,16 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/milestone"
 	"github.com/0xPolygon/heimdall-v2/x/stake"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 var (
@@ -121,6 +125,8 @@ type HeimdallApp struct {
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
 	// CheckpointKeeper checkpointkeeper.Keeper
+
+	MilestoneKeeper milestoneKeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
@@ -182,6 +188,7 @@ func NewHeimdallApp(
 		// checkpointtypes.StoreKey,
 		topupTypes.StoreKey,
 		chainmanagertypes.StoreKey,
+		milestoneTypes.StoreKey,
 	)
 
 	// register streaming services
@@ -323,6 +330,14 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		appCodec,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		&app.StakeKeeper,
+		&app.caller,
+	)
+
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
@@ -336,6 +351,7 @@ func NewHeimdallApp(
 		// TODO HV2: add custom modules
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
+		milestone.NewAppModule(&app.MilestoneKeeper),
 	)
 
 	// Basic manager
@@ -381,6 +397,7 @@ func NewHeimdallApp(
 		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
+		milestoneTypes.ModuleName,
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
