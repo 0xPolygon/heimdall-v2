@@ -2,10 +2,12 @@ package heimdalld
 
 import (
 	"os"
+	"path"
 
 	"cosmossdk.io/log"
 	"github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
@@ -34,9 +36,15 @@ type EncodingConfig struct {
 // NewRootCmd creates a new root command for heimdalld. It is called once in the
 // main function.
 func NewRootCmd() *cobra.Command {
+	dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
+	db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, dataDir)
+	if err != nil {
+		panic(err)
+	}
+
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
-	tempApp := app.NewHeimdallApp(log.NewNopLogger(), dbm.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
