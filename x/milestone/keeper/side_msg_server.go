@@ -101,8 +101,8 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 
 	}
 
-	_, err = ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
-	if err != nil {
+	isValid, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
+	if err != nil || !isValid {
 		logger.Error("error validating milestone",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
