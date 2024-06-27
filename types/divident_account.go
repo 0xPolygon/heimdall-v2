@@ -1,14 +1,14 @@
 package types
 
 import (
-	bytes "bytes"
-	"github.com/ethereum/go-ethereum/common"
+	"bytes"
 	"math/big"
 	"sort"
 	"strings"
 
 	"github.com/cbergoon/merkletree"
 	addCodec "github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"golang.org/x/crypto/sha3"
 )
