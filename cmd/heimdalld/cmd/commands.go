@@ -64,13 +64,7 @@ const (
 
 // CometBFT full-node start flags
 const (
-	flagAddress      = "address"
-	flagTraceStore   = "trace-store"
-	flagPruning      = "pruning"
-	flagCPUProfile   = "cpu-profile"
-	FlagMinGasPrices = "minimum-gas-prices"
-	FlagHaltHeight   = "halt-height"
-	FlagHaltTime     = "halt-time"
+	flagPruning = "pruning"
 )
 
 // Open Collector Flags
@@ -133,7 +127,8 @@ func initCometBFTConfig() *cmtcfg.Config {
 // initAppConfig helps to override default appConfig template and configs.
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
-	return "", nil
+	conf := helper.GetDefaultHeimdallConfig
+	return helper.DefaultConfigTemplate, conf
 }
 
 func initRootCmd(
@@ -540,23 +535,6 @@ func promptPassphrase(confirmation bool) (string, error) {
 	}
 
 	return passphrase, nil
-}
-
-func openDB(rootDir string) (dbm.DB, error) {
-	dataDir := filepath.Join(rootDir, "data")
-	return dbm.NewDB("application", dbm.GoLevelDBBackend, dataDir)
-}
-
-func openTraceWriter(traceWriterFile string) (io.Writer, error) {
-	if traceWriterFile == "" {
-		return nil, nil
-	}
-
-	return os.OpenFile(
-		traceWriterFile,
-		os.O_WRONLY|os.O_APPEND|os.O_CREATE,
-		0666,
-	)
 }
 
 // Total Validators to be included in the testnet
