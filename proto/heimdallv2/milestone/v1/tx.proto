@@ -79,7 +79,7 @@ message MsgMilestoneTimeoutResponse {}
 // MsgUpdateParams is the Msg/UpdateParams request type.
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name) = "heimdall-v1/x/milestone/MsgUpdateParams";
+  option (amino.name) = "heimdall-v2/x/milestone/MsgUpdateParams";
 
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).
