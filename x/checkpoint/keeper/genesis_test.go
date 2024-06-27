@@ -39,8 +39,6 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	)
 
 	checkpoints := make([]types.Checkpoint, 0, ackCount)
-	checkpoints = append(checkpoints, bufferedCheckpoint)
-
 	params := types.DefaultParams()
 	genesisState := types.NewGenesisState(
 		params,
