@@ -659,7 +659,12 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	s.k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
 
 	// remove the old validator from validator set
-	oldValidator.EndEpoch = s.k.checkpointKeeper.GetACKCount(ctx)
+	oldValidator.EndEpoch, err = s.k.checkpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		s.k.Logger(ctx).Error("unable to get ack count", "error", err)
+		return
+	}
+
 	oldValidator.VotingPower = 0
 	oldValidator.LastUpdated = sequence.String()
 

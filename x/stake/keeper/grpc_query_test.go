@@ -24,7 +24,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 	require.Error(err)
 
 	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).AnyTimes().Return(uint64(1), nil)
 
 	req = &types.QueryCurrentValidatorSetRequest{}
 	res, err = queryClient.CurrentValidatorSet(ctx, req)
@@ -98,7 +98,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetAllValidators(ctx)
 

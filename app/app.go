@@ -310,8 +310,7 @@ func NewHeimdallApp(
 	app.StakeKeeper = stakeKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[staketypes.StoreKey]),
-		// TODO HV2: replace nil with checkpoint keeper when implemented
-		nil,
+		app.CheckpointKeeper,
 		app.BankKeeper,
 		app.ChainManagerKeeper,
 		address.HexCodec{},
@@ -498,9 +497,8 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
-	/* TODO HV2: uncomment when checkpoint is implemented
-	stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
-	checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
+	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
+	checkpointState := checkpointTypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 
 	// check if validator is current validator
 	// add to val updates else skip
@@ -510,19 +508,20 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		if validator.IsCurrentValidator(checkpointState.AckCount) {
 			// convert to Validator Update
 			updateVal := abci.ValidatorUpdate{
-				Power:  validator.VotingPower,
-				PubKey: validator.PubKey.ABCIPubKey(),
+				Power: validator.VotingPower,
+				// TODO HV2: Vaibhav, fix this unresolved dependency
+				// PubKey: validator.PubKey.ABCIPubKey(),
 			}
 			// Add validator to validator updated to be processed below
 			valUpdates = append(valUpdates, updateVal)
 		}
 	}
-	*/
 
 	// TODO HV2: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
 	// update validators
 	return &abci.ResponseInitChain{
 		// TODO HV2: enable when stake is implemented
+		// TODO HV2: Vaibhav, enable this
 		// validator updates
 		// Validators: valUpdates,
 	}, nil
