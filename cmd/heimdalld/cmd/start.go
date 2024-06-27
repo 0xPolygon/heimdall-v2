@@ -19,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	servercmtlog "github.com/cosmos/cosmos-sdk/server/log"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel"
@@ -84,7 +83,7 @@ which accepts a path for the resulting pprof file.
 			startRestServer, _ := cmd.Flags().GetBool(helper.RestServerFlag)
 			startBridge, _ := cmd.Flags().GetBool(helper.BridgeFlag)
 
-			err := startInProcess(cmd, ctx, newApp, cdc, startRestServer, startBridge, hApp)
+			err := startInProcess(cmd, ctx, cdc, startRestServer, startBridge, hApp)
 			return err
 		},
 		PreRun: func(cmd *cobra.Command, args []string) {
@@ -210,11 +209,8 @@ func startOpenTracing(cmd *cobra.Command) (*sdktrace.TracerProvider, *context.Co
 	return nil, nil, nil
 }
 
-func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator servertypes.AppCreator, cdc *codec.LegacyAmino, startRestServer bool, startBridge bool, hApp *app.HeimdallApp) error {
+func startInProcess(cmd *cobra.Command, ctx *server.Context, cdc *codec.LegacyAmino, startRestServer bool, startBridge bool, hApp *app.HeimdallApp) error {
 	cfg := ctx.Config
-	home := cfg.RootDir
-	traceWriterFile := viper.GetString(flagTraceStore)
-	vp := viper.New()
 
 	// initialize heimdall if needed (do not force!)
 	initConfig := &initHeimdallConfig{
@@ -229,24 +225,12 @@ func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator serverty
 		return fmt.Errorf("failed init heimdall: %s", err)
 	}
 
-	db, err := openDB(home)
-	if err != nil {
-		return fmt.Errorf("failed to open db: %s", err)
-	}
-
-	traceWriter, err := openTraceWriter(traceWriterFile)
-	if err != nil {
-		return fmt.Errorf("failed to open trace writer: %s", err)
-	}
-
-	appc := appCreator(ctx.Logger, db, traceWriter, vp)
-
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		return fmt.Errorf("failed to load or gen node key: %s", err)
 	}
 
-	cmtApp := server.NewCometABCIWrapper(appc)
+	cmtApp := server.NewCometABCIWrapper(hApp)
 
 	// create & start cometbft node
 	cmtNode, err := node.NewNode(
@@ -343,11 +327,6 @@ func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator serverty
 			return cmtNode.Stop()
 		}
 
-		err = db.Close()
-		if err != nil {
-			return err
-		}
-
 		return nil
 	})
 
@@ -361,4 +340,12 @@ func startInProcess(cmd *cobra.Command, ctx *server.Context, appCreator serverty
 	logger.Info("Heimdall services stopped")
 
 	return nil
+}
+
+func getCtx(svrCtx *server.Context, block bool) (*errgroup.Group, context.Context) {
+	ctx, cancelFn := context.WithCancel(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
+	// listen for quit signals so the calling parent process can gracefully exit
+	server.ListenForQuitSignals(g, block, cancelFn, svrCtx.Logger)
+	return g, ctx
 }
