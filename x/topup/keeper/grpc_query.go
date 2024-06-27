@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
 	"math/big"
 
@@ -133,24 +134,20 @@ func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// TODO HV2: replace `_` with `dividendAccounts`
-	_, err := q.k.GetAllDividendAccounts(sdkCtx)
+	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	/* TODO HV2: enable this when checkpoint is implemented in heimdall-v2
-	accountRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
+	accountRoot, err := heimdallTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	if len(accountRoot) == 0 {
 		return nil, status.Errorf(codes.NotFound, "account root not found")
 	}
-	*/
 
-	// TODO HV2: return `accountRoot` instead of nil
-	return &types.QueryDividendAccountRootHashResponse{AccountRootHash: nil}, nil
+	return &types.QueryDividendAccountRootHashResponse{AccountRootHash: &heimdallTypes.HeimdallHash{Hash: accountRoot}}, nil
 }
 
 func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVerifyAccountProofRequest) (*types.QueryVerifyAccountProofResponse, error) {
@@ -160,21 +157,18 @@ func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVer
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// TODO HV2: replace `_` with `dividendAccounts`
-	_, err := q.k.GetAllDividendAccounts(sdkCtx)
+	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	// Verify account proof
-	// TODO HV2: enable when checkpoint is implemented in heimdall-v2
-	// accountProofStatus, err := checkpointTypes.VerifyAccountProof(dividendAccounts, req.Address, req.Proof)
+	accountProofStatus, err := heimdallTypes.VerifyAccountProof(dividendAccounts, req.Address, req.Proof)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	// TODO HV2: replace `false` with `accountProofStatus`
-	return &types.QueryVerifyAccountProofResponse{IsVerified: false}, nil
+	return &types.QueryVerifyAccountProofResponse{IsVerified: accountProofStatus}, nil
 
 }
 
@@ -197,39 +191,34 @@ func (q queryServer) GetAccountProof(ctx context.Context, req *types.QueryAccoun
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	// TODO HV2: replace `_` with `accountRootOnChain` when checkpoint is implemented in heimdall-v2
-	_, err = q.k.contractCaller.CurrentAccountStateRoot(stakingInfoInstance)
+	accountRootOnChain, err := q.k.contractCaller.CurrentAccountStateRoot(stakingInfoInstance)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	// TODO HV2: replace `_` with `dividendAccounts` when checkpoint is implemented in heimdall-v2
-	_, err = q.k.GetAllDividendAccounts(sdkCtx)
+	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	/* TODO HV2: enable this when chainManager and checkpoint are implemented in heimdall-v2
-	currentStateAccountRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
+	currentStateAccountRoot, err := heimdallTypes.GetAccountRootHash(dividendAccounts)
 	if !bytes.Equal(accountRootOnChain[:], currentStateAccountRoot) {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "accountRootOnChain does not match with currentStateAccountRoot")
 	}
 
 	// Calculate new account root hash
-	merkleProof, index, err := checkpointTypes.GetAccountProof(dividendAccounts, req.Address)
+	merkleProof, index, err := heimdallTypes.GetAccountProof(dividendAccounts, req.Address)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
 	// build response and return
-	dividendAccountProof := &types.DividendAccountProof{
-		Address:      req.Address,
-		AccountProof: merkleProof,
-		Index:        index,
+	dividendAccountProof := &types.QueryAccountProofResponse{
+		Proof: &types.AccountProof{
+			Address:      req.Address,
+			AccountProof: merkleProof,
+			Index:        index,
+		},
 	}
 
-	return &types.QueryDividendAccountProofResponse{dividendAccountProof}, nil
-	}
-	*/
-
-	// TODO HV2: remove the `return nil, nil` when the above is enabled
-	return nil, nil
+	return dividendAccountProof, nil
 }

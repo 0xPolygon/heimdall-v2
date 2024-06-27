@@ -94,7 +94,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 		return mod.Vote_VOTE_NO
 	}
 
-	// TODO HV2: discuss this with the team
+	// TODO HV2: ensure addresses/keys consistency (see https://polygon.atlassian.net/browse/POS-2622)
 	msgAddr := common.HexToAddress(msg.User)
 
 	if !bytes.Equal(eventLog.User.Bytes(), msgAddr.Bytes()) {

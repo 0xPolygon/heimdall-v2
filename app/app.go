@@ -71,6 +71,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/0xPolygon/heimdall-v2/x/milestone"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -120,10 +123,11 @@ type HeimdallApp struct {
 	StakeKeeper        stakeKeeper.Keeper
 	TopupKeeper        topupKeeper.Keeper
 	ChainManagerKeeper chainmanagerkeeper.Keeper
+	CheckpointKeeper   checkpointKeeper.Keeper
+	MilestoneKeeper    milestoneKeeper.Keeper
 	// TODO HV2: uncomment when the keepers are implemented
 	// BorKeeper borkeeper.Keeper
 	// ClerkKeeper clerkkeeper.Keeper
-	CheckpointKeeper checkpointKeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
@@ -179,12 +183,13 @@ func NewHeimdallApp(
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
 		staketypes.StoreKey,
-		// TODO HV2: uncomment when modules are implemented
-		// bortypes.StoreKey,
-		// clerktypes.StoreKey,
 		checkpointTypes.StoreKey,
 		topupTypes.StoreKey,
 		chainmanagertypes.StoreKey,
+		milestoneTypes.StoreKey,
+		// TODO HV2: uncomment when modules are implemented
+		// bortypes.StoreKey,
+		// clerktypes.StoreKey,
 	)
 
 	// register streaming services
@@ -334,6 +339,14 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		appCodec,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		&app.StakeKeeper,
+		&app.caller,
+	)
+
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
@@ -344,10 +357,11 @@ func NewHeimdallApp(
 		stake.NewAppModule(app.StakeKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		// TODO HV2: add custom modules
+		// TODO HV2: add custom modules here
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
+		milestone.NewAppModule(&app.MilestoneKeeper),
 	)
 
 	// Basic manager
@@ -389,8 +403,9 @@ func NewHeimdallApp(
 		chainmanagertypes.ModuleName,
 		topupTypes.ModuleName,
 		staketypes.ModuleName,
-		// TODO HV2: uncomment when modules are implemented
 		checkpointTypes.ModuleName,
+		milestoneTypes.ModuleName,
+		// TODO HV2: uncomment when modules are implemented
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
 	}
@@ -530,38 +545,61 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	// TODO HV2: is this needed?
 
-	// TODO HV2: implement when BytesToHeimdallAddress is available, or simply replace with common.BytesToAddress(b)
-	// app.AccountKeeper.SetBlockProposer(ctx,types.BytesToHeimdallAddress(req.Header.GetProposerAddress()))
+	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
+		account, err := sdk.AccAddressFromHex(proposer.String())
+		if err != nil {
+			app.Logger().Error("error while converting the proposer from hex to account address", "error", err)
+			return sdk.BeginBlock{}, err
+		}
+		err = app.AccountKeeper.SetBlockProposer(ctx, account)
+		if err != nil {
+			app.Logger().Error("error while setting the block proposer", "error", err)
+			return sdk.BeginBlock{}, err
+		}
+	}
+
 	return app.mm.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
+	// TODO HV2: is this needed?
+
 	// transfer fees to current proposer
-	/* TODO HV2: enable when keepers are implemented
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
-		amount := moduleAccount.GetCoins().AmountOf(authTypes.FeeToken)
-		if !amount.IsZero() {
-			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: amount}}
-			if err := app.SupplyKeeper.SendCoinsFromModuleToAccount(ctx, authTypes.FeeCollectorName, proposer, coins); err != nil {
-				logger.Error("EndBlocker | SendCoinsFromModuleToAccount", "Error", err)
+		coins := app.BankKeeper.GetBalance(ctx, moduleAccount.GetAddress(), authtypes.FeeToken)
+		if !coins.Amount.IsZero() {
+			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: coins.Amount}}
+			if err := app.BankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, proposer, coins); err != nil {
+				app.Logger().Error("EndBlocker | SendCoinsFromModuleToAccount", "error", err)
 			}
 		}
 		// remove block proposer
-		app.AccountKeeper.RemoveBlockProposer(ctx)
+		err := app.AccountKeeper.RemoveBlockProposer(ctx)
+		if err != nil {
+			app.Logger().Error("EndBlocker | RemoveBlockProposer", "error", err)
+		}
 	}
 
 	var tmValUpdates []abci.ValidatorUpdate
 
 	// Start updating new validators
-	currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)
-	allValidators := app.StakingKeeper.GetAllValidators(ctx)
-	ackCount := app.CheckpointKeeper.GetAckCount(ctx)
+	currentValidatorSet, err := app.StakeKeeper.GetValidatorSet(ctx)
+	if err != nil {
+		return sdk.EndBlock{}, err
+	}
+
+	allValidators := app.StakeKeeper.GetAllValidators(ctx)
+	ackCount, err := app.CheckpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return sdk.EndBlock{}, err
+	}
 
 	// get validator updates
-	setUpdates := helper.GetUpdatedValidators(
+	setUpdates := staketypes.GetUpdatedValidators(
 		&currentValidatorSet, // pointer to current validator set -- UpdateValidators will modify it
 		allValidators,        // All validators
 		ackCount,             // ack count
@@ -571,36 +609,34 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		// create new validator set
 		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
 			// return with nothing
-			logger.Error("Unable to update current validator set", "Error", err)
-			return abci.ResponseEndBlock{}
-		}
-
-		// TODO HV2: this should not be needed
-		// Hardfork to remove the rotation of validator list on stake update
-		if ctx.BlockHeight() < helper.GetAalborgHardForkHeight() {
-			// increment proposer priority
-			currentValidatorSet.IncrementProposerPriority(1)
+			app.Logger().Error("unable to update current validator set", "error", err)
+			return sdk.EndBlock{}, err
 		}
 
 		// validator set change
-		logger.Debug("[ENDBLOCK] Updated current validator set", "proposer", currentValidatorSet.GetProposer())
+		app.Logger().Debug("Updated current validator set in EndBlocker", "proposer", currentValidatorSet.GetProposer())
 
 		// save set in store
-		if err := app.StakingKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
+		if err := app.StakeKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
 			// return with nothing
-			logger.Error("Unable to update current validator set in state", "Error", err)
-			return abci.ResponseEndBlock{}
+			app.Logger().Error("unable to update current validator set in state", "error", err)
+			return sdk.EndBlock{}, err
 		}
 
 		// convert updates from map to array
 		for _, v := range setUpdates {
+			cmtProtoPk, err := v.CmtConsPublicKey()
+			if err != nil {
+				// return with nothing
+				app.Logger().Error("unable to get validator public key", "error", err)
+				return sdk.EndBlock{}, err
+			}
 			tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
 				Power:  v.VotingPower,
-				PubKey: v.PubKey.ABCIPubKey(),
+				PubKey: cmtProtoPk,
 			})
 		}
 	}
-	*/
 
 	return app.mm.EndBlock(ctx)
 }

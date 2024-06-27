@@ -167,11 +167,10 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_Success() {
 
 	req := &types.QueryDividendAccountRootHashRequest{}
 
-	_, err = queryClient.GetDividendAccountRootHash(ctx, req)
+	res, err := queryClient.GetDividendAccountRootHash(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when `GetDividendAccountRootHash` is fully functional in grpc_query.go
-	// require.NotNil(res.AccountRootHash)
-	// require.NotEmpty(res.AccountRootHash)
+	require.NotNil(res.AccountRootHash)
+	require.NotEmpty(res.AccountRootHash)
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_NotFound() {
@@ -179,11 +178,10 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_NotFound() {
 
 	req := &types.QueryDividendAccountRootHashRequest{}
 
-	res, _ := queryClient.GetDividendAccountRootHash(ctx, req)
-	// TODO HV2: enable this when `GetDividendAccountRootHash` is fully functional in grpc_query.go
-	// require.Error(err)
-	// require.Contains(err.Error(), "not found")
-	require.Empty(res.AccountRootHash)
+	res, err := queryClient.GetDividendAccountRootHash(ctx, req)
+	require.Error(err)
+	require.Contains(err.Error(), "cannot construct tree with no content")
+	require.Nil(res)
 }
 
 func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
@@ -196,14 +194,16 @@ func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
 
+	// TODO HV2: double check this
+	AccountHashProof := "44ad89ba62b98ff34f51403ac22759b55759460c0bb5521eb4b6ee3cff49cf83"
+
 	req := &types.QueryVerifyAccountProofRequest{
 		Address: AccountHash,
-		Proof:   "",
+		Proof:   AccountHashProof,
 	}
-	_, err = queryClient.VerifyAccountProof(ctx, req)
+	res, err := queryClient.VerifyAccountProof(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when `VerifyAccountProof` is fully functional in grpc_query.go
-	// require.True(res.IsVerified)
+	require.True(res.IsVerified)
 }
 
 func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
@@ -217,13 +217,10 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 	}
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
-	// TODO HV2: replace `_` with `dividendAccounts` when checkpoint is implemented in heimdall-v2
-	_, err = tk.GetAllDividendAccounts(ctx)
+	dividendAccounts, err := tk.GetAllDividendAccounts(ctx)
 	require.NoError(err)
-	// TODO HV2: enable this when checkpoint is implemented in heimdall-v2 and deleted the mocked `accRoot`
-	// accRoot, err := checkpointTypes.GetAccountRootHash(dividendAccounts)
+	accRoot, err := hTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
-	accRoot := []byte("accRoot")
 	copy(accountRoot[:], accRoot)
 
 	contractCaller.On("GetStakingInfoInstance", mock.Anything).Return(stakingInfo, nil)
@@ -234,8 +231,7 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 		Address: AccountHash,
 	}
 
-	_, err = queryClient.GetAccountProof(ctx, req)
+	res, err := queryClient.GetAccountProof(ctx, req)
 	require.NoError(err)
-	// TODO HV2: enable this when `GetAccountProof` is fully functional in grpc_query.go
-	// require.NotNil(res.Proof)
+	require.NotNil(res.Proof)
 }
