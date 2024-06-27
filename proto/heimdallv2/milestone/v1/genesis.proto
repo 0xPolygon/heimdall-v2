@@ -1,7 +1,9 @@
 syntax = "proto3";
 package heimdallv2.milestone.v1;
 
+import "heimdallv2/milestone/v1/milestone.proto";
+
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
 // GenesisState defines the milestone module's genesis state.
-message GenesisState {}
+message GenesisState { Params params = 1; }

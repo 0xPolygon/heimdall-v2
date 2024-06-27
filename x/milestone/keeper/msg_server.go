@@ -107,8 +107,8 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 
 			return nil, errorsmod.Wrap(types.ErrMilestoneNotInContinuity, "milestone not in continuity")
 		}
-	} else if msg.StartBlock != uint64(0) {
-		logger.Error("first milestone to start from", "block", 0, "milestone start block", msg.StartBlock, "error", err)
+	} else if msg.StartBlock != types.StartBlock {
+		logger.Error("first milestone to start from", "block", types.StartBlock, "milestone start block", msg.StartBlock, "error", err)
 		return nil, errorsmod.Wrap(types.ErrMilestoneInvalid, "start block doesn't match with expected one")
 	}
 

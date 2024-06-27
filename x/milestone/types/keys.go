@@ -1,6 +1,7 @@
 package types
 
 import (
+	"cosmossdk.io/collections"
 	"github.com/0xPolygon/heimdall-v2/types"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -17,21 +18,16 @@ const (
 )
 
 var (
-	MilestoneKey          = []byte{0x10} // Key to store milestone
-	CountKey              = []byte{0x11} //Key to store the count
-	MilestoneNoAckKey     = []byte{0x12} //Key to store the NoAckMilestone
-	MilestoneLastNoAckKey = []byte{0x13} //Key to store the Latest NoAckMilestone
-	LastMilestoneTimeout  = []byte{0x14} //Key to store the Last Milestone Timeout
-	BlockNumberKey        = []byte{0x15} //Key to store the block number
-
-	ParamsKey = []byte{0x16} // prefix for parameters
+	ParamsPrefixKey                = collections.NewPrefix([]byte{0x80})
+	MilestoneMapPrefixKey          = collections.NewPrefix([]byte{0x81})
+	CountPrefixKey                 = collections.NewPrefix([]byte{0x83})
+	BlockNumberPrefixKey           = collections.NewPrefix([]byte{0x84})
+	MilestoneTimeoutKPrefixey      = collections.NewPrefix([]byte{0x85})
+	MilestoneNoAckPrefixKey        = collections.NewPrefix([]byte{0x86})
+	MilestoneLastNoAckKeyPrefixKey = collections.NewPrefix([]byte{0x87})
 )
 
-// GetMilestoneNoAckKey appends prefix to milestoneId
-func GetMilestoneNoAckKey(milestoneId string) []byte {
-	milestoneNoAckBytes := []byte(milestoneId)
-	return append(MilestoneNoAckKey, milestoneNoAckBytes...)
-}
+const StartBlock uint64 = 0
 
 // ZeroHeimdallHash represents empty pub key
 var ZeroHeimdallHash = types.HeimdallHash{Hash: common.Hash{}.Bytes()}

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"math"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -76,9 +77,9 @@ func (q queryServer) LatestNoAckMilestone(ctx context.Context, req *types.QueryL
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	res := q.k.GetLastNoAckMilestone(ctx)
+	res, err := q.k.GetLastNoAckMilestone(ctx)
 
-	return &types.QueryLatestNoAckMilestoneResponse{Result: res}, nil
+	return &types.QueryLatestNoAckMilestoneResponse{Result: res}, err
 }
 
 // NoAckMilestoneByID gives the result by ID number
@@ -87,14 +88,18 @@ func (q queryServer) NoAckMilestoneByID(ctx context.Context, req *types.QueryNoA
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	res := q.k.GetNoAckMilestone(ctx, req.Id)
+	res, err := q.k.HasNoAckMilestone(ctx, req.Id)
 
-	return &types.QueryNoAckMilestoneByIDResponse{Result: res}, nil
+	return &types.QueryNoAckMilestoneByIDResponse{Result: res}, err
 }
 
 // MilestoneProposer queries for the milestone proposer
 func (q queryServer) MilestoneProposer(ctx context.Context, req *types.QueryMilestoneProposerRequest) (*types.QueryMilestoneProposerResponse, error) {
 	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.Times >= math.MaxInt64 {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 

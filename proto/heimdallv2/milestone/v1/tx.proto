@@ -33,6 +33,7 @@ service Msg {
 message MsgMilestone {
   option (cosmos.msg.v1.signer) = "proposer";
   option (amino.name) = "heimdall-v2/MsgMilestone";
+  option (cosmos.msg.v1.signer) = "proposer";
 
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;

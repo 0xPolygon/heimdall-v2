@@ -27,6 +27,8 @@ type Keeper struct {
 	blockNumber collections.Item[int64]
 	count       collections.Item[uint64]
 	timeout     collections.Item[uint64]
+	noAckMap    collections.Map[string, bool]
+	lastNoAckId collections.Item[string]
 }
 
 // NewKeeper creates a new milestone Keeper instance
@@ -192,47 +194,42 @@ func (k *Keeper) GetMilestoneBlockNumber(ctx context.Context) (int64, error) {
 }
 
 // SetNoAckMilestone sets the last no-ack milestone
-func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) {
-	store := k.storeService.OpenKVStore(ctx)
-
-	milestoneNoAckKey := types.GetMilestoneNoAckKey(milestoneId)
-	value := []byte(milestoneId)
-
-	err := store.Set(milestoneNoAckKey, value)
+func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) error {
+	err := k.noAckMap.Set(ctx, milestoneId, true)
 	if err != nil {
-		k.Logger(ctx).Error("error while setting no-ack milestone in store", "err", err)
-		return
+		k.Logger(ctx).Error("error while storing milestone no ack in store", "err", err)
+		return err
 	}
-	err = store.Set(types.MilestoneLastNoAckKey, value)
+
+	err = k.lastNoAckId.Set(ctx, milestoneId)
 	if err != nil {
-		k.Logger(ctx).Error("error while setting last no-ack milestone in store", "err", err)
-		return
+		k.Logger(ctx).Error("error while setting last milestone id in store", "err", err)
+		return err
 	}
+
+	return nil
 }
 
 // GetLastNoAckMilestone returns the last no-ack milestone
-func (k *Keeper) GetLastNoAckMilestone(ctx context.Context) string {
-	store := k.storeService.OpenKVStore(ctx)
-	lastNoAckBytes, err := store.Get(types.MilestoneLastNoAckKey)
-
-	if err != nil || lastNoAckBytes == nil {
-		return ""
+func (k *Keeper) GetLastNoAckMilestone(ctx context.Context) (string, error) {
+	milestoneID, err := k.lastNoAckId.Get(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while fetching block number from store", "err", err)
+		return "", err
 	}
 
-	return string(lastNoAckBytes)
+	return milestoneID, nil
 }
 
 // GetNoAckMilestone returns the last no-ack milestone
-func (k *Keeper) GetNoAckMilestone(ctx context.Context, milestoneId string) bool {
-	store := k.storeService.OpenKVStore(ctx)
-
-	res, err := store.Has(types.GetMilestoneNoAckKey(milestoneId))
-
+func (k *Keeper) HasNoAckMilestone(ctx context.Context, milestoneId string) (bool, error) {
+	res, err := k.noAckMap.Has(ctx, milestoneId)
 	if err != nil {
-		return false
+		k.Logger(ctx).Error("error while getting no ack from store", "err", err)
+		return false, err
 	}
 
-	return res
+	return res, nil
 }
 
 // SetLastMilestoneTimeout set lastMilestone timeout time

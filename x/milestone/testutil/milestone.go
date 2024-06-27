@@ -3,8 +3,9 @@ package testutil
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/google/uuid"
@@ -51,7 +52,7 @@ func CreateMilestone(
 		Proposer:    proposer,
 		BorChainID:  borChainID,
 		MilestoneID: milestoneID,
-		TimeStamp:   timestamp,
+		Timestamp:   timestamp,
 	}
 }
 
