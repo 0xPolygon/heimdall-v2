@@ -513,8 +513,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 			// convert to Validator Update
 			updateVal := abci.ValidatorUpdate{
-				Power: validator.VotingPower,
-				// TODO HV2: Vaibhav, fix this unresolved dependency
+				Power:  validator.VotingPower,
 				PubKey: cmtProtoPk,
 			}
 			// Add validator to validator updated to be processed below
