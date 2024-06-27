@@ -506,11 +506,16 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 	for _, validator := range stakingState.Validators {
 		if validator.IsCurrentValidator(checkpointState.AckCount) {
+			cmtProtoPk, err := validator.CmtConsPublicKey()
+			if err != nil {
+				panic(err)
+			}
+
 			// convert to Validator Update
 			updateVal := abci.ValidatorUpdate{
 				Power: validator.VotingPower,
 				// TODO HV2: Vaibhav, fix this unresolved dependency
-				// PubKey: validator.PubKey.ABCIPubKey(),
+				PubKey: cmtProtoPk,
 			}
 			// Add validator to validator updated to be processed below
 			valUpdates = append(valUpdates, updateVal)
@@ -520,10 +525,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	// TODO HV2: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
 	// update validators
 	return &abci.ResponseInitChain{
-		// TODO HV2: enable when stake is implemented
-		// TODO HV2: Vaibhav, enable this
-		// validator updates
-		// Validators: valUpdates,
+		Validators: valUpdates,
 	}, nil
 }
 
