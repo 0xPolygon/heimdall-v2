@@ -23,7 +23,6 @@ type Keeper struct {
 	schema       collections.Schema
 
 	BankKeeper     types.BankKeeper
-	stakeKeeper    types.StakeKeeper
 	ChainKeeper    types.ChainKeeper
 	contractCaller helper.IContractCaller
 
@@ -36,7 +35,6 @@ func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService store.KVStoreService,
 	bankKeeper types.BankKeeper,
-	stakeKeeper types.StakeKeeper,
 	chainKeeper types.ChainKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
@@ -46,7 +44,6 @@ func NewKeeper(
 		cdc:            cdc,
 		storeService:   storeService,
 		BankKeeper:     bankKeeper,
-		stakeKeeper:    stakeKeeper,
 		ChainKeeper:    chainKeeper,
 		contractCaller: contractCaller,
 
@@ -73,7 +70,7 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 }
 
 // GetAllTopupSequences returns all the topup sequences
-func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) (seq []string, e error) {
+func (k *Keeper) GetAllTopupSequences(ctx context.Context) (seq []string, e error) {
 	logger := k.Logger(ctx)
 
 	// get the sequences iterator
@@ -105,7 +102,7 @@ func (k *Keeper) GetAllTopupSequences(ctx sdk.Context) (seq []string, e error) {
 }
 
 // SetTopupSequence sets the topup sequence value in the store for the given key
-func (k *Keeper) SetTopupSequence(ctx sdk.Context, sequence string) error {
+func (k *Keeper) SetTopupSequence(ctx context.Context, sequence string) error {
 	logger := k.Logger(ctx)
 
 	err := k.sequences.Set(ctx, sequence)
@@ -120,7 +117,7 @@ func (k *Keeper) SetTopupSequence(ctx sdk.Context, sequence string) error {
 }
 
 // HasTopupSequence checks if the topup sequence exists
-func (k *Keeper) HasTopupSequence(ctx sdk.Context, sequence string) (bool, error) {
+func (k *Keeper) HasTopupSequence(ctx context.Context, sequence string) (bool, error) {
 	logger := k.Logger(ctx)
 
 	isSequencePresent, err := k.sequences.Has(ctx, sequence)
@@ -135,7 +132,7 @@ func (k *Keeper) HasTopupSequence(ctx sdk.Context, sequence string) (bool, error
 }
 
 // GetAllDividendAccounts returns all the dividend accounts
-func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) (da []hTypes.DividendAccount, e error) {
+func (k *Keeper) GetAllDividendAccounts(ctx context.Context) (da []hTypes.DividendAccount, e error) {
 	logger := k.Logger(ctx)
 
 	// get the dividend accounts iterator
@@ -167,7 +164,7 @@ func (k *Keeper) GetAllDividendAccounts(ctx sdk.Context) (da []hTypes.DividendAc
 }
 
 // SetDividendAccount sets the dividend account in the store for the given dividendAccount
-func (k *Keeper) SetDividendAccount(ctx sdk.Context, dividendAccount hTypes.DividendAccount) error {
+func (k *Keeper) SetDividendAccount(ctx context.Context, dividendAccount hTypes.DividendAccount) error {
 	logger := k.Logger(ctx)
 
 	err := k.dividendAccounts.Set(ctx, dividendAccount.User, dividendAccount)
@@ -182,7 +179,7 @@ func (k *Keeper) SetDividendAccount(ctx sdk.Context, dividendAccount hTypes.Divi
 }
 
 // HasDividendAccount checks if the dividend account exists
-func (k *Keeper) HasDividendAccount(ctx sdk.Context, user string) (bool, error) {
+func (k *Keeper) HasDividendAccount(ctx context.Context, user string) (bool, error) {
 	logger := k.Logger(ctx)
 
 	isDividendAccountPresent, err := k.dividendAccounts.Has(ctx, user)
@@ -197,7 +194,7 @@ func (k *Keeper) HasDividendAccount(ctx sdk.Context, user string) (bool, error) 
 }
 
 // GetDividendAccount returns the dividend account for the given user
-func (k *Keeper) GetDividendAccount(ctx sdk.Context, user string) (hTypes.DividendAccount, error) {
+func (k *Keeper) GetDividendAccount(ctx context.Context, user string) (hTypes.DividendAccount, error) {
 	logger := k.Logger(ctx)
 
 	dividendAccount, err := k.dividendAccounts.Get(ctx, user)
@@ -212,7 +209,7 @@ func (k *Keeper) GetDividendAccount(ctx sdk.Context, user string) (hTypes.Divide
 }
 
 // AddFeeToDividendAccount adds the fee to the dividend account for the given user
-func (k *Keeper) AddFeeToDividendAccount(ctx sdk.Context, user string, fee *big.Int) error {
+func (k *Keeper) AddFeeToDividendAccount(ctx context.Context, user string, fee *big.Int) error {
 	logger := k.Logger(ctx)
 
 	// check if dividendAccount exists
