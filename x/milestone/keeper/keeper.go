@@ -54,7 +54,7 @@ func NewKeeper(
 		params:      collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
 		count:       collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
 		blockNumber: collections.NewItem(sb, types.BlockNumberPrefixKey, "block_number", collections.Int64Value),
-		timeout:     collections.NewItem(sb, types.MilestoneTimeoutKPrefixey, "timeout", collections.Uint64Value),
+		timeout:     collections.NewItem(sb, types.MilestoneTimeoutKPrefixKey, "timeout", collections.Uint64Value),
 		lastNoAckID: collections.NewItem(sb, types.MilestoneLastNoAckKeyPrefixKey, "last_no_ack", collections.StringValue),
 	}
 
@@ -138,7 +138,7 @@ func (k *Keeper) GetMilestoneByNumber(ctx context.Context, number uint64) (*type
 	return &milestone, nil
 }
 
-// DoLastMilestoneExist gets last milestone, where number = GetCount()
+// HasMilestone checks for existence of milestone
 func (k *Keeper) HasMilestone(ctx context.Context) (bool, error) {
 	lastMilestoneNumber, err := k.GetMilestoneCount(ctx)
 	if err != nil {
@@ -265,7 +265,7 @@ func (k *Keeper) GetLastNoAckMilestone(ctx context.Context) (string, error) {
 	return milestoneID, nil
 }
 
-// GetNoAckMilestone returns the last no-ack milestone
+// HasNoAckMilestone checks for existence of the last no-ack milestone
 func (k *Keeper) HasNoAckMilestone(ctx context.Context, milestoneId string) (bool, error) {
 	res, err := k.noAckMap.Has(ctx, milestoneId)
 	if err != nil {

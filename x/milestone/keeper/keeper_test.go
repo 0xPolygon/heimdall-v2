@@ -162,7 +162,8 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 
 	milestoneID := "0000"
 
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	val, err := keeper.HasNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
@@ -177,7 +178,8 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 	require.False(val)
 
 	milestoneID = "0001"
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	val, err = keeper.HasNoAckMilestone(ctx, "0001")
 	require.NoError(err)
@@ -201,7 +203,8 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 	val, err := keeper.GetLastNoAckMilestone(ctx)
 	require.Error(err)
 
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	val, err = keeper.GetLastNoAckMilestone(ctx)
 	require.NoError(err)
@@ -209,7 +212,8 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 
 	milestoneID = "0001"
 
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	val, err = keeper.GetLastNoAckMilestone(ctx)
 	require.NoError(err)

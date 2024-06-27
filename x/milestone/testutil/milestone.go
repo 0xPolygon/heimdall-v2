@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"

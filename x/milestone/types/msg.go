@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+
 	"cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 

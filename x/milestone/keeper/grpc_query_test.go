@@ -100,7 +100,8 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 	require.Nil(res)
 
 	milestoneID := "00000"
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	res, err = queryClient.LatestNoAckMilestone(ctx, req)
 	require.NoError(err)
@@ -109,7 +110,8 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 	require.Equal(res.Result, milestoneID)
 
 	milestoneID = "00001"
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	res, err = queryClient.LatestNoAckMilestone(ctx, req)
 	require.NoError(err)
@@ -130,7 +132,8 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 
 	require.Equal(res.Result, false)
 
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	res, err = queryClient.NoAckMilestoneByID(ctx, req)
 	require.NotNil(res)
@@ -140,7 +143,8 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 
 	milestoneID = "00001"
 
-	keeper.SetNoAckMilestone(ctx, milestoneID)
+	err = keeper.SetNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 
 	req = &types.QueryNoAckMilestoneByIDRequest{Id: milestoneID}
 

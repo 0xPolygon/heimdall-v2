@@ -127,7 +127,11 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 	}
 
 	if sideTxResult != hmModule.Vote_VOTE_YES {
-		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		err := srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		if err != nil {
+			logger.Error("error while setting no-ack", "err", err)
+			return
+		}
 		logger.Debug("skipping milestone handler since side-tx didn't get yes votes")
 		return
 	}
@@ -157,7 +161,11 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 			"startBlock", msg.StartBlock,
 		)
 
-		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		err = srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		if err != nil {
+			logger.Error("error while setting no-ack", "err", err)
+			return
+		}
 
 		return
 	}
@@ -165,13 +173,17 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 	if !doExist && msg.StartBlock != types.StartBlock {
 		logger.Error("first milestone to start from", "block", types.StartBlock, "Error", err)
 
-		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		err = srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		if err != nil {
+			logger.Error("error while setting no-ack", "err", err)
+			return
+		}
 
 		return
 	}
 
 	// Add the milestone to the store
-	if err := srv.AddMilestone(ctx, types.Milestone{
+	err = srv.AddMilestone(ctx, types.Milestone{
 		StartBlock:  msg.StartBlock,
 		EndBlock:    msg.EndBlock,
 		Hash:        msg.Hash,
@@ -179,8 +191,12 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 		BorChainID:  msg.BorChainID,
 		MilestoneID: msg.MilestoneID,
 		Timestamp:   timeStamp,
-	}); err != nil {
-		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+	})
+	if err != nil {
+		err = srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		if err != nil {
+			logger.Error("error while setting no-ack", "err", err)
+		}
 		logger.Error("failed to set milestone ", "Error", err)
 	}
 
