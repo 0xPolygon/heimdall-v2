@@ -9,13 +9,14 @@ import (
 )
 
 // NewGenesisState creates a new genesis state.
-func NewGenesisState() GenesisState {
-	return GenesisState{}
+func NewGenesisState(params *Params) GenesisState {
+	return GenesisState{Params: params}
 }
 
 // DefaultGenesisState gets the raw genesis raw message for testing
 func DefaultGenesisState() *GenesisState {
-	return &GenesisState{}
+	params := DefaultParams()
+	return &GenesisState{Params: &params}
 }
 
 // GetGenesisStateFromAppState returns x/Milestone GenesisState given raw application
@@ -28,6 +29,15 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 	}
 
 	return &genesisState
+}
+
+// ValidateGenesis validates the provided checkpoint data
+func (gs GenesisState) ValidateGenesis() error {
+	if err := gs.Params.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DefaultParams returns a default set of parameters.

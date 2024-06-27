@@ -1,5 +1,6 @@
 package cli
 
+/*
 import (
 	"fmt"
 
@@ -92,7 +93,7 @@ func MilestoneCmd(ac address.Codec) *cobra.Command {
 				proposer,
 				startBlock,
 				endBlock,
-				hmTypes.HexToHeimdallHash(hashStr),
+				common.  hashStr),
 				borChainID,
 				milestoneID,
 			)
@@ -161,3 +162,5 @@ func MilestoneTimeoutCmd() *cobra.Command {
 
 	return cmd
 }
+
+*/

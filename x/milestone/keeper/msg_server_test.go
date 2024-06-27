@@ -109,8 +109,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.NotNil(res)
 		require.NoError(err)
 		bufferedHeader, err := keeper.GetLastMilestone(ctx)
-		require.NoError(err)
-		require.Empty(bufferedHeader, "Should not store state")
+		require.Error(err)
+		require.Nil(bufferedHeader)
 		milestoneBlockNumber, err := keeper.GetMilestoneBlockNumber(ctx)
 		require.NoError(err)
 		require.Equal(int64(3), milestoneBlockNumber, "Mismatch in milestoneBlockNumber")
@@ -197,11 +197,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 
 	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
-
-	lastMilestone, err := keeper.GetLastMilestone(ctx)
-	if err == nil {
-		start = start + lastMilestone.EndBlock + 1
-	}
 
 	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 	require.NoError(err)

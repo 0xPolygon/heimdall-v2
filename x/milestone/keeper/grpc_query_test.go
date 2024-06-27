@@ -97,9 +97,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 	req := &types.QueryLatestNoAckMilestoneRequest{}
 
 	res, err := queryClient.LatestNoAckMilestone(ctx, req)
-	require.NoError(err)
-	require.Equal(res.Result, "")
-	require.NotNil(res)
+	require.Nil(res)
 
 	milestoneID := "00000"
 	keeper.SetNoAckMilestone(ctx, milestoneID)
@@ -159,6 +157,7 @@ func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
 	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	req := &types.QueryMilestoneProposerRequest{Times: 1}
 

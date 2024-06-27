@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"bytes"
 	"crypto/rand"
 	"fmt"
 	"time"
@@ -60,4 +61,29 @@ func RandomBytes() []byte {
 	b := make([]byte, 32)
 	_, _ = rand.Read(b)
 	return b
+}
+
+func IsEqual(a, b *types.Milestone) bool {
+	if a == nil || b == nil {
+		return false
+	}
+
+	if a.StartBlock != b.StartBlock {
+		return false
+	}
+
+	if a.EndBlock != b.EndBlock {
+		return false
+	}
+
+	if !bytes.Equal(a.Hash.Hash, b.Hash.Hash) {
+		fmt.Print("here")
+		return false
+	}
+
+	if a.Proposer != b.Proposer {
+		return false
+	}
+
+	return true
 }

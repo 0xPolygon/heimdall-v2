@@ -99,7 +99,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 		return
 	}
 
-	return params, err
+	return params, nil
 }
 
 // AddMilestone adds a milestone to the store

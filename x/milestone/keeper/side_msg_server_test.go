@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
@@ -39,7 +39,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 	start := uint64(0)
 	minMilestoneLength := params.MinMilestoneLength
 
-	milestone := milestoneSim.GenRandMilestone(start, minMilestoneLength)
+	milestone := testutil.GenRandMilestone(start, minMilestoneLength)
 
 	s.Run("Success", func() {
 		s.contractCaller.Mock = mock.Mock{}
@@ -55,7 +55,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should succeed")
@@ -79,7 +79,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(false, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(false, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -103,7 +103,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -126,7 +126,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, minMilestoneLength, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -137,6 +137,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 	stakingKeeper := s.stakeKeeper
+
+	milestoneId := "00000"
 
 	params := types.DefaultParams()
 	err := keeper.SetParams(ctx, params)
@@ -149,7 +151,10 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	start := uint64(0)
 	minMilestoneLength := params.MinMilestoneLength
 
-	milestone := milestoneSim.GenRandMilestone(start, minMilestoneLength)
+	milestone := testutil.GenRandMilestone(start, minMilestoneLength)
+	milestone.BorChainID = BorChainId
+	milestone.Timestamp = uint64(ctx.BlockTime().Unix())
+	milestone.MilestoneID = milestoneId
 
 	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
@@ -165,7 +170,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.EndBlock,
 			milestone.Hash,
 			BorChainId,
-			"00000",
+			milestoneId,
 		)
 
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_NO)
@@ -176,9 +181,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
-		require.Equal(lastNoAckMilestone, "00000")
+		require.Equal(lastNoAckMilestone, milestoneId)
 
-		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00000")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, milestoneId)
 		require.NoError(err)
 		require.True(IsNoAckMilestone)
 
@@ -186,6 +191,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		require.NoError(err)
 		require.False(IsNoAckMilestone)
 	})
+
+	milestoneId = "00000"
+	milestone.MilestoneID = milestoneId
 
 	s.Run("Failure-Invalid Start Block", func() {
 		// create milestone msg
@@ -195,7 +203,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.EndBlock+1,
 			milestone.Hash,
 			BorChainId,
-			"00000",
+			milestoneId,
 		)
 
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
@@ -206,9 +214,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
-		require.Equal(lastNoAckMilestone, "00000")
+		require.Equal(lastNoAckMilestone, milestoneId)
 
-		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00000")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, milestoneId)
 		require.NoError(err)
 		require.True(IsNoAckMilestone)
 
@@ -216,6 +224,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		require.NoError(err)
 		require.False(IsNoAckMilestone)
 	})
+
+	milestoneId = "00001"
+	milestone.MilestoneID = milestoneId
 
 	s.Run("Success", func() {
 		// create milestone msg
@@ -225,27 +236,30 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.EndBlock,
 			milestone.Hash,
 			BorChainId,
-			"00001",
+			milestoneId,
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
 
 		bufferedHeader, err := keeper.GetLastMilestone(ctx)
-		require.True(bufferedHeader.Equal(milestone))
+		require.NoError(err)
+		require.NotNil(bufferedHeader)
+
+		require.True(testutil.IsEqual(bufferedHeader, &milestone))
 
 		require.Empty(err, "Unable to set milestone, Error: %v", err)
 
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
-		require.NotEqual(lastNoAckMilestone, "00001")
-
-		lastNoAckMilestone, err = keeper.GetLastNoAckMilestone(ctx)
-		require.NoError(err)
+		require.NotEqual(lastNoAckMilestone, milestoneId)
 		require.Equal(lastNoAckMilestone, "00000")
 
-		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00001")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, milestoneId)
 		require.NoError(err)
 		require.False(IsNoAckMilestone)
 	})
+
+	milestoneId = "00002"
+	milestone.MilestoneID = milestoneId
 
 	s.Run("Pre Exist", func() {
 		// create milestone msg
@@ -255,18 +269,20 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.EndBlock,
 			milestone.Hash,
 			BorChainId,
-			"00002",
+			milestoneId,
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
-
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
-		require.Equal(lastNoAckMilestone, "00002")
+		require.Equal(lastNoAckMilestone, milestoneId)
 
-		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00002")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, milestoneId)
 		require.NoError(err)
 		require.True(IsNoAckMilestone)
 	})
+
+	milestoneId = "00003"
+	milestone.MilestoneID = milestoneId
 
 	s.Run("Not in continuity", func() {
 		// create milestone msg
@@ -276,19 +292,22 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.EndBlock+64+1,
 			milestone.Hash,
 			BorChainId,
-			"00003",
+			milestoneId,
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
 
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
-		require.Equal(lastNoAckMilestone, "00003")
+		require.Equal(lastNoAckMilestone, milestoneId)
 
-		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00003")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, milestoneId)
 		require.NoError(err)
 		require.True(IsNoAckMilestone)
 
 	})
+
+	milestoneId = "00004"
+	milestone.MilestoneID = milestoneId
 
 	s.Run("Replay", func() {
 		// create milestone msg
@@ -298,7 +317,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestone.EndBlock,
 			milestone.Hash,
 			BorChainId,
-			"00004",
+			milestoneId,
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_NO)
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
