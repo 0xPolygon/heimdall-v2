@@ -8,11 +8,11 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
@@ -22,7 +22,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakekeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 )
 
 type KeeperTestSuite struct {
@@ -30,7 +30,7 @@ type KeeperTestSuite struct {
 
 	ctx             sdk.Context
 	milestoneKeeper *milestoneKeeper.Keeper
-	stakeKeeper     *stakekeeper.Keeper
+	stakeKeeper     *testutil.MockStakeKeeper
 	contractCaller  *mocks.IContractCaller
 	queryClient     milestoneTypes.QueryClient
 	msgServer       milestoneTypes.MsgServer
@@ -44,32 +44,26 @@ func (s *KeeperTestSuite) Run(_ string, fn func()) {
 func (s *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(milestoneTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
-	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := cosmosTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	s.contractCaller = &mocks.IContractCaller{}
+	ctrl := gomock.NewController(s.T())
+	defer ctrl.Finish()
 
-	sKeeper := stakekeeper.NewKeeper(
-		encCfg.Codec,
-		storeService,
-		nil,
-		nil,
-		nil,
-		addrCodec.NewHexCodec(),
-		s.contractCaller,
-	)
+	s.ctx = ctx
+	s.contractCaller = &mocks.IContractCaller{}
+	s.stakeKeeper = testutil.NewMockStakeKeeper(ctrl)
 
 	keeper := milestoneKeeper.NewKeeper(
 		encCfg.Codec,
+		"authority",
 		storeService,
-		sKeeper,
+		s.stakeKeeper,
 		s.contractCaller,
 	)
 
-	s.ctx = ctx
-	s.milestoneKeeper = keeper
-	s.stakeKeeper = &sKeeper
+	s.milestoneKeeper = &keeper
 
 	milestoneGenesis := types.DefaultGenesisState()
 
@@ -77,12 +71,12 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	milestoneTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	milestoneTypes.RegisterQueryServer(queryHelper, milestoneKeeper.NewQueryServer(keeper))
+	milestoneTypes.RegisterQueryServer(queryHelper, milestoneKeeper.NewQueryServer(&keeper))
 	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
-	s.msgServer = milestoneKeeper.NewMsgServerImpl(keeper)
+	s.msgServer = milestoneKeeper.NewMsgServerImpl(&keeper)
 
 	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
-	types.RegisterSideMsgServer(s.sideMsgCfg, milestoneKeeper.NewSideMsgServerImpl(keeper))
+	types.RegisterSideMsgServer(s.sideMsgCfg, milestoneKeeper.NewSideMsgServerImpl(&keeper))
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -100,7 +94,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"
 
-	milestone := types.CreateMilestone(
+	milestone := testutil.CreateMilestone(
 		startBlock,
 		endBlock,
 		hash,
@@ -123,7 +117,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 
 	result, err = keeper.GetMilestoneByNumber(ctx, 2)
 	require.Nil(result)
-	require.Equal(err, types.ErrNoMilestoneFound)
+	require.Error(err)
 }
 
 func (s *KeeperTestSuite) TestGetMilestoneCount() {
@@ -141,7 +135,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"
 
-	milestone := types.CreateMilestone(
+	milestone := testutil.CreateMilestone(
 		startBlock,
 		endBlock,
 		hash,
@@ -170,22 +164,27 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 
 	keeper.SetNoAckMilestone(ctx, milestoneID)
 
-	val := keeper.GetNoAckMilestone(ctx, milestoneID)
+	val, err := keeper.HasNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 	require.True(val)
 
-	val = keeper.GetNoAckMilestone(ctx, "00001")
+	val, err = keeper.HasNoAckMilestone(ctx, "00001")
+	require.NoError(err)
 	require.False(val)
 
-	val = keeper.GetNoAckMilestone(ctx, "")
+	val, err = keeper.HasNoAckMilestone(ctx, "")
+	require.NoError(err)
 	require.False(val)
 
 	milestoneID = "0001"
 	keeper.SetNoAckMilestone(ctx, milestoneID)
 
-	val = keeper.GetNoAckMilestone(ctx, "0001")
+	val, err = keeper.HasNoAckMilestone(ctx, "0001")
+	require.NoError(err)
 	require.True(val)
 
-	val = keeper.GetNoAckMilestone(ctx, milestoneID)
+	val, err = keeper.HasNoAckMilestone(ctx, milestoneID)
+	require.NoError(err)
 	require.True(val)
 }
 
@@ -199,19 +198,21 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 
 	milestoneID := "0000"
 
-	val := keeper.GetLastNoAckMilestone(ctx)
-	require.NotEqual(val, milestoneID)
+	val, err := keeper.GetLastNoAckMilestone(ctx)
+	require.Error(err)
 
 	keeper.SetNoAckMilestone(ctx, milestoneID)
 
-	val = keeper.GetLastNoAckMilestone(ctx)
+	val, err = keeper.GetLastNoAckMilestone(ctx)
+	require.NoError(err)
 	require.Equal(val, milestoneID)
 
 	milestoneID = "0001"
 
 	keeper.SetNoAckMilestone(ctx, milestoneID)
 
-	val = keeper.GetLastNoAckMilestone(ctx)
+	val, err = keeper.GetLastNoAckMilestone(ctx)
+	require.NoError(err)
 	require.Equal(val, milestoneID)
 }
 

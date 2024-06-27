@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
@@ -141,24 +142,20 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	err := keeper.SetParams(ctx, params)
 	require.NoError(err)
 
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+
 	start := uint64(0)
 	minMilestoneLength := params.MinMilestoneLength
 
-	// check valid milestone
-	// generate proposer for validator set
-	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
-	err = stakingKeeper.IncrementAccum(ctx, 1)
-	require.NoError(err)
-
-	lastMilestone, err := keeper.GetLastMilestone(ctx)
-	if err == nil {
-		start = start + lastMilestone.EndBlock + 1
-	}
-
 	milestone := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
+	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
+
 	// add current proposer to header
-	milestone.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
+	milestone.Proposer = milestoneValidatorSet.Proposer.Signer
 
 	s.Run("Failure", func() {
 		// create milestone msg
@@ -173,19 +170,21 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_NO)
 
-		lastMilestone, err = keeper.GetLastMilestone(ctx)
+		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		require.Nil(lastMilestone)
 		require.Error(err)
 
-		lastNoAckMilestone := keeper.GetLastNoAckMilestone(ctx)
+		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
+		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00000")
 
-		IsNoAckMilestone := keeper.GetNoAckMilestone(ctx, "00000")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00000")
+		require.NoError(err)
 		require.True(IsNoAckMilestone)
 
-		IsNoAckMilestone = keeper.GetNoAckMilestone(ctx, "WrongID")
+		IsNoAckMilestone, err = keeper.HasNoAckMilestone(ctx, "WrongID")
+		require.NoError(err)
 		require.False(IsNoAckMilestone)
-
 	})
 
 	s.Run("Failure-Invalid Start Block", func() {
@@ -201,17 +200,20 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
 
-		lastMilestone, err = keeper.GetLastMilestone(ctx)
+		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		require.Nil(lastMilestone)
 		require.Error(err)
 
-		lastNoAckMilestone := keeper.GetLastNoAckMilestone(ctx)
+		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
+		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00000")
 
-		IsNoAckMilestone := keeper.GetNoAckMilestone(ctx, "00000")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00000")
+		require.NoError(err)
 		require.True(IsNoAckMilestone)
 
-		IsNoAckMilestone = keeper.GetNoAckMilestone(ctx, "WrongID")
+		IsNoAckMilestone, err = keeper.HasNoAckMilestone(ctx, "WrongID")
+		require.NoError(err)
 		require.False(IsNoAckMilestone)
 	})
 
@@ -232,15 +234,17 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 
 		require.Empty(err, "Unable to set milestone, Error: %v", err)
 
-		lastNoAckMilestone := keeper.GetLastNoAckMilestone(ctx)
+		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
+		require.NoError(err)
 		require.NotEqual(lastNoAckMilestone, "00001")
 
-		lastNoAckMilestone = keeper.GetLastNoAckMilestone(ctx)
+		lastNoAckMilestone, err = keeper.GetLastNoAckMilestone(ctx)
+		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00000")
 
-		IsNoAckMilestone := keeper.GetNoAckMilestone(ctx, "00001")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00001")
+		require.NoError(err)
 		require.False(IsNoAckMilestone)
-
 	})
 
 	s.Run("Pre Exist", func() {
@@ -255,12 +259,13 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
 
-		lastNoAckMilestone := keeper.GetLastNoAckMilestone(ctx)
+		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
+		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00002")
 
-		IsNoAckMilestone := keeper.GetNoAckMilestone(ctx, "00002")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00002")
+		require.NoError(err)
 		require.True(IsNoAckMilestone)
-
 	})
 
 	s.Run("Not in continuity", func() {
@@ -275,10 +280,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
 
-		lastNoAckMilestone := keeper.GetLastNoAckMilestone(ctx)
+		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
+		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00003")
 
-		IsNoAckMilestone := keeper.GetNoAckMilestone(ctx, "00003")
+		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, "00003")
+		require.NoError(err)
 		require.True(IsNoAckMilestone)
 
 	})
@@ -294,7 +301,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			"00004",
 		)
 		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_NO)
-		lastNoAckMilestone := keeper.GetLastNoAckMilestone(ctx)
+		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
+		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00004")
 	})
 }

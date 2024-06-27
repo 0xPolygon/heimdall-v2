@@ -4,11 +4,12 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/golang/mock/gomock"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeTestUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {
@@ -156,9 +157,8 @@ func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
 	ctx, queryClient := s.ctx, s.queryClient
 	require := s.Require()
 
-	stakingKeeper := s.stakeKeeper
-
-	validatorSet := stakeTestUtil.LoadValidatorSet(require, 4, stakingKeeper, ctx, false, 10)
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 
 	req := &types.QueryMilestoneProposerRequest{Times: 1}
 

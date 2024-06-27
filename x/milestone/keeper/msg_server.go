@@ -69,6 +69,8 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "error in fetching milestone block number")
 	}
 
+	// To prevent the new milestone to go into voting if the previous milestone
+	// is still in process stage
 	if sdkCtx.BlockHeight()-mBlockNumber < 2 {
 		logger.Error(
 			"previous milestone still in voting phase",
@@ -158,7 +160,7 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, _ *types.MsgMilestoneTi
 		return nil, errorsmod.Wrap(types.ErrNoMilestoneFound, "")
 	}
 
-	lastMilestoneTime := time.Unix(int64(lastMilestone.TimeStamp), 0)
+	lastMilestoneTime := time.Unix(int64(lastMilestone.Timestamp), 0)
 
 	// If last milestone happens before milestone buffer time, then throw an error
 	if lastMilestoneTime.After(currentTime) || (currentTime.Sub(lastMilestoneTime) < bufferTime) {

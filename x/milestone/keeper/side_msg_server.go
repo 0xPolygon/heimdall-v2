@@ -67,21 +67,19 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 
 	contractCaller := srv.IContractCaller
 
-	// Get the milestone count
-	count, err := srv.GetMilestoneCount(ctx)
+	doExist, err := srv.HasMilestone(ctx)
 	if err != nil {
-		logger.Error("error in fetching milestone count", "error", err)
+		logger.Error("error in existence of last milestone", "error", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
 	lastMilestone, err := srv.GetLastMilestone(ctx)
-
-	if count != uint64(0) && err != nil {
+	if doExist && err != nil {
 		logger.Error("error while receiving the last milestone in the side handler", "err", err)
 		return hmModule.Vote_VOTE_NO
 	}
 
-	if count != uint64(0) && lastMilestone != nil && msg.StartBlock != lastMilestone.EndBlock+1 {
+	if doExist && lastMilestone != nil && msg.StartBlock != lastMilestone.EndBlock+1 {
 		logger.Error("milestone is not in continuity to last stored milestone",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
@@ -91,6 +89,16 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 		)
 
 		return hmModule.Vote_VOTE_NO
+	}
+
+	if !doExist && msg.StartBlock != types.StartBlock {
+		logger.Error("milestone's start block is not correct",
+			"msg start block", msg.StartBlock,
+			"expected start block", types.StartBlock,
+		)
+
+		return hmModule.Vote_VOTE_NO
+
 	}
 
 	validMilestone, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
@@ -136,31 +144,36 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 
 	timeStamp := uint64(ctx.BlockTime().Unix())
 
-	if lastMilestone, err := srv.GetLastMilestone(ctx); err == nil {
-		// make sure new milestone is after tip
-		if lastMilestone.EndBlock > msg.StartBlock {
-			logger.Error("milestone already exists",
-				"currentTip", lastMilestone.EndBlock,
-				"startBlock", msg.StartBlock,
-			)
+	doExist, err := srv.HasMilestone(ctx)
+	if err != nil {
+		logger.Error("error while checking for the last milestone", "err", err)
+		return
+	}
 
-			srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+	lastMilestone, err := srv.GetLastMilestone(ctx)
+	if doExist && err != nil {
+		logger.Error("error while fetching  the last milestone", "err", err)
+		return
+	}
 
-			return
-		}
+	if doExist && lastMilestone == nil {
+		logger.Error("last milestone shouldn't be nil")
+		return
+	}
 
-		// check if new milestone's start block start from current tip
-		if lastMilestone.EndBlock+1 != msg.StartBlock {
-			logger.Error("milestone not in continuity",
-				"currentTip", lastMilestone.EndBlock,
-				"startBlock", msg.StartBlock)
+	if doExist && (lastMilestone.EndBlock+1) != msg.StartBlock {
+		logger.Error("milestone is not in continuity",
+			"currentTip", lastMilestone.EndBlock,
+			"startBlock", msg.StartBlock,
+		)
 
-			srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
 
-			return
-		}
-	} else if msg.StartBlock != uint64(0) {
-		logger.Error("first milestone to start from", "block", 0, "Error", err)
+		return
+	}
+
+	if !doExist && msg.StartBlock != types.StartBlock {
+		logger.Error("first milestone to start from", "block", types.StartBlock, "Error", err)
 
 		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
 
@@ -175,7 +188,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 		Proposer:    msg.Proposer,
 		BorChainID:  msg.BorChainID,
 		MilestoneID: msg.MilestoneID,
-		TimeStamp:   timeStamp,
+		Timestamp:   timeStamp,
 	}); err != nil {
 		srv.SetNoAckMilestone(ctx, msg.MilestoneID)
 		logger.Error("failed to set milestone ", "Error", err)
@@ -188,7 +201,6 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeMilestone,
-			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
 			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hash.String()),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),

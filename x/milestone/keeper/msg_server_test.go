@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
@@ -30,16 +31,9 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 
 	minMilestoneLength := params.MinMilestoneLength
 
-	// check valid milestone
-	// generate proposer for validator set
-	stakeSim.LoadRandomValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
-	err = stakingKeeper.IncrementAccum(ctx, 1)
-	require.NoError(err)
-
-	lastMilestone, err := keeper.GetLastMilestone(ctx)
-	if err == nil {
-		start = start + lastMilestone.EndBlock + 1
-	}
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
@@ -62,8 +56,11 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.ErrorContains(err, types.ErrProposerMismatch.Error())
 	})
 
+	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
+	require.NoError(err)
+
 	// add current proposer to header
-	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
+	header.Proposer = milestoneValidatorSet.Proposer.Signer
 
 	s.Run("Invalid msg based on milestone length", func() {
 		msgMilestone := types.NewMsgMilestoneBlock(
@@ -81,9 +78,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.ErrorContains(err, types.ErrMilestoneInvalid.Error())
 	})
 
-	// add current proposer to header
-	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
-
 	s.Run("Invalid msg based on start block number", func() {
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
@@ -99,8 +93,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneInvalid.Error())
 	})
-
-	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
 
 	s.Run("Success", func() {
 		msgMilestone := types.NewMsgMilestoneBlock(
@@ -124,8 +116,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.Equal(int64(3), milestoneBlockNumber, "Mismatch in milestoneBlockNumber")
 	})
 
-	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
-
 	ctx = ctx.WithBlockHeight(int64(4))
 
 	s.Run("Previous milestone is still in voting phase", func() {
@@ -145,8 +135,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.ErrorContains(err, types.ErrPrevMilestoneInVoting.Error())
 	})
 
-	header.Proposer = stakingKeeper.GetMilestoneValidatorSet(ctx).Proposer.Signer
-
 	ctx = ctx.WithBlockHeight(int64(6))
 
 	s.Run("Milestone not in continuity", func() {
@@ -157,10 +145,9 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		_, err = keeper.GetLastMilestone(ctx)
 		require.NoError(err)
 
-		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		require.NoError(err)
 
-		start = start + lastMilestone.EndBlock + 2
+		start = start + header.EndBlock + 2
 
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
@@ -176,7 +163,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneNotInContinuity.Error())
 
-		start = start + lastMilestone.EndBlock - 2
+		start = start + header.EndBlock - 2
 
 		msgMilestone = types.NewMsgMilestoneBlock(
 			header.Proposer,
@@ -204,8 +191,11 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 
 	minMilestoneLength := params.MinMilestoneLength
 
-	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
-	err := stakingKeeper.IncrementAccum(ctx, 1)
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+
+	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
 
 	lastMilestone, err := keeper.GetLastMilestone(ctx)
@@ -217,7 +207,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	require.NoError(err)
 
 	// add current proposer to header
-	header.Proposer = stakingKeeper.GetValidatorSet(ctx).Proposer.Signer
+	header.Proposer = milestoneValidatorSet.Proposer.Signer
 
 	msgMilestone := types.NewMsgMilestoneBlock(
 		header.Proposer,
@@ -250,9 +240,12 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
 	require := s.Require()
-	stakingKeeper := s.stakeKeeper
 
 	params := types.DefaultParams()
+
+	validatorSet := stakeSim.GetRandomValidatorSet(2)
+	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
@@ -262,8 +255,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	milestoneID := "0000"
 
 	proposer := common.Address{}.String()
-
-	stakeSim.LoadValidatorSet(require, 2, stakingKeeper, ctx, false, 10)
 
 	s.Run("Last milestone not found", func() {
 		msgMilestoneTimeout := types.NewMsgMilestoneTimeout(
@@ -276,7 +267,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 		require.ErrorContains(err, types.ErrNoMilestoneFound.Error())
 	})
 
-	milestone := types.CreateMilestone(
+	milestone := testutil.CreateMilestone(
 		startBlock,
 		endBlock,
 		hash,
@@ -288,7 +279,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	err := keeper.AddMilestone(ctx, milestone)
 	require.NoError(err)
 
-	newTime := milestone.TimeStamp + uint64(params.MilestoneBufferTime) - 1
+	newTime := milestone.Timestamp + uint64(params.MilestoneBufferTime) - 1
 	ctx = ctx.WithBlockTime(time.Unix(0, int64(newTime)))
 
 	msgMilestoneTimeout := types.NewMsgMilestoneTimeout(
@@ -299,7 +290,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	require.Nil(res)
 	require.ErrorContains(err, types.ErrInvalidMilestoneTimeout.Error())
 
-	newTime = milestone.TimeStamp + 2*uint64(params.MilestoneBufferTime) + 10000000
+	newTime = milestone.Timestamp + 2*uint64(params.MilestoneBufferTime) + 10000000
 	ctx = ctx.WithBlockTime(time.Unix(0, int64(newTime)))
 
 	msgMilestoneTimeout = types.NewMsgMilestoneTimeout(

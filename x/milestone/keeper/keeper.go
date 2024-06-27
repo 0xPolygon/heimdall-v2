@@ -11,15 +11,16 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
 // Keeper of the x/milestone store
 type Keeper struct {
-	storeService    storetypes.KVStoreService
-	cdc             codec.BinaryCodec
-	authority       string
-	sk              stakeKeeper.Keeper
+	storeService storetypes.KVStoreService
+	cdc          codec.BinaryCodec
+	authority    string
+	schema       collections.Schema
+
+	sk              types.StakeKeeper
 	IContractCaller helper.IContractCaller
 
 	milestone   collections.Map[uint64, types.Milestone]
@@ -28,23 +29,43 @@ type Keeper struct {
 	count       collections.Item[uint64]
 	timeout     collections.Item[uint64]
 	noAckMap    collections.Map[string, bool]
-	lastNoAckId collections.Item[string]
+	lastNoAckID collections.Item[string]
 }
 
 // NewKeeper creates a new milestone Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
+	authority string,
 	storeService storetypes.KVStoreService,
-	stakingKeeper stakeKeeper.Keeper,
+	stakingKeeper types.StakeKeeper,
 	contractCaller helper.IContractCaller,
+) Keeper {
+	sb := collections.NewSchemaBuilder(storeService)
 
-) *Keeper {
-	return &Keeper{
+	k := Keeper{
 		storeService:    storeService,
+		authority:       authority,
 		cdc:             cdc,
 		sk:              stakingKeeper,
 		IContractCaller: contractCaller,
+
+		milestone:   collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
+		noAckMap:    collections.NewMap(sb, types.MilestoneNoAckPrefixKey, "no_ack", collections.StringKey, collections.BoolValue),
+		params:      collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		count:       collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
+		blockNumber: collections.NewItem(sb, types.BlockNumberPrefixKey, "block_number", collections.Int64Value),
+		timeout:     collections.NewItem(sb, types.MilestoneTimeoutKPrefixey, "timeout", collections.Uint64Value),
+		lastNoAckID: collections.NewItem(sb, types.MilestoneLastNoAckKeyPrefixKey, "last_no_ack", collections.StringValue),
 	}
+
+	// build the schema and set it in the keeper
+	s, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+	k.schema = s
+
+	return k
 }
 
 // Logger returns a module-specific logger.
@@ -118,19 +139,17 @@ func (k *Keeper) GetMilestoneByNumber(ctx context.Context, number uint64) (*type
 }
 
 // DoLastMilestoneExist gets last milestone, where number = GetCount()
-func (k *Keeper) DoLastMilestoneExist(ctx context.Context) (bool, error) {
+func (k *Keeper) HasMilestone(ctx context.Context) (bool, error) {
 	lastMilestoneNumber, err := k.GetMilestoneCount(ctx)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	milestone, err := k.milestone.Get(ctx, lastMilestoneNumber)
-	if err != nil {
-		k.Logger(ctx).Error("error while fetching milestone from store", "number", lastMilestoneNumber, "err", err)
-		return nil, err
+	if lastMilestoneNumber == 0 {
+		return false, nil
 	}
 
-	return &milestone, nil
+	return true, nil
 }
 
 // GetLastMilestone gets last milestone, where number = GetCount()
@@ -138,6 +157,11 @@ func (k *Keeper) GetLastMilestone(ctx context.Context) (*types.Milestone, error)
 	lastMilestoneNumber, err := k.GetMilestoneCount(ctx)
 	if err != nil {
 		return nil, err
+	}
+
+	if lastMilestoneNumber == 0 {
+		k.Logger(ctx).Error("milestone doesn't exist in store")
+		return nil, types.ErrNoMilestoneFound
 	}
 
 	milestone, err := k.milestone.Get(ctx, lastMilestoneNumber)
@@ -162,6 +186,16 @@ func (k *Keeper) SetMilestoneCount(ctx context.Context, number uint64) error {
 
 // GetMilestoneCount returns the milestone count
 func (k *Keeper) GetMilestoneCount(ctx context.Context) (uint64, error) {
+	doExist, err := k.count.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the existence of milestone count in store", "err", err)
+		return 0, err
+	}
+
+	if !doExist {
+		return 0, nil
+	}
+
 	count, err := k.count.Get(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching milestone count in store", "err", err)
@@ -184,6 +218,16 @@ func (k *Keeper) SetMilestoneBlockNumber(ctx context.Context, number int64) erro
 
 // GetMilestoneBlockNumber returns the block number when the latest milestone enter the handler
 func (k *Keeper) GetMilestoneBlockNumber(ctx context.Context) (int64, error) {
+	doExist, err := k.blockNumber.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the existence of block number in store", "err", err)
+		return 0, err
+	}
+
+	if !doExist {
+		return 0, nil
+	}
+
 	number, err := k.blockNumber.Get(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching block number from store", "err", err)
@@ -201,7 +245,7 @@ func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) erro
 		return err
 	}
 
-	err = k.lastNoAckId.Set(ctx, milestoneId)
+	err = k.lastNoAckID.Set(ctx, milestoneId)
 	if err != nil {
 		k.Logger(ctx).Error("error while setting last milestone id in store", "err", err)
 		return err
@@ -212,7 +256,7 @@ func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) erro
 
 // GetLastNoAckMilestone returns the last no-ack milestone
 func (k *Keeper) GetLastNoAckMilestone(ctx context.Context) (string, error) {
-	milestoneID, err := k.lastNoAckId.Get(ctx)
+	milestoneID, err := k.lastNoAckID.Get(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching block number from store", "err", err)
 		return "", err
@@ -245,6 +289,16 @@ func (k *Keeper) SetLastMilestoneTimeout(ctx context.Context, timestamp uint64) 
 
 // GetLastMilestoneTimeout returns lastMilestone timeout time
 func (k *Keeper) GetLastMilestoneTimeout(ctx context.Context) (uint64, error) {
+	doExist, err := k.timeout.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the existence of milestone timeout in store", "err", err)
+		return 0, err
+	}
+
+	if !doExist {
+		return 0, nil
+	}
+
 	timeout, err := k.timeout.Get(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching milestone timeout from store", "err", err)
