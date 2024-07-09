@@ -35,18 +35,19 @@ func (m *MockCheckpointKeeper) EXPECT() *MockCheckpointKeeperMockRecorder {
 	return m.recorder
 }
 
-// GetACKCount mocks base method.
-func (m *MockCheckpointKeeper) GetACKCount(ctx context.Context) uint64 {
+// GetAckCount mocks base method.
+func (m *MockCheckpointKeeper) GetAckCount(ctx context.Context) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetACKCount", ctx)
+	ret := m.ctrl.Call(m, "GetAckCount", ctx)
 	ret0, _ := ret[0].(uint64)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// GetACKCount indicates an expected call of GetACKCount.
-func (mr *MockCheckpointKeeperMockRecorder) GetACKCount(ctx interface{}) *gomock.Call {
+// GetAckCount indicates an expected call of GetAckCount.
+func (mr *MockCheckpointKeeperMockRecorder) GetAckCount(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetACKCount", reflect.TypeOf((*MockCheckpointKeeper)(nil).GetACKCount), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAckCount", reflect.TypeOf((*MockCheckpointKeeper)(nil).GetAckCount), ctx)
 }
 
 // MockBankKeeper is a mock of BankKeeper interface.

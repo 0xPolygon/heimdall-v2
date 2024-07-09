@@ -118,6 +118,6 @@ message QueryAccountProofResponse { AccountProof proof = 1; }
 // QueryAccountProofResponse
 message AccountProof {
   string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  string account_proof = 2;
+  bytes account_proof = 2;
   uint64 index = 3;
 }

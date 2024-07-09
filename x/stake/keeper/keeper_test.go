@@ -213,7 +213,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	require.LessOrEqual(6, len(totalValidators), "Total Validators should be six.")
 
 	// check current validators
-	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(0)).Times(1)
+	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(1)
 	currentValidators := keeper.GetCurrentValidators(ctx)
 	require.LessOrEqual(5, len(currentValidators), "Current Validators should be five.")
 }
@@ -268,7 +268,7 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 			err = sKeeper.AddValidator(ctx, *newVal)
 			require.NoError(err)
 
-			s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(item.ackcount).Times(1)
+			s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(item.ackcount, nil).Times(1)
 
 			isCurrentVal := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer)
 			require.Equal(item.result, isCurrentVal, item.resultmsg)
@@ -381,7 +381,7 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, validators[0].Signer)
@@ -413,7 +413,7 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 
@@ -426,7 +426,7 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	testUtil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 
@@ -441,12 +441,12 @@ func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 
 	// Test ActCount = 0
-	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(0)).Times(1)
+	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(1)
 
 	valActCount0 := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(valActCount0), 4)
 
-	s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(0)).Times(20)
+	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(20)
 
 	validators := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(validators), 4)

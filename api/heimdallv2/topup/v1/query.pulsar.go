@@ -4796,8 +4796,8 @@ func (x *fastReflection_AccountProof) Range(f func(protoreflect.FieldDescriptor,
 			return
 		}
 	}
-	if x.AccountProof != "" {
-		value := protoreflect.ValueOfString(x.AccountProof)
+	if len(x.AccountProof) != 0 {
+		value := protoreflect.ValueOfBytes(x.AccountProof)
 		if !f(fd_AccountProof_account_proof, value) {
 			return
 		}
@@ -4826,7 +4826,7 @@ func (x *fastReflection_AccountProof) Has(fd protoreflect.FieldDescriptor) bool 
 	case "heimdallv2.topup.v1.AccountProof.address":
 		return x.Address != ""
 	case "heimdallv2.topup.v1.AccountProof.account_proof":
-		return x.AccountProof != ""
+		return len(x.AccountProof) != 0
 	case "heimdallv2.topup.v1.AccountProof.index":
 		return x.Index != uint64(0)
 	default:
@@ -4848,7 +4848,7 @@ func (x *fastReflection_AccountProof) Clear(fd protoreflect.FieldDescriptor) {
 	case "heimdallv2.topup.v1.AccountProof.address":
 		x.Address = ""
 	case "heimdallv2.topup.v1.AccountProof.account_proof":
-		x.AccountProof = ""
+		x.AccountProof = nil
 	case "heimdallv2.topup.v1.AccountProof.index":
 		x.Index = uint64(0)
 	default:
@@ -4872,7 +4872,7 @@ func (x *fastReflection_AccountProof) Get(descriptor protoreflect.FieldDescripto
 		return protoreflect.ValueOfString(value)
 	case "heimdallv2.topup.v1.AccountProof.account_proof":
 		value := x.AccountProof
-		return protoreflect.ValueOfString(value)
+		return protoreflect.ValueOfBytes(value)
 	case "heimdallv2.topup.v1.AccountProof.index":
 		value := x.Index
 		return protoreflect.ValueOfUint64(value)
@@ -4899,7 +4899,7 @@ func (x *fastReflection_AccountProof) Set(fd protoreflect.FieldDescriptor, value
 	case "heimdallv2.topup.v1.AccountProof.address":
 		x.Address = value.Interface().(string)
 	case "heimdallv2.topup.v1.AccountProof.account_proof":
-		x.AccountProof = value.Interface().(string)
+		x.AccountProof = value.Bytes()
 	case "heimdallv2.topup.v1.AccountProof.index":
 		x.Index = value.Uint()
 	default:
@@ -4944,7 +4944,7 @@ func (x *fastReflection_AccountProof) NewField(fd protoreflect.FieldDescriptor) 
 	case "heimdallv2.topup.v1.AccountProof.address":
 		return protoreflect.ValueOfString("")
 	case "heimdallv2.topup.v1.AccountProof.account_proof":
-		return protoreflect.ValueOfString("")
+		return protoreflect.ValueOfBytes(nil)
 	case "heimdallv2.topup.v1.AccountProof.index":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
@@ -5160,7 +5160,7 @@ func (x *fastReflection_AccountProof) ProtoMethods() *protoiface.Methods {
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field AccountProof", wireType)
 				}
-				var stringLen uint64
+				var byteLen int
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -5170,23 +5170,25 @@ func (x *fastReflection_AccountProof) ProtoMethods() *protoiface.Methods {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					stringLen |= uint64(b&0x7F) << shift
+					byteLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
 				}
-				intStringLen := int(stringLen)
-				if intStringLen < 0 {
+				if byteLen < 0 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
 				}
-				postIndex := iNdEx + intStringLen
+				postIndex := iNdEx + byteLen
 				if postIndex < 0 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
 				}
 				if postIndex > l {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
-				x.AccountProof = string(dAtA[iNdEx:postIndex])
+				x.AccountProof = append(x.AccountProof[:0], dAtA[iNdEx:postIndex]...)
+				if x.AccountProof == nil {
+					x.AccountProof = []byte{}
+				}
 				iNdEx = postIndex
 			case 3:
 				if wireType != 0 {
@@ -5677,7 +5679,7 @@ type AccountProof struct {
 	unknownFields protoimpl.UnknownFields
 
 	Address      string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	AccountProof string `protobuf:"bytes,2,opt,name=account_proof,json=accountProof,proto3" json:"account_proof,omitempty"`
+	AccountProof []byte `protobuf:"bytes,2,opt,name=account_proof,json=accountProof,proto3" json:"account_proof,omitempty"`
 	Index        uint64 `protobuf:"varint,3,opt,name=index,proto3" json:"index,omitempty"`
 }
 
@@ -5708,11 +5710,11 @@ func (x *AccountProof) GetAddress() string {
 	return ""
 }
 
-func (x *AccountProof) GetAccountProof() string {
+func (x *AccountProof) GetAccountProof() []byte {
 	if x != nil {
 		return x.AccountProof
 	}
-	return ""
+	return nil
 }
 
 func (x *AccountProof) GetIndex() uint64 {
@@ -5800,7 +5802,7 @@ var file_heimdallv2_topup_v1_query_proto_rawDesc = []byte{
 	0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41,
 	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x07, 0x61, 0x64,
 	0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x23, 0x0a, 0x0d, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74,
-	0x5f, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x61, 0x63,
+	0x5f, 0x70, 0x72, 0x6f, 0x6f, 0x66, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x0c, 0x61, 0x63,
 	0x63, 0x6f, 0x75, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x6f, 0x66, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6e,
 	0x64, 0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x05, 0x69, 0x6e, 0x64, 0x65, 0x78,
 	0x32, 0xb7, 0x08, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x96, 0x01, 0x0a, 0x0c, 0x49,
