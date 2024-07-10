@@ -1,0 +1,160 @@
+syntax = "proto3";
+package heimdallv2.milestone.v1;
+
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "cosmos/query/v1/query.proto";
+import "amino/amino.proto";
+import "heimdallv2/milestone/v1/milestone.proto";
+import "heimdallv2/stake/v1/validator.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
+
+/* HV2 Some API paths have changed.
+ Also, milestones has its own module now, whilst it was embedded in checkpoint
+in v1. A (maybe non-exhaustive) list of changed API routes here:
+"/milestone/lastNoAck"  -> "/milestone/last-no-ack"
+"/milestone/noAck/{id}" -> "/milestone/no-ack/{id}"
+"/milestone/ID/{id}"    -> removed
+"/staking/milestoneProposer/{times}" -> "/milestone/proposer/{times}"
+*/
+
+// Query defines the gRPC querier service.
+service Query {
+
+  // Params queries for the milestone parameters
+  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/params";
+  }
+
+  // Count queries for the milestone count
+  rpc Count(QueryCountRequest) returns (QueryCountResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/count";
+  }
+
+  // LatestMilestone queries for the latest milestone
+  rpc LatestMilestone(QueryLatestMilestoneRequest)
+      returns (QueryLatestMilestoneResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/latest";
+  }
+
+  // Milestone queries for the milestone based on the number
+  rpc Milestone(QueryMilestoneRequest) returns (QueryMilestoneResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/{number}";
+  }
+
+  // LatestNoAckMilestone query for the LatestNoAck
+  rpc LatestNoAckMilestone(QueryLatestNoAckMilestoneRequest)
+      returns (QueryLatestNoAckMilestoneResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/last-no-ack";
+  }
+
+  // NoAckMilestoneByID query for the no-ack by ID
+  rpc NoAckMilestoneByID(QueryNoAckMilestoneByIDRequest)
+      returns (QueryNoAckMilestoneByIDResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/no-ack/{id}";
+  }
+
+  // MilestoneProposer queries for the milestone proposer
+  rpc MilestoneProposer(QueryMilestoneProposerRequest)
+      returns (QueryMilestoneProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/proposer/{times}";
+  }
+}
+
+// QueryParamsRequest is request type for Params
+// RPC method.
+message QueryParamsRequest {}
+
+// QueryParamsResponse is response type for the Params
+// RPC method
+message QueryParamsResponse {
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// QueryCountRequest is request type for the Count RPC method
+message QueryCountRequest {}
+
+// QueryCountResponse is response type for the Count RPC method
+message QueryCountResponse {
+  uint64 count = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryLastNoAckRequest is request type for the LastNoAckCount RPC
+// method
+message QueryLastNoAckRequest {}
+
+// QueryLastNoAckResponse is response type for the LastNoAckCount RPC
+// method
+message QueryLastNoAckResponse {
+  uint64 result = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryLatestMilestoneRequest is request type for the LatestMilestone
+// RPC method
+message QueryLatestMilestoneRequest {}
+
+// QueryLatestMilestoneResponse is response type for the LatestMilestone
+// RPC method
+message QueryLatestMilestoneResponse {
+  Milestone milestone = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// QueryMilestoneRequest is request type for the Milestone  RPC
+// method
+message QueryMilestoneRequest {
+  uint64 number = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryMilestoneResponse is response type for the Milestone
+// RPC method
+message QueryMilestoneResponse {
+  Milestone milestone = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// QueryLatestNoAckMilestoneRequest is request type for the
+// LatestNoAckMilestone RPC method
+message QueryLatestNoAckMilestoneRequest {}
+
+// QueryLatestNoAckMilestoneResponse is response type for the
+// LatestNoAckMilestone RPC method
+message QueryLatestNoAckMilestoneResponse {
+  string result = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryNoAckMilestoneByIDRequest is request type for the
+// NoAckMilestoneByID RPC method
+message QueryNoAckMilestoneByIDRequest {
+  string id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryNoAckMilestoneByIDResponse is response type for the
+// NoAckMilestoneByID RPC method
+message QueryNoAckMilestoneByIDResponse {
+  bool result = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryMilestoneProposerRequest is request type for the
+// MilestoneProposer RPC method
+message QueryMilestoneProposerRequest {
+  // times represents the number of subsequent milestone's proposers
+  uint64 times = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryMilestoneProposerResponse is response type for the
+// Query/MilestoneProposer RPC method
+message QueryMilestoneProposerResponse {
+  // proposers defines the validator info.
+  repeated heimdallv2.stake.v1.Validator proposers = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

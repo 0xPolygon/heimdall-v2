@@ -36,7 +36,10 @@ func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) er
 // IsCurrentValidatorByAddress check if validator is in current validator set by signer address
 func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) bool {
 	// get ack count
-	ackCount := k.checkpointKeeper.GetACKCount(ctx)
+	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return false
+	}
 
 	// get validator info
 	validator, err := k.GetValidatorInfo(ctx, address)
@@ -67,7 +70,11 @@ func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (va
 	}
 
 	// get ack count
-	ackCount := k.checkpointKeeper.GetACKCount(ctx)
+	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return validator, err
+	}
+
 	if !validator.IsCurrentValidator(ackCount) {
 		return validator, errors.New("validator is not active")
 	}
@@ -78,7 +85,10 @@ func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (va
 // GetCurrentValidators returns all validators who are in validator set
 func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.Validator) {
 	// get ack count
-	ackCount := k.checkpointKeeper.GetACKCount(ctx)
+	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return nil
+	}
 
 	// Get validators
 	// iterate through validator list
@@ -109,7 +119,10 @@ func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error
 // GetSpanEligibleValidators returns current validators who are not getting deactivated in between next span
 func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []types.Validator) {
 	// get ack count
-	ackCount := k.checkpointKeeper.GetACKCount(ctx)
+	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return nil
+	}
 
 	// Get validators and iterate through validator list
 	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
@@ -401,7 +414,10 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 // GetValIdFromAddress returns a validator's id given its address string
 func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint64, error) {
 	// get ack count
-	ackCount := k.checkpointKeeper.GetACKCount(ctx)
+	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return 0, err
+	}
 
 	validator, err := k.GetValidatorInfo(ctx, strings.ToLower(address))
 	if err != nil {
@@ -496,8 +512,10 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	}
 
 	allValidators := k.GetAllValidators(ctx)
-	ackCount := k.checkpointKeeper.GetACKCount(ctx)
-
+	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return cmtValUpdates, err
+	}
 	// get validator updates
 	setUpdates := types.GetUpdatedValidators(
 		&currentValidatorSet, // pointer to current validator set -- UpdateValidators will modify it

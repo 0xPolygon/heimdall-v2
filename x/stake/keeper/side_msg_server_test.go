@@ -438,7 +438,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
@@ -631,7 +631,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
@@ -891,7 +891,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
@@ -1196,7 +1196,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	amount := math.NewInt(1)
 
@@ -1263,7 +1263,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).Times(2).Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).Times(2).Return(uint64(1), nil)
 
 	amount := math.NewInt(1)
 
@@ -1316,7 +1316,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 		currentVals := keeper.GetCurrentValidators(ctx)
 		require.Equal(4, len(currentVals), "Number of current validators should exist before epoch passes")
 
-		s.checkpointKeeper.EXPECT().GetACKCount(gomock.Any()).Return(uint64(20)).Times(1)
+		s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(20), nil).Times(1)
 		currentVals = keeper.GetCurrentValidators(ctx)
 		require.Equal(3, len(currentVals), "Number of current validators should reduce after epoch passes")
 	})
@@ -1327,7 +1327,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 
 	// pass 0 as time alive to generate non de-activated validators
 	stakeSim.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetACKCount(ctx).AnyTimes().Return(uint64(1))
+	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)

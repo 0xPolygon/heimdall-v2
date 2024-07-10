@@ -1,0 +1,48 @@
+syntax = "proto3";
+package heimdallv2.checkpoint.v1;
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
+
+import "cosmos_proto/cosmos.proto";
+import "amino/amino.proto";
+import "heimdallv2/types/hash.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
+
+// Checkpoint structure
+message Checkpoint {
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+
+  string proposer = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+
+  uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+
+  uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+
+  heimdallv2.types.HeimdallHash root_hash = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  string bor_chain_i_d = 5 [ (amino.dont_omitempty) = true ];
+
+  uint64 timestamp = 6 [ (amino.dont_omitempty) = true ];
+}
+
+// Params structure
+message Params {
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+
+  google.protobuf.Duration checkpoint_buffer_time = 1 [
+    (gogoproto.stdduration) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  uint64 avg_checkpoint_length = 2 [ (amino.dont_omitempty) = true ];
+  uint64 max_checkpoint_length = 3 [ (amino.dont_omitempty) = true ];
+  uint64 child_block_interval = 4 [ (amino.dont_omitempty) = true ];
+}
