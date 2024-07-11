@@ -1,24 +1,9 @@
 package heimdalld
 
-import (
-	"encoding/json"
-	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
+// TODO HV2 - uncomment once staking module is available
+// stakingcli "github.com/0xPolygon/heimdall-v2/x/staking/client/cli"
 
-	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	cmtcfg "github.com/cometbft/cometbft/config"
-	cmttime "github.com/cometbft/cometbft/types/time"
-	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/server"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	// TODO HV2 - uncomment once staking module is available
-	// stakingcli "github.com/0xPolygon/heimdall-v2/x/staking/client/cli"
-)
-
+/*
 type initHeimdallConfig struct {
 	clientHome  string
 	chainID     string
@@ -26,7 +11,15 @@ type initHeimdallConfig struct {
 	chain       string
 	forceInit   bool
 }
+*/
 
+/*
+TODO HV2
+As we are not using custom init command, we can safely remove this function
+commenting it out for now, will remove it later (after testing)
+*/
+
+/*
 // TODO HV2 - this function was heavily modified, review carefully
 func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHeimdallConfig, config *cmtcfg.Config, mbm module.BasicManager, cliCdc codec.Codec) error {
 	conf := helper.GetDefaultHeimdallConfig()
@@ -109,6 +102,7 @@ func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHei
 
 	return genutil.ExportGenesisFileWithTime(config.GenesisFile(), chainID, nil, appStateJSON, cmttime.Now())
 }
+*/
 
 /*
 TODO HV2 - I guess we are safe to remove this, as `genutilcli.InitCmd(basicManager, app.DefaultNodeHome)`

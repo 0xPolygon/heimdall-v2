@@ -39,7 +39,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	"github.com/cosmos/cosmos-sdk/x/crisis"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	ethCommon "github.com/ethereum/go-ethereum/common"
@@ -64,7 +63,13 @@ const (
 
 // CometBFT full-node start flags
 const (
-	flagPruning = "pruning"
+	flagAddress      = "address"
+	flagTraceStore   = "trace-store"
+	flagPruning      = "pruning"
+	flagCPUProfile   = "cpu-profile"
+	FlagMinGasPrices = "minimum-gas-prices"
+	FlagHaltHeight   = "halt-height"
+	FlagHaltTime     = "halt-time"
 )
 
 // Open Collector Flags
@@ -153,7 +158,42 @@ func initRootCmd(
 		snapshot.Cmd(newApp),
 	)
 
-	server.AddCommands(rootCmd, app.DefaultNodeHome, newApp, appExport, addModuleInitFlags)
+	// TODO HV2 - uncomment when we have server.AddCommandsWithStartCmdOptions
+	// in our fork of cosmos-sdk
+	/*
+		server.AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
+			AddFlags: func(startCmd *cobra.Command) {
+				startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
+				startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
+			},
+			PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+				// start rest
+				if viper.GetBool(helper.RestServerFlag) {
+					waitForREST := make(chan struct{})
+
+					g.Go(func() error {
+						return nil
+						// TODO HV2 - uncomment when we have server implemented
+						// return restServer.StartRestServer(ctx, cdc, restServer.RegisterRoutes, waitForREST)
+					})
+
+					// hang here for a while, and wait for REST server to start
+					<-waitForREST
+				}
+
+				// start bridge
+				if viper.GetBool(helper.BridgeFlag) {
+					// TODO HV2 - uncomment when we have bridge implemented
+					// // bridgeCmd.AdjustBridgeDBValue(cmd, viper.GetViper())
+					// g.Go(func() error {
+					// 	return bridgeCmd.StartBridgeWithCtx(ctx)
+					// })
+				}
+
+				return nil
+			},
+		})
+	*/
 
 	cometbftCmd := &cobra.Command{
 		Use:   "cometbft",
@@ -215,10 +255,6 @@ func genesisCommand(txConfig client.TxConfig, basicManager module.BasicManager, 
 		cmd.AddCommand(subCmd)
 	}
 	return cmd
-}
-
-func addModuleInitFlags(startCmd *cobra.Command) {
-	crisis.AddModuleInitFlags(startCmd)
 }
 
 func queryCommand() *cobra.Command {

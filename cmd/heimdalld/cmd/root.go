@@ -117,8 +117,6 @@ func NewRootCmd() *cobra.Command {
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
 	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
 
-	rootCmd.AddCommand(heimdallStart(tempApp))
-
 	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp)
 
 	// add keyring to autocli opts
