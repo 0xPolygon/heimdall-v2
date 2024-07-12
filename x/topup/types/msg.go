@@ -2,8 +2,9 @@ package types
 
 import (
 	"cosmossdk.io/math"
-	"github.com/0xPolygon/heimdall-v2/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/types"
 )
 
 var _ sdk.Msg = &MsgTopupTx{}

@@ -2,6 +2,12 @@ package types
 
 import (
 	bytes "bytes"
+
+	"github.com/ethereum/go-ethereum/common"
+)
+
+const (
+	HashLength = common.HashLength
 )
 
 // ZeroHeimdallHash represents zero address

@@ -37,6 +37,7 @@ type AppModule struct {
 	contractCaller helper.ContractCaller
 }
 
+// NewAppModule creates a new AppModule object
 func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) AppModule {
 	return AppModule{
 		keeper:         keeper,
@@ -111,6 +112,8 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
+
+// AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the x/topup module.
 func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {

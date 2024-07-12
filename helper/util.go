@@ -254,3 +254,12 @@ func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHe
 	return result, fmt.Errorf("error while fetching data from url: %v, status: %v", URL, resp.StatusCode)
 }
 */
+
+// IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
+// It must be 0x04 for uncompressed public keys
+func IsPubKeyFirstByteValid(pubKey []byte) bool {
+	prefix := make([]byte, 1)
+	prefix[0] = byte(0x04)
+
+	return bytes.Equal(prefix, pubKey[0:1])
+}

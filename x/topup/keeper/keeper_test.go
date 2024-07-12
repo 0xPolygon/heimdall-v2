@@ -24,6 +24,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/types"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -70,8 +71,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 		encCfg.Codec,
 		storeService,
 		bankKeeper,
-		// TODO HV2: replace nil with stakeKeeper mock once implemented
-		nil,
 		chainKeeper,
 		&suite.contractCaller,
 	)
@@ -149,23 +148,22 @@ func (suite *KeeperTestSuite) TestDividendAccountTree() {
 
 	divAccounts := make([]types.DividendAccount, 5)
 	for i := 0; i < len(divAccounts); i++ {
-		accountBytes, err := codec.StringToBytes(AccountHash)
+		_, err := codec.StringToBytes(AccountHash)
 		require.NoError(err)
 		divAccounts[i] = types.DividendAccount{
-			User:      string(accountBytes),
+			User:      AccountHash,
 			FeeAmount: big.NewInt(0).String(),
 		}
 	}
 
-	/* TODO HV2: enable when checkpoint is implemented
-	accountRoot, err := checkpointTypes.GetAccountRootHash(divAccounts)
+	accountRoot, err := heimdallTypes.GetAccountRootHash(divAccounts)
 	require.NotNil(accountRoot)
 	require.NoError(err)
 
-	accountProof, _, err := checkpointTypes.GetAccountProof(divAccounts, AccountHash)
+	accountProof, index, err := heimdallTypes.GetAccountProof(divAccounts, AccountHash)
 	require.NotNil(accountProof)
+	require.NotNil(index)
 	require.NoError(err)
-	*/
 
 	leafHash := CalculateDividendAccountHash(divAccounts[0])
 	require.NotNil(leafHash)

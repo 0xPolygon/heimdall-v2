@@ -23,6 +23,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/grpc/cmtservice"
 	nodeservice "github.com/cosmos/cosmos-sdk/client/grpc/node"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	runtimeservices "github.com/cosmos/cosmos-sdk/runtime/services"
@@ -69,6 +70,15 @@ import (
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
+	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/0xPolygon/heimdall-v2/x/milestone"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -105,7 +115,6 @@ type HeimdallApp struct {
 	// keepers
 	AccountKeeper authkeeper.AccountKeeper
 	BankKeeper    bankkeeper.Keeper
-	// StakingKeeper *stakingkeeper.Keeper
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	DistrKeeper           distrkeeper.Keeper
 	GovKeeper             govkeeper.Keeper
@@ -113,13 +122,14 @@ type HeimdallApp struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	// Custom Keepers
-	// TODO HV2: uncomment when the keepers are implemented
-	// StakeKeeper stakekeeper.Keeper
-	// BorKeeper borkeeper.Keeper
-	ClerkKeeper clerkkeeper.Keeper
-	// CheckpointKeeper checkpointkeeper.Keeper
+	ClerkKeeper        clerkkeeper.Keeper
+	StakeKeeper        stakeKeeper.Keeper
 	TopupKeeper        topupKeeper.Keeper
 	ChainManagerKeeper chainmanagerkeeper.Keeper
+	CheckpointKeeper   checkpointKeeper.Keeper
+	MilestoneKeeper    milestoneKeeper.Keeper
+	// TODO HV2: uncomment when the keepers are implemented
+	// BorKeeper borkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
@@ -174,13 +184,14 @@ func NewHeimdallApp(
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
-		// TODO HV2: uncomment when modules are implemented
-		// staketypes.StoreKey,
-		// bortypes.StoreKey,
 		clerktypes.StoreKey,
-		// checkpointtypes.StoreKey,
+		staketypes.StoreKey,
+		checkpointTypes.StoreKey,
 		topupTypes.StoreKey,
 		chainmanagertypes.StoreKey,
+		milestoneTypes.StoreKey,
+		// TODO HV2: uncomment when modules are implemented
+		// bortypes.StoreKey,
 	)
 
 	// register streaming services
@@ -189,6 +200,7 @@ func NewHeimdallApp(
 	}
 
 	tKeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
+	// TODO HV2: are memKeys needed?
 	// memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, ibcmock.MemStoreKey)
 
 	app := &HeimdallApp{
@@ -256,8 +268,6 @@ func NewHeimdallApp(
 		logger,
 	)
 
-	// TODO HV2: initialise stake keeper here
-
 	// TODO HV2: consider removing distribution module since rewards are distributed on L1
 	app.DistrKeeper = distrkeeper.NewKeeper(
 		appCodec,
@@ -304,31 +314,56 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String())
 
+	app.StakeKeeper = stakeKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[staketypes.StoreKey]),
+		app.CheckpointKeeper,
+		app.BankKeeper,
+		app.ChainManagerKeeper,
+		address.HexCodec{},
+		&app.caller,
+	)
+
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
 		app.BankKeeper,
-		// TODO HV2: replace nil with stakeKeeper when implemented
-		nil,
 		app.ChainManagerKeeper,
 		&app.caller,
 	)
 
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[checkpointTypes.StoreKey]),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		&app.caller,
+	)
+
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		appCodec,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		&app.StakeKeeper,
+		&app.caller,
+	)
+
 	app.mm = module.NewManager(
-		// TODO HV2: add stake keeper once implemented
-		// genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
+		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
-		// TODO HV2: replace with our stake module
-		// staking.NewAppModule(appCodec, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(stakingtypes.ModuleName)),
+		stake.NewAppModule(app.StakeKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		// TODO HV2: add custom modules
+		// TODO HV2: add custom modules here
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
+		checkpoint.NewAppModule(&app.CheckpointKeeper),
+		milestone.NewAppModule(&app.MilestoneKeeper),
 	)
 
 	// Basic manager
@@ -349,29 +384,30 @@ func NewHeimdallApp(
 	app.mm.SetOrderBeginBlockers(
 		// TODO HV2: consider removing distribution module since rewards are distributed on L1
 		distrtypes.ModuleName,
-		// TODO HV2: stakingtypes.ModuleName, replace with our stake module
 		genutiltypes.ModuleName,
+		staketypes.ModuleName,
 	)
 
 	app.mm.SetOrderEndBlockers(
 		govtypes.ModuleName,
-		// TODO HV2: replace with our stake module
-		// stakingtypes.ModuleName,
 		genutiltypes.ModuleName,
+		staketypes.ModuleName,
 	)
 
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		distrtypes.ModuleName, // TODO HV2: consider removing distribution module since rewards are distributed on L1
+		// TODO HV2: consider removing distribution module since rewards are distributed on L1
+		distrtypes.ModuleName,
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		chainmanagertypes.ModuleName,
 		topupTypes.ModuleName,
+		staketypes.ModuleName,
+		checkpointTypes.ModuleName,
+		milestoneTypes.ModuleName,
 		// TODO HV2: uncomment when modules are implemented
-		// staketypes.ModuleName,
-		// checkpointtypes.ModuleName,
 		// bortypes.ModuleName,
 		// clerktypes.ModuleName,
 	}
@@ -478,9 +514,8 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
-	/* TODO HV2: uncomment when stake and checkpoint are implemented
-	stakingState := stakingTypes.GetGenesisStateFromAppState(genesisState)
-	checkpointState := checkpointTypes.GetGenesisStateFromAppState(genesisState)
+	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
+	checkpointState := checkpointTypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 
 	// check if validator is current validator
 	// add to val updates else skip
@@ -488,62 +523,85 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 	for _, validator := range stakingState.Validators {
 		if validator.IsCurrentValidator(checkpointState.AckCount) {
+			cmtProtoPk, err := validator.CmtConsPublicKey()
+			if err != nil {
+				panic(err)
+			}
+
 			// convert to Validator Update
 			updateVal := abci.ValidatorUpdate{
 				Power:  validator.VotingPower,
-				PubKey: validator.PubKey.ABCIPubKey(),
+				PubKey: cmtProtoPk,
 			}
 			// Add validator to validator updated to be processed below
 			valUpdates = append(valUpdates, updateVal)
 		}
 	}
-	*/
 
 	// TODO HV2: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
 	// update validators
 	return &abci.ResponseInitChain{
-		// TODO HV2: enable when stake is implemented
-		// validator updates
-		// Validators: valUpdates,
+		Validators: valUpdates,
 	}, nil
 }
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
+	// TODO HV2: is this needed?
 
-	// TODO HV2: implement when BytesToHeimdallAddress is available
-	// app.AccountKeeper.SetBlockProposer(ctx,types.BytesToHeimdallAddress(req.Header.GetProposerAddress()))
+	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
+		account, err := sdk.AccAddressFromHex(proposer.String())
+		if err != nil {
+			app.Logger().Error("error while converting the proposer from hex to account address", "error", err)
+			return sdk.BeginBlock{}, err
+		}
+		err = app.AccountKeeper.SetBlockProposer(ctx, account)
+		if err != nil {
+			app.Logger().Error("error while setting the block proposer", "error", err)
+			return sdk.BeginBlock{}, err
+		}
+	}
+
 	return app.mm.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
-	// TODO HV2: consider moving the validator set update logic to staking module's EndBlock under x/staking/module.go
+	// TODO HV2: is this needed?
 
 	// transfer fees to current proposer
-	/* TODO HV2: enable when keepers are implemented
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
-		amount := moduleAccount.GetCoins().AmountOf(authTypes.FeeToken)
-		if !amount.IsZero() {
-			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: amount}}
-			if err := app.SupplyKeeper.SendCoinsFromModuleToAccount(ctx, authTypes.FeeCollectorName, proposer, coins); err != nil {
-				logger.Error("EndBlocker | SendCoinsFromModuleToAccount", "Error", err)
+		coins := app.BankKeeper.GetBalance(ctx, moduleAccount.GetAddress(), authtypes.FeeToken)
+		if !coins.Amount.IsZero() {
+			coins := sdk.Coins{sdk.Coin{Denom: authtypes.FeeToken, Amount: coins.Amount}}
+			if err := app.BankKeeper.SendCoinsFromModuleToAccount(ctx, authtypes.FeeCollectorName, proposer, coins); err != nil {
+				app.Logger().Error("EndBlocker | SendCoinsFromModuleToAccount", "error", err)
 			}
 		}
 		// remove block proposer
-		app.AccountKeeper.RemoveBlockProposer(ctx)
+		err := app.AccountKeeper.RemoveBlockProposer(ctx)
+		if err != nil {
+			app.Logger().Error("EndBlocker | RemoveBlockProposer", "error", err)
+		}
 	}
 
 	var tmValUpdates []abci.ValidatorUpdate
 
 	// Start updating new validators
-	currentValidatorSet := app.StakingKeeper.GetValidatorSet(ctx)
-	allValidators := app.StakingKeeper.GetAllValidators(ctx)
-	ackCount := app.CheckpointKeeper.GetACKCount(ctx)
+	currentValidatorSet, err := app.StakeKeeper.GetValidatorSet(ctx)
+	if err != nil {
+		return sdk.EndBlock{}, err
+	}
+
+	allValidators := app.StakeKeeper.GetAllValidators(ctx)
+	ackCount, err := app.CheckpointKeeper.GetAckCount(ctx)
+	if err != nil {
+		return sdk.EndBlock{}, err
+	}
 
 	// get validator updates
-	setUpdates := helper.GetUpdatedValidators(
+	setUpdates := staketypes.GetUpdatedValidators(
 		&currentValidatorSet, // pointer to current validator set -- UpdateValidators will modify it
 		allValidators,        // All validators
 		ackCount,             // ack count
@@ -553,36 +611,34 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		// create new validator set
 		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
 			// return with nothing
-			logger.Error("Unable to update current validator set", "Error", err)
-			return abci.ResponseEndBlock{}
-		}
-
-		// TODO HV2: this should not be needed
-		// Hardfork to remove the rotation of validator list on stake update
-		if ctx.BlockHeight() < helper.GetAalborgHardForkHeight() {
-			// increment proposer priority
-			currentValidatorSet.IncrementProposerPriority(1)
+			app.Logger().Error("unable to update current validator set", "error", err)
+			return sdk.EndBlock{}, err
 		}
 
 		// validator set change
-		logger.Debug("[ENDBLOCK] Updated current validator set", "proposer", currentValidatorSet.GetProposer())
+		app.Logger().Debug("Updated current validator set in EndBlocker", "proposer", currentValidatorSet.GetProposer())
 
 		// save set in store
-		if err := app.StakingKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
+		if err := app.StakeKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
 			// return with nothing
-			logger.Error("Unable to update current validator set in state", "Error", err)
-			return abci.ResponseEndBlock{}
+			app.Logger().Error("unable to update current validator set in state", "error", err)
+			return sdk.EndBlock{}, err
 		}
 
 		// convert updates from map to array
 		for _, v := range setUpdates {
+			cmtProtoPk, err := v.CmtConsPublicKey()
+			if err != nil {
+				// return with nothing
+				app.Logger().Error("unable to get validator public key", "error", err)
+				return sdk.EndBlock{}, err
+			}
 			tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
 				Power:  v.VotingPower,
-				PubKey: v.PubKey.ABCIPubKey(),
+				PubKey: cmtProtoPk,
 			})
 		}
 	}
-	*/
 
 	return app.mm.EndBlock(ctx)
 }
@@ -625,7 +681,7 @@ func (app *HeimdallApp) GetTxConfig() client.TxConfig {
 
 // AutoCliOpts returns the autocli options for the app.
 func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
-	modules := make(map[string]appmodule.AppModule, 0)
+	modules := make(map[string]appmodule.AppModule)
 	for _, m := range app.mm.Modules {
 		if moduleWithName, ok := m.(module.HasName); ok {
 			moduleName := moduleWithName.Name()
