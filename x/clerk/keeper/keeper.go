@@ -35,6 +35,7 @@ type Keeper struct {
 	ChainKeeper    chainmanagerkeeper.Keeper
 	contractCaller helper.IContractCaller
 
+	Schema        collections.Schema
 	RecordsWithID collections.Map[uint64, types.EventRecord]
 	// TODO HV2 - is this needed? We can regenerate this from RecordsWithID
 	RecordsWithTime collections.Map[collections.Pair[time.Time, uint64], uint64]
@@ -58,6 +59,13 @@ func NewKeeper(
 		RecordsWithTime: collections.NewMap(sb, types.RecordsWithTimeKeyPrefix, "recordsWithTime", collections.PairKeyCodec(sdk.TimeKey, collections.Uint64Key), collections.Uint64Value),
 		RecordSequences: collections.NewMap(sb, types.RecordSequencesKeyPrefix, "recordSequences", collections.StringKey, collections.BytesValue),
 	}
+
+	schema, err := sb.Build()
+	if err != nil {
+		panic(err)
+	}
+
+	keeper.Schema = schema
 
 	return keeper
 }
