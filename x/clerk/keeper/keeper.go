@@ -21,10 +21,6 @@ import (
 
 var (
 	StateRecordPrefixKey = []byte{0x11} // prefix key for when storing state
-
-	// DefaultValue default value
-	DefaultValue = []byte{0x01}
-
 	// RecordSequencePrefixKey represents record sequence prefix key
 	RecordSequencePrefixKey = []byte{0x12}
 
@@ -48,7 +44,6 @@ type Keeper struct {
 // NewKeeper create new keeper
 func NewKeeper(
 	cdc codec.BinaryCodec,
-	// TODO HV2: As we are not using the migrator, I believe we do not need this
 	storeService storetypes.KVStoreService,
 	ChainKeeper chainmanagerkeeper.Keeper,
 	contractCaller helper.IContractCaller,
@@ -315,7 +310,7 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx context.Context, f func(se
 // SetRecordSequence sets mapping for sequence id to bool
 func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	if sequence != "" {
-		_ = k.RecordSequences.Set(ctx, sequence, DefaultValue)
+		_ = k.RecordSequences.Set(ctx, sequence, types.DefaultValue)
 	}
 }
 

@@ -9,7 +9,6 @@ import (
 
 // InitGenesis sets distribution information for genesis.
 func InitGenesis(ctx sdk.Context, keeper *keeper.Keeper, data *types.GenesisState) {
-	// add checkpoint headers
 	if len(data.EventRecords) != 0 {
 		for _, record := range data.EventRecords {
 			if err := keeper.SetEventRecord(ctx, *record); err != nil {

@@ -9,9 +9,7 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
 // GenesisState defines the clerk module's genesis state.
 message GenesisState {
-  repeated EventRecord event_records = 1
-      [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
+  repeated EventRecord event_records = 1 [ (amino.dont_omitempty) = true ];
 
-  repeated string record_sequences = 2
-      [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
+  repeated string record_sequences = 2 [ (amino.dont_omitempty) = true ];
 }

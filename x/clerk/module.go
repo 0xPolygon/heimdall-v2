@@ -86,7 +86,7 @@ func (ab AppModuleBasic) GetTxCmd() *cobra.Command {
 	return cli.GetTxCmd(ab.cdc)
 }
 
-// GetQueryCmd returns the root query command for the auth module.
+// GetQueryCmd returns the root query command for the clerk module.
 func (ab AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
 	return cli.GetQueryCmd(cdc)
 }
@@ -137,8 +137,7 @@ func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 // QuerierRoute returns the clerk module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
 
-// InitGenesis performs genesis initialization for the clerk module. It returns
-// no validator updates.
+// InitGenesis performs genesis initialization for the clerk module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)

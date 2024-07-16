@@ -59,7 +59,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				{
 					RpcMethod: "HandleMsgEventRecord",
 					Use:       "handle-msg-event-record [from] [tx-hash] [log-index] [block-number] [contract-address] [data] [id] [chain-id]",
-					Short:     "Create a new vesting account funded with an allocation of tokens.",
+					Short:     "Adds the state sync event in the DB.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
 						{ProtoField: "from"},
 						{ProtoField: "tx_hash"},

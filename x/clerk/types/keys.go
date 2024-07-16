@@ -24,4 +24,7 @@ var (
 	RecordsWithIDKeyPrefix   = collections.NewPrefix(0)
 	RecordsWithTimeKeyPrefix = collections.NewPrefix(1)
 	RecordSequencesKeyPrefix = collections.NewPrefix(2)
+
+	// DefaultValue of record sequence
+	DefaultValue = []byte{0x01}
 )

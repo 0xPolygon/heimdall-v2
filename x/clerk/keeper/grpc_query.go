@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-// query endpoints supported by the auth querier
+// query endpoints supported by the clerk querier
 const (
 	QueryRecord             = "record"
 	QueryRecordList         = "record-list"

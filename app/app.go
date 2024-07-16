@@ -409,7 +409,7 @@ func NewHeimdallApp(
 		milestoneTypes.ModuleName,
 		// TODO HV2: uncomment when modules are implemented
 		// bortypes.ModuleName,
-		// clerktypes.ModuleName,
+		clerktypes.ModuleName,
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)

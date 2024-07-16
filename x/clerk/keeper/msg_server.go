@@ -48,7 +48,6 @@ func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEvent
 	chainParams := params.ChainParams
 
 	// check chain id
-
 	if chainParams.BorChainId != msg.ChainID {
 		k.Logger(ctx).Error("Invalid Bor chain id", "msgChainID", msg.ChainID, "borChainId", chainParams.BorChainId)
 		return nil, hmTypes.ErrInvalidBorChainID(types.ModuleName)
