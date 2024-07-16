@@ -13,12 +13,13 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
-  rpc HandleMsgEventRecord(MsgEventRecord) returns (MsgEventRecordResponse);
+  rpc HandleMsgEventRecord(MsgEventRecordRequest)
+      returns (MsgEventRecordResponse);
 }
 
 message MsgEventRecordResponse {}
 
-message MsgEventRecord {
+message MsgEventRecordRequest {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 

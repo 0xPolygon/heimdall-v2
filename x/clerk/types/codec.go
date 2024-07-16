@@ -10,13 +10,13 @@ import (
 // RegisterLegacyAminoCodec registers the necessary x/clerk interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	cdc.RegisterConcrete(MsgEventRecord{}, "cosmos-sdk/MsgEventRecord", nil)
+	cdc.RegisterConcrete(MsgEventRecordRequest{}, "cosmos-sdk/MsgEventRecordRequest", nil)
 }
 
 // RegisterInterfaces registers the x/clerk interfaces types with the interface registry
 func RegisterInterfaces(registry types.InterfaceRegistry) {
 	registry.RegisterImplementations((*sdk.Msg)(nil),
-		&MsgEventRecord{},
+		&MsgEventRecordRequest{},
 	)
 
 	msgservice.RegisterMsgServiceDesc(registry, &_Msg_serviceDesc)

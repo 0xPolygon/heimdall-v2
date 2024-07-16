@@ -1,5 +1,5 @@
 package types
 
 const (
-	MsgEventRecordMethod = "MsgEventRecord"
+	MsgEventRecordMethod = "MsgEventRecordRequest"
 )

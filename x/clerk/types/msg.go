@@ -20,7 +20,7 @@ func NewMsgEventRecord(
 	data hm2types.HexBytes,
 	chainID string,
 
-) MsgEventRecord {
+) MsgEventRecordRequest {
 	contractAddressBytes, err := hexCodec.NewHexCodec().BytesToString(contractAddress)
 	if err != nil {
 		contractAddressBytes = ""
@@ -31,7 +31,7 @@ func NewMsgEventRecord(
 		fromBytes = ""
 	}
 
-	return MsgEventRecord{
+	return MsgEventRecordRequest{
 		From:            fromBytes,
 		TxHash:          txHash,
 		LogIndex:        logIndex,
@@ -44,13 +44,13 @@ func NewMsgEventRecord(
 }
 
 // Route Implements Msg.
-func (msg MsgEventRecord) Route() string { return RouterKey }
+func (msg MsgEventRecordRequest) Route() string { return RouterKey }
 
 // Type Implements Msg.
-func (msg MsgEventRecord) Type() string { return "event-record" }
+func (msg MsgEventRecordRequest) Type() string { return "event-record" }
 
 // ValidateBasic Implements Msg.
-func (msg MsgEventRecord) ValidateBasic() error {
+func (msg MsgEventRecordRequest) ValidateBasic() error {
 	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
 	tempFrom := sdk.AccAddress(bytes)
 	if tempFrom.Empty() || err != nil {
@@ -70,7 +70,7 @@ func (msg MsgEventRecord) ValidateBasic() error {
 }
 
 // GetSigners Implements Msg.
-func (msg MsgEventRecord) GetSigners() []sdk.AccAddress {
+func (msg MsgEventRecordRequest) GetSigners() []sdk.AccAddress {
 	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
 	if err != nil {
 		return nil
@@ -80,16 +80,16 @@ func (msg MsgEventRecord) GetSigners() []sdk.AccAddress {
 }
 
 // GetTxHash Returns tx hash
-func (msg MsgEventRecord) GetTxHash() hm2types.HeimdallHash {
+func (msg MsgEventRecordRequest) GetTxHash() hm2types.HeimdallHash {
 	return msg.TxHash
 }
 
 // GetLogIndex Returns log index
-func (msg MsgEventRecord) GetLogIndex() uint64 {
+func (msg MsgEventRecordRequest) GetLogIndex() uint64 {
 	return msg.LogIndex
 }
 
 // GetSideSignBytes returns side sign bytes
-func (msg MsgEventRecord) GetSideSignBytes() []byte {
+func (msg MsgEventRecordRequest) GetSideSignBytes() []byte {
 	return nil
 }

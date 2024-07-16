@@ -50,10 +50,10 @@ type EventRecord struct {
 * `ChainID` is the chain id of the bor chain.
 * `RecordTime` is the time at which the event was recorded in heimdall state.
 
-The bridge will listen to the state-sync events from L1 and generate a txn with `MsgEventRecord` which is responsible for validating events from `StateSender` contract and storing the `EventRecord` on the heimdall state for bor to use.
+The bridge will listen to the state-sync events from L1 and generate a txn with `MsgEventRecordRequest` which is responsible for validating events from `StateSender` contract and storing the `EventRecord` on the heimdall state for bor to use.
 
 ```
-type MsgEventRecord struct {
+type MsgEventRecordRequest struct {
 	From            types.HeimdallAddress `json:"from"`
 	TxHash          types.HeimdallHash    `json:"tx_hash"`
 	LogIndex        uint64                `json:"log_index"`

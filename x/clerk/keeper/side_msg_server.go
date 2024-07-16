@@ -20,10 +20,10 @@ type sideMsgServer struct {
 }
 
 var (
-	msgeventrecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
+	msgeventrecord = sdk.MsgTypeURL(&types.MsgEventRecordRequest{})
 )
 
-// NewSideMsgServerImpl returns an implementation of the clerk MsgServer interface
+// NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.
 func NewSideMsgServerImpl(keeper Keeper) types.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
@@ -50,7 +50,7 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandle
 }
 
 func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgEventRecord)
+	msg, ok := _msg.(*types.MsgEventRecordRequest)
 	if !ok {
 		srv.Logger(ctx).Error("msg type mismatched")
 		return hmModule.Vote_VOTE_NO
@@ -137,7 +137,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 }
 
 func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
-	msg, ok := _msg.(*types.MsgEventRecord)
+	msg, ok := _msg.(*types.MsgEventRecordRequest)
 	if !ok {
 		srv.Logger(ctx).Error("msg type mismatched")
 	}

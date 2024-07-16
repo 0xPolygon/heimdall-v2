@@ -23,7 +23,7 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEventRecord) (*types.MsgEventRecordResponse, error) {
+func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEventRecordRequest) (*types.MsgEventRecordResponse, error) {
 	k.Logger(ctx).Debug("✅ Validating clerk msg",
 		"id", msg.ID,
 		"contract", msg.ContractAddress,
