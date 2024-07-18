@@ -123,17 +123,6 @@ func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, contractCaller helper.I
 	}
 }
 
-/*
-TODO HV2 - check if we need to add invariants
-RegisterInvariants registers the clerk module invariants.
-*/
-
-/*
-func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
-	keeper.RegisterInvariants(ir, am.keeper)
-}
-*/
-
 // QuerierRoute returns the clerk module's querier route name.
 func (AppModule) QuerierRoute() string { return types.RouterKey }
 

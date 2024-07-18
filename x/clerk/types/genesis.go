@@ -18,7 +18,7 @@ func DefaultGenesisState() *GenesisState {
 	}
 }
 
-// ValidateGenesis performs basic validation of bank genesis data returning an
+// ValidateGenesis performs basic validation of clerk genesis data returning an
 // error for any failed validation criteria.
 func ValidateGenesis(data GenesisState) error {
 	for _, sq := range data.RecordSequences {

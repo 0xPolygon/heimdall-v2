@@ -20,7 +20,7 @@ type sideMsgServer struct {
 }
 
 var (
-	msgeventrecord = sdk.MsgTypeURL(&types.MsgEventRecordRequest{})
+	msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecordRequest{})
 )
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
@@ -29,20 +29,20 @@ func NewSideMsgServerImpl(keeper Keeper) types.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
-// SideTxHandler returns a side handler for "topup" type messages.
+// SideTxHandler returns a side handler for clerk type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
 	switch methodName {
-	case msgeventrecord:
+	case msgEventRecord:
 		return srv.SideHandleMsgEventRecord
 	default:
 		return nil
 	}
 }
 
-// PostTxHandler returns a side handler for "bank" type messages.
+// PostTxHandler returns a post handler for clerk type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler {
 	switch methodName {
-	case msgeventrecord:
+	case msgEventRecord:
 		return srv.PostHandleMsgEventRecord
 	default:
 		return nil
@@ -137,24 +137,26 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 }
 
 func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult hmModule.Vote) {
+	logger := srv.Logger(ctx)
+
 	msg, ok := _msg.(*types.MsgEventRecordRequest)
 	if !ok {
-		srv.Logger(ctx).Error("msg type mismatched")
+		logger.Error("msg type mismatched")
 	}
 
 	// Skip handler if clerk is not approved
 	if sideTxResult != hmModule.Vote_VOTE_YES {
-		srv.Logger(ctx).Debug("Skipping new clerk since side-tx didn't get yes votes")
+		logger.Debug("Skipping new clerk since side-tx didn't get yes votes")
 		return
 	}
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.ID) {
-		srv.Logger(ctx).Debug("Skipping new clerk record as it's already processed")
+		logger.Debug("Skipping new clerk record as it's already processed")
 		return
 	}
 
-	srv.Logger(ctx).Debug("Persisting clerk state", "sideTxResult", sideTxResult)
+	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -174,7 +176,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	// save event into state
 	if err := srv.SetEventRecord(ctx, record); err != nil {
-		srv.Logger(ctx).Error("Unable to update event record", "id", msg.ID, "error", err)
+		logger.Error("Unable to update event record", "id", msg.ID, "error", err)
 		return
 	}
 

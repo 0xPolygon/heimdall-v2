@@ -23,8 +23,10 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEventRecordRequest) (*types.MsgEventRecordResponse, error) {
-	k.Logger(ctx).Debug("✅ Validating clerk msg",
+func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEventRecordRequest) (*types.MsgEventRecordResponse, error) {
+	logger := srv.Logger(ctx)
+
+	logger.Debug("✅ Validating clerk msg",
 		"id", msg.ID,
 		"contract", msg.ContractAddress,
 		"data", msg.Data.String(),
@@ -34,14 +36,14 @@ func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEvent
 	)
 
 	// check if event record exists
-	if exists := k.HasEventRecord(ctx, msg.ID); exists {
+	if exists := srv.HasEventRecord(ctx, msg.ID); exists {
 		return nil, types.ErrEventRecordAlreadySynced
 	}
 
 	// chainManager params
-	params, err := k.ChainKeeper.GetParams(ctx)
+	params, err := srv.ChainKeeper.GetParams(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("failed to get chain manager params", "error", err)
+		logger.Error("failed to get chain manager params", "error", err)
 		return nil, err
 	}
 
@@ -49,7 +51,7 @@ func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEvent
 
 	// check chain id
 	if chainParams.BorChainId != msg.ChainID {
-		k.Logger(ctx).Error("Invalid Bor chain id", "msgChainID", msg.ChainID, "borChainId", chainParams.BorChainId)
+		logger.Error("Invalid Bor chain id", "msgChainID", msg.ChainID, "borChainId", chainParams.BorChainId)
 		return nil, hmTypes.ErrInvalidBorChainID(types.ModuleName)
 	}
 
@@ -59,8 +61,8 @@ func (k msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEvent
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// check if incoming tx is older
-	if k.HasRecordSequence(ctx, sequence.String()) {
-		k.Logger(ctx).Error("Older invalid tx found", "Sequence", sequence.String())
+	if srv.HasRecordSequence(ctx, sequence.String()) {
+		logger.Error("Older invalid tx found", "Sequence", sequence.String())
 		return nil, hmTypes.ErrOldTx(types.ModuleName)
 	}
 
