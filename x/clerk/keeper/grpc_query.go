@@ -27,6 +27,11 @@ func NewQueryServer(k Keeper) types.QueryServer {
 }
 
 func (s QueryServer) Record(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
+	if request == nil {
+		return nil, errors.New("empty request")
+
+	}
+
 	record, err := s.K.GetEventRecord(ctx, request.RecordID)
 	if err != nil {
 		return nil, err
@@ -36,6 +41,11 @@ func (s QueryServer) Record(ctx context.Context, request *types.RecordRequest) (
 }
 
 func (s QueryServer) RecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
+	if request == nil {
+		return nil, errors.New("empty request")
+
+	}
+
 	records, err := s.K.GetEventRecordList(ctx, request.Page, request.Limit)
 	if err != nil {
 		return nil, err
@@ -50,6 +60,11 @@ func (s QueryServer) RecordList(ctx context.Context, request *types.RecordListRe
 }
 
 func (s QueryServer) RecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
+	if request == nil {
+		return nil, errors.New("empty request")
+
+	}
+
 	records, err := s.K.GetEventRecordListWithTime(ctx, request.FromTime, request.ToTime, request.Page, request.Limit)
 	if err != nil {
 		return nil, err
@@ -64,6 +79,11 @@ func (s QueryServer) RecordListWithTime(ctx context.Context, request *types.Reco
 }
 
 func (s QueryServer) RecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
+	if request == nil {
+		return nil, errors.New("empty request")
+
+	}
+
 	chainParams, err := s.K.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, errors.New("failed to get chain manager params")

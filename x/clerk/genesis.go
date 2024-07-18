@@ -7,7 +7,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-// InitGenesis sets distribution information for genesis.
+// InitGenesis sets clerk information for genesis.
 func InitGenesis(ctx sdk.Context, keeper *keeper.Keeper, data *types.GenesisState) {
 	if len(data.EventRecords) != 0 {
 		for _, record := range data.EventRecords {
