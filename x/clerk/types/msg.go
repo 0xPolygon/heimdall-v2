@@ -69,16 +69,6 @@ func (msg MsgEventRecordRequest) ValidateBasic() error {
 	return nil
 }
 
-// GetSigners Implements Msg.
-func (msg MsgEventRecordRequest) GetSigners() []sdk.AccAddress {
-	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
-	if err != nil {
-		return nil
-	}
-
-	return []sdk.AccAddress{bytes}
-}
-
 // GetTxHash Returns tx hash
 func (msg MsgEventRecordRequest) GetTxHash() hm2types.HeimdallHash {
 	return msg.TxHash
@@ -87,9 +77,4 @@ func (msg MsgEventRecordRequest) GetTxHash() hm2types.HeimdallHash {
 // GetLogIndex Returns log index
 func (msg MsgEventRecordRequest) GetLogIndex() uint64 {
 	return msg.LogIndex
-}
-
-// GetSideSignBytes returns side sign bytes
-func (msg MsgEventRecordRequest) GetSideSignBytes() []byte {
-	return nil
 }

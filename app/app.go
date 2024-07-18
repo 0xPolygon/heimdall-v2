@@ -14,6 +14,7 @@ import (
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/clerk"
 	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -324,6 +325,13 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.ClerkKeeper = clerkkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[clerktypes.StoreKey]),
+		app.ChainManagerKeeper,
+		&app.caller,
+	)
+
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
@@ -360,6 +368,7 @@ func NewHeimdallApp(
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules here
+		clerk.NewAppModule(appCodec, app.ClerkKeeper),
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),

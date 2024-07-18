@@ -14,7 +14,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -95,8 +94,7 @@ func (ab AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
 type AppModule struct {
 	AppModuleBasic
 
-	keeper         keeper.Keeper
-	contractCaller helper.IContractCaller
+	keeper keeper.Keeper
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
@@ -115,11 +113,10 @@ func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
 }
 
 // NewAppModule creates a new AppModule object
-func NewAppModule(cdc codec.Codec, keeper keeper.Keeper, contractCaller helper.IContractCaller) AppModule {
+func NewAppModule(cdc codec.Codec, keeper keeper.Keeper) AppModule {
 	return AppModule{
 		AppModuleBasic: AppModuleBasic{cdc: &cdc},
 		keeper:         keeper,
-		contractCaller: contractCaller,
 	}
 }
 
