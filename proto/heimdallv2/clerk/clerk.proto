@@ -10,7 +10,6 @@ import "heimdallv2/types/hash.proto";
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
 message EventRecord {
-  option (amino.name) = "clerk/EventRecord";
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.equal) = false;
 

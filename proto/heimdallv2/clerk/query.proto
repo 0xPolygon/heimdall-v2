@@ -14,7 +14,7 @@ service Query {
   // TODO HV2 - check url
   rpc Record(RecordRequest) returns (RecordResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/record-id";
+    option (google.api.http).get = "/clerk/event-record/{record_i_d}";
   }
 
   // TODO HV2 - check url
@@ -39,7 +39,7 @@ service Query {
 
 message RecordRequest { uint64 record_i_d = 1; }
 
-// RecordResponse defines the params for querying accounts.
+// RecordResponse defines the params for RecordListRequest.
 message RecordResponse { EventRecord record = 1; }
 
 message RecordListRequest {
@@ -47,8 +47,7 @@ message RecordListRequest {
   uint64 limit = 2;
 }
 
-// RecordListResponse defines the params for querying an account
-// Sequence.
+// RecordListResponse defines the params for RecordListRequest
 message RecordListResponse { repeated EventRecord event_records = 1; }
 
 message RecordListWithTimeRequest {
@@ -60,8 +59,8 @@ message RecordListWithTimeRequest {
   uint64 limit = 4;
 }
 
-// RecordListWithTimeResponse defines the params for querying records with
-// time.
+// RecordListWithTimeResponse defines the params for querying
+// RecordListWithTimeRequest
 message RecordListWithTimeResponse { repeated EventRecord event_records = 1; }
 
 message RecordSequenceRequest {
