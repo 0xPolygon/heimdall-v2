@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"google.golang.org/grpc"
 
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -14,11 +13,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	"github.com/0xPolygon/heimdall-v2/x/clerk/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -79,17 +75,6 @@ func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) 
 	types.RegisterInterfaces(registry)
 }
 
-// GetTxCmd returns the root tx command for the clerk module.
-func (ab AppModuleBasic) GetTxCmd() *cobra.Command {
-	// TODO HV2 - write cli module and implement GetTxCmd()
-	return cli.GetTxCmd(ab.cdc)
-}
-
-// GetQueryCmd returns the root query command for the clerk module.
-func (ab AppModuleBasic) GetQueryCmd(cdc *codec.Codec) *cobra.Command {
-	return cli.GetQueryCmd(cdc)
-}
-
 // AppModule implements an application module for the clerk module.
 type AppModule struct {
 	AppModuleBasic
@@ -105,9 +90,9 @@ func (am AppModule) IsAppModule() {}
 
 // TODO HV2 - check if this is correct (cosmos way)
 // RegisterServices registers module services.
-func (am AppModule) RegisterServices(registrar grpc.ServiceRegistrar) error {
-	types.RegisterMsgServer(registrar, keeper.NewMsgServerImpl(am.keeper))
-	types.RegisterQueryServer(registrar, keeper.NewQueryServer(am.keeper))
+func (am AppModule) RegisterServices(cfg module.Configurator) error {
+	types.RegisterMsgServer(cfg, keeper.NewMsgServerImpl(am.keeper))
+	types.RegisterQueryServer(cfg, keeper.NewQueryServer(am.keeper))
 
 	return nil
 }

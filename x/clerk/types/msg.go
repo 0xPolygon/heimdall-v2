@@ -52,13 +52,17 @@ func (msg MsgEventRecordRequest) Type() string { return "event-record" }
 // ValidateBasic Implements Msg.
 func (msg MsgEventRecordRequest) ValidateBasic() error {
 	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
+	if err != nil {
+		return sdkerrors.ErrInvalidAddress
+	}
+
 	tempFrom := sdk.AccAddress(bytes)
-	if tempFrom.Empty() || err != nil {
+	if tempFrom.Empty() {
 		return sdkerrors.ErrInvalidAddress
 	}
 
 	if msg.TxHash.Empty() {
-		return sdkerrors.ErrInvalidAddress
+		return ErrEmptyTxHash
 	}
 
 	// DO NOT REMOVE THIS CHANGE

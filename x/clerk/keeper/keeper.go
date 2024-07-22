@@ -133,9 +133,9 @@ func (k *Keeper) HasEventRecord(ctx context.Context, stateID uint64) bool {
 
 // GetAllEventRecords get all state records
 func (k *Keeper) GetAllEventRecords(ctx context.Context) (records []*types.EventRecord) {
-	// iterate through spans and create span update array
+	// iterate through state sync and append to list
 	k.IterateRecordsAndApplyFn(ctx, func(record types.EventRecord) error {
-		// append to list of validatorUpdates
+		// append to list of records
 		records = append(records, &record)
 		return nil
 	})
@@ -318,13 +318,20 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx context.Context, f func(se
 // SetRecordSequence sets mapping for sequence id to bool
 func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	if sequence != "" {
-		_ = k.RecordSequences.Set(ctx, sequence, types.DefaultValue)
+		err := k.RecordSequences.Set(ctx, sequence, types.DefaultValue)
+		if err != nil {
+			k.Logger(ctx).Error("SetRecordSequence | Set", "error", err)
+		}
 	}
 }
 
 // HasRecordSequence checks if record already exists
 func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
-	isPresent, _ := k.RecordSequences.Has(ctx, sequence)
+	isPresent, err := k.RecordSequences.Has(ctx, sequence)
+
+	if err != nil {
+		return false
+	}
 
 	return isPresent
 }

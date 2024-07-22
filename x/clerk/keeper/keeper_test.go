@@ -32,24 +32,12 @@ var Address1 = "0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 var Address2 = "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 var TxHash1 = "0xc316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 
-// createTestApp returns context and app on clerk keeper
-// nolint: unparam
-/*
-func createTestApp(t *testing.T, isCheckTx bool) (*app.HeimdallApp, sdk.Context) {
-	app := app.Setup(t, isCheckTx)
-	ctx := app.BaseApp.NewContext(isCheckTx)
-
-	return app, ctx
-}
-*/
-
 // KeeperTestSuite integrate test suite context object
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx    sdk.Context
-	keeper clerkKeeper.Keeper
-	// app        *app.HeimdallApp
+	ctx            sdk.Context
+	keeper         clerkKeeper.Keeper
 	chainID        string
 	msgServer      types.MsgServer
 	sideMsgCfg     hmModule.SideTxConfigurator
@@ -119,7 +107,7 @@ func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	// GetEventRecord
 	respRecord, err := ck.GetEventRecord(ctx, testRecord1.ID)
 	require.Nil(t, err)
-	require.Equal(t, (*respRecord).ID, testRecord1.ID)
+	require.Equal(t, *respRecord, testRecord1)
 
 	_, err = ck.GetEventRecord(ctx, testRecord1.ID+1)
 	require.NotNil(t, err)
