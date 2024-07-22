@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"cosmossdk.io/core/appmodule"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,43 +19,37 @@ import (
 )
 
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModule{}
-	// _ module.AppModuleSimulation = AppModule{}
 	_ module.HasGenesis = AppModule{}
 
-	// TODO HV2 - this is giving error
-	/*
-		cannot use AppModule{} (value of type AppModule) as module.HasServices value in variable declaration:
-		AppModule does not implement module.HasServices (wrong type for method RegisterServices)
-		have RegisterServices("google.golang.org/grpc".ServiceRegistrar) error
-		want RegisterServices(module.Configurator)compilerInvalidIfaceAssign
-	*/
-	// _ module.HasServices = AppModule{}
+	// TODO HV2 - check if we need the following (this was giving an error)
+	// _ module.HasServices    = AppModule{}
+
+	_ module.AppModuleBasic = AppModule{}
+	_ appmodule.AppModule   = AppModule{}
 )
 
-// AppModuleBasic defines the basic application module used by the clerk module.
-type AppModuleBasic struct {
-	cdc *codec.Codec
-}
+// // AppModule implements an application module for the clerk module.
+// type AppModule struct {
+// 	keeper *keeper.Keeper
+// }
 
 // Name returns the clerk module's name.
-func (AppModuleBasic) Name() string {
+func (AppModule) Name() string {
 	return types.ModuleName
 }
 
 // RegisterLegacyAminoCodec registers the clerk module's types for the given codec.
-func (AppModuleBasic) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
+func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 	types.RegisterLegacyAminoCodec(cdc)
 }
 
 // DefaultGenesis returns default genesis state as raw bytes for the clerk module.
-func (AppModuleBasic) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
+func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(types.DefaultGenesisState())
 }
 
 // ValidateGenesis performs genesis state validation for the clerk module.
-func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
+func (AppModule) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
@@ -64,21 +59,19 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the clerk module.
-func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
+func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwruntime.ServeMux) {
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
 }
 
 // RegisterInterfaces registers interfaces and implementations of the clerk module.
-func (AppModuleBasic) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
+func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 	types.RegisterInterfaces(registry)
 }
 
 // AppModule implements an application module for the clerk module.
 type AppModule struct {
-	AppModuleBasic
-
 	keeper keeper.Keeper
 }
 
@@ -100,8 +93,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) error {
 // NewAppModule creates a new AppModule object
 func NewAppModule(cdc codec.Codec, keeper keeper.Keeper) AppModule {
 	return AppModule{
-		AppModuleBasic: AppModuleBasic{cdc: &cdc},
-		keeper:         keeper,
+		keeper: keeper,
 	}
 }
 
