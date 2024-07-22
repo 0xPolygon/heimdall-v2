@@ -1,6 +1,7 @@
 package keeper_test
 
 import (
+	"math/rand"
 	"testing"
 	"time"
 
@@ -8,7 +9,6 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -31,6 +31,12 @@ import (
 var Address1 = "0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 var Address2 = "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 var TxHash1 = "0xc316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+
+func RandomBytes() []byte {
+	b := make([]byte, 32)
+	_, _ = rand.Read(b)
+	return b
+}
 
 // KeeperTestSuite integrate test suite context object
 type KeeperTestSuite struct {
@@ -89,16 +95,11 @@ func (suite *KeeperTestSuite) SetupTest() {
 func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
-	ac := address.NewHexCodec()
-	addrBz, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
-	hHash := hmTypes.HeimdallHash{Hash: addrBz}
-
+	hHash := hmTypes.HeimdallHash{Hash: RandomBytes()}
 	testRecord1 := types.NewEventRecord(hHash, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
 
 	// SetEventRecord
-	err = ck.SetEventRecord(ctx, testRecord1)
+	err := ck.SetEventRecord(ctx, testRecord1)
 	require.Nil(t, err)
 
 	err = ck.SetEventRecord(ctx, testRecord1)
@@ -128,10 +129,7 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 
 	var i uint64
 
-	ac := address.NewHexCodec()
-	addrBz, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-	hHash := hmTypes.HeimdallHash{Hash: addrBz}
+	hHash := hmTypes.HeimdallHash{Hash: RandomBytes()}
 
 	for i = 0; i < 60; i++ {
 		testRecord := types.NewEventRecord(hHash, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
@@ -160,10 +158,7 @@ func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
 
 	var i uint64
 
-	ac := address.NewHexCodec()
-	addrBz, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-	hHash := hmTypes.HeimdallHash{Hash: addrBz}
+	hHash := hmTypes.HeimdallHash{Hash: RandomBytes()}
 
 	for i = 0; i < 30; i++ {
 		testRecord := types.NewEventRecord(hHash, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Unix(int64(i), 0))
