@@ -211,7 +211,7 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	for _, stateID := range stateIDs {
 		record, err := k.GetEventRecord(ctx, stateID)
 		if err != nil {
-			k.Logger(ctx).Error("GetEventRecordListWithTime | GetEventRecord", "error", err)
+			k.Logger(ctx).Error("error in fetching event record", "error", err)
 			continue
 		}
 		allRecords = append(allRecords, *record)
@@ -320,7 +320,7 @@ func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	if sequence != "" {
 		err := k.RecordSequences.Set(ctx, sequence, types.DefaultValue)
 		if err != nil {
-			k.Logger(ctx).Error("SetRecordSequence | Set", "error", err)
+			k.Logger(ctx).Error("error in storing record sequence", "error", err)
 		}
 	}
 }

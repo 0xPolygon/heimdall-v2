@@ -12,7 +12,7 @@ func InitGenesis(ctx sdk.Context, keeper *keeper.Keeper, data *types.GenesisStat
 	if len(data.EventRecords) != 0 {
 		for _, record := range data.EventRecords {
 			if err := keeper.SetEventRecord(ctx, *record); err != nil {
-				keeper.Logger(ctx).Error("InitGenesis | SetEventRecord", "error", err)
+				keeper.Logger(ctx).Error("error in storing event record", "error", err)
 			}
 		}
 	}
