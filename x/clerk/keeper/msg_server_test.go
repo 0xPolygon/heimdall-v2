@@ -28,9 +28,6 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
-	txHashBz, err := ac.StringToBytes(TxHash1)
-	require.NoError(t, err)
-
 	id := r.Uint64()
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
@@ -38,7 +35,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	// successful message
 	msg := types.NewMsgEventRecord(
 		addrBz1,
-		hmTypes.HeimdallHash{Hash: txHashBz},
+		TxHash1,
 		logIndex,
 		blockNumber,
 		id,
@@ -116,12 +113,9 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
-	txHashBz, err := ac.StringToBytes(TxHash1)
-	require.NoError(t, err)
-
 	msg := types.NewMsgEventRecord(
 		addrBz1,
-		hmTypes.HeimdallHash{Hash: txHashBz},
+		TxHash1,
 		r.Uint64(),
 		r.Uint64(),
 		r.Uint64(),
@@ -161,13 +155,10 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 
 	id := r.Uint64()
 
-	txHashBz, err := ac.StringToBytes(TxHash1)
-	require.NoError(t, err)
-
 	// wrong chain id
 	msg := types.NewMsgEventRecord(
 		addrBz1,
-		hmTypes.HeimdallHash{Hash: txHashBz},
+		TxHash1,
 		r.Uint64(),
 		r.Uint64(),
 		id,

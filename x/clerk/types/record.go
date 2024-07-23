@@ -8,7 +8,7 @@ import (
 
 // NewEventRecord creates new record
 func NewEventRecord(
-	txHash types.HeimdallHash,
+	txHash string,
 	logIndex uint64,
 	id uint64,
 	contract string,

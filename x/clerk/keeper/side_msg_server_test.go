@@ -45,16 +45,13 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
-	txHashBz, err := ac.StringToBytes(TxHash1)
-	require.NoError(t, err)
-
 	id := r.Uint64()
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
 
 	msg := types.NewMsgEventRecord(
 		addrBz1,
-		hmTypes.HeimdallHash{Hash: txHashBz},
+		TxHash1,
 		logIndex,
 		blockNumber,
 		id,
@@ -98,9 +95,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
 		}
-		txHash := hmTypes.HeimdallHash{
-			Hash: []byte("success hash"),
-		}
+		txHash := "success hash"
 
 		msg := types.NewMsgEventRecord(
 			addrBz1,
@@ -139,9 +134,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		logIndex := uint64(200)
 		blockNumber := uint64(51)
-		txHash := hmTypes.HeimdallHash{
-			Hash: []byte("no receipt hash"),
-		}
+		txHash := "no receipt hash"
 
 		msg := types.NewMsgEventRecord(
 			addrBz1,
@@ -173,9 +166,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
 		}
-		txHash := hmTypes.HeimdallHash{
-			Hash: []byte("no log hash"),
-		}
+		txHash := "no log hash"
 
 		msg := types.NewMsgEventRecord(
 			addrBz1,
@@ -207,9 +198,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
-		txHash := hmTypes.HeimdallHash{
-			Hash: []byte("success hash"),
-		}
+		txHash := "success hash"
 
 		const letterBytes = "abcdefABCDEF"
 		b := make([]byte, helper.LegacyMaxStateSyncSize+3)
@@ -265,16 +254,13 @@ func (suite *KeeperTestSuite) TestPostHandler() {
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
-	txHashBz, err := ac.StringToBytes(TxHash1)
-	require.NoError(t, err)
-
 	id := r.Uint64()
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
 
 	msg := types.NewMsgEventRecord(
 		addrBz1,
-		hmTypes.HeimdallHash{Hash: txHashBz},
+		TxHash1,
 		logIndex,
 		blockNumber,
 		id,
@@ -306,16 +292,13 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
-	txHashBz, err := ac.StringToBytes(TxHash1)
-	require.NoError(t, err)
-
 	id := r.Uint64()
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
 
 	msg := types.NewMsgEventRecord(
 		addrBz1,
-		hmTypes.HeimdallHash{Hash: txHashBz},
+		TxHash1,
 		logIndex,
 		blockNumber,
 		id,
@@ -369,7 +352,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 
 		_ = types.NewMsgEventRecord(
 			addrBz1,
-			hmTypes.HeimdallHash{Hash: txHashBz},
+			TxHash1,
 			logIndex,
 			blockNumber,
 			id,

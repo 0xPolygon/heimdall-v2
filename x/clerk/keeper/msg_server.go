@@ -30,7 +30,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 		"id", msg.ID,
 		"contract", msg.ContractAddress,
 		"data", msg.Data.String(),
-		"txHash", msg.TxHash.String(),
+		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -74,7 +74,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
 			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.ID, 10)),
 			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
-			sdk.NewAttribute(types.AttributeKeyRecordTxHash, msg.TxHash.String()),
+			sdk.NewAttribute(types.AttributeKeyRecordTxHash, msg.TxHash),
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
 		),
 	})

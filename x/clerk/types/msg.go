@@ -12,7 +12,7 @@ import (
 // NewMsgEventRecord - construct state msg
 func NewMsgEventRecord(
 	from sdk.AccAddress,
-	txHash hm2types.HeimdallHash,
+	txHash string,
 	logIndex uint64,
 	blockNumber uint64,
 	id uint64,
@@ -61,7 +61,7 @@ func (msg MsgEventRecordRequest) ValidateBasic() error {
 		return sdkerrors.ErrInvalidAddress
 	}
 
-	if msg.TxHash.Empty() {
+	if msg.TxHash == "" {
 		return ErrEmptyTxHash
 	}
 
@@ -74,7 +74,7 @@ func (msg MsgEventRecordRequest) ValidateBasic() error {
 }
 
 // GetTxHash Returns tx hash
-func (msg MsgEventRecordRequest) GetTxHash() hm2types.HeimdallHash {
+func (msg MsgEventRecordRequest) GetTxHash() string {
 	return msg.TxHash
 }
 

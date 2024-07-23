@@ -73,7 +73,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	_ = params.ChainParams
 
 	// get confirmed tx receipt
-	receipt, err := srv.Keeper.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.GetMainChainTxConfirmations())
+	receipt, err := srv.Keeper.contractCaller.GetConfirmedTxReceipt(common.HexToHash(msg.TxHash), params.GetMainChainTxConfirmations())
 	if receipt == nil || err != nil {
 		return hmModule.Vote_VOTE_NO
 	}
