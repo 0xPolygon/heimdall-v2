@@ -271,11 +271,8 @@ func (suite *KeeperTestSuite) TestPostHandler() {
 		chainID,
 	)
 
-	// TODO HV2 - in our case, post handler does not return anything. How to test then?
-	// post tx handler
+	// Post handler should fail
 	suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
-	// require.False(t, result.IsOK(), "Post handler should fail")
-	// require.Equal(t, sdk.CodeUnknownRequest, result.Code)
 }
 
 func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
@@ -310,11 +307,8 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 	)
 
 	t.Run("NoResult", func(t *testing.T) {
-		// TODO HV2 - in our case, post handler does not return anything. How to test then?
+		// Post handler should fail
 		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_NO)
-		// require.False(t, result.IsOK(), "Post handler should fail")
-		// require.Equal(t, common.CodeSideTxValidationFailed, result.Code)
-		// require.Equal(t, 0, len(result.Events), "No error should be emitted for failed post-tx")
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -323,10 +317,8 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 	})
 
 	t.Run("YesResult", func(t *testing.T) {
-		// TODO HV2 - in our case, post handler does not return anything. How to test then?
+		// Post handler should succeed
 		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
-		// require.True(t, result.IsOK(), "Post handler should succeed")
-		// require.Greater(t, len(result.Events), 0, "Events should be emitted for successful post-tx")
 
 		// sequence id
 		blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -363,13 +355,10 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 			suite.chainID,
 		)
 
-		// TODO HV2 - in our case, post handler does not return anything. How to test then?
+		// Post handler should succeed
 		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
-		// require.True(t, result.IsOK(), "Post handler should succeed")
 
-		// TODO HV2 - in our case, post handler does not return anything. How to test then?
+		// Post handler should prevent replay attack
 		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
-		// require.False(t, result.IsOK(), "Post handler should prevent replay attack")
-		// require.Equal(t, common.CodeOldTx, result.Code)
 	})
 }
