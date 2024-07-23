@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -83,7 +84,8 @@ func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventR
 	}
 
 	_, err := k.RecordsWithTime.Get(ctx, collections.Join(record.RecordTime, record.ID))
-	if err == collections.ErrEncoding {
+	if errors.Is(err, collections.ErrEncoding) {
+		k.Logger(ctx).Error("key decoding failed", "error", err)
 		return collections.ErrEncoding
 	}
 
@@ -97,7 +99,8 @@ func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRec
 	}
 
 	_, err := k.RecordsWithID.Get(ctx, record.ID)
-	if err == collections.ErrEncoding {
+	if errors.Is(err, collections.ErrEncoding) {
+		k.Logger(ctx).Error("key decoding failed", "error", err)
 		return collections.ErrEncoding
 	}
 
