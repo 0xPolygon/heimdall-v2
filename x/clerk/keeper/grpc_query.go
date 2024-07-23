@@ -2,12 +2,13 @@ package keeper
 
 import (
 	"context"
-	"errors"
 	"math/big"
 
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/ethereum/go-ethereum/common"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // query endpoints supported by the clerk querier
@@ -28,13 +29,14 @@ func NewQueryServer(k Keeper) types.QueryServer {
 
 func (s QueryServer) Record(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
 	if request == nil {
-		return nil, errors.New("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 
 	}
 
 	record, err := s.K.GetEventRecord(ctx, request.RecordID)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
+
 	}
 
 	return &types.RecordResponse{Record: record}, nil
@@ -42,13 +44,13 @@ func (s QueryServer) Record(ctx context.Context, request *types.RecordRequest) (
 
 func (s QueryServer) RecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
 	if request == nil {
-		return nil, errors.New("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 
 	}
 
 	records, err := s.K.GetEventRecordList(ctx, request.Page, request.Limit)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	newRecords := make([]*types.EventRecord, len(records))
@@ -61,13 +63,13 @@ func (s QueryServer) RecordList(ctx context.Context, request *types.RecordListRe
 
 func (s QueryServer) RecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
 	if request == nil {
-		return nil, errors.New("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 
 	}
 
 	records, err := s.K.GetEventRecordListWithTime(ctx, request.FromTime, request.ToTime, request.Page, request.Limit)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	newRecords := make([]*types.EventRecord, len(records))
@@ -80,20 +82,20 @@ func (s QueryServer) RecordListWithTime(ctx context.Context, request *types.Reco
 
 func (s QueryServer) RecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
 	if request == nil {
-		return nil, errors.New("empty request")
+		return nil, status.Error(codes.InvalidArgument, "empty request")
 
 	}
 
 	chainParams, err := s.K.ChainKeeper.GetParams(ctx)
 	if err != nil {
-		return nil, errors.New("failed to get chain manager params")
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	// get main tx receipt
 	txHash := heimdallTypes.TxHash{Hash: common.FromHex(request.TxHash)}
 	receipt, err := s.K.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash.Hash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
-		return nil, errors.New("transaction is not confirmed yet. please wait for sometime and try again")
+		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}
 
 	// sequence id
