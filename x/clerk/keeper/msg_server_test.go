@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/common"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -49,8 +50,6 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	t.Run("Success", func(t *testing.T) {
 		_, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.NoError(t, err)
-		// TODO HV2 - the above check seems enough, we can remove the below commented lines
-		// require.True(t, result.IsOK(), "expected msg record to be ok, got %v", result)
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -76,9 +75,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 
 		_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.Error(t, err)
-		// TODO HV2 - the above check seems enough, we can remove the below commented lines
-		// require.False(t, result.IsOK(), "should fail due to existent event record but succeeded")
-		// require.Equal(t, types.CodeEventRecordAlreadySynced, result.Code)
+		require.Equal(t, types.ErrEventRecordAlreadySynced, err)
 	})
 
 	t.Run("EventSizeExceed", func(t *testing.T) {
@@ -134,9 +131,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 
 	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
-	// TODO HV2 - the above check seems enough, we can remove the below commented lines
-	// require.False(t, result.IsOK(), "should fail due to existent sequence but succeeded")
-	// require.Equal(t, common.CodeOldTx, result.Code)
+	require.Equal(t, common.ErrOldTx(types.ModuleName), err)
 }
 
 func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
@@ -170,9 +165,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 	)
 	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
-	// TODO HV2 - the above check seems enough, we can remove the below commented lines
-	// require.False(t, result.IsOK(), "error invalid bor chain id %v", result.Code)
-	// require.Equal(t, common.CodeInvalidBorChainID, result.Code)
+	require.Equal(t, common.ErrInvalidBorChainID(types.ModuleName), common.ErrInvalidBorChainID(types.ModuleName))
 
 	// there should be no stored event record
 	storedEventRecord, err := ck.GetEventRecord(ctx, id)
