@@ -421,29 +421,33 @@ func IsCatchingUp(cliCtx client.Context) bool {
 	return resp.SyncInfo.CatchingUp
 }
 
-// TODO HV2 - sdk.AccountI is not accepted by jsoniter.ConfigFastest.Unmarshal
-/*
 // GetAccount returns heimdall auth account
-func GetAccount(cliCtx client.Context, address string) (*sdk.AccountI, error) {
+func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 	logger := Logger(context.Background())
 
 	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
 
-	// call account rest api
-	response, err := helper.FetchFromAPI(cliCtx, url)
-	if err != nil {
-		return nil, err
-	}
+	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	/*
+		// call account rest api
+		response, err := helper.FetchFromAPI(cliCtx, url)
+		if err != nil {
+			return nil, err
+		}
+	*/
+
+	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
+	var response struct{ Result []byte }
+	var err error
 
 	var account sdk.AccountI
-	if err = cliCtx.Codec.UnmarshalJSON(response.Result, &account); err != nil {
+	if err = cliCtx.Codec.UnmarshalJSON(response.Result, account); err != nil {
 		logger.Error("Error unmarshalling account details", "url", url)
 		return nil, err
 	}
 
-	return &account, nil
+	return account, nil
 }
-*/
 
 // GetChainmanagerParams return chain manager params
 func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
