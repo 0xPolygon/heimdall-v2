@@ -421,12 +421,10 @@ func IsCatchingUp(cliCtx client.Context) bool {
 	return resp.SyncInfo.CatchingUp
 }
 
-// TODO HV2 - what to do of the followings
-// 			- types.HeimdallAddress not present
-// 			- sdk.AccountI is not accepted by jsoniter.ConfigFastest.Unmarshal
+// TODO HV2 - sdk.AccountI is not accepted by jsoniter.ConfigFastest.Unmarshal
 /*
 // GetAccount returns heimdall auth account
-func GetAccount(cliCtx client.Context, address types.HeimdallAddress) (*sdk.AccountI, error) {
+func GetAccount(cliCtx client.Context, address string) (*sdk.AccountI, error) {
 	logger := Logger(context.Background())
 
 	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
