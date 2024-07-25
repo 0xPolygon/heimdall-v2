@@ -1,11 +1,10 @@
 syntax = "proto3";
 package heimdallv2.milestone.v1;
 
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
-
-import "cosmos_proto/cosmos.proto";
-import "amino/amino.proto";
 import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
@@ -32,6 +31,13 @@ message Milestone {
   string milestone_i_d = 6 [ (amino.dont_omitempty) = true ];
 
   uint64 timestamp = 7 [ (amino.dont_omitempty) = true ];
+}
+
+message MilestoneCount {
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+
+  uint64 count = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // Params represents the milestone parameters
