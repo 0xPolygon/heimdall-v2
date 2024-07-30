@@ -14,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	// TODO HV2 Uncomment the following import once the rest is implemented in rest
 	//"github.com/maticnetwork/heimdall/types/rest"
@@ -28,19 +29,15 @@ var (
 	Client HTTPClient
 )
 
-// TODO HV2 This fn is required in bridge, but might require different implementation
-// as HeimdallAddress is not available in types
-/*
 // GetFromAddress get from address
-func GetFromAddress(cliCtx client.Context) types.HeimdallAddress {
+func GetFromAddress(cliCtx client.Context) string {
 	fromAddress := cliCtx.GetFromAddress()
 	if !fromAddress.Empty() {
-		return types.AccAddressToHeimdallAddress(fromAddress)
+		return string(fromAddress[:])
 	}
 
-	return types.BytesToHeimdallAddress(GetAddress())
+	return string(GetAddress()[:])
 }
-*/
 
 func init() {
 	Client = &http.Client{}
