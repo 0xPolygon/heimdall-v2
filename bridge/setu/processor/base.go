@@ -146,7 +146,7 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 		return false, err
 	}
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		res, err := helper.FetchFromAPI(bp.cliCtx, url)
 		if err != nil {

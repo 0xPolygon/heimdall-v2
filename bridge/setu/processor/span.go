@@ -135,7 +135,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 /*
 // checks span status
 func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
-	// TODO HV2 - Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	// // fetch latest start block from heimdall via rest query
 	// result, err := helper.FetchFromAPI(sp.cliCtx, helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
 	// if err != nil {
@@ -202,7 +202,7 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 	q.Add("proposer", helper.GetFromAddress(sp.cliCtx))
 	req.URL.RawQuery = q.Encode()
 
-	// TODO HV2 - Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	// // fetch next span details
 	// result, err := helper.FetchFromAPI(sp.cliCtx, req.URL.String())
 	// if err != nil {
@@ -229,7 +229,7 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 func (sp *SpanProcessor) fetchNextSpanSeed() (nextSpanSeed common.Hash, err error) {
 	sp.Logger.Info("Sending Rest call to Get Seed for next span")
 
-	// TODO HV2 - Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(sp.cliCtx, helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL))
 		if err != nil {

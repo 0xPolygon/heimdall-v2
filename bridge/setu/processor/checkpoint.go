@@ -563,7 +563,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash hmTypes.HeimdallHash, err error) {
 	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
 		if err != nil {
@@ -614,7 +614,7 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 }
 
 func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.LastNoAckURL))
 		if err != nil {

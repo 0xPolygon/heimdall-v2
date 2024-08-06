@@ -427,7 +427,7 @@ func queryTxCount(cliCtx client.Context, validatorId uint64, currentHeight int64
 			}
 		*/
 
-		// TODO HV2 -  uncomment the following fn once it is uncommented in helper.
+		// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 		/*
 			searchResult, err := helper.QueryTxsByEvents(cliCtx, events, defaultPage, defaultLimit)
 			if err != nil {

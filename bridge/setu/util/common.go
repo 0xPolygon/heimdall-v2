@@ -96,7 +96,7 @@ func IsProposer(cliCtx client.Context) (bool, error) {
 		// count     = uint64(1)
 	)
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		result, err := helper.FetchFromAPI(cliCtx,
 			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))),
@@ -133,7 +133,7 @@ func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
 		// count     = uint64(1)
 	)
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		result, err := helper.FetchFromAPI(cliCtx,
 			helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
@@ -172,7 +172,7 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -211,7 +211,7 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -294,7 +294,7 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 
 	var proposer staketypes.Validator
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		result, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentProposerURL))
 		if err != nil {
@@ -329,7 +329,7 @@ func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
 
 	var validator staketypes.Validator
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		result, err := helper.FetchFromAPI(cliCtx,
 			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
@@ -427,7 +427,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 
 	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		// call account rest api
 		response, err := helper.FetchFromAPI(cliCtx, url)
@@ -453,7 +453,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -482,7 +482,7 @@ func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, er
 func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -510,7 +510,7 @@ func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error)
 func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -539,7 +539,7 @@ func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -567,7 +567,7 @@ func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, 
 func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -596,7 +596,7 @@ func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, er
 func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -625,7 +625,7 @@ func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error
 func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
@@ -666,7 +666,7 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, int64
 
 	var validator staketypes.Validator
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		result, err := helper.FetchFromAPI(cliCtx,
 			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
@@ -698,7 +698,7 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, int64
 func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 	logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
 		if err != nil {
@@ -724,7 +724,7 @@ func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 func GetBlockHeight(cliCtx client.Context) int64 {
 	// logger := Logger(context.Background())
 
-	// TODO HV2 Please uncomment the following fn once it is uncommented in helper.
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
 		response, err := helper.FetchFromAPI(
 			cliCtx,
