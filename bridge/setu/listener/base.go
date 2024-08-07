@@ -5,10 +5,10 @@ import (
 	"math/big"
 	"time"
 
-	"cosmossdk.io/log"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -79,7 +79,7 @@ type blockHeader struct {
 
 // NewBaseListener creates a new BaseListener.
 func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
-	logger := util.Logger(context.Background()).With("service", "listener", "module", name)
+	logger := log.NewNopLogger().With("service", "listener", "module", name)
 
 	contractCaller, err := helper.NewContractCaller()
 	if err != nil {

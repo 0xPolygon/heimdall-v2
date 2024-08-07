@@ -16,8 +16,6 @@ const (
 	MaticChainListenerStr = "maticchain"
 )
 
-// var logger = util.Logger().With("service", ListenerServiceStr)
-
 // ListenerService starts and stops all chain event listeners
 type ListenerService struct {
 	// Base service

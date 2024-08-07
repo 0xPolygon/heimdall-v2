@@ -12,11 +12,11 @@ import (
 	"strconv"
 	"time"
 
-	"cosmossdk.io/log"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/cometbft/cometbft/libs/log"
 
 	// TODO HV2 - uncomment when clerk is merged
 	// clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -83,14 +83,13 @@ const (
 )
 
 // Logger returns logger singleton instance
-func Logger(ctx context.Context) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return sdkCtx.Logger().With("module", "bridge")
+func Logger() log.Logger {
+	return log.NewNopLogger().With("module", "bridge")
 }
 
 // IsProposer checks if we are proposer
 func IsProposer(cliCtx client.Context) (bool, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 	var (
 		proposers []staketypes.Validator
 		// count     = uint64(1)
@@ -126,7 +125,7 @@ func IsProposer(cliCtx client.Context) (bool, error) {
 
 // IsMilestoneProposer checks if we are milestone proposer
 func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	var (
 		proposers []staketypes.Validator
@@ -168,7 +167,7 @@ func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
 
 // IsInProposerList checks if we are in current proposer
 func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
 
@@ -207,7 +206,7 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 // IsInMilestoneProposerList checks if we are in current proposer
 func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
 
@@ -247,7 +246,7 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 // CalculateTaskDelay calculates delay required for current validator to propose the tx
 // It solves for multiple validators sending same transaction.
 func CalculateTaskDelay(cliCtx client.Context, event interface{}) (bool, time.Duration) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	defer LogElapsedTimeForStateSyncedEvent(event, "CalculateTaskDelay", time.Now())
 
@@ -290,7 +289,7 @@ func CalculateTaskDelay(cliCtx client.Context, event interface{}) (bool, time.Du
 
 // IsCurrentProposer checks if we are current proposer
 func IsCurrentProposer(cliCtx client.Context) (bool, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	var proposer staketypes.Validator
 
@@ -325,7 +324,7 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 
 // IsEventSender check if we are the EventSender
 func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	var validator staketypes.Validator
 
@@ -378,7 +377,7 @@ func CreateURLWithQuery(uri string, param map[string]interface{}) (string, error
 //
 // This handles subscribing and unsubscribing under the hood
 func WaitForOneEvent(tx cmtTypes.Tx, client *rpchttp.HTTP) (cmtTypes.TMEventData, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	ctx, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
@@ -423,7 +422,7 @@ func IsCatchingUp(cliCtx client.Context) bool {
 
 // GetAccount returns heimdall auth account
 func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
 
@@ -451,7 +450,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 
 // GetChainmanagerParams return chain manager params
 func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -480,7 +479,7 @@ func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, er
 
 // GetCheckpointParams return params
 func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -508,7 +507,7 @@ func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error)
 
 // GetCheckpointParams return params
 func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -537,7 +536,7 @@ func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 
 // GetBufferedCheckpoint return checkpoint from bueffer
 func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -565,7 +564,7 @@ func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, 
 
 // GetLatestCheckpoint return last successful checkpoint
 func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -594,7 +593,7 @@ func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, er
 
 // GetLatestMilestone return last successful milestone
 func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -623,7 +622,7 @@ func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error
 
 // GetCheckpointParams return params
 func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -662,7 +661,7 @@ func AppendPrefix(signerPubKey []byte) []byte {
 
 // GetValidatorNonce fetches validator nonce and height
 func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, int64, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	var validator staketypes.Validator
 
@@ -696,7 +695,7 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, int64
 
 // GetValidatorSet fetches the current validator set
 func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -722,7 +721,7 @@ func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 
 // GetBlockHeight return last successful checkpoint
 func GetBlockHeight(cliCtx client.Context) int64 {
-	// logger := Logger(context.Background())
+	// logger := Logger()
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
@@ -746,7 +745,7 @@ func GetBlockHeight(cliCtx client.Context) int64 {
 /*
 // GetClerkEventRecord return last successful checkpoint
 func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.EventRecord, error) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	response, err := helper.FetchFromAPI(
 		cliCtx,
@@ -768,7 +767,7 @@ func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.Even
 */
 
 func GetUnconfirmedTxnCount(event interface{}) int {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	defer LogElapsedTimeForStateSyncedEvent(event, "GetUnconfirmedTxnCount", time.Now())
 
@@ -804,7 +803,7 @@ func GetUnconfirmedTxnCount(event interface{}) int {
 
 // LogElapsedTimeForStateSyncedEvent logs useful info for StateSynced events
 func LogElapsedTimeForStateSyncedEvent(event interface{}, functionName string, startTime time.Time) {
-	logger := Logger(context.Background())
+	logger := Logger()
 
 	if event == nil {
 		return

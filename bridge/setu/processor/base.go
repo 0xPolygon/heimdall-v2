@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"context"
 	"encoding/base64"
 	"io"
 	"net/http"
@@ -10,17 +9,16 @@ import (
 	// TODO HV2 - uncomment when clerk is merged
 	// clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 
-	"cosmossdk.io/log"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/broadcaster"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/viper"
@@ -66,14 +64,13 @@ type BaseProcessor struct {
 }
 
 // Logger returns logger singleton instance
-func Logger(ctx context.Context, name string) log.Logger {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	return sdkCtx.Logger().With("service", "processor", "module", name)
+func Logger(name string) log.Logger {
+	return log.NewNopLogger().With("service", "processor", "module", name)
 }
 
 // NewBaseProcessor creates a new BaseProcessor.
 func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.QueueConnector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, name string, impl Processor) *BaseProcessor {
-	logger := Logger(context.Background(), name)
+	logger := Logger(name)
 
 	cliCtx := client.Context{}.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastSync

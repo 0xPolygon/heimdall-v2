@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"cosmossdk.io/log"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -45,7 +45,7 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 	}
 
 	return &TxBroadcaster{
-		logger:    util.Logger(context.Background()).With("module", "txBroadcaster"),
+		logger:    log.NewNopLogger().With("module", "txBroadcaster"),
 		CliCtx:    cliCtx,
 		lastSeqNo: account.GetSequence(),
 		accNum:    account.GetAccountNumber(),

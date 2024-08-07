@@ -1,11 +1,8 @@
 package queue
 
 import (
-	"context"
+	"github.com/cometbft/cometbft/libs/log"
 
-	"cosmossdk.io/log"
-
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/streadway/amqp"
@@ -48,7 +45,7 @@ func NewQueueConnector(dialer string) *QueueConnector {
 
 	// queue connector
 	connector := QueueConnector{
-		logger: util.Logger(context.Background()).With("module", "QueueConnector"),
+		logger: log.NewNopLogger().With("module", "QueueConnector"),
 		Server: server,
 	}
 
