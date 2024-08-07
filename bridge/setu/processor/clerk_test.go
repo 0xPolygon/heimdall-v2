@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/setu/listener"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -23,8 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	jsoniter "github.com/json-iterator/go"
-	"github.com/maticnetwork/heimdall/app"
-	"github.com/maticnetwork/heimdall/bridge/setu/listener"
 	"github.com/spf13/viper"
 )
 
@@ -555,6 +554,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	configuration := helper.GetDefaultHeimdallConfig()
 	configuration.HeimdallServerURL = dummyHeimdallServerUrl
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
+
 	helper.SetTestConfig(configuration)
 
 	txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
@@ -575,7 +575,9 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 }
 
 func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
-	cdc := app.MakeCodec()
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
 	viper.Set("log_level", "debug")

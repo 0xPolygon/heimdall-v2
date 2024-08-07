@@ -951,3 +951,8 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 		return os.Stdout
 	}
 }
+
+// SetTestConfig sets test configuration
+func SetTestConfig(_conf Configuration) {
+	conf = _conf
+}

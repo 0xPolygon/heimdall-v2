@@ -10,11 +10,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 )
 
-// SetTestConfig sets test configuration
-func SetTestConfig(_conf Configuration) {
-	conf = _conf
-}
-
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
 	// TODO HV2: fix this test as it currently depends on the config file
