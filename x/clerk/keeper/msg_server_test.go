@@ -83,7 +83,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 
 		const letterBytes = "abcdefABCDEF"
 		b := hmTypes.HexBytes{
-			HexBytes: make([]byte, helper.LegacyMaxStateSyncSize+3),
+			HexBytes: make([]byte, helper.MaxStateSyncSize+3),
 		}
 		for i := range b.HexBytes {
 			b.HexBytes[i] = letterBytes[rand.Intn(len(letterBytes))]

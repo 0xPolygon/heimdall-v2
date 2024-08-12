@@ -66,7 +66,7 @@ func (msg MsgEventRecordRequest) ValidateBasic() error {
 	}
 
 	// DO NOT REMOVE THIS CHANGE
-	if msg.Data.Size() > helper.LegacyMaxStateSyncSize {
+	if msg.Data.Size() > helper.MaxStateSyncSize {
 		return ErrSizeExceed
 	}
 

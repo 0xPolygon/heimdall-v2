@@ -201,7 +201,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		txHash := "success hash"
 
 		const letterBytes = "abcdefABCDEF"
-		b := make([]byte, helper.LegacyMaxStateSyncSize+3)
+		b := make([]byte, helper.MaxStateSyncSize+3)
 		for i := range b {
 			b[i] = letterBytes[rand.Intn(len(letterBytes))]
 		}

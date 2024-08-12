@@ -122,7 +122,7 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 			}
 			else {
 		*/
-		if !(len(eventLog.Data) > helper.LegacyMaxStateSyncSize && bytes.Equal(msg.Data.HexBytes, []byte(""))) {
+		if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.HexBytes, []byte(""))) {
 			srv.Logger(ctx).Error(
 				"Data from event does not match with Msg Data",
 				"EventData", hex.EncodeToString(eventLog.Data),
