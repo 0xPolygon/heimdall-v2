@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -12,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -20,7 +23,6 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	"github.com/0xPolygon/heimdall-v2/x/clerk"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -73,7 +75,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	clerkGenesis := types.DefaultGenesisState()
 
-	clerk.InitGenesis(ctx, &keeper, clerkGenesis)
+	keeper.InitGenesis(ctx, clerkGenesis)
 
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
@@ -184,4 +186,30 @@ func (suite *KeeperTestSuite) TestSetHasGetRecordSequence() {
 
 	recordSequences := ck.GetRecordSequences(ctx)
 	require.Len(t, recordSequences, 1)
+}
+
+func (suite *KeeperTestSuite) TestInitExportGenesis() {
+	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+
+	s1 := rand.NewSource(time.Now().UnixNano())
+	r1 := rand.New(s1)
+	recordSequences := make([]string, 5)
+	eventRecords := make([]*types.EventRecord, 1)
+
+	for i := range recordSequences {
+		recordSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+	}
+
+	testEventRecord := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+	eventRecords[0] = &testEventRecord
+
+	genesisState := types.GenesisState{
+		EventRecords:    eventRecords,
+		RecordSequences: recordSequences,
+	}
+
+	ck.InitGenesis(ctx, &genesisState)
+	actualParams := ck.ExportGenesis(ctx)
+	require.Equal(t, len(recordSequences), len(actualParams.RecordSequences))
+	require.Equal(t, len(eventRecords), len(actualParams.EventRecords))
 }
