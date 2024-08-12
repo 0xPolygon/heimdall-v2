@@ -14,7 +14,7 @@ service Query {
   // TODO HV2 - check url
   rpc Record(RecordRequest) returns (RecordResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/{record_i_d}";
+    option (google.api.http).get = "/clerk/event-record";
   }
 
   // TODO HV2 - check url
