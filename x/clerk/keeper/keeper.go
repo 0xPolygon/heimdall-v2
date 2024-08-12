@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"cosmossdk.io/collections"
@@ -245,13 +244,13 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 
 // GetEventRecordKey appends prefix to state id
 func GetEventRecordKey(stateID uint64) []byte {
-	stateIDBytes := []byte(strconv.FormatUint(stateID, 10))
+	stateIDBytes := sdk.Uint64ToBigEndian(stateID)
 	return append(StateRecordPrefixKey, stateIDBytes...)
 }
 
 // GetEventRecordKeyWithTime appends prefix to state id and record time
 func GetEventRecordKeyWithTime(stateID uint64, recordTime time.Time) []byte {
-	stateIDBytes := []byte(strconv.FormatUint(stateID, 10))
+	stateIDBytes := sdk.Uint64ToBigEndian(stateID)
 	return append(GetEventRecordKeyWithTimePrefix(recordTime), stateIDBytes...)
 }
 
