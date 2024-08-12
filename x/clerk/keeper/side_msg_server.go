@@ -107,21 +107,6 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	if !bytes.Equal(eventLog.Data, msg.Data.GetHexBytes()) {
-		// TODO HV2 - Do we need this GetSpanOverrideHeight() check?
-		/*
-			if ctx.BlockHeight() > helper.GetSpanOverrideHeight() {
-				if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.HexBytes, []byte(""))) {
-					srv.Logger(ctx).Error(
-						"Data from event does not match with Msg Data",
-						"EventData", hex.EncodeToString(eventLog.Data),
-						"MsgData", msg.Data.String(),
-					)
-
-					return hmModule.Vote_VOTE_NO
-				}
-			}
-			else {
-		*/
 		if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.HexBytes, []byte(""))) {
 			srv.Logger(ctx).Error(
 				"Data from event does not match with Msg Data",
