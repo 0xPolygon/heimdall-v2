@@ -73,6 +73,8 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.ctx = ctx
 	suite.keeper = keeper
 
+	suite.chainID = "15001"
+
 	clerkGenesis := types.DefaultGenesisState()
 
 	keeper.InitGenesis(ctx, clerkGenesis)
@@ -90,7 +92,8 @@ func (suite *KeeperTestSuite) SetupTest() {
 func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
-	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
+	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+	testRecord1.RecordTime = testRecord1.RecordTime.UTC()
 
 	// SetEventRecord
 	err := ck.SetEventRecord(ctx, testRecord1)
@@ -102,7 +105,7 @@ func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	// GetEventRecord
 	respRecord, err := ck.GetEventRecord(ctx, testRecord1.ID)
 	require.Nil(t, err)
-	require.Equal(t, *respRecord, testRecord1)
+	require.Equal(t, testRecord1, *respRecord)
 
 	_, err = ck.GetEventRecord(ctx, testRecord1.ID+1)
 	require.NotNil(t, err)
@@ -124,24 +127,30 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 	var i uint64
 
 	for i = 0; i < 60; i++ {
-		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Now())
+		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
 	}
 
-	recordList, _ := ck.GetEventRecordList(ctx, 1, 20)
+	recordList, err := ck.GetEventRecordList(ctx, 1, 20)
+	require.NoError(t, err)
 	require.Len(t, recordList, 20)
 
-	recordList, _ = ck.GetEventRecordList(ctx, 2, 20)
+	recordList, err = ck.GetEventRecordList(ctx, 2, 20)
+	require.NoError(t, err)
 	require.Len(t, recordList, 20)
 
-	recordList, _ = ck.GetEventRecordList(ctx, 3, 30)
+	recordList, err = ck.GetEventRecordList(ctx, 3, 30)
+	require.NoError(t, err)
 	require.Len(t, recordList, 0)
 
-	recordList, _ = ck.GetEventRecordList(ctx, 1, 70)
+	recordList, err = ck.GetEventRecordList(ctx, 1, 70)
+	require.NoError(t, err)
 	require.Len(t, recordList, 50)
 
-	recordList, _ = ck.GetEventRecordList(ctx, 2, 60)
+	recordList, err = ck.GetEventRecordList(ctx, 2, 60)
+	require.NoError(t, err)
 	require.Len(t, recordList, 10)
 }
 
@@ -151,7 +160,8 @@ func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
 	var i uint64
 
 	for i = 0; i < 30; i++ {
-		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 0)}, "1", time.Unix(int64(i), 0))
+		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Unix(int64(i), 0))
+		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
 	}
@@ -194,14 +204,15 @@ func (suite *KeeperTestSuite) TestInitExportGenesis() {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 	recordSequences := make([]string, 5)
-	eventRecords := make([]*types.EventRecord, 1)
+	eventRecords := make([]types.EventRecord, 1)
 
 	for i := range recordSequences {
 		recordSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 
 	testEventRecord := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
-	eventRecords[0] = &testEventRecord
+	testEventRecord.RecordTime = testEventRecord.RecordTime.UTC()
+	eventRecords[0] = testEventRecord
 
 	genesisState := types.GenesisState{
 		EventRecords:    eventRecords,

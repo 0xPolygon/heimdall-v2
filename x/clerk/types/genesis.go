@@ -3,7 +3,7 @@ package types
 import "errors"
 
 // NewGenesisState creates a new genesis state.
-func NewGenesisState(eventRecords []*EventRecord, recordSequences []string) GenesisState {
+func NewGenesisState(eventRecords []EventRecord, recordSequences []string) GenesisState {
 	return GenesisState{
 		EventRecords:    eventRecords,
 		RecordSequences: recordSequences,
@@ -13,7 +13,7 @@ func NewGenesisState(eventRecords []*EventRecord, recordSequences []string) Gene
 // DefaultGenesisState returns a default genesis state
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
-		EventRecords:    make([]*EventRecord, 0),
+		EventRecords:    make([]EventRecord, 0),
 		RecordSequences: nil,
 	}
 }

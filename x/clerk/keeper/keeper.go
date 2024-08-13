@@ -134,15 +134,10 @@ func (k *Keeper) HasEventRecord(ctx context.Context, stateID uint64) bool {
 }
 
 // GetAllEventRecords get all state records
-func (k *Keeper) GetAllEventRecords(ctx context.Context) (records []*types.EventRecord) {
+func (k *Keeper) GetAllEventRecords(ctx context.Context) []types.EventRecord {
+	records, _ := k.IterateRecords(ctx)
 	// iterate through state sync and append to list
-	k.IterateRecordsAndApplyFn(ctx, func(record types.EventRecord) error {
-		// append to list of records
-		records = append(records, &record)
-		return nil
-	})
-
-	return
+	return records
 }
 
 // GetEventRecordList returns all records with params like page and limit
@@ -266,24 +261,18 @@ func GetRecordSequenceKey(sequence string) []byte {
 }
 
 // IterateRecordsAndApplyFn iterate records and apply the given function.
-func (k *Keeper) IterateRecordsAndApplyFn(ctx context.Context, f func(record types.EventRecord) error) {
+func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error) {
 	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	records, err := iterator.Values()
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	// loop through spans to get valid spans
-	for _, record := range records {
-		// call function and return if required
-		if err := f(record); err != nil {
-			return
-		}
-	}
+	return records, nil
 }
 
 // GetRecordSequences checks if record already exists
@@ -342,7 +331,7 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 func (k *Keeper) InitGenesis(ctx sdk.Context, data *types.GenesisState) {
 	if len(data.EventRecords) != 0 {
 		for _, record := range data.EventRecords {
-			if err := k.SetEventRecord(ctx, *record); err != nil {
+			if err := k.SetEventRecord(ctx, record); err != nil {
 				k.Logger(ctx).Error("error in storing event record", "error", err)
 			}
 		}
