@@ -27,7 +27,7 @@ type Keeper struct {
 	// contractCaller helper.ContractCaller
 
 	Schema       collections.Schema
-	spans        collections.Map[uint64, types.Span]
+	spans        collections.Map[uint64, *types.Span]
 	latestSpan   collections.Item[uint64]
 	lastEthBlock collections.Item[[]byte]
 	Params       collections.Item[types.Params]
@@ -49,7 +49,7 @@ func NewKeeper(
 		sk:           stakingKeeper,
 		// TODO HV2: uncomment when contractCaller is implemented
 		// contractCaller: caller,
-		spans:        collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
+		spans:        collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollInterfaceValue[*types.Span](cdc)),
 		latestSpan:   collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
 		lastEthBlock: collections.NewItem(sb, types.LastProcessedEthBlock, "lastEthBlock", collections.BytesValue),
 		Params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
@@ -112,7 +112,7 @@ func (k *Keeper) AddNewRawSpan(ctx context.Context, span *types.Span) error {
 
 	// return store.Set(GetSpanKey(span.Id), out)
 
-	return k.spans.Set(ctx, span.Id, *span)
+	return k.spans.Set(ctx, span.Id, span)
 }
 
 // GetSpan fetches span indexed by id from store
@@ -132,7 +132,7 @@ func (k *Keeper) GetSpan(ctx context.Context, id uint64) (*types.Span, error) {
 		return nil, err
 	}
 
-	return &span, nil
+	return span, nil
 }
 
 func (k *Keeper) HasSpan(ctx context.Context, id uint64) (bool, error) {
@@ -153,7 +153,7 @@ func (k *Keeper) GetAllSpans(ctx context.Context) ([]*types.Span, error) {
 		return nil, err
 	}
 
-	defer func(iter collections.Iterator[uint64, types.Span]) {
+	defer func(iter collections.Iterator[uint64, *types.Span]) {
 		err := iter.Close()
 		if err != nil {
 			logger.Error("error closing span iterator", "err", err)
@@ -169,7 +169,7 @@ func (k *Keeper) GetAllSpans(ctx context.Context) ([]*types.Span, error) {
 
 	result := make([]*types.Span, 0, len(spans))
 	for _, span := range spans {
-		result = append(result, &span)
+		result = append(result, span)
 	}
 	return result, err
 }

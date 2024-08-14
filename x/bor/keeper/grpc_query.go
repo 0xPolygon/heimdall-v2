@@ -155,8 +155,25 @@ func (q QueryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 		},
 	)
 
+	// TODO @Raneet: This is a workaround to flatten the 2D slice of spans and solve the compile error in
+	//  the return statement. However, the error was there even before my fix to `query.CollectionPaginate`,
+	//  which is basically declaring spans as collections.Map[uint64, *types.Span] (note the pointer).
+	//  Hence, you might want to remove this (untested) and implement your own solution
+
+	// Create a one-dimensional slice to hold the result
+	var flatSpans []types.Span
+
+	// Flatten the 2D slice and dereference the pointers
+	for _, innerSlice := range spans {
+		for _, spanPtr := range innerSlice {
+			if spanPtr != nil {
+				flatSpans = append(flatSpans, *spanPtr)
+			}
+		}
+	}
+
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
-	return &types.QuerySpanListResponse{SpanList: spans, Pagination: pageRes}, nil
+	return &types.QuerySpanListResponse{SpanList: flatSpans, Pagination: pageRes}, nil
 }
