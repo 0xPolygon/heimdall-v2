@@ -126,11 +126,22 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 
 	var i uint64
 
+	var testRecords []types.EventRecord
+
 	for i = 0; i < 60; i++ {
 		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
 		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
+
+		testRecords = append(testRecords, testRecord)
+	}
+
+	recordList := ck.GetAllEventRecords(ctx)
+	require.Len(t, recordList, 60)
+
+	for i, record := range recordList {
+		require.Equal(t, testRecords[i], record)
 	}
 
 	recordList, err := ck.GetEventRecordList(ctx, 1, 20)
@@ -142,7 +153,7 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 	require.Len(t, recordList, 20)
 
 	recordList, err = ck.GetEventRecordList(ctx, 3, 30)
-	require.NoError(t, err)
+	require.NotNil(t, err)
 	require.Len(t, recordList, 0)
 
 	recordList, err = ck.GetEventRecordList(ctx, 1, 70)

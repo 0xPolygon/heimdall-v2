@@ -155,6 +155,8 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 		return records, err
 	}
 
+	iterator.Next()
+
 	allRecords, err := iterator.Values()
 	if err != nil {
 		return records, err
@@ -266,6 +268,8 @@ func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error
 	if err != nil {
 		return nil, err
 	}
+
+	iterator.Next()
 
 	records, err := iterator.Values()
 	if err != nil {
