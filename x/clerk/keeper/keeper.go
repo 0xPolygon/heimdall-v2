@@ -150,12 +150,10 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 		limit = 50
 	}
 
-	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
+	iterator, err := k.RecordsWithID.Iterate(ctx, new(collections.Range[uint64]).StartInclusive(0))
 	if err != nil {
 		return records, err
 	}
-
-	iterator.Next()
 
 	allRecords, err := iterator.Values()
 	if err != nil {
@@ -264,12 +262,10 @@ func GetRecordSequenceKey(sequence string) []byte {
 
 // IterateRecordsAndApplyFn iterate records and apply the given function.
 func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error) {
-	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
+	iterator, err := k.RecordsWithID.Iterate(ctx, new(collections.Range[uint64]).StartInclusive(0))
 	if err != nil {
 		return nil, err
 	}
-
-	iterator.Next()
 
 	records, err := iterator.Values()
 	if err != nil {
