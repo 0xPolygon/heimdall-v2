@@ -4,11 +4,12 @@ import (
 	"context"
 	"math/big"
 
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 // query endpoints supported by the clerk querier

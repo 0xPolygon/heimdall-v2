@@ -11,8 +11,8 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	type2 "github.com/0xPolygon/heimdall-v2/types"
-	types "github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 type sideMsgServer struct {
@@ -70,7 +70,6 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	chainParams := params.ChainParams
-	_ = params.ChainParams
 
 	// get confirmed tx receipt
 	receipt, err := srv.Keeper.contractCaller.GetConfirmedTxReceipt(common.HexToHash(msg.TxHash), params.GetMainChainTxConfirmations())
@@ -96,7 +95,10 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		return hmModule.Vote_VOTE_NO
 	}
 
-	if !bytes.Equal(eventLog.ContractAddress.Bytes(), []byte(msg.ContractAddress)) {
+	// TODO HV2: ensure addresses/keys consistency (see https://polygon.atlassian.net/browse/POS-2622)
+	msgContractAddr := common.HexToAddress(msg.ContractAddress)
+
+	if !bytes.Equal(eventLog.ContractAddress.Bytes(), msgContractAddr.Bytes()) {
 		srv.Logger(ctx).Error(
 			"ContractAddress from event does not match with Msg ContractAddress",
 			"EventContractAddress", eventLog.ContractAddress.String(),
@@ -145,7 +147,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
-	sequence := new(big.Int).Mul(blockNumber, big.NewInt(type2.DefaultLogIndexUnit))
+	sequence := new(big.Int).Mul(blockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
 	// create event record
@@ -170,7 +172,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := type2.TxHash{Hash: txBytes}
+	hash := heimdallTypes.TxHash{Hash: txBytes}
 
 	// add events
 	ctx.EventManager().EmitEvents(sdk.Events{
@@ -178,9 +180,9 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 			types.EventTypeRecord,
 			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                   // action
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory), // module name
-			sdk.NewAttribute(type2.AttributeKeyTxHash, hash.String()),              // tx hash
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, hash.String()),      // tx hash
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
-			sdk.NewAttribute(type2.AttributeKeySideTxResult, sideTxResult.String()), // result
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
 			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.ID, 10)),
 			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
 		),

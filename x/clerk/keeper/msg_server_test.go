@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/stretchr/testify/require"
+
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	"github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/stretchr/testify/require"
 )
 
 func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {

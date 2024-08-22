@@ -15,6 +15,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -25,13 +27,11 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 var Address1 = "0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"
 var Address2 = "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
-var TxHash1 = "0xc316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+var TxHash1 = "0x000000000000000000000000000000000000000000000000000000000000dead"
 
 // KeeperTestSuite integrate test suite context object
 type KeeperTestSuite struct {
