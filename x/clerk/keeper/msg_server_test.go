@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
@@ -78,8 +78,6 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	})
 
 	t.Run("EventSizeExceed", func(t *testing.T) {
-		suite.contractCaller = mocks.IContractCaller{}
-
 		const letterBytes = "abcdefABCDEF"
 		b := hmTypes.HexBytes{
 			HexBytes: make([]byte, helper.MaxStateSyncSize+3),
