@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -80,12 +79,6 @@ func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventR
 		return fmt.Errorf("record with time %s and id %d already exists", record.RecordTime, record.ID)
 	}
 
-	_, err := k.RecordsWithTime.Get(ctx, collections.Join(record.RecordTime, record.ID))
-	if errors.Is(err, collections.ErrEncoding) {
-		k.Logger(ctx).Error("key decoding failed", "error", err)
-		return collections.ErrEncoding
-	}
-
 	return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.ID), record.ID)
 }
 
@@ -93,12 +86,6 @@ func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventR
 func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRecord) error {
 	if k.HasEventRecord(ctx, record.ID) {
 		return fmt.Errorf("record with id %d already exists", record.ID)
-	}
-
-	_, err := k.RecordsWithID.Get(ctx, record.ID)
-	if errors.Is(err, collections.ErrEncoding) {
-		k.Logger(ctx).Error("key decoding failed", "error", err)
-		return collections.ErrEncoding
 	}
 
 	return k.RecordsWithID.Set(ctx, record.ID, record)
