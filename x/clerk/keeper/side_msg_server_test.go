@@ -7,7 +7,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -67,7 +66,6 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	require.Equal(t, hmModule.Vote_VOTE_YES, result)
 }
 
-// TODO HV2 - why do I get `no tests to run?` when running this test?
 func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
@@ -88,8 +86,6 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	id := r.Uint64()
 
 	t.Run("Success", func(t *testing.T) {
-		suite.contractCaller = mocks.IContractCaller{}
-
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
 		txReceipt := &ethTypes.Receipt{
@@ -111,7 +107,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls
-		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
+		suite.contractCaller.On("GetConfirmedTxReceipt", common.HexToAddress(txHash), chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.ID),
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
@@ -130,8 +126,6 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	})
 
 	t.Run("NoReceipt", func(t *testing.T) {
-		suite.contractCaller = mocks.IContractCaller{}
-
 		logIndex := uint64(200)
 		blockNumber := uint64(51)
 		txHash := "no receipt hash"
@@ -150,7 +144,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls -- no receipt
-		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(nil, nil)
+		suite.contractCaller.On("GetConfirmedTxReceipt", common.HexToAddress(txHash), chainParams.GetMainChainTxConfirmations()).Return(nil, nil)
 		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, nil, logIndex).Return(nil, nil)
 
 		// execute handler
@@ -159,8 +153,6 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	})
 
 	t.Run("NoLog", func(t *testing.T) {
-		suite.contractCaller = mocks.IContractCaller{}
-
 		logIndex := uint64(100)
 		blockNumber := uint64(510)
 		txReceipt := &ethTypes.Receipt{
@@ -182,7 +174,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls -- no receipt
-		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
+		suite.contractCaller.On("GetConfirmedTxReceipt", common.HexToAddress(txHash), chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
 		suite.contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(nil, nil)
 
 		// execute handler
@@ -191,7 +183,6 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	})
 
 	t.Run("EventDataExceed", func(t *testing.T) {
-		suite.contractCaller = mocks.IContractCaller{}
 		id := uint64(111)
 		logIndex := uint64(1)
 		blockNumber := uint64(1000)
@@ -221,7 +212,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		)
 
 		// mock external calls
-		suite.contractCaller.On("GetConfirmedTxReceipt", txHash, chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
+		suite.contractCaller.On("GetConfirmedTxReceipt", common.HexToAddress(txHash), chainParams.GetMainChainTxConfirmations()).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.ID),
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
