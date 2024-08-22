@@ -127,39 +127,46 @@ func (k *Keeper) GetAllEventRecords(ctx context.Context) []types.EventRecord {
 
 // GetEventRecordList returns all records with params like page and limit
 func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint64) ([]types.EventRecord, error) {
-	// create records
+	// create records slice
 	var records []types.EventRecord
 
-	// have max limit
+	// set max limit
 	if limit > 50 {
 		limit = 50
-	}
-
-	iterator, err := k.RecordsWithID.Iterate(ctx, new(collections.Range[uint64]).StartInclusive(0))
-	if err != nil {
-		return records, err
-	}
-
-	allRecords, err := iterator.Values()
-	if err != nil {
-		return records, err
 	}
 
 	startIndex := int((page - 1) * limit)
 	endIndex := int(page * limit)
 
-	// Check if the startIndex is within bounds
-	if startIndex >= len(allRecords) {
+	// Initialize a counter to track the number of records processed
+	counter := 0
+
+	// Use Walk to iterate over the records
+	err := k.RecordsWithID.Walk(ctx, new(collections.Range[uint64]).StartInclusive(0), func(key uint64, record types.EventRecord) (bool, error) {
+		// If the current index is within the desired range, add the record to the slice
+		if counter >= startIndex && counter < endIndex {
+			records = append(records, record)
+		}
+
+		// Increment the counter
+		counter++
+
+		// Stop walking if we've collected enough records
+		if counter >= endIndex {
+			return true, nil // Stop the walk
+		}
+
+		return false, nil // Continue walking
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if we have collected any records
+	if len(records) == 0 && startIndex > 0 {
 		return nil, fmt.Errorf("page %d does not exist", page)
 	}
-
-	// Check if the endIndex exceeds the length of eventRecords
-	if endIndex > len(allRecords) {
-		endIndex = len(allRecords)
-	}
-
-	// Retrieve the event records for the requested page
-	records = allRecords[startIndex:endIndex]
 
 	return records, nil
 }
