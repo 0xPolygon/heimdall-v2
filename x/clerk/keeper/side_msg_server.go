@@ -52,7 +52,7 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandle
 func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgEventRecordRequest)
 	if !ok {
-		srv.Logger(ctx).Error("msg type mismatched")
+		srv.Logger(ctx).Error("msg type mismatch for MsgEventRecordRequest")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -77,15 +77,15 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		return hmModule.Vote_VOTE_NO
 	}
 
-	// get event log for topup
+	// get event log for clerk
 	eventLog, err := srv.Keeper.contractCaller.DecodeStateSyncedEvent(chainParams.StateSenderAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		srv.Logger(ctx).Error("Error fetching log from txhash")
+		srv.Logger(ctx).Error("Error fetching log from tx hash")
 		return hmModule.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		srv.Logger(ctx).Error("BlockNumber in message doesn't match blocknumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
+		srv.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "MsgBlockNumber", msg.BlockNumber, "ReceiptBlockNumber", receipt.BlockNumber.Uint64())
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -128,22 +128,22 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	msg, ok := _msg.(*types.MsgEventRecordRequest)
 	if !ok {
-		logger.Error("msg type mismatched")
+		logger.Error("msg type mismatch for MsgEventRecordRequest")
 	}
 
 	// Skip handler if clerk is not approved
 	if sideTxResult != hmModule.Vote_VOTE_YES {
-		logger.Debug("Skipping new clerk since side-tx didn't get yes votes")
+		logger.Debug("skipping new clerk since side-tx didn't get yes votes")
 		return
 	}
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.ID) {
-		logger.Debug("Skipping new clerk record as it's already processed")
+		logger.Debug("skipping new clerk record as it's already processed")
 		return
 	}
 
-	logger.Debug("Persisting clerk state", "sideTxResult", sideTxResult)
+	logger.Debug("persisting clerk state", "sideTxResult", sideTxResult)
 
 	// sequence id
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -163,14 +163,14 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	// save event into state
 	if err := srv.SetEventRecord(ctx, record); err != nil {
-		logger.Error("Unable to update event record", "id", msg.ID, "error", err)
+		logger.Error("unable to update event record", "id", msg.ID, "error", err)
 		return
 	}
 
 	// save record sequence
 	srv.SetRecordSequence(ctx, sequence.String())
 
-	// TX bytes
+	// tx bytes
 	txBytes := ctx.TxBytes()
 	hash := heimdallTypes.TxHash{Hash: txBytes}
 

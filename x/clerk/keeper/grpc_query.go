@@ -12,14 +12,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-// query endpoints supported by the clerk querier
-const (
-	QueryRecord             = "record"
-	QueryRecordList         = "record-list"
-	QueryRecordListWithTime = "record-list-time"
-	QueryRecordSequence     = "record-sequence"
-)
-
 type QueryServer struct{ K Keeper }
 
 var _ types.QueryServer = QueryServer{}

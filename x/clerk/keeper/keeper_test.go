@@ -58,15 +58,15 @@ func (suite *KeeperTestSuite) SetupTest() {
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	chainmanagerKeeper := chainmanagerkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	require.NoError(suite.T(), chainmanagerKeeper.SetParams(ctx, chainmanagertypes.DefaultParams()))
+	chainManagerKeeper := chainmanagerkeeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	require.NoError(suite.T(), chainManagerKeeper.SetParams(ctx, chainmanagertypes.DefaultParams()))
 
 	suite.contractCaller = mocks.IContractCaller{}
 
 	keeper := clerkKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		chainmanagerKeeper,
+		chainManagerKeeper,
 		&suite.contractCaller,
 	)
 

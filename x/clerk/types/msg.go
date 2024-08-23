@@ -43,13 +43,13 @@ func NewMsgEventRecord(
 	}
 }
 
-// Route Implements Msg.
+// Route Implements Msg
 func (msg MsgEventRecordRequest) Route() string { return RouterKey }
 
 // Type Implements Msg.
 func (msg MsgEventRecordRequest) Type() string { return "event-record" }
 
-// ValidateBasic Implements Msg.
+// ValidateBasic Implements Msg
 func (msg MsgEventRecordRequest) ValidateBasic() error {
 	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
 	if err != nil {
@@ -65,6 +65,7 @@ func (msg MsgEventRecordRequest) ValidateBasic() error {
 		return ErrEmptyTxHash
 	}
 
+	// TODO HV2: Double check this
 	// DO NOT REMOVE THIS CHANGE
 	if msg.Data.Size() > helper.MaxStateSyncSize {
 		return ErrSizeExceed

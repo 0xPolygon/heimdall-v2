@@ -1,7 +1,7 @@
 package clerk
 
 import (
-	clerk "github.com/0xPolygon/heimdall-v2/api/heimdallv2/clerk"
+	"github.com/0xPolygon/heimdall-v2/api/heimdallv2/clerk"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	_ "cosmossdk.io/api/cosmos/crypto/secp256k1" // register to that it shows up in protoregistry.GlobalTypes

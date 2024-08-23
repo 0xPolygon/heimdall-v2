@@ -162,7 +162,6 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 	)
 	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
-	// require.Equal(t, common.ErrInvalidBorChainID(types.ModuleName), err)
 
 	// there should be no stored event record
 	storedEventRecord, err := ck.GetEventRecord(ctx, id)

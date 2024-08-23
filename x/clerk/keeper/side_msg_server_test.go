@@ -51,6 +51,7 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	blockNumber := r.Uint64()
 
 	chainParams, err := ck.ChainKeeper.GetParams(suite.ctx)
+	require.NoError(t, err)
 
 	msg := types.NewMsgEventRecord(
 		addrBz1,
@@ -77,7 +78,6 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	}
 	contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
 
-	// side handler
 	result := suite.sideHandler(ctx, &msg)
 	require.Equal(t, hmModule.Vote_VOTE_YES, result)
 }

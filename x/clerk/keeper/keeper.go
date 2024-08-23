@@ -16,14 +16,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-var (
-	StateRecordPrefixKey = []byte{0x11} // prefix key for when storing state
-	// RecordSequencePrefixKey represents record sequence prefix key
-	RecordSequencePrefixKey = []byte{0x12}
-
-	StateRecordPrefixKeyWithTime = []byte{0x13} // prefix key for when storing state with time
-)
-
 // Keeper stores all related data
 type Keeper struct {
 	storeService storetypes.KVStoreService
@@ -34,7 +26,7 @@ type Keeper struct {
 
 	Schema        collections.Schema
 	RecordsWithID collections.Map[uint64, types.EventRecord]
-	// TODO HV2 - is this needed? We can regenerate this from RecordsWithID
+	// TODO HV2 - is RecordsWithTime this needed? We can regenerate this from RecordsWithID
 	RecordsWithTime collections.Map[collections.Pair[time.Time, uint64], uint64]
 	RecordSequences collections.Map[string, []byte]
 }
@@ -229,30 +221,7 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	return records, nil
 }
 
-// GetEventRecordKey appends prefix to state id
-func GetEventRecordKey(stateID uint64) []byte {
-	stateIDBytes := sdk.Uint64ToBigEndian(stateID)
-	return append(StateRecordPrefixKey, stateIDBytes...)
-}
-
-// GetEventRecordKeyWithTime appends prefix to state id and record time
-func GetEventRecordKeyWithTime(stateID uint64, recordTime time.Time) []byte {
-	stateIDBytes := sdk.Uint64ToBigEndian(stateID)
-	return append(GetEventRecordKeyWithTimePrefix(recordTime), stateIDBytes...)
-}
-
-// GetEventRecordKeyWithTimePrefix gives prefix for record time key
-func GetEventRecordKeyWithTimePrefix(recordTime time.Time) []byte {
-	recordTimeBytes := sdk.FormatTimeBytes(recordTime)
-	return append(StateRecordPrefixKeyWithTime, recordTimeBytes...)
-}
-
-// GetRecordSequenceKey returns record sequence key
-func GetRecordSequenceKey(sequence string) []byte {
-	return append(RecordSequencePrefixKey, []byte(sequence)...)
-}
-
-// IterateRecordsAndApplyFn iterate records and apply the given function.
+// IterateRecords iterates records and apply the given function
 func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error) {
 	iterator, err := k.RecordsWithID.Iterate(ctx, new(collections.Range[uint64]).StartInclusive(0))
 	if err != nil {
