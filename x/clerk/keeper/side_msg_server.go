@@ -52,7 +52,7 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandle
 func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result hmModule.Vote) {
 	msg, ok := _msg.(*types.MsgEventRecordRequest)
 	if !ok {
-		srv.Logger(ctx).Error("msg type mismatch for MsgEventRecordRequest")
+		srv.Logger(ctx).Error("type mismatch for MsgEventRecordRequest")
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -128,7 +128,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	msg, ok := _msg.(*types.MsgEventRecordRequest)
 	if !ok {
-		logger.Error("msg type mismatch for MsgEventRecordRequest")
+		logger.Error("type mismatch for MsgEventRecordRequest")
 	}
 
 	// Skip handler if clerk is not approved
