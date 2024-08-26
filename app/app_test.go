@@ -7,7 +7,6 @@ import (
 	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
-	"github.com/cosmos/cosmos-sdk/x/distribution"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
@@ -162,10 +161,9 @@ func TestRunMigrations(t *testing.T) {
 			_, err = app.mm.RunMigrations(
 				app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()}), configurator,
 				module.VersionMap{
-					"bank":         1,
-					"auth":         auth.AppModule{}.ConsensusVersion(),
-					"distribution": distribution.AppModule{}.ConsensusVersion(),
-					"gov":          gov.AppModule{}.ConsensusVersion(),
+					"bank": 1,
+					"auth": auth.AppModule{}.ConsensusVersion(),
+					"gov":  gov.AppModule{}.ConsensusVersion(),
 					// TODO HV2: do we need to add ConsensusVersion for all custom modules?
 					// "stake":      stake.AppModule{}.ConsensusVersion(),
 					// "bor": bor.AppModule{}.ConsensusVersion(),
@@ -212,10 +210,9 @@ func TestInitGenesisOnMigration(t *testing.T) {
 	// the VersionMap to simulate upgrading with a new module.
 	_, err := app.mm.RunMigrations(ctx, app.configurator,
 		module.VersionMap{
-			"bank":         1,
-			"auth":         auth.AppModule{}.ConsensusVersion(),
-			"distribution": distribution.AppModule{}.ConsensusVersion(),
-			"gov":          gov.AppModule{}.ConsensusVersion(),
+			"bank": 1,
+			"auth": auth.AppModule{}.ConsensusVersion(),
+			"gov":  gov.AppModule{}.ConsensusVersion(),
 			// TODO HV2: do we need to add ConsensusVersion for all custom modules?
 			// "stake":      stake.AppModule{}.ConsensusVersion(),
 			// "bor": bor.AppModule{}.ConsensusVersion(),
@@ -237,14 +234,14 @@ func TestValidateGenesis(t *testing.T) {
 	happ, _, _ := SetupApp(t, 1)
 
 	// not valid app state
-	//nolint:errcheck
 	require.Panics(t, func() {
-		happ.InitChain(
+		_, err := happ.InitChain(
 			&abci.RequestInitChain{
 				Validators:    []abci.ValidatorUpdate{},
 				AppStateBytes: []byte("{}"),
 			},
 		)
+		require.Error(t, err)
 	})
 }
 

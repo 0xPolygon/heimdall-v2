@@ -6,11 +6,14 @@ import (
 	"errors"
 	"fmt"
 
-	mod "github.com/0xPolygon/heimdall-v2/module"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	mod "github.com/0xPolygon/heimdall-v2/module"
 )
+
+// TODO HV2: implement abci_test.go
 
 // VoteExtensionProcessor handles Vote Extension processing for Heimdall app
 type VoteExtensionProcessor struct {
@@ -34,29 +37,19 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		logger := app.Logger()
 
 		// start including ExtendedVoteInfo a block after vote extensions are enabled
-		if !canAddVE(ctx, req.Height) {
+		if !mustAddSpecialTransaction(ctx, req.Height+1) {
 			return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
 		}
 		// Validate VE sigs and check whether they have 2/3+ majority
-		hasTwoThirdsSigs := true
-		// TODO HV2: uncomment when stake is merged
-		// if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.AccountKeeper); err != nil {
-		// 	logger.Error("PrepareProposal: Error occurred while validating VEs: ", err)
-		// 	hasTwoThirdsSigs = false
-		// }
-
-		var txs [][]byte
-		rawTxs := req.Txs
-
-		// Only include VE if there's majority
-		if !hasTwoThirdsSigs {
+		if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
+			logger.Error("PrepareProposal: Error occurred while validating VEs: ", err)
 			return nil, errors.New("can't prepare the block without more than 2/3 majority")
 		}
 
+		var txs [][]byte
+
 		bz, err := json.Marshal(req.LocalLastCommit.Votes)
 		if err != nil {
-			// TODO CHECK HV2: we throw an error since encoding ExtendedVoteInfo should not fail ideally
-			// clarify with Informal
 			logger.Error("Error occurred while marshaling extVoteInfo", "error", err)
 			return nil, err
 		}
@@ -64,7 +57,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// encode the txs
 		totalTxBytes := len(txs)
-		for _, rtx := range rawTxs {
+		for _, rtx := range req.Txs {
 			totalTxBytes += len(rtx)
 			if totalTxBytes > int(req.MaxTxBytes) {
 				break
@@ -82,15 +75,21 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		logger := app.Logger()
 
 		// check for ExtendedVoteInfo a block after vote extensions are enabled
-		if !canAddVE(ctx, req.Height) {
-			// TODO HV2: Clarify with Informal
-			// Should we execute CheckTx() as well if a malicious proposer includes an invalid tx
+		if !mustAddSpecialTransaction(ctx, req.Height+1) {
+			for _, tx := range req.Txs {
+				checkTx, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
+				if err != nil || checkTx.IsErr() {
+					logger.Error("Error occurred while checking tx", "error", err)
+					return nil, err
+				}
+			}
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 		}
 
 		var extVoteInfo []abci.ExtendedVoteInfo
 
 		if len(req.Txs) < 1 {
+			logger.Error("Unexpected behaviour, no txs found in the proposal")
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
@@ -105,13 +104,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// Validate VE sigs and check whether they have 2/3+ majority
-		hasTwoThirdsSigs := true
-		// TODO HV2: uncomment when stake is merged
-		// if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), extVoteInfo, req.ProposedLastCommit.Round, app.AccountKeeper); err != nil {
-		// 	hasTwoThirdsSigs = false
-		// }
-
-		if !hasTwoThirdsSigs {
+		if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), extVoteInfo, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Vote extensions don't have 2/3rds majority signatures. Rejecting proposal")
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -129,19 +122,19 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 
 		sideTxRes := make([]*mod.SideTxResponse, 0)
 
-		if len(req.Txs) > 1 || (len(req.Txs) >= 1 && req.Height == ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight) {
+		if len(req.Txs) > 1 || (len(req.Txs) == 1 && req.Height == ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight) {
 			var extVoteInfo []abci.ExtendedVoteInfo
 
 			logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
 
 			txs := req.Txs
 
-			if canAddVE(ctx, req.Height) {
+			if mustAddSpecialTransaction(ctx, req.Height) {
 				// check whether ExtendedVoteInfo is encoded at the beginning
 				bz := req.Txs[0]
 				if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
 					// abnormal behavior since the block got >2/3 prevotes
-					panic(fmt.Errorf("%v occurred while decoding ExtendedVoteInfo; they should have be encoded in the beginning of txs slice",
+					panic(fmt.Errorf("error occurred while decoding ExtendedVoteInfo; they should have be encoded in the beginning of txs slice. Error: %v",
 						err))
 				}
 
@@ -157,7 +150,6 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 					return nil, err
 				}
 
-				// TODO HV2: Clarify with Informal: should we execute CheckTx() ?
 				msgs := tx.GetMsgs()
 				for _, msg := range msgs {
 					sideHandler := v.sideTxCfg.GetSideHandler(msg)
@@ -204,39 +196,38 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 		logger := v.app.Logger()
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 
-		var ve mod.CanonicalSideTxResponse
-		if err := json.Unmarshal(req.VoteExtension, &ve); err != nil {
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while unmarshalling VoteExtension: %v", err, "validator", req.ValidatorAddress)
+		var canonicalSideTxResponse mod.CanonicalSideTxResponse
+		if err := json.Unmarshal(req.VoteExtension, &canonicalSideTxResponse); err != nil {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while unmarshalling VoteExtension", "error", err, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		// ensure block height and hash match
 		switch {
-		case req.Height != ve.Height:
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block height", req.Height, "ve height", ve.Height, "validator", req.ValidatorAddress)
+		case req.Height != canonicalSideTxResponse.Height:
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block height", req.Height, "canonicalSideTxResponse height", canonicalSideTxResponse.Height, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 
-		case !bytes.Equal(req.Hash, ve.Hash):
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block hash", req.Hash, "ve hash", ve.Hash, "validator", req.ValidatorAddress)
+		case !bytes.Equal(req.Hash, canonicalSideTxResponse.Hash):
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block hash", req.Hash, "canonicalSideTxResponse hash", canonicalSideTxResponse.Hash, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 
 		}
 
 		// TODO HV2: Ensure the side txs included in V.E.s are actually present in the block.
 		// This will be possible once the block is available to be consumed in RequestVerifyVoteExtension from Comet
-		for _, v := range ve.SideTxResponses {
+		for _, v := range canonicalSideTxResponse.SideTxResponses {
 			// check whether the vote result is valid
-			isValidVote := v.Result == mod.Vote_VOTE_YES || v.Result == mod.Vote_VOTE_NO || v.Result == mod.Vote_VOTE_SKIP
-			if !isValidVote {
-				logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! vote result type invalid", "vote result", v.Result, "validator", req.ValidatorAddress)
+			if !isVoteValid(v.Result) {
+				logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Invalid vote result type", "vote result", v.Result, "validator", string(req.ValidatorAddress))
 				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 			}
 		}
 
 		// check for duplicate votes
-		hasDupVotes, txHash := checkDuplicateVotes(ve.SideTxResponses)
+		hasDupVotes, txHash := checkDuplicateVotes(canonicalSideTxResponse.SideTxResponses)
 		if hasDupVotes {
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Validator voted twice for a side transaction", "validator", req.ValidatorAddress, "tx hash", txHash)
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Validator voted more than once for a side transaction", "validator", string(req.ValidatorAddress), "tx hash", string(txHash))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
@@ -248,114 +239,112 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 
-	if req.Height >= ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight {
-		// store side tx data
-		txs := req.Txs
-		if canAddVE(ctx, req.Height) {
-			txs = req.Txs[1:]
+	// store side tx data
+	txs := req.Txs
+	if mustAddSpecialTransaction(ctx, req.Height+1) {
+		txs = req.Txs[1:]
+	}
+
+	for _, rawTx := range txs {
+		tx, err := app.TxDecode(rawTx)
+		if err != nil {
+			logger.Error("Error occurred while decoding tx bytes", "error", err)
+			return nil, err
 		}
 
-		for _, rawTx := range txs {
-			tx, err := app.TxDecode(rawTx)
+		msgs := tx.GetMsgs()
+		for _, msg := range msgs {
+			postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
+			if postHandler != nil {
+				// TODO HV2: uncomment when implemented
+				// app.VoteExtensionKeeper.storeTxData(ctx, txBytes.Hash(), tx)
+			}
+		}
+
+	}
+
+	if mustAddSpecialTransaction(ctx, req.Height+1) {
+		// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
+		var extVoteInfo []abci.ExtendedVoteInfo
+
+		bz := req.Txs[0]
+		if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
+			logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
+			return nil, err
+		}
+
+		// Fetch validators from previous block
+		// TODO HV2: Heimdall as of now uses validator set from currentHeight. But should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
+		// TODO HV2 (in response to the previous comment): could not find the function where currentHeight is used
+		validators, err := app.StakeKeeper.GetValidatorSet(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(validators.Validators) == 0 {
+			return nil, errors.New("no validators found")
+		}
+
+		// tally votes
+		approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(extVoteInfo, logger, validators.Validators)
+		if err != nil {
+			logger.Error("Error occurred while tallying votes", "error", err)
+			return nil, err
+		}
+
+		// execute side txs
+		for _, txHash := range approvedTxs {
+			// check whether tx exists
+			if !app.VoteExtensionKeeper.HasTx(ctx, txHash) {
+				logger.Error("side tx not found in keeper", "tx", txHash)
+				continue
+			}
+
+			// fetch side tx from keeper
+			tx, err := app.VoteExtensionKeeper.GetTxData(ctx, txHash)
 			if err != nil {
-				logger.Error("Error occurred while decoding tx bytes", "error", err)
+				logger.Error("Error occurred while fetching side tx from keeper", "error", err)
 				return nil, err
 			}
 
+			// execute with YES vote
 			msgs := tx.GetMsgs()
 			for _, msg := range msgs {
-				postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
-				if postHandler != nil {
-					// TODO HV2: uncomment when implemented
-					// app.VoteExtensionKeeper.storeTxData(ctx, txBytes.Hash(), tx)
-				}
-			}
-
-		}
-
-		if canAddVE(ctx, req.Height) {
-			// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
-			var extVoteInfo []abci.ExtendedVoteInfo
-
-			bz := req.Txs[0]
-			// TODO HV2: Clarify with Informal: should we throw an error here ?
-			if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
-				logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
-				return nil, err
-			}
-
-			/* TODO HV2: uncomment when stake is merged
-			// Fetch validators from previous block
-			// TODO HV2: Heimdall as of now uses validator set from currentHeight. But should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
-			validators := app.StakeKeeper.GetValidators(ctx, req.Height - 1)
-			if len(validators) == 0 {
-				return errors.New("No validators found")
-			}
-
-			// tally votes
-			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(extVoteInfo, logger, validators)
-			if err != nil {
-				logger.Error("Error occurred while tallying votes", "error", err)
-				return nil, err
-			}
-
-			// execute side txs
-			for _, txHash := range approvedTxs {
-				// check whether tx exists
-				if !app.VoteExtensionKeeper.HasTx(ctx, txHash) {
-					logger.Error("side tx not found in keeper", "tx", txHash)
-					continue
+				fn, ok := app.VoteExtensionHandler.modPostHandler[sdk.MsgTypeURL(msg)]
+				if !ok {
+					return nil, errors.New("could not fetch post handler for the tx msg")
 				}
 
-				// fetch side tx from keeper
-				tx, err := app.VoteExtensionKeeper.GetTxData(ctx, txHash)
+				// TODO HV2: how do we process the events ?
+				err := fn(ctx, msg, mod.Vote_VOTE_YES)
 				if err != nil {
-					logger.Error("Error occurred while fetching side tx from keeper", "error", err)
-					return nil, err
-				}
+					logger.Error("Error occurred while executing post handler", "error", err, "tx", tx)
+					continue
 
-				// execute with YES vote
-				msgs := tx.GetMsgs()
-				for _, msg := range msgs {
-					fn, ok := app.VoteExtensionHandler.modPostHandler[sdk.MsgTypeURL(msg)]
-					if !ok {
-						return nil, errors.New("could not fetch post handler for the tx msg")
-					}
-
-					// TODO HV2: how do we process the events ?
-					err := fn(ctx, msg, types.Vote_VOTE_YES)
-					if err != nil {
-						logger.Error("Error occurred while executing post handler", "error", err, "tx", tx)
-						continue
-
-					}
-				}
-
-				// remove tx from keeper to prevent re-execution
-				if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-					logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-					return nil, err
-				}
-
-			}
-
-			// delete the rejected and skipped txs
-			for _, txHash := range rejectedTxs {
-				if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-					logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-					return nil, err
 				}
 			}
 
-			for _, txHash := range skippedTxs {
-				if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-					logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-					return nil, err
-				}
+			// remove tx from keeper to prevent re-execution
+			if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
+				logger.Error("Error occurred while deleting side tx from keeper", "error", err)
+				return nil, err
 			}
-			*/
+
 		}
 
+		// delete the rejected and skipped txs
+		for _, txHash := range rejectedTxs {
+			if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
+				logger.Error("Error occurred while deleting side tx from keeper", "error", err)
+				return nil, err
+			}
+		}
+
+		for _, txHash := range skippedTxs {
+			if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
+				logger.Error("Error occurred while deleting side tx from keeper", "error", err)
+				return nil, err
+			}
+		}
 	}
 
 	return app.mm.PreBlock(ctx)

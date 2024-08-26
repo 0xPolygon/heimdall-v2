@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -15,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -65,7 +65,7 @@ func setupAppWithValidatorSet(t *testing.T, validators []*cmttypes.Validator, ac
 
 	db := dbm.NewMemDB()
 
-	appOptions := make(simtestutil.AppOptionsMap, 0)
+	appOptions := make(simtestutil.AppOptionsMap)
 	appOptions[flags.FlagHome] = DefaultNodeHome
 
 	logger := log.NewTestLogger(t)
@@ -78,7 +78,7 @@ func setupAppWithValidatorSet(t *testing.T, validators []*cmttypes.Validator, ac
 	genesisState, err := simtestutil.GenesisStateWithValSet(app.AppCodec(), genesisState, valSet, accounts, balances...)
 	require.NoError(t, err)
 
-	stateBytes, err := jsoniter.ConfigFastest.Marshal(genesisState)
+	stateBytes, err := json.Marshal(genesisState)
 	require.NoError(t, err)
 
 	// initialize chain with the validator set and genesis accounts

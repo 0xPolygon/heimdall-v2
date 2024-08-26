@@ -46,9 +46,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
-	"github.com/cosmos/cosmos-sdk/x/distribution"
-	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
-	distrtypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
@@ -88,7 +85,6 @@ var (
 	maccPerms = map[string][]string{
 		authtypes.FeeCollectorName: nil,
 		govtypes.ModuleName:        nil,
-		distrtypes.ModuleName:      nil,
 		topupTypes.ModuleName:      {authtypes.Minter, authtypes.Burner},
 	}
 )
@@ -111,10 +107,8 @@ type HeimdallApp struct {
 	memKeys map[string]*storetypes.MemoryStoreKey
 
 	// keepers
-	AccountKeeper authkeeper.AccountKeeper
-	BankKeeper    bankkeeper.Keeper
-	// TODO HV2: consider removing distribution module since rewards are distributed on L1
-	DistrKeeper           distrkeeper.Keeper
+	AccountKeeper         authkeeper.AccountKeeper
+	BankKeeper            bankkeeper.Keeper
 	GovKeeper             govkeeper.Keeper
 	ParamsKeeper          paramskeeper.Keeper
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
@@ -179,7 +173,6 @@ func NewHeimdallApp(
 		authtypes.StoreKey,
 		banktypes.StoreKey,
 		consensusparamtypes.StoreKey,
-		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
 		staketypes.StoreKey,
@@ -244,6 +237,7 @@ func NewHeimdallApp(
 
 	// Set the voteExtension methods to HeimdallApp
 	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
+	bApp.SetVerifyVoteExtensionHandler(app.VoteExtensionProcessor.VerifyVoteExtension())
 
 	// SDK module keepers
 
@@ -266,17 +260,6 @@ func NewHeimdallApp(
 		logger,
 	)
 
-	// TODO HV2: consider removing distribution module since rewards are distributed on L1
-	app.DistrKeeper = distrkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[distrtypes.StoreKey]),
-		app.AccountKeeper,
-		app.BankKeeper,
-		nil, // TODO HV2: pass stake keeper here once implemented
-		authtypes.FeeCollectorName,
-		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-	)
-
 	govRouter := govv1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
@@ -288,8 +271,8 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
 		app.AccountKeeper,
 		app.BankKeeper,
-		nil, // TODO HV2: add our modified stake keeper as the param
-		app.DistrKeeper,
+		&app.StakeKeeper,
+		nil,
 		app.MsgServiceRouter(),
 		govConfig,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -352,8 +335,6 @@ func NewHeimdallApp(
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
-		// TODO HV2: consider removing distribution module since rewards are distributed on L1
-		distribution.NewAppModule(appCodec, app.DistrKeeper, app.AccountKeeper, app.BankKeeper, nil, app.GetSubspace(distrtypes.ModuleName)),
 		stake.NewAppModule(app.StakeKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
@@ -380,8 +361,6 @@ func NewHeimdallApp(
 	app.BasicManager.RegisterInterfaces(interfaceRegistry)
 
 	app.mm.SetOrderBeginBlockers(
-		// TODO HV2: consider removing distribution module since rewards are distributed on L1
-		distrtypes.ModuleName,
 		genutiltypes.ModuleName,
 		staketypes.ModuleName,
 	)
@@ -395,8 +374,6 @@ func NewHeimdallApp(
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		// TODO HV2: consider removing distribution module since rewards are distributed on L1
-		distrtypes.ModuleName,
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		consensusparamtypes.ModuleName,

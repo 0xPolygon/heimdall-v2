@@ -30,11 +30,11 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	// TODO HV2: uncomment when implemented
+	// TODO HV2: uncomment when implemented. Do we need to implement WriteValidators in our stake module? Currently missing
 	// validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
 	return servertypes.ExportedApp{
 		AppState: appState,
-		// TODO HV2: uncomment when implemented
+		// TODO HV2: uncomment when implemented (see previous comment)
 		// Validators:      validators,
 		Height:          height,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),

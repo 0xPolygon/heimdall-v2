@@ -1,10 +1,10 @@
 package version
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/cometbft/cometbft/libs/cli"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
@@ -33,7 +33,7 @@ var Cmd = &cobra.Command{
 
 		switch viper.GetString(cli.OutputFlag) {
 		case "json":
-			bz, err = jsoniter.ConfigFastest.Marshal(verInfo)
+			bz, err = json.Marshal(verInfo)
 		default:
 			bz, err = yaml.Marshal(&verInfo)
 		}
