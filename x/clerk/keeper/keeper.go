@@ -134,7 +134,7 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 	counter := 0
 
 	// Use Walk to iterate over the records
-	err := k.RecordsWithID.Walk(ctx, new(collections.Range[uint64]).StartInclusive(0), func(key uint64, record types.EventRecord) (bool, error) {
+	err := k.RecordsWithID.Walk(ctx, nil, func(key uint64, record types.EventRecord) (bool, error) {
 		// If the current index is within the desired range, add the record to the slice
 		if counter >= startIndex && counter < endIndex {
 			records = append(records, record)
@@ -223,7 +223,7 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 
 // IterateRecords iterates records and apply the given function
 func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error) {
-	iterator, err := k.RecordsWithID.Iterate(ctx, new(collections.Range[uint64]).StartInclusive(0))
+	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
