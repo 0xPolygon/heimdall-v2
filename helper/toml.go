@@ -9,7 +9,7 @@ import (
 
 // Note: any changes to the comments/variables/mapstructure
 // must be reflected in the appropriate struct in helper/config.go
-const defaultConfigTemplate = `# This is a TOML config file.
+const DefaultConfigTemplate = `# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 ##### RPC and REST configs #####
@@ -64,7 +64,7 @@ func init() {
 	var err error
 
 	tmpl := template.New("appConfigFileTemplate")
-	if configTemplate, err = tmpl.Parse(defaultConfigTemplate); err != nil {
+	if configTemplate, err = tmpl.Parse(DefaultConfigTemplate); err != nil {
 		panic(err)
 	}
 }
