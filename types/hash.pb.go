@@ -24,7 +24,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// HeimdallHash defines the hash
+// HeimdallHash this following defines the
+// hash
 type HeimdallHash struct {
 	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 }
@@ -69,7 +70,8 @@ func (m *HeimdallHash) GetHash() []byte {
 	return nil
 }
 
-// TxHash defines the hash of the transaction
+// TxHash this following defines the
+// hash of the transaction
 type TxHash struct {
 	Hash []byte `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
 }
