@@ -1,0 +1,71 @@
+syntax = "proto3";
+package heimdallv2.clerk;
+
+import "cosmos/query/v1/query.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "heimdallv2/clerk/clerk.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
+
+// Query defines the gRPC querier service.
+service Query {
+  // TODO HV2 - check url
+  rpc Record(RecordRequest) returns (RecordResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/event-record";
+  }
+
+  // TODO HV2 - check url
+  rpc RecordList(RecordListRequest) returns (RecordListResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/event-record/list";
+  }
+
+  // TODO HV2 - check url
+  rpc RecordListWithTime(RecordListWithTimeRequest)
+      returns (RecordListWithTimeResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/time";
+  }
+
+  // TODO HV2 - check url
+  rpc RecordSequence(RecordSequenceRequest) returns (RecordSequenceResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/sequence";
+  }
+}
+
+message RecordRequest { uint64 record_i_d = 1; }
+
+// RecordResponse defines the params for RecordListRequest.
+message RecordResponse { EventRecord record = 1; }
+
+message RecordListRequest {
+  uint64 page = 1;
+  uint64 limit = 2;
+}
+
+// RecordListResponse defines the params for RecordListRequest
+message RecordListResponse { repeated EventRecord event_records = 1; }
+
+message RecordListWithTimeRequest {
+  google.protobuf.Timestamp from_time = 1
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  google.protobuf.Timestamp to_time = 2
+      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  uint64 page = 3;
+  uint64 limit = 4;
+}
+
+// RecordListWithTimeResponse defines the params for querying
+// RecordListWithTimeRequest
+message RecordListWithTimeResponse { repeated EventRecord event_records = 1; }
+
+message RecordSequenceRequest {
+  string tx_hash = 1;
+  uint64 log_index = 2;
+}
+
+message RecordSequenceResponse { uint64 sequence = 1; }
