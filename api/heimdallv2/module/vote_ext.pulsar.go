@@ -12,81 +12,81 @@ import (
 	sync "sync"
 )
 
-var _ protoreflect.List = (*_CanonicalSideTxResponse_1_list)(nil)
+var _ protoreflect.List = (*_ConsolidatedSideTxResponse_1_list)(nil)
 
-type _CanonicalSideTxResponse_1_list struct {
+type _ConsolidatedSideTxResponse_1_list struct {
 	list *[]*SideTxResponse
 }
 
-func (x *_CanonicalSideTxResponse_1_list) Len() int {
+func (x *_ConsolidatedSideTxResponse_1_list) Len() int {
 	if x.list == nil {
 		return 0
 	}
 	return len(*x.list)
 }
 
-func (x *_CanonicalSideTxResponse_1_list) Get(i int) protoreflect.Value {
+func (x *_ConsolidatedSideTxResponse_1_list) Get(i int) protoreflect.Value {
 	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
 }
 
-func (x *_CanonicalSideTxResponse_1_list) Set(i int, value protoreflect.Value) {
+func (x *_ConsolidatedSideTxResponse_1_list) Set(i int, value protoreflect.Value) {
 	valueUnwrapped := value.Message()
 	concreteValue := valueUnwrapped.Interface().(*SideTxResponse)
 	(*x.list)[i] = concreteValue
 }
 
-func (x *_CanonicalSideTxResponse_1_list) Append(value protoreflect.Value) {
+func (x *_ConsolidatedSideTxResponse_1_list) Append(value protoreflect.Value) {
 	valueUnwrapped := value.Message()
 	concreteValue := valueUnwrapped.Interface().(*SideTxResponse)
 	*x.list = append(*x.list, concreteValue)
 }
 
-func (x *_CanonicalSideTxResponse_1_list) AppendMutable() protoreflect.Value {
+func (x *_ConsolidatedSideTxResponse_1_list) AppendMutable() protoreflect.Value {
 	v := new(SideTxResponse)
 	*x.list = append(*x.list, v)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
-func (x *_CanonicalSideTxResponse_1_list) Truncate(n int) {
+func (x *_ConsolidatedSideTxResponse_1_list) Truncate(n int) {
 	for i := n; i < len(*x.list); i++ {
 		(*x.list)[i] = nil
 	}
 	*x.list = (*x.list)[:n]
 }
 
-func (x *_CanonicalSideTxResponse_1_list) NewElement() protoreflect.Value {
+func (x *_ConsolidatedSideTxResponse_1_list) NewElement() protoreflect.Value {
 	v := new(SideTxResponse)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
-func (x *_CanonicalSideTxResponse_1_list) IsValid() bool {
+func (x *_ConsolidatedSideTxResponse_1_list) IsValid() bool {
 	return x.list != nil
 }
 
 var (
-	md_CanonicalSideTxResponse                   protoreflect.MessageDescriptor
-	fd_CanonicalSideTxResponse_side_tx_responses protoreflect.FieldDescriptor
-	fd_CanonicalSideTxResponse_hash              protoreflect.FieldDescriptor
-	fd_CanonicalSideTxResponse_height            protoreflect.FieldDescriptor
+	md_ConsolidatedSideTxResponse                   protoreflect.MessageDescriptor
+	fd_ConsolidatedSideTxResponse_side_tx_responses protoreflect.FieldDescriptor
+	fd_ConsolidatedSideTxResponse_hash              protoreflect.FieldDescriptor
+	fd_ConsolidatedSideTxResponse_height            protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_module_vote_ext_proto_init()
-	md_CanonicalSideTxResponse = File_heimdallv2_module_vote_ext_proto.Messages().ByName("CanonicalSideTxResponse")
-	fd_CanonicalSideTxResponse_side_tx_responses = md_CanonicalSideTxResponse.Fields().ByName("side_tx_responses")
-	fd_CanonicalSideTxResponse_hash = md_CanonicalSideTxResponse.Fields().ByName("hash")
-	fd_CanonicalSideTxResponse_height = md_CanonicalSideTxResponse.Fields().ByName("height")
+	md_ConsolidatedSideTxResponse = File_heimdallv2_module_vote_ext_proto.Messages().ByName("ConsolidatedSideTxResponse")
+	fd_ConsolidatedSideTxResponse_side_tx_responses = md_ConsolidatedSideTxResponse.Fields().ByName("side_tx_responses")
+	fd_ConsolidatedSideTxResponse_hash = md_ConsolidatedSideTxResponse.Fields().ByName("hash")
+	fd_ConsolidatedSideTxResponse_height = md_ConsolidatedSideTxResponse.Fields().ByName("height")
 }
 
-var _ protoreflect.Message = (*fastReflection_CanonicalSideTxResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_ConsolidatedSideTxResponse)(nil)
 
-type fastReflection_CanonicalSideTxResponse CanonicalSideTxResponse
+type fastReflection_ConsolidatedSideTxResponse ConsolidatedSideTxResponse
 
-func (x *CanonicalSideTxResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_CanonicalSideTxResponse)(x)
+func (x *ConsolidatedSideTxResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_ConsolidatedSideTxResponse)(x)
 }
 
-func (x *CanonicalSideTxResponse) slowProtoReflect() protoreflect.Message {
+func (x *ConsolidatedSideTxResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_module_vote_ext_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -98,43 +98,43 @@ func (x *CanonicalSideTxResponse) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_CanonicalSideTxResponse_messageType fastReflection_CanonicalSideTxResponse_messageType
-var _ protoreflect.MessageType = fastReflection_CanonicalSideTxResponse_messageType{}
+var _fastReflection_ConsolidatedSideTxResponse_messageType fastReflection_ConsolidatedSideTxResponse_messageType
+var _ protoreflect.MessageType = fastReflection_ConsolidatedSideTxResponse_messageType{}
 
-type fastReflection_CanonicalSideTxResponse_messageType struct{}
+type fastReflection_ConsolidatedSideTxResponse_messageType struct{}
 
-func (x fastReflection_CanonicalSideTxResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_CanonicalSideTxResponse)(nil)
+func (x fastReflection_ConsolidatedSideTxResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_ConsolidatedSideTxResponse)(nil)
 }
-func (x fastReflection_CanonicalSideTxResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_CanonicalSideTxResponse)
+func (x fastReflection_ConsolidatedSideTxResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_ConsolidatedSideTxResponse)
 }
-func (x fastReflection_CanonicalSideTxResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_CanonicalSideTxResponse
+func (x fastReflection_ConsolidatedSideTxResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_ConsolidatedSideTxResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_CanonicalSideTxResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_CanonicalSideTxResponse
+func (x *fastReflection_ConsolidatedSideTxResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_ConsolidatedSideTxResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_CanonicalSideTxResponse) Type() protoreflect.MessageType {
-	return _fastReflection_CanonicalSideTxResponse_messageType
+func (x *fastReflection_ConsolidatedSideTxResponse) Type() protoreflect.MessageType {
+	return _fastReflection_ConsolidatedSideTxResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_CanonicalSideTxResponse) New() protoreflect.Message {
-	return new(fastReflection_CanonicalSideTxResponse)
+func (x *fastReflection_ConsolidatedSideTxResponse) New() protoreflect.Message {
+	return new(fastReflection_ConsolidatedSideTxResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_CanonicalSideTxResponse) Interface() protoreflect.ProtoMessage {
-	return (*CanonicalSideTxResponse)(x)
+func (x *fastReflection_ConsolidatedSideTxResponse) Interface() protoreflect.ProtoMessage {
+	return (*ConsolidatedSideTxResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -142,22 +142,22 @@ func (x *fastReflection_CanonicalSideTxResponse) Interface() protoreflect.ProtoM
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_CanonicalSideTxResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_ConsolidatedSideTxResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if len(x.SideTxResponses) != 0 {
-		value := protoreflect.ValueOfList(&_CanonicalSideTxResponse_1_list{list: &x.SideTxResponses})
-		if !f(fd_CanonicalSideTxResponse_side_tx_responses, value) {
+		value := protoreflect.ValueOfList(&_ConsolidatedSideTxResponse_1_list{list: &x.SideTxResponses})
+		if !f(fd_ConsolidatedSideTxResponse_side_tx_responses, value) {
 			return
 		}
 	}
 	if len(x.Hash) != 0 {
 		value := protoreflect.ValueOfBytes(x.Hash)
-		if !f(fd_CanonicalSideTxResponse_hash, value) {
+		if !f(fd_ConsolidatedSideTxResponse_hash, value) {
 			return
 		}
 	}
 	if x.Height != int64(0) {
 		value := protoreflect.ValueOfInt64(x.Height)
-		if !f(fd_CanonicalSideTxResponse_height, value) {
+		if !f(fd_ConsolidatedSideTxResponse_height, value) {
 			return
 		}
 	}
@@ -174,19 +174,19 @@ func (x *fastReflection_CanonicalSideTxResponse) Range(f func(protoreflect.Field
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_CanonicalSideTxResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_ConsolidatedSideTxResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.module.CanonicalSideTxResponse.side_tx_responses":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.side_tx_responses":
 		return len(x.SideTxResponses) != 0
-	case "heimdallv2.module.CanonicalSideTxResponse.hash":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.hash":
 		return len(x.Hash) != 0
-	case "heimdallv2.module.CanonicalSideTxResponse.height":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.height":
 		return x.Height != int64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.CanonicalSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.ConsolidatedSideTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.module.CanonicalSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.module.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -196,19 +196,19 @@ func (x *fastReflection_CanonicalSideTxResponse) Has(fd protoreflect.FieldDescri
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_CanonicalSideTxResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_ConsolidatedSideTxResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.module.CanonicalSideTxResponse.side_tx_responses":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.side_tx_responses":
 		x.SideTxResponses = nil
-	case "heimdallv2.module.CanonicalSideTxResponse.hash":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.hash":
 		x.Hash = nil
-	case "heimdallv2.module.CanonicalSideTxResponse.height":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.height":
 		x.Height = int64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.CanonicalSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.ConsolidatedSideTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.module.CanonicalSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.module.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -218,25 +218,25 @@ func (x *fastReflection_CanonicalSideTxResponse) Clear(fd protoreflect.FieldDesc
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_CanonicalSideTxResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_ConsolidatedSideTxResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.module.CanonicalSideTxResponse.side_tx_responses":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.side_tx_responses":
 		if len(x.SideTxResponses) == 0 {
-			return protoreflect.ValueOfList(&_CanonicalSideTxResponse_1_list{})
+			return protoreflect.ValueOfList(&_ConsolidatedSideTxResponse_1_list{})
 		}
-		listValue := &_CanonicalSideTxResponse_1_list{list: &x.SideTxResponses}
+		listValue := &_ConsolidatedSideTxResponse_1_list{list: &x.SideTxResponses}
 		return protoreflect.ValueOfList(listValue)
-	case "heimdallv2.module.CanonicalSideTxResponse.hash":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.hash":
 		value := x.Hash
 		return protoreflect.ValueOfBytes(value)
-	case "heimdallv2.module.CanonicalSideTxResponse.height":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.height":
 		value := x.Height
 		return protoreflect.ValueOfInt64(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.CanonicalSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.ConsolidatedSideTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.module.CanonicalSideTxResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.module.ConsolidatedSideTxResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -250,21 +250,21 @@ func (x *fastReflection_CanonicalSideTxResponse) Get(descriptor protoreflect.Fie
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_CanonicalSideTxResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_ConsolidatedSideTxResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.module.CanonicalSideTxResponse.side_tx_responses":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.side_tx_responses":
 		lv := value.List()
-		clv := lv.(*_CanonicalSideTxResponse_1_list)
+		clv := lv.(*_ConsolidatedSideTxResponse_1_list)
 		x.SideTxResponses = *clv.list
-	case "heimdallv2.module.CanonicalSideTxResponse.hash":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.hash":
 		x.Hash = value.Bytes()
-	case "heimdallv2.module.CanonicalSideTxResponse.height":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.height":
 		x.Height = value.Int()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.CanonicalSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.ConsolidatedSideTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.module.CanonicalSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.module.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -278,53 +278,53 @@ func (x *fastReflection_CanonicalSideTxResponse) Set(fd protoreflect.FieldDescri
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_CanonicalSideTxResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_ConsolidatedSideTxResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.module.CanonicalSideTxResponse.side_tx_responses":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.side_tx_responses":
 		if x.SideTxResponses == nil {
 			x.SideTxResponses = []*SideTxResponse{}
 		}
-		value := &_CanonicalSideTxResponse_1_list{list: &x.SideTxResponses}
+		value := &_ConsolidatedSideTxResponse_1_list{list: &x.SideTxResponses}
 		return protoreflect.ValueOfList(value)
-	case "heimdallv2.module.CanonicalSideTxResponse.hash":
-		panic(fmt.Errorf("field hash of message heimdallv2.module.CanonicalSideTxResponse is not mutable"))
-	case "heimdallv2.module.CanonicalSideTxResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.module.CanonicalSideTxResponse is not mutable"))
+	case "heimdallv2.module.ConsolidatedSideTxResponse.hash":
+		panic(fmt.Errorf("field hash of message heimdallv2.module.ConsolidatedSideTxResponse is not mutable"))
+	case "heimdallv2.module.ConsolidatedSideTxResponse.height":
+		panic(fmt.Errorf("field height of message heimdallv2.module.ConsolidatedSideTxResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.CanonicalSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.ConsolidatedSideTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.module.CanonicalSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.module.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_CanonicalSideTxResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_ConsolidatedSideTxResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.module.CanonicalSideTxResponse.side_tx_responses":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.side_tx_responses":
 		list := []*SideTxResponse{}
-		return protoreflect.ValueOfList(&_CanonicalSideTxResponse_1_list{list: &list})
-	case "heimdallv2.module.CanonicalSideTxResponse.hash":
+		return protoreflect.ValueOfList(&_ConsolidatedSideTxResponse_1_list{list: &list})
+	case "heimdallv2.module.ConsolidatedSideTxResponse.hash":
 		return protoreflect.ValueOfBytes(nil)
-	case "heimdallv2.module.CanonicalSideTxResponse.height":
+	case "heimdallv2.module.ConsolidatedSideTxResponse.height":
 		return protoreflect.ValueOfInt64(int64(0))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.CanonicalSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.module.ConsolidatedSideTxResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.module.CanonicalSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.module.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_CanonicalSideTxResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_ConsolidatedSideTxResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.module.CanonicalSideTxResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.module.ConsolidatedSideTxResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -332,7 +332,7 @@ func (x *fastReflection_CanonicalSideTxResponse) WhichOneof(d protoreflect.Oneof
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_CanonicalSideTxResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_ConsolidatedSideTxResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -343,7 +343,7 @@ func (x *fastReflection_CanonicalSideTxResponse) GetUnknown() protoreflect.RawFi
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_CanonicalSideTxResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_ConsolidatedSideTxResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -355,7 +355,7 @@ func (x *fastReflection_CanonicalSideTxResponse) SetUnknown(fields protoreflect.
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_CanonicalSideTxResponse) IsValid() bool {
+func (x *fastReflection_ConsolidatedSideTxResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -365,9 +365,9 @@ func (x *fastReflection_CanonicalSideTxResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_CanonicalSideTxResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*CanonicalSideTxResponse)
+		x := input.Message.Interface().(*ConsolidatedSideTxResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -402,7 +402,7 @@ func (x *fastReflection_CanonicalSideTxResponse) ProtoMethods() *protoiface.Meth
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*CanonicalSideTxResponse)
+		x := input.Message.Interface().(*ConsolidatedSideTxResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -460,7 +460,7 @@ func (x *fastReflection_CanonicalSideTxResponse) ProtoMethods() *protoiface.Meth
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*CanonicalSideTxResponse)
+		x := input.Message.Interface().(*ConsolidatedSideTxResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -492,10 +492,10 @@ func (x *fastReflection_CanonicalSideTxResponse) ProtoMethods() *protoiface.Meth
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: CanonicalSideTxResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: ConsolidatedSideTxResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: CanonicalSideTxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: ConsolidatedSideTxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -1152,7 +1152,7 @@ func (Vote) EnumDescriptor() ([]byte, []int) {
 	return file_heimdallv2_module_vote_ext_proto_rawDescGZIP(), []int{0}
 }
 
-type CanonicalSideTxResponse struct {
+type ConsolidatedSideTxResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1162,8 +1162,8 @@ type CanonicalSideTxResponse struct {
 	Height          int64             `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"` // denotes the block height of the extended vote
 }
 
-func (x *CanonicalSideTxResponse) Reset() {
-	*x = CanonicalSideTxResponse{}
+func (x *ConsolidatedSideTxResponse) Reset() {
+	*x = ConsolidatedSideTxResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_module_vote_ext_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1171,32 +1171,32 @@ func (x *CanonicalSideTxResponse) Reset() {
 	}
 }
 
-func (x *CanonicalSideTxResponse) String() string {
+func (x *ConsolidatedSideTxResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*CanonicalSideTxResponse) ProtoMessage() {}
+func (*ConsolidatedSideTxResponse) ProtoMessage() {}
 
-// Deprecated: Use CanonicalSideTxResponse.ProtoReflect.Descriptor instead.
-func (*CanonicalSideTxResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ConsolidatedSideTxResponse.ProtoReflect.Descriptor instead.
+func (*ConsolidatedSideTxResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_module_vote_ext_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *CanonicalSideTxResponse) GetSideTxResponses() []*SideTxResponse {
+func (x *ConsolidatedSideTxResponse) GetSideTxResponses() []*SideTxResponse {
 	if x != nil {
 		return x.SideTxResponses
 	}
 	return nil
 }
 
-func (x *CanonicalSideTxResponse) GetHash() []byte {
+func (x *ConsolidatedSideTxResponse) GetHash() []byte {
 	if x != nil {
 		return x.Hash
 	}
 	return nil
 }
 
-func (x *CanonicalSideTxResponse) GetHeight() int64 {
+func (x *ConsolidatedSideTxResponse) GetHeight() int64 {
 	if x != nil {
 		return x.Height
 	}
@@ -1209,7 +1209,7 @@ type SideTxResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	TxHash []byte `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`                // denotes the tx hash for which this V.E correspond to.
-	Result Vote   `protobuf:"varint,4,opt,name=result,proto3,enum=heimdallv2.module.Vote" json:"result,omitempty"` // will have YES/NO/SKIP depending on the side-tx data correctness.
+	Result Vote   `protobuf:"varint,4,opt,name=result,proto3,enum=heimdallv2.module.Vote" json:"result,omitempty"` // will have YES/NO/UNSPECIFIED depending on the side-tx data
 }
 
 func (x *SideTxResponse) Reset() {
@@ -1252,38 +1252,38 @@ var file_heimdallv2_module_vote_ext_proto_rawDesc = []byte{
 	0x0a, 0x20, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x6d, 0x6f, 0x64,
 	0x75, 0x6c, 0x65, 0x2f, 0x76, 0x6f, 0x74, 0x65, 0x5f, 0x65, 0x78, 0x74, 0x2e, 0x70, 0x72, 0x6f,
 	0x74, 0x6f, 0x12, 0x11, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x6d,
-	0x6f, 0x64, 0x75, 0x6c, 0x65, 0x22, 0x94, 0x01, 0x0a, 0x17, 0x43, 0x61, 0x6e, 0x6f, 0x6e, 0x69,
-	0x63, 0x61, 0x6c, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x4d, 0x0a, 0x11, 0x73, 0x69, 0x64, 0x65, 0x5f, 0x74, 0x78, 0x5f, 0x72, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65,
-	0x2e, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52,
-	0x0f, 0x73, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x73,
-	0x12, 0x12, 0x0a, 0x04, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04,
-	0x68, 0x61, 0x73, 0x68, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22, 0x5a, 0x0a, 0x0e,
-	0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x17,
-	0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52,
-	0x06, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x12, 0x2f, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c,
-	0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x17, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x2e, 0x56, 0x6f, 0x74, 0x65,
-	0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2a, 0x32, 0x0a, 0x04, 0x56, 0x6f, 0x74, 0x65,
-	0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10,
-	0x00, 0x12, 0x0c, 0x0a, 0x08, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x59, 0x45, 0x53, 0x10, 0x01, 0x12,
-	0x0b, 0x0a, 0x07, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x4e, 0x4f, 0x10, 0x02, 0x42, 0xc2, 0x01, 0x0a,
-	0x15, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x42, 0x0c, 0x56, 0x6f, 0x74, 0x65, 0x45, 0x78, 0x74, 0x50,
-	0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x36, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63,
-	0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0xa2, 0x02,
-	0x03, 0x48, 0x4d, 0x58, 0xaa, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0xca, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0xe2, 0x02, 0x1d, 0x48,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65,
-	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x12, 0x48,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x4d, 0x6f, 0x64, 0x75, 0x6c,
-	0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x64, 0x75, 0x6c, 0x65, 0x22, 0x97, 0x01, 0x0a, 0x1a, 0x43, 0x6f, 0x6e, 0x73, 0x6f, 0x6c,
+	0x69, 0x64, 0x61, 0x74, 0x65, 0x64, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x12, 0x4d, 0x0a, 0x11, 0x73, 0x69, 0x64, 0x65, 0x5f, 0x74, 0x78, 0x5f,
+	0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32,
+	0x21, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x6d, 0x6f, 0x64,
+	0x75, 0x6c, 0x65, 0x2e, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x52, 0x0f, 0x73, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x73, 0x12, 0x12, 0x0a, 0x04, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x0c, 0x52, 0x04, 0x68, 0x61, 0x73, 0x68, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68,
+	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22,
+	0x5a, 0x0a, 0x0e, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x12, 0x17, 0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0c, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x12, 0x2f, 0x0a, 0x06, 0x72, 0x65,
+	0x73, 0x75, 0x6c, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x17, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x2e, 0x56,
+	0x6f, 0x74, 0x65, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2a, 0x32, 0x0a, 0x04, 0x56,
+	0x6f, 0x74, 0x65, 0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
+	0x45, 0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x59, 0x45, 0x53,
+	0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x4e, 0x4f, 0x10, 0x02, 0x42,
+	0xc2, 0x01, 0x0a, 0x15, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x42, 0x0c, 0x56, 0x6f, 0x74, 0x65, 0x45,
+	0x78, 0x74, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x36, 0x67, 0x69, 0x74, 0x68, 0x75,
+	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x6d, 0x6f, 0x64, 0x75, 0x6c,
+	0x65, 0xa2, 0x02, 0x03, 0x48, 0x4d, 0x58, 0xaa, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0xca, 0x02, 0x11, 0x48, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0xe2,
+	0x02, 0x1d, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x6f, 0x64,
+	0x75, 0x6c, 0x65, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea,
+	0x02, 0x12, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x4d, 0x6f,
+	0x64, 0x75, 0x6c, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1301,12 +1301,12 @@ func file_heimdallv2_module_vote_ext_proto_rawDescGZIP() []byte {
 var file_heimdallv2_module_vote_ext_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_heimdallv2_module_vote_ext_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_heimdallv2_module_vote_ext_proto_goTypes = []interface{}{
-	(Vote)(0),                       // 0: heimdallv2.module.Vote
-	(*CanonicalSideTxResponse)(nil), // 1: heimdallv2.module.CanonicalSideTxResponse
-	(*SideTxResponse)(nil),          // 2: heimdallv2.module.SideTxResponse
+	(Vote)(0),                          // 0: heimdallv2.module.Vote
+	(*ConsolidatedSideTxResponse)(nil), // 1: heimdallv2.module.ConsolidatedSideTxResponse
+	(*SideTxResponse)(nil),             // 2: heimdallv2.module.SideTxResponse
 }
 var file_heimdallv2_module_vote_ext_proto_depIdxs = []int32{
-	2, // 0: heimdallv2.module.CanonicalSideTxResponse.side_tx_responses:type_name -> heimdallv2.module.SideTxResponse
+	2, // 0: heimdallv2.module.ConsolidatedSideTxResponse.side_tx_responses:type_name -> heimdallv2.module.SideTxResponse
 	0, // 1: heimdallv2.module.SideTxResponse.result:type_name -> heimdallv2.module.Vote
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
@@ -1322,7 +1322,7 @@ func file_heimdallv2_module_vote_ext_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_heimdallv2_module_vote_ext_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CanonicalSideTxResponse); i {
+			switch v := v.(*ConsolidatedSideTxResponse); i {
 			case 0:
 				return &v.state
 			case 1:

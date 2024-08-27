@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -35,6 +34,20 @@ func (v *VoteExtensionProcessor) SetSideTxConfigurator(cfg mod.SideTxConfigurato
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
+
+		for _, vote := range req.LocalLastCommit.Votes {
+			var consolidatedSideTxResponse mod.ConsolidatedSideTxResponse
+			if err := json.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
+				logger.Error("Error while unmarshalling VoteExtension during PrepareProposal", "error", err, "validator", string(req.ProposerAddress))
+				return nil, errors.New("can't prepare the proposal because the vote extension is not valid")
+			}
+			// check for duplicate votes
+			hasDupVotes, txHash := checkDuplicateVotes(consolidatedSideTxResponse.SideTxResponses)
+			if hasDupVotes {
+				logger.Error("Proposer voted more than once for a side transaction", "validator", string(req.ProposerAddress), "tx hash", string(txHash))
+				panic("can't prepare the proposal because of duplicated votes")
+			}
+		}
 
 		// start including ExtendedVoteInfo a block after vote extensions are enabled
 		if !mustAddSpecialTransaction(ctx, req.Height+1) {
@@ -101,6 +114,20 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			// deliberately does not include ExtendedVoteInfo at the beginning of txs slice
 			logger.Error("Error occurred while decoding ExtendedVoteInfo", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
+		for _, vote := range extVoteInfo {
+			var consolidatedSideTxResponse mod.ConsolidatedSideTxResponse
+			if err := json.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
+				logger.Error("Error while unmarshalling VoteExtension during ProcessProposal", "error", err, "proposer", string(req.ProposerAddress))
+				return nil, errors.New("can't process the proposal because the vote extension is not valid")
+			}
+			// check for duplicate votes
+			hasDupVotes, txHash := checkDuplicateVotes(consolidatedSideTxResponse.SideTxResponses)
+			if hasDupVotes {
+				logger.Error("Proposer voted more than once for a side transaction", "validator", string(req.ProposerAddress), "tx hash", string(txHash))
+				panic("can't prepare the proposal because of duplicated votes")
+			}
 		}
 
 		// Validate VE sigs and check whether they have 2/3+ majority
@@ -174,7 +201,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			}
 		}
 
-		canonicalSideTxRes := mod.CanonicalSideTxResponse{
+		canonicalSideTxRes := mod.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
 			Hash:            req.Hash,
@@ -196,7 +223,7 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 		logger := v.app.Logger()
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 
-		var canonicalSideTxResponse mod.CanonicalSideTxResponse
+		var canonicalSideTxResponse mod.ConsolidatedSideTxResponse
 		if err := json.Unmarshal(req.VoteExtension, &canonicalSideTxResponse); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while unmarshalling VoteExtension", "error", err, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
@@ -215,7 +242,7 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 		}
 
 		// TODO HV2: Ensure the side txs included in V.E.s are actually present in the block.
-		// This will be possible once the block is available to be consumed in RequestVerifyVoteExtension from Comet
+		//  This will be possible once the block is available to be consumed in RequestVerifyVoteExtension from Comet
 		for _, v := range canonicalSideTxResponse.SideTxResponses {
 			// check whether the vote result is valid
 			if !isVoteValid(v.Result) {
@@ -239,30 +266,6 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 
-	// store side tx data
-	txs := req.Txs
-	if mustAddSpecialTransaction(ctx, req.Height+1) {
-		txs = req.Txs[1:]
-	}
-
-	for _, rawTx := range txs {
-		tx, err := app.TxDecode(rawTx)
-		if err != nil {
-			logger.Error("Error occurred while decoding tx bytes", "error", err)
-			return nil, err
-		}
-
-		msgs := tx.GetMsgs()
-		for _, msg := range msgs {
-			postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
-			if postHandler != nil {
-				// TODO HV2: uncomment when implemented
-				// app.VoteExtensionKeeper.storeTxData(ctx, txBytes.Hash(), tx)
-			}
-		}
-
-	}
-
 	if mustAddSpecialTransaction(ctx, req.Height+1) {
 		// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
 		var extVoteInfo []abci.ExtendedVoteInfo
@@ -285,65 +288,30 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		// tally votes
-		approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(extVoteInfo, logger, validators.Validators)
+		approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.Validators)
 		if err != nil {
 			logger.Error("Error occurred while tallying votes", "error", err)
 			return nil, err
 		}
 
 		// execute side txs
-		for _, txHash := range approvedTxs {
-			// check whether tx exists
-			if !app.VoteExtensionKeeper.HasTx(ctx, txHash) {
-				logger.Error("side tx not found in keeper", "tx", txHash)
-				continue
-			}
+		// TODO HV2: is approvedTxs a list of raw txs or a list of tx hashes? Based on that app.TxDecode(tx) might work or not
+		for _, tx := range approvedTxs {
 
-			// fetch side tx from keeper
-			tx, err := app.VoteExtensionKeeper.GetTxData(ctx, txHash)
+			decodedTx, err := app.TxDecode(tx)
 			if err != nil {
-				logger.Error("Error occurred while fetching side tx from keeper", "error", err)
+				logger.Error("Error occurred while decoding tx bytes", "error", err)
 				return nil, err
 			}
 
-			// execute with YES vote
-			msgs := tx.GetMsgs()
+			msgs := decodedTx.GetMsgs()
 			for _, msg := range msgs {
-				fn, ok := app.VoteExtensionHandler.modPostHandler[sdk.MsgTypeURL(msg)]
-				if !ok {
-					return nil, errors.New("could not fetch post handler for the tx msg")
-				}
-
-				// TODO HV2: how do we process the events ?
-				err := fn(ctx, msg, mod.Vote_VOTE_YES)
-				if err != nil {
-					logger.Error("Error occurred while executing post handler", "error", err, "tx", tx)
-					continue
-
+				postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
+				if postHandler != nil {
+					postHandler(ctx, msg, mod.Vote_VOTE_YES)
 				}
 			}
 
-			// remove tx from keeper to prevent re-execution
-			if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-				logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-				return nil, err
-			}
-
-		}
-
-		// delete the rejected and skipped txs
-		for _, txHash := range rejectedTxs {
-			if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-				logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-				return nil, err
-			}
-		}
-
-		for _, txHash := range skippedTxs {
-			if err := app.VoteExtensionKeeper.removeTx(ctx, txHash); err != nil {
-				logger.Error("Error occurred while deleting side tx from keeper", "error", err)
-				return nil, err
-			}
 		}
 	}
 

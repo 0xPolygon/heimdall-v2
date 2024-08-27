@@ -3,7 +3,7 @@ package heimdallv2.module;
 
 option go_package = "github.com/0xPolygon/heimdall-v2/module";
 
-message CanonicalSideTxResponse {
+message ConsolidatedSideTxResponse {
   repeated SideTxResponse side_tx_responses = 1;
   bytes hash =
       2; // denotes the block hash of the block that this vote is referring to.
@@ -12,8 +12,8 @@ message CanonicalSideTxResponse {
 
 message SideTxResponse {
   bytes tx_hash = 1; // denotes the tx hash for which this V.E correspond to.
-  Vote result =
-      4; // will have YES/NO/UNSPECIFIED depending on the side-tx data correctness.
+  Vote result = 4; // will have YES/NO/UNSPECIFIED depending on the side-tx data
+                   // correctness.
 }
 
 enum Vote {

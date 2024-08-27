@@ -196,7 +196,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vot
 	voteByTxHash := make(map[string]map[mod.Vote]int64)      // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
 
-	var ve mod.CanonicalSideTxResponse
+	var ve mod.ConsolidatedSideTxResponse
 
 	for _, vote := range extVoteInfo {
 
@@ -256,7 +256,9 @@ func checkDuplicateVotes(sideTxResponses []*mod.SideTxResponse) (bool, []byte) {
 }
 
 // mustAddSpecialTransaction indicates whether the proposer must include V.E from previous height in the block proposal as a special transaction.
-// the method will be useful during the transition period (when Heimdall has upgraded, but vote extensions are not enabled yet)
+// The method will be useful during the transition period (when heimdall has upgraded, but vote extensions are not enabled yet)
+// Since we are using a hard fork approach for the heimdall migration, vote extensions will be enabled from v2 genesis' initial height, so there would not be any transition.
+// Leaving this function here in case further checks are needed. It should not hurt by setting VoteExtensionsEnableHeight = 0
 func mustAddSpecialTransaction(ctx sdk.Context, height int64) bool {
 	return height > ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight
 }
