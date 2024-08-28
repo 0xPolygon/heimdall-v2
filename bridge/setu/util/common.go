@@ -16,10 +16,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cometbft/cometbft/libs/log"
-
-	// TODO HV2 - uncomment when clerk is merged
-	// clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -741,20 +739,25 @@ func GetBlockHeight(cliCtx client.Context) int64 {
 	return response.Height
 }
 
-// TODO HV2 - uncomment when clerk is merged
-/*
 // GetClerkEventRecord return last successful checkpoint
 func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)),
-	)
-	if err != nil {
-		logger.Error("Error fetching event record by state ID", "error", err)
-		return nil, err
-	}
+	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
+	/*
+		response, err := helper.FetchFromAPI(
+			cliCtx,
+			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)),
+		)
+		if err != nil {
+			logger.Error("Error fetching event record by state ID", "error", err)
+			return nil, err
+		}
+	*/
+
+	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
+	var response struct{ Result []byte }
+	var err error
 
 	var eventRecord clerktypes.EventRecord
 	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &eventRecord); err != nil {
@@ -764,7 +767,6 @@ func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.Even
 
 	return &eventRecord, nil
 }
-*/
 
 func GetUnconfirmedTxnCount(event interface{}) int {
 	logger := Logger()

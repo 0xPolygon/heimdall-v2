@@ -6,13 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	// TODO HV2 - uncomment when clerk is merged
-	// clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
-
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/broadcaster"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -222,32 +220,29 @@ Loop:
 		switch txMsg.String() {
 		case "event-record":
 
-			// TODO HV2 - uncomment when clerk is merged
-			/*
-				// typecast the txs for clerk type message
-				mempoolTxMsg, ok := txMsg.(clerkTypes.MsgEventRecord)
-				if !ok {
-					bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
-					continue Loop
-				}
+			// typecast the txs for clerk type message
+			mempoolTxMsg, ok := txMsg.(*clerkTypes.MsgEventRecordRequest)
+			if !ok {
+				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
+				continue Loop
+			}
 
-				// typecast the msg for clerk type message
-				clerkMsg, ok := msg.(clerkTypes.MsgEventRecord)
-				if !ok {
-					bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
-					continue Loop
-				}
+			// typecast the msg for clerk type message
+			clerkMsg, ok := msg.(*clerkTypes.MsgEventRecordRequest)
+			if !ok {
+				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
+				continue Loop
+			}
 
-				// check the transaction hash in message
-				if clerkMsg.GetTxHash() != mempoolTxMsg.GetTxHash() {
-					continue Loop
-				}
+			// check the transaction hash in message
+			if clerkMsg.GetTxHash() != mempoolTxMsg.GetTxHash() {
+				continue Loop
+			}
 
-				// check the log index in the message
-				if clerkMsg.GetLogIndex() != mempoolTxMsg.GetLogIndex() {
-					continue Loop
-				}
-			*/
+			// check the log index in the message
+			if clerkMsg.GetLogIndex() != mempoolTxMsg.GetLogIndex() {
+				continue Loop
+			}
 
 			// If we reach here, there's already a same transaction in the mempool
 			status = true

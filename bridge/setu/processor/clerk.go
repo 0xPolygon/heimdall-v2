@@ -9,9 +9,10 @@ import (
 	"github.com/0xPolygon/heimdall-v2/common/tracing"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -127,28 +128,22 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		}
 		tracing.EndSpan(maxStateSyncSizeCheckSpan)
 
-		// TODO HV2 - this is a placeholder, remove when clerk PR is merged
-		var msg proto.Message
-
-		// TODO HV2 - uncomment this after clerk PR is merged
-		/*
-			msg := clerkTypes.NewMsgEventRecord(
-				hmTypes.BytesToHeimdallAddress(helper.GetAddress()),
-				hmTypes.BytesToHeimdallHash(vLog.TxHash.Bytes()),
-				uint64(vLog.Index),
-				vLog.BlockNumber,
-				event.Id.Uint64(),
-				hmTypes.BytesToHeimdallAddress(event.ContractAddress.Bytes()),
-				event.Data,
-				chainParams.BorChainId,
-			)
-		*/
+		msg := clerkTypes.NewMsgEventRecord(
+			helper.GetAddress(),
+			vLog.TxHash.String(),
+			uint64(vLog.Index),
+			vLog.BlockNumber,
+			event.Id.Uint64(),
+			event.ContractAddress.Bytes(),
+			hmTypes.HexBytes{HexBytes: event.Data},
+			chainParams.BorChainId,
+		)
 
 		_, checkTxAgainstMempoolSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "checkTxAgainstMempool")
 		// Check if we have the same transaction in mempool or not
 		// Don't drop the transaction. Keep retrying after `util.RetryStateSyncTaskDelay = 24 seconds`,
 		// until the transaction in mempool is processed or cancelled.
-		inMempool, _ := cp.checkTxAgainstMempool(msg, event)
+		inMempool, _ := cp.checkTxAgainstMempool(&msg, event)
 		tracing.EndSpan(checkTxAgainstMempoolSpan)
 
 		if inMempool {
@@ -158,7 +153,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 
 		_, BroadcastToHeimdallSpan := tracing.StartSpan(sendStateSyncedToHeimdallCtx, "BroadcastToHeimdall")
 		// return broadcast to heimdall
-		err = cp.txBroadcaster.BroadcastToHeimdall(msg, event)
+		err = cp.txBroadcaster.BroadcastToHeimdall(&msg, event)
 		tracing.EndSpan(BroadcastToHeimdallSpan)
 
 		if err != nil {

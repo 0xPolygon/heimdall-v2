@@ -159,13 +159,10 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 	}
 
 	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
-		// TODO HV2 - uncomment when clerk is merged
-		/*
-			if _, err = util.GetClerkEventRecord(rl.cliCtx, i); err == nil {
-				rl.Logger.Info("State found on heimdall", "id", i)
-				continue
-			}
-		*/
+		if _, err = util.GetClerkEventRecord(rl.cliCtx, i); err == nil {
+			rl.Logger.Info("State found on heimdall", "id", i)
+			continue
+		}
 
 		rl.Logger.Info("Processing state sync", "id", i)
 
@@ -199,13 +196,10 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 			var statusCheck int
 			for statusCheck = 0; statusCheck > 15; statusCheck++ {
-				// TODO HV2 - uncomment when clerk is merged
-				/*
-					if _, err = util.GetClerkEventRecord(rl.cliCtx, i); err == nil {
-						rl.Logger.Info("State found on heimdall", "id", i)
-						break
-					}
-				*/
+				if _, err = util.GetClerkEventRecord(rl.cliCtx, i); err == nil {
+					rl.Logger.Info("State found on heimdall", "id", i)
+					break
+				}
 
 				rl.Logger.Info("State not found on heimdall", "id", i)
 				time.Sleep(1 * time.Second)

@@ -1,7 +1,5 @@
 package processor
 
-// TODO HV2 - uncomment when clerk is merged
-/*
 import (
 	"os"
 	"testing"
@@ -31,20 +29,20 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 
 	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
 
-	defaultMessage := clerkTypes.MsgEventRecord{
-		From:            hmTypes.BytesToHeimdallAddress(helper.GetAddress()),
-		TxHash:          hmTypes.BytesToHeimdallHash([]byte("0xa86a2f8f30d5fab1bb858e572ecf3f24d691276f833f06fc90a745cea20f4fcb")),
+	defaultMessage := clerkTypes.MsgEventRecordRequest{
+		From:            string(helper.GetAddress()[:]),
+		TxHash:          "0xa86a2f8f30d5fab1bb858e572ecf3f24d691276f833f06fc90a745cea20f4fcb",
 		LogIndex:        71,
 		BlockNumber:     14475337,
-		ContractAddress: hmTypes.BytesToHeimdallAddress([]byte("0x401f6c983ea34274ec46f84d70b31c151321188b")),
-		Data:            []byte{},
+		ContractAddress: "0x401f6c983ea34274ec46f84d70b31c151321188b",
+		Data:            hmTypes.HexBytes{HexBytes: []byte{}},
 		ID:              1897091,
 		ChainID:         "15001",
 	}
 
 	// adding clerk messages and errors for testing
 	var (
-		testData       []clerkTypes.MsgEventRecord
+		testData       []clerkTypes.MsgEventRecordRequest
 		expectedStatus []bool
 	)
 
@@ -56,7 +54,7 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 
 	// change the txhash in the 3rd message
 	defaultMessage2 := defaultMessage
-	defaultMessage2.TxHash = hmTypes.BytesToHeimdallHash([]byte("0x8a83aa78a400fe959b44ccf70d926c967af4e451ba630a849b2e1dedc7e30c07"))
+	defaultMessage2.TxHash = "0x8a83aa78a400fe959b44ccf70d926c967af4e451ba630a849b2e1dedc7e30c07"
 	testData = append(testData, defaultMessage2)
 	expectedStatus = append(expectedStatus, false) // 3rd message should go through as the txhash is different
 
@@ -82,7 +80,7 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 		t.Run(string(rune(index)), func(t *testing.T) {
 			t.Parallel()
 
-			inMempool, err := cp.checkTxAgainstMempool(tx, nil)
+			inMempool, err := cp.checkTxAgainstMempool(&tx, nil)
 			t.Log("Done checking tx against mempool", "in mempool", inMempool)
 			if err != nil {
 				t.Fatal(err)
@@ -91,7 +89,7 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 			assert.Equal(t, inMempool, expectedStatus[index])
 			if !inMempool {
 				t.Log("Tx not in mempool, broadcasting")
-				err = _txBroadcaster.BroadcastToHeimdall(tx, nil)
+				err = _txBroadcaster.BroadcastToHeimdall(&tx, nil)
 				assert.Empty(t, err, "Error broadcasting tx to heimdall", err)
 			} else {
 				t.Log("Tx is already in mempool, not broadcasting")
@@ -99,4 +97,3 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 		})
 	}
 }
-*/
