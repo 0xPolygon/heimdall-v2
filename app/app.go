@@ -13,10 +13,6 @@ import (
 	"cosmossdk.io/core/appmodule"
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
-	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/clerk"
-	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
-	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -67,10 +63,14 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	mod "github.com/0xPolygon/heimdall-v2/module"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
+	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/0xPolygon/heimdall-v2/x/clerk"
+	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
+	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -346,12 +346,13 @@ func NewHeimdallApp(
 		stake.NewAppModule(app.StakeKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		// TODO HV2: add custom modules here
 		clerk.NewAppModule(appCodec, app.ClerkKeeper),
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
 		milestone.NewAppModule(&app.MilestoneKeeper),
+		// TODO HV2: add custom modules here
+		// bor.NewAppModule(app.BorKeeper),
 	)
 
 	// Basic manager
@@ -391,9 +392,9 @@ func NewHeimdallApp(
 		staketypes.ModuleName,
 		checkpointTypes.ModuleName,
 		milestoneTypes.ModuleName,
+		clerktypes.ModuleName,
 		// TODO HV2: uncomment when modules are implemented
 		// bortypes.ModuleName,
-		clerktypes.ModuleName,
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
