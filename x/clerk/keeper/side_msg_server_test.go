@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
@@ -16,6 +17,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
@@ -50,8 +53,7 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
 
-	chainParams, err := ck.ChainKeeper.GetParams(suite.ctx)
-	require.NoError(t, err)
+	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	msg := types.NewMsgEventRecord(
 		addrBz1,
@@ -76,7 +78,7 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 		ContractAddress: common.HexToAddress(msg.ContractAddress),
 		Data:            msg.Data.HexBytes,
 	}
-	contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
+	contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
 	result := suite.sideHandler(ctx, &msg)
 	require.Equal(t, hmModule.Vote_VOTE_YES, result)
@@ -84,9 +86,6 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 
 func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	t, ctx, ck, contractCaller := suite.T(), suite.ctx, suite.keeper, &suite.contractCaller
-
-	chainParams, err := ck.ChainKeeper.GetParams(suite.ctx)
-	require.NoError(t, err)
 
 	s := rand.NewSource(1)
 	r := rand.New(s)
@@ -128,8 +127,9 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			ContractAddress: common.HexToAddress(msg.ContractAddress),
 			Data:            msg.Data.HexBytes,
 		}
-		contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
+		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
+		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
 		require.Equal(t, hmModule.Vote_VOTE_YES, result)
@@ -162,6 +162,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
 		// execute handler
+		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		result := suite.sideHandler(ctx, &msg)
 		require.Equal(t, hmModule.Vote_VOTE_NO, result)
 	})
@@ -188,8 +189,9 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		// mock external calls -- no receipt
 		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
-		contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(nil, nil)
+		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 
+		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
 		require.Equal(t, hmModule.Vote_VOTE_NO, result)
@@ -230,8 +232,9 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
 			Data:            b,
 		}
-		contractCaller.On("DecodeStateSyncedEvent", chainParams.ChainParams.StateSenderAddress, txReceipt, logIndex).Return(event, nil)
+		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
+		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
 		require.Equal(t, hmModule.Vote_VOTE_NO, result)

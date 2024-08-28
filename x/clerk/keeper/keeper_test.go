@@ -11,21 +11,19 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/runtime"
-	"github.com/cosmos/cosmos-sdk/testutil"
+	cosmostestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
@@ -52,27 +50,20 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (suite *KeeperTestSuite) SetupTest() {
-	keyChainManager := storetypes.NewKVStoreKey(chainmanagertypes.StoreKey)
-	storeServiceChainManager := runtime.NewKVStoreService(keyChainManager)
-	testCtxChainManager := testutil.DefaultContextWithDB(suite.T(), keyChainManager, storetypes.NewTransientStoreKey("transient_test"))
-	ctxChainManager := testCtxChainManager.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
-
-	encCfg := moduletestutil.MakeTestEncodingConfig()
-
-	chainManagerKeeper := chainmanagerkeeper.NewKeeper(encCfg.Codec, storeServiceChainManager, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	require.NoError(suite.T(), chainManagerKeeper.SetParams(ctxChainManager, chainmanagertypes.DefaultParams()))
-
-	suite.contractCaller = mocks.IContractCaller{}
-
 	key := storetypes.NewKVStoreKey(types.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
-	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := cosmostestutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
+	encCfg := moduletestutil.MakeTestEncodingConfig()
+	ctrl := gomock.NewController(suite.T())
+	defer ctrl.Finish()
+	chainKeeper := testutil.NewMockChainKeeper(ctrl)
+	suite.contractCaller = mocks.IContractCaller{}
 
 	keeper := clerkKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		chainManagerKeeper,
+		chainKeeper,
 		&suite.contractCaller,
 	)
 

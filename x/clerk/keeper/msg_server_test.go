@@ -7,10 +7,13 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
@@ -47,6 +50,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	)
 
 	t.Run("Success", func(t *testing.T) {
+		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		_, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.NoError(t, err)
 
@@ -72,6 +76,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 		)
 		require.NoError(t, err)
 
+		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.Error(t, err)
 		require.Equal(t, types.ErrEventRecordAlreadySynced, err)
@@ -126,6 +131,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 	ck.SetRecordSequence(ctx, sequence.String())
 
+	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
 	// require.Equal(t, common.ErrOldTx(types.ModuleName), err)
@@ -160,6 +166,8 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 		},
 		"random chain id",
 	)
+
+	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
 

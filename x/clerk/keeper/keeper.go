@@ -12,7 +12,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
@@ -21,7 +20,7 @@ type Keeper struct {
 	storeService storetypes.KVStoreService
 	cdc          codec.BinaryCodec
 
-	ChainKeeper    chainmanagerkeeper.Keeper
+	ChainKeeper    types.ChainKeeper
 	contractCaller helper.IContractCaller
 
 	Schema        collections.Schema
@@ -35,7 +34,7 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
-	ChainKeeper chainmanagerkeeper.Keeper,
+	ChainKeeper types.ChainKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
