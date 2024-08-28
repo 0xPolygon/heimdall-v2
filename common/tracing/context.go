@@ -22,14 +22,14 @@ func FromContext(ctx context.Context) trace.Tracer {
 	return tr
 }
 
-func StartSpan(ctx context.Context, snapName string) (context.Context, trace.Span) {
+func StartSpan(ctx context.Context, spanName string) (context.Context, trace.Span) {
 	tr := FromContext(ctx)
 
 	if tr == nil {
 		return ctx, nil
 	}
 
-	ctx, span := tr.Start(ctx, snapName)
+	ctx, span := tr.Start(ctx, spanName)
 	ctx = WithTracer(ctx, tr)
 
 	return ctx, span
@@ -64,7 +64,7 @@ func Exec(ctx context.Context, spanName string, opts ...Option) {
 		optFn(ctx, span)
 	}
 
-	if tr != nil {
+	if tr != nil && span != nil {
 		span.End()
 	}
 }

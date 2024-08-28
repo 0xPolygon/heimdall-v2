@@ -72,7 +72,7 @@ string amount = 3 [
 To check reflected topup on account run following command
 
 ```bash
-heimdallcli query auth account <validator-address> --trust-node
+heimdalld query auth account <validator-address> --trust-node
 ```
 
 ## REST APIs
