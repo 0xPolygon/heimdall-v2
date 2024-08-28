@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -275,6 +276,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
 			return nil, err
 		}
+		txs := req.Txs[1:]
 
 		// Fetch validators from previous block
 		// TODO HV2: Heimdall as of now uses validator set from currentHeight. But should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
@@ -295,23 +297,31 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		// execute side txs
-		// TODO HV2: is approvedTxs a list of raw txs or a list of tx hashes? Based on that app.TxDecode(tx) might work or not
-		for _, tx := range approvedTxs {
-
-			decodedTx, err := app.TxDecode(tx)
+		for _, rawTx := range txs {
+			// create a cache wrapped context for stateless execution
+			ctx, _ = app.cacheTxContext(ctx, rawTx)
+			decodedTx, err := app.TxDecode(rawTx)
 			if err != nil {
 				logger.Error("Error occurred while decoding tx bytes", "error", err)
 				return nil, err
 			}
 
-			msgs := decodedTx.GetMsgs()
-			for _, msg := range msgs {
-				postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
-				if postHandler != nil {
-					postHandler(ctx, msg, mod.Vote_VOTE_YES)
+			var txBytes cmtTypes.Tx = rawTx
+
+			for _, approvedTx := range approvedTxs {
+
+				if bytes.Equal(approvedTx, txBytes.Hash()) {
+
+					msgs := decodedTx.GetMsgs()
+					for _, msg := range msgs {
+						postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
+						if postHandler != nil {
+							postHandler(ctx, msg, mod.Vote_VOTE_YES)
+						}
+					}
+
 				}
 			}
-
 		}
 	}
 

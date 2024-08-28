@@ -23,7 +23,7 @@ import (
 	stakingKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
-// TODO HV2: unit test this file
+// TODO HV2: implement vote_ext_utils_test.go
 
 // ValidateVoteExtensions is a helper function for verifying vote extension
 // signatures by a proposer during PrepareProposal and validators during ProcessProposal.
@@ -208,7 +208,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vot
 		if err := json.Unmarshal(vote.VoteExtension, &ve); err != nil {
 			return nil, err
 		}
-		// TODO HV2: validate ve.Height and ve.Hash?
+		// TODO HV2: validate ve.Height and ve.Hash? Against what?
 
 		// iterate through vote extensions and accumulate voting power for YES/NO/SKIP votes
 		for _, res := range ve.SideTxResponses {

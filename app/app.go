@@ -213,8 +213,6 @@ func NewHeimdallApp(
 
 	app.caller = contractCallerObj
 
-	// TODO HV2: Set vote extension and post handlers for each module (use SetModVoteExtHandler and SetModPostHandler)
-
 	// Set ABCI++ Handlers
 	bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
 	bApp.SetProcessProposal(app.NewProcessProposalHandler())
