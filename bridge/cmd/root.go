@@ -9,9 +9,7 @@ import (
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-
-	// TODO HV2 - uncomment when cmd PR is merged
-	// "github.com/0xPolygon/heimdall-v2/version"
+	"github.com/0xPolygon/heimdall-v2/version"
 
 	cometbftLogger "github.com/cometbft/cometbft/libs/log"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
@@ -38,16 +36,13 @@ var rootCmd = &cobra.Command{
 	Aliases: []string{"bridge"},
 	Short:   "Heimdall bridge daemon",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// TODO HV2 - uncomment when cmd PR is merged
-		/*
-			if cmd.Use != version.Cmd.Use {
-				// initialize cometbft viper config
-				initCometBFTViperConfig(cmd)
+		if cmd.Use != version.Cmd.Use {
+			// initialize cometbft viper config
+			initCometBFTViperConfig(cmd)
 
-				// init metrics server
-				initMetrics()
-			}
-		*/
+			// init metrics server
+			initMetrics()
+		}
 	},
 	PostRunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
