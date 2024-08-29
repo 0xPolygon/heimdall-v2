@@ -8,8 +8,8 @@ import (
 	context "context"
 	reflect "reflect"
 
-	types "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	types0 "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	types "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	types0 "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -37,10 +37,10 @@ func (m *MockStakeKeeper) EXPECT() *MockStakeKeeperMockRecorder {
 }
 
 // GetSpanEligibleValidators mocks base method.
-func (m *MockStakeKeeper) GetSpanEligibleValidators(ctx context.Context) []types.Validator {
+func (m *MockStakeKeeper) GetSpanEligibleValidators(ctx context.Context) []types0.Validator {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSpanEligibleValidators", ctx)
-	ret0, _ := ret[0].([]types.Validator)
+	ret0, _ := ret[0].([]types0.Validator)
 	return ret0
 }
 
@@ -51,10 +51,10 @@ func (mr *MockStakeKeeperMockRecorder) GetSpanEligibleValidators(ctx interface{}
 }
 
 // GetValidatorFromValID mocks base method.
-func (m *MockStakeKeeper) GetValidatorFromValID(ctx context.Context, valID uint64) (types.Validator, bool) {
+func (m *MockStakeKeeper) GetValidatorFromValID(ctx context.Context, valID uint64) (types0.Validator, bool) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorFromValID", ctx, valID)
-	ret0, _ := ret[0].(types.Validator)
+	ret0, _ := ret[0].(types0.Validator)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
@@ -66,10 +66,10 @@ func (mr *MockStakeKeeperMockRecorder) GetValidatorFromValID(ctx, valID interfac
 }
 
 // GetValidatorSet mocks base method.
-func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) types.ValidatorSet {
+func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) types0.ValidatorSet {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSet", ctx)
-	ret0, _ := ret[0].(types.ValidatorSet)
+	ret0, _ := ret[0].(types0.ValidatorSet)
 	return ret0
 }
 
@@ -103,10 +103,10 @@ func (m *MockChainManagerKeeper) EXPECT() *MockChainManagerKeeperMockRecorder {
 }
 
 // GetParams mocks base method.
-func (m *MockChainManagerKeeper) GetParams(ctx context.Context) (types0.Params, error) {
+func (m *MockChainManagerKeeper) GetParams(ctx context.Context) (types.Params, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetParams", ctx)
-	ret0, _ := ret[0].(types0.Params)
+	ret0, _ := ret[0].(types.Params)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

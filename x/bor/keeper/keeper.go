@@ -8,23 +8,21 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
-	storetypes "cosmossdk.io/store/types"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 // Keeper stores all chainmanager related data
 type Keeper struct {
-	cdc          codec.BinaryCodec
-	storeService store.KVStoreService
-	ck           types.ChainManagerKeeper
-	sk           types.StakeKeeper
-	// TODO HV2: uncomment when contractCaller is implemented
-	// contractCaller helper.ContractCaller
+	cdc            codec.BinaryCodec
+	storeService   store.KVStoreService
+	ck             types.ChainManagerKeeper
+	sk             types.StakeKeeper
+	contractCaller helper.IContractCaller
 
 	Schema       collections.Schema
 	spans        collections.Map[uint64, *types.Span]
@@ -39,20 +37,19 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
-	// caller helper.ContractCaller,
+	caller helper.IContractCaller,
 ) Keeper {
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
-		cdc:          cdc,
-		storeService: storeService,
-		ck:           chainKeeper,
-		sk:           stakingKeeper,
-		// TODO HV2: uncomment when contractCaller is implemented
-		// contractCaller: caller,
-		spans:        collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollInterfaceValue[*types.Span](cdc)),
-		latestSpan:   collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
-		lastEthBlock: collections.NewItem(sb, types.LastProcessedEthBlock, "lastEthBlock", collections.BytesValue),
-		Params:       collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		cdc:            cdc,
+		storeService:   storeService,
+		ck:             chainKeeper,
+		sk:             stakingKeeper,
+		contractCaller: caller,
+		spans:          collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollInterfaceValue[*types.Span](cdc)),
+		latestSpan:     collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
+		lastEthBlock:   collections.NewItem(sb, types.LastProcessedEthBlock, "lastEthBlock", collections.BytesValue),
+		Params:         collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
 
 	schema, err := sb.Build()
@@ -78,19 +75,6 @@ func GetSpanKey(id uint64) []byte {
 // AddNewSpan adds new span for bor to store and updates last span
 func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 	logger := k.Logger(ctx)
-	// store := k.storeService.OpenKVStore(ctx)
-
-	// out, err := k.cdc.Marshal(span)
-	// if err != nil {
-	// 	k.Logger(ctx).Error("Error marshalling span", "error", err)
-	// 	return err
-	// }
-
-	// // store set span id
-	// if err := store.Set(GetSpanKey(span.Id), out); err != nil {
-	// 	return err
-	// }
-
 	if err := k.AddNewRawSpan(ctx, span); err != nil {
 		// TODO HV2: should we panic here instead ?
 		logger.Error("error setting span", "error", err, "span", span)
@@ -171,31 +155,31 @@ func (k *Keeper) GetAllSpans(ctx context.Context) ([]*types.Span, error) {
 }
 
 // GetSpanList returns all spans with params like page and limit
-func (k *Keeper) FetchSpanList(ctx context.Context, page uint64, limit uint64) ([]types.Span, error) {
-	store := k.storeService.OpenKVStore(ctx)
+// func (k *Keeper) FetchSpanList(ctx context.Context, page uint64, limit uint64) ([]types.Span, error) {
+// 	store := k.storeService.OpenKVStore(ctx)
 
-	// have max limit
-	if limit > 20 {
-		limit = 20
-	}
+// 	// have max limit
+// 	if limit > 20 {
+// 		limit = 20
+// 	}
 
-	// get paginated iterator
-	st := runtime.KVStoreAdapter(store)
-	iterator := storetypes.KVStorePrefixIteratorPaginated(st, types.SpanPrefixKey, uint(page), uint(limit))
-	defer iterator.Close()
+// 	// get paginated iterator
+// 	st := runtime.KVStoreAdapter(store)
+// 	iterator := storetypes.KVStorePrefixIteratorPaginated(st, types.SpanPrefixKey, uint(page), uint(limit))
+// 	defer iterator.Close()
 
-	// loop through validators to get valid validators
-	var spans []types.Span
+// 	// loop through validators to get valid validators
+// 	var spans []types.Span
 
-	for ; iterator.Valid(); iterator.Next() {
-		var span types.Span
-		if err := k.cdc.Unmarshal(iterator.Value(), &span); err == nil {
-			spans = append(spans, span)
-		}
-	}
+// 	for ; iterator.Valid(); iterator.Next() {
+// 		var span types.Span
+// 		if err := k.cdc.Unmarshal(iterator.Value(), &span); err == nil {
+// 			spans = append(spans, span)
+// 		}
+// 	}
 
-	return spans, nil
-}
+// 	return spans, nil
+// }
 
 // GetLastSpan fetches last span from store
 func (k *Keeper) GetLastSpan(ctx context.Context) (*types.Span, error) {
@@ -244,7 +228,7 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 }
 
 // SelectNextProducers selects producers for next span
-func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) ([]types.Validator, error) {
+func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) ([]staketypes.Validator, error) {
 	// spanEligibleVals are current validators who are not getting deactivated in between next span
 	spanEligibleVals := k.sk.GetSpanEligibleValidators(ctx)
 	params, err := k.FetchParams(ctx)
@@ -264,7 +248,7 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) ([]t
 		return nil, err
 	}
 
-	vals := make([]types.Validator, 0, len(newProducersIds))
+	vals := make([]staketypes.Validator, 0, len(newProducersIds))
 
 	IDToPower := make(map[uint64]uint64)
 	for _, ID := range newProducersIds {
@@ -279,8 +263,7 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) ([]t
 	}
 
 	// sort by address
-	// TODO HV2: uncomment when helper is merged
-	// vals = helper.SortValidatorByAddress(vals)
+	vals = types.SortValidatorByAddress(vals)
 
 	return vals, nil
 }
@@ -352,10 +335,8 @@ func (k *Keeper) FetchNextSpanSeed(ctx context.Context) (common.Hash, error) {
 	newEthBlock := lastEthBlock.Add(lastEthBlock, big.NewInt(1))
 	logger.Debug("newEthBlock to generate seed", "newEthBlock", newEthBlock)
 
-	// TODO HV2: uncomment when contractCaller is implemented
 	// fetch block header from mainchain
-	// blockHeader, err := k.contractCaller.GetMainChainBlock(newEthBlock)
-	blockHeader := &ethtypes.Header{Number: newEthBlock} // dummy block header to avoid panic
+	blockHeader, err := k.contractCaller.GetMainChainBlock(newEthBlock)
 	if err != nil {
 		logger.Error("error fetching block header from mainchain while calculating next span seed", "error", err)
 		return common.Hash{}, err

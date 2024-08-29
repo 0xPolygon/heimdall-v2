@@ -5,24 +5,25 @@ import (
 	"math"
 	"math/rand"
 
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // selectNextProducers selects producers for next span
-func selectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Validator, producerCount uint64) ([]uint64, error) {
+func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketypes.Validator, producerCount uint64) ([]uint64, error) {
 	selectedProducers := make([]uint64, 0)
 
 	if len(spanEligibleValidators) <= int(producerCount) {
 		for _, validator := range spanEligibleValidators {
-			selectedProducers = append(selectedProducers, uint64(validator.Id))
+			selectedProducers = append(selectedProducers, uint64(validator.ValId))
 		}
 
 		return selectedProducers, nil
 	}
 
 	// extract seed from hash
-	seedBytes := toBytes32(blkHash.Bytes()[:32])
+	seedBytes := helper.ToBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
 	r := rand.New(rand.NewSource(seed))
 
@@ -43,7 +44,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []types.Val
 		*/
 		targetWeight := randomRangeInclusive(1, totalVotingPower, r)
 		index := binarySearch(weightedRanges, targetWeight)
-		selectedProducers = append(selectedProducers, spanEligibleValidators[index].Id)
+		selectedProducers = append(selectedProducers, spanEligibleValidators[index].ValId)
 	}
 
 	return selectedProducers[:producerCount], nil
@@ -98,17 +99,4 @@ func createWeightedRanges(weights []uint64) ([]uint64, uint64) {
 	}
 
 	return weightedRanges, totalWeight
-}
-
-// TODO HV2: this method ought to be in the helper package
-
-// toBytes32 is a convenience method for converting a byte slice to a fix
-// sized 32 byte array. This method will truncate the input if it is larger
-// than 32 bytes.
-func toBytes32(x []byte) [32]byte {
-	var y [32]byte
-
-	copy(y[:], x)
-
-	return y
 }

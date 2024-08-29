@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 )
 
@@ -47,7 +48,7 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 
 // SetGenesisStateToAppState sets x/bor GenesisState into raw application
 // genesis state.
-func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, currentValSet ValidatorSet) (map[string]json.RawMessage, error) {
+func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, currentValSet staketypes.ValidatorSet) (map[string]json.RawMessage, error) {
 	// set state to bor state
 	borState := GetGenesisStateFromAppState(cdc, appState)
 	chainState := chainmanagertypes.GetGenesisStateFromAppState(cdc, appState)
@@ -63,10 +64,10 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 }
 
 // genFirstSpan generates default first span using the validators producer set
-func genFirstSpan(valSet ValidatorSet, chainId string) []*Span {
+func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []*Span {
 	var (
 		firstSpan         []*Span
-		selectedProducers []Validator
+		selectedProducers []staketypes.Validator
 	)
 
 	if len(valSet.Validators) > int(DefaultProducerCount) {

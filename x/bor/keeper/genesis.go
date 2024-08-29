@@ -14,8 +14,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	}
 
 	// sort data spans before inserting to ensure lastspanId fetched is correct
-	// TODO HV2: uncomment when helper is merged
-	// helper.SortSpanByID(data.Spans)
+	types.SortSpansById(data.Spans)
+
 	// add new span
 	for _, span := range data.Spans {
 		if err := k.AddNewRawSpan(ctx, span); err != nil {
@@ -43,8 +43,8 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 	if err != nil {
 		panic(err)
 	}
-	// TODO HV2: uncomment when helper is merged
-	// helper.SortSpanByID(allSpans)
+
+	types.SortSpansById(allSpans)
 
 	return types.NewGenesisState(
 		params,

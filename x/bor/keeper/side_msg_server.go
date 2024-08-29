@@ -3,7 +3,6 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"math/big"
 	"strconv"
 
 	hModule "github.com/0xPolygon/heimdall-v2/module"
@@ -11,7 +10,6 @@ import (
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 var (
@@ -81,8 +79,8 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 
 	// fetch current child block
 	// TODO HV2: uncomment when contract caller is implemented
-	// childBlock, err := s.k.contractCaller.GetBorChainBlock(nil)
-	childBlock := &ethtypes.Header{Number: big.NewInt(1)} // dummy block to avoid nil pointer
+	childBlock, err := s.k.contractCaller.GetBorChainBlock(nil)
+	// childBlock := &ethtypes.Header{Number: big.NewInt(1)} // dummy block to avoid nil pointer
 	if err != nil {
 		logger.Error("error fetching current child block", "error", err)
 		return hModule.Vote_VOTE_SKIP

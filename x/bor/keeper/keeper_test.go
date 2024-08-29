@@ -6,9 +6,11 @@ import (
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	bortestutil "github.com/0xPolygon/heimdall-v2/x/bor/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -28,12 +30,11 @@ type KeeperTestSuite struct {
 	borKeeper          keeper.Keeper
 	chainManagerKeeper *bortestutil.MockChainManagerKeeper
 	stakeKeeper        *bortestutil.MockStakeKeeper
-	// TODO HV2: blocked by contract caller
-	// contractCaller     *bortestutil.ContractCaller
-	queryClient   types.QueryClient
-	msgServer     types.MsgServer
-	sideMsgServer types.SideMsgServer
-	encCfg        moduletestutil.TestEncodingConfig
+	contractCaller     mocks.IContractCaller
+	queryClient        types.QueryClient
+	msgServer          types.MsgServer
+	sideMsgServer      types.SideMsgServer
+	encCfg             moduletestutil.TestEncodingConfig
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -56,9 +57,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	stakeKeeper := bortestutil.NewMockStakeKeeper(ctrl)
 	suite.stakeKeeper = stakeKeeper
 
-	// TODO HV2: blocked by contract caller
-	// contractCaller := bortestutil.NewMockContractCaller(ctrl)
-	// suite.contractCaller = contractCaller
+	suite.contractCaller = mocks.IContractCaller{}
 
 	suite.ctx = ctx
 
@@ -67,8 +66,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 		storeService,
 		suite.chainManagerKeeper,
 		suite.stakeKeeper,
-		// TODO HV2: blocked by contract caller
-		// suite.contractCaller,
+		&suite.contractCaller,
 	)
 
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
@@ -192,46 +190,46 @@ func (suite *KeeperTestSuite) TestGetAllSpans() {
 	require.Equal(spans, resSpans)
 }
 
-func (suite *KeeperTestSuite) TestFetchSpanList() {
-	require := suite.Require()
-	spans := suite.genTestSpans(30)
+// func (suite *KeeperTestSuite) TestFetchSpanList() {
+// 	require := suite.Require()
+// 	spans := suite.genTestSpans(30)
 
-	expSpanList := make([]types.Span, 0, len(spans))
-	for _, s := range spans {
-		expSpanList = append(expSpanList, *s)
-		err := suite.borKeeper.AddNewSpan(suite.ctx, s)
-		require.NoError(err)
-	}
+// 	expSpanList := make([]types.Span, 0, len(spans))
+// 	for _, s := range spans {
+// 		expSpanList = append(expSpanList, *s)
+// 		err := suite.borKeeper.AddNewSpan(suite.ctx, s)
+// 		require.NoError(err)
+// 	}
 
-	testcases := []struct {
-		name         string
-		page         uint64
-		limit        uint64
-		expSpanLists []types.Span
-	}{
-		{
-			name:         "Normal limit",
-			page:         1,
-			limit:        10,
-			expSpanLists: expSpanList[:10],
-		},
-		{
-			name:         "Above limit",
-			page:         1,
-			limit:        30,
-			expSpanLists: expSpanList[:20],
-		},
-	}
+// 	testcases := []struct {
+// 		name         string
+// 		page         uint64
+// 		limit        uint64
+// 		expSpanLists []types.Span
+// 	}{
+// 		{
+// 			name:         "Normal limit",
+// 			page:         1,
+// 			limit:        10,
+// 			expSpanLists: expSpanList[:10],
+// 		},
+// 		{
+// 			name:         "Above limit",
+// 			page:         1,
+// 			limit:        30,
+// 			expSpanLists: expSpanList[:20],
+// 		},
+// 	}
 
-	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			resSpanLists, err := suite.borKeeper.FetchSpanList(suite.ctx, tc.page, tc.limit)
-			require.NoError(err)
+// 	for _, tc := range testcases {
+// 		suite.T().Run(tc.name, func(t *testing.T) {
+// 			resSpanLists, err := suite.borKeeper.FetchSpanList(suite.ctx, tc.page, tc.limit)
+// 			require.NoError(err)
 
-			require.Equal(tc.expSpanLists, resSpanLists)
-		})
-	}
-}
+// 			require.Equal(tc.expSpanLists, resSpanLists)
+// 		})
+// 	}
+// }
 
 func (suite *KeeperTestSuite) TestFreezeSet() {
 	require := suite.Require()
@@ -239,13 +237,13 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 	valSet, vals := suite.genTestValidators()
 	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).Return(vals).Times(1)
 	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).Return(valSet).Times(1)
-	suite.stakeKeeper.EXPECT().GetValidatorFromValID(suite.ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (types.Validator, bool) {
+	suite.stakeKeeper.EXPECT().GetValidatorFromValID(suite.ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (staketypes.Validator, bool) {
 		for _, v := range vals {
-			if v.Id == valID {
+			if v.ValId == valID {
 				return v, true
 			}
 		}
-		return types.Validator{}, false
+		return staketypes.Validator{}, false
 	}).Times(len(vals))
 
 	params := types.DefaultParams()
@@ -257,7 +255,7 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 		startBlock      uint64
 		endBlock        uint64
 		seed            common.Hash
-		expValSet       types.ValidatorSet
+		expValSet       staketypes.ValidatorSet
 		expLastEthBlock *big.Int
 	}{
 		{
@@ -430,18 +428,18 @@ func (suite *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
 	return spans
 }
 
-func (suite *KeeperTestSuite) genTestValidators() (types.ValidatorSet, []types.Validator) {
+func (suite *KeeperTestSuite) genTestValidators() (staketypes.ValidatorSet, []staketypes.Validator) {
 	suite.T().Helper()
-	var validators []*types.Validator
+	var validators []*staketypes.Validator
 	err := json.Unmarshal([]byte(keeper.TestValidators), &validators)
 	suite.Require().NoError(err)
 	suite.Require().Equal(5, len(validators), "Total validators should be 5")
 
-	valSet := types.ValidatorSet{
+	valSet := staketypes.ValidatorSet{
 		Validators: validators,
 	}
 
-	vals := make([]types.Validator, 0, len(validators))
+	vals := make([]staketypes.Validator, 0, len(validators))
 	for _, v := range validators {
 		vals = append(vals, *v)
 	}

@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"math/big"
+	"strings"
 	"testing"
 
 	hModule "github.com/0xPolygon/heimdall-v2/module"
@@ -22,8 +23,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 	err := suite.borKeeper.AddNewSpan(suite.ctx, spans[0])
 	require.NoError(err)
 
-	// TODO HV2: replace with mock when contract caller is implemented
 	// suite.contractCaller.EXPECT().GetMainChainBlock(&ethtypes.Header{}).Return().AnyTimes()
+	suite.contractCaller.On("GetMainChainBlock", nil).Return(&ethtypes.Header{}, nil).Times(1)
 	lastEthBlock, err := suite.borKeeper.GetLastEthBlock(suite.ctx)
 	require.NoError(err)
 
@@ -85,12 +86,13 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 
-			// TODO HV2: uncomment when contract caller is implemented
-			// if strings.Contains(tc.name, "less than last span start block") {
-			// 	suite.contractCaller.EXPECT().GetBorChainBlock(nil).Return(&ethtypes.Header{Number: big.NewInt(0)}, nil).AnyTimes()
-			// } else if strings.Contains(tc.name, "greater than last span end block") {
-			// 	suite.contractCaller.EXPECT().GetBorChainBlock(nil).Return(&ethtypes.Header{Number: big.NewInt(103)}, nil).AnyTimes()
-			// }
+			if strings.Contains(tc.name, "less than last span start block") {
+				suite.contractCaller.On("GetBorChainBlock", nil).Return(&ethtypes.Header{Number: big.NewInt(0)}, nil).Times(1)
+				// suite.contractCaller.EXPECT().GetBorChainBlock(nil).Return(&ethtypes.Header{Number: big.NewInt(0)}, nil).AnyTimes()
+			} else if strings.Contains(tc.name, "greater than last span end block") {
+				suite.contractCaller.On("GetBorChainBlock", nil).Return(&ethtypes.Header{Number: big.NewInt(103)}, nil).Times(1)
+				// suite.contractCaller.EXPECT().GetBorChainBlock(nil).Return(&ethtypes.Header{Number: big.NewInt(103)}, nil).AnyTimes()
+			}
 			sideHandler := suite.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
 			res := sideHandler(suite.ctx, tc.msg)
 			require.Equal(tc.expVote, res)

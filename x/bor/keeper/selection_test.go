@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -83,7 +83,7 @@ func TestSelectNextProducers(t *testing.T) {
 		{"0xe09cc356df20c7a2dd38cb85b680a16ec29bd8b3e1ecc1b20f2e5603d5e7ee85", 4, 4, 4},
 	}
 
-	var validators []types.Validator
+	var validators []staketypes.Validator
 	err := json.Unmarshal([]byte(TestValidators), &validators)
 	require.NoError(t, err)
 	require.Equal(t, 5, len(validators), "Total validators should be 5")
@@ -100,8 +100,8 @@ func TestSelectNextProducers(t *testing.T) {
 	}
 }
 
-func getSelectedValidatorsFromIDs(validators []types.Validator, producerIds []uint64) ([]types.Validator, int64) {
-	var vals []types.Validator
+func getSelectedValidatorsFromIDs(validators []staketypes.Validator, producerIds []uint64) ([]staketypes.Validator, int64) {
+	var vals []staketypes.Validator
 
 	IDToPower := make(map[uint64]uint64)
 	for _, ID := range producerIds {
@@ -121,9 +121,9 @@ func getSelectedValidatorsFromIDs(validators []types.Validator, producerIds []ui
 	return vals, slots
 }
 
-func findValidatorByID(validators []types.Validator, id uint64) (val types.Validator, ok bool) {
+func findValidatorByID(validators []staketypes.Validator, id uint64) (val staketypes.Validator, ok bool) {
 	for _, v := range validators {
-		if v.Id == id {
+		if v.ValId == id {
 			return v, true
 		}
 	}

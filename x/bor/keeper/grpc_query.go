@@ -77,8 +77,7 @@ func (q QueryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	// TODO HV2: uncomment when helper is merged
-	// selectedProducers = helper.SortValidatorByAddress(selectedProducers)
+	selectedProducers = types.SortValidatorByAddress(selectedProducers)
 
 	// create next span
 	nextSpan := &types.Span{
@@ -141,6 +140,10 @@ func (q QueryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 	// if err != nil {
 	// 	return nil, status.Errorf(codes.Internal, err.Error())
 	// }
+
+	if req.Pagination != nil && req.Pagination.Limit > 20 {
+		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 20")
+	}
 
 	res, pageRes, err := query.CollectionPaginate(
 		ctx,
