@@ -81,13 +81,13 @@ const (
 	CodePrevMilestoneInVoting    = 7508
 )
 
-// -------- invalid msg
+// invalid msg
 
 func ErrInvalidMsg(ModuleName string, format string) error {
 	return errors.Register(ModuleName, CodeInvalidMsg, format)
 }
 
-// -------- checkpoint Errors
+// checkpoint Errors
 
 func ErrBadProposerDetails(ModuleName string, proposer sdk.AccAddress) error {
 	return errors.Register(ModuleName, CodeInvalidProposerInput, fmt.Sprintf("proposer is not valid, current proposer is %v", proposer.String()))
@@ -161,7 +161,7 @@ func ErrBadTimeStamp(ModuleName string) error {
 	return errors.Register(ModuleName, CodeBadTimeStamp, "invalid time stamp. It must be in near past.")
 }
 
-// -----------Milestone Errors
+// Milestone Errors
 
 func ErrNoMilestoneFound(ModuleName string) error {
 	return errors.Register(ModuleName, CodeNoMilestone, "milestone not found")
@@ -173,10 +173,6 @@ func ErrMilestoneNotInContinuity(ModuleName string) error {
 
 func ErrMilestoneInvalid(ModuleName string) error {
 	return errors.Register(ModuleName, CodeMilestoneInvalid, "milestone msg invalid")
-}
-
-func ErrOldMilestone(ModuleName string) error {
-	return errors.Register(ModuleName, CodeOldMilestone, "milestone already exists")
 }
 
 func ErrInvalidMilestoneTimeout(ModuleName string) error {
@@ -195,7 +191,7 @@ func ErrPrevMilestoneInVoting(ModuleName string) error {
 	return errors.Register(ModuleName, CodePrevMilestoneInVoting, "previous milestone still in voting phase")
 }
 
-// ----------- Staking Errors
+// Staking Errors
 
 func ErrOldValidator(ModuleName string) error {
 	return errors.Register(ModuleName, CodeOldValidator, "start epoch behind current epoch")

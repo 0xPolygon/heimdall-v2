@@ -7,9 +7,6 @@ import (
 	"time"
 
 	"cosmossdk.io/core/appmodule"
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/simulation"
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -18,6 +15,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/simulation"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 var (
@@ -28,11 +29,6 @@ var (
 
 	_ appmodule.AppModule = AppModule{}
 )
-
-// TODO HV2: what should this value be ?
-
-// ConsensusVersion defines the current x/bank module consensus version.
-const ConsensusVersion = 1
 
 // Name returns the chainmanager module's name.
 func (AppModule) Name() string { return types.ModuleName }
@@ -73,7 +69,7 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 // AppModule implements an application module for the chainmanager module.
 type AppModule struct {
 	keeper keeper.Keeper
-	// contractCaller helper.IContractCaller
+	// contractCaller helper.contractCaller
 
 }
 
@@ -88,7 +84,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	keeper keeper.Keeper,
-	// contractCaller helper.IContractCaller,
+	// contractCaller helper.contractCaller,
 ) AppModule {
 	return AppModule{
 		keeper: keeper,
@@ -116,9 +112,6 @@ func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.Raw
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
 }
 
-// ConsensusVersion implements AppModule/ConsensusVersion.
-func (AppModule) ConsensusVersion() uint64 { return ConsensusVersion }
-
 // AppModuleSimulation functions
 
 // GenerateGenesisState creates a randomized GenState of the chainmanager module.
@@ -128,13 +121,6 @@ func (AppModule) GenerateGenesisState(simState *module.SimulationState) {
 
 // RegisterStoreDecoder registers a decoder for chainmanager module's types
 func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {}
-
-// TODO HV2: uncomment when simulation is implemented
-
-// RandomizedParams creates randomized param changes for the simulator.
-// func (AppModule) RandomizedParams(r *rand.Rand) []simTypes.ParamChange {
-// 	return simulation.ParamChanges(r)
-// }
 
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {

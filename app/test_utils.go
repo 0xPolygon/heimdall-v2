@@ -43,6 +43,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*cmttypes.Validator, 
 
 		// create validator set
 		val := cmttypes.NewValidator(pubKey, 100)
+
 		validators = append(validators, val)
 
 		senderPubKey := secp256k1.GenPrivKey().PubKey()
