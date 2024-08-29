@@ -46,6 +46,10 @@ import (
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
 	"cosmossdk.io/log"
 	borkeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/clerk"
+	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
+	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -74,7 +78,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	mod "github.com/0xPolygon/heimdall-v2/module"
-	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -127,13 +130,13 @@ type HeimdallApp struct {
 	ConsensusParamsKeeper consensusparamkeeper.Keeper
 
 	// Custom Keepers
+	ClerkKeeper        clerkkeeper.Keeper
 	StakeKeeper        stakeKeeper.Keeper
 	TopupKeeper        topupKeeper.Keeper
 	ChainManagerKeeper chainmanagerkeeper.Keeper
 	CheckpointKeeper   checkpointKeeper.Keeper
 	MilestoneKeeper    milestoneKeeper.Keeper
 	BorKeeper          borkeeper.Keeper
-	// ClerkKeeper clerkkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
@@ -188,13 +191,13 @@ func NewHeimdallApp(
 		distrtypes.StoreKey,
 		govtypes.StoreKey,
 		paramstypes.StoreKey,
+		clerktypes.StoreKey,
 		staketypes.StoreKey,
 		checkpointTypes.StoreKey,
 		topupTypes.StoreKey,
 		chainmanagertypes.StoreKey,
 		milestoneTypes.StoreKey,
 		bortypes.StoreKey,
-		// clerktypes.StoreKey,
 	)
 
 	// register streaming services
@@ -327,6 +330,13 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.ClerkKeeper = clerkkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[clerktypes.StoreKey]),
+		app.ChainManagerKeeper,
+		&app.caller,
+	)
+
 	app.TopupKeeper = topupKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
@@ -364,6 +374,7 @@ func NewHeimdallApp(
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		// TODO HV2: add custom modules
 		bor.NewAppModule(app.BorKeeper, address.HexCodec{}),
+		clerk.NewAppModule(appCodec, app.ClerkKeeper),
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
@@ -411,9 +422,9 @@ func NewHeimdallApp(
 		checkpointTypes.ModuleName,
 		milestoneTypes.ModuleName,
 		bortypes.ModuleName,
-		// TODO HV2: uncomment when modules are implemented
-		// clerktypes.ModuleName,
+		clerktypes.ModuleName,
 		topupTypes.ModuleName,
+		// TODO HV2: uncomment when modules are implemented
 	}
 
 	app.mm.SetOrderInitGenesis(genesisModuleOrder...)

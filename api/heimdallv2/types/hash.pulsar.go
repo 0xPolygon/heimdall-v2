@@ -1292,8 +1292,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// HeimdallHash this following defines the
-// hash
+// HeimdallHash defines the hash
 type HeimdallHash struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1329,8 +1328,7 @@ func (x *HeimdallHash) GetHash() []byte {
 	return nil
 }
 
-// TxHash this following defines the
-// hash of the transaction
+// TxHash defines the hash of the transaction
 type TxHash struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
