@@ -16,7 +16,9 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -490,9 +492,6 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	return nil
 }
 
-// TODO HV2 - understand what the SideTxMsg is in this line `sideMsg, ok := cmsg.(checkpointtypes.SideTxMsg)`
-//            Also the `FetchSideTxSigs()` is not implemented in the helper package.
-/*
 // createAndSendCheckpointToRootchain prepares the data required for rootchain checkpoint submission
 // and sends a transaction to rootchain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
@@ -516,7 +515,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 
 	cmsg := stdTx.GetMsgs()[0]
 
-	sideMsg, ok := cmsg.(checkpointtypes.SideTxMsg)
+	sideMsg, ok := cmsg.(*checkpointtypes.MsgCheckpoint)
 	if !ok {
 		cp.Logger.Error("Invalid side-tx msg", "txHash", tx.Tx.Hash())
 		return err
@@ -525,12 +524,18 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 	// side-tx data
 	sideTxData := sideMsg.GetSideSignBytes()
 
-	// get sigs
-	sigs, err := helper.FetchSideTxSigs(cp.httpClient, height, tx.Tx.Hash(), sideTxData)
-	if err != nil {
-		cp.Logger.Error("Error fetching votes for checkpoint tx", "height", height)
-		return err
-	}
+	// TODO HV2 - `FetchSideTxSigs()` is not implemented in the helper package.
+	/*
+		// get sigs
+		sigs, err := helper.FetchSideTxSigs(cp.httpClient, height, tx.Tx.Hash(), sideTxData)
+		if err != nil {
+			cp.Logger.Error("Error fetching votes for checkpoint tx", "height", height)
+			return err
+		}
+	*/
+
+	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
+	var sigs [][3]*big.Int
 
 	shouldSend, err := cp.shouldSendCheckpoint(checkpointContext, start, end)
 	if err != nil {
@@ -557,7 +562,6 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 
 	return nil
 }
-*/
 
 // fetchDividendAccountRoot - fetches dividend accountroothash
 func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash hmTypes.HeimdallHash, err error) {
