@@ -139,7 +139,7 @@ func (tb *TxBroadcaster) BroadcastToMatic(msg ethereum.CallMsg) error {
 
 	// broadcast transaction
 	if err := maticClient.SendTransaction(ctx, signedTx); err != nil {
-		tb.logger.Error("Error while broadcasting the transaction to maticchain", "error", err)
+		tb.logger.Error("Error while broadcasting the transaction to polygonposchain", "error", err)
 		return err
 	}
 

@@ -13,7 +13,7 @@ const (
 
 	RootChainListenerStr  = "rootchain"
 	HeimdallListenerStr   = "heimdall"
-	MaticChainListenerStr = "maticchain"
+	MaticChainListenerStr = "polygonposchain"
 )
 
 // ListenerService starts and stops all chain event listeners

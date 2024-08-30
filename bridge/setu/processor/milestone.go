@@ -71,7 +71,7 @@ func (mp *MilestoneProcessor) startPolling(ctx context.Context, milestoneLength 
 	}
 }
 
-// sendMilestoneToHeimdall - handles headerblock from maticchain
+// sendMilestoneToHeimdall - handles headerblock from polygonposchain
 // 1. check if i am the proposer for next milestone
 // 2. check if milestone has to be proposed
 // 3. if so, propose milestone to heimdall.
@@ -215,7 +215,7 @@ func (mp *MilestoneProcessor) startPollingMilestoneTimeout(ctx context.Context, 
 	}
 }
 
-// sendMilestoneToHeimdall - handles headerblock from maticchain
+// sendMilestoneToHeimdall - handles headerblock from polygonposchain
 // 1. check if i am the proposer for next milestone
 // 2. check if milestone has to be proposed
 // 3. if so, propose milestone to heimdall.

@@ -8,7 +8,7 @@ import (
 	"github.com/RichardKnop/machinery/v1/tasks"
 )
 
-// MaticChainListener - Listens to and process headerblocks from maticchain
+// MaticChainListener - Listens to and process headerblocks from polygonposchain
 type MaticChainListener struct {
 	BaseListener
 }
@@ -37,7 +37,7 @@ func (ml *MaticChainListener) Start() error {
 	return nil
 }
 
-// ProcessHeader - process headerblock from maticchain
+// ProcessHeader - process headerblock from polygonposchain
 func (ml *MaticChainListener) ProcessHeader(newHeader *blockHeader) {
 	ml.Logger.Debug("New block detected", "blockNumber", newHeader.header.Number)
 	// Marshall header block and publish to queue

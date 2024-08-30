@@ -101,7 +101,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 	}
 }
 
-// sendCheckpointToHeimdall - handles headerblock from maticchain
+// sendCheckpointToHeimdall - handles headerblock from polygonposchain
 // 1. check if i am the proposer for next checkpoint
 // 2. check if checkpoint has to be proposed for given headerblock
 // 3. if so, propose checkpoint to heimdall.
