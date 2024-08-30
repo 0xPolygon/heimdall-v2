@@ -104,7 +104,7 @@ func (bp *BaseProcessor) String() string {
 	return bp.name
 }
 
-// OnStop stops all necessary go routines
+// Stop stops all necessary go routines
 func (bp *BaseProcessor) Stop() {
 	// override to stop any go-routines in individual processors
 }
