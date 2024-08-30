@@ -15,7 +15,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// milestoneProcessor - process milestone related events
+// MilestoneProcessor - process milestone related events
 type MilestoneProcessor struct {
 	BaseProcessor
 

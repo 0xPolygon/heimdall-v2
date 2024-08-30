@@ -15,7 +15,7 @@ type QueueConnector struct {
 }
 
 const (
-	// machinery task queue
+	// QueueName is machinery task queue
 	QueueName = "machinery_tasks"
 )
 
