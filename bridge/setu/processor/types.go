@@ -38,11 +38,3 @@ func NewContractCheckpoint(_newStart uint64, _newEnd uint64, _currentHeaderBlock
 		currentHeaderBlock: _currentHeaderBlock,
 	}
 }
-
-// NewHeimdallCheckpoint creates new heimdall checkpoint object
-func NewHeimdallCheckpoint(_start uint64, _end uint64) *HeimdallCheckpoint {
-	return &HeimdallCheckpoint{
-		start: _start,
-		end:   _end,
-	}
-}
