@@ -82,6 +82,10 @@ func ValidateVoteExtensions(ctx sdk.Context,
 			continue
 		}
 
+		if vote.BlockIdFlag == types.BlockIDFlagUnknown {
+			return fmt.Errorf("received vote with unknown block ID flag at height %d", currentHeight)
+		}
+
 		if len(vote.ExtensionSignature) == 0 {
 			return fmt.Errorf("vote extensions enabled; received empty vote extension signature at height %d", currentHeight)
 		}
