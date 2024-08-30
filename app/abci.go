@@ -36,6 +36,11 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
+		// start including ExtendedVoteInfo a block after vote extensions are enabled
+		if !mustAddSpecialTransaction(ctx, req.Height+1) {
+			return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
+		}
+
 		for _, vote := range req.LocalLastCommit.Votes {
 			var consolidatedSideTxResponse mod.ConsolidatedSideTxResponse
 			if err := json.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
@@ -50,10 +55,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 		}
 
-		// start including ExtendedVoteInfo a block after vote extensions are enabled
-		if !mustAddSpecialTransaction(ctx, req.Height+1) {
-			return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
-		}
 		// Validate VE sigs and check whether they have 2/3+ majority
 		if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("PrepareProposal: Error occurred while validating VEs: ", err)
