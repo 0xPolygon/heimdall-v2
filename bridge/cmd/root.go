@@ -124,8 +124,8 @@ func initMetrics() {
 	}()
 }
 
-// function is called to set appropriate bridge db path
-func AdjustBridgeDBValue(cmd *cobra.Command, v *viper.Viper) {
+// AdjustBridgeDBValue function is called to set appropriate bridge db path
+func AdjustBridgeDBValue(cmd *cobra.Command) {
 	cometbftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
 	homeValue, _ := cmd.Flags().GetString(helper.HomeFlag)
 	withHeimdallConfigValue, _ := cmd.Flags().GetString(helper.WithHeimdallConfigFlag)
@@ -150,7 +150,7 @@ func AdjustBridgeDBValue(cmd *cobra.Command, v *viper.Viper) {
 // initCometBFTViperConfig sets global viper configuration needed to heimdall
 func initCometBFTViperConfig(cmd *cobra.Command) {
 	// set appropriate bridge DB
-	AdjustBridgeDBValue(cmd, viper.GetViper())
+	AdjustBridgeDBValue(cmd)
 
 	// start heimdall config
 	helper.InitHeimdallConfig("")
