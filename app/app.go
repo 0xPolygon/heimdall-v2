@@ -1,8 +1,10 @@
 package app
 
 import (
+	"cosmossdk.io/x/tx/signing"
 	"encoding/json"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/std"
 	"io"
 	"os"
 	"path/filepath"
@@ -28,7 +30,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/api"
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/cosmos/cosmos-sdk/std"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -123,7 +124,7 @@ type HeimdallApp struct {
 	ChainManagerKeeper chainmanagerkeeper.Keeper
 	CheckpointKeeper   checkpointKeeper.Keeper
 	MilestoneKeeper    milestoneKeeper.Keeper
-	// TODO HV2: uncomment when the keepers are implemented
+	// TODO HV2: uncomment when bor module is implemented
 	// BorKeeper borkeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
@@ -157,11 +158,20 @@ func NewHeimdallApp(
 	appOpts servertypes.AppOptions,
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *HeimdallApp {
-	encodingConfig := RegisterEncodingConfig()
-	appCodec := encodingConfig.Marshaller
-	legacyAmino := encodingConfig.Amino
-	txConfig := encodingConfig.TxConfig
-	interfaceRegistry := encodingConfig.InterfaceRegistry
+
+	legacyAmino := codec.NewLegacyAmino()
+	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec:          address.HexCodec{},
+			ValidatorAddressCodec: address.HexCodec{},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+	appCodec := codec.NewProtoCodec(interfaceRegistry)
+	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
 
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
@@ -172,7 +182,9 @@ func NewHeimdallApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
+	// TODO HV2: do we need these keys? For example, gaia app doesn't have them
 	keys := storetypes.NewKVStoreKeys(
+		// TODO HV2: if we need such keys, change authtypes.StoreKey to be equal to the ModuleName (to be consistent with other modules)
 		authtypes.StoreKey,
 		banktypes.StoreKey,
 		consensusparamtypes.StoreKey,
@@ -184,7 +196,7 @@ func NewHeimdallApp(
 		topupTypes.StoreKey,
 		chainmanagertypes.StoreKey,
 		milestoneTypes.StoreKey,
-		// TODO HV2: uncomment when modules are implemented
+		// TODO HV2: uncomment when bor module is implemented
 		// bortypes.StoreKey,
 	)
 
@@ -216,33 +228,20 @@ func NewHeimdallApp(
 
 	app.caller = contractCallerObj
 
+	moduleAccountAddresses := app.ModuleAccountAddrs()
+	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
+
 	// Set ABCI++ Handlers
 	bApp.SetPrepareProposal(app.NewPrepareProposalHandler())
 	bApp.SetProcessProposal(app.NewProcessProposalHandler())
 
-	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tKeys[paramstypes.TStoreKey])
-
-	moduleAccountAddresses := app.ModuleAccountAddrs()
-	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
-
 	// set the BaseApp's parameter store
+	app.ParamsKeeper = initParamsKeeper(appCodec, legacyAmino, keys[paramstypes.StoreKey], tKeys[paramstypes.TStoreKey])
 	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[consensusparamtypes.StoreKey]), authtypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.EventService{})
 	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
-	sideTxCfg := mod.NewSideTxConfigurator()
-	app.RegisterSideMsgServices(sideTxCfg)
+	// sdk module keepers
 
-	// Create the voteExtProcessor using sideTxCfg
-	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
-	app.VoteExtensionProcessor = voteExtProcessor
-
-	// Set the voteExtension methods to HeimdallApp
-	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
-	bApp.SetVerifyVoteExtensionHandler(app.VoteExtensionProcessor.VerifyVoteExtension())
-
-	// SDK module keepers
-
-	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
@@ -264,9 +263,7 @@ func NewHeimdallApp(
 	govRouter := govv1beta1.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govv1beta1.ProposalHandler).
 		AddRoute(paramproposal.RouterKey, params.NewParamChangeProposalHandler(app.ParamsKeeper))
-
 	govConfig := govtypes.DefaultConfig()
-
 	govKeeper := govkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[govtypes.StoreKey]),
@@ -278,10 +275,8 @@ func NewHeimdallApp(
 		govConfig,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
-
 	// Set legacy router for backwards compatibility with gov v1beta1
 	govKeeper.SetLegacyRouter(govRouter)
-
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
 		// register the governance hooks
@@ -289,7 +284,6 @@ func NewHeimdallApp(
 	)
 
 	// custom keepers
-	// TODO HV2: initialize custom module keepers
 
 	app.ChainManagerKeeper = chainmanagerkeeper.NewKeeper(
 		appCodec,
@@ -338,6 +332,8 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	// TODO HV2: add bor module keeper here
+
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
@@ -351,7 +347,7 @@ func NewHeimdallApp(
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
 		milestone.NewAppModule(&app.MilestoneKeeper),
-		// TODO HV2: add custom modules here
+		// TODO HV2: uncomment when bor module is implemented
 		// bor.NewAppModule(app.BorKeeper),
 	)
 
@@ -370,17 +366,31 @@ func NewHeimdallApp(
 	app.BasicManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicManager.RegisterInterfaces(interfaceRegistry)
 
+	sideTxCfg := mod.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(sideTxCfg)
+
+	// Create the voteExtProcessor using sideTxCfg
+	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
+	app.VoteExtensionProcessor = voteExtProcessor
+
+	// Set the voteExtension methods to HeimdallApp
+	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
+	bApp.SetVerifyVoteExtensionHandler(app.VoteExtensionProcessor.VerifyVoteExtension())
+
+	// TODO HV2: is this order correct?
 	app.mm.SetOrderBeginBlockers(
 		genutiltypes.ModuleName,
 		staketypes.ModuleName,
 	)
 
+	// TODO HV2: is this order correct? Do we need any other module?
 	app.mm.SetOrderEndBlockers(
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
 		staketypes.ModuleName,
 	)
 
+	// TODO HV2: is this order correct?
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -393,7 +403,7 @@ func NewHeimdallApp(
 		checkpointTypes.ModuleName,
 		milestoneTypes.ModuleName,
 		clerktypes.ModuleName,
-		// TODO HV2: uncomment when modules are implemented
+		// TODO HV2: uncomment when bor module is implemented
 		// bortypes.ModuleName,
 	}
 
@@ -423,6 +433,7 @@ func NewHeimdallApp(
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tKeys)
+	// TODO HV2: are memKeys needed?
 	// app.MountMemoryStores(memKeys)
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
@@ -644,7 +655,7 @@ func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	delete(modAccAddrs, authtypes.NewModuleAddress(topupTypes.ModuleName).String())
-	// TODO HV2: any other module to remove from the BlockedModuleAccountAddrs? So that they can send/receive tokens
+	// TODO HV2: any other module to remove from the BlockedModuleAccountAddrs? So that they can send/receive tokens. Maybe bank module?
 	return modAccAddrs
 }
 

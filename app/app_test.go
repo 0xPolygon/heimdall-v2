@@ -5,12 +5,6 @@ import (
 	"testing"
 
 	"cosmossdk.io/core/appmodule"
-	"github.com/cosmos/cosmos-sdk/x/auth"
-	"github.com/cosmos/cosmos-sdk/x/bank"
-	"github.com/cosmos/cosmos-sdk/x/gov"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/require"
-
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -18,13 +12,22 @@ import (
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/cosmos/cosmos-sdk/x/bank"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/cosmos-sdk/x/gov"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/require"
 )
 
+// TODO HV2: all the tests in this file are skipped. We need to enable them and make sure they pass.
+//  Current error is about initialization of validatorSet (stake module?).
+//         	Error:      	Received unexpected error:
+//         	validator set is empty after InitGenesis, please ensure at least one validator is initialized
+//        	with a delegation greater than or equal to the DefaultPowerReduction
+
 func TestHeimdallAppExport(t *testing.T) {
-	// TODO HV2: enable this test once modules implementation is completed
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
+	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
 
@@ -46,9 +49,7 @@ func TestHeimdallAppExport(t *testing.T) {
 
 //nolint:tparallel
 func TestRunMigrations(t *testing.T) {
-	// TODO HV2: enable this test once modules implementation is completed
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
+	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
 
@@ -164,7 +165,7 @@ func TestRunMigrations(t *testing.T) {
 					"bank": 1,
 					"auth": auth.AppModule{}.ConsensusVersion(),
 					"gov":  gov.AppModule{}.ConsensusVersion(),
-					// TODO HV2: do we need to add ConsensusVersion for all custom modules?
+					// TODO HV2: do we need to add ConsensusVersion for all custom modules? We agreed with Lauren once to remove the ConsensusVersion constant from all the v2 modules
 					// "stake":      stake.AppModule{}.ConsensusVersion(),
 					// "bor": bor.AppModule{}.ConsensusVersion(),
 					// "clerk": clerk.AppModule{}.ConsensusVersion(),
@@ -187,9 +188,7 @@ func TestRunMigrations(t *testing.T) {
 }
 
 func TestInitGenesisOnMigration(t *testing.T) {
-	// TODO HV2: enable this test once modules implementation is completed
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
+	t.Skip("TODO HVE: fix and enable this test")
 	t.Parallel()
 	app, _, _ := SetupApp(t, 1)
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
@@ -213,7 +212,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 			"bank": 1,
 			"auth": auth.AppModule{}.ConsensusVersion(),
 			"gov":  gov.AppModule{}.ConsensusVersion(),
-			// TODO HV2: do we need to add ConsensusVersion for all custom modules?
+			// TODO HV2: do we need to add ConsensusVersion for all custom modules? Or can we remove them all?
 			// "stake":      stake.AppModule{}.ConsensusVersion(),
 			// "bor": bor.AppModule{}.ConsensusVersion(),
 			// "clerk": clerk.AppModule{}.ConsensusVersion(),
@@ -226,9 +225,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 }
 
 func TestValidateGenesis(t *testing.T) {
-	// TODO HV2: enable this test once modules implementation is completed
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
+	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 
 	happ, _, _ := SetupApp(t, 1)
@@ -246,9 +243,7 @@ func TestValidateGenesis(t *testing.T) {
 }
 
 func TestGetMaccPerms(t *testing.T) {
-	// TODO HV2: enable this test once modules implementation is completed
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
+	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 
 	dup := GetMaccPerms()

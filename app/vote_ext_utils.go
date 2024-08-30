@@ -23,8 +23,6 @@ import (
 	stakingKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
-// TODO HV2: implement vote_ext_utils_test.go
-
 // ValidateVoteExtensions is a helper function for verifying vote extension
 // signatures by a proposer during PrepareProposal and validators during ProcessProposal.
 // It returns an error if any signature is invalid or if unexpected vote extensions and/or signatures are found or less than 2/3
@@ -48,8 +46,9 @@ func ValidateVoteExtensions(ctx sdk.Context,
 	}
 
 	// Fetch validatorSet from previous block
-	// TODO HV2: Heimdall as of now uses validator set from currentHeight. But should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
-	// TODO HV2 (in response to the previous comment): could not find the function where currentHeight is used
+	// TODO HV2: Heimdall as of now uses validator set from current height.
+	//  Should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
+	//  Discuss with PoS team
 	validatorSet, err := stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return err
@@ -208,13 +207,13 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vot
 		if err := json.Unmarshal(vote.VoteExtension, &ve); err != nil {
 			return nil, err
 		}
-		// TODO HV2: validate ve.Height and ve.Hash? Against what?
+		// TODO HV2: How to validate ve.Height and ve.Hash? Against what?
 
 		// iterate through vote extensions and accumulate voting power for YES/NO/SKIP votes
 		for _, res := range ve.SideTxResponses {
 			txHashStr := string(res.TxHash[:])
 
-			// TODO HV2: do we slash in case a validator maliciously adds conflicting votes ?
+			// TODO HV2: (once slashing is enabled) do we slash in case a validator maliciously adds conflicting votes ?
 			// Given that we also check for duplicate votes during VerifyVoteExtension, is this redundant ?
 			if _, hasVoted := validatorToTxMap[string(vote.Validator.Address[:])][txHashStr]; !hasVoted {
 

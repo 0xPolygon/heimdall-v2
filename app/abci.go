@@ -13,7 +13,7 @@ import (
 	mod "github.com/0xPolygon/heimdall-v2/module"
 )
 
-// TODO HV2: implement abci_test.go
+// TODO HV2: check the correct usage and flow of the VEs
 
 // VoteExtensionProcessor handles Vote Extension processing for Heimdall app
 type VoteExtensionProcessor struct {
@@ -242,8 +242,8 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 
 		}
 
-		// TODO HV2: Ensure the side txs included in V.E.s are actually present in the block.
-		//  This will be possible once the block is available to be consumed in RequestVerifyVoteExtension from Comet
+		// TODO HV2: Ensure the side txs included in V.E.s are actually present in the block. This would require the block being available in RequestVerifyVoteExtension
+		//  As this issue https://github.com/informalsystems/heimdall-migration/issues/46 will be closed, this most probably won't be possible
 		for _, v := range canonicalSideTxResponse.SideTxResponses {
 			// check whether the vote result is valid
 			if !isVoteValid(v.Result) {
@@ -279,8 +279,9 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		txs := req.Txs[1:]
 
 		// Fetch validators from previous block
-		// TODO HV2: Heimdall as of now uses validator set from currentHeight. But should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
-		// TODO HV2 (in response to the previous comment): could not find the function where currentHeight is used
+		// TODO HV2: Heimdall as of now uses validator set from current height.
+		//  Should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
+		//  Discuss with PoS team
 		validators, err := app.StakeKeeper.GetValidatorSet(ctx)
 		if err != nil {
 			return nil, err

@@ -30,7 +30,7 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	// TODO HV2: this is not implemented in our custom staking module. Do we need it?
+	// TODO HV2: the `WriteValidators` function is not implemented in our custom `stake` module. Do we need it?
 	// validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
 	return servertypes.ExportedApp{
 		AppState: appState,
