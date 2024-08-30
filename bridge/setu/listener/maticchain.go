@@ -13,11 +13,6 @@ type MaticChainListener struct {
 	BaseListener
 }
 
-// NewMaticChainListener - constructor func
-func NewMaticChainListener() *MaticChainListener {
-	return &MaticChainListener{}
-}
-
 // Start starts new block subscription
 func (ml *MaticChainListener) Start() error {
 	ml.Logger.Info("Starting")

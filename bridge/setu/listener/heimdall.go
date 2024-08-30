@@ -22,11 +22,6 @@ type HeimdallListener struct {
 	BaseListener
 }
 
-// NewHeimdallListener - constructor func
-func NewHeimdallListener() *HeimdallListener {
-	return &HeimdallListener{}
-}
-
 // Start starts new block subscription
 func (hl *HeimdallListener) Start() error {
 	hl.Logger.Info("Starting")
