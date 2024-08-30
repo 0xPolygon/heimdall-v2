@@ -17,23 +17,23 @@ func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event)
 	rl.Logger.Debug("ReceivedEvent", "eventname", selectedEvent.Name)
 
 	switch selectedEvent.Name {
-	case "NewHeaderBlock":
+	case helper.NewHeaderBlockEvent:
 		rl.handleNewHeaderBlockLog(vLog, selectedEvent)
-	case "Staked":
+	case helper.StakedEvent:
 		rl.handleStakedLog(vLog, selectedEvent)
-	case "StakeUpdate":
+	case helper.StakeUpdateEvent:
 		rl.handleStakeUpdateLog(vLog, selectedEvent)
-	case "SignerChange":
+	case helper.SignerChangeEvent:
 		rl.handleSignerChangeLog(vLog, selectedEvent)
-	case "UnstakeInit":
+	case helper.UnstakeInitEvent:
 		rl.handleUnstakeInitLog(vLog, selectedEvent)
-	case "StateSynced":
+	case helper.StateSyncedEvent:
 		rl.handleStateSyncedLog(vLog, selectedEvent)
-	case "TopUpFee":
+	case helper.TopUpFeeEvent:
 		rl.handleTopUpFeeLog(vLog, selectedEvent)
-	case "Slashed":
+	case helper.SlashedEvent:
 		rl.handleSlashedLog(vLog, selectedEvent)
-	case "UnJailed":
+	case helper.UnJailedEvent:
 		rl.handleUnJailedLog(vLog, selectedEvent)
 	}
 }

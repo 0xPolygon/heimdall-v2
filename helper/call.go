@@ -31,15 +31,15 @@ import (
 
 // smart contracts' events names
 const (
-	newHeaderBlockEvent = "NewHeaderBlock"
-	topUpFeeEvent       = "TopUpFee"
-	stakedEvent         = "Staked"
-	stakeUpdateEvent    = "StakeUpdate"
+	NewHeaderBlockEvent = "NewHeaderBlock"
+	TopUpFeeEvent       = "TopUpFee"
+	StakedEvent         = "Staked"
+	StakeUpdateEvent    = "StakeUpdate"
 	UnstakeInitEvent    = "UnstakeInit"
-	signerChangeEvent   = "SignerChange"
-	stateSyncedEvent    = "StateSynced"
-	slashedEvent        = "Slashed"
-	unJailedEvent       = "UnJailed"
+	SignerChangeEvent   = "SignerChange"
+	StateSyncedEvent    = "StateSynced"
+	SlashedEvent        = "Slashed"
+	UnJailedEvent       = "UnJailed"
 )
 
 // ContractsABIsMap is a cached map holding the ABIs of the contracts
@@ -614,7 +614,7 @@ func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string,
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.RootChainABI, event, newHeaderBlockEvent, vLog); err != nil {
+			if err := UnpackLog(&c.RootChainABI, event, NewHeaderBlockEvent, vLog); err != nil {
 				return nil, err
 			}
 
@@ -635,7 +635,7 @@ func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddressString str
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, topUpFeeEvent, vLog); err != nil {
+			if err := UnpackLog(&c.StakingInfoABI, event, TopUpFeeEvent, vLog); err != nil {
 				return nil, err
 			}
 
@@ -654,7 +654,7 @@ func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddressString string, 
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, stakedEvent, vLog); err != nil {
+			if err := UnpackLog(&c.StakingInfoABI, event, StakedEvent, vLog); err != nil {
 				return nil, err
 			}
 
@@ -675,7 +675,7 @@ func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString s
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, stakeUpdateEvent, vLog); err != nil {
+			if err := UnpackLog(&c.StakingInfoABI, event, StakeUpdateEvent, vLog); err != nil {
 				return nil, err
 			}
 
@@ -719,7 +719,7 @@ func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, r
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, signerChangeEvent, vLog); err != nil {
+			if err := UnpackLog(&c.StakingInfoABI, event, SignerChangeEvent, vLog); err != nil {
 				return nil, err
 			}
 
@@ -740,7 +740,7 @@ func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, re
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StateSenderABI, event, stateSyncedEvent, vLog); err != nil {
+			if err := UnpackLog(&c.StateSenderABI, event, StateSyncedEvent, vLog); err != nil {
 				return nil, err
 			}
 
@@ -763,7 +763,7 @@ func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receip
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, slashedEvent, vLog); err != nil {
+			if err := UnpackLog(&c.StakingInfoABI, event, SlashedEvent, vLog); err != nil {
 				return nil, err
 			}
 
@@ -784,7 +784,7 @@ func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, recei
 
 	for _, vLog := range receipt.Logs {
 		if uint64(vLog.Index) == logIndex && bytes.Equal(vLog.Address.Bytes(), contractAddress.Bytes()) {
-			if err := UnpackLog(&c.StakingInfoABI, event, unJailedEvent, vLog); err != nil {
+			if err := UnpackLog(&c.StakingInfoABI, event, UnJailedEvent, vLog); err != nil {
 				return nil, err
 			}
 
