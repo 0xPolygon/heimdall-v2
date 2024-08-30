@@ -133,7 +133,7 @@ func (bl *BaseListener) StartPolling(ctx context.Context, pollInterval time.Dura
 	// How often to fire the passed in function in second
 	interval := pollInterval
 
-	// Setup the ticket and the channel to signal
+	// Set up the ticket and the channel to signal
 	// the ending of the interval
 	ticker := time.NewTicker(interval)
 
