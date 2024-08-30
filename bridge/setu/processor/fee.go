@@ -1,7 +1,7 @@
 package processor
 
 import (
-	math "cosmossdk.io/math"
+	"cosmossdk.io/math"
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"

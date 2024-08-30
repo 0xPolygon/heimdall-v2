@@ -3,7 +3,7 @@ package processor
 import (
 	"time"
 
-	math "cosmossdk.io/math"
+	"cosmossdk.io/math"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	defaultDelayDuration time.Duration = 15 * time.Second
+	defaultDelayDuration = 15 * time.Second
 )
 
 // StakingProcessor - process staking related events
