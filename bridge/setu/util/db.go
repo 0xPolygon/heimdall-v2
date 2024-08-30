@@ -23,7 +23,10 @@ func GetBridgeDBInstance(filePath string) *leveldb.DB {
 func CloseBridgeDBInstance() {
 	bridgeDBCloseOnce.Do(func() {
 		if bridgeDB != nil {
-			bridgeDB.Close()
+			err := bridgeDB.Close()
+			if err != nil {
+				panic(err)
+			}
 		}
 	})
 }

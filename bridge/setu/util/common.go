@@ -782,7 +782,11 @@ func GetUnconfirmedTxnCount(event interface{}) int {
 	}
 
 	body, err := io.ReadAll(resp.Body)
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.Error("Error closing response body:", err)
+		}
+	}()
 
 	if err != nil {
 		logger.Error("Error fetching mempool txs count", "error", err)

@@ -96,7 +96,7 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 		}
 
 		if result == nil {
-			return fmt.Errorf("Got nil result while fetching milestone count")
+			return fmt.Errorf("got nil result while fetching milestone count")
 		}
 
 		var start = helper.GetMilestoneBorBlockHeight()
@@ -109,7 +109,7 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 			}
 
 			if latestMilestone == nil {
-				return errors.New("Got nil result while fetching latest milestone")
+				return errors.New("got nil result while fetching latest milestone")
 			}
 
 			//start block number should be continuous to the end block of lasted stored milestone
@@ -143,7 +143,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	latestNum := block.Number.Uint64()
 
 	if latestNum < startNum+milestoneLength+blocksConfirmation-1 {
-		return fmt.Errorf("Less than milestoneLength  Start=%v Latest Block=%v MilestoneLength=%v MaticChainConfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation)
+		return fmt.Errorf("less than milestoneLength  start=%v latest block=%v milestonelength=%v maticchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation)
 	}
 
 	endNum := latestNum - blocksConfirmation
@@ -151,7 +151,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	//fetch the endBlock+1 number instead of endBlock so that we can directly get the hash of endBlock using parent hash
 	block, err = mp.contractConnector.GetMaticChainBlock(big.NewInt(int64(endNum + 1)))
 	if err != nil {
-		return fmt.Errorf("Error while fetching %d block %w", endNum+1, err)
+		return fmt.Errorf("error while fetching %d block %w", endNum+1, err)
 	}
 
 	endHash := block.ParentHash
@@ -275,7 +275,7 @@ func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) 
 	}
 
 	lastMilestoneEndBlock := latestMilestone.EndBlock
-	currentChildBlockNumber, _ := mp.getCurrentChildBlock()
+	currentChildBlockNumber, err := mp.getCurrentChildBlock()
 
 	if err != nil {
 		return false, err

@@ -54,7 +54,11 @@ func (rl *RootChainListener) querySubGraph(query []byte, ctx context.Context) (d
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			fmt.Println("Error closing response body:", err)
+		}
+	}()
 
 	return io.ReadAll(response.Body)
 }

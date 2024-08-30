@@ -176,8 +176,11 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 	}
 
 	body, err := io.ReadAll(resp.Body)
-	defer resp.Body.Close()
-
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			bp.Logger.Error("Error closing response body:", err)
+		}
+	}()
 	if err != nil {
 		bp.Logger.Error("Error fetching mempool tx", "error", err)
 		return false, err

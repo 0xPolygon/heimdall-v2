@@ -22,7 +22,10 @@ var resetCmd = &cobra.Command{
 		}
 
 		for _, d := range dir {
-			os.RemoveAll(path.Join([]string{dbLocation, d.Name()}...))
+			err = os.RemoveAll(path.Join([]string{dbLocation, d.Name()}...))
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
