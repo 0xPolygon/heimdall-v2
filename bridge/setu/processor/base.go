@@ -52,7 +52,7 @@ type BaseProcessor struct {
 	cliCtx client.Context
 
 	// contract caller
-	contractConnector helper.ContractCaller
+	contractCaller helper.ContractCaller
 
 	// http client to subscribe to
 	httpClient *rpchttp.HTTP
@@ -90,12 +90,12 @@ func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.QueueConnector, htt
 		quit:   make(chan struct{}),
 		impl:   impl,
 
-		cliCtx:            cliCtx,
-		queueConnector:    queueConnector,
-		contractConnector: contractCaller,
-		txBroadcaster:     txBroadcaster,
-		httpClient:        httpClient,
-		storageClient:     util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),
+		cliCtx:         cliCtx,
+		queueConnector: queueConnector,
+		contractCaller: contractCaller,
+		txBroadcaster:  txBroadcaster,
+		httpClient:     httpClient,
+		storageClient:  util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),
 	}
 }
 

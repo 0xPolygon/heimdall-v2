@@ -107,7 +107,7 @@ func (rl *RootChainListener) getCurrentStateID(ctx context.Context) (*big.Int, e
 		return nil, err
 	}
 
-	stateReceiverInstance, err := rl.contractConnector.GetStateReceiverInstance(
+	stateReceiverInstance, err := rl.contractCaller.GetStateReceiverInstance(
 		rootchainContext.ChainmanagerParams.ChainParams.StateReceiverAddress,
 	)
 	if err != nil {
@@ -154,7 +154,7 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*
 		return nil, fmt.Errorf("no state sync found for state id %d", stateId)
 	}
 
-	receipt, err := rl.contractConnector.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StateSyncs[0].TransactionHash))
+	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StateSyncs[0].TransactionHash))
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 		return nil, fmt.Errorf("no stake update found for validator %d and nonce %d", validatorId, nonce)
 	}
 
-	receipt, err := rl.contractConnector.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StakeUpdates[0].TransactionHash))
+	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StakeUpdates[0].TransactionHash))
 	if err != nil {
 		return nil, err
 	}

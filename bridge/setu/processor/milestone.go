@@ -135,7 +135,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	blocksConfirmation := helper.MaticChainMilestoneConfirmation
 
 	// Get latest matic block
-	block, err := mp.contractConnector.GetMaticChainBlock(nil)
+	block, err := mp.contractCaller.GetMaticChainBlock(nil)
 	if err != nil {
 		return err
 	}
@@ -149,7 +149,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	endNum := latestNum - blocksConfirmation
 
 	//fetch the endBlock+1 number instead of endBlock so that we can directly get the hash of endBlock using parent hash
-	block, err = mp.contractConnector.GetMaticChainBlock(big.NewInt(int64(endNum + 1)))
+	block, err = mp.contractCaller.GetMaticChainBlock(big.NewInt(int64(endNum + 1)))
 	if err != nil {
 		return fmt.Errorf("error while fetching %d block %w", endNum+1, err)
 	}
@@ -290,7 +290,7 @@ func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) 
 
 // getCurrentChildBlock gets the current child block
 func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := mp.contractConnector.GetMaticChainBlock(nil)
+	childBlock, err := mp.contractCaller.GetMaticChainBlock(nil)
 	if err != nil {
 		return 0, err
 	}

@@ -160,14 +160,14 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 func (rl *RootChainListener) queryAndBroadcastEvents(rootchainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) {
 	rl.Logger.Info("Query rootchain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
 
-	ctx, cancel := context.WithTimeout(context.Background(), rl.contractConnector.MainChainTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), rl.contractCaller.MainChainTimeout)
 	defer cancel()
 
 	// get chain params
 	chainParams := rootchainContext.ChainmanagerParams.ChainParams
 
 	// Fetch events from the rootchain
-	logs, err := rl.contractConnector.MainChainClient.FilterLogs(ctx, ethereum.FilterQuery{
+	logs, err := rl.contractCaller.MainChainClient.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: fromBlock,
 		ToBlock:   toBlock,
 		Addresses: []ethCommon.Address{

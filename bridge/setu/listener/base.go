@@ -46,7 +46,7 @@ type BaseListener struct {
 	impl Listener
 
 	// contract caller
-	contractConnector helper.ContractCaller
+	contractCaller helper.ContractCaller
 
 	chainClient *ethclient.Client
 
@@ -98,11 +98,11 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, http
 		impl:          impl,
 		storageClient: util.GetBridgeDBInstance(viper.GetString(util.BridgeDBFlag)),
 
-		cliCtx:            cliCtx,
-		queueConnector:    queueConnector,
-		httpClient:        httpClient,
-		contractConnector: contractCaller,
-		chainClient:       chainClient,
+		cliCtx:         cliCtx,
+		queueConnector: queueConnector,
+		httpClient:     httpClient,
+		contractCaller: contractCaller,
+		chainClient:    chainClient,
 
 		HeaderChannel: make(chan *blockHeader),
 	}

@@ -356,13 +356,13 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	chainmanagerParams := checkpointContext.ChainmanagerParams
 	checkpointParams := checkpointContext.CheckpointParams
 
-	rootChainInstance, err := cp.contractConnector.GetRootChainInstance(chainmanagerParams.ChainParams.RootChainAddress)
+	rootChainInstance, err := cp.contractCaller.GetRootChainInstance(chainmanagerParams.ChainParams.RootChainAddress)
 	if err != nil {
 		return nil, err
 	}
 
 	// fetch current header block from mainchain contract
-	_currentHeaderBlock, err := cp.contractConnector.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildBlockInterval)
+	_currentHeaderBlock, err := cp.contractCaller.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block number from rootchain", "error", err)
 		return nil, err
@@ -372,7 +372,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	currentHeaderBlockNumber := big.NewInt(0).SetUint64(_currentHeaderBlock)
 
 	// get header info
-	_, currentStart, currentEnd, lastCheckpointTime, _, err := cp.contractConnector.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildBlockInterval)
+	_, currentStart, currentEnd, lastCheckpointTime, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block object from rootchain", "error", err)
 		return nil, err
@@ -450,7 +450,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	checkpointParams := checkpointContext.CheckpointParams
 
 	// Get root hash
-	root, err := cp.contractConnector.GetRootHash(start, end, checkpointParams.MaxCheckpointLength)
+	root, err := cp.contractCaller.GetRootHash(start, end, checkpointParams.MaxCheckpointLength)
 	if err != nil {
 		return err
 	}
@@ -548,13 +548,13 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 		// root chain address
 		rootChainAddress := chainParams.RootChainAddress
 		// root chain instance
-		rootChainInstance, err := cp.contractConnector.GetRootChainInstance(rootChainAddress)
+		rootChainInstance, err := cp.contractCaller.GetRootChainInstance(rootChainAddress)
 		if err != nil {
 			cp.Logger.Info("Error while creating rootchain instance", "error", err)
 			return err
 		}
 
-		if err := cp.contractConnector.SendCheckpoint(sideTxData, sigs, common.HexToAddress(rootChainAddress), rootChainInstance); err != nil {
+		if err := cp.contractCaller.SendCheckpoint(sideTxData, sigs, common.HexToAddress(rootChainAddress), rootChainInstance); err != nil {
 			cp.Logger.Info("Error submitting checkpoint to rootchain", "error", err)
 			return err
 		}
@@ -595,20 +595,20 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 	chainParams := checkpointContext.ChainmanagerParams.ChainParams
 	checkpointParams := checkpointContext.CheckpointParams
 
-	rootChainInstance, err := cp.contractConnector.GetRootChainInstance(chainParams.RootChainAddress)
+	rootChainInstance, err := cp.contractCaller.GetRootChainInstance(chainParams.RootChainAddress)
 	if err != nil {
 		return 0, err
 	}
 
 	// fetch last header number
-	lastHeaderNumber, err := cp.contractConnector.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildBlockInterval)
+	lastHeaderNumber, err := cp.contractCaller.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block number", "error", err)
 		return 0, err
 	}
 
 	// header block
-	_, _, _, createdAt, _, err := cp.contractConnector.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildBlockInterval)
+	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching header block object", "error", err)
 		return 0, err
@@ -697,14 +697,14 @@ func (cp *CheckpointProcessor) proposeCheckpointNoAck() (err error) {
 func (cp *CheckpointProcessor) shouldSendCheckpoint(checkpointContext *CheckpointContext, start uint64, end uint64) (bool, error) {
 	chainmanagerParams := checkpointContext.ChainmanagerParams
 
-	rootChainInstance, err := cp.contractConnector.GetRootChainInstance(chainmanagerParams.ChainParams.RootChainAddress)
+	rootChainInstance, err := cp.contractCaller.GetRootChainInstance(chainmanagerParams.ChainParams.RootChainAddress)
 	if err != nil {
 		cp.Logger.Error("Error while creating rootchain instance", "error", err)
 		return false, err
 	}
 
 	// current child block from contract
-	currentChildBlock, err := cp.contractConnector.GetLastChildBlock(rootChainInstance)
+	currentChildBlock, err := cp.contractCaller.GetLastChildBlock(rootChainInstance)
 	if err != nil {
 		cp.Logger.Error("Error fetching current child block", "currentChildBlock", currentChildBlock, "error", err)
 		return false, err

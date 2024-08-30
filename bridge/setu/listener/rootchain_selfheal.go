@@ -214,7 +214,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 }
 
 func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) (bool, error) {
-	blockTime, err := rl.contractConnector.GetMainChainBlockTime(ctx, vLog.BlockNumber)
+	blockTime, err := rl.contractCaller.GetMainChainBlockTime(ctx, vLog.BlockNumber)
 	if err != nil {
 		rl.Logger.Error("Unable to get block time", "error", err)
 		return false, err
