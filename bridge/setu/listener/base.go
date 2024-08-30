@@ -108,39 +108,6 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, http
 	}
 }
 
-// TODO HV2 - this was commented in heimdall-v1
-/*
-	// // Start starts new block subscription
-	// func (bl *BaseListener) Start() error {
-	// 	bl.Logger.Info("Starting listener", "name", bl.String())
-	// 	// create cancellable context
-	// 	ctx, cancelSubscription := context.WithCancel(context.Background())
-	// 	bl.cancelSubscription = cancelSubscription
-
-	// 	// create cancellable context
-	// 	headerCtx, cancelHeaderProcess := context.WithCancel(context.Background())
-	// 	bl.cancelHeaderProcess = cancelHeaderProcess
-
-	// 	// start header process
-	// 	go bl.StartHeaderProcess(headerCtx)
-
-	// 	// subscribe to new head
-	// 	subscription, err := bl.contractConnector.MainChainClient.SubscribeNewHead(ctx, bl.HeaderChannel)
-	// 	if err != nil {
-	// 		// start go routine to poll for new header using client object
-	// 		go bl.StartPolling(ctx, helper.GetConfig().SyncerPollInterval)
-	// 	} else {
-	// 		// start go routine to listen new header using subscription
-	// 		go bl.StartSubscription(ctx, subscription)
-	// 	}
-
-	// 	// subscribed to new head
-	// 	bl.Logger.Info("Subscribed to new head")
-
-	// 	return nil
-	// }
-*/
-
 // String implements Service by returning a string representation of the service.
 func (bl *BaseListener) String() string {
 	return bl.name

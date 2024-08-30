@@ -61,13 +61,6 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 	// the ending of the interval
 	ticker := time.NewTicker(interval)
 
-	// TODO HV2 - this part was commented out in heimdall-v1
-	// var eventTypes []string
-	// eventTypes = append(eventTypes, "message.action='checkpoint'")
-	// eventTypes = append(eventTypes, "message.action='event-record'")
-	// eventTypes = append(eventTypes, "message.action='tick'")
-	// ADD EVENT TYPE for SLASH-LIMIT
-
 	// start listening
 	for {
 		select {
@@ -94,42 +87,6 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 					*/
 				}
 
-				// TODO HV2 - this part was commented out in heimdall-v1
-				// Querying and processing tx Events. Below for loop is kept for future purpose to process events from tx
-				/* 		for _, eventType := range eventTypes {
-					var query []string
-					query = append(query, eventType)
-					query = append(query, fmt.Sprintf("tx.height>=%v", fromBlock))
-					query = append(query, fmt.Sprintf("tx.height<=%v", toBlock))
-
-					limit := 50
-					for page := 1; page > 0; {
-						searchResult, err := helper.QueryTxsByEvents(hl.cliCtx, query, page, limit)
-						hl.Logger.Debug("Fetching new events using search query", "query", query, "page", page, "limit", limit)
-
-						if err != nil {
-							hl.Logger.Error("Error while searching events", "eventType", eventType, "error", err)
-							break
-						}
-
-						for _, tx := range searchResult.Txs {
-							for _, log := range tx.Logs {
-								event := helper.FilterEvents(log.Events, func(et sdk.StringEvent) bool {
-									return et.Type == checkpointTypes.EventTypeCheckpoint || et.Type == clerkTypes.EventTypeRecord
-								})
-								if event != nil {
-									hl.ProcessEvent(*event, tx)
-								}
-							}
-						}
-
-						if len(searchResult.Txs) == limit {
-							page = page + 1
-						} else {
-							page = 0
-						}
-					}
-				} */
 				// set last block to storage
 				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(toBlock, 10)), nil); err != nil {
 					hl.Logger.Error("hl.storageClient.Put", "Error", err)

@@ -27,9 +27,6 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	CometBFTNode := "tcp://localhost:26657"
 	viper.Set(helper.CometBFTNodeFlag, CometBFTNode)
 	viper.Set("log_level", "info")
-	// cliCtx := cliContext.NewCLIContext().WithCodec(cdc)
-	// cliCtx.BroadcastMode = client.BroadcastSync
-	// cliCtx.TrustNode = true
 
 	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
 
