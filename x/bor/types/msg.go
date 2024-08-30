@@ -25,7 +25,7 @@ func NewMsgProposeSpanRequest(
 	}
 }
 
-// Type returns the type of the x/bor MsgTopupTx.
+// Type returns the type of the x/bor MsgProposeSpanRequest.
 func (msg MsgProposeSpanRequest) Type() string {
 	return EventTypeProposeSpan
 }
