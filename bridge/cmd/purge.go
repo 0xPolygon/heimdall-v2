@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/spf13/cobra"
 	"github.com/streadway/amqp"

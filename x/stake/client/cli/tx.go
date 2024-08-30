@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/maticnetwork/heimdall/bridge/setu/util"
+	"github.com/maticnetwork/heimdall/bridge/util"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 	"github.com/cosmos/cosmos-sdk/client"

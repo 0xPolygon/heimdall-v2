@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"

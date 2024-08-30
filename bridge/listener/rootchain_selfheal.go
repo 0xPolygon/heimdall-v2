@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/prometheus/client_golang/prometheus"

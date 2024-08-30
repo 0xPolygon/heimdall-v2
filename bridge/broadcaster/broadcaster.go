@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"

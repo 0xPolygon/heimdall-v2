@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/queue"
-	"github.com/0xPolygon/heimdall-v2/bridge/setu/util"
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cometbft/cometbft/libs/log"
