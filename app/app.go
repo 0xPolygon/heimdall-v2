@@ -182,9 +182,7 @@ func NewHeimdallApp(
 	bApp.SetInterfaceRegistry(interfaceRegistry)
 	bApp.SetTxEncoder(txConfig.TxEncoder())
 
-	// TODO HV2: do we need these keys? For example, gaia app doesn't have them
 	keys := storetypes.NewKVStoreKeys(
-		// TODO HV2: if we need such keys, change authtypes.StoreKey to be equal to the ModuleName (to be consistent with other modules)
 		authtypes.StoreKey,
 		banktypes.StoreKey,
 		consensusparamtypes.StoreKey,
