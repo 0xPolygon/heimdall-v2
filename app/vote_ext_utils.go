@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/ethereum/go-ethereum/common"
 	"sort"
 
 	"cosmossdk.io/log"
@@ -215,11 +216,15 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 
 		// iterate through vote extensions and accumulate voting power for YES/NO/SKIP votes
 		for _, res := range ve.SideTxResponses {
-			txHashStr := string(res.TxHash[:])
+			txHashStr := common.Bytes2Hex(res.TxHash)
 
 			// TODO HV2: (once slashing is enabled) do we slash in case a validator maliciously adds conflicting votes ?
 			// Given that we also check for duplicate votes during VerifyVoteExtension, is this redundant ?
-			if _, hasVoted := validatorToTxMap[string(vote.Validator.Address[:])][txHashStr]; !hasVoted {
+			addr, err := address.NewHexCodec().BytesToString(vote.Validator.Address)
+			if err != nil {
+				return nil, err
+			}
+			if _, hasVoted := validatorToTxMap[addr][txHashStr]; !hasVoted {
 
 				if voteByTxHash[txHashStr] == nil {
 					voteByTxHash[txHashStr] = make(map[sidetxs.Vote]int64)
@@ -231,7 +236,10 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 
 				voteByTxHash[txHashStr][res.Result] += vote.Validator.Power
 
-				// validator's vote received; mark it avoid duplicate votes
+				// validator's vote received; mark it to avoid duplicated votes
+				if validatorToTxMap[string(vote.Validator.Address[:])] == nil {
+					validatorToTxMap[string(vote.Validator.Address[:])] = make(map[string]struct{})
+				}
 				validatorToTxMap[string(vote.Validator.Address[:])][txHashStr] = struct{}{}
 			}
 
