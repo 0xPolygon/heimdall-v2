@@ -34,11 +34,6 @@ var (
 func GetFromAddress(cliCtx client.Context) string {
 	ac := address.NewHexCodec()
 	fromAddress := cliCtx.GetFromAddress()
-	if !fromAddress.Empty() {
-		addressString, _ := ac.BytesToString(fromAddress.Bytes())
-		return addressString
-	}
-
 	addressString, _ := ac.BytesToString(fromAddress.Bytes())
 	return addressString
 }
