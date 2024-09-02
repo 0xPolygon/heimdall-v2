@@ -5,8 +5,7 @@ option go_package = "github.com/0xPolygon/heimdall-v2/module";
 
 message ConsolidatedSideTxResponse {
   repeated SideTxResponse side_tx_responses = 1;
-  bytes hash =
-      2; // denotes the block hash of the block that this vote is referring to.
+  bytes hash = 2; // denotes the block hash of the block that this vote is referring to.
   int64 height = 3; // denotes the block height of the extended vote
 }
 
