@@ -122,7 +122,14 @@ func (tb *TxBroadcaster) BroadcastToMatic(msg ethereum.CallMsg) error {
 	}
 
 	// Create the transaction, sign it and schedule it for execution
-	rawTx := types.NewTransaction(auth.Nonce.Uint64(), *msg.To, msg.Value, auth.GasLimit, auth.GasPrice, msg.Data)
+	rawTx := types.NewTx(&types.LegacyTx{
+		Nonce:    auth.Nonce.Uint64(),
+		To:       msg.To,
+		Value:    msg.Value,
+		Gas:      auth.GasLimit,
+		GasPrice: auth.GasPrice,
+		Data:     msg.Data,
+	})
 
 	// signer
 	signedTx, err := auth.Signer(auth.From, rawTx)
