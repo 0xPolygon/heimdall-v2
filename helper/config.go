@@ -139,7 +139,7 @@ const (
 
 	MilestonePruneNumber = uint64(100)
 
-	MaticChainMilestoneConfirmation = uint64(16)
+	PolygonPosChainMilestoneConfirmation = uint64(16)
 
 	// MilestoneBufferLength defines the condition to propose the
 	// milestoneTimeout if this many bor blocks have passed since
@@ -209,9 +209,9 @@ var conf Configuration
 var mainChainClient *ethclient.Client
 var mainRPCClient *rpc.Client
 
-// MaticClient stores eth/rpc client for Matic Network
-var maticClient *ethclient.Client
-var maticRPCClient *rpc.Client
+// polygonPosClient stores eth/rpc client for Polygon Pos Network
+var polygonPosClient *ethclient.Client
+var polygonPosRPCClient *rpc.Client
 
 // private key object
 var privKeyObject secp256k1.PrivKey
@@ -227,7 +227,7 @@ var GenesisDoc cmTypes.GenesisDoc
 var milestoneBorBlockHeight uint64 = 0
 
 type ChainManagerAddressMigration struct {
-	MaticTokenAddress     string
+	PolTokenAddress       string
 	RootChainAddress      string
 	StakingManagerAddress string
 	SlashManagerAddress   string
@@ -356,11 +356,11 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if maticRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
+	if polygonPosRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
-	maticClient = ethclient.NewClient(maticRPCClient)
+	polygonPosClient = ethclient.NewClient(polygonPosRPCClient)
 	// Loading genesis doc
 	genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
 	if err != nil {
@@ -434,7 +434,7 @@ func GetGenesisDoc() cmTypes.GenesisDoc {
 }
 
 //
-// Get main/matic clients
+// Get main/pos clients
 //
 
 // GetMainChainRPCClient returns main chain RPC client
@@ -447,14 +447,14 @@ func GetMainClient() *ethclient.Client {
 	return mainChainClient
 }
 
-// GetMaticClient returns matic's eth client
-func GetMaticClient() *ethclient.Client {
-	return maticClient
+// GetPolygonPosClient returns polygon pos' eth client
+func GetPolygonPosClient() *ethclient.Client {
+	return polygonPosClient
 }
 
-// GetMaticRPCClient returns matic's RPC client
-func GetMaticRPCClient() *rpc.Client {
-	return maticRPCClient
+// GetPolygonPosRPCClient returns polygon pos RPC client
+func GetPolygonPosRPCClient() *rpc.Client {
+	return polygonPosRPCClient
 }
 
 // GetPrivKey returns priv key object

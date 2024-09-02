@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
@@ -52,7 +52,7 @@ type KeeperTestSuite struct {
 	cmKeeper         *cmKeeper.Keeper
 	queryClient      stakeTypes.QueryClient
 	msgServer        stakeTypes.MsgServer
-	sideMsgCfg       hmModule.SideTxConfigurator
+	sideMsgCfg       sidetxs.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) SetupTest() {
@@ -96,7 +96,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.queryClient = stakeTypes.NewQueryClient(queryHelper)
 	s.msgServer = stakeKeeper.NewMsgServerImpl(&keeper)
 
-	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
+	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, stakeKeeper.NewSideMsgServerImpl(&keeper))
 
 }

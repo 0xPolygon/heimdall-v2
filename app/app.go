@@ -62,7 +62,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
@@ -366,7 +366,7 @@ func NewHeimdallApp(
 	app.BasicManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicManager.RegisterInterfaces(interfaceRegistry)
 
-	sideTxCfg := mod.NewSideTxConfigurator()
+	sideTxCfg := sidetxs.NewSideTxConfigurator()
 	app.RegisterSideMsgServices(sideTxCfg)
 
 	// Create the voteExtProcessor using sideTxCfg
@@ -779,9 +779,9 @@ func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 	return app.BaseApp
 }
 
-func (app *HeimdallApp) RegisterSideMsgServices(cfg mod.SideTxConfigurator) {
+func (app *HeimdallApp) RegisterSideMsgServices(cfg sidetxs.SideTxConfigurator) {
 	for _, md := range app.mm.Modules {
-		if sideMsgModule, ok := md.(mod.HasSideMsgServices); ok {
+		if sideMsgModule, ok := md.(sidetxs.HasSideMsgServices); ok {
 			sideMsgModule.RegisterSideMsgServices(cfg)
 		}
 	}

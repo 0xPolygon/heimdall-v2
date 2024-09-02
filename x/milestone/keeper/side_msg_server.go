@@ -5,7 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
@@ -25,7 +25,7 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 }
 
 // SideTxHandler returns a side handler for milestone type messages.
-func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandler {
+func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 
 	switch methodName {
 	case milestoneMsgTypeURL:
@@ -36,7 +36,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) hmModule.SideTxHandle
 }
 
 // PostTxHandler returns a side handler for milestone type messages.
-func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandler {
+func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 
 	switch methodName {
 	case milestoneMsgTypeURL:
@@ -47,19 +47,19 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) hmModule.PostTxHandle
 }
 
 // SideHandleMilestone handles the side msg for milestones
-func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (result hmModule.Vote) {
+func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
 	logger := srv.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgMilestone)
 	if !ok {
 		logger.Error("type mismatch for MsgMilestone")
-		return hmModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	params, err := srv.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in getting params", "error", err)
-		return hmModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	minMilestoneLength := params.MinMilestoneLength
@@ -70,13 +70,13 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 	doExist, err := srv.HasMilestone(ctx)
 	if err != nil {
 		logger.Error("error in existence of last milestone", "error", err)
-		return hmModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	lastMilestone, err := srv.GetLastMilestone(ctx)
 	if doExist && err != nil {
 		logger.Error("error while receiving the last milestone in the side handler", "err", err)
-		return hmModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	if doExist && lastMilestone != nil && msg.StartBlock != lastMilestone.EndBlock+1 {
@@ -88,7 +88,7 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 			"error", err,
 		)
 
-		return hmModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	if !doExist && msg.StartBlock != types.StartBlock {
@@ -97,7 +97,7 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 			"expected start block", types.StartBlock,
 		)
 
-		return hmModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 
 	}
 
@@ -110,14 +110,14 @@ func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (re
 			"milestoneId", msg.MilestoneID,
 			"error", err,
 		)
-		return hmModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
-	return hmModule.Vote_VOTE_YES
+	return sidetxs.Vote_VOTE_YES
 }
 
 // PostHandleMsgMilestone handles the post side tx for a milestone
-func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, sideTxResult hmModule.Vote) {
+func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := srv.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgMilestone)
@@ -126,7 +126,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 		return
 	}
 
-	if sideTxResult != hmModule.Vote_VOTE_YES {
+	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		err := srv.SetNoAckMilestone(ctx, msg.MilestoneID)
 		if err != nil {
 			logger.Error("error while setting no-ack", "err", err)

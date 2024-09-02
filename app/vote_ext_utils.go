@@ -19,7 +19,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakingKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
@@ -170,13 +170,13 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 
 	for _, txHash := range txHashList {
 		voteMap := voteByTxHash[txHash]
-		if voteMap[mod.Vote_VOTE_YES] > (totalVP * 2 / 3) {
+		if voteMap[sidetxs.Vote_VOTE_YES] > (totalVP * 2 / 3) {
 			// approved
 			logger.Debug("Approved side-tx", "txHash", txHash)
 
 			// append to approved tx slice
 			approvedTxs = append(approvedTxs, []byte(txHash))
-		} else if voteMap[mod.Vote_VOTE_NO] > (totalVP * 2 / 3) {
+		} else if voteMap[sidetxs.Vote_VOTE_NO] > (totalVP * 2 / 3) {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
 
@@ -195,11 +195,11 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 }
 
 // aggregateVotes collates votes received for a side tx
-func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vote]int64, error) {
-	voteByTxHash := make(map[string]map[mod.Vote]int64)      // track votes for a side tx
+func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs.Vote]int64, error) {
+	voteByTxHash := make(map[string]map[sidetxs.Vote]int64)  // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
 
-	var ve mod.ConsolidatedSideTxResponse
+	var ve sidetxs.ConsolidatedSideTxResponse
 
 	for _, vote := range extVoteInfo {
 
@@ -222,7 +222,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vot
 			if _, hasVoted := validatorToTxMap[string(vote.Validator.Address[:])][txHashStr]; !hasVoted {
 
 				if voteByTxHash[txHashStr] == nil {
-					voteByTxHash[txHashStr] = make(map[mod.Vote]int64)
+					voteByTxHash[txHashStr] = make(map[sidetxs.Vote]int64)
 				}
 
 				if !isVoteValid(res.Result) {
@@ -243,7 +243,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vot
 }
 
 // checkDuplicateVotes detects duplicate votes by a validator for a side tx
-func checkDuplicateVotes(sideTxResponses []*mod.SideTxResponse) (bool, []byte) {
+func checkDuplicateVotes(sideTxResponses []*sidetxs.SideTxResponse) (bool, []byte) {
 	// track votes of the validator
 	txVoteMap := make(map[string]struct{})
 
@@ -266,6 +266,6 @@ func mustAddSpecialTransaction(ctx sdk.Context, height int64) bool {
 	return height > ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight
 }
 
-func isVoteValid(v mod.Vote) bool {
-	return v == mod.Vote_UNSPECIFIED || v == mod.Vote_VOTE_YES || v == mod.Vote_VOTE_NO
+func isVoteValid(v sidetxs.Vote) bool {
+	return v == sidetxs.Vote_UNSPECIFIED || v == sidetxs.Vote_VOTE_YES || v == sidetxs.Vote_VOTE_NO
 }

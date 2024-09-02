@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"cosmossdk.io/api/tendermint/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -25,8 +24,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
-	// TODO HV2 Please use the stake module once it is merged
-	//"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // smart contracts' events names
@@ -57,7 +55,7 @@ type IContractCaller interface {
 	SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error)
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
-	GetMaticChainBlock(*big.Int) (*ethTypes.Header, error)
+	GetPolygonPosChainBlock(*big.Int) (*ethTypes.Header, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
@@ -76,7 +74,7 @@ type IContractCaller interface {
 	DecodeUnJailedEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)
 
 	GetMainTxReceipt(common.Hash) (*ethTypes.Receipt, error)
-	GetMaticTxReceipt(common.Hash) (*ethTypes.Receipt, error)
+	GetPolygonPosTxReceipt(common.Hash) (*ethTypes.Receipt, error)
 	ApproveTokens(*big.Int, common.Address, common.Address, *erc20.Erc20) error
 	StakeFor(common.Address, *big.Int, *big.Int, bool, common.Address, *stakemanager.Stakemanager) error
 	CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error)
@@ -91,26 +89,26 @@ type IContractCaller interface {
 	GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error)
 	GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error)
 	GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error)
-	GetMaticTokenInstance(maticTokenAddress string) (*erc20.Erc20, error)
+	GetPolygonPosTokenInstance(tokenAddress string) (*erc20.Erc20, error)
 }
 
 // ContractCaller contract caller
 type ContractCaller struct {
-	MainChainClient   *ethclient.Client
-	MainChainRPC      *rpc.Client
-	MainChainTimeout  time.Duration
-	MaticChainClient  *ethclient.Client
-	MaticChainRPC     *rpc.Client
-	MaticChainTimeout time.Duration
+	MainChainClient        *ethclient.Client
+	MainChainRPC           *rpc.Client
+	MainChainTimeout       time.Duration
+	PolygonPosChainClient  *ethclient.Client
+	PolygonPosChainRPC     *rpc.Client
+	PolygonPosChainTimeout time.Duration
 
-	RootChainABI     abi.ABI
-	StakingInfoABI   abi.ABI
-	ValidatorSetABI  abi.ABI
-	StateReceiverABI abi.ABI
-	StateSenderABI   abi.ABI
-	StakeManagerABI  abi.ABI
-	SlashManagerABI  abi.ABI
-	MaticTokenABI    abi.ABI
+	RootChainABI       abi.ABI
+	StakingInfoABI     abi.ABI
+	ValidatorSetABI    abi.ABI
+	StateReceiverABI   abi.ABI
+	StateSenderABI     abi.ABI
+	StakeManagerABI    abi.ABI
+	SlashManagerABI    abi.ABI
+	PolygonPosTokenABI abi.ABI
 
 	ReceiptCache *lru.Cache
 
@@ -132,10 +130,10 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	config := GetConfig()
 	contractCallerObj.MainChainClient = GetMainClient()
 	contractCallerObj.MainChainTimeout = config.EthRPCTimeout
-	contractCallerObj.MaticChainClient = GetMaticClient()
-	contractCallerObj.MaticChainTimeout = config.BorRPCTimeout
+	contractCallerObj.PolygonPosChainClient = GetPolygonPosClient()
+	contractCallerObj.PolygonPosChainTimeout = config.BorRPCTimeout
 	contractCallerObj.MainChainRPC = GetMainChainRPCClient()
-	contractCallerObj.MaticChainRPC = GetMaticRPCClient()
+	contractCallerObj.PolygonPosChainRPC = GetPolygonPosRPCClient()
 	contractCallerObj.ReceiptCache, err = lru.New(1000)
 
 	if err != nil {
@@ -278,7 +276,7 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (
 
 	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := statereceiver.NewStatereceiver(address, maticClient)
+		ci, err := statereceiver.NewStatereceiver(address, polygonPosClient)
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
@@ -292,9 +290,9 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (
 	return contractInstance.(*statereceiver.Statereceiver), nil
 }
 
-// GetMaticTokenInstance returns stakingInfo contract instance for selected base chain
-func (c *ContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc20.Erc20, error) {
-	address := common.HexToAddress(maticTokenAddress)
+// GetPolygonPosTokenInstance returns stakingInfo contract instance for selected base chain
+func (c *ContractCaller) GetPolygonPosTokenInstance(tokenAddress string) (*erc20.Erc20, error) {
+	address := common.HexToAddress(tokenAddress)
 
 	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
@@ -302,7 +300,7 @@ func (c *ContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc20
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the matic token address from mainchain client", "error", err)
+			Logger.Error("error in fetching the polygon pos token address from mainchain client", "error", err)
 			return nil, err
 		}
 
@@ -349,13 +347,13 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 		return nil, errors.New("number of headers requested exceeds checkpoint length")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.MaticChainTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	rootHash, err := c.MaticChainClient.GetRootHash(ctx, start, end)
+	rootHash, err := c.PolygonPosChainClient.GetRootHash(ctx, start, end)
 
 	if err != nil {
-		Logger.Error("could not fetch rootHash from matic chain", "error", err)
+		Logger.Error("could not fetch rootHash from polygon pos chain", "error", err)
 		return nil, err
 	}
 
@@ -368,12 +366,12 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 		return false, errors.New("Start block number is greater than the end block number")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.MaticChainTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	vote, err := c.MaticChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	vote, err := c.PolygonPosChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
 	if err != nil {
-		return false, errors.New(fmt.Sprint("Error in fetching vote from matic chain", "err", err))
+		return false, errors.New(fmt.Sprint("Error in fetching vote from polygon pos chain", "err", err))
 	}
 
 	return vote, nil
@@ -417,35 +415,28 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-	// TODO HV2 Uncomment when staking module is merged, as it contains the v2 validator struct
 
-	/*
-		// amount, startEpoch, endEpoch, signer, status, err := c.StakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-		stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-		if err != nil {
-			Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
-			return
-		}
+	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
+	if err != nil && &stakerDetails != nil {
+		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
+		return
+	}
 
-		newAmount, err := GetPowerFromAmount(stakerDetails.Amount)
-		if err != nil {
-			return
-		}
+	newAmount, err := GetPowerFromAmount(stakerDetails.Amount)
+	if err != nil {
+		return
+	}
 
-		// newAmount
-		validator = types.Validator{
-			ValId:       valID,
-			VotingPower: newAmount.Int64(),
-			StartEpoch:  stakerDetails.ActivationEpoch.Uint64(),
-			EndEpoch:    stakerDetails.DeactivationEpoch.Uint64(),
-			Signer:      stakerDetails.Signer.String(),
-		}
+	// newAmount
+	validator = types.Validator{
+		ValId:       valID,
+		VotingPower: newAmount.Int64(),
+		StartEpoch:  stakerDetails.ActivationEpoch.Uint64(),
+		EndEpoch:    stakerDetails.DeactivationEpoch.Uint64(),
+		Signer:      stakerDetails.Signer.String(),
+	}
 
-		return validator, nil
-	*/
-
-	// TODO HV2 Remove the following line when staking module is merged
-	return types.Validator{}, nil
+	return validator, nil
 }
 
 // GetMainChainBlock returns main chain block header
@@ -469,7 +460,7 @@ func (c *ContractCaller) GetMainChainFinalizedBlock() (header *ethTypes.Header, 
 
 	latestFinalizedBlock, err := c.MainChainClient.HeaderByNumber(ctx, big.NewInt(int64(rpc.FinalizedBlockNumber)))
 	if err != nil {
-		Logger.Error("unable toconnect to main chain", "error", err)
+		Logger.Error("unable to connect to polygon pos chain", "error", err)
 		return
 	}
 
@@ -483,21 +474,21 @@ func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uin
 
 	latestBlock, err := c.MainChainClient.BlockByNumber(ctx, big.NewInt(0).SetUint64(blockNum))
 	if err != nil {
-		Logger.Error("unable toconnect to main chain", "error", err)
+		Logger.Error("unable to connect to polygon pos chain", "error", err)
 		return time.Time{}, err
 	}
 
 	return time.Unix(int64(latestBlock.Time()), 0), nil
 }
 
-// GetMaticChainBlock returns child chain block header
-func (c *ContractCaller) GetMaticChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.MaticChainTimeout)
+// GetPolygonPosChainBlock returns child chain block header
+func (c *ContractCaller) GetPolygonPosChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	latestBlock, err := c.MaticChainClient.HeaderByNumber(ctx, blockNum)
+	latestBlock, err := c.PolygonPosChainClient.HeaderByNumber(ctx, blockNum)
 	if err != nil {
-		Logger.Error("unable toconnect to matic chain", "error", err)
+		Logger.Error("unable to connect to polygon pos chain", "error", err)
 		return
 	}
 
@@ -837,7 +828,10 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 	error,
 ) {
 	d, err := validatorSetInstance.GetSpan(nil, id)
-	return d.Number, d.StartBlock, d.EndBlock, err
+	if &d != nil {
+		return d.Number, d.StartBlock, d.EndBlock, err
+	}
+	return nil, nil, nil, errors.New("unable to get span details")
 }
 
 // CurrentStateCounter get state counter
@@ -853,7 +847,7 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 
 // CheckIfBlocksExist - check if the given block exists on local chain
 func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), c.MaticChainTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
 	block := c.GetBlockByNumber(ctx, end)
@@ -866,7 +860,7 @@ func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
 
 // GetBlockByNumber returns blocks by number from child chain (bor)
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) *ethTypes.Block {
-	block, err := c.MaticChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	block, err := c.PolygonPosChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
 	if err != nil {
 		Logger.Error("unable tofetch block by number from child chain", "block", block, "err", err)
 		return nil
@@ -887,12 +881,12 @@ func (c *ContractCaller) GetMainTxReceipt(txHash common.Hash) (*ethTypes.Receipt
 	return c.getTxReceipt(ctx, c.MainChainClient, txHash)
 }
 
-// GetMaticTxReceipt returns matic tx receipt
-func (c *ContractCaller) GetMaticTxReceipt(txHash common.Hash) (*ethTypes.Receipt, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.MaticChainTimeout)
+// GetPolygonPosTxReceipt returns polygon pos tx receipt
+func (c *ContractCaller) GetPolygonPosTxReceipt(txHash common.Hash) (*ethTypes.Receipt, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(ctx, c.MaticChainClient, txHash)
+	return c.getTxReceipt(ctx, c.PolygonPosChainClient, txHash)
 }
 
 func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, txHash common.Hash) (*ethTypes.Receipt, error) {
@@ -979,7 +973,7 @@ func chooseContractCallerABI(contractCallerObj *ContractCaller, abi string) (*ab
 	case slashmanager.SlashmanagerMetaData.ABI:
 		return &contractCallerObj.SlashManagerABI, nil
 	case erc20.Erc20MetaData.ABI:
-		return &contractCallerObj.MaticTokenABI, nil
+		return &contractCallerObj.PolygonPosTokenABI, nil
 	}
 
 	return nil, errors.New("no ABI associated with such data")

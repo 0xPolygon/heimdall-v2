@@ -158,9 +158,9 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 	return nil
 }
 
-// ApproveTokens approves matic token for stake
-func (c *ContractCaller) ApproveTokens(amount *big.Int, stakeManager common.Address, tokenAddress common.Address, maticTokenInstance *erc20.Erc20) error {
-	data, err := c.MaticTokenABI.Pack("approve", stakeManager, amount)
+// ApproveTokens approves polygon pos token for stake
+func (c *ContractCaller) ApproveTokens(amount *big.Int, stakeManager common.Address, tokenAddress common.Address, tokenInstance *erc20.Erc20) error {
+	data, err := c.PolygonPosTokenABI.Pack("approve", stakeManager, amount)
 	if err != nil {
 		Logger.Error("unable topack tx for approve", "error", err)
 		return err
@@ -172,7 +172,7 @@ func (c *ContractCaller) ApproveTokens(amount *big.Int, stakeManager common.Addr
 		return err
 	}
 
-	tx, err := maticTokenInstance.Approve(auth, stakeManager, amount)
+	tx, err := tokenInstance.Approve(auth, stakeManager, amount)
 	if err != nil {
 		Logger.Error("error while approving approve", "error", err)
 		return err

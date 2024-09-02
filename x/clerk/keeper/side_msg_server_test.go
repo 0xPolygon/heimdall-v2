@@ -15,19 +15,19 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
+func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {
 	cfg := suite.sideMsgCfg
 	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
-func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
+func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs.Vote) {
 	cfg := suite.sideMsgCfg
 
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
@@ -81,7 +81,7 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
 	result := suite.sideHandler(ctx, &msg)
-	require.Equal(t, hmModule.Vote_VOTE_YES, result)
+	require.Equal(t, sidetxs.Vote_VOTE_YES, result)
 }
 
 func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
@@ -132,7 +132,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_YES, result)
+		require.Equal(t, sidetxs.Vote_VOTE_YES, result)
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -164,7 +164,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		// execute handler
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_NO, result)
+		require.Equal(t, sidetxs.Vote_VOTE_NO, result)
 	})
 
 	t.Run("NoLog", func(t *testing.T) {
@@ -194,7 +194,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_NO, result)
+		require.Equal(t, sidetxs.Vote_VOTE_NO, result)
 	})
 
 	t.Run("EventDataExceed", func(t *testing.T) {
@@ -237,7 +237,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
 		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_NO, result)
+		require.Equal(t, sidetxs.Vote_VOTE_NO, result)
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -278,7 +278,7 @@ func (suite *KeeperTestSuite) TestPostHandler() {
 	)
 
 	// Post handler should fail
-	suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+	suite.postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 }
 
 func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
@@ -314,7 +314,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 
 	t.Run("NoResult", func(t *testing.T) {
 		// Post handler should fail
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_NO)
+		suite.postHandler(ctx, &msg, sidetxs.Vote_VOTE_NO)
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -324,7 +324,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 
 	t.Run("YesResult", func(t *testing.T) {
 		// Post handler should succeed
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+		suite.postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
 		// sequence id
 		blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -362,9 +362,9 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		)
 
 		// Post handler should succeed
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+		suite.postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
 		// Post handler should prevent replay attack
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+		suite.postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 	})
 }

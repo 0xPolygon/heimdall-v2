@@ -16,13 +16,13 @@ import (
 
 	stakemanager "github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+
 	stakinginfo "github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 
 	statereceiver "github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 
 	statesender "github.com/0xPolygon/heimdall-v2/contracts/statesender"
-
-	tenderminttypes "cosmossdk.io/api/tendermint/types"
 
 	types "github.com/ethereum/go-ethereum/core/types"
 
@@ -722,12 +722,12 @@ func (_m *IContractCaller) GetMainTxReceipt(_a0 common.Hash) (*types.Receipt, er
 	return r0, r1
 }
 
-// GetMaticChainBlock provides a mock function with given fields: _a0
-func (_m *IContractCaller) GetMaticChainBlock(_a0 *big.Int) (*types.Header, error) {
+// GetPolygonPosChainBlock provides a mock function with given fields: _a0
+func (_m *IContractCaller) GetPolygonPosChainBlock(_a0 *big.Int) (*types.Header, error) {
 	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetMaticChainBlock")
+		panic("no return value specified for GetPolygonPosChainBlock")
 	}
 
 	var r0 *types.Header
@@ -752,21 +752,21 @@ func (_m *IContractCaller) GetMaticChainBlock(_a0 *big.Int) (*types.Header, erro
 	return r0, r1
 }
 
-// GetMaticTokenInstance provides a mock function with given fields: maticTokenAddress
-func (_m *IContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc20.Erc20, error) {
-	ret := _m.Called(maticTokenAddress)
+// GetPolygonPosTokenInstance provides a mock function with given fields: tokenAddress
+func (_m *IContractCaller) GetPolygonPosTokenInstance(tokenAddress string) (*erc20.Erc20, error) {
+	ret := _m.Called(tokenAddress)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetMaticTokenInstance")
+		panic("no return value specified for GetPolygonPosTokenInstance")
 	}
 
 	var r0 *erc20.Erc20
 	var r1 error
 	if rf, ok := ret.Get(0).(func(string) (*erc20.Erc20, error)); ok {
-		return rf(maticTokenAddress)
+		return rf(tokenAddress)
 	}
 	if rf, ok := ret.Get(0).(func(string) *erc20.Erc20); ok {
-		r0 = rf(maticTokenAddress)
+		r0 = rf(tokenAddress)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*erc20.Erc20)
@@ -774,7 +774,7 @@ func (_m *IContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc
 	}
 
 	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(maticTokenAddress)
+		r1 = rf(tokenAddress)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -782,12 +782,12 @@ func (_m *IContractCaller) GetMaticTokenInstance(maticTokenAddress string) (*erc
 	return r0, r1
 }
 
-// GetMaticTxReceipt provides a mock function with given fields: _a0
-func (_m *IContractCaller) GetMaticTxReceipt(_a0 common.Hash) (*types.Receipt, error) {
+// GetPolygonPosTxReceipt provides a mock function with given fields: _a0
+func (_m *IContractCaller) GetPolygonPosTxReceipt(_a0 common.Hash) (*types.Receipt, error) {
 	ret := _m.Called(_a0)
 
 	if len(ret) == 0 {
-		panic("no return value specified for GetMaticTxReceipt")
+		panic("no return value specified for GetPolygonPosTxReceipt")
 	}
 
 	var r0 *types.Receipt
@@ -1071,22 +1071,22 @@ func (_m *IContractCaller) GetStateSenderInstance(stateSenderAddress string) (*s
 }
 
 // GetValidatorInfo provides a mock function with given fields: valID, stakingInfoInstance
-func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (tenderminttypes.Validator, error) {
+func (_m *IContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (staketypes.Validator, error) {
 	ret := _m.Called(valID, stakingInfoInstance)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetValidatorInfo")
 	}
 
-	var r0 tenderminttypes.Validator
+	var r0 staketypes.Validator
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) (tenderminttypes.Validator, error)); ok {
+	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) (staketypes.Validator, error)); ok {
 		return rf(valID, stakingInfoInstance)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) tenderminttypes.Validator); ok {
+	if rf, ok := ret.Get(0).(func(uint64, *stakinginfo.Stakinginfo) staketypes.Validator); ok {
 		r0 = rf(valID, stakingInfoInstance)
 	} else {
-		r0 = ret.Get(0).(tenderminttypes.Validator)
+		r0 = ret.Get(0).(staketypes.Validator)
 	}
 
 	if rf, ok := ret.Get(1).(func(uint64, *stakinginfo.Stakinginfo) error); ok {

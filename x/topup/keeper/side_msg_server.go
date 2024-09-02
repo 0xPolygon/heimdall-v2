@@ -9,7 +9,7 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -28,7 +28,7 @@ func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
 }
 
 // SideTxHandler redirects to the right sideMsgServer side_handler based on methodName
-func (s sideMsgServer) SideTxHandler(methodName string) mod.SideTxHandler {
+func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
 		return s.SideHandleTopupTx
@@ -38,7 +38,7 @@ func (s sideMsgServer) SideTxHandler(methodName string) mod.SideTxHandler {
 }
 
 // PostTxHandler redirects to the right sideMsgServer post_handler based on methodName
-func (s sideMsgServer) PostTxHandler(methodName string) mod.PostTxHandler {
+func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
 		return s.PostHandleTopupTx
@@ -48,13 +48,13 @@ func (s sideMsgServer) PostTxHandler(methodName string) mod.PostTxHandler {
 }
 
 // SideHandleTopupTx handles the side tx for a validator's topup tx
-func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote {
+func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
 		logger.Error("type mismatch for MsgTopupTx")
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	logger.Debug("validating external call for topup msg",
@@ -67,31 +67,31 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
 		logger.Error("default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	params, err := s.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 	chainParams := params.ChainParams
 
 	// get main tx receipt
 	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	// get event log for topup
 	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		logger.Error("error fetching log from txHash for DecodeValidatorTopupFeesEvent")
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		logger.Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	// TODO HV2: ensure addresses/keys consistency (see https://polygon.atlassian.net/browse/POS-2622)
@@ -104,21 +104,21 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 			"msgUser", msg.User,
 		)
 
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.Fee.Cmp(msg.Fee.BigInt()) != 0 {
 		logger.Error("fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	logger.Debug("Successfully validated external call for topup msg")
 
-	return mod.Vote_VOTE_YES
+	return sidetxs.Vote_VOTE_YES
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup tx
-func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult mod.Vote) {
+func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
@@ -128,7 +128,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	// skip handler if topup is not approved
-	if sideTxResult != mod.Vote_VOTE_YES {
+	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
 		return
 	}

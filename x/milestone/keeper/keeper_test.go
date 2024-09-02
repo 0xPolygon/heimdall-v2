@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
@@ -34,7 +34,7 @@ type KeeperTestSuite struct {
 	contractCaller  *mocks.IContractCaller
 	queryClient     milestoneTypes.QueryClient
 	msgServer       milestoneTypes.MsgServer
-	sideMsgCfg      hmModule.SideTxConfigurator
+	sideMsgCfg      sidetxs.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) Run(_ string, fn func()) {
@@ -75,7 +75,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
 	s.msgServer = milestoneKeeper.NewMsgServerImpl(&keeper)
 
-	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
+	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, milestoneKeeper.NewSideMsgServerImpl(&keeper))
 }
 

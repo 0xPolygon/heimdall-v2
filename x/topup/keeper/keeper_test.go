@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/types"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
@@ -42,7 +42,7 @@ type KeeperTestSuite struct {
 	keeper topupKeeper.Keeper
 
 	msgServer      topupTypes.MsgServer
-	sideMsgCfg     mod.SideTxConfigurator
+	sideMsgCfg     sidetxs.SideTxConfigurator
 	queryClient    topupTypes.QueryClient
 	contractCaller mocks.IContractCaller
 }
@@ -85,7 +85,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	suite.keeper = keeper
 	suite.queryClient = topupTypes.NewQueryClient(queryHelper)
 	suite.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
-	suite.sideMsgCfg = mod.NewSideTxConfigurator()
+	suite.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 
 	topupTypes.RegisterSideMsgServer(suite.sideMsgCfg, topupKeeper.NewSideMsgServerImpl(&keeper))
 }

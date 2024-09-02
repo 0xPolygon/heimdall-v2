@@ -1,7 +1,7 @@
 syntax = "proto3";
-package heimdallv2.module;
+package heimdallv2.sidetxs;
 
-option go_package = "github.com/0xPolygon/heimdall-v2/module";
+option go_package = "github.com/0xPolygon/heimdall-v2/sidetxs";
 
 message ConsolidatedSideTxResponse {
   repeated SideTxResponse side_tx_responses = 1;

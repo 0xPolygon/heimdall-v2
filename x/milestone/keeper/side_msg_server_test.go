@@ -5,18 +5,18 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
 
-func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
+func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {
 	cfg := s.sideMsgCfg
 	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
-func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
+func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs.Vote) {
 	cfg := s.sideMsgCfg
 
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
@@ -58,7 +58,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
-		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should succeed")
+		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should succeed")
 
 		milestoneReceived, _ := keeper.GetLastMilestone(ctx)
 		require.Nil(milestoneReceived, "Should not store state")
@@ -82,7 +82,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(false, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 
 		header, err := keeper.GetLastMilestone(ctx)
 		require.Error(err)
@@ -106,7 +106,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 	})
 
 	s.Run("Not in continuity", func() {
@@ -129,7 +129,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 	})
 }
 
@@ -173,7 +173,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestoneId,
 		)
 
-		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_NO)
+		s.postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_NO)
 
 		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		require.Nil(lastMilestone)
@@ -206,7 +206,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestoneId,
 		)
 
-		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
+		s.postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
 
 		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		require.Nil(lastMilestone)
@@ -238,7 +238,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
+		s.postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
 
 		bufferedHeader, err := keeper.GetLastMilestone(ctx)
 		require.NoError(err)
@@ -271,7 +271,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
+		s.postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
 		require.Equal(lastNoAckMilestone, milestoneId)
@@ -294,7 +294,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_YES)
+		s.postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
 
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
@@ -319,7 +319,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		s.postHandler(ctx, &msgMilestone, hmModule.Vote_VOTE_NO)
+		s.postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_NO)
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00004")

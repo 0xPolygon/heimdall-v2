@@ -117,7 +117,7 @@ func TestPopulateABIs(t *testing.T) {
 		"values for %s not equals", stakemanager.StakemanagerMetaData.ABI)
 	assert.Equalf(t, ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI], &contractCallerObjFirst.SlashManagerABI,
 		"values for %s not equals", slashmanager.SlashmanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjFirst.MaticTokenABI,
+	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjFirst.PolygonPosTokenABI,
 		"values for %s not equals", erc20.Erc20MetaData.ABI)
 
 	t.Log("ABIs map should not be empty and all ABIs found")
@@ -156,6 +156,6 @@ func TestPopulateABIs(t *testing.T) {
 		"values for %s not equals", stakemanager.StakemanagerMetaData.ABI)
 	assert.Equalf(t, ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI], &contractCallerObjSecond.SlashManagerABI,
 		"values for %s not equals", slashmanager.SlashmanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjSecond.MaticTokenABI,
+	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjSecond.PolygonPosTokenABI,
 		"values for %s not equals", erc20.Erc20MetaData.ABI)
 }

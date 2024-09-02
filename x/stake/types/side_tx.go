@@ -7,18 +7,18 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc"
 
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
 type SideMsgServer interface {
 	// SideTxHandler to register specific sideHandler based on methodName
-	SideTxHandler(methodName string) hmModule.SideTxHandler
+	SideTxHandler(methodName string) sidetxs.SideTxHandler
 
 	// PostTxHandler to register specific postHandler based on methodName
-	PostTxHandler(methodName string) hmModule.PostTxHandler
+	PostTxHandler(methodName string) sidetxs.PostTxHandler
 }
 
-func RegisterSideMsgServer(sideCfg hmModule.SideTxConfigurator, srv SideMsgServer) {
+func RegisterSideMsgServer(sideCfg sidetxs.SideTxConfigurator, srv SideMsgServer) {
 	serviceDesc := _Msg_serviceDesc
 
 	for _, service := range serviceDesc.Methods {

@@ -10,7 +10,7 @@ import (
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
 // TODO HV2: check the correct usage and flow of the VEs
@@ -18,16 +18,16 @@ import (
 // VoteExtensionProcessor handles Vote Extension processing for Heimdall app
 type VoteExtensionProcessor struct {
 	app       *HeimdallApp
-	sideTxCfg mod.SideTxConfigurator
+	sideTxCfg sidetxs.SideTxConfigurator
 }
 
-func NewVoteExtensionProcessor(cfg mod.SideTxConfigurator) *VoteExtensionProcessor {
+func NewVoteExtensionProcessor(cfg sidetxs.SideTxConfigurator) *VoteExtensionProcessor {
 	return &VoteExtensionProcessor{
 		sideTxCfg: cfg,
 	}
 }
 
-func (v *VoteExtensionProcessor) SetSideTxConfigurator(cfg mod.SideTxConfigurator) {
+func (v *VoteExtensionProcessor) SetSideTxConfigurator(cfg sidetxs.SideTxConfigurator) {
 	v.sideTxCfg = cfg
 }
 
@@ -42,7 +42,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		}
 
 		for _, vote := range req.LocalLastCommit.Votes {
-			var consolidatedSideTxResponse mod.ConsolidatedSideTxResponse
+			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
 			if err := json.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
 				logger.Error("Error while unmarshalling VoteExtension during PrepareProposal", "error", err, "validator", string(req.ProposerAddress))
 				return nil, errors.New("can't prepare the proposal because the vote extension is not valid")
@@ -119,7 +119,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		for _, vote := range extVoteInfo {
-			var consolidatedSideTxResponse mod.ConsolidatedSideTxResponse
+			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
 			if err := json.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
 				logger.Error("Error while unmarshalling VoteExtension during ProcessProposal", "error", err, "proposer", string(req.ProposerAddress))
 				return nil, errors.New("can't process the proposal because the vote extension is not valid")
@@ -149,7 +149,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		logger := v.app.Logger()
 
-		sideTxRes := make([]*mod.SideTxResponse, 0)
+		sideTxRes := make([]*sidetxs.SideTxResponse, 0)
 
 		if len(req.Txs) > 1 || (len(req.Txs) == 1 && req.Height == ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight) {
 			var extVoteInfo []abci.ExtendedVoteInfo
@@ -192,7 +192,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 
 					// add result to side tx response
 					logger.Debug("Adding V.E.", "txHash", txBytes.Hash(), "blockHeight", req.Height, "blockHash", req.Hash)
-					ve := mod.SideTxResponse{
+					ve := sidetxs.SideTxResponse{
 						TxHash: txBytes.Hash(),
 						Result: res,
 					}
@@ -203,7 +203,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			}
 		}
 
-		canonicalSideTxRes := mod.ConsolidatedSideTxResponse{
+		canonicalSideTxRes := sidetxs.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
 			Hash:            req.Hash,
@@ -225,7 +225,7 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 		logger := v.app.Logger()
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 
-		var canonicalSideTxResponse mod.ConsolidatedSideTxResponse
+		var canonicalSideTxResponse sidetxs.ConsolidatedSideTxResponse
 		if err := json.Unmarshal(req.VoteExtension, &canonicalSideTxResponse); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while unmarshalling VoteExtension", "error", err, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
@@ -318,7 +318,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 					for _, msg := range msgs {
 						postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
 						if postHandler != nil {
-							postHandler(ctx, msg, mod.Vote_VOTE_YES)
+							postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 						}
 					}
 
