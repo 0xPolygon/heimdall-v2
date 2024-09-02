@@ -15,6 +15,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	// TODO HV2 Uncomment the following import once the rest is implemented in rest
 	//"github.com/maticnetwork/heimdall/types/rest"
@@ -31,12 +32,15 @@ var (
 
 // GetFromAddress get from address
 func GetFromAddress(cliCtx client.Context) string {
+	ac := address.NewHexCodec()
 	fromAddress := cliCtx.GetFromAddress()
 	if !fromAddress.Empty() {
-		return string(fromAddress[:])
+		addressString, _ := ac.BytesToString(fromAddress.Bytes())
+		return addressString
 	}
 
-	return string(GetAddress()[:])
+	addressString, _ := ac.BytesToString(fromAddress.Bytes())
+	return addressString
 }
 
 func init() {
