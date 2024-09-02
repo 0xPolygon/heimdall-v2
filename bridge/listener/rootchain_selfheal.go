@@ -205,7 +205,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 				time.Sleep(1 * time.Second)
 			}
 
-			if statusCheck == 15 {
+			if statusCheck >= 15 {
 				i--
 				continue
 			}
