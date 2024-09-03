@@ -532,7 +532,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		}
 	}
 
-	// TODO HV2: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
+	// TODO: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
 	// update validators
 	return &abci.ResponseInitChain{
 		Validators: valUpdates,
