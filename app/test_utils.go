@@ -17,6 +17,8 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
 func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger) {
@@ -98,4 +100,22 @@ func setupAppWithValidatorSet(t *testing.T, validators []*cmttypes.Validator, ac
 	require.NoError(t, err)
 
 	return app, db, logger
+}
+
+func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...string) []byte {
+	responses := make([]*sidetxs.SideTxResponse, len(txHashes))
+	for i, txHash := range txHashes {
+		responses[i] = &sidetxs.SideTxResponse{
+			TxHash: []byte(txHash),
+			Result: vote,
+		}
+	}
+
+	sideTxResponses := sidetxs.ConsolidatedSideTxResponse{
+		SideTxResponses: responses,
+	}
+
+	voteExtension, err := json.Marshal(sideTxResponses)
+	require.NoError(t, err)
+	return voteExtension
 }

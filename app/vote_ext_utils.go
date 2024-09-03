@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/ethereum/go-ethereum/common"
 	"sort"
 
 	"cosmossdk.io/log"
@@ -14,14 +12,15 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	stakingKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // ValidateVoteExtensions is a helper function for verifying vote extension
@@ -33,7 +32,7 @@ func ValidateVoteExtensions(ctx sdk.Context,
 	chainID string,
 	extVoteInfo []abci.ExtendedVoteInfo,
 	round int32,
-	stakeKeeper stakingKeeper.Keeper) error {
+	stakeKeeper stakeKeeper.Keeper) error {
 	cp := ctx.ConsensusParams()
 	vesEnabled := cp.Abci != nil && currentHeight >= cp.Abci.VoteExtensionsEnableHeight && cp.Abci.VoteExtensionsEnableHeight != 0
 
@@ -79,11 +78,11 @@ func ValidateVoteExtensions(ctx sdk.Context,
 		}
 
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
-		if vote.BlockIdFlag != types.BlockIDFlagCommit {
+		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
 		}
 
-		if vote.BlockIdFlag == types.BlockIDFlagUnknown {
+		if vote.BlockIdFlag == cmtTypes.BlockIDFlagUnknown {
 			return fmt.Errorf("received vote with unknown block ID flag at height %d", currentHeight)
 		}
 
@@ -205,7 +204,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 	for _, vote := range extVoteInfo {
 
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
-		if vote.BlockIdFlag != types.BlockIDFlagCommit {
+		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
 		}
 
@@ -216,7 +215,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 
 		// iterate through vote extensions and accumulate voting power for YES/NO/SKIP votes
 		for _, res := range ve.SideTxResponses {
-			txHashStr := common.Bytes2Hex(res.TxHash)
+			txHashStr := string(res.TxHash)
 
 			// TODO HV2: (once slashing is enabled) do we slash in case a validator maliciously adds conflicting votes ?
 			// Given that we also check for duplicate votes during VerifyVoteExtension, is this redundant ?
@@ -237,10 +236,10 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 				voteByTxHash[txHashStr][res.Result] += vote.Validator.Power
 
 				// validator's vote received; mark it to avoid duplicated votes
-				if validatorToTxMap[string(vote.Validator.Address[:])] == nil {
-					validatorToTxMap[string(vote.Validator.Address[:])] = make(map[string]struct{})
+				if validatorToTxMap[addr] == nil {
+					validatorToTxMap[addr] = make(map[string]struct{})
 				}
-				validatorToTxMap[string(vote.Validator.Address[:])][txHashStr] = struct{}{}
+				validatorToTxMap[addr][txHashStr] = struct{}{}
 			}
 
 		}

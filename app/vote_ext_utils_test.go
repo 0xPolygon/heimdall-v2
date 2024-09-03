@@ -2,19 +2,21 @@ package app
 
 import (
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
+	"errors"
+	"fmt"
 	"testing"
 
 	"cosmossdk.io/log"
+	storetypes "cosmossdk.io/store/types"
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	cosmostestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -27,23 +29,191 @@ const (
 	ValAddr3 = "0x000000000000000000000000000000000003dEaD"
 )
 
-// MockKeeper is a mock of stakingKeeper.Keeper
-type MockKeeper struct {
-	mock.Mock
-}
-
-func (m *MockKeeper) GetValidatorSet(ctx sdk.Context) (stakeTypes.ValidatorSet, error) {
-	args := m.Called(ctx)
-	return args.Get(0).(stakeTypes.ValidatorSet), args.Error(1)
-}
-
-func (m *MockKeeper) GetValidatorInfo(ctx sdk.Context, addr string) (stakeTypes.Validator, error) {
-	args := m.Called(ctx, addr)
-	return args.Get(0).(stakeTypes.Validator), args.Error(1)
-}
-
 func TestValidateVoteExtensions(t *testing.T) {
-	// TODO HV2: Implement this test
+	t.Skip("TODO HV2: fix and enable this test") // The test depend on the app_test.go
+	app, _, _ := SetupApp(t, 1)
+	key := storetypes.NewKVStoreKey("test_store_key")
+	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
+
+	tests := []struct {
+		name        string
+		ctx         sdk.Context
+		extVoteInfo []abci.ExtendedVoteInfo
+		round       int32
+		keeper      stakeKeeper.Keeper
+		expectedErr error
+	}{
+		{
+			name: "ves disabled with non-empty vote extension",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 0,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+					VoteExtension:      []byte("extension"),
+					ExtensionSignature: []byte{},
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: fmt.Errorf("vote extensions disabled; received non-empty vote extension at height %d", 1),
+		},
+		{
+			name: "ves disabled with non-empty vote extension signature",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 0,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+					VoteExtension:      []byte{},
+					ExtensionSignature: []byte("signature"),
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: fmt.Errorf("vote extensions disabled; received non-empty vote extension signature at height %d", 1),
+		},
+		{
+			name: "vote.BlockIdFlag != types.BlockIDFlagCommit",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 10,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag: cmtTypes.BlockIDFlagNil,
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: nil,
+		},
+		{
+			name: "vote.BlockIdFlag == types.BlockIDFlagUnknown",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 10,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag: cmtTypes.BlockIDFlagUnknown,
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: fmt.Errorf("received vote with unknown block ID flag at height %d", 1),
+		},
+		{
+			name: "len(vote.ExtensionSignature) == 0",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 10,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+					VoteExtension:      []byte("extension"),
+					ExtensionSignature: []byte{}, // Empty signature
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: fmt.Errorf("vote extensions enabled; received empty vote extension signature at height %d", 1),
+		},
+		{
+			name: "failed to encode CanonicalVoteExtension",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 10,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+					VoteExtension:      []byte("extension"),
+					ExtensionSignature: []byte("signature"),
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: fmt.Errorf("failed to encode CanonicalVoteExtension: %w", errors.New("mock error")),
+		},
+		{
+			name: "failed to verify validator vote extension signature",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 10,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+					VoteExtension:      []byte("extension"),
+					ExtensionSignature: []byte("signature"),
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: fmt.Errorf("failed to verify validator %X vote extension signature", "address"),
+		},
+		{
+			name: "sumVP.Int64() <= 2/3*(totalVP)",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 10,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+					VoteExtension:      []byte("extension"),
+					ExtensionSignature: []byte("signature"),
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", 100, 150),
+		},
+		{
+			name: "sumVP.Int64() > 2/3*(totalVP)",
+			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+				Abci: &cmtTypes.ABCIParams{
+					VoteExtensionsEnableHeight: 10,
+				},
+			}),
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				{
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+					VoteExtension:      []byte("extension"),
+					ExtensionSignature: []byte("signature"),
+				},
+			},
+			round:       1,
+			keeper:      app.StakeKeeper,
+			expectedErr: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateVoteExtensions(tt.ctx, int64(tt.round), "test-chain", tt.extVoteInfo, tt.round, tt.keeper)
+			if tt.expectedErr != nil {
+				require.Error(t, err)
+				require.EqualError(t, err, tt.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }
 
 func TestTallyVotes(t *testing.T) {
@@ -76,7 +246,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -85,7 +255,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -94,7 +264,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 			},
 			expectedApprove: [][]byte{[]byte(TxHash1)},
@@ -116,7 +286,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -125,7 +295,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash2),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 
 				{
@@ -135,7 +305,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash3),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -144,7 +314,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -153,7 +323,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash2),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -162,7 +332,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash3),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -171,7 +341,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash1),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 				{
 					Validator: abci.Validator{
@@ -180,7 +350,7 @@ func TestTallyVotes(t *testing.T) {
 					},
 					VoteExtension:      mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash2),
 					ExtensionSignature: []byte("signature"),
-					BlockIdFlag:        types.BlockIDFlagCommit,
+					BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 				},
 			},
 			expectedApprove: [][]byte{[]byte(TxHash1)},
@@ -204,11 +374,8 @@ func TestAggregateVotes(t *testing.T) {
 	txHashStr := "000000000000000000000000000000000000000000000000000000000001dead"
 	hashStr := "000000000000000000000000000000000000000000000000000000000000dead"
 
-	// Convert hex strings to byte slices
-	txHashBytes, err := hex.DecodeString(txHashStr)
-	require.NoError(t, err)
-	hashBytes, err := hex.DecodeString(hashStr)
-	require.NoError(t, err)
+	txHashBytes := []byte(txHashStr)
+	hashBytes := []byte(hashStr)
 
 	// Prepare a valid JSON for VoteExtension with base64 encoding for bytes
 	voteExtension := `{
@@ -233,7 +400,7 @@ func TestAggregateVotes(t *testing.T) {
 			},
 			VoteExtension:      []byte(voteExtension),
 			ExtensionSignature: []byte("signature"),
-			BlockIdFlag:        types.BlockIDFlagCommit,
+			BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 		},
 	}
 
@@ -250,15 +417,42 @@ func TestAggregateVotes(t *testing.T) {
 }
 
 func TestCheckDuplicateVotes(t *testing.T) {
-	sideTxResponses := []*sidetxs.SideTxResponse{
-		{TxHash: []byte(TxHash1)},
-		{TxHash: []byte(TxHash2)},
-		{TxHash: []byte(TxHash1)},
+	tests := []struct {
+		name              string
+		sideTxResponses   []*sidetxs.SideTxResponse
+		expectedDuplicate bool
+		expectedTxHash    []byte
+	}{
+		{
+			name: "no duplicates",
+			sideTxResponses: []*sidetxs.SideTxResponse{
+				{TxHash: []byte(TxHash1)},
+				{TxHash: []byte(TxHash2)},
+				{TxHash: []byte(TxHash3)},
+			},
+			expectedDuplicate: false,
+			expectedTxHash:    nil,
+		},
+		{
+			name: "one duplicate",
+			sideTxResponses: []*sidetxs.SideTxResponse{
+				{TxHash: []byte(TxHash1)},
+				{TxHash: []byte(TxHash2)},
+				{TxHash: []byte(TxHash3)},
+				{TxHash: []byte(TxHash3)},
+			},
+			expectedDuplicate: true,
+			expectedTxHash:    []byte(TxHash3),
+		},
 	}
 
-	duplicate, txHash := checkDuplicateVotes(sideTxResponses)
-	require.True(t, duplicate)
-	require.Equal(t, []byte(TxHash1), txHash)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			duplicate, txHash := checkDuplicateVotes(tc.sideTxResponses)
+			require.Equal(t, tc.expectedDuplicate, duplicate)
+			require.Equal(t, tc.expectedTxHash, txHash)
+		})
+	}
 }
 
 func TestIsVoteValid(t *testing.T) {
@@ -266,26 +460,34 @@ func TestIsVoteValid(t *testing.T) {
 	require.True(t, isVoteValid(sidetxs.Vote_VOTE_YES))
 	require.True(t, isVoteValid(sidetxs.Vote_VOTE_NO))
 	require.False(t, isVoteValid(100))
+	require.False(t, isVoteValid(-1))
 }
 
 func TestMustAddSpecialTransaction(t *testing.T) {
-	// TODO HV2: Implement this test
-}
+	key := storetypes.NewKVStoreKey("testStoreKey")
+	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
+	ctx := testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
+		Abci: &cmtTypes.ABCIParams{
+			VoteExtensionsEnableHeight: 100,
+		},
+	})
 
-func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...string) []byte {
-	responses := make([]*sidetxs.SideTxResponse, len(txHashes))
-	for i, txHash := range txHashes {
-		responses[i] = &sidetxs.SideTxResponse{
-			TxHash: []byte(txHash),
-			Result: vote,
-		}
+	tests := []struct {
+		name   string
+		height int64
+		want   bool
+	}{
+		{"height is less than VoteExtensionsEnableHeight", 50, false},
+		{"height is equal to VoteExtensionsEnableHeight", 100, false},
+		{"height is greater than VoteExtensionsEnableHeight", 150, true},
 	}
 
-	sideTxResponses := sidetxs.ConsolidatedSideTxResponse{
-		SideTxResponses: responses,
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := mustAddSpecialTransaction(ctx, tt.height)
+			if got != tt.want {
+				t.Errorf("mustAddSpecialTransaction() = %v, want %v", got, tt.want)
+			}
+		})
 	}
-
-	voteExtension, err := json.Marshal(sideTxResponses)
-	require.NoError(t, err)
-	return voteExtension
 }
