@@ -23,6 +23,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
+// ConsensusVersion defines the current x/checkpoint module consensus version.
+const ConsensusVersion = 1
+
 var (
 	_ module.AppModuleSimulation = AppModule{}
 	_ module.HasGenesis          = AppModule{}
@@ -127,4 +130,9 @@ func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
 	return nil
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

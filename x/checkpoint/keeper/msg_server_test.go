@@ -335,7 +335,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
 	require := s.Require()
-	//stakeKeeper := s.stakeKeeper
 	start := uint64(0)
 	maxSize := uint64(256)
 	params, err := keeper.GetParams(ctx)

@@ -20,7 +20,7 @@ type Keeper struct {
 	storeService storetypes.KVStoreService
 	schema       collections.Schema
 
-	checkpointKeeper      types.CheckpointKeeper
+	CheckpointKeeper      types.CheckpointKeeper
 	bankKeeper            types.BankKeeper
 	cmKeeper              cmKeeper.Keeper
 	validatorAddressCodec addresscodec.Codec
@@ -47,7 +47,7 @@ func NewKeeper(
 	k := Keeper{
 		storeService:          storeService,
 		cdc:                   cdc,
-		checkpointKeeper:      checkpointKeeper,
+		CheckpointKeeper:      checkpointKeeper,
 		bankKeeper:            bankKeeper,
 		cmKeeper:              cmKeeper,
 		validatorAddressCodec: validatorAddressCodec,

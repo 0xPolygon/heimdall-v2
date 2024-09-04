@@ -25,6 +25,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+// ConsensusVersion defines the current x/checkpoint module consensus version.
+const ConsensusVersion = 1
+
 var (
 	_ module.AppModuleBasic      = AppModule{}
 	_ module.AppModuleSimulation = AppModule{}
@@ -118,7 +121,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	telemetry.MeasureSince(start, "InitGenesis", "topup", "unmarshal")
+	telemetry.MeasureSince(start, "InitGenesis", "stake", "unmarshal")
+
+	// return am.keeper.InitGenesis(ctx, &genesisState)
 
 	am.keeper.InitGenesis(ctx, &genesisState)
 
@@ -145,4 +150,9 @@ func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {}
 
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
 	return nil
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

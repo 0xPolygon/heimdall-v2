@@ -30,7 +30,9 @@ const (
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test") // The test depend on the app_test.go
+	// TODO HV2: this test fails because of
+	//  panic: store does not exist for key: stake
+	t.Skip("TODO HV2: fix and enable this test")
 	app, _, _ := SetupApp(t, 1)
 	key := storetypes.NewKVStoreKey("test_store_key")
 	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))

@@ -2,23 +2,30 @@ package app
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/rand"
+	"strconv"
 	"testing"
+	"time"
 
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
-	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/cosmos/cosmos-sdk/codec"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger) {
@@ -31,10 +38,10 @@ func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Log
 	return setupAppWithValidatorSet(t, validators, accounts, balances)
 }
 
-func generateValidators(t *testing.T, numOfVals uint64) ([]*cmttypes.Validator, []authtypes.GenesisAccount, []banktypes.Balance) {
+func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator, []authtypes.GenesisAccount, []banktypes.Balance) {
 	t.Helper()
 
-	validators := make([]*cmttypes.Validator, 0, numOfVals)
+	validators := make([]*stakeTypes.Validator, 0, numOfVals)
 	accounts := make([]authtypes.GenesisAccount, 0, numOfVals)
 	balances := make([]banktypes.Balance, 0, numOfVals)
 
@@ -42,9 +49,13 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*cmttypes.Validator, 
 	for ; i < numOfVals; i++ {
 		privKey := cmtcrypto.GenPrivKey()
 		pubKey := privKey.PubKey()
+		pk, err := cryptocodec.FromCmtPubKeyInterface(pubKey)
+		if err != nil {
+			_ = fmt.Errorf("failed to convert pubkey: %w", err)
+		}
 
 		// create validator set
-		val := cmttypes.NewValidator(pubKey, 100)
+		val, _ := stakeTypes.NewValidator(i, 0, 0, i, 100, pk, pubKey.Address().String())
 
 		validators = append(validators, val)
 
@@ -62,7 +73,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*cmttypes.Validator, 
 	return validators, accounts, balances
 }
 
-func setupAppWithValidatorSet(t *testing.T, validators []*cmttypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance) (*HeimdallApp, *dbm.MemDB, log.Logger) {
+func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance) (*HeimdallApp, *dbm.MemDB, log.Logger) {
 	t.Helper()
 
 	db := dbm.NewMemDB()
@@ -75,9 +86,9 @@ func setupAppWithValidatorSet(t *testing.T, validators []*cmttypes.Validator, ac
 	genesisState := app.DefaultGenesis()
 
 	// initialize validator set
-	valSet := cmttypes.NewValidatorSet(validators)
+	valSet := stakeTypes.NewValidatorSet(validators)
 
-	genesisState, err := simtestutil.GenesisStateWithValSet(app.AppCodec(), genesisState, valSet, accounts, balances...)
+	genesisState, err := GenesisStateWithValSet(app.AppCodec(), genesisState, valSet, accounts, balances...)
 	require.NoError(t, err)
 
 	stateBytes, err := json.Marshal(genesisState)
@@ -93,9 +104,8 @@ func setupAppWithValidatorSet(t *testing.T, validators []*cmttypes.Validator, ac
 	require.NoError(t, err)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height:             app.LastBlockHeight() + 1,
-		Hash:               app.LastCommitID().Hash,
-		NextValidatorsHash: valSet.Hash(),
+		Height: app.LastBlockHeight() + 1,
+		Hash:   app.LastCommitID().Hash,
 	})
 	require.NoError(t, err)
 
@@ -118,4 +128,48 @@ func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...str
 	voteExtension, err := json.Marshal(sideTxResponses)
 	require.NoError(t, err)
 	return voteExtension
+}
+
+// GenesisStateWithValSet returns a new genesis state with the validator set
+func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawMessage, valSet *stakeTypes.ValidatorSet, genAccs []authtypes.GenesisAccount, balances ...banktypes.Balance) (map[string]json.RawMessage, error) {
+	// set genesis accounts
+	authGenesis := authtypes.NewGenesisState(authtypes.DefaultParams(), genAccs)
+	genesisState[authtypes.ModuleName] = codec.MustMarshalJSON(authGenesis)
+
+	validators := make([]*stakeTypes.Validator, 0, len(valSet.Validators))
+	seqs := make([]string, 0, len(valSet.Validators))
+	r := rand.New(rand.NewSource(time.Now().UnixMilli()))
+
+	for i, val := range valSet.Validators {
+
+		validator := stakeTypes.Validator{
+			ValId:       uint64(i),
+			StartEpoch:  0,
+			EndEpoch:    0,
+			Nonce:       uint64(i),
+			VotingPower: 100,
+			PubKey:      val.PubKey,
+			Signer:      val.Signer,
+			LastUpdated: time.Now().String(),
+		}
+
+		validators = append(validators, &validator)
+		seqs = append(seqs, strconv.Itoa(simulation.RandIntBetween(r, 1, 1000000)))
+	}
+
+	// set validators and delegations
+	stakingGenesis := stakeTypes.NewGenesisState(validators, *valSet, seqs)
+	genesisState[stakeTypes.ModuleName] = codec.MustMarshalJSON(stakingGenesis)
+
+	totalSupply := sdk.NewCoins()
+	for _, b := range balances {
+		// add genesis acc tokens to total supply
+		totalSupply = totalSupply.Add(b.Coins...)
+	}
+
+	// update total supply
+	bankGenesis := banktypes.NewGenesisState(banktypes.DefaultGenesisState().Params, balances, totalSupply, []banktypes.Metadata{}, []banktypes.SendEnabled{})
+	genesisState[banktypes.ModuleName] = codec.MustMarshalJSON(bankGenesis)
+
+	return genesisState, nil
 }

@@ -18,16 +18,15 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
+	"github.com/0xPolygon/heimdall-v2/x/clerk"
+	"github.com/0xPolygon/heimdall-v2/x/stake"
+	"github.com/0xPolygon/heimdall-v2/x/topup"
 )
 
-// TODO HV2: all the tests in this file are skipped. We need to enable them and make sure they pass.
-//  Current error is about initialization of validatorSet (stake module?).
-//         	Error:      	Received unexpected error:
-//         	validator set is empty after InitGenesis, please ensure at least one validator is initialized
-//        	with a delegation greater than or equal to the DefaultPowerReduction
-
 func TestHeimdallAppExport(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
 
@@ -49,6 +48,8 @@ func TestHeimdallAppExport(t *testing.T) {
 
 //nolint:tparallel
 func TestRunMigrations(t *testing.T) {
+	// TODO HV2: this test fails because of
+	//  panic: kv store with key KVStoreKey{0x14000c06910, milestone} has not been registered in stores
 	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
@@ -65,7 +66,7 @@ func TestRunMigrations(t *testing.T) {
 	//
 	// The loop below is the same as calling `RegisterServices` on
 	// ModuleManager, except that we skip x/bank.
-	for name, mod := range app.mm.Modules {
+	for name, mod := range app.ModuleManager.Modules {
 		if name == banktypes.ModuleName {
 			continue
 		}
@@ -159,20 +160,18 @@ func TestRunMigrations(t *testing.T) {
 			// Run migrations only for bank. That's why we put the initial
 			// version for bank as 1, and for all other modules, we put as
 			// their latest ConsensusVersion.
-			_, err = app.mm.RunMigrations(
+			_, err = app.ModuleManager.RunMigrations(
 				app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()}), configurator,
 				module.VersionMap{
-					"bank": 1,
-					"auth": auth.AppModule{}.ConsensusVersion(),
-					"gov":  gov.AppModule{}.ConsensusVersion(),
-					// TODO HV2: do we need to add ConsensusVersion for all custom modules? We agreed with Lauren once to remove the ConsensusVersion constant from all the v2 modules
-					// "stake":      stake.AppModule{}.ConsensusVersion(),
+					"bank":         1,
+					"auth":         auth.AppModule{}.ConsensusVersion(),
+					"gov":          gov.AppModule{}.ConsensusVersion(),
+					"stake":        stake.AppModule{}.ConsensusVersion(),
+					"clerk":        clerk.AppModule{}.ConsensusVersion(),
+					"checkpoint":   checkpoint.AppModule{}.ConsensusVersion(),
+					"chainmanager": chainmanager.AppModule{}.ConsensusVersion(),
+					"topup":        topup.AppModule{}.ConsensusVersion(),
 					// "bor": bor.AppModule{}.ConsensusVersion(),
-					// "clerk": clerk.AppModule{}.ConsensusVersion(),
-					// "checkpoint": checkpoint.AppModule{}.ConsensusVersion(),
-					// "topup": topup.AppModule{}.ConsensusVersion(),
-					// "chainmanager": chainmanager.AppModule{}.ConsensusVersion(),
-
 				},
 			)
 
@@ -188,7 +187,7 @@ func TestRunMigrations(t *testing.T) {
 }
 
 func TestInitGenesisOnMigration(t *testing.T) {
-	t.Skip("TODO HVE: fix and enable this test")
+	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 	app, _, _ := SetupApp(t, 1)
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
@@ -203,29 +202,27 @@ func TestInitGenesisOnMigration(t *testing.T) {
 	mockModule.EXPECT().InitGenesis(gomock.Eq(ctx), gomock.Eq(app.appCodec), gomock.Eq(mockDefaultGenesis)).Times(1)
 	mockModule.EXPECT().ConsensusVersion().Times(1).Return(uint64(0))
 
-	app.mm.Modules["mock"] = mockModule
+	app.ModuleManager.Modules["mock"] = mockModule
 
 	// Run migrations only for "mock" module. We exclude it from
 	// the VersionMap to simulate upgrading with a new module.
-	_, err := app.mm.RunMigrations(ctx, app.configurator,
+	_, err := app.ModuleManager.RunMigrations(ctx, app.configurator,
 		module.VersionMap{
-			"bank": 1,
-			"auth": auth.AppModule{}.ConsensusVersion(),
-			"gov":  gov.AppModule{}.ConsensusVersion(),
-			// TODO HV2: do we need to add ConsensusVersion for all custom modules? Or can we remove them all?
-			// "stake":      stake.AppModule{}.ConsensusVersion(),
+			"bank":         1,
+			"auth":         auth.AppModule{}.ConsensusVersion(),
+			"gov":          gov.AppModule{}.ConsensusVersion(),
+			"stake":        stake.AppModule{}.ConsensusVersion(),
+			"clerk":        clerk.AppModule{}.ConsensusVersion(),
+			"checkpoint":   checkpoint.AppModule{}.ConsensusVersion(),
+			"chainmanager": chainmanager.AppModule{}.ConsensusVersion(),
+			"topup":        topup.AppModule{}.ConsensusVersion(),
 			// "bor": bor.AppModule{}.ConsensusVersion(),
-			// "clerk": clerk.AppModule{}.ConsensusVersion(),
-			// "checkpoint": checkpoint.AppModule{}.ConsensusVersion(),
-			// "topup": topup.AppModule{}.ConsensusVersion(),
-			// "chainmanager": chainmanager.AppModule{}.ConsensusVersion(),
 		},
 	)
 	require.NoError(t, err)
 }
 
 func TestValidateGenesis(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 
 	happ, _, _ := SetupApp(t, 1)
@@ -243,7 +240,6 @@ func TestValidateGenesis(t *testing.T) {
 }
 
 func TestGetMaccPerms(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 
 	dup := GetMaccPerms()

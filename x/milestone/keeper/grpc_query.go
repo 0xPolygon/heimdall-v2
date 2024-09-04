@@ -104,7 +104,7 @@ func (q queryServer) MilestoneProposer(ctx context.Context, req *types.QueryMile
 	}
 
 	// get milestone validator set
-	validatorSet, err := q.k.sk.GetMilestoneValidatorSet(ctx)
+	validatorSet, err := q.k.StakeKeeper.GetMilestoneValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

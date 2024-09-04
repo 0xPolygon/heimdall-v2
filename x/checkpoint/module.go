@@ -18,6 +18,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
+// ConsensusVersion defines the current x/checkpoint module consensus version.
+const ConsensusVersion = 1
+
 var (
 	// TODO HV2 implement checkpoint simulation
 	//_ module.AppModuleSimulation = AppModule{}
@@ -106,4 +109,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

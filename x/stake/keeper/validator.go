@@ -36,7 +36,7 @@ func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) er
 // IsCurrentValidatorByAddress check if validator is in current validator set by signer address
 func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) bool {
 	// get ack count
-	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	ackCount, err := k.CheckpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		return false
 	}
@@ -70,7 +70,7 @@ func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (va
 	}
 
 	// get ack count
-	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	ackCount, err := k.CheckpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		return validator, err
 	}
@@ -85,7 +85,7 @@ func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (va
 // GetCurrentValidators returns all validators who are in validator set
 func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.Validator) {
 	// get ack count
-	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	ackCount, err := k.CheckpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		return nil
 	}
@@ -119,7 +119,7 @@ func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error
 // GetSpanEligibleValidators returns current validators who are not getting deactivated in between next span
 func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []types.Validator) {
 	// get ack count
-	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	ackCount, err := k.CheckpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		return nil
 	}
@@ -414,7 +414,7 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 // GetValIdFromAddress returns a validator's id given its address string
 func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint64, error) {
 	// get ack count
-	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	ackCount, err := k.CheckpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -512,7 +512,7 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	}
 
 	allValidators := k.GetAllValidators(ctx)
-	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
+	ackCount, err := k.CheckpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		return cmtValUpdates, err
 	}

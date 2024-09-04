@@ -21,6 +21,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
+// ConsensusVersion defines the current x/chainmanager module consensus version.
+const ConsensusVersion = 1
+
 var (
 	_ module.AppModuleSimulation = AppModule{}
 	_ module.HasGenesis          = AppModule{}
@@ -125,4 +128,9 @@ func (am AppModule) RegisterStoreDecoder(_ simtypes.StoreDecoderRegistry) {}
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simtypes.WeightedOperation {
 	return nil
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

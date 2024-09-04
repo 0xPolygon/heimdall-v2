@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
 	"io"
 	"os"
 	"path/filepath"
@@ -130,8 +131,8 @@ type HeimdallApp struct {
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
 
-	mm           *module.Manager
-	BasicManager module.BasicManager
+	ModuleManager *module.Manager
+	BasicManager  module.BasicManager
 
 	simulationManager *module.SimulationManager
 
@@ -159,7 +160,6 @@ func NewHeimdallApp(
 	baseAppOptions ...func(*baseapp.BaseApp),
 ) *HeimdallApp {
 
-	legacyAmino := codec.NewLegacyAmino()
 	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -170,7 +170,9 @@ func NewHeimdallApp(
 	if err != nil {
 		panic(err)
 	}
+
 	appCodec := codec.NewProtoCodec(interfaceRegistry)
+	legacyAmino := codec.NewLegacyAmino()
 	txConfig := authtx.NewTxConfig(appCodec, authtx.DefaultSignModes)
 
 	std.RegisterLegacyAminoCodec(legacyAmino)
@@ -204,8 +206,6 @@ func NewHeimdallApp(
 	}
 
 	tKeys := storetypes.NewTransientStoreKeys(paramstypes.TStoreKey)
-	// TODO HV2: are memKeys needed?
-	// memKeys := storetypes.NewMemoryStoreKeys(capabilitytypes.MemStoreKey, ibcmock.MemStoreKey)
 
 	app := &HeimdallApp{
 		BaseApp:           bApp,
@@ -215,7 +215,6 @@ func NewHeimdallApp(
 		interfaceRegistry: interfaceRegistry,
 		keys:              keys,
 		tKeys:             tKeys,
-		// memKeys:        memKeys,
 	}
 
 	// Contract caller
@@ -238,8 +237,6 @@ func NewHeimdallApp(
 	app.ConsensusParamsKeeper = consensusparamkeeper.NewKeeper(appCodec, runtime.NewKVStoreService(keys[consensusparamtypes.StoreKey]), authtypes.NewModuleAddress(govtypes.ModuleName).String(), runtime.EventService{})
 	bApp.SetParamStore(app.ConsensusParamsKeeper.ParamsStore)
 
-	// sdk module keepers
-
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
@@ -249,6 +246,19 @@ func NewHeimdallApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
+	app.ChainManagerKeeper = chainmanagerkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
+	app.ClerkKeeper = clerkkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[clerktypes.StoreKey]),
+		app.ChainManagerKeeper,
+		&app.caller,
+	)
+
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
@@ -256,6 +266,26 @@ func NewHeimdallApp(
 		blockedAddr,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		logger,
+	)
+
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		app.BankKeeper,
+		app.ChainManagerKeeper,
+		&app.caller,
+	)
+
+	app.StakeKeeper = stakeKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[staketypes.StoreKey]),
+		// TODO HV2: stake and checkpoint keepers are circularly dependent
+		//  so we need to pass nil here, and update the reference later
+		nil, // app.CheckpointKeeper,
+		app.BankKeeper,
+		app.ChainManagerKeeper,
+		address.HexCodec{},
+		&app.caller,
 	)
 
 	govRouter := govv1beta1.NewRouter()
@@ -281,38 +311,6 @@ func NewHeimdallApp(
 		),
 	)
 
-	// custom keepers
-
-	app.ChainManagerKeeper = chainmanagerkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[chainmanagertypes.StoreKey]),
-		authtypes.NewModuleAddress(govtypes.ModuleName).String())
-
-	app.StakeKeeper = stakeKeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[staketypes.StoreKey]),
-		app.CheckpointKeeper,
-		app.BankKeeper,
-		app.ChainManagerKeeper,
-		address.HexCodec{},
-		&app.caller,
-	)
-
-	app.ClerkKeeper = clerkkeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[clerktypes.StoreKey]),
-		app.ChainManagerKeeper,
-		&app.caller,
-	)
-
-	app.TopupKeeper = topupKeeper.NewKeeper(
-		appCodec,
-		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
-		app.BankKeeper,
-		app.ChainManagerKeeper,
-		&app.caller,
-	)
-
 	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[checkpointTypes.StoreKey]),
@@ -325,21 +323,26 @@ func NewHeimdallApp(
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		appCodec,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
-		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
+		runtime.NewKVStoreService(keys[milestoneTypes.StoreKey]),
 		&app.StakeKeeper,
 		&app.caller,
 	)
 
 	// TODO HV2: add bor module keeper here
 
-	app.mm = module.NewManager(
+	// TODO HV2: stake and checkpoint keepers are circularly dependent
+	//  This is a workaround to solve it
+	app.StakeKeeper.CheckpointKeeper = app.CheckpointKeeper
+	app.GovKeeper.StakingKeeper = &app.StakeKeeper
+	app.CheckpointKeeper.StakeKeeper = &app.StakeKeeper
+	app.MilestoneKeeper.StakeKeeper = &app.StakeKeeper
+
+	app.ModuleManager = module.NewManager(
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
 		stake.NewAppModule(app.StakeKeeper, app.caller),
-		params.NewAppModule(app.ParamsKeeper),
-		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 		clerk.NewAppModule(appCodec, app.ClerkKeeper),
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),
@@ -347,11 +350,13 @@ func NewHeimdallApp(
 		milestone.NewAppModule(&app.MilestoneKeeper),
 		// TODO HV2: uncomment when bor module is implemented
 		// bor.NewAppModule(app.BorKeeper),
+		params.NewAppModule(app.ParamsKeeper),
+		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 	)
 
 	// Basic manager
 	app.BasicManager = module.NewBasicManagerFromManager(
-		app.mm,
+		app.ModuleManager,
 		map[string]module.AppModuleBasic{
 			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 			govtypes.ModuleName: gov.NewAppModuleBasic(
@@ -376,28 +381,29 @@ func NewHeimdallApp(
 	bApp.SetVerifyVoteExtensionHandler(app.VoteExtensionProcessor.VerifyVoteExtension())
 
 	// TODO HV2: is this order correct?
-	app.mm.SetOrderBeginBlockers(
+	app.ModuleManager.SetOrderBeginBlockers(
 		genutiltypes.ModuleName,
 		staketypes.ModuleName,
 	)
 
 	// TODO HV2: is this order correct? Do we need any other module?
-	app.mm.SetOrderEndBlockers(
+	app.ModuleManager.SetOrderEndBlockers(
 		govtypes.ModuleName,
-		genutiltypes.ModuleName,
 		staketypes.ModuleName,
+		genutiltypes.ModuleName,
 	)
 
 	// TODO HV2: is this order correct?
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
+		staketypes.ModuleName,
 		govtypes.ModuleName,
 		genutiltypes.ModuleName,
+		paramstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		chainmanagertypes.ModuleName,
 		topupTypes.ModuleName,
-		staketypes.ModuleName,
 		checkpointTypes.ModuleName,
 		milestoneTypes.ModuleName,
 		clerktypes.ModuleName,
@@ -405,20 +411,20 @@ func NewHeimdallApp(
 		// bortypes.ModuleName,
 	}
 
-	app.mm.SetOrderInitGenesis(genesisModuleOrder...)
-	app.mm.SetOrderExportGenesis(genesisModuleOrder...)
+	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
+	app.ModuleManager.SetOrderExportGenesis(genesisModuleOrder...)
 
 	app.configurator = module.NewConfigurator(
 		app.appCodec,
 		app.MsgServiceRouter(),
 		app.GRPCQueryRouter(),
 	)
-	err = app.mm.RegisterServices(app.configurator)
+	err = app.ModuleManager.RegisterServices(app.configurator)
 	if err != nil {
 		panic(err)
 	}
 
-	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.mm.Modules))
+	autocliv1.RegisterQueryServer(app.GRPCQueryRouter(), runtimeservices.NewAutoCLIQueryService(app.ModuleManager.Modules))
 
 	reflectionSvc, err := runtimeservices.NewReflectionService()
 	if err != nil {
@@ -431,14 +437,13 @@ func NewHeimdallApp(
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tKeys)
-	// TODO HV2: are memKeys needed?
-	// app.MountMemoryStores(memKeys)
 	// initialize BaseApp
 	app.SetInitChainer(app.InitChainer)
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 	app.setAnteHandler(txConfig)
+	app.setPostHandler()
 
 	// At startup, after all modules have been registered, check that all proto
 	// annotations are correct.
@@ -484,6 +489,17 @@ func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
 	app.SetAnteHandler(anteHandler)
 }
 
+func (app *HeimdallApp) setPostHandler() {
+	postHandler, err := posthandler.NewPostHandler(
+		posthandler.HandlerOptions{},
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	app.SetPostHandler(postHandler)
+}
+
 func (app *HeimdallApp) Name() string { return app.BaseApp.Name() }
 
 // InitChainer application update at chain initialization
@@ -504,7 +520,7 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	}
 
 	// init genesis
-	if _, err := app.mm.InitGenesis(ctx, app.AppCodec(), genesisState); err != nil {
+	if _, err := app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState); err != nil {
 		return &abci.ResponseInitChain{}, err
 	}
 
@@ -556,7 +572,7 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 		}
 	}
 
-	return app.mm.BeginBlock(ctx)
+	return app.ModuleManager.BeginBlock(ctx)
 }
 
 // EndBlocker application updates every end block
@@ -634,7 +650,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		}
 	}
 
-	return app.mm.EndBlock(ctx)
+	return app.ModuleManager.EndBlock(ctx)
 }
 
 func (app *HeimdallApp) LoadHeight(height int64) error {
@@ -647,13 +663,6 @@ func (app *HeimdallApp) ModuleAccountAddrs() map[string]bool {
 		modAccAddrs[authtypes.NewModuleAddress(acc).String()] = true
 	}
 
-	return modAccAddrs
-}
-
-func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
-	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	delete(modAccAddrs, authtypes.NewModuleAddress(topupTypes.ModuleName).String())
-	// TODO HV2: any other module to remove from the BlockedModuleAccountAddrs? So that they can send/receive tokens. Maybe bank module?
 	return modAccAddrs
 }
 
@@ -676,7 +685,7 @@ func (app *HeimdallApp) GetTxConfig() client.TxConfig {
 // AutoCliOpts returns the autocli options for the app.
 func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
 	modules := make(map[string]appmodule.AppModule)
-	for _, m := range app.mm.Modules {
+	for _, m := range app.ModuleManager.Modules {
 		if moduleWithName, ok := m.(module.HasName); ok {
 			moduleName := moduleWithName.Name()
 			if appModule, ok := moduleWithName.(appmodule.AppModule); ok {
@@ -687,7 +696,7 @@ func (app *HeimdallApp) AutoCliOpts() autocli.AppOptions {
 
 	return autocli.AppOptions{
 		Modules:               modules,
-		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.mm.Modules),
+		ModuleOptions:         runtimeservices.ExtractAutoCLIOptions(app.ModuleManager.Modules),
 		AddressCodec:          authcodec.NewHexCodec(),
 		ValidatorAddressCodec: authcodec.NewHexCodec(),
 		ConsensusAddressCodec: authcodec.NewHexCodec(),
@@ -778,7 +787,7 @@ func (app *HeimdallApp) GetBaseApp() *baseapp.BaseApp {
 }
 
 func (app *HeimdallApp) RegisterSideMsgServices(cfg sidetxs.SideTxConfigurator) {
-	for _, md := range app.mm.Modules {
+	for _, md := range app.ModuleManager.Modules {
 		if sideMsgModule, ok := md.(sidetxs.HasSideMsgServices); ok {
 			sideMsgModule.RegisterSideMsgServices(cfg)
 		}
@@ -789,15 +798,6 @@ type EmptyAppOptions struct{}
 
 func (ao EmptyAppOptions) Get(_ string) interface{} {
 	return nil
-}
-
-// TODO HV2: params will be soon deprecated, remove paramskeeper once it's done
-
-// initParamsKeeper init params keeper and its subspaces
-func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, storeKey storetypes.StoreKey) paramskeeper.Keeper {
-	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, storeKey)
-
-	return paramsKeeper
 }
 
 // GetSubspace returns a param subspace for a given module name.
@@ -829,4 +829,33 @@ func GetMaccPerms() map[string][]string {
 	}
 
 	return dupMaccPerms
+}
+
+func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
+	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	delete(modAccAddrs, authtypes.NewModuleAddress(topupTypes.ModuleName).String())
+	// TODO HV2: any other module to remove from the BlockedModuleAccountAddrs? So that they can send/receive tokens. Maybe bank module?
+	return modAccAddrs
+}
+
+// TODO HV2: params will be soon deprecated
+
+// initParamsKeeper init params keeper and its subspaces
+func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, storeKey storetypes.StoreKey) paramskeeper.Keeper {
+	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, storeKey)
+
+	// TODO HV2: are all the following needed?
+	paramsKeeper.Subspace(authtypes.ModuleName)
+	paramsKeeper.Subspace(banktypes.ModuleName)
+	paramsKeeper.Subspace(govtypes.ModuleName)
+	paramsKeeper.Subspace(staketypes.ModuleName)
+	paramsKeeper.Subspace(clerktypes.ModuleName)
+	paramsKeeper.Subspace(checkpointTypes.ModuleName)
+	paramsKeeper.Subspace(topupTypes.ModuleName)
+	paramsKeeper.Subspace(chainmanagertypes.ModuleName)
+	paramsKeeper.Subspace(milestoneTypes.ModuleName)
+	// TODO HV2: uncomment when bor module is implemented
+	// paramsKeeper.Subspace(borTypes.ModuleName)
+
+	return paramsKeeper
 }

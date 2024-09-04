@@ -21,7 +21,7 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 	// We export at last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
 	height := app.LastBlockHeight() + 1
-	genState, err := app.mm.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
+	genState, err := app.ModuleManager.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -30,11 +30,12 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	// TODO HV2: the `WriteValidators` function is not implemented in our custom `stake` module. Do we need it?
+	// TODO HV2: the `WriteValidators` function is not implemented in our custom `stake` module.
+	//  Do we need it? In case, uncomment the following lines
+
 	// validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
 	return servertypes.ExportedApp{
 		AppState: appState,
-		// TODO HV2: uncomment when implemented (see previous comment)
 		// Validators:      validators,
 		Height:          height,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
