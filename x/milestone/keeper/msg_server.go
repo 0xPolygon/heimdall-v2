@@ -40,7 +40,7 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 	minMilestoneLength := params.MinMilestoneLength
 
 	// Get the milestone proposer
-	validatorSet, err := m.StakeKeeper.GetMilestoneValidatorSet(ctx)
+	validatorSet, err := m.stakeKeeper.GetMilestoneValidatorSet(ctx)
 	if err != nil {
 		logger.Error("error in fetching milestone validator set", "error", err)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "error in fetching milestone validator set")
@@ -82,7 +82,7 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 	}
 
 	// increment the priority in the milestone validator set
-	m.StakeKeeper.MilestoneIncrementAccum(ctx, 1)
+	m.stakeKeeper.MilestoneIncrementAccum(ctx, 1)
 
 	// Calculate the milestone length
 	msgMilestoneLength := int64(msg.EndBlock) - int64(msg.StartBlock) + 1
@@ -198,10 +198,10 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, _ *types.MsgMilestoneTi
 	logger.Debug("last milestone-timeout set", "lastMilestoneTimeout", newLastMilestoneTimeout)
 
 	// Increment accum (selects new proposer)
-	m.StakeKeeper.MilestoneIncrementAccum(ctx, 1)
+	m.stakeKeeper.MilestoneIncrementAccum(ctx, 1)
 
 	// Get new proposer
-	vs, err := m.StakeKeeper.GetMilestoneValidatorSet(ctx)
+	vs, err := m.stakeKeeper.GetMilestoneValidatorSet(ctx)
 	if err != nil {
 		logger.Error("error in fetching milestone validator set", "error", err)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "error in fetching milestone validator set")

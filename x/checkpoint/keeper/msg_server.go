@@ -117,7 +117,7 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	}
 
 	// Check proposer in message
-	validatorSet, err := srv.StakeKeeper.GetValidatorSet(ctx)
+	validatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
@@ -242,7 +242,7 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 
 	isProposer := false
 
-	currentValidatorSet, err := srv.StakeKeeper.GetValidatorSet(ctx)
+	currentValidatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error while fetching validator set")
 	}
@@ -290,14 +290,14 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
 
 	// increment accum (selects new proposer)
-	err = srv.StakeKeeper.IncrementAccum(ctx, 1)
+	err = srv.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
 
 	}
 
 	// get new proposer
-	vs, err := srv.StakeKeeper.GetValidatorSet(ctx)
+	vs, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
 

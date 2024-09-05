@@ -356,7 +356,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// increment accum (selects new proposer)
-	err = srv.StakeKeeper.IncrementAccum(ctx, 1)
+	err = srv.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		logger.Error("error while incrementing accum", "err", err)
 		return

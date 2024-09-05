@@ -11,6 +11,8 @@ import (
 
 // InitGenesis sets validator information for genesis in x/stake module
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
+	k.PanicIfSetupIsIncomplete()
+
 	ctx = sdk.UnwrapSDKContext(ctx)
 
 	// get current val set
@@ -57,6 +59,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 // ExportGenesis returns a GenesisState for the given stake context and keeper.
 // The GenesisState will contain the validators and the staking sequences
 func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
+	k.PanicIfSetupIsIncomplete()
 
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {

@@ -279,9 +279,6 @@ func NewHeimdallApp(
 	app.StakeKeeper = stakeKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[staketypes.StoreKey]),
-		// TODO HV2: stake and checkpoint keepers are circularly dependent
-		//  so we need to pass nil here, and update the reference later
-		nil, // app.CheckpointKeeper,
 		app.BankKeeper,
 		app.ChainManagerKeeper,
 		address.HexCodec{},
@@ -332,10 +329,7 @@ func NewHeimdallApp(
 
 	// TODO HV2: stake and checkpoint keepers are circularly dependent
 	//  This is a workaround to solve it
-	app.StakeKeeper.CheckpointKeeper = app.CheckpointKeeper
-	app.GovKeeper.StakingKeeper = &app.StakeKeeper
-	app.CheckpointKeeper.StakeKeeper = &app.StakeKeeper
-	app.MilestoneKeeper.StakeKeeper = &app.StakeKeeper
+	app.StakeKeeper.SetCheckpointKeeper(app.CheckpointKeeper)
 
 	app.ModuleManager = module.NewManager(
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),

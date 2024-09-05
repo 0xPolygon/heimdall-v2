@@ -20,7 +20,7 @@ type Keeper struct {
 	authority    string
 	schema       collections.Schema
 
-	StakeKeeper     types.StakeKeeper
+	stakeKeeper     types.StakeKeeper
 	IContractCaller helper.IContractCaller
 
 	milestone   collections.Map[uint64, types.Milestone]
@@ -46,7 +46,7 @@ func NewKeeper(
 		storeService:    storeService,
 		authority:       authority,
 		cdc:             cdc,
-		StakeKeeper:     stakingKeeper,
+		stakeKeeper:     stakingKeeper,
 		IContractCaller: contractCaller,
 
 		milestone:   collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),

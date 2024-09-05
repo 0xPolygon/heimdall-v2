@@ -79,12 +79,13 @@ func (s *KeeperTestSuite) SetupTest() {
 	keeper := stakeKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		s.checkpointKeeper,
 		s.bankKeeper,
 		cmk,
 		addrCodec.NewHexCodec(),
 		s.contractCaller,
 	)
+
+	keeper.SetCheckpointKeeper(s.checkpointKeeper)
 
 	s.ctx = ctx
 	s.cmKeeper = &cmk

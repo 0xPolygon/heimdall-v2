@@ -19,7 +19,7 @@ type Keeper struct {
 	cdc          codec.BinaryCodec
 	schema       collections.Schema
 
-	StakeKeeper     types.StakeKeeper
+	stakeKeeper     types.StakeKeeper
 	ck              types.ChainManagerKeeper
 	topupKeeper     types.TopupKeeper
 	IContractCaller helper.IContractCaller
@@ -46,7 +46,7 @@ func NewKeeper(
 	k := Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
-		StakeKeeper:     stakingKeeper,
+		stakeKeeper:     stakingKeeper,
 		ck:              cmKeeper,
 		topupKeeper:     topupKeeper,
 		IContractCaller: contractCaller,
