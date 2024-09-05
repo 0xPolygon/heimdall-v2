@@ -551,8 +551,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	// TODO HV2: is this needed?
-
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		account, err := sdk.AccAddressFromHex(proposer.String())
 		if err != nil {
@@ -571,8 +569,6 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 
 // EndBlocker application updates every end block
 func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
-	// TODO HV2: is this needed?
-
 	// transfer fees to current proposer
 	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
 		moduleAccount := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName)
