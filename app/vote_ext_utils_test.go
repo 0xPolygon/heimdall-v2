@@ -477,18 +477,24 @@ func TestMustAddSpecialTransaction(t *testing.T) {
 	tests := []struct {
 		name   string
 		height int64
-		want   bool
+		panics bool
 	}{
-		{"height is less than VoteExtensionsEnableHeight", 50, false},
-		{"height is equal to VoteExtensionsEnableHeight", 100, false},
-		{"height is greater than VoteExtensionsEnableHeight", 150, true},
+		{"height is less than VoteExtensionsEnableHeight", 50, true},
+		{"height is equal to VoteExtensionsEnableHeight", 100, true},
+		{"height is greater than VoteExtensionsEnableHeight", 150, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := mustAddSpecialTransaction(ctx, tt.height)
-			if got != tt.want {
-				t.Errorf("mustAddSpecialTransaction() = %v, want %v", got, tt.want)
+
+			if !tt.panics {
+				require.NotPanics(t, func() {
+					mustAddSpecialTransaction(ctx, tt.height)
+				}, "mustAddSpecialTransaction panicked unexpectedly")
+			} else {
+				require.Panics(t, func() {
+					mustAddSpecialTransaction(ctx, tt.height)
+				}, "mustAddSpecialTransaction did not panic, but it should have")
 			}
 		})
 	}

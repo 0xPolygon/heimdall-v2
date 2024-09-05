@@ -37,9 +37,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		logger := app.Logger()
 
 		// start including ExtendedVoteInfo a block after vote extensions are enabled
-		if !mustAddSpecialTransaction(ctx, req.Height+1) {
-			return &abci.ResponsePrepareProposal{Txs: req.Txs}, nil
-		}
+		mustAddSpecialTransaction(ctx, req.Height+1)
 
 		for _, vote := range req.LocalLastCommit.Votes {
 			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
@@ -90,15 +88,14 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		logger := app.Logger()
 
 		// check for ExtendedVoteInfo a block after vote extensions are enabled
-		if !mustAddSpecialTransaction(ctx, req.Height+1) {
-			for _, tx := range req.Txs {
-				checkTx, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
-				if err != nil || checkTx.IsErr() {
-					logger.Error("Error occurred while checking tx", "error", err)
-					return nil, err
-				}
+		mustAddSpecialTransaction(ctx, req.Height+1)
+
+		for _, tx := range req.Txs {
+			checkTx, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
+			if err != nil || checkTx.IsErr() {
+				logger.Error("Error occurred while checking tx", "error", err)
+				return nil, err
 			}
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 		}
 
 		var extVoteInfo []abci.ExtendedVoteInfo
@@ -158,17 +155,17 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 
 			txs := req.Txs
 
-			if mustAddSpecialTransaction(ctx, req.Height) {
-				// check whether ExtendedVoteInfo is encoded at the beginning
-				bz := req.Txs[0]
-				if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
-					// abnormal behavior since the block got >2/3 prevotes
-					panic(fmt.Errorf("error occurred while decoding ExtendedVoteInfo; they should have be encoded in the beginning of txs slice. Error: %v",
-						err))
-				}
+			mustAddSpecialTransaction(ctx, req.Height)
 
-				txs = req.Txs[1:]
+			// check whether ExtendedVoteInfo is encoded at the beginning
+			bz := req.Txs[0]
+			if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
+				// abnormal behavior since the block got >2/3 prevotes
+				panic(fmt.Errorf("error occurred while decoding ExtendedVoteInfo; they should have be encoded in the beginning of txs slice. Error: %v",
+					err))
 			}
+
+			txs = req.Txs[1:]
 
 			for _, rawTx := range txs {
 				// create a cache wrapped context for stateless execution
@@ -268,65 +265,65 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 
-	if mustAddSpecialTransaction(ctx, req.Height+1) {
-		// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
-		var extVoteInfo []abci.ExtendedVoteInfo
+	mustAddSpecialTransaction(ctx, req.Height+1)
 
-		if len(req.Txs) > 0 {
-			bz := req.Txs[0]
-			if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
-				logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
-				return nil, err
-			}
+	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
+	var extVoteInfo []abci.ExtendedVoteInfo
+
+	if len(req.Txs) > 0 {
+		bz := req.Txs[0]
+		if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
+			logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
+			return nil, err
+		}
+	}
+
+	if len(req.Txs) > 1 {
+		txs := req.Txs[1:]
+
+		// Fetch validators from previous block
+		// TODO HV2: Heimdall as of now uses validator set from current height.
+		//  Should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
+		//  Discuss with PoS team
+		validators, err := app.StakeKeeper.GetValidatorSet(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(validators.Validators) == 0 {
+			return nil, errors.New("no validators found")
 		}
 
-		if len(req.Txs) > 1 {
-			txs := req.Txs[1:]
+		// tally votes
+		approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.Validators)
+		if err != nil {
+			logger.Error("Error occurred while tallying votes", "error", err)
+			return nil, err
+		}
 
-			// Fetch validators from previous block
-			// TODO HV2: Heimdall as of now uses validator set from current height.
-			//  Should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
-			//  Discuss with PoS team
-			validators, err := app.StakeKeeper.GetValidatorSet(ctx)
+		// execute side txs
+		for _, rawTx := range txs {
+			// create a cache wrapped context for stateless execution
+			ctx, _ = app.cacheTxContext(ctx, rawTx)
+			decodedTx, err := app.TxDecode(rawTx)
 			if err != nil {
-				return nil, err
-			}
-			if len(validators.Validators) == 0 {
-				return nil, errors.New("no validators found")
-			}
-
-			// tally votes
-			approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.Validators)
-			if err != nil {
-				logger.Error("Error occurred while tallying votes", "error", err)
+				logger.Error("Error occurred while decoding tx bytes", "error", err)
 				return nil, err
 			}
 
-			// execute side txs
-			for _, rawTx := range txs {
-				// create a cache wrapped context for stateless execution
-				ctx, _ = app.cacheTxContext(ctx, rawTx)
-				decodedTx, err := app.TxDecode(rawTx)
-				if err != nil {
-					logger.Error("Error occurred while decoding tx bytes", "error", err)
-					return nil, err
-				}
+			var txBytes cmtTypes.Tx = rawTx
 
-				var txBytes cmtTypes.Tx = rawTx
+			for _, approvedTx := range approvedTxs {
 
-				for _, approvedTx := range approvedTxs {
+				if bytes.Equal(approvedTx, txBytes.Hash()) {
 
-					if bytes.Equal(approvedTx, txBytes.Hash()) {
-
-						msgs := decodedTx.GetMsgs()
-						for _, msg := range msgs {
-							postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
-							if postHandler != nil {
-								postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
-							}
+					msgs := decodedTx.GetMsgs()
+					for _, msg := range msgs {
+						postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
+						if postHandler != nil {
+							postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 						}
-
 					}
+
 				}
 			}
 		}
