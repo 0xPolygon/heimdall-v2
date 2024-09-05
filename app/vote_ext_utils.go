@@ -199,10 +199,9 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 	voteByTxHash := make(map[string]map[sidetxs.Vote]int64)  // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
 
-	var ve sidetxs.ConsolidatedSideTxResponse
-
 	for _, vote := range extVoteInfo {
 
+		var ve sidetxs.ConsolidatedSideTxResponse
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
