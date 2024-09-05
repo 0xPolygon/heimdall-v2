@@ -212,16 +212,17 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 		}
 		// TODO HV2: How to validate ve.Height and ve.Hash? Against what?
 
+		addr, err := address.NewHexCodec().BytesToString(vote.Validator.Address)
+		if err != nil {
+			return nil, err
+		}
+
 		// iterate through vote extensions and accumulate voting power for YES/NO/SKIP votes
 		for _, res := range ve.SideTxResponses {
 			txHashStr := string(res.TxHash)
 
 			// TODO HV2: (once slashing is enabled) do we slash in case a validator maliciously adds conflicting votes ?
 			// Given that we also check for duplicate votes during VerifyVoteExtension, is this redundant ?
-			addr, err := address.NewHexCodec().BytesToString(vote.Validator.Address)
-			if err != nil {
-				return nil, err
-			}
 			if _, hasVoted := validatorToTxMap[addr][txHashStr]; !hasVoted {
 
 				if voteByTxHash[txHashStr] == nil {
