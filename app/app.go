@@ -824,7 +824,6 @@ func GetMaccPerms() map[string][]string {
 func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) map[string]bool {
 	delete(modAccAddrs, authtypes.NewModuleAddress(govtypes.ModuleName).String())
 	delete(modAccAddrs, authtypes.NewModuleAddress(topupTypes.ModuleName).String())
-	// TODO HV2: any other module to remove from the BlockedModuleAccountAddrs? So that they can send/receive tokens. Maybe bank module?
 	return modAccAddrs
 }
 
