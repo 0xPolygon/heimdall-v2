@@ -266,7 +266,7 @@ func checkDuplicateVotes(sideTxResponses []*sidetxs.SideTxResponse) (bool, []byt
 
 // mustAddSpecialTransaction indicates whether the proposer must include V.E from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, vote extensions will be enabled from v2 genesis' initial height.
-// We can use this function in case further checks are needed. Anyway, VoteExtensionsEnableHeight wil be set to 0
+// We can use this function in case further checks are needed. Anyway, VoteExtensionsEnableHeight wil be set to 1 (first block)
 func mustAddSpecialTransaction(ctx sdk.Context, height int64) {
 	enableHeight := ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight
 	if enableHeight == 0 || height <= enableHeight {
