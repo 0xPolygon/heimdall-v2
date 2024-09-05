@@ -133,7 +133,7 @@ func ValidateVoteExtensions(ctx sdk.Context,
 
 	// Ensure we have at least 2/3 voting power that submitted valid vote
 	// extensions for each side tx msg.
-	if sumVP.Int64() <= 2/3*(totalVP) {
+	if sumVP.Int64() <= (2*totalVP)/3 {
 		return fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", sumVP.Int64(), totalVP)
 	}
 
