@@ -268,7 +268,8 @@ func checkDuplicateVotes(sideTxResponses []*sidetxs.SideTxResponse) (bool, []byt
 // Since we are using a hard fork approach for the heimdall migration, vote extensions will be enabled from v2 genesis' initial height.
 // We can use this function in case further checks are needed. Anyway, VoteExtensionsEnableHeight wil be set to 0
 func mustAddSpecialTransaction(ctx sdk.Context, height int64) {
-	if height <= ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight {
+	enableHeight := ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight
+	if enableHeight == 0 || height <= enableHeight {
 		panic("mustAddSpecialTransaction should not be called before VoteExtensionsEnableHeight")
 	}
 }
