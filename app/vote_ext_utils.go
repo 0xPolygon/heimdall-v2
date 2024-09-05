@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -205,7 +204,8 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo, currentHeight int64) (m
 			continue
 		}
 
-		if err := json.Unmarshal(vote.VoteExtension, &ve); err != nil {
+		err := proto.Unmarshal(vote.VoteExtension, &ve)
+		if err != nil {
 			return nil, err
 		}
 		if ve.Height != currentHeight-1 {

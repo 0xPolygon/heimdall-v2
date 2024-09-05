@@ -9,6 +9,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
@@ -36,7 +37,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		for _, vote := range req.LocalLastCommit.Votes {
 			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-			if err := json.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
+			if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
 				logger.Error("Error while unmarshalling VoteExtension during PrepareProposal", "error", err, "validator", string(req.ProposerAddress))
 				return nil, errors.New("can't prepare the proposal because the vote extension is not valid")
 			}
@@ -112,7 +113,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 		for _, vote := range extVoteInfo {
 			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-			if err := json.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
+			if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
 				logger.Error("Error while unmarshalling VoteExtension during ProcessProposal", "error", err, "proposer", string(req.ProposerAddress))
 				return nil, errors.New("can't process the proposal because the vote extension is not valid")
 			}
@@ -218,7 +219,7 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 
 		var canonicalSideTxResponse sidetxs.ConsolidatedSideTxResponse
-		if err := json.Unmarshal(req.VoteExtension, &canonicalSideTxResponse); err != nil {
+		if err := proto.Unmarshal(req.VoteExtension, &canonicalSideTxResponse); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while unmarshalling VoteExtension", "error", err, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
