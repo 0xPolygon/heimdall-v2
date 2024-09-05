@@ -76,11 +76,14 @@ func ValidateVoteExtensions(ctx sdk.Context,
 			continue
 		}
 
+		if vote.BlockIdFlag == cmtTypes.BlockIDFlagUnknown {
+			return fmt.Errorf("received vote with unknown block ID flag at height %d", currentHeight)
+		}
+
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
 		}
-
 		if vote.BlockIdFlag == cmtTypes.BlockIDFlagUnknown {
 			return fmt.Errorf("received vote with unknown block ID flag at height %d", currentHeight)
 		}
