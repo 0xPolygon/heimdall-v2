@@ -168,7 +168,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			expectedErr: fmt.Errorf("failed to verify validator %X vote extension signature", "address"),
 		},
 		{
-			name: "sumVP.Int64() <= 2/3*(totalVP)",
+			name: "sumVP.Int64() <= (2*totalVP)/3",
 			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
 				Abci: &cmtTypes.ABCIParams{
 					VoteExtensionsEnableHeight: 10,
@@ -186,7 +186,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			expectedErr: fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", 100, 150),
 		},
 		{
-			name: "sumVP.Int64() > 2/3*(totalVP)",
+			name: "sumVP.Int64() > (2*totalVP)/3",
 			ctx: testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
 				Abci: &cmtTypes.ABCIParams{
 					VoteExtensionsEnableHeight: 10,
