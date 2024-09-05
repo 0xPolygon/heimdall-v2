@@ -21,14 +21,11 @@ type VoteExtensionProcessor struct {
 	sideTxCfg sidetxs.SideTxConfigurator
 }
 
+// NewVoteExtensionProcessor returns a new VoteExtensionProcessor with its sideTxConfigurator
 func NewVoteExtensionProcessor(cfg sidetxs.SideTxConfigurator) *VoteExtensionProcessor {
 	return &VoteExtensionProcessor{
 		sideTxCfg: cfg,
 	}
-}
-
-func (v *VoteExtensionProcessor) SetSideTxConfigurator(cfg sidetxs.SideTxConfigurator) {
-	v.sideTxCfg = cfg
 }
 
 // NewPrepareProposalHandler checks for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
