@@ -28,6 +28,17 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+const (
+	VoteExtBlockHeight = 100
+	CurrentHeight      = 101
+	TxHash1            = "0x000000000000000000000000000000000000000000000000000000000001dead"
+	TxHash2            = "0x000000000000000000000000000000000000000000000000000000000002dead"
+	TxHash3            = "0x000000000000000000000000000000000000000000000000000000000003dead"
+	ValAddr1           = "0x000000000000000000000000000000000001dEaD"
+	ValAddr2           = "0x000000000000000000000000000000000002dEaD"
+	ValAddr3           = "0x000000000000000000000000000000000003dEaD"
+)
+
 func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger) {
 	t.Helper()
 
@@ -123,6 +134,7 @@ func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...str
 
 	sideTxResponses := sidetxs.ConsolidatedSideTxResponse{
 		SideTxResponses: responses,
+		Height:          VoteExtBlockHeight,
 	}
 
 	voteExtension, err := json.Marshal(sideTxResponses)

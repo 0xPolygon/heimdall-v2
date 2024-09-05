@@ -13,8 +13,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
-// TODO HV2: check the correct usage and flow of the VEs
-
 // VoteExtensionProcessor handles Vote Extension processing for Heimdall app
 type VoteExtensionProcessor struct {
 	app       *HeimdallApp
@@ -291,7 +289,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		// tally votes
-		approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.Validators)
+		approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.Validators, req.Height)
 		if err != nil {
 			logger.Error("Error occurred while tallying votes", "error", err)
 			return nil, err

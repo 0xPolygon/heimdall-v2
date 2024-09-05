@@ -141,10 +141,8 @@ func ValidateVoteExtensions(ctx sdk.Context,
 }
 
 // tallyVotes is a helper function to tally votes received for the side txs
-// It returns lists of txs which got >2/3+ YES, NO and SKIP votes
-//
-// nolint:unused
-func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validators []*stakeTypes.Validator) ([][]byte, [][]byte, [][]byte, error) {
+// It returns lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
+func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validators []*stakeTypes.Validator, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
 
 	// calculate total voting power
@@ -153,7 +151,7 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 		totalVP += v.VotingPower
 	}
 
-	voteByTxHash, err := aggregateVotes(extVoteInfo)
+	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -195,7 +193,7 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 }
 
 // aggregateVotes collates votes received for a side tx
-func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs.Vote]int64, error) {
+func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo, currentHeight int64) (map[string]map[sidetxs.Vote]int64, error) {
 	voteByTxHash := make(map[string]map[sidetxs.Vote]int64)  // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
 
@@ -210,14 +208,15 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[sidetxs
 		if err := json.Unmarshal(vote.VoteExtension, &ve); err != nil {
 			return nil, err
 		}
-		// TODO HV2: How to validate ve.Height and ve.Hash? Against what?
-
+		if ve.Height != currentHeight-1 {
+			return nil, fmt.Errorf("invalid height received for vote extension")
+		}
 		addr, err := address.NewHexCodec().BytesToString(vote.Validator.Address)
 		if err != nil {
 			return nil, err
 		}
 
-		// iterate through vote extensions and accumulate voting power for YES/NO/SKIP votes
+		// iterate through vote extensions and accumulate voting power for YES/NO/UNSPECIFIED votes
 		for _, res := range ve.SideTxResponses {
 			txHashStr := string(res.TxHash)
 

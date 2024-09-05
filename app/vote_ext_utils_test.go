@@ -20,15 +20,6 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const (
-	TxHash1  = "0x000000000000000000000000000000000000000000000000000000000001dead"
-	TxHash2  = "0x000000000000000000000000000000000000000000000000000000000002dead"
-	TxHash3  = "0x000000000000000000000000000000000000000000000000000000000003dead"
-	ValAddr1 = "0x000000000000000000000000000000000001dEaD"
-	ValAddr2 = "0x000000000000000000000000000000000002dEaD"
-	ValAddr3 = "0x000000000000000000000000000000000003dEaD"
-)
-
 func TestValidateVoteExtensions(t *testing.T) {
 	// TODO HV2: this test fails because of
 	//  panic: store does not exist for key: stake
@@ -363,7 +354,7 @@ func TestTallyVotes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(tc.extVoteInfo, log.NewTestLogger(t), tc.validators)
+			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(tc.extVoteInfo, log.NewTestLogger(t), tc.validators, CurrentHeight)
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedApprove, approvedTxs)
 			require.Equal(t, tc.expectedReject, rejectedTxs)
@@ -380,16 +371,19 @@ func TestAggregateVotes(t *testing.T) {
 	hashBytes := []byte(hashStr)
 
 	// Prepare a valid JSON for VoteExtension with base64 encoding for bytes
-	voteExtension := `{
+	voteExtension := fmt.Sprintf(`{
 		"side_tx_responses": [
 			{
-				"tx_hash": "` + base64.StdEncoding.EncodeToString(txHashBytes) + `",
+				"tx_hash": "%s",
 				"result": 1
 			}
 		],
-		"hash": "` + base64.StdEncoding.EncodeToString(hashBytes) + `",
-		"height": 100
-	}`
+		"hash": "%s",
+		"height": %d
+		}`,
+		base64.StdEncoding.EncodeToString(txHashBytes), // Encode txHashBytes to base64
+		base64.StdEncoding.EncodeToString(hashBytes),   // Encode hashBytes to base64
+		VoteExtBlockHeight)
 
 	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
 	require.NoError(t, err)
@@ -412,7 +406,7 @@ func TestAggregateVotes(t *testing.T) {
 		},
 	}
 
-	actualVotes, err := aggregateVotes(extVoteInfo)
+	actualVotes, err := aggregateVotes(extVoteInfo, CurrentHeight)
 	require.NoError(t, err)
 	require.NotEmpty(t, actualVotes)
 	require.Equal(t, expectedVotes, actualVotes)
@@ -466,11 +460,12 @@ func TestIsVoteValid(t *testing.T) {
 }
 
 func TestMustAddSpecialTransaction(t *testing.T) {
+	VoteExtEnableHeight := 100
 	key := storetypes.NewKVStoreKey("testStoreKey")
 	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithConsensusParams(cmtTypes.ConsensusParams{
 		Abci: &cmtTypes.ABCIParams{
-			VoteExtensionsEnableHeight: 100,
+			VoteExtensionsEnableHeight: int64(VoteExtEnableHeight),
 		},
 	})
 
@@ -479,9 +474,9 @@ func TestMustAddSpecialTransaction(t *testing.T) {
 		height int64
 		panics bool
 	}{
-		{"height is less than VoteExtensionsEnableHeight", 50, true},
-		{"height is equal to VoteExtensionsEnableHeight", 100, true},
-		{"height is greater than VoteExtensionsEnableHeight", 150, false},
+		{"height is less than VoteExtensionsEnableHeight", int64(VoteExtEnableHeight) - 1, true},
+		{"height is equal to VoteExtensionsEnableHeight", int64(VoteExtEnableHeight), true},
+		{"height is greater than VoteExtensionsEnableHeight", int64(VoteExtEnableHeight) + 1, false},
 	}
 
 	for _, tt := range tests {
