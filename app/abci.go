@@ -202,7 +202,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			Hash:            req.Hash,
 		}
 
-		bz, err := json.Marshal(canonicalSideTxRes)
+		bz, err := proto.Marshal(&canonicalSideTxRes)
 		if err != nil {
 			logger.Error("Error occurred while marshalling VoteExtension", "error", err)
 			return &abci.ResponseExtendVote{VoteExtension: []byte{}}, nil

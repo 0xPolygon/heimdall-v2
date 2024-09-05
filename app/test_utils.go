@@ -22,6 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -137,7 +138,7 @@ func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...str
 		Height:          VoteExtBlockHeight,
 	}
 
-	voteExtension, err := json.Marshal(sideTxResponses)
+	voteExtension, err := proto.Marshal(&sideTxResponses)
 	require.NoError(t, err)
 	return voteExtension
 }
