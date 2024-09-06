@@ -27,83 +27,98 @@ func NewVoteExtensionProcessor(cfg sidetxs.SideTxConfigurator) *VoteExtensionPro
 	}
 }
 
-// NewPrepareProposalHandler checks for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
+// NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
+
+		// check if there are any txs in the request
+		if len(req.Txs) < 1 {
+			logger.Error("No txs found in the request to prepare the proposal")
+			return nil, errors.New("no txs found in the request to prepare the proposal")
+		}
+
+		// check the txs via the ante handler
+		for i, tx := range req.Txs {
+			// skip the first tx as it contains the ExtendedVoteInfo and may not have an ante handler
+			if i == 0 {
+				continue
+			}
+			if err := checkTx(app, tx); err != nil {
+				logger.Error("Error occurred while checking tx in prepare proposal", "error", err)
+				return nil, err
+			}
+		}
 
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
 			panic("vote extension validation failed during PrepareProposal")
 		}
 
+		// prepare the proposal with the vote extensions and the validators set's votes
 		var txs [][]byte
-
 		bz, err := json.Marshal(req.LocalLastCommit.Votes)
 		if err != nil {
-			logger.Error("Error occurred while marshaling extVoteInfo", "error", err)
+			logger.Error("Error occurred while marshaling the ExtendedVoteInfo in prepare proposal", "error", err)
 			return nil, err
 		}
 		txs = append(txs, bz)
 
-		// encode the txs
+		// once added the VEs, we append add the txs to the proposal
 		totalTxBytes := len(txs)
-		for _, rtx := range req.Txs {
-			totalTxBytes += len(rtx)
+		for _, proposedTx := range req.Txs {
+			totalTxBytes += len(proposedTx)
+			// check if the total tx bytes exceed the max tx bytes of the request
 			if totalTxBytes > int(req.MaxTxBytes) {
 				break
 			}
-			txs = append(txs, rtx)
+			txs = append(txs, proposedTx)
 		}
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
 
-// NewProcessProposalHandler checks for 2/3+ V.E. sigs and reject the proposal in case we don't have a majority.
-// It is implemented by all the validators
+// NewProcessProposalHandler processes the proposal, validates the vote extensions, and reject the proposal in case
+// there's no majority. It is implemented by all the validators.
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
 
-		for i, tx := range req.Txs {
-			// skip the first tx as it contains the ExtendedVoteInfo
-			// such tx might not have an ante handler
-			// it will be anyway checked later on
-			if i == 0 {
-				continue
-			}
-			checkTx, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
-			if err != nil || checkTx.IsErr() {
-				logger.Error("Error occurred while checking tx", "error", err)
-				return nil, err
-			}
-		}
-
-		var extVoteInfo []abci.ExtendedVoteInfo
-
+		// check if there are any txs in the request
 		if len(req.Txs) < 1 {
 			logger.Error("Unexpected behaviour, no txs found in the proposal")
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		// Extract ExtendedVoteInfo from txs (encoded at the beginning)
-		extendedVoteTx := req.Txs[0]
+		// check the txs via the ante handler
+		for i, tx := range req.Txs {
+			// skip the first tx as it contains the ExtendedVoteInfo and may not have an ante handler
+			if i == 0 {
+				continue
+			}
+			if err := checkTx(app, tx); err != nil {
+				logger.Error("Error occurred while checking the tx in process proposal", "error", err)
+				return nil, err
+			}
+		}
 
+		// extract the ExtendedVoteInfo from the txs (it is encoded at the beginning, index 0)
+		var extVoteInfo []abci.ExtendedVoteInfo
+		extendedVoteTx := req.Txs[0]
 		if err := json.Unmarshal(extendedVoteTx, &extVoteInfo); err != nil {
 			// returning an error here would cause consensus to panic. Reject the proposal instead if a proposer
-			// deliberately does not include ExtendedVoteInfo at the beginning of txs slice
+			// deliberately does not include ExtendedVoteInfo at the beginning of the txs slice
 			logger.Error("Error occurred while decoding ExtendedVoteInfo", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		// Validate VE sigs and check whether they have 2/3+ majority
+		// validate the vote extensions
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extVoteInfo, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Vote extensions don't have 2/3rds majority signatures. Rejecting proposal")
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
-
 	}
 }
 
@@ -294,4 +309,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	return app.ModuleManager.PreBlock(ctx)
+}
+
+// checkTx invokes the abci method to check the tx by using the ante handler
+func checkTx(app *HeimdallApp, tx []byte) error {
+	res, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
+	if err != nil || res.IsErr() {
+		return err
+	}
+	return nil
 }
