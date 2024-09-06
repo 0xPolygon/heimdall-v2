@@ -32,9 +32,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
-		// start including ExtendedVoteInfo a block after vote extensions are enabled
-		mustAddSpecialTransaction(ctx, req.Height+1)
-
 		for _, vote := range req.LocalLastCommit.Votes {
 			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
 			if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
@@ -50,7 +47,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		}
 
 		// Validate VE sigs and check whether they have 2/3+ majority
-		if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("PrepareProposal: Error occurred while validating VEs: ", err)
 			return nil, errors.New("can't prepare the block without more than 2/3 majority")
 		}
@@ -82,9 +79,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
-
-		// check for ExtendedVoteInfo a block after vote extensions are enabled
-		mustAddSpecialTransaction(ctx, req.Height+1)
 
 		for _, tx := range req.Txs {
 			checkTx, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
@@ -126,7 +120,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// Validate VE sigs and check whether they have 2/3+ majority
-		if err := ValidateVoteExtensions(ctx, ctx.BlockHeight(), ctx.ChainID(), extVoteInfo, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, extVoteInfo, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Vote extensions don't have 2/3rds majority signatures. Rejecting proposal")
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -279,8 +273,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		// Fetch validators from previous block
 		// TODO HV2: Heimdall as of now uses validator set from current height.
-		//  Should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
-		//  Discuss with PoS team
+		//  Should we be taking into account the validator set from currentHeight-1 or currentHeight-2? Discuss with PoS team
 		validators, err := app.StakeKeeper.GetValidatorSet(ctx)
 		if err != nil {
 			return nil, err

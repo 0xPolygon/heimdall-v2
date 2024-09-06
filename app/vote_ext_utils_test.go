@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	cosmostestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -198,7 +198,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := ValidateVoteExtensions(tt.ctx, int64(tt.round), "test-chain", tt.extVoteInfo, tt.round, tt.keeper)
+			err := ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper)
 			if tt.expectedErr != nil {
 				require.Error(t, err)
 				require.EqualError(t, err, tt.expectedErr.Error())
@@ -364,26 +364,24 @@ func TestTallyVotes(t *testing.T) {
 }
 
 func TestAggregateVotes(t *testing.T) {
-	txHashStr := "000000000000000000000000000000000000000000000000000000000001dead"
-	hashStr := "000000000000000000000000000000000000000000000000000000000000dead"
+	txHashBytes := []byte(TxHash1)
+	blockHashBytes := []byte(TxHash2)
 
-	txHashBytes := []byte(txHashStr)
-	hashBytes := []byte(hashStr)
-
-	// Prepare a valid JSON for VoteExtension with base64 encoding for bytes
-	voteExtension := fmt.Sprintf(`{
-		"side_tx_responses": [
+	// create a protobuf msg for ConsolidatedSideTxResponse
+	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
+		SideTxResponses: []*sidetxs.SideTxResponse{
 			{
-				"tx_hash": "%s",
-				"result": 1
-			}
-		],
-		"hash": "%s",
-		"height": %d
-		}`,
-		base64.StdEncoding.EncodeToString(txHashBytes), // Encode txHashBytes to base64
-		base64.StdEncoding.EncodeToString(hashBytes),   // Encode hashBytes to base64
-		VoteExtBlockHeight)
+				TxHash: txHashBytes,
+				Result: sidetxs.Vote_VOTE_YES,
+			},
+		},
+		Hash:   blockHashBytes,
+		Height: VoteExtBlockHeight,
+	}
+
+	// marshal it into Protobuf bytes
+	voteExtensionBytes, err := proto.Marshal(&voteExtensionProto)
+	require.NoError(t, err)
 
 	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
 	require.NoError(t, err)
@@ -394,14 +392,14 @@ func TestAggregateVotes(t *testing.T) {
 				Address: val1,
 				Power:   10,
 			},
-			VoteExtension:      []byte(voteExtension),
+			VoteExtension:      voteExtensionBytes,
 			ExtensionSignature: []byte("signature"),
 			BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 		},
 	}
 
 	expectedVotes := map[string]map[sidetxs.Vote]int64{
-		txHashStr: {
+		TxHash1: {
 			sidetxs.Vote_VOTE_YES: 10,
 		},
 	}

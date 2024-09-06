@@ -9,10 +9,10 @@ import (
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
+	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
@@ -22,38 +22,25 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// ValidateVoteExtensions is a helper function for verifying vote extension
-// signatures by a proposer during PrepareProposal and validators during ProcessProposal.
-// It returns an error if any signature is invalid or if unexpected vote extensions and/or signatures are found or less than 2/3
-// power is received.
-func ValidateVoteExtensions(ctx sdk.Context,
-	currentHeight int64,
-	chainID string,
-	extVoteInfo []abci.ExtendedVoteInfo,
-	round int32,
-	stakeKeeper stakeKeeper.Keeper) error {
-	cp := ctx.ConsensusParams()
-	vesEnabled := cp.Abci != nil && currentHeight >= cp.Abci.VoteExtensionsEnableHeight && cp.Abci.VoteExtensionsEnableHeight != 0
+// ValidateVoteExtensions verifies the vote extension correctness
+// It checks the signature of the proposer (during PrepareProposal) or validators (during ProcessProposal)
+// Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
+// It returns an error in case the validation fails
+func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
+	currentHeight := ctx.BlockHeight()
 
-	marshalDelimitedFn := func(msg proto.Message) ([]byte, error) {
-		var buf bytes.Buffer
-		if _, err := protoio.NewDelimitedWriter(&buf).WriteMsg(msg); err != nil {
-			return nil, err
-		}
-
-		return buf.Bytes(), nil
-	}
+	// check if VEs are enabled
+	mustAddSpecialTransaction(ctx, reqHeight+1)
 
 	// Fetch validatorSet from previous block
 	// TODO HV2: Heimdall as of now uses validator set from current height.
-	//  Should we be taking into account the validator set from currentHeight - 1/ currentHeight - 2 ?
-	//  Discuss with PoS team
+	//  Should we be taking into account the validator set from currentHeight-1 or currentHeight-2? Discuss with PoS team
 	validatorSet, err := stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return err
 	}
 	if len(validatorSet.Validators) == 0 {
-		return errors.New("no validatorSet found")
+		return errors.New("no validators found in validator set")
 	}
 
 	// calculate total voting power
@@ -65,17 +52,6 @@ func ValidateVoteExtensions(ctx sdk.Context,
 	sumVP := math.NewInt(0)
 
 	for _, vote := range extVoteInfo {
-		if !vesEnabled {
-			if len(vote.VoteExtension) > 0 {
-				return fmt.Errorf("vote extensions disabled; received non-empty vote extension at height %d", currentHeight)
-			}
-			if len(vote.ExtensionSignature) > 0 {
-				return fmt.Errorf("vote extensions disabled; received non-empty vote extension signature at height %d", currentHeight)
-			}
-
-			continue
-		}
-
 		// make sure the BlockIdFlag is valid
 		if vote.BlockIdFlag == cmtTypes.BlockIDFlagUnknown {
 			return fmt.Errorf("received vote with unknown block ID flag at height %d", currentHeight)
@@ -84,9 +60,8 @@ func ValidateVoteExtensions(ctx sdk.Context,
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
 		}
-
 		if len(vote.ExtensionSignature) == 0 {
-			return fmt.Errorf("vote extensions enabled; received empty vote extension signature at height %d", currentHeight)
+			return fmt.Errorf("received empty vote extension signature at height %d", currentHeight)
 		}
 
 		codec := address.HexCodec{}
@@ -110,13 +85,21 @@ func ValidateVoteExtensions(ctx sdk.Context,
 			return fmt.Errorf("failed to convert validator %s public key: %w", valAddrStr, err)
 		}
 
-		cve := cmtproto.CanonicalVoteExtension{
+		cve := cmtTypes.CanonicalVoteExtension{
 			Extension: vote.VoteExtension,
 			Height:    currentHeight - 1, // the vote extension was signed in the previous height
 			Round:     int64(round),
-			ChainId:   chainID,
+			ChainId:   ctx.ChainID(),
 		}
 
+		marshalDelimitedFn := func(msg proto.Message) ([]byte, error) {
+			var buf bytes.Buffer
+			if _, err := protoio.NewDelimitedWriter(&buf).WriteMsg(msg); err != nil {
+				return nil, err
+			}
+
+			return buf.Bytes(), nil
+		}
 		extSignBytes, err := marshalDelimitedFn(&cve)
 		if err != nil {
 			return fmt.Errorf("failed to encode CanonicalVoteExtension: %w", err)
@@ -130,8 +113,7 @@ func ValidateVoteExtensions(ctx sdk.Context,
 
 	}
 
-	// Ensure we have at least 2/3 voting power that submitted valid vote
-	// extensions for each side tx msg.
+	// Ensure we have at least 2/3 voting power for the submitted vote extensions in each side tx
 	if sumVP.Int64() <= (2*totalVP)/3 {
 		return fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", sumVP.Int64(), totalVP)
 	}
