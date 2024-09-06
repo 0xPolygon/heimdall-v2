@@ -7,7 +7,6 @@ import (
 	"cosmossdk.io/core/appmodule"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -41,32 +40,26 @@ func TestHeimdallAppExport(t *testing.T) {
 	require.NoError(t, err)
 
 	// Making a new app object with the db, so that initchain hasn't been called
-	app2 := NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
-	_, err = app2.ExportAppStateAndValidators(false, []string{}, []string{})
+	hApp := NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
+	_, err = hApp.ExportAppStateAndValidators(false, []string{}, []string{})
 	require.NoError(t, err)
 }
 
 //nolint:tparallel
 func TestRunMigrations(t *testing.T) {
-	// TODO HV2: this test fails because of
-	//  panic: kv store with key KVStoreKey{0x14000c06910, milestone} has not been registered in stores
 	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
-	app, db, logger := SetupApp(t, 1)
 
-	// Create a new baseapp and configurator for the purpose of this test.
-	bApp := baseapp.NewBaseApp(app.Name(), logger.With("instance", "baseapp"), db, app.GetTxConfig().TxDecoder())
-	bApp.SetCommitMultiStoreTracer(nil)
-	bApp.SetInterfaceRegistry(app.InterfaceRegistry())
-	app.BaseApp = bApp
-	configurator := module.NewConfigurator(app.appCodec, bApp.MsgServiceRouter(), app.GRPCQueryRouter())
+	_, db, logger := SetupApp(t, 1)
+	hApp := NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
+	configurator := module.NewConfigurator(hApp.appCodec, hApp.MsgServiceRouter(), hApp.GRPCQueryRouter())
 
 	// We register all modules on the Configurator, except x/bank. x/bank will
 	// serve as the test subject on which we run the migration tests.
 	//
 	// The loop below is the same as calling `RegisterServices` on
 	// ModuleManager, except that we skip x/bank.
-	for name, mod := range app.ModuleManager.Modules {
+	for name, mod := range hApp.ModuleManager.Modules {
 		if name == banktypes.ModuleName {
 			continue
 		}
@@ -84,9 +77,9 @@ func TestRunMigrations(t *testing.T) {
 	}
 
 	// Initialize the chain
-	_, err := app.InitChain(&abci.RequestInitChain{})
+	_, err := hApp.InitChain(&abci.RequestInitChain{})
 	require.NoError(t, err)
-	_, err = app.Commit()
+	_, err = hApp.Commit()
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -160,8 +153,8 @@ func TestRunMigrations(t *testing.T) {
 			// Run migrations only for bank. That's why we put the initial
 			// version for bank as 1, and for all other modules, we put as
 			// their latest ConsensusVersion.
-			_, err = app.ModuleManager.RunMigrations(
-				app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()}), configurator,
+			_, err = hApp.ModuleManager.RunMigrations(
+				hApp.NewContextLegacy(true, cmtproto.Header{Height: hApp.LastBlockHeight()}), configurator,
 				module.VersionMap{
 					"bank":         1,
 					"auth":         auth.AppModule{}.ConsensusVersion(),
@@ -225,11 +218,11 @@ func TestInitGenesisOnMigration(t *testing.T) {
 func TestValidateGenesis(t *testing.T) {
 	t.Parallel()
 
-	happ, _, _ := SetupApp(t, 1)
+	hApp, _, _ := SetupApp(t, 1)
 
 	// not valid app state
 	require.Panics(t, func() {
-		_, err := happ.InitChain(
+		_, err := hApp.InitChain(
 			&abci.RequestInitChain{
 				Validators:    []abci.ValidatorUpdate{},
 				AppStateBytes: []byte("{}"),

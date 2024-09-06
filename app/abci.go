@@ -32,24 +32,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
-		for _, vote := range req.LocalLastCommit.Votes {
-			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-			if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
-				logger.Error("Error while unmarshalling VoteExtension during PrepareProposal", "error", err, "validator", string(req.ProposerAddress))
-				return nil, errors.New("can't prepare the proposal because the vote extension is not valid")
-			}
-			// check for duplicate votes
-			hasDupVotes, txHash := checkDuplicateVotes(consolidatedSideTxResponse.SideTxResponses)
-			if hasDupVotes {
-				logger.Error("Proposer voted more than once for a side transaction", "validator", string(req.ProposerAddress), "tx hash", string(txHash))
-				panic("can't prepare the proposal because of duplicated votes")
-			}
-		}
-
-		// Validate VE sigs and check whether they have 2/3+ majority
-		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
-			logger.Error("PrepareProposal: Error occurred while validating VEs: ", err)
-			return nil, errors.New("can't prepare the block without more than 2/3 majority")
+		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
+			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
+			panic("vote extension validation failed during PrepareProposal")
 		}
 
 		var txs [][]byte
@@ -105,22 +90,8 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		for _, vote := range extVoteInfo {
-			var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-			if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
-				logger.Error("Error while unmarshalling VoteExtension during ProcessProposal", "error", err, "proposer", string(req.ProposerAddress))
-				return nil, errors.New("can't process the proposal because the vote extension is not valid")
-			}
-			// check for duplicate votes
-			hasDupVotes, txHash := checkDuplicateVotes(consolidatedSideTxResponse.SideTxResponses)
-			if hasDupVotes {
-				logger.Error("Proposer voted more than once for a side transaction", "validator", string(req.ProposerAddress), "tx hash", string(txHash))
-				panic("can't prepare the proposal because of duplicated votes")
-			}
-		}
-
 		// Validate VE sigs and check whether they have 2/3+ majority
-		if err := ValidateVoteExtensions(ctx, req.Height, extVoteInfo, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extVoteInfo, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Vote extensions don't have 2/3rds majority signatures. Rejecting proposal")
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -128,7 +99,6 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 
 	}
-
 }
 
 // ExtendVote extends precommit vote
@@ -206,7 +176,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 	}
 }
 
-// VerifyVoteExtension performs some sanity checks on the V.E received from other validators
+// VerifyVoteExtension performs some sanity checks on the VE received from other validators
 func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHandler {
 	return func(ctx sdk.Context, req *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
 		logger := v.app.Logger()
@@ -219,15 +189,14 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 		}
 
 		// ensure block height and hash match
-		switch {
-		case req.Height != canonicalSideTxResponse.Height:
+		if req.Height != canonicalSideTxResponse.Height {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block height", req.Height, "canonicalSideTxResponse height", canonicalSideTxResponse.Height, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
+		}
 
-		case !bytes.Equal(req.Hash, canonicalSideTxResponse.Hash):
+		if !bytes.Equal(req.Hash, canonicalSideTxResponse.Hash) {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block hash", req.Hash, "canonicalSideTxResponse hash", canonicalSideTxResponse.Hash, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
-
 		}
 
 		// TODO HV2: Ensure the side txs included in V.E.s are actually present in the block. This would require the block being available in RequestVerifyVoteExtension

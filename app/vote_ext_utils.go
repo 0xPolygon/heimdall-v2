@@ -25,7 +25,7 @@ import (
 // It checks the signature of the proposer (during PrepareProposal) or validators (during ProcessProposal)
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
-func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
+func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
 	currentHeight := ctx.BlockHeight()
 
 	// check if VEs are enabled
@@ -56,6 +56,14 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		}
 		if len(vote.ExtensionSignature) == 0 {
 			return fmt.Errorf("received empty vote extension signature at height %d", currentHeight)
+		}
+		var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
+		if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
+			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
+		}
+		hasDupVotes, txHash := checkDuplicateVotes(consolidatedSideTxResponse.SideTxResponses)
+		if hasDupVotes {
+			return fmt.Errorf("duplicated votes detected for validator %s and tx %s", string(proposerAddress), string(txHash))
 		}
 
 		codec := address.HexCodec{}
