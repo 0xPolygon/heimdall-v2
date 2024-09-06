@@ -65,7 +65,13 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
 
-		for _, tx := range req.Txs {
+		for i, tx := range req.Txs {
+			// skip the first tx as it contains the ExtendedVoteInfo
+			// such tx might not have an ante handler
+			// it will be anyway checked later on
+			if i == 0 {
+				continue
+			}
 			checkTx, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
 			if err != nil || checkTx.IsErr() {
 				logger.Error("Error occurred while checking tx", "error", err)
@@ -81,9 +87,9 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// Extract ExtendedVoteInfo from txs (encoded at the beginning)
-		bz := req.Txs[0]
+		extendedVoteTx := req.Txs[0]
 
-		if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
+		if err := json.Unmarshal(extendedVoteTx, &extVoteInfo); err != nil {
 			// returning an error here would cause consensus to panic. Reject the proposal instead if a proposer
 			// deliberately does not include ExtendedVoteInfo at the beginning of txs slice
 			logger.Error("Error occurred while decoding ExtendedVoteInfo", "error", err)
