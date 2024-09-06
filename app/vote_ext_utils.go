@@ -43,12 +43,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		return errors.New("no validators found in validator set")
 	}
 
-	// calculate total voting power
-	var totalVP int64
-	for _, v := range validatorSet.Validators {
-		totalVP += v.VotingPower
-	}
-
+	var totalVP = validatorSet.GetTotalVotingPower()
 	sumVP := math.NewInt(0)
 
 	for _, vote := range extVoteInfo {
