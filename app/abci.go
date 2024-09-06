@@ -126,61 +126,63 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		logger := v.app.Logger()
+		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
 
+		// check if VEs are enabled
+		mustAddSpecialTransaction(ctx, req.Height)
+
+		// prepare the side tx responses
 		sideTxRes := make([]*sidetxs.SideTxResponse, 0)
 
-		if len(req.Txs) > 1 || (len(req.Txs) == 1 && req.Height == ctx.ConsensusParams().Abci.VoteExtensionsEnableHeight) {
-			var extVoteInfo []abci.ExtendedVoteInfo
+		// extract the ExtendedVoteInfo from the txs (it is encoded at the beginning, index 0)
+		var extVoteInfos []abci.ExtendedVoteInfo
 
-			logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
-
-			txs := req.Txs
-
-			mustAddSpecialTransaction(ctx, req.Height)
-
-			// check whether ExtendedVoteInfo is encoded at the beginning
-			bz := req.Txs[0]
-			if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
-				// abnormal behavior since the block got >2/3 prevotes
-				panic(fmt.Errorf("error occurred while decoding ExtendedVoteInfo; they should have be encoded in the beginning of txs slice. Error: %v",
-					err))
-			}
-
-			txs = req.Txs[1:]
-
-			for _, rawTx := range txs {
-				// create a cache wrapped context for stateless execution
-				ctx, _ = v.app.cacheTxContext(ctx, rawTx)
-				tx, err := v.app.TxDecode(rawTx)
-				if err != nil {
-					logger.Error("Error occurred while decoding tx bytes", "error", err)
-					return nil, err
-				}
-
-				msgs := tx.GetMsgs()
-				for _, msg := range msgs {
-					sideHandler := v.sideTxCfg.GetSideHandler(msg)
-					if sideHandler == nil {
-						continue
-					}
-
-					res := sideHandler(ctx, msg)
-
-					var txBytes cmtTypes.Tx = rawTx
-
-					// add result to side tx response
-					logger.Debug("Adding V.E.", "txHash", txBytes.Hash(), "blockHeight", req.Height, "blockHash", req.Hash)
-					ve := sidetxs.SideTxResponse{
-						TxHash: txBytes.Hash(),
-						Result: res,
-					}
-					sideTxRes = append(sideTxRes, &ve)
-
-				}
-
-			}
+		// check whether ExtendedVoteInfo is encoded at the beginning
+		bz := req.Txs[0]
+		if err := json.Unmarshal(bz, &extVoteInfos); err != nil {
+			// abnormal behavior since the block got >2/3 prevotes, so the special tx should have been added
+			panic(fmt.Errorf("error occurred while decoding ExtendedVoteInfos; "+
+				"they should have be encoded in the beginning of txs slice. Error: %v", err))
 		}
 
+		txs := req.Txs[1:]
+
+		// decode txs and execute side txs
+		for _, rawTx := range txs {
+			// create a cache wrapped context for stateless execution
+			ctx, _ = v.app.cacheTxContext(ctx, rawTx)
+			tx, err := v.app.TxDecode(rawTx)
+			if err != nil {
+				logger.Error("Error occurred while decoding tx bytes in ExtendVote", "error", err)
+				return nil, err
+			}
+
+			// messages represent the side txs (operations performed by modules using the VEs mechanism)
+			// e.g. bor, checkpoint, clerk, milestone, stake and topup
+			messages := tx.GetMsgs()
+			for _, msg := range messages {
+				// get the right module's side handler for the message
+				sideHandler := v.sideTxCfg.GetSideHandler(msg)
+				if sideHandler == nil {
+					continue
+				}
+
+				// execute the side tx
+				res := sideHandler(ctx, msg)
+
+				// add the result of execution (vote YES/NO/UNSPECIFIED) to the side tx response
+				var txBytes cmtTypes.Tx = rawTx
+				logger.Debug("Adding V.E.", "txHash", txBytes.Hash(), "blockHeight", req.Height, "blockHash", req.Hash)
+				ve := sidetxs.SideTxResponse{
+					TxHash: txBytes.Hash(),
+					Result: res,
+				}
+				sideTxRes = append(sideTxRes, &ve)
+			}
+
+		}
+
+		// prepare the response with votes, height of the extended vote, and block hash
 		canonicalSideTxRes := sidetxs.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
@@ -189,7 +191,7 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 
 		bz, err := proto.Marshal(&canonicalSideTxRes)
 		if err != nil {
-			logger.Error("Error occurred while marshalling VoteExtension", "error", err)
+			logger.Error("Error occurred while marshalling the VoteExtension in ExtendVote", "error", err)
 			return &abci.ResponseExtendVote{VoteExtension: []byte{}}, nil
 		}
 
