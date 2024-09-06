@@ -167,10 +167,10 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 					continue
 				}
 
-				// execute the side tx
+				// execute the side handler to collect the votes from the validators
 				res := sideHandler(ctx, msg)
 
-				// add the result of execution (vote YES/NO/UNSPECIFIED) to the side tx response
+				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response
 				var txBytes cmtTypes.Tx = rawTx
 				logger.Debug("Adding V.E.", "txHash", txBytes.Hash(), "blockHeight", req.Height, "blockHash", req.Hash)
 				ve := sidetxs.SideTxResponse{
