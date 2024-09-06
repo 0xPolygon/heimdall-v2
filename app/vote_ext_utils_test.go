@@ -17,7 +17,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
@@ -218,19 +217,15 @@ func TestTallyVotes(t *testing.T) {
 	require.NoError(t, err)
 	tests := []struct {
 		name            string
-		validators      []*stakeTypes.Validator
 		extVoteInfo     []abci.ExtendedVoteInfo
+		votingPower     int64
 		expectedApprove [][]byte
 		expectedReject  [][]byte
 		expectedSkip    [][]byte
 	}{
 		{
-			name: "single tx approved with 2/3+1 majority",
-			validators: []*stakeTypes.Validator{
-				{VotingPower: 10},
-				{VotingPower: 20},
-				{VotingPower: 1},
-			},
+			name:        "single tx approved with 2/3+1 majority",
+			votingPower: 31,
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				{
 					Validator: abci.Validator{
@@ -265,12 +260,8 @@ func TestTallyVotes(t *testing.T) {
 			expectedSkip:    make([][]byte, 0, 3),
 		},
 		{
-			name: "one tx approved one rejected one skipped",
-			validators: []*stakeTypes.Validator{
-				{VotingPower: 40},
-				{VotingPower: 30},
-				{VotingPower: 5},
-			},
+			name:        "one tx approved one rejected one skipped",
+			votingPower: 75,
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				{
 					Validator: abci.Validator{
@@ -354,7 +345,7 @@ func TestTallyVotes(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(tc.extVoteInfo, log.NewTestLogger(t), tc.validators, CurrentHeight)
+			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(tc.extVoteInfo, log.NewTestLogger(t), tc.votingPower, CurrentHeight)
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedApprove, approvedTxs)
 			require.Equal(t, tc.expectedReject, rejectedTxs)

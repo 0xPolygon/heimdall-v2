@@ -19,7 +19,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
@@ -109,23 +108,18 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 	}
 
 	// Ensure we have at least 2/3 voting power for the submitted vote extensions in each side tx
-	if sumVP.Int64() <= (2*totalVP)/3 {
-		return fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", sumVP.Int64(), totalVP)
+	majorityVP := totalVP * 2 / 3
+	if sumVP.Int64() <= majorityVP {
+		return fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", sumVP.Int64(), majorityVP)
 	}
 
 	return nil
 }
 
-// tallyVotes is a helper function to tally votes received for the side txs
-// It returns lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
-func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validators []*stakeTypes.Validator, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
+// tallyVotes tallies the votes received for the side tx
+// It returns the lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
+func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, totalVP int64, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
-
-	// calculate total voting power
-	var totalVP int64
-	for _, v := range validators {
-		totalVP += v.VotingPower
-	}
 
 	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight)
 	if err != nil {
@@ -142,15 +136,17 @@ func tallyVotes(extVoteInfo []abci.ExtendedVoteInfo, logger log.Logger, validato
 
 	approvedTxs, rejectedTxs, skippedTxs := make([][]byte, 0, len(txHashList)), make([][]byte, 0, len(txHashList)), make([][]byte, 0, len(txHashList))
 
+	majorityVP := totalVP * 2 / 3
+
 	for _, txHash := range txHashList {
 		voteMap := voteByTxHash[txHash]
-		if voteMap[sidetxs.Vote_VOTE_YES] > (totalVP * 2 / 3) {
+		if voteMap[sidetxs.Vote_VOTE_YES] > majorityVP {
 			// approved
 			logger.Debug("Approved side-tx", "txHash", txHash)
 
 			// append to approved tx slice
 			approvedTxs = append(approvedTxs, []byte(txHash))
-		} else if voteMap[sidetxs.Vote_VOTE_NO] > (totalVP * 2 / 3) {
+		} else if voteMap[sidetxs.Vote_VOTE_NO] > majorityVP {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
 

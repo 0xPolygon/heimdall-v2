@@ -283,7 +283,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 
 		// tally votes
-		approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.Validators, req.Height)
+		approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.GetTotalVotingPower(), req.Height)
 		if err != nil {
 			logger.Error("Error occurred while tallying votes", "error", err)
 			return nil, err
