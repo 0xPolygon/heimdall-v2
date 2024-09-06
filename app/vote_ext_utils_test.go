@@ -277,8 +277,8 @@ func TestAggregateVotes(t *testing.T) {
 				Result: sidetxs.Vote_VOTE_YES,
 			},
 		},
-		Hash:   blockHashBytes,
-		Height: VoteExtBlockHeight,
+		BlockHash: blockHashBytes,
+		Height:    VoteExtBlockHeight,
 	}
 
 	// marshal it into Protobuf bytes

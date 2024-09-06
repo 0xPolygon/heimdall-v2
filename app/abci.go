@@ -182,11 +182,11 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 
 		}
 
-		// prepare the response with votes, height of the extended vote, and block hash
+		// prepare the response with votes, block height and block hash
 		canonicalSideTxRes := sidetxs.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
-			Hash:            req.Hash,
+			BlockHash:       req.Hash,
 		}
 
 		bz, err := proto.Marshal(&canonicalSideTxRes)
@@ -217,8 +217,8 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if !bytes.Equal(req.Hash, canonicalSideTxResponse.Hash) {
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block hash", req.Hash, "canonicalSideTxResponse hash", canonicalSideTxResponse.Hash, "validator", string(req.ValidatorAddress))
+		if !bytes.Equal(req.Hash, canonicalSideTxResponse.BlockHash) {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block hash", req.Hash, "canonicalSideTxResponse hash", canonicalSideTxResponse.BlockHash, "validator", string(req.ValidatorAddress))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
