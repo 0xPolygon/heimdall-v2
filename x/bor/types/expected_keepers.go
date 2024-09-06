@@ -9,8 +9,8 @@ import (
 
 type StakeKeeper interface {
 	GetSpanEligibleValidators(ctx context.Context) []staketypes.Validator
-	GetValidatorSet(ctx context.Context) staketypes.ValidatorSet
-	GetValidatorFromValID(ctx context.Context, valID uint64) (staketypes.Validator, bool)
+	GetValidatorSet(ctx context.Context) (staketypes.ValidatorSet, error)
+	GetValidatorFromValID(ctx context.Context, valID uint64) (staketypes.Validator, error)
 }
 
 type ChainManagerKeeper interface {

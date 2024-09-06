@@ -2,9 +2,10 @@
 package bor
 
 import (
+	v1beta1 "cosmossdk.io/api/cosmos/base/query/v1beta1"
+	_ "cosmossdk.io/api/cosmos/query/v1"
 	fmt "fmt"
 	runtime "github.com/cosmos/cosmos-proto/runtime"
-	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -1027,7 +1028,7 @@ func (x *fastReflection_QuerySpanListRequest) Get(descriptor protoreflect.FieldD
 func (x *fastReflection_QuerySpanListRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
 	case "heimdallv2.bor.QuerySpanListRequest.pagination":
-		x.Pagination = value.Message().Interface().(*query.PageRequest)
+		x.Pagination = value.Message().Interface().(*v1beta1.PageRequest)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListRequest"))
@@ -1050,7 +1051,7 @@ func (x *fastReflection_QuerySpanListRequest) Mutable(fd protoreflect.FieldDescr
 	switch fd.FullName() {
 	case "heimdallv2.bor.QuerySpanListRequest.pagination":
 		if x.Pagination == nil {
-			x.Pagination = new(query.PageRequest)
+			x.Pagination = new(v1beta1.PageRequest)
 		}
 		return protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
 	default:
@@ -1067,7 +1068,7 @@ func (x *fastReflection_QuerySpanListRequest) Mutable(fd protoreflect.FieldDescr
 func (x *fastReflection_QuerySpanListRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	case "heimdallv2.bor.QuerySpanListRequest.pagination":
-		m := new(query.PageRequest)
+		m := new(v1beta1.PageRequest)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
@@ -1264,7 +1265,7 @@ func (x *fastReflection_QuerySpanListRequest) ProtoMethods() *protoiface.Methods
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
 				if x.Pagination == nil {
-					x.Pagination = &query.PageRequest{}
+					x.Pagination = &v1beta1.PageRequest{}
 				}
 				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Pagination); err != nil {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
@@ -1535,7 +1536,7 @@ func (x *fastReflection_QuerySpanListResponse) Set(fd protoreflect.FieldDescript
 		clv := lv.(*_QuerySpanListResponse_1_list)
 		x.SpanList = *clv.list
 	case "heimdallv2.bor.QuerySpanListResponse.pagination":
-		x.Pagination = value.Message().Interface().(*query.PageResponse)
+		x.Pagination = value.Message().Interface().(*v1beta1.PageResponse)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.QuerySpanListResponse"))
@@ -1564,7 +1565,7 @@ func (x *fastReflection_QuerySpanListResponse) Mutable(fd protoreflect.FieldDesc
 		return protoreflect.ValueOfList(value)
 	case "heimdallv2.bor.QuerySpanListResponse.pagination":
 		if x.Pagination == nil {
-			x.Pagination = new(query.PageResponse)
+			x.Pagination = new(v1beta1.PageResponse)
 		}
 		return protoreflect.ValueOfMessage(x.Pagination.ProtoReflect())
 	default:
@@ -1584,7 +1585,7 @@ func (x *fastReflection_QuerySpanListResponse) NewField(fd protoreflect.FieldDes
 		list := []*Span{}
 		return protoreflect.ValueOfList(&_QuerySpanListResponse_1_list{list: &list})
 	case "heimdallv2.bor.QuerySpanListResponse.pagination":
-		m := new(query.PageResponse)
+		m := new(v1beta1.PageResponse)
 		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
@@ -1837,7 +1838,7 @@ func (x *fastReflection_QuerySpanListResponse) ProtoMethods() *protoiface.Method
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
 				}
 				if x.Pagination == nil {
-					x.Pagination = &query.PageResponse{}
+					x.Pagination = &v1beta1.PageResponse{}
 				}
 				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.Pagination); err != nil {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
@@ -5281,7 +5282,7 @@ type QuerySpanListRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Pagination *query.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	Pagination *v1beta1.PageRequest `protobuf:"bytes,1,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (x *QuerySpanListRequest) Reset() {
@@ -5304,7 +5305,7 @@ func (*QuerySpanListRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_query_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *QuerySpanListRequest) GetPagination() *query.PageRequest {
+func (x *QuerySpanListRequest) GetPagination() *v1beta1.PageRequest {
 	if x != nil {
 		return x.Pagination
 	}
@@ -5318,8 +5319,8 @@ type QuerySpanListResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SpanList   []*Span             `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list,omitempty"`
-	Pagination *query.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	SpanList   []*Span               `protobuf:"bytes,1,rep,name=span_list,json=spanList,proto3" json:"span_list,omitempty"`
+	Pagination *v1beta1.PageResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
 }
 
 func (x *QuerySpanListResponse) Reset() {
@@ -5349,7 +5350,7 @@ func (x *QuerySpanListResponse) GetSpanList() []*Span {
 	return nil
 }
 
-func (x *QuerySpanListResponse) GetPagination() *query.PageResponse {
+func (x *QuerySpanListResponse) GetPagination() *v1beta1.PageResponse {
 	if x != nil {
 		return x.Pagination
 	}
@@ -5799,8 +5800,8 @@ var file_heimdallv2_bor_query_proto_goTypes = []interface{}{
 	(*QueryParamsRequest)(nil),        // 10: heimdallv2.bor.QueryParamsRequest
 	(*QueryParamsResponse)(nil),       // 11: heimdallv2.bor.QueryParamsResponse
 	(*Span)(nil),                      // 12: heimdallv2.bor.Span
-	(*query.PageRequest)(nil),         // 13: cosmos.base.query.v1beta1.PageRequest
-	(*query.PageResponse)(nil),        // 14: cosmos.base.query.v1beta1.PageResponse
+	(*v1beta1.PageRequest)(nil),       // 13: cosmos.base.query.v1beta1.PageRequest
+	(*v1beta1.PageResponse)(nil),      // 14: cosmos.base.query.v1beta1.PageResponse
 	(*Params)(nil),                    // 15: heimdallv2.bor.Params
 }
 var file_heimdallv2_bor_query_proto_depIdxs = []int32{

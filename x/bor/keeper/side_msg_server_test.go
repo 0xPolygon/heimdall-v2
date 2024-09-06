@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"math/big"
-	"strings"
 	"testing"
 
 	hModule "github.com/0xPolygon/heimdall-v2/module"
@@ -10,11 +9,12 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 )
 
 func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
+	ctx := suite.ctx
 	require := suite.Require()
 
 	testChainParams := chainmanagertypes.DefaultParams()
@@ -23,15 +23,18 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 	err := suite.borKeeper.AddNewSpan(suite.ctx, spans[0])
 	require.NoError(err)
 
-	// suite.contractCaller.EXPECT().GetMainChainBlock(&ethtypes.Header{}).Return().AnyTimes()
-	suite.contractCaller.On("GetMainChainBlock", nil).Return(&ethtypes.Header{}, nil).Times(1)
-	lastEthBlock, err := suite.borKeeper.GetLastEthBlock(suite.ctx)
+	lastEthBlock := big.NewInt(100)
+	err = suite.borKeeper.SetLastEthBlock(ctx, lastEthBlock)
 	require.NoError(err)
+
+	nextEthBlock := lastEthBlock.Add(lastEthBlock, big.NewInt(1))
+	nextEthBlockHeader := &ethTypes.Header{Number: nextEthBlock}
 
 	testcases := []struct {
 		name    string
 		msg     sdk.Msg
 		expVote hModule.Vote
+		mockFn  func()
 	}{
 		{
 			name: "seed mismatch",
@@ -53,9 +56,12 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       (&ethtypes.Header{}).Hash().Bytes(),
+				Seed:       nextEthBlockHeader.Hash().Bytes(),
 			},
 			expVote: hModule.Vote_VOTE_NO,
+			mockFn: func() {
+				suite.contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
+			},
 		},
 		{
 			name: "span is not in turn (current child block is greater than last span end block)",
@@ -65,9 +71,12 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       (&ethtypes.Header{}).Hash().Bytes(),
+				Seed:       nextEthBlockHeader.Hash().Bytes(),
 			},
 			expVote: hModule.Vote_VOTE_NO,
+			mockFn: func() {
+				suite.contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
+			},
 		},
 		{
 			name: "correct span is proposed",
@@ -77,21 +86,21 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       (&ethtypes.Header{Number: lastEthBlock.Add(lastEthBlock, big.NewInt(1))}).Hash().Bytes(),
+				Seed:       nextEthBlockHeader.Hash().Bytes(),
 			},
 			expVote: hModule.Vote_VOTE_YES,
+			mockFn: func() {
+				suite.contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
+			},
 		},
 	}
 
+	suite.contractCaller.On("GetMainChainBlock", nextEthBlock).Return(nextEthBlockHeader, nil).Times(len(testcases))
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 
-			if strings.Contains(tc.name, "less than last span start block") {
-				suite.contractCaller.On("GetBorChainBlock", nil).Return(&ethtypes.Header{Number: big.NewInt(0)}, nil).Times(1)
-				// suite.contractCaller.EXPECT().GetBorChainBlock(nil).Return(&ethtypes.Header{Number: big.NewInt(0)}, nil).AnyTimes()
-			} else if strings.Contains(tc.name, "greater than last span end block") {
-				suite.contractCaller.On("GetBorChainBlock", nil).Return(&ethtypes.Header{Number: big.NewInt(103)}, nil).Times(1)
-				// suite.contractCaller.EXPECT().GetBorChainBlock(nil).Return(&ethtypes.Header{Number: big.NewInt(103)}, nil).AnyTimes()
+			if tc.mockFn != nil {
+				tc.mockFn()
 			}
 			sideHandler := suite.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
 			res := sideHandler(suite.ctx, tc.msg)

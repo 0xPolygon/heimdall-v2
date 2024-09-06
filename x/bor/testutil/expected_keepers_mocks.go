@@ -51,11 +51,11 @@ func (mr *MockStakeKeeperMockRecorder) GetSpanEligibleValidators(ctx interface{}
 }
 
 // GetValidatorFromValID mocks base method.
-func (m *MockStakeKeeper) GetValidatorFromValID(ctx context.Context, valID uint64) (types0.Validator, bool) {
+func (m *MockStakeKeeper) GetValidatorFromValID(ctx context.Context, valID uint64) (types0.Validator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorFromValID", ctx, valID)
 	ret0, _ := ret[0].(types0.Validator)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
@@ -66,11 +66,12 @@ func (mr *MockStakeKeeperMockRecorder) GetValidatorFromValID(ctx, valID interfac
 }
 
 // GetValidatorSet mocks base method.
-func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) types0.ValidatorSet {
+func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) (types0.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSet", ctx)
 	ret0, _ := ret[0].(types0.ValidatorSet)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetValidatorSet indicates an expected call of GetValidatorSet.

@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -13,8 +12,6 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 	require := suite.Require()
 
 	testChainParams := chainmanagertypes.DefaultParams()
-	suite.chainManagerKeeper.EXPECT().GetParams(suite.ctx).Return(testChainParams, nil).Times(1)
-
 	testSpan := suite.genTestSpans(1)[0]
 	err := suite.borKeeper.AddNewSpan(suite.ctx, testSpan)
 	require.NoError(err)
@@ -23,7 +20,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 		name   string
 		span   types.MsgProposeSpanRequest
 		expRes *types.MsgProposeSpanResponse
-		expErr error
+		expErr string
 	}{
 		{
 			name: "correct span gets proposed",
@@ -36,7 +33,6 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},
 			expRes: &types.MsgProposeSpanResponse{},
-			expErr: nil,
 		},
 		{
 			name: "incorrect validator address",
@@ -49,7 +45,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},
 			expRes: nil,
-			expErr: errors.New("decoding address from hex string failed: not valid address"),
+			expErr: "invalid proposer address",
 		},
 		{
 			name: "incorrect chain id",
@@ -62,7 +58,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},
 			expRes: nil,
-			expErr: types.ErrInvalidChainID,
+			expErr: "invalid bor chain id",
 		},
 		{
 			name: "span id not in continuity",
@@ -75,7 +71,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},
 			expRes: nil,
-			expErr: types.ErrInvalidSpan,
+			expErr: "invalid span",
 		},
 		{
 			name: "start block not in continuity",
@@ -88,7 +84,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},
 			expRes: nil,
-			expErr: types.ErrInvalidSpan,
+			expErr: "invalid span",
 		},
 		{
 			name: "end block less than start block",
@@ -101,7 +97,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},
 			expRes: nil,
-			expErr: types.ErrInvalidSpan,
+			expErr: "invalid span",
 		},
 		{
 			name: "end block equal to start block",
@@ -114,15 +110,21 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				Seed:       common.HexToHash("testseed1").Bytes(),
 			},
 			expRes: nil,
-			expErr: types.ErrInvalidSpan,
+			expErr: "invalid span",
 		},
 	}
+
+	suite.chainManagerKeeper.EXPECT().GetParams(suite.ctx).Return(testChainParams, nil).AnyTimes()
 
 	for _, tc := range testcases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			res, err := suite.msgServer.ProposeSpan(suite.ctx, &tc.span)
 			require.Equal(tc.expRes, res)
-			require.Equal(tc.expErr, err)
+			if tc.expErr == "" {
+				require.NoError(err)
+			} else {
+				require.ErrorContains(err, tc.expErr)
+			}
 		})
 	}
 }

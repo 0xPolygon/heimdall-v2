@@ -25,7 +25,7 @@ type Keeper struct {
 	contractCaller helper.IContractCaller
 
 	Schema       collections.Schema
-	spans        collections.Map[uint64, *types.Span]
+	spans        collections.Map[uint64, types.Span]
 	latestSpan   collections.Item[uint64]
 	lastEthBlock collections.Item[[]byte]
 	Params       collections.Item[types.Params]
@@ -46,7 +46,7 @@ func NewKeeper(
 		ck:             chainKeeper,
 		sk:             stakingKeeper,
 		contractCaller: caller,
-		spans:          collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollInterfaceValue[*types.Span](cdc)),
+		spans:          collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
 		latestSpan:     collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
 		lastEthBlock:   collections.NewItem(sb, types.LastProcessedEthBlock, "lastEthBlock", collections.BytesValue),
 		Params:         collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
@@ -86,44 +86,30 @@ func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 
 // AddNewRawSpan adds new span for bor to store
 func (k *Keeper) AddNewRawSpan(ctx context.Context, span *types.Span) error {
-	// store := k.storeService.OpenKVStore(ctx)
-
-	// out, err := k.cdc.Marshal(span)
-	// if err != nil {
-	// 	k.Logger(ctx).Error("Error marshalling span", "error", err)
-	// 	return err
-	// }
-
-	// return store.Set(GetSpanKey(span.Id), out)
-
-	return k.spans.Set(ctx, span.Id, span)
+	return k.spans.Set(ctx, span.Id, *span)
 }
 
 // GetSpan fetches span indexed by id from store
-func (k *Keeper) GetSpan(ctx context.Context, id uint64) (*types.Span, error) {
+func (k *Keeper) GetSpan(ctx context.Context, id uint64) (types.Span, error) {
 	ok, err := k.spans.Has(ctx, id)
 	if err != nil {
-		return nil, err
+		return types.Span{}, err
 	}
 
 	// If we are starting from 0 there will be no spanKey present
 	if !ok {
-		return nil, fmt.Errorf("span not found for id: %v", id)
+		return types.Span{}, fmt.Errorf("span not found for id: %v", id)
 	}
 
 	span, err := k.spans.Get(ctx, id)
 	if err != nil {
-		return nil, err
+		return types.Span{}, err
 	}
 
 	return span, nil
 }
 
 func (k *Keeper) HasSpan(ctx context.Context, id uint64) (bool, error) {
-	// store := k.storeService.OpenKVStore(ctx)
-	// spanKey := GetSpanKey(id)
-
-	// return store.Has(spanKey)
 	return k.spans.Has(ctx, id)
 }
 
@@ -137,7 +123,7 @@ func (k *Keeper) GetAllSpans(ctx context.Context) ([]*types.Span, error) {
 		return nil, err
 	}
 
-	defer func(iter collections.Iterator[uint64, *types.Span]) {
+	defer func(iter collections.Iterator[uint64, types.Span]) {
 		err := iter.Close()
 		if err != nil {
 			logger.Error("error closing span iterator", "err", err)
@@ -145,57 +131,34 @@ func (k *Keeper) GetAllSpans(ctx context.Context) ([]*types.Span, error) {
 		}
 	}(iter)
 
-	spans, err := iter.Values()
+	res, err := iter.Values()
 	if err != nil {
 		logger.Error("error getting spans from iterator", "err", err)
 		return nil, err
 	}
 
+	spans := make([]*types.Span, 0, len(res))
+	for _, span := range res {
+		spans = append(spans, &span)
+	}
 	return spans, err
 }
 
-// GetSpanList returns all spans with params like page and limit
-// func (k *Keeper) FetchSpanList(ctx context.Context, page uint64, limit uint64) ([]types.Span, error) {
-// 	store := k.storeService.OpenKVStore(ctx)
-
-// 	// have max limit
-// 	if limit > 20 {
-// 		limit = 20
-// 	}
-
-// 	// get paginated iterator
-// 	st := runtime.KVStoreAdapter(store)
-// 	iterator := storetypes.KVStorePrefixIteratorPaginated(st, types.SpanPrefixKey, uint(page), uint(limit))
-// 	defer iterator.Close()
-
-// 	// loop through validators to get valid validators
-// 	var spans []types.Span
-
-// 	for ; iterator.Valid(); iterator.Next() {
-// 		var span types.Span
-// 		if err := k.cdc.Unmarshal(iterator.Value(), &span); err == nil {
-// 			spans = append(spans, span)
-// 		}
-// 	}
-
-// 	return spans, nil
-// }
-
 // GetLastSpan fetches last span from store
-func (k *Keeper) GetLastSpan(ctx context.Context) (*types.Span, error) {
+func (k *Keeper) GetLastSpan(ctx context.Context) (types.Span, error) {
 	ok, err := k.latestSpan.Has(ctx)
 	if err != nil {
-		return nil, err
+		return types.Span{}, err
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("last span not found")
+		return types.Span{}, fmt.Errorf("last span not found")
 	}
 
 	// get last span id
 	lastSpanId, err := k.latestSpan.Get(ctx)
 	if err != nil {
-		return nil, err
+		return types.Span{}, err
 	}
 
 	return k.GetSpan(ctx, lastSpanId)
@@ -214,12 +177,17 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 		return err
 	}
 
+	valSet, err := k.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return err
+	}
+
 	// generate new span
 	newSpan := &types.Span{
 		Id:                id,
 		StartBlock:        startBlock,
 		EndBlock:          endBlock,
-		ValidatorSet:      k.sk.GetValidatorSet(ctx),
+		ValidatorSet:      valSet,
 		SelectedProducers: newProducers,
 		ChainId:           borChainID,
 	}
@@ -256,10 +224,13 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) ([]s
 	}
 
 	for key, value := range IDToPower {
-		if val, ok := k.sk.GetValidatorFromValID(ctx, key); ok {
-			val.VotingPower = int64(value)
-			vals = append(vals, val)
+		val, err := k.sk.GetValidatorFromValID(ctx, key)
+		if err != nil {
+			return nil, err
 		}
+
+		val.VotingPower = int64(value)
+		vals = append(vals, val)
 	}
 
 	// sort by address
@@ -270,14 +241,11 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash) ([]s
 
 // UpdateLastSpan updates the last span
 func (k *Keeper) UpdateLastSpan(ctx context.Context, id uint64) error {
-	// store := k.storeService.OpenKVStore(ctx)
-	// return store.Set(types.LastSpanIDKey, []byte(strconv.FormatUint(id, 10)))
 	return k.latestSpan.Set(ctx, id)
 }
 
 // IncrementLastEthBlock increment last eth block
 func (k *Keeper) IncrementLastEthBlock(ctx context.Context) error {
-	// store := k.storeService.OpenKVStore(ctx)
 	lastEthBlock := big.NewInt(0)
 	ok, err := k.lastEthBlock.Has(ctx)
 	if err != nil {
@@ -296,14 +264,11 @@ func (k *Keeper) IncrementLastEthBlock(ctx context.Context) error {
 
 // SetLastEthBlock sets last eth block number
 func (k *Keeper) SetLastEthBlock(ctx context.Context, blockNumber *big.Int) error {
-	// store := k.storeService.OpenKVStore(ctx)
-	// return store.Set(types.LastProcessedEthBlock, blockNumber.Bytes())
 	return k.lastEthBlock.Set(ctx, blockNumber.Bytes())
 }
 
 // GetLastEthBlock gets last processed Eth block for seed
 func (k *Keeper) GetLastEthBlock(ctx context.Context) (*big.Int, error) {
-	// store := k.storeService.OpenKVStore(ctx)
 	lastEthBlock := big.NewInt(0)
 	ok, err := k.lastEthBlock.Has(ctx)
 	if err != nil {

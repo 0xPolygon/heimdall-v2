@@ -1,68 +1,64 @@
 package keeper
 
 import (
-	"encoding/json"
 	"reflect"
 	"testing"
 
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/cosmos/cosmos-sdk/codec/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const TestValidators = `[
-  {
-    "ID": 3,
-    "startEpoch": 0,
-    "endEpoch": 0,
-    "voting_power": 10000,
-    "pub_key": "0x046434e10a34ade13c4fea917346a9fd1473eac2138a0b4e2a36426871918be63188fde4edbf598457592c9a49fe3b0036dd5497079495d132e5045bf499c4bdb1",
-    "signer": "0x1c4f0f054a0d6a1415382dc0fd83c6535188b220",
-    "last_updated": "0",
-    "accum": -40000
-  },
-  {
-    "ID": 4,
-    "startEpoch": 0,
-    "endEpoch": 0,
-    "voting_power": 10000,
-    "pub_key": "0x04d9d09f2afc9da3cccc164e8112eb6911a63f5ede10169768f800df83cf99c73f944411e9d4fac3543b11c5f84a82e56b36cfcd34f1d065855c1e2b27af8b5247",
-    "signer": "0x461295d3d9249215e758e939a150ab180950720b",
-    "last_updated": "0",
-    "accum": 10000
-  },
-  {
-    "ID": 5,
-    "startEpoch": 0,
-    "endEpoch": 0,
-    "voting_power": 10000,
-    "pub_key": "0x04a36f6ed1f93acb0a38f4cacbe2467c72458ac41ce3b12b34d758205b2bc5d930a4e059462da7a0976c32fce766e1f7e8d73933ae72ac2af231fe161187743932",
-    "signer": "0x836fe3e3dd0a5f77d9d5b0f67e48048aaafcd5a0",
-    "last_updated": "0",
-    "accum": 10000
-  },
-  {
-    "ID": 1,
-    "startEpoch": 0,
-    "endEpoch": 0,
-    "voting_power": 10000,
-    "pub_key": "0x04a312814042a6655c8e5ecf0c52cba0b6a6f3291c87cc42260a3c0222410c0d0d59b9139d1c56542e5df0ce2fce3a86ce13e93bd9bde0dc8ff664f8dd5294dead",
-    "signer": "0x925a91f8003aaeabea6037103123b93c50b86ca3",
-    "last_updated": "0",
-    "accum": 10000
-  },
-  {
-    "ID": 2,
-    "startEpoch": 0,
-    "endEpoch": 0,
-    "voting_power": 10000,
-    "pub_key": "0x0469536ae98030a7e83ec5ef3baffed2d05a32e31d978e58486f6bdb0fbbf240293838325116090190c0639db03f9cbd8b9aecfd269d016f46e3a2287fbf9ad232",
-    "signer": "0xc787af4624cb3e80ee23ae7faac0f2acea2be34c",
-    "last_updated": "0",
-    "accum": 10000
-  }
-]`
+var TestValidators = []staketypes.Validator{
+	{
+		ValId:       3,
+		StartEpoch:  0,
+		EndEpoch:    0,
+		VotingPower: 10000,
+		PubKey:      &types.Any{TypeUrl: "/cosmos.crypto.secp256k1.PubKey", Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		Signer:      "0x1c4f0f054a0d6a1415382dc0fd83c6535188b220",
+		LastUpdated: "0",
+	},
+	{
+		ValId:       4,
+		StartEpoch:  0,
+		EndEpoch:    0,
+		VotingPower: 10000,
+		PubKey:      &types.Any{TypeUrl: "/cosmos.crypto.secp256k1.PubKey", Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		Signer:      "0x461295d3d9249215e758e939a150ab180950720b",
+		LastUpdated: "0",
+	},
+	{
+		ValId:       5,
+		StartEpoch:  0,
+		EndEpoch:    0,
+		VotingPower: 10000,
+		PubKey:      &types.Any{TypeUrl: "/cosmos.crypto.secp256k1.PubKey", Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		Signer:      "0x836fe3e3dd0a5f77d9d5b0f67e48048aaafcd5a0",
+		LastUpdated: "0",
+	},
+	{
+		ValId:       1,
+		StartEpoch:  0,
+		EndEpoch:    0,
+		VotingPower: 10000,
+		PubKey:      &types.Any{TypeUrl: "/cosmos.crypto.secp256k1.PubKey", Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		Signer:      "0x925a91f8003aaeabea6037103123b93c50b86ca3",
+		LastUpdated: "0",
+	},
+	{
+		ValId:       2,
+		StartEpoch:  0,
+		EndEpoch:    0,
+		VotingPower: 10000,
+		PubKey:      &types.Any{TypeUrl: "/cosmos.crypto.secp256k1.PubKey", Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		Signer:      "0xc787af4624cb3e80ee23ae7faac0f2acea2be34c",
+		LastUpdated: "0",
+	},
+}
 
 func TestSelectNextProducers(t *testing.T) {
 	t.Parallel()
@@ -83,18 +79,13 @@ func TestSelectNextProducers(t *testing.T) {
 		{"0xe09cc356df20c7a2dd38cb85b680a16ec29bd8b3e1ecc1b20f2e5603d5e7ee85", 4, 4, 4},
 	}
 
-	var validators []staketypes.Validator
-	err := json.Unmarshal([]byte(TestValidators), &validators)
-	require.NoError(t, err)
-	require.Equal(t, 5, len(validators), "Total validators should be 5")
-
 	for i, testcase := range testcases {
 		seed := common.HexToHash(testcase.seed)
 
-		producerIds, err := selectNextProducers(seed, validators, testcase.producerCount)
+		producerIds, err := selectNextProducers(seed, TestValidators, testcase.producerCount)
 		require.NoError(t, err, "Error should be nil")
 
-		producers, slots := getSelectedValidatorsFromIDs(validators, producerIds)
+		producers, slots := getSelectedValidatorsFromIDs(TestValidators, producerIds)
 		require.Equal(t, testcase.resultSlots, slots, "Total slots should be %v (Testcase %v)", testcase.resultSlots, i+1)
 		require.Equal(t, int(testcase.resultProducers), len(producers), "Total producers should be %v (Testcase %v)", testcase.resultProducers, i+1)
 	}

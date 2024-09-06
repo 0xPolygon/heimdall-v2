@@ -64,7 +64,10 @@ func (q QueryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	}
 
 	// fetch current validator set
-	validatorSet := q.sk.GetValidatorSet(ctx)
+	validatorSet, err := q.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
 
 	// fetch next selected block producers
 	nextSpanSeed, err := q.FetchNextSpanSeed(ctx)
@@ -128,7 +131,7 @@ func (q QueryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &types.QuerySpanByIdResponse{Span: span}, nil
+	return &types.QuerySpanByIdResponse{Span: &span}, nil
 }
 
 func (q QueryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
@@ -136,19 +139,14 @@ func (q QueryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	// spansList, err := q.FetchSpanList(ctx, req.Page, req.Limit)
-	// if err != nil {
-	// 	return nil, status.Errorf(codes.Internal, err.Error())
-	// }
-
-	if req.Pagination != nil && req.Pagination.Limit > 20 {
+	if req.Pagination != nil && req.Pagination.Limit > 1000 {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 20")
 	}
 
-	res, pageRes, err := query.CollectionPaginate(
+	spans, pageRes, err := query.CollectionPaginate(
 		ctx,
 		q.spans,
-		req.Pagination, func(id uint64, span *types.Span) (*types.Span, error) {
+		req.Pagination, func(id uint64, span types.Span) (types.Span, error) {
 			return q.GetSpan(ctx, id)
 		},
 	)
@@ -157,9 +155,5 @@ func (q QueryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
 
-	spans := make([]types.Span, 0, len(res))
-	for _, span := range res {
-		spans = append(spans, *span)
-	}
 	return &types.QuerySpanListResponse{SpanList: spans, Pagination: pageRes}, nil
 }
