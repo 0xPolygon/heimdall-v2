@@ -6,11 +6,6 @@ import (
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
-	bortestutil "github.com/0xPolygon/heimdall-v2/x/bor/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -22,6 +17,12 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	bortestutil "github.com/0xPolygon/heimdall-v2/x/bor/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 type KeeperTestSuite struct {
@@ -50,7 +51,6 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	storeService := runtime.NewKVStoreService(key)
 
-	// gomock initializations
 	ctrl := gomock.NewController(suite.T())
 	chainManagerKeeper := bortestutil.NewMockChainManagerKeeper(ctrl)
 	suite.chainManagerKeeper = chainManagerKeeper
@@ -214,7 +214,7 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 			id:              1,
 			startBlock:      1,
 			endBlock:        100,
-			seed:            common.HexToHash("testseed1"),
+			seed:            common.HexToHash("testSeed1"),
 			expValSet:       valSet,
 			expLastEthBlock: big.NewInt(0),
 		},
@@ -224,7 +224,7 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 			id:              2,
 			startBlock:      101,
 			endBlock:        200,
-			seed:            common.HexToHash("testseed2"),
+			seed:            common.HexToHash("testSeed2"),
 			expValSet:       valSet,
 			expLastEthBlock: big.NewInt(1),
 		},

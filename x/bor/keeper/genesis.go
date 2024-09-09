@@ -13,7 +13,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		panic(fmt.Sprintf("error while setting bor params during InitGenesis: %v", err))
 	}
 
-	// sort data spans before inserting to ensure lastspanId fetched is correct
+	// sort data spans before inserting to ensure lastSpanId fetched is correct
 	types.SortSpansById(data.Spans)
 
 	// add new span

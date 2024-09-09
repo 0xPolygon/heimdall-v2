@@ -5,11 +5,12 @@ import (
 	"context"
 	"strconv"
 
-	hModule "github.com/0xPolygon/heimdall-v2/module"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	hModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
 var (
@@ -51,7 +52,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 
 	}
 
-	logger.Debug("✅ validating External call for span msg",
+	logger.Debug("✅ validating external call for span msg",
 		"proposer", msg.Proposer,
 		"spanId", msg.SpanId,
 		"startBlock", msg.StartBlock,
@@ -66,7 +67,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 		return hModule.Vote_VOTE_SKIP
 	}
 
-	// check if span seed matches or not.
+	// check if span seed matches or not
 	if !bytes.Equal(msg.Seed, nextSpanSeed.Bytes()) {
 		logger.Error(
 			"span seed does not match",
@@ -96,14 +97,14 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 		logger.Error(
 			"span proposed is not in-turn",
 			"currentChildBlock", currentBlock,
-			"msgStartblock", msg.StartBlock,
+			"msgStartBlock", msg.StartBlock,
 			"msgEndBlock", msg.EndBlock,
 		)
 
 		return hModule.Vote_VOTE_NO
 	}
 
-	logger.Debug("✅ successfully validated External call for span msg")
+	logger.Debug("✅ successfully validated external call for span msg")
 
 	return hModule.Vote_VOTE_YES
 }
@@ -138,7 +139,7 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	// check for replay
 	ok, err := s.k.HasSpan(ctx, msg.SpanId)
 	if err != nil {
-		logger.Error("error ocurred while checking for span", "span id", msg.SpanId, "error", err)
+		logger.Error("error occurred while checking for span", "span id", msg.SpanId, "error", err)
 		return
 	}
 	if ok {

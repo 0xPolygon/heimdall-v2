@@ -5,9 +5,10 @@ import (
 	"strconv"
 
 	"cosmossdk.io/errors"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
 type msgServer struct {

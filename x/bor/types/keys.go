@@ -13,11 +13,10 @@ const (
 	RouterKey = ModuleName
 )
 
+// Keys for store prefixes
 var (
-	// Keys for store prefixes
-
 	LastSpanIDKey         = collections.NewPrefix(0x35) // Key to store last span
 	SpanPrefixKey         = collections.NewPrefix(0x36) // Prefix key to store span
 	LastProcessedEthBlock = collections.NewPrefix(0x38) // key to store last processed eth block for seed
-	ParamsKey             = collections.NewPrefix(0x39) // ParamsKey is the key to store the params in the store
+	ParamsKey             = collections.NewPrefix(0x39) // Key to store the params in the store
 )

@@ -7,20 +7,20 @@ import (
 	"time"
 
 	"cosmossdk.io/core/appmodule"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	"github.com/0xPolygon/heimdall-v2/x/bor/client/cli"
-	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
-	"github.com/spf13/cobra"
-
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/x/bor/client/cli"
+	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
 var (
@@ -69,23 +69,19 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 }
 
 // RegisterSideMsgServices registers the side message services for the bor module.
-func (am AppModule) RegisterSideMsgServices(cfg hmModule.SideTxConfigurator) {
-	sideMsgServer := keeper.NewSideMsgServerImpl(&am.keeper)
-	cfg.RegisterSideHandler(keeper.SpanProposeMsgTypeURL, sideMsgServer.SideTxHandler(keeper.SpanProposeMsgTypeURL))
-	cfg.RegisterPostHandler(keeper.SpanProposeMsgTypeURL, sideMsgServer.PostTxHandler(keeper.SpanProposeMsgTypeURL))
+func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
+	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
 
 // AppModule implements an application module for the bor module.
 type AppModule struct {
-	keeper keeper.Keeper
-	ac     address.HexCodec
-	// contractCaller helper.IContractCaller
-
+	keeper         keeper.Keeper
+	contractCaller *helper.IContractCaller
 }
 
 // GetTxCmd returns the root tx command for the bor module.
 func (am AppModule) GetTxCmd() *cobra.Command {
-	return cli.NewTxCmd(am.ac)
+	return cli.NewTxCmd()
 }
 
 // IsOnePerModuleType implements the depinject.OnePerModuleType interface.
@@ -103,13 +99,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 // NewAppModule creates a new AppModule object
 func NewAppModule(
 	keeper keeper.Keeper,
-	ac address.HexCodec,
-	// contractCaller helper.IContractCaller,
+	contractCaller helper.IContractCaller,
 ) AppModule {
 	return AppModule{
-		keeper: keeper,
-		ac:     ac,
-		// contractCaller: contractCaller,
+		keeper:         keeper,
+		contractCaller: &contractCaller,
 	}
 }
 

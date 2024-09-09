@@ -8,15 +8,16 @@ import (
 	"cosmossdk.io/collections"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// Keeper stores all chainmanager related data
+// Keeper stores all bor module related data
 type Keeper struct {
 	cdc            codec.BinaryCodec
 	storeService   store.KVStoreService
@@ -286,7 +287,7 @@ func (k *Keeper) GetLastEthBlock(ctx context.Context) (*big.Int, error) {
 	return lastEthBlock, nil
 }
 
-// GetNextSpanSeed gets the eth block hash which serves as the seed for random selection of producer set
+// FetchNextSpanSeed gets the eth block hash which serves as seed for random selection of producer set
 // for the next span
 func (k *Keeper) FetchNextSpanSeed(ctx context.Context) (common.Hash, error) {
 	logger := k.Logger(ctx)
@@ -315,7 +316,7 @@ func (k *Keeper) SetParams(ctx context.Context, params types.Params) error {
 	return k.Params.Set(ctx, params)
 }
 
-// GetParams gets the bor module's parameters.
+// FetchParams gets the bor module's parameters.
 func (k *Keeper) FetchParams(ctx context.Context) (types.Params, error) {
 	params, err := k.Params.Get(ctx)
 	if err != nil {

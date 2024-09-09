@@ -3,9 +3,10 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func (suite *KeeperTestSuite) TestProposeSpan() {
@@ -26,11 +27,11 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 			name: "correct span gets proposed",
 			span: types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			expRes: &types.MsgProposeSpanResponse{},
 		},
@@ -42,7 +43,7 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			expRes: nil,
 			expErr: "invalid proposer address",
@@ -51,11 +52,11 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 			name: "incorrect chain id",
 			span: types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   202,
-				ChainId:    "invalidchainid",
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				ChainId:    "invalidChainId",
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			expRes: nil,
 			expErr: "invalid bor chain id",
@@ -64,11 +65,11 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 			name: "span id not in continuity",
 			span: types.MsgProposeSpanRequest{
 				SpanId:     3,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			expRes: nil,
 			expErr: "invalid span",
@@ -77,11 +78,11 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 			name: "start block not in continuity",
 			span: types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 105,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			expRes: nil,
 			expErr: "invalid span",
@@ -90,11 +91,11 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 			name: "end block less than start block",
 			span: types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   100,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			expRes: nil,
 			expErr: "invalid span",
@@ -103,11 +104,11 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 			name: "end block equal to start block",
 			span: types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   102,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			expRes: nil,
 			expErr: "invalid span",

@@ -362,6 +362,14 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.BorKeeper = borkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[bortypes.StoreKey]),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		&app.caller,
+	)
+
 	app.mm = module.NewManager(
 		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
@@ -372,8 +380,7 @@ func NewHeimdallApp(
 		stake.NewAppModule(app.StakeKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
-		// TODO HV2: add custom modules
-		bor.NewAppModule(app.BorKeeper, address.HexCodec{}),
+		bor.NewAppModule(app.BorKeeper, &app.caller),
 		clerk.NewAppModule(appCodec, app.ClerkKeeper),
 		chainmanager.NewAppModule(app.ChainManagerKeeper),
 		topup.NewAppModule(app.TopupKeeper, app.caller),

@@ -4,13 +4,14 @@ import (
 	"math/big"
 	"testing"
 
-	hModule "github.com/0xPolygon/heimdall-v2/module"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
+
+	hModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
@@ -44,7 +45,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("invalidseed").Bytes(),
+				Seed:       common.HexToHash("invalidSeed").Bytes(),
 			},
 			expVote: hModule.Vote_VOTE_NO,
 		},
@@ -52,7 +53,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			name: "span is not in turn (current child block is less than last span start block)",
 			msg: &types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
@@ -67,7 +68,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			name: "span is not in turn (current child block is greater than last span end block)",
 			msg: &types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
@@ -82,7 +83,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			name: "correct span is proposed",
 			msg: &types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
@@ -139,7 +140,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			vote:          hModule.Vote_VOTE_NO,
 			expLastSpanId: spans[0].Id,
@@ -148,11 +149,11 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 			name: "span replayed",
 			msg: &types.MsgProposeSpanRequest{
 				SpanId:     1,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 1,
 				EndBlock:   101,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			vote:          hModule.Vote_VOTE_YES,
 			expLastSpanId: spans[0].Id,
@@ -161,11 +162,11 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 			name: "correct span is proposed",
 			msg: &types.MsgProposeSpanRequest{
 				SpanId:     2,
-				Proposer:   common.HexToAddress("someproposer").String(),
+				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testseed1").Bytes(),
+				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
 			vote:          hModule.Vote_VOTE_YES,
 			expLastSpanId: 2,

@@ -7,16 +7,18 @@ import (
 	"strconv"
 
 	"cosmossdk.io/core/address"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	codec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
 // NewTxCmd returns a root CLI command handler for all x/bor transaction commands.
-func NewTxCmd(ac address.Codec) *cobra.Command {
+func NewTxCmd() *cobra.Command {
 	txCmd := &cobra.Command{
 		Use:                        types.ModuleName,
 		Short:                      "Bor transaction subcommands",
@@ -24,6 +26,8 @@ func NewTxCmd(ac address.Codec) *cobra.Command {
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
+
+	ac := codec.NewHexCodec()
 
 	txCmd.AddCommand(
 		NewSpanProposalCmd(ac),
@@ -79,10 +83,6 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			//
-			// Query data
-			//
 
 			// fetch params
 			res, _, err := clientCtx.QueryWithData(fmt.Sprintf("custom/%s/%s", types.ModuleName, types.QueryParams), nil)

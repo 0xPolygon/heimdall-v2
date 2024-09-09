@@ -1,5 +1,7 @@
 # Bor Module
 
+<!-- TODO HV2 - update/verify the query, cli behaviour -->
+
 ## Table of Contents
 
 * [Preliminary terminology](#preliminary-terminology)
