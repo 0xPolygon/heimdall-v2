@@ -1,8 +1,6 @@
 package cli
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -85,41 +83,22 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			}
 
 			// fetch params
-			res, _, err := clientCtx.QueryWithData(fmt.Sprintf("custom/%s/%s", types.ModuleName, types.QueryParams), nil)
+			queryClient := types.NewQueryClient(clientCtx)
+			res, err := queryClient.GetParams(cmd.Context(), &types.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}
-			if len(res) == 0 {
-				return errors.New("params not found")
-			}
-
-			var params types.Params
-			if err := json.Unmarshal(res, &params); err != nil {
-				return err
-			}
-
-			spanDuration := params.SpanDuration
+			spanDuration := res.Params.SpanDuration
 
 			// fetch next span seed
-			res, _, err = clientCtx.QueryWithData(fmt.Sprintf("custom/%s/%s/%s", types.ModuleName, types.QuerySpan, types.QuerySpanSeed), nil)
+			res2, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{})
 			if err != nil {
 				return err
 			}
-
-			if len(res) == 0 {
-				return errors.New("next span seed not found")
+			seed := common.HexToHash(res2.Seed)
+			if len(seed) != common.HashLength {
+				return fmt.Errorf("invalid seed length, expected: %v, got: %v", common.HashLength, len(seed))
 			}
-
-			if len(res) != common.HashLength {
-				return fmt.Errorf("invalid seed length, expected: %v, got: %v", common.HashLength, len(res))
-
-			}
-
-			var seed common.Hash
-			if err := json.Unmarshal(res, &seed); err != nil {
-				return err
-			}
-
 			msg := types.NewMsgProposeSpanRequest(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes())
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
