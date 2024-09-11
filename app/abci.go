@@ -45,12 +45,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		totalTxBytes := len(txs)
 		for i, proposedTx := range req.Txs {
 
-			// skip the first tx as it contains the ExtendedVoteInfo and may not have an ante handler
-			if i == 0 {
-				continue
-			}
 			// check the txs via the ante handler
-			if err := checkTx(app, proposedTx); err != nil {
+			// skip the first tx as it contains the ExtendedVoteInfo and may not have a handler
+			if err := checkTx(app, proposedTx); err != nil && i > 0 {
 				logger.Error("Error occurred while checking tx in prepare proposal", "error", err)
 				return nil, err
 			}
