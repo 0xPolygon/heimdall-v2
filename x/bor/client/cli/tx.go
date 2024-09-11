@@ -91,14 +91,11 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			spanDuration := res.Params.SpanDuration
 
 			// fetch next span seed
-			res2, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{})
+			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{})
 			if err != nil {
 				return err
 			}
-			seed := common.HexToHash(res2.Seed)
-			if len(seed) != common.HashLength {
-				return fmt.Errorf("invalid seed length, expected: %v, got: %v", common.HashLength, len(seed))
-			}
+			seed := common.HexToHash(nextSpanSeedResponse.Seed)
 			msg := types.NewMsgProposeSpanRequest(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes())
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
