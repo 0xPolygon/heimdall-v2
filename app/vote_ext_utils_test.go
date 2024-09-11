@@ -10,9 +10,9 @@ import (
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	cosmostestutil "github.com/cosmos/cosmos-sdk/testutil"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -21,8 +21,7 @@ import (
 
 func TestValidateVoteExtensions(t *testing.T) {
 	t.Skip("TODO HV2: fix and enable this test")
-	_, db, logger := SetupApp(t, 1)
-	hApp := NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
+	hApp, _, _ := SetupApp(t, 1)
 	ctx := cosmostestutil.DefaultContextWithKeys(hApp.keys, hApp.tKeys, nil)
 	proposer, err := address.NewHexCodec().StringToBytes(ValAddr1)
 	require.NoError(t, err)
@@ -183,7 +182,7 @@ func TestTallyVotes(t *testing.T) {
 						Power:   1,
 					}),
 			},
-			expectedApprove: [][]byte{[]byte(TxHash1)},
+			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
 			expectedReject:  make([][]byte, 0, 3),
 			expectedSkip:    make([][]byte, 0, 3),
 		},
@@ -248,9 +247,9 @@ func TestTallyVotes(t *testing.T) {
 						Power:   5,
 					}),
 			},
-			expectedApprove: [][]byte{[]byte(TxHash1)},
-			expectedReject:  [][]byte{[]byte(TxHash2)},
-			expectedSkip:    [][]byte{[]byte(TxHash3)},
+			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
+			expectedReject:  [][]byte{common.Hex2Bytes(TxHash2)},
+			expectedSkip:    [][]byte{common.Hex2Bytes(TxHash3)},
 		},
 	}
 
@@ -266,8 +265,8 @@ func TestTallyVotes(t *testing.T) {
 }
 
 func TestAggregateVotes(t *testing.T) {
-	txHashBytes := []byte(TxHash1)
-	blockHashBytes := []byte(TxHash2)
+	txHashBytes := common.Hex2Bytes(TxHash1)
+	blockHashBytes := common.Hex2Bytes(TxHash2)
 
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
@@ -306,46 +305,46 @@ func TestAggregateVotes(t *testing.T) {
 		},
 	}
 
-	actualVotes, err := aggregateVotes(extVoteInfo, CurrentHeight)
+	actualVotes, err := aggregateVotes(extVoteInfo, CurrentHeight, nil)
 	require.NoError(t, err)
 	require.NotEmpty(t, actualVotes)
 	require.Equal(t, expectedVotes, actualVotes)
 }
 
-func TestCheckDuplicateVotes(t *testing.T) {
+func TestValidateSideTxResponses(t *testing.T) {
 	tests := []struct {
-		name              string
-		sideTxResponses   []*sidetxs.SideTxResponse
-		expectedDuplicate bool
-		expectedTxHash    []byte
+		name            string
+		sideTxResponses []*sidetxs.SideTxResponse
+		expectedValid   bool
+		expectedTxHash  []byte
 	}{
 		{
 			name: "no duplicates",
 			sideTxResponses: []*sidetxs.SideTxResponse{
-				{TxHash: []byte(TxHash1)},
-				{TxHash: []byte(TxHash2)},
-				{TxHash: []byte(TxHash3)},
+				{TxHash: common.Hex2Bytes(TxHash1)},
+				{TxHash: common.Hex2Bytes(TxHash2)},
+				{TxHash: common.Hex2Bytes(TxHash3)},
 			},
-			expectedDuplicate: false,
-			expectedTxHash:    nil,
+			expectedValid:  true,
+			expectedTxHash: nil,
 		},
 		{
 			name: "one duplicate",
 			sideTxResponses: []*sidetxs.SideTxResponse{
-				{TxHash: []byte(TxHash1)},
-				{TxHash: []byte(TxHash2)},
-				{TxHash: []byte(TxHash3)},
-				{TxHash: []byte(TxHash3)},
+				{TxHash: common.Hex2Bytes(TxHash1)},
+				{TxHash: common.Hex2Bytes(TxHash2)},
+				{TxHash: common.Hex2Bytes(TxHash3)},
+				{TxHash: common.Hex2Bytes(TxHash3)},
 			},
-			expectedDuplicate: true,
-			expectedTxHash:    []byte(TxHash3),
+			expectedValid:  false,
+			expectedTxHash: common.Hex2Bytes(TxHash3),
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			duplicate, txHash := checkDuplicateVotes(tc.sideTxResponses)
-			require.Equal(t, tc.expectedDuplicate, duplicate)
+			responsesValid, txHash := areSideTxResponsesValid(tc.sideTxResponses)
+			require.Equal(t, tc.expectedValid, responsesValid)
 			require.Equal(t, tc.expectedTxHash, txHash)
 		})
 	}

@@ -29,7 +29,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 
 	switch methodName {
 	case milestoneMsgTypeURL:
-		return srv.SideHandleMilestone
+		return srv.SideHandleMsgMilestone
 	default:
 		return nil
 	}
@@ -46,8 +46,8 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler
 	}
 }
 
-// SideHandleMilestone handles the side msg for milestones
-func (srv *sideMsgServer) SideHandleMilestone(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
+// SideHandleMsgMilestone handles the side msg for milestones
+func (srv *sideMsgServer) SideHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
 	logger := srv.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgMilestone)

@@ -8,7 +8,6 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
-	abci "github.com/cometbft/cometbft/abci/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
@@ -16,6 +15,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
@@ -61,9 +61,9 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 		if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
 			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
-		hasDupVotes, txHash := checkDuplicateVotes(consolidatedSideTxResponse.SideTxResponses)
-		if hasDupVotes {
-			return fmt.Errorf("duplicated votes detected for validator %s and tx %s", string(proposerAddress), string(txHash))
+		responsesValid, txHash := areSideTxResponsesValid(consolidatedSideTxResponse.SideTxResponses)
+		if !responsesValid {
+			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s", string(proposerAddress), string(txHash))
 		}
 
 		codec := address.HexCodec{}
@@ -129,7 +129,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, totalVP int64, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
 
-	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight)
+	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight, logger)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -153,19 +153,19 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 			logger.Debug("Approved side-tx", "txHash", txHash)
 
 			// append to approved tx slice
-			approvedTxs = append(approvedTxs, []byte(txHash))
+			approvedTxs = append(approvedTxs, common.Hex2Bytes(txHash))
 		} else if voteMap[sidetxs.Vote_VOTE_NO] > majorityVP {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
 
 			// append to rejected tx slice
-			rejectedTxs = append(rejectedTxs, []byte(txHash))
+			rejectedTxs = append(rejectedTxs, common.Hex2Bytes(txHash))
 		} else {
 			// skipped
 			logger.Debug("Skipped side-tx", "txHash", txHash)
 
 			// append to rejected tx slice
-			skippedTxs = append(skippedTxs, []byte(txHash))
+			skippedTxs = append(skippedTxs, common.Hex2Bytes(txHash))
 		}
 	}
 
@@ -173,7 +173,7 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 }
 
 // aggregateVotes collates votes received for a side tx
-func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo, currentHeight int64) (map[string]map[sidetxs.Vote]int64, error) {
+func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int64, logger log.Logger) (map[string]map[sidetxs.Vote]int64, error) {
 	voteByTxHash := make(map[string]map[sidetxs.Vote]int64)  // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
 
@@ -199,10 +199,10 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo, currentHeight int64) (m
 
 		// iterate through vote extensions and accumulate voting power for YES/NO/UNSPECIFIED votes
 		for _, res := range ve.SideTxResponses {
-			txHashStr := string(res.TxHash)
+			txHashStr := common.Bytes2Hex(res.TxHash)
 
 			// TODO HV2: (once slashing is enabled) do we slash in case a validator maliciously adds conflicting votes ?
-			// Given that we also check for duplicate votes during VerifyVoteExtension, is this redundant ?
+			//  Given that we also check for duplicate votes during VerifyVoteExtensionHandler, is this redundant ?
 			if _, hasVoted := validatorToTxMap[addr][txHashStr]; !hasVoted {
 
 				if voteByTxHash[txHashStr] == nil {
@@ -220,6 +220,9 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo, currentHeight int64) (m
 					validatorToTxMap[addr] = make(map[string]struct{})
 				}
 				validatorToTxMap[addr][txHashStr] = struct{}{}
+			} else {
+				logger.Error("multiple votes received for side tx",
+					"txHash", txHashStr, "validatorAddress", addr)
 			}
 
 		}
@@ -229,20 +232,28 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo, currentHeight int64) (m
 	return voteByTxHash, nil
 }
 
-// checkDuplicateVotes detects duplicate votes by a validator for a side tx
-func checkDuplicateVotes(sideTxResponses []*sidetxs.SideTxResponse) (bool, []byte) {
+// areSideTxResponsesValid validates the SideTxResponses and return true/false for valid/invalid responses, plus the txHash of the first invalid tx detected
+func areSideTxResponsesValid(sideTxResponses []*sidetxs.SideTxResponse) (bool, []byte) {
 	// track votes of the validator
 	txVoteMap := make(map[string]struct{})
 
 	for _, res := range sideTxResponses {
+		// check txHash is well-formed
+		if len(res.TxHash) == 0 || len(res.TxHash) != common.HashLength {
+			_ = fmt.Errorf("invalid tx hash received")
+			return false, res.TxHash
+		}
+
+		// check if the validator has already voted for the side tx
 		if _, ok := txVoteMap[string(res.TxHash)]; ok {
-			return true, res.TxHash
+			_ = fmt.Errorf("duplicated votes detected")
+			return false, res.TxHash
 		}
 
 		txVoteMap[string(res.TxHash)] = struct{}{}
 	}
 
-	return false, nil
+	return true, nil
 }
 
 // mustAddSpecialTransaction indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.

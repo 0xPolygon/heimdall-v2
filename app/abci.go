@@ -5,50 +5,27 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
-
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
 // VoteExtensionProcessor handles Vote Extension processing for Heimdall app
 type VoteExtensionProcessor struct {
-	app       *HeimdallApp
-	sideTxCfg sidetxs.SideTxConfigurator
+	app *HeimdallApp
 }
 
 // NewVoteExtensionProcessor returns a new VoteExtensionProcessor with its sideTxConfigurator
-func NewVoteExtensionProcessor(cfg sidetxs.SideTxConfigurator) *VoteExtensionProcessor {
-	return &VoteExtensionProcessor{
-		sideTxCfg: cfg,
-	}
+func NewVoteExtensionProcessor() *VoteExtensionProcessor {
+	return &VoteExtensionProcessor{}
 }
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
-
-		// check if there are any txs in the request
-		if len(req.Txs) < 1 {
-			logger.Error("No txs found in the request to prepare the proposal")
-			return nil, errors.New("no txs found in the request to prepare the proposal")
-		}
-
-		// check the txs via the ante handler
-		for i, tx := range req.Txs {
-			// skip the first tx as it contains the ExtendedVoteInfo and may not have an ante handler
-			if i == 0 {
-				continue
-			}
-			if err := checkTx(app, tx); err != nil {
-				logger.Error("Error occurred while checking tx in prepare proposal", "error", err)
-				return nil, err
-			}
-		}
 
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
@@ -66,7 +43,18 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// once added the VEs, we append add the txs to the proposal
 		totalTxBytes := len(txs)
-		for _, proposedTx := range req.Txs {
+		for i, proposedTx := range req.Txs {
+
+			// skip the first tx as it contains the ExtendedVoteInfo and may not have an ante handler
+			if i == 0 {
+				continue
+			}
+			// check the txs via the ante handler
+			if err := checkTx(app, proposedTx); err != nil {
+				logger.Error("Error occurred while checking tx in prepare proposal", "error", err)
+				return nil, err
+			}
+
 			totalTxBytes += len(proposedTx)
 			// check if the total tx bytes exceed the max tx bytes of the request
 			if totalTxBytes > int(req.MaxTxBytes) {
@@ -122,8 +110,8 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	}
 }
 
-// ExtendVote extends precommit vote
-func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
+// ExtendVoteHandler extends precommit vote
+func (v *VoteExtensionProcessor) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		logger := v.app.Logger()
 		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
@@ -153,7 +141,8 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			ctx, _ = v.app.cacheTxContext(ctx, rawTx)
 			tx, err := v.app.TxDecode(rawTx)
 			if err != nil {
-				logger.Error("Error occurred while decoding tx bytes in ExtendVote", "error", err)
+				// This tx comes from a block that has already been prevoted by >2/3 of the voting power, so this should never happen unless
+				panic(fmt.Errorf("error occurred while decoding tx bytes in ExtendVoteHandler. Error: %v", err))
 				return nil, err
 			}
 
@@ -162,8 +151,9 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 			messages := tx.GetMsgs()
 			for _, msg := range messages {
 				// get the right module's side handler for the message
-				sideHandler := v.sideTxCfg.GetSideHandler(msg)
+				sideHandler := v.app.sideTxCfg.GetSideHandler(msg)
 				if sideHandler == nil {
+					logger.Debug("No side handler found for the message", "msg", msg)
 					continue
 				}
 
@@ -171,10 +161,10 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 				res := sideHandler(ctx, msg)
 
 				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response
-				var txBytes cmtTypes.Tx = rawTx
-				logger.Debug("Adding V.E.", "txHash", txBytes.Hash(), "blockHeight", req.Height, "blockHash", req.Hash)
+				txHash := cmtTypes.Tx(rawTx).Hash()
+				logger.Debug("Adding V.E.", "txHash", txHash, "blockHeight", req.Height, "blockHash", req.Hash)
 				ve := sidetxs.SideTxResponse{
-					TxHash: txBytes.Hash(),
+					TxHash: txHash,
 					Result: res,
 				}
 				sideTxRes = append(sideTxRes, &ve)
@@ -183,15 +173,15 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 		}
 
 		// prepare the response with votes, block height and block hash
-		canonicalSideTxRes := sidetxs.ConsolidatedSideTxResponse{
+		consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
 			BlockHash:       req.Hash,
 		}
 
-		bz, err := proto.Marshal(&canonicalSideTxRes)
+		bz, err := proto.Marshal(&consolidatedSideTxRes)
 		if err != nil {
-			logger.Error("Error occurred while marshalling the VoteExtension in ExtendVote", "error", err)
+			logger.Error("Error occurred while marshalling the VoteExtension in ExtendVoteHandler", "error", err)
 			return &abci.ResponseExtendVote{VoteExtension: []byte{}}, nil
 		}
 
@@ -199,8 +189,8 @@ func (v *VoteExtensionProcessor) ExtendVote() sdk.ExtendVoteHandler {
 	}
 }
 
-// VerifyVoteExtension performs some sanity checks on the VE received from other validators
-func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHandler {
+// VerifyVoteExtensionHandler performs some sanity checks on the VE received from other validators
+func (v *VoteExtensionProcessor) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHandler {
 	return func(ctx sdk.Context, req *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
 		logger := v.app.Logger()
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
@@ -233,9 +223,9 @@ func (v *VoteExtensionProcessor) VerifyVoteExtension() sdk.VerifyVoteExtensionHa
 		}
 
 		// check for duplicate votes
-		hasDupVotes, txHash := checkDuplicateVotes(canonicalSideTxResponse.SideTxResponses)
-		if hasDupVotes {
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Validator voted more than once for a side transaction", "validator", string(req.ValidatorAddress), "tx hash", string(txHash))
+		responsesValid, txHash := areSideTxResponsesValid(canonicalSideTxResponse.SideTxResponses)
+		if !responsesValid {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", string(req.ValidatorAddress), "tx hash", string(txHash))
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
@@ -299,7 +289,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 					msgs := decodedTx.GetMsgs()
 					for _, msg := range msgs {
-						postHandler := app.VoteExtensionProcessor.sideTxCfg.GetPostHandler(msg)
+						postHandler := app.sideTxCfg.GetPostHandler(msg)
 						if postHandler != nil {
 							postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 						}
@@ -315,7 +305,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 // checkTx invokes the abci method to check the tx by using the ante handler
 func checkTx(app *HeimdallApp, tx []byte) error {
-	res, err := app.CheckTx(&abci.RequestCheckTx{Tx: tx})
+	res, err := app.CheckTx(&abci.RequestCheckTx{
+		Tx:   tx,
+		Type: abci.CheckTxType_New,
+	})
 	if err != nil || res.IsErr() {
 		return err
 	}

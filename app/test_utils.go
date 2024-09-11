@@ -23,6 +23,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/gogoproto/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -32,12 +33,12 @@ import (
 const (
 	VoteExtBlockHeight = 100
 	CurrentHeight      = 101
-	TxHash1            = "0x000000000000000000000000000000000000000000000000000000000001dead"
-	TxHash2            = "0x000000000000000000000000000000000000000000000000000000000002dead"
-	TxHash3            = "0x000000000000000000000000000000000000000000000000000000000003dead"
-	ValAddr1           = "0x000000000000000000000000000000000001dEaD"
-	ValAddr2           = "0x000000000000000000000000000000000002dEaD"
-	ValAddr3           = "0x000000000000000000000000000000000003dEaD"
+	TxHash1            = "000000000000000000000000000000000000000000000000000000000001dead"
+	TxHash2            = "000000000000000000000000000000000000000000000000000000000002dead"
+	TxHash3            = "000000000000000000000000000000000000000000000000000000000003dead"
+	ValAddr1           = "000000000000000000000000000000000001dEaD"
+	ValAddr2           = "000000000000000000000000000000000002dEaD"
+	ValAddr3           = "000000000000000000000000000000000003dEaD"
 )
 
 func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger) {
@@ -128,7 +129,7 @@ func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...str
 	responses := make([]*sidetxs.SideTxResponse, len(txHashes))
 	for i, txHash := range txHashes {
 		responses[i] = &sidetxs.SideTxResponse{
-			TxHash: []byte(txHash),
+			TxHash: common.Hex2Bytes(txHash),
 			Result: vote,
 		}
 	}

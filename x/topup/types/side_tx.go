@@ -47,7 +47,7 @@ func RegisterSideMsgServer(sideCfg sidetxs.SideTxConfigurator, srv SideMsgServer
 
 		postHandler := srv.PostTxHandler(requestTypeName)
 
-		if sideHandler == nil || postHandler == nil {
+		if sideHandler == nil && postHandler == nil {
 			continue
 		}
 

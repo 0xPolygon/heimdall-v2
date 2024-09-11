@@ -39,7 +39,7 @@ func TestHeimdallAppExport(t *testing.T) {
 	_, err = app.Commit()
 	require.NoError(t, err)
 
-	// Making a new app object with the db, so that initchain hasn't been called
+	// Making a new app object with the db, so that InitChain hasn't been called
 	hApp := NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
 	_, err = hApp.ExportAppStateAndValidators(false, []string{}, []string{})
 	require.NoError(t, err)
@@ -50,8 +50,7 @@ func TestRunMigrations(t *testing.T) {
 	t.Skip("TODO HV2: fix and enable this test")
 	t.Parallel()
 
-	_, db, logger := SetupApp(t, 1)
-	hApp := NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
+	hApp, _, _ := SetupApp(t, 1)
 	configurator := module.NewConfigurator(hApp.appCodec, hApp.MsgServiceRouter(), hApp.GRPCQueryRouter())
 
 	// We register all modules on the Configurator, except x/bank. x/bank will

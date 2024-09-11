@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
 	"io"
 	"os"
 	"path/filepath"
@@ -40,6 +39,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
+	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -140,6 +140,9 @@ type HeimdallApp struct {
 
 	// Vote Extension handler
 	VoteExtensionProcessor *VoteExtensionProcessor
+
+	// SideTxConfigurator
+	sideTxCfg sidetxs.SideTxConfigurator
 }
 
 func init() {
@@ -367,12 +370,12 @@ func NewHeimdallApp(
 	app.RegisterSideMsgServices(sideTxCfg)
 
 	// Create the voteExtProcessor using sideTxCfg
-	voteExtProcessor := NewVoteExtensionProcessor(sideTxCfg)
+	voteExtProcessor := NewVoteExtensionProcessor()
 	app.VoteExtensionProcessor = voteExtProcessor
 
 	// Set the voteExtension methods to HeimdallApp
-	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVote())
-	bApp.SetVerifyVoteExtensionHandler(app.VoteExtensionProcessor.VerifyVoteExtension())
+	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVoteHandler())
+	bApp.SetVerifyVoteExtensionHandler(app.VoteExtensionProcessor.VerifyVoteExtensionHandler())
 
 	// TODO HV2: is this order correct?
 	app.ModuleManager.SetOrderBeginBlockers(
