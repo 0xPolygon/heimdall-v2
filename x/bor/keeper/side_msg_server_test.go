@@ -61,7 +61,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				suite.contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
+				suite.contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
 			},
 		},
 		{
@@ -76,7 +76,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				suite.contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
+				suite.contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
 			},
 		},
 		{
@@ -91,7 +91,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
-				suite.contractCaller.On("GetPolygonPoSChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
+				suite.contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
 			},
 		},
 	}
