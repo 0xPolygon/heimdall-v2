@@ -64,6 +64,9 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/bor"
+	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	chainmanagerkeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
@@ -125,10 +128,9 @@ type HeimdallApp struct {
 	ChainManagerKeeper chainmanagerkeeper.Keeper
 	CheckpointKeeper   checkpointKeeper.Keeper
 	MilestoneKeeper    milestoneKeeper.Keeper
-	// TODO HV2: uncomment when bor module is implemented
-	// BorKeeper borkeeper.Keeper
+	BorKeeper          borKeeper.Keeper
 
-	// utility for invoking contracts in Ethereum and Bor chain
+	// utility for invoking contracts in Ethereum and Polygon PoS chain
 	caller helper.ContractCaller
 
 	ModuleManager *module.Manager
@@ -199,8 +201,7 @@ func NewHeimdallApp(
 		topupTypes.StoreKey,
 		chainmanagertypes.StoreKey,
 		milestoneTypes.StoreKey,
-		// TODO HV2: uncomment when bor module is implemented
-		// bortypes.StoreKey,
+		borTypes.StoreKey,
 	)
 
 	// register streaming services
@@ -328,7 +329,13 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
-	// TODO HV2: add bor module keeper here
+	app.BorKeeper = borKeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[borTypes.StoreKey]),
+		&app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		&app.caller,
+	)
 
 	// TODO HV2: stake and checkpoint keepers are circularly dependent
 	//  This is a workaround to solve it
@@ -345,8 +352,7 @@ func NewHeimdallApp(
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
 		milestone.NewAppModule(&app.MilestoneKeeper),
-		// TODO HV2: uncomment when bor module is implemented
-		// bor.NewAppModule(app.BorKeeper),
+		bor.NewAppModule(app.BorKeeper, &app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 	)
@@ -404,8 +410,7 @@ func NewHeimdallApp(
 		checkpointTypes.ModuleName,
 		milestoneTypes.ModuleName,
 		clerktypes.ModuleName,
-		// TODO HV2: uncomment when bor module is implemented
-		// bortypes.ModuleName,
+		borTypes.ModuleName,
 	}
 
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
@@ -846,8 +851,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(topupTypes.ModuleName)
 	paramsKeeper.Subspace(chainmanagertypes.ModuleName)
 	paramsKeeper.Subspace(milestoneTypes.ModuleName)
-	// TODO HV2: uncomment when bor module is implemented
-	// paramsKeeper.Subspace(borTypes.ModuleName)
+	paramsKeeper.Subspace(borTypes.ModuleName)
 
 	return paramsKeeper
 }
