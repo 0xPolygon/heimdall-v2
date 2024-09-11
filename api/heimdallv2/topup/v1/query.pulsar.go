@@ -2,11 +2,11 @@
 package topupv1
 
 import (
+	_ "cosmossdk.io/api/cosmos/query/v1"
 	fmt "fmt"
 	types "github.com/0xPolygon/heimdall-v2/api/heimdallv2/types"
 	_ "github.com/cosmos/cosmos-proto"
 	runtime "github.com/cosmos/cosmos-proto/runtime"
-	_ "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
