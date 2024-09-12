@@ -5,6 +5,8 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/stake"
 )
 
 // ExportAppStateAndValidators exports the state of the application for a genesis
@@ -30,9 +32,11 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
+	validators, err := stake.WriteValidators(ctx, &app.StakeKeeper)
 	return servertypes.ExportedApp{
 		AppState:        appState,
 		Height:          height,
+		Validators:      validators,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
 	}, err
 }

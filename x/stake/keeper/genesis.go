@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // InitGenesis sets validator information for genesis in x/stake module
-func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
+func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abci.ValidatorUpdate {
 	k.PanicIfSetupIsIncomplete()
 
 	ctx = sdk.UnwrapSDKContext(ctx)
@@ -54,6 +55,21 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 			panic(fmt.Errorf("error in setting staking sequence while initializing stake genesis: %w", err))
 		}
 	}
+
+	var cometVals []abci.ValidatorUpdate
+	validators := k.GetAllValidators(ctx)
+	for _, validator := range validators {
+		cmtPk, err := validator.CmtConsPublicKey()
+		if err != nil {
+			panic(err)
+		}
+		cometVals = append(cometVals, abci.ValidatorUpdate{
+			PubKey: cmtPk,
+			Power:  validator.GetVotingPower(),
+		})
+	}
+
+	return cometVals
 }
 
 // ExportGenesis returns a GenesisState for the given stake context and keeper.

@@ -22,6 +22,8 @@ func TestNewPrepareProposalHandler(t *testing.T) {
 	})
 	require.NoError(t, err)
 	ctx := cosmostestutil.DefaultContextWithKeys(hApp.keys, hApp.tKeys, nil)
+	_, err = hApp.Commit()
+	require.NoError(t, err)
 
 	tests := []struct {
 		name           string
@@ -85,6 +87,8 @@ func TestNewProcessProposalHandler(t *testing.T) {
 	})
 	require.NoError(t, err)
 	ctx := cosmostestutil.DefaultContextWithKeys(hApp.keys, hApp.tKeys, nil)
+	_, err = hApp.Commit()
+	require.NoError(t, err)
 
 	tests := []struct {
 		name           string
@@ -137,6 +141,8 @@ func TestExtendVote(t *testing.T) {
 	})
 	require.NoError(t, err)
 	ctx := cosmostestutil.DefaultContextWithKeys(hApp.keys, hApp.tKeys, nil)
+	_, err = hApp.Commit()
+	require.NoError(t, err)
 
 	tests := []struct {
 		name          string
@@ -187,6 +193,8 @@ func TestVerifyVoteExtension(t *testing.T) {
 	})
 	require.NoError(t, err)
 	ctx := cosmostestutil.DefaultContextWithKeys(hApp.keys, hApp.tKeys, nil)
+	_, err = hApp.Commit()
+	require.NoError(t, err)
 
 	txHashBytes := common.Hex2Bytes(TxHash1)
 	blockHashBytes := common.Hex2Bytes(TxHash2)
@@ -261,6 +269,8 @@ func TestPreBlocker(t *testing.T) {
 	})
 	require.NoError(t, err)
 	ctx := cosmostestutil.DefaultContextWithKeys(hApp.keys, hApp.tKeys, nil)
+	_, err = hApp.Commit()
+	require.NoError(t, err)
 
 	tests := []struct {
 		name          string

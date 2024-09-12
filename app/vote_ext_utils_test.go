@@ -25,6 +25,8 @@ func TestValidateVoteExtensions(t *testing.T) {
 	ctx := cosmostestutil.DefaultContextWithKeys(hApp.keys, hApp.tKeys, nil)
 	proposer, err := address.NewHexCodec().StringToBytes(ValAddr1)
 	require.NoError(t, err)
+	_, err = hApp.Commit()
+	require.NoError(t, err)
 
 	tests := []struct {
 		name         string
