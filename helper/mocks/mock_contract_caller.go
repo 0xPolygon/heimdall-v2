@@ -498,6 +498,36 @@ func (_m *IContractCaller) GetBlockNumberFromTxHash(_a0 common.Hash) (*big.Int, 
 	return r0, r1
 }
 
+// GetBorChainBlock provides a mock function with given fields: _a0
+func (_m *IContractCaller) GetBorChainBlock(_a0 *big.Int) (*types.Header, error) {
+	ret := _m.Called(_a0)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetBorChainBlock")
+	}
+
+	var r0 *types.Header
+	var r1 error
+	if rf, ok := ret.Get(0).(func(*big.Int) (*types.Header, error)); ok {
+		return rf(_a0)
+	}
+	if rf, ok := ret.Get(0).(func(*big.Int) *types.Header); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.Header)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(*big.Int) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetCheckpointSign provides a mock function with given fields: txHash
 func (_m *IContractCaller) GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error) {
 	ret := _m.Called(txHash)
@@ -714,36 +744,6 @@ func (_m *IContractCaller) GetMainTxReceipt(_a0 common.Hash) (*types.Receipt, er
 	}
 
 	if rf, ok := ret.Get(1).(func(common.Hash) error); ok {
-		r1 = rf(_a0)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetMaticChainBlock provides a mock function with given fields: _a0
-func (_m *IContractCaller) GetMaticChainBlock(_a0 *big.Int) (*types.Header, error) {
-	ret := _m.Called(_a0)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetMaticChainBlock")
-	}
-
-	var r0 *types.Header
-	var r1 error
-	if rf, ok := ret.Get(0).(func(*big.Int) (*types.Header, error)); ok {
-		return rf(_a0)
-	}
-	if rf, ok := ret.Get(0).(func(*big.Int) *types.Header); ok {
-		r0 = rf(_a0)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*types.Header)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(*big.Int) error); ok {
 		r1 = rf(_a0)
 	} else {
 		r1 = ret.Error(1)

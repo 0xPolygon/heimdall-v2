@@ -2,12 +2,12 @@
 package stakev1
 
 import (
+	_ "cosmossdk.io/api/amino"
+	_ "cosmossdk.io/api/cosmos/msg/v1"
 	fmt "fmt"
 	types "github.com/0xPolygon/heimdall-v2/api/heimdallv2/types"
 	_ "github.com/cosmos/cosmos-proto"
 	runtime "github.com/cosmos/cosmos-proto/runtime"
-	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
-	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoiface "google.golang.org/protobuf/runtime/protoiface"

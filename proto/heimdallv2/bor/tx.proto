@@ -1,0 +1,30 @@
+syntax = "proto3";
+package heimdallv2.bor;
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
+
+// Msg defines the bor Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // ProposeSpan defines a method for proposing a bor span.
+  rpc ProposeSpan(MsgProposeSpanRequest) returns (MsgProposeSpanResponse);
+}
+
+// MsgProposeSpanRequest represents a message to propose a span.
+message MsgProposeSpanRequest {
+  option (cosmos.msg.v1.signer) = "proposer";
+
+  uint64 span_id = 1;
+  string proposer = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  uint64 start_block = 3;
+  uint64 end_block = 4;
+  string chain_id = 5;
+  bytes seed = 6;
+}
+
+// MsgProposeSpanResponse represents a response to a Msg/ProposeSpan message.
+message MsgProposeSpanResponse {}

@@ -2,11 +2,11 @@
 package checkpointv1
 
 import (
+	_ "cosmossdk.io/api/amino"
+	_ "cosmossdk.io/api/cosmos/query/v1"
 	fmt "fmt"
 	v1 "github.com/0xPolygon/heimdall-v2/api/heimdallv2/stake/v1"
 	runtime "github.com/cosmos/cosmos-proto/runtime"
-	_ "github.com/cosmos/cosmos-sdk/types/query"
-	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

@@ -209,9 +209,9 @@ var conf Configuration
 var mainChainClient *ethclient.Client
 var mainRPCClient *rpc.Client
 
-// MaticClient stores eth/rpc client for Matic Network
-var maticClient *ethclient.Client
-var maticRPCClient *rpc.Client
+// BorClient stores eth/rpc client for Matic Network
+var borClient *ethclient.Client
+var borRPCClient *rpc.Client
 
 // private key object
 var privKeyObject secp256k1.PrivKey
@@ -356,11 +356,11 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if maticRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
+	if borRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
-	maticClient = ethclient.NewClient(maticRPCClient)
+	borClient = ethclient.NewClient(borRPCClient)
 	// Loading genesis doc
 	genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
 	if err != nil {
@@ -447,14 +447,14 @@ func GetMainClient() *ethclient.Client {
 	return mainChainClient
 }
 
-// GetMaticClient returns matic's eth client
-func GetMaticClient() *ethclient.Client {
-	return maticClient
+// GetBorClient returns bor's eth client
+func GetBorClient() *ethclient.Client {
+	return borClient
 }
 
-// GetMaticRPCClient returns matic's RPC client
-func GetMaticRPCClient() *rpc.Client {
-	return maticRPCClient
+// GetBorRPCClient returns bor's RPC client
+func GetBorRPCClient() *rpc.Client {
+	return borRPCClient
 }
 
 // GetPrivKey returns priv key object
