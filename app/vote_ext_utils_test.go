@@ -128,7 +128,8 @@ func TestValidateVoteExtensions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
 				require.PanicsWithValue(t, tt.panicMessage, func() {
-					_ = ValidateVoteExtensions(tt.ctx, CurrentHeight, proposer, tt.extVoteInfo, tt.round, tt.keeper)
+					err = ValidateVoteExtensions(tt.ctx, CurrentHeight, proposer, tt.extVoteInfo, tt.round, tt.keeper)
+					fmt.Printf("err: %v\n", err)
 				})
 			} else {
 				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, proposer, tt.extVoteInfo, tt.round, tt.keeper)
