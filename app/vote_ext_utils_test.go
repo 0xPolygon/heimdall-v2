@@ -47,7 +47,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			round:        1,
 			keeper:       hApp.StakeKeeper,
 			shouldPanic:  true,
-			panicMessage: "mustAddSpecialTransaction should not be called before VoteExtensionsEnableHeight",
+			panicMessage: "VoteExtensions are disabled!",
 		},
 		{
 			name: "duplicate votes detected",
