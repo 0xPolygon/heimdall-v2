@@ -156,6 +156,7 @@ func initRootCmd(
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
 		snapshot.Cmd(newApp),
+		MigrateCommand(),
 	)
 
 	// TODO HV2 - uncomment when we have server.AddCommandsWithStartCmdOptions

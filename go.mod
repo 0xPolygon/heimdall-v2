@@ -3,6 +3,7 @@ module github.com/0xPolygon/heimdall-v2
 go 1.22.1
 
 require (
+	github.com/cosmos/cosmos-sdk v0.50.6
 	cosmossdk.io/api v0.7.2
 	cosmossdk.io/client/v2 v2.0.0-beta.1
 	cosmossdk.io/collections v0.4.0
@@ -251,3 +252,4 @@ replace (
 	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
+
