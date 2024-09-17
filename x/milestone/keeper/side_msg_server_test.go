@@ -51,11 +51,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.EndBlock,
 			milestone.Hash,
 			BorChainId,
-			milestone.MilestoneID,
+			milestone.MilestoneId,
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should succeed")
@@ -75,11 +75,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.EndBlock,
 			milestone.Hash,
 			BorChainId,
-			milestone.MilestoneID,
+			milestone.MilestoneId,
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(false, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(false, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -99,11 +99,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.EndBlock-1,
 			milestone.Hash,
 			BorChainId,
-			milestone.MilestoneID,
+			milestone.MilestoneId,
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -122,11 +122,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.EndBlock,
 			milestone.Hash,
 			BorChainId,
-			milestone.MilestoneID,
+			milestone.MilestoneId,
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneID).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
@@ -152,9 +152,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	minMilestoneLength := params.MinMilestoneLength
 
 	milestone := testutil.GenRandMilestone(start, minMilestoneLength)
-	milestone.BorChainID = BorChainId
+	milestone.BorChainId = BorChainId
 	milestone.Timestamp = uint64(ctx.BlockTime().Unix())
-	milestone.MilestoneID = milestoneId
+	milestone.MilestoneId = milestoneId
 
 	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
@@ -193,7 +193,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	})
 
 	milestoneId = "00000"
-	milestone.MilestoneID = milestoneId
+	milestone.MilestoneId = milestoneId
 
 	s.Run("Failure-Invalid Start Block", func() {
 		// create milestone msg
@@ -226,7 +226,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	})
 
 	milestoneId = "00001"
-	milestone.MilestoneID = milestoneId
+	milestone.MilestoneId = milestoneId
 
 	s.Run("Success", func() {
 		// create milestone msg
@@ -259,7 +259,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	})
 
 	milestoneId = "00002"
-	milestone.MilestoneID = milestoneId
+	milestone.MilestoneId = milestoneId
 
 	s.Run("Pre Exist", func() {
 		// create milestone msg
@@ -282,7 +282,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	})
 
 	milestoneId = "00003"
-	milestone.MilestoneID = milestoneId
+	milestone.MilestoneId = milestoneId
 
 	s.Run("Not in continuity", func() {
 		// create milestone msg
@@ -307,7 +307,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	})
 
 	milestoneId = "00004"
-	milestone.MilestoneID = milestoneId
+	milestone.MilestoneId = milestoneId
 
 	s.Run("Replay", func() {
 		// create milestone msg

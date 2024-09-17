@@ -90,8 +90,8 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	// check if message and event log matches
-	if eventLog.Id.Uint64() != msg.ID {
-		srv.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.ID, "stateIdFromTx", eventLog.Id)
+	if eventLog.Id.Uint64() != msg.Id {
+		srv.Logger(ctx).Error("ID in message doesn't match with id in log", "msgId", msg.Id, "stateIdFromTx", eventLog.Id)
 		return hmModule.Vote_VOTE_NO
 	}
 
@@ -138,7 +138,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	}
 
 	// check for replay
-	if srv.HasEventRecord(ctx, msg.ID) {
+	if srv.HasEventRecord(ctx, msg.Id) {
 		logger.Debug("skipping new clerk record as it's already processed")
 		return
 	}
@@ -154,16 +154,16 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	record := types.NewEventRecord(
 		msg.TxHash,
 		msg.LogIndex,
-		msg.ID,
+		msg.Id,
 		msg.ContractAddress,
 		msg.Data,
-		msg.ChainID,
+		msg.ChainId,
 		ctx.BlockTime(),
 	)
 
 	// save event into state
 	if err := srv.SetEventRecord(ctx, record); err != nil {
-		logger.Error("unable to update event record", "id", msg.ID, "error", err)
+		logger.Error("unable to update event record", "id", msg.Id, "error", err)
 		return
 	}
 
@@ -183,7 +183,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, hash.String()),      // tx hash
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
 			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
-			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.ID, 10)),
+			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.Id, 10)),
 			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
 		),
 	})

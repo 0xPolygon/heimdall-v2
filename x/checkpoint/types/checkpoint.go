@@ -20,7 +20,7 @@ func CreateCheckpoint(
 		EndBlock:   end,
 		RootHash:   rootHash,
 		Proposer:   proposer,
-		BorChainID: borChainID,
+		BorChainId: borChainID,
 		Timestamp:  timestamp,
 	}
 }

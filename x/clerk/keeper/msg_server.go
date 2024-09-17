@@ -28,7 +28,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	logger := srv.Logger(ctx)
 
 	logger.Debug("✅ Validating clerk msg",
-		"id", msg.ID,
+		"id", msg.Id,
 		"contract", msg.ContractAddress,
 		"data", msg.Data.String(),
 		"txHash", msg.TxHash,
@@ -37,7 +37,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	)
 
 	// check if event record exists
-	if exists := srv.HasEventRecord(ctx, msg.ID); exists {
+	if exists := srv.HasEventRecord(ctx, msg.Id); exists {
 		return nil, types.ErrEventRecordAlreadySynced
 	}
 
@@ -51,8 +51,8 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	chainParams := params.ChainParams
 
 	// check chain id
-	if chainParams.BorChainId != msg.ChainID {
-		logger.Error("Invalid Bor chain id", "msgChainID", msg.ChainID, "borChainId", chainParams.BorChainId)
+	if chainParams.BorChainId != msg.ChainId {
+		logger.Error("Invalid Bor chain id", "msgChainID", msg.ChainId, "borChainId", chainParams.BorChainId)
 		return nil, common.ErrInvalidBorChainID(types.ModuleName)
 	}
 
@@ -73,7 +73,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 		sdk.NewEvent(
 			types.EventTypeRecord,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.ID, 10)),
+			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.Id, 10)),
 			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
 			sdk.NewAttribute(types.AttributeKeyRecordTxHash, msg.TxHash),
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),

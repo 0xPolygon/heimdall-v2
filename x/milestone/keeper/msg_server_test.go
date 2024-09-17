@@ -209,8 +209,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 		header.StartBlock,
 		header.EndBlock,
 		header.Hash,
-		header.BorChainID,
-		header.MilestoneID,
+		header.BorChainId,
+		header.MilestoneId,
 	)
 
 	// send old milestone

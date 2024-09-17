@@ -67,10 +67,10 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 			types.NewEventRecord(
 				msg.TxHash,
 				msg.LogIndex,
-				msg.ID,
+				msg.Id,
 				msg.ContractAddress,
 				msg.Data,
-				msg.ChainID,
+				msg.ChainId,
 				tempTime,
 			),
 		)
