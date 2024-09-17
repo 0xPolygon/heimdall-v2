@@ -19,7 +19,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
-// ConsensusVersion defines the current x/checkpoint module consensus version.
+// ConsensusVersion defines the current x/milestone module consensus version.
 const ConsensusVersion = 1
 
 var (

@@ -2,12 +2,10 @@ package app
 
 import (
 	"bytes"
-	"errors"
-	"fmt"
-	"sort"
-
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
+	"errors"
+	"fmt"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
@@ -16,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"sort"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"

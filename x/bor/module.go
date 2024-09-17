@@ -23,6 +23,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
+// ConsensusVersion defines the current x/bor module consensus version.
+const ConsensusVersion = 1
+
 var (
 	_ module.HasGenesis     = AppModule{}
 	_ module.HasServices    = AppModule{}
@@ -126,4 +129,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	gs := am.keeper.ExportGenesis(ctx)
 	return cdc.MustMarshalJSON(gs)
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

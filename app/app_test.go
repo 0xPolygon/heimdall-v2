@@ -18,9 +18,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/x/bor"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
 	"github.com/0xPolygon/heimdall-v2/x/clerk"
+	"github.com/0xPolygon/heimdall-v2/x/milestone"
 	"github.com/0xPolygon/heimdall-v2/x/stake"
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 )
@@ -47,7 +49,7 @@ func TestHeimdallAppExport(t *testing.T) {
 
 //nolint:tparallel
 func TestRunMigrations(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test")
+	t.Skip("TODO HV2: fix and enable this test if required")
 	t.Parallel()
 
 	hApp, _, _ := SetupApp(t, 1)
@@ -162,8 +164,9 @@ func TestRunMigrations(t *testing.T) {
 					"clerk":        clerk.AppModule{}.ConsensusVersion(),
 					"checkpoint":   checkpoint.AppModule{}.ConsensusVersion(),
 					"chainmanager": chainmanager.AppModule{}.ConsensusVersion(),
+					"milestone":    milestone.AppModule{}.ConsensusVersion(),
 					"topup":        topup.AppModule{}.ConsensusVersion(),
-					// "bor": bor.AppModule{}.ConsensusVersion(),
+					"bor":          bor.AppModule{}.ConsensusVersion(),
 				},
 			)
 
@@ -179,7 +182,7 @@ func TestRunMigrations(t *testing.T) {
 }
 
 func TestInitGenesisOnMigration(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test")
+	t.Skip("TODO HV2: fix and enable this test if required")
 	t.Parallel()
 	app, _, _ := SetupApp(t, 1)
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
@@ -207,8 +210,9 @@ func TestInitGenesisOnMigration(t *testing.T) {
 			"clerk":        clerk.AppModule{}.ConsensusVersion(),
 			"checkpoint":   checkpoint.AppModule{}.ConsensusVersion(),
 			"chainmanager": chainmanager.AppModule{}.ConsensusVersion(),
+			"milestone":    milestone.AppModule{}.ConsensusVersion(),
 			"topup":        topup.AppModule{}.ConsensusVersion(),
-			// "bor": bor.AppModule{}.ConsensusVersion(),
+			"bor":          bor.AppModule{}.ConsensusVersion(),
 		},
 	)
 	require.NoError(t, err)

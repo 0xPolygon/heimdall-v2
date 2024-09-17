@@ -48,8 +48,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/consensus"
 	consensusparamkeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	consensusparamtypes "github.com/cosmos/cosmos-sdk/x/consensus/types"
-	"github.com/cosmos/cosmos-sdk/x/genutil"
-	genutiltypes "github.com/cosmos/cosmos-sdk/x/genutil/types"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	govclient "github.com/cosmos/cosmos-sdk/x/gov/client"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
@@ -342,7 +340,6 @@ func NewHeimdallApp(
 	app.StakeKeeper.SetCheckpointKeeper(app.CheckpointKeeper)
 
 	app.ModuleManager = module.NewManager(
-		genutil.NewAppModule(app.AccountKeeper, app.StakeKeeper, app, txConfig),
 		auth.NewAppModule(appCodec, app.AccountKeeper, nil, app.GetSubspace(authtypes.ModuleName)),
 		bank.NewAppModule(appCodec, app.BankKeeper, app.AccountKeeper, app.GetSubspace(banktypes.ModuleName)),
 		gov.NewAppModule(appCodec, &app.GovKeeper, app.AccountKeeper, app.BankKeeper, app.GetSubspace(govtypes.ModuleName)),
@@ -361,7 +358,6 @@ func NewHeimdallApp(
 	app.BasicManager = module.NewBasicManagerFromManager(
 		app.ModuleManager,
 		map[string]module.AppModuleBasic{
-			genutiltypes.ModuleName: genutil.NewAppModuleBasic(genutiltypes.DefaultMessageValidator),
 			govtypes.ModuleName: gov.NewAppModuleBasic(
 				[]govclient.ProposalHandler{
 					paramsclient.ProposalHandler,
@@ -385,7 +381,6 @@ func NewHeimdallApp(
 
 	// TODO HV2: is this order correct?
 	app.ModuleManager.SetOrderBeginBlockers(
-		genutiltypes.ModuleName,
 		staketypes.ModuleName,
 	)
 
@@ -393,7 +388,6 @@ func NewHeimdallApp(
 	app.ModuleManager.SetOrderEndBlockers(
 		govtypes.ModuleName,
 		staketypes.ModuleName,
-		genutiltypes.ModuleName,
 	)
 
 	// TODO HV2: is this order correct?
@@ -402,7 +396,6 @@ func NewHeimdallApp(
 		banktypes.ModuleName,
 		staketypes.ModuleName,
 		govtypes.ModuleName,
-		genutiltypes.ModuleName,
 		paramstypes.ModuleName,
 		consensusparamtypes.ModuleName,
 		chainmanagertypes.ModuleName,

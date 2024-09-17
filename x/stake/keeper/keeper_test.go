@@ -328,7 +328,7 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	err = keeper.AddValidator(ctx, valToBeAdded)
 	require.NoError(err)
 
-	_, err = keeper.GetValidatorInfo(ctx, valToBeAdded.GetSigner())
+	_, err = keeper.GetValidatorInfo(ctx, strings.ToLower(valToBeAdded.GetSigner()))
 	require.NoError(err)
 
 	setUpdates := types.GetUpdatedValidators(currentValSet, keeper.GetAllValidators(ctx), 5)
@@ -384,7 +384,7 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, validators[0].Signer)
+	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, strings.ToLower(validators[0].Signer))
 	require.NoError(err)
 	require.Equal(validators[0], activeValidatorInfo)
 }

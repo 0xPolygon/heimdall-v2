@@ -23,7 +23,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// ConsensusVersion defines the current x/checkpoint module consensus version.
+// ConsensusVersion defines the current x/topup module consensus version.
 const ConsensusVersion = 1
 
 var (

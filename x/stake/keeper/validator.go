@@ -19,7 +19,7 @@ import (
 func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
 	k.PanicIfSetupIsIncomplete()
 	// store validator with address prefixed with validator key as index
-	err := k.validators.Set(ctx, validator.Signer, validator)
+	err := k.validators.Set(ctx, strings.ToLower(validator.Signer), validator)
 	if err != nil {
 		k.Logger(ctx).Error("error while setting the validator in store", "err", err)
 		return err
@@ -312,7 +312,7 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 
 // SetValidatorIDToSignerAddr sets mapping for validator ID to signer address
 func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, signerAddr string) {
-	err := k.signer.Set(ctx, valID, signerAddr)
+	err := k.signer.Set(ctx, valID, strings.ToLower(signerAddr))
 	if err != nil {
 		k.Logger(ctx).Error("key or value is nil", "error", err)
 	}
