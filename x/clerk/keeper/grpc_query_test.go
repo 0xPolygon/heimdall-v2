@@ -17,7 +17,7 @@ func (suite *KeeperTestSuite) TestGetGRPCRecord_Success() {
 	require.NoError(err)
 
 	req := &types.RecordRequest{
-		RecordID: testRecord1.ID,
+		RecordId: testRecord1.Id,
 	}
 
 	res, err := queryClient.Record(ctx, req)
@@ -30,7 +30,7 @@ func (suite *KeeperTestSuite) TestGetGRPCRecord_NotFound() {
 	ctx, queryClient, require := suite.ctx, suite.queryClient, suite.Require()
 
 	req := &types.RecordRequest{
-		RecordID: 1,
+		RecordId: 1,
 	}
 
 	res, err := queryClient.Record(ctx, req)

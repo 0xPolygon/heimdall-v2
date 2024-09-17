@@ -123,7 +123,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAck() {
 	require.NoError(err)
 	require.NotNil(res)
 
-	require.Equal(res.LastNoAckID, noAck)
+	require.Equal(res.LastNoAckId, noAck)
 }
 
 func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
@@ -153,7 +153,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
 	require.NoError(err)
 
-	req := types.QueryNextCheckpointRequest{BorChainID: BorChainID}
+	req := types.QueryNextCheckpointRequest{BorChainId: BorChainID}
 
 	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	res, err := queryClient.GetNextCheckpoint(ctx, &req)
@@ -162,7 +162,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	require.Equal(checkpointBlock.StartBlock, res.Checkpoint.StartBlock)
 	require.Equal(checkpointBlock.EndBlock, res.Checkpoint.EndBlock)
 	require.Equal(checkpointBlock.RootHash, res.Checkpoint.RootHash)
-	require.Equal(checkpointBlock.BorChainID, res.Checkpoint.BorChainID)
+	require.Equal(checkpointBlock.BorChainId, res.Checkpoint.BorChainId)
 }
 
 func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {

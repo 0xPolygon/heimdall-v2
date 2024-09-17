@@ -100,18 +100,18 @@ func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	require.NotNil(t, err)
 
 	// GetEventRecord
-	respRecord, err := ck.GetEventRecord(ctx, testRecord1.ID)
+	respRecord, err := ck.GetEventRecord(ctx, testRecord1.Id)
 	require.Nil(t, err)
 	require.Equal(t, testRecord1, *respRecord)
 
-	_, err = ck.GetEventRecord(ctx, testRecord1.ID+1)
+	_, err = ck.GetEventRecord(ctx, testRecord1.Id+1)
 	require.NotNil(t, err)
 
 	// HasEventRecord
-	recordPresent := ck.HasEventRecord(ctx, testRecord1.ID)
+	recordPresent := ck.HasEventRecord(ctx, testRecord1.Id)
 	require.True(t, recordPresent)
 
-	recordPresent = ck.HasEventRecord(ctx, testRecord1.ID+1)
+	recordPresent = ck.HasEventRecord(ctx, testRecord1.Id+1)
 	require.False(t, recordPresent)
 
 	recordList := ck.GetAllEventRecords(ctx)

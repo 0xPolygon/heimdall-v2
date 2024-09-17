@@ -37,7 +37,7 @@ service Query {
   }
 }
 
-message RecordRequest { uint64 record_i_d = 1; }
+message RecordRequest { uint64 record_id = 1; }
 
 // RecordResponse defines the params for RecordListRequest.
 message RecordResponse { EventRecord record = 1; }
