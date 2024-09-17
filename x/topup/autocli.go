@@ -16,15 +16,15 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod:      "GetTopupTxSequence",
-					Use:            "topup-sequence [txHash] [logIndex]",
+					Use:            "topup-sequence [tx_hash] [log_index]",
 					Short:          "Query the sequence of a topup tx",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "txHash"}, {ProtoField: "logIndex"}},
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "tx_hash"}, {ProtoField: "log_index"}},
 				},
 				{
 					RpcMethod:      "IsTopupTxOld",
-					Use:            "is-old-tx [txHash] [logIndex]",
+					Use:            "is-old-tx [tx_hash] [log_index]",
 					Short:          "Check if a tx is old (already submitted)",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "txHash"}, {ProtoField: "logIndex"}},
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "tx_hash"}, {ProtoField: "log_index"}},
 				},
 				{
 					RpcMethod:      "GetDividendAccountByAddress",
@@ -46,32 +46,33 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "VerifyAccountProof",
-					Use:       "verify-account-proof [address] [accountProof]",
+					Use:       "verify-account-proof [address] [proof]",
 					Short:     "Verify account proof",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "address"}, {ProtoField: "accountProof"}},
+						{ProtoField: "address"}, {ProtoField: "proof"}},
 				},
 			},
 		},
-		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: topupv1.Msg_ServiceDesc.ServiceName,
-			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
-				{
-					RpcMethod: "HandleTopupTx",
-					Use:       "handle-topup-tx [proposer] [user] [fee] [txHash] [logIndex] [blockNumber]",
-					Short:     "Handle a topup tx",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "proposer"}, {ProtoField: "user"}, {ProtoField: "fee"},
-						{ProtoField: "txHash"}, {ProtoField: "logIndex"}, {ProtoField: "blockNumber"}},
-				},
-				{
-					RpcMethod: "WithdrawFeeTx",
-					Use:       "withdraw-fee [proposer] [fee]",
-					Short:     "Withdraw fee",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "proposer"}, {ProtoField: "fee"}},
-				},
-			},
-		},
+		// TODO HV2: Fix this
+		//Tx: &autocliv1.ServiceCommandDescriptor{
+		//	Service: topupv1.Msg_ServiceDesc.ServiceName,
+		//	RpcCommandOptions: []*autocliv1.RpcCommandOptions{
+		//		{
+		//			RpcMethod: "HandleTopupTx",
+		//			Use:       "handle-topup-tx [proposer] [user] [fee] [tx_hash] [log_index] [block_number]",
+		//			Short:     "Handle a topup tx",
+		//			PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+		//				{ProtoField: "proposer"}, {ProtoField: "user"}, {ProtoField: "fee"},
+		//				{ProtoField: "tx_hash"}, {ProtoField: "log_index"}, {ProtoField: "block_number"}},
+		//		},
+		//		{
+		//			RpcMethod: "WithdrawFeeTx",
+		//			Use:       "withdraw-fee [proposer] [fee]",
+		//			Short:     "Withdraw fee",
+		//			PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+		//				{ProtoField: "proposer"}, {ProtoField: "fee"}},
+		//		},
+		//	},
+		//},
 	}
 }
