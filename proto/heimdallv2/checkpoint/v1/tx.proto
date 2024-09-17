@@ -47,7 +47,7 @@ message MsgCheckpoint {
   heimdallv2.types.HeimdallHash account_root_hash = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
-  string bor_chain_i_d = 6 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 
 // MsgCheckpointResponse defines the Msg/Checkpoint response type.

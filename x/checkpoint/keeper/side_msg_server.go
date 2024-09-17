@@ -248,7 +248,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		EndBlock:   msg.EndBlock,
 		RootHash:   msg.RootHash,
 		Proposer:   msg.Proposer,
-		BorChainID: msg.BorChainID,
+		BorChainId: msg.BorChainId,
 		Timestamp:  timeStamp,
 	}); err != nil {
 		logger.Error("failed to set checkpoint buffer", "Error", err)

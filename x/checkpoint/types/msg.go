@@ -33,7 +33,7 @@ func NewMsgCheckpointBlock(
 		EndBlock:        endBlock,
 		RootHash:        rootHash,
 		AccountRootHash: accountRootHash,
-		BorChainID:      borChainID,
+		BorChainId:      borChainID,
 	}
 }
 
@@ -67,7 +67,7 @@ func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
 // GetSideSignBytes returns side sign bytes
 func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 	// keccak256(abi.encoded(proposer, startBlock, endBlock, rootHash, accountRootHash, bor chain id))
-	borChainID, _ := strconv.ParseUint(msg.BorChainID, 10, 64)
+	borChainID, _ := strconv.ParseUint(msg.BorChainId, 10, 64)
 
 	return types.AppendBytes32(
 		[]byte(msg.Proposer),

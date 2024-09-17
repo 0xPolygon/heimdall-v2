@@ -50,8 +50,8 @@ func CreateMilestone(
 		EndBlock:    end,
 		Hash:        hash,
 		Proposer:    proposer,
-		BorChainID:  borChainID,
-		MilestoneID: milestoneID,
+		BorChainId:  borChainID,
+		MilestoneId: milestoneID,
 		Timestamp:   timestamp,
 	}
 }

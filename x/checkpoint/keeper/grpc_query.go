@@ -85,7 +85,7 @@ func (q queryServer) GetLastNoAck(ctx context.Context, _ *types.QueryLastNoAckRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &types.QueryLastNoAckResponse{LastNoAckID: noAck}, err
+	return &types.QueryLastNoAckResponse{LastNoAckId: noAck}, err
 }
 
 // GetNextCheckpoint returns the next expected checkpoint
@@ -152,7 +152,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		EndBlock:        endBlockNumber,
 		RootHash:        hmTypes.HeimdallHash{Hash: rootHash},
 		AccountRootHash: hmTypes.HeimdallHash{Hash: accRootHash},
-		BorChainID:      req.BorChainID,
+		BorChainId:      req.BorChainId,
 	}
 
 	return &types.QueryNextCheckpointResponse{Checkpoint: checkpointMsg}, nil

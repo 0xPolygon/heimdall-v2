@@ -74,7 +74,7 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	event := &statesender.StatesenderStateSynced{
-		Id:              new(big.Int).SetUint64(msg.ID),
+		Id:              new(big.Int).SetUint64(msg.Id),
 		ContractAddress: common.HexToAddress(msg.ContractAddress),
 		Data:            msg.Data.HexBytes,
 	}
@@ -123,7 +123,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		// mock external calls
 		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
-			Id:              new(big.Int).SetUint64(msg.ID),
+			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.HexToAddress(msg.ContractAddress),
 			Data:            msg.Data.HexBytes,
 		}
@@ -228,7 +228,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		// mock external calls
 		contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 		event := &statesender.StatesenderStateSynced{
-			Id:              new(big.Int).SetUint64(msg.ID),
+			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
 			Data:            b,
 		}
@@ -339,7 +339,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
 		require.NotNil(t, storedEventRecord)
 		require.NoError(t, err)
-		require.Equal(t, id, storedEventRecord.ID)
+		require.Equal(t, id, storedEventRecord.Id)
 		require.Equal(t, logIndex, storedEventRecord.LogIndex)
 	})
 

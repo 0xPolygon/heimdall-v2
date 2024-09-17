@@ -1,13 +1,12 @@
 syntax = "proto3";
 package heimdallv2.milestone.v1;
 
-import "gogoproto/gogo.proto";
-
-import "cosmos_proto/cosmos.proto";
-import "cosmos/msg/v1/msg.proto";
 import "amino/amino.proto";
-import "heimdallv2/types/hash.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
 import "heimdallv2/milestone/v1/milestone.proto";
+import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
@@ -50,9 +49,9 @@ message MsgMilestone {
   heimdallv2.types.HeimdallHash hash = 4
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 
-  string bor_chain_i_d = 5 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 5 [ (amino.dont_omitempty) = true ];
 
-  string milestone_i_d = 6 [ (amino.dont_omitempty) = true ];
+  string milestone_id = 6 [ (amino.dont_omitempty) = true ];
 }
 
 // MsgMilestoneResponse defines the Msg/Milestone response type.
@@ -88,8 +87,8 @@ message MsgUpdateParams {
   // NOTE: All parameters must be supplied.
   Params params = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-};
+}
 
 // MsgUpdateParamsResponse defines the response structure for executing a
 // MsgUpdateParams message.
-message MsgUpdateParamsResponse {};
+message MsgUpdateParamsResponse {}

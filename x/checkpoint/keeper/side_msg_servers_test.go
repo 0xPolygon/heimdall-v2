@@ -251,7 +251,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 		require.Equal(bufferedHeader.EndBlock, header.EndBlock)
 		require.Equal(bufferedHeader.RootHash, header.RootHash)
 		require.Equal(bufferedHeader.Proposer, header.Proposer)
-		require.Equal(bufferedHeader.BorChainID, header.BorChainID)
+		require.Equal(bufferedHeader.BorChainId, header.BorChainId)
 		require.NoError(err, "Unable to set checkpoint from buffer, Error: %v", err)
 	})
 }

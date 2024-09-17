@@ -84,7 +84,7 @@ func (srv *sideMsgServer) SideHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg) 
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
 			"hash", msg.Hash,
-			"milestoneId", msg.MilestoneID,
+			"milestoneId", msg.MilestoneId,
 			"error", err,
 		)
 
@@ -101,13 +101,13 @@ func (srv *sideMsgServer) SideHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg) 
 
 	}
 
-	isValid, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneID, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
+	isValid, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneId, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
 	if err != nil || !isValid {
 		logger.Error("error validating milestone",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
 			"hash", msg.Hash,
-			"milestoneId", msg.MilestoneID,
+			"milestoneId", msg.MilestoneId,
 			"error", err,
 		)
 		return sidetxs.Vote_VOTE_NO
@@ -127,7 +127,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 	}
 
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		err := srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		err := srv.SetNoAckMilestone(ctx, msg.MilestoneId)
 		if err != nil {
 			logger.Error("error while setting no-ack", "err", err)
 			return
@@ -161,7 +161,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 			"startBlock", msg.StartBlock,
 		)
 
-		err = srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		err = srv.SetNoAckMilestone(ctx, msg.MilestoneId)
 		if err != nil {
 			logger.Error("error while setting no-ack", "err", err)
 			return
@@ -173,7 +173,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 	if !doExist && msg.StartBlock != types.StartBlock {
 		logger.Error("first milestone to start from", "block", types.StartBlock, "Error", err)
 
-		err = srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		err = srv.SetNoAckMilestone(ctx, msg.MilestoneId)
 		if err != nil {
 			logger.Error("error while setting no-ack", "err", err)
 			return
@@ -188,12 +188,12 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 		EndBlock:    msg.EndBlock,
 		Hash:        msg.Hash,
 		Proposer:    msg.Proposer,
-		BorChainID:  msg.BorChainID,
-		MilestoneID: msg.MilestoneID,
+		BorChainId:  msg.BorChainId,
+		MilestoneId: msg.MilestoneId,
 		Timestamp:   timeStamp,
 	})
 	if err != nil {
-		err = srv.SetNoAckMilestone(ctx, msg.MilestoneID)
+		err = srv.SetNoAckMilestone(ctx, msg.MilestoneId)
 		if err != nil {
 			logger.Error("error while setting no-ack", "err", err)
 		}
@@ -214,7 +214,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyHash, msg.Hash.String()),
-			sdk.NewAttribute(types.AttributeKeyMilestoneID, msg.MilestoneID),
+			sdk.NewAttribute(types.AttributeKeyMilestoneID, msg.MilestoneId),
 		),
 	})
 }
