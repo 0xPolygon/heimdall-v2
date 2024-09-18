@@ -26,7 +26,7 @@ func (s QueryServer) Record(ctx context.Context, request *types.RecordRequest) (
 
 	}
 
-	record, err := s.K.GetEventRecord(ctx, request.RecordID)
+	record, err := s.K.GetEventRecord(ctx, request.RecordId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 

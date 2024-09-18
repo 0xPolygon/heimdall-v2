@@ -17,12 +17,12 @@ func NewEventRecord(
 	recordTime time.Time,
 ) EventRecord {
 	return EventRecord{
-		ID:         id,
+		Id:         id,
 		Contract:   contract,
 		Data:       data,
 		TxHash:     txHash,
 		LogIndex:   logIndex,
-		BorChainID: chainID,
+		BorChainId: chainID,
 		RecordTime: recordTime,
 	}
 }

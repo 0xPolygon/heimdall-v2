@@ -65,21 +65,21 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 
 // SetEventRecordWithTime sets event record id with time
 func (k *Keeper) SetEventRecordWithTime(ctx context.Context, record types.EventRecord) error {
-	isPresent, _ := k.RecordsWithTime.Has(ctx, collections.Join(record.RecordTime, record.ID))
+	isPresent, _ := k.RecordsWithTime.Has(ctx, collections.Join(record.RecordTime, record.Id))
 	if isPresent {
-		return fmt.Errorf("record with time %s and id %d already exists", record.RecordTime, record.ID)
+		return fmt.Errorf("record with time %s and id %d already exists", record.RecordTime, record.Id)
 	}
 
-	return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.ID), record.ID)
+	return k.RecordsWithTime.Set(ctx, collections.Join(record.RecordTime, record.Id), record.Id)
 }
 
 // SetEventRecordWithID adds record to store with ID
 func (k *Keeper) SetEventRecordWithID(ctx context.Context, record types.EventRecord) error {
-	if k.HasEventRecord(ctx, record.ID) {
-		return fmt.Errorf("record with id %d already exists", record.ID)
+	if k.HasEventRecord(ctx, record.Id) {
+		return fmt.Errorf("record with id %d already exists", record.Id)
 	}
 
-	return k.RecordsWithID.Set(ctx, record.ID, record)
+	return k.RecordsWithID.Set(ctx, record.Id, record)
 }
 
 // SetEventRecord adds record to store

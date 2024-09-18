@@ -1,10 +1,10 @@
 syntax = "proto3";
 package heimdallv2.checkpoint.v1;
 
+import "amino/amino.proto";
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/query/v1/query.proto";
-import "amino/amino.proto";
 import "heimdallv2/checkpoint/v1/checkpoint.proto";
 import "heimdallv2/checkpoint/v1/tx.proto";
 import "heimdallv2/stake/v1/validator.proto";
@@ -97,7 +97,7 @@ message QueryLastNoAckRequest {}
 // QueryLastNoAckResponse is response type for the last no ack count RPC
 // method
 message QueryLastNoAckResponse {
-  uint64 last_no_ack_i_d = 1 [ (amino.dont_omitempty) = true ];
+  uint64 last_no_ack_id = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryCheckpointBufferRequest is request type for the buffered checkpoint RPC
@@ -137,7 +137,7 @@ message QueryCheckpointLatestResponse {
 
 // QueryNextCheckpointRequest is request type for the next checkpoint
 // RPC method
-message QueryNextCheckpointRequest { string bor_chain_i_d = 1; }
+message QueryNextCheckpointRequest { string bor_chain_id = 1; }
 
 // QueryNextCheckpointResponse is response type for the
 // Query/Checkpoints/prepare-next RPC method

@@ -35,6 +35,6 @@ message MsgEventRecordRequest {
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
   heimdallv2.types.HexBytes data = 6 [ (gogoproto.nullable) = false ];
-  uint64 i_d = 7;
-  string chain_i_d = 8;
+  uint64 id = 7;
+  string chain_id = 8;
 }

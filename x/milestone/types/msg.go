@@ -26,8 +26,8 @@ func NewMsgMilestoneBlock(
 		StartBlock:  startBlock,
 		EndBlock:    endBlock,
 		Hash:        hash,
-		BorChainID:  borChainID,
-		MilestoneID: milestoneID,
+		BorChainId:  borChainID,
+		MilestoneId: milestoneID,
 	}
 }
 
