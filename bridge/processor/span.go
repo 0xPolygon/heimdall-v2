@@ -123,10 +123,17 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 		}
 
 		// return broadcast to heimdall
-		if err := sp.txBroadcaster.BroadcastToHeimdall(msg, nil); err != nil {
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+		if err != nil {
 			sp.Logger.Error("Error while broadcasting span to heimdall", "spanId", nextSpanMsg.ID, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock, "error", err)
 			return
 		}
+
+		if txRes.Code != uint32(abci.CodeTypeOK) {
+			sp.Logger.Error("span tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return
+		}
+
 	}
 }
 */
@@ -159,7 +166,7 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 
 // getCurrentChildBlock gets the current child block
 func (sp *SpanProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := sp.contractCaller.GetMaticChainBlock(nil)
+	childBlock, err := sp.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		return 0, err
 	}

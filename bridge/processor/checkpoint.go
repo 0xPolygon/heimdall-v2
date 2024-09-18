@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -305,10 +307,17 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		)
 
 		// return broadcast to heimdall
-		if err = cp.txBroadcaster.BroadcastToHeimdall(&msg, event); err != nil {
+		txRes, err := cp.txBroadcaster.BroadcastToHeimdall(&msg, event)
+		if err != nil {
 			cp.Logger.Error("Error while broadcasting checkpoint-ack to heimdall", "error", err)
 			return err
 		}
+
+		if txRes.Code != uint32(abci.CodeTypeOK) {
+			cp.Logger.Error("checkpoint-ack tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("checkpoint-ack tx failed, tx response code: %d", txRes.Code)
+		}
+
 	}
 
 	return nil
@@ -484,9 +493,15 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	)
 
 	// return broadcast to heimdall
-	if err := cp.txBroadcaster.BroadcastToHeimdall(&msg, nil); err != nil {
+	txRes, err := cp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+	if err != nil {
 		cp.Logger.Error("Error while broadcasting checkpoint to heimdall", "error", err)
 		return err
+	}
+
+	if txRes.Code != uint32(abci.CodeTypeOK) {
+		cp.Logger.Error("Checkpoint tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		return fmt.Errorf("checkpoint tx failed, tx response code: %d", txRes.Code)
 	}
 
 	return nil
@@ -683,9 +698,15 @@ func (cp *CheckpointProcessor) proposeCheckpointNoAck() (err error) {
 	)
 
 	// return broadcast to heimdall
-	if err := cp.txBroadcaster.BroadcastToHeimdall(&msg, nil); err != nil {
+	txRes, err := cp.txBroadcaster.BroadcastToHeimdall(&msg, nil)
+	if err != nil {
 		cp.Logger.Error("Error while broadcasting checkpoint-no-ack to heimdall", "msg", msg, "error", err)
 		return err
+	}
+
+	if txRes.Code != uint32(abci.CodeTypeOK) {
+		cp.Logger.Error("Checkpoint No-Ack tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		return fmt.Errorf("checkpoint-no-ack tx failed, tx response code: %d", txRes.Code)
 	}
 
 	cp.Logger.Info("No-ack transaction sent successfully")

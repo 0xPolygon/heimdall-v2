@@ -2,18 +2,22 @@ package broadcaster
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/spf13/viper"
 )
 
 // TxBroadcaster is used to broadcast transaction to each chain
@@ -53,56 +57,80 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 }
 
 // BroadcastToHeimdall broadcast to heimdall
-func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) error {
+func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, testOpts ...*helper.TestOpts) (sdk.TxResponse, error) {
 	tb.heimdallMutex.Lock()
 	defer tb.heimdallMutex.Unlock()
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "BroadcastToHeimdall", time.Now())
 
-	// TODO HV2 - get help from informal team on
-	// 1. NewTxBuilderFromCLI (unavailable in cosmos-sdk)
-	// 2. BuildAndBroadcastMsgs (removed/unavailable in helper)
+	// TODO HV2 - is this needed?
 	/*
 		// tx encoder
 		txEncoder := authlegacytx.DefaultTxEncoder(tb.CliCtx.LegacyAmino)
 		// chain id
 		chainID := helper.GetGenesisDoc().ChainID
+	*/
 
+	txCfg := tb.CliCtx.TxConfig
+
+	txBldr := txCfg.NewTxBuilder()
+	err := txBldr.SetMsgs(msg)
+	if err != nil {
+		return sdk.TxResponse{}, err
+	}
+
+	signMode, err := authsign.APISignModeToInternal(txCfg.SignModeHandler().DefaultMode())
+	if err != nil {
+		return sdk.TxResponse{}, err
+	}
+
+	err = txBldr.SetSignatures(helper.GetSignature(signMode, tb.lastSeqNo))
+	if err != nil {
+		return sdk.TxResponse{}, err
+	}
+	txBldr.SetMemo(viper.GetString("memo"))
+	// TODO HV2 - what should be the gas limit and fee amount?
+	/*
+		txBldr.SetFeeAmount(feeAmt)
+		txBldr.SetGasLimit(gas)
+	*/
+
+	/*
 		// get TxBuilder
 		txBldr := authTypes.NewTxBuilderFromCLI().
 			WithTxEncoder(txEncoder).
 			WithAccountNumber(tb.accNum).
 			WithSequence(tb.lastSeqNo).
 			WithChainID(chainID)
-
-		txResponse, err := helper.BuildAndBroadcastMsgs(tb.CliCtx, txBldr, []sdk.Msg{msg})
-		if err != nil {
-			tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err)
-
-			// current address
-			address := helper.GetAddress()
-
-			// fetch from APIs
-			account, errAcc := util.GetAccount(tb.CliCtx, string(address[:]))
-			if errAcc != nil {
-				tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
-				return errAcc
-			}
-
-			// update seqNo for safety
-			tb.lastSeqNo = account.GetSequence()
-
-			return err
-		}
-
-		txHash := txResponse.TxHash
-
-		tb.logger.Info("Tx sent on heimdall", "txHash", txHash, "accSeq", tb.lastSeqNo, "accNum", tb.accNum)
-		tb.logger.Debug("Tx successful on heimdall", "txResponse", txResponse)
-		// increment account sequence
-		tb.lastSeqNo += 1
 	*/
 
-	return nil
+	txResponse, err := helper.BuildAndBroadcastMsgs(tb.CliCtx, txBldr, []sdk.Msg{msg}, testOpts...)
+	if err != nil || txResponse.Code != uint32(abci.CodeTypeOK) {
+		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err, "txResponse", txResponse.Code)
+
+		// current address
+		address := helper.GetAddress()
+
+		// fetch from APIs
+		account, errAcc := util.GetAccount(tb.CliCtx, string(address[:]))
+		if errAcc != nil {
+			tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
+			return txResponse, errAcc
+		}
+
+		// update seqNo for safety
+		tb.lastSeqNo = account.GetSequence()
+
+		return txResponse, err
+	}
+
+	txHash := txResponse.TxHash
+
+	tb.logger.Info("Tx sent on heimdall", "txHash", txHash, "accSeq", tb.lastSeqNo, "accNum", tb.accNum)
+	tb.logger.Debug("Tx successful on heimdall", "txResponse", txResponse)
+	// increment account sequence
+	tb.lastSeqNo += 1
+
+	return txResponse, nil
 }
 
 // BroadcastToMatic broadcast to matic
@@ -111,7 +139,7 @@ func (tb *TxBroadcaster) BroadcastToMatic(msg ethereum.CallMsg) error {
 	defer tb.maticMutex.Unlock()
 
 	// get matic client
-	maticClient := helper.GetMaticClient()
+	maticClient := helper.GetBorClient()
 
 	// get auth
 	auth, err := helper.GenerateAuthObj(maticClient, *msg.To, msg.Data)

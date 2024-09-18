@@ -1,12 +1,15 @@
 package processor
 
 import (
+	"fmt"
+
 	"cosmossdk.io/math"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	jsoniter "github.com/json-iterator/go"
@@ -77,10 +80,17 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 		msg := topupTypes.NewMsgTopupTx(helper.GetFromAddress(fp.cliCtx), event.User.String(), math.NewIntFromBigInt(event.Fee), hmTypes.TxHash{Hash: vLog.TxHash.Bytes()}, uint64(vLog.Index), vLog.BlockNumber)
 
 		// return broadcast to heimdall
-		if err = fp.txBroadcaster.BroadcastToHeimdall(msg, event); err != nil {
+		txRes, err := fp.txBroadcaster.BroadcastToHeimdall(msg, event)
+		if err != nil {
 			fp.Logger.Error("Error while broadcasting TopupFee msg to heimdall", "msg", msg, "error", err)
 			return err
 		}
+
+		if txRes.Code != uint32(abci.CodeTypeOK) {
+			fp.Logger.Error("topup tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("topup tx failed, tx response code: %v", txRes.Code)
+		}
+
 	}
 
 	return nil

@@ -54,7 +54,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		)
 
 		// send checkpoint to handler
-		res, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
+		res, err := msgServer.Checkpoint(ctx, msgCheckpoint)
 		require.NotNil(res)
 		require.NoError(err)
 
@@ -79,7 +79,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		)
 
 		// send checkpoint to handler
-		_, err := msgServer.Checkpoint(ctx, &msgCheckpoint)
+		_, err := msgServer.Checkpoint(ctx, msgCheckpoint)
 		require.Error(err)
 		require.ErrorContains(err, types.ErrInvalidMsg.Error())
 	})
@@ -114,7 +114,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		)
 
 		// send checkpoint to handler
-		_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+		_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 		require.Error(err)
 		require.ErrorContains(err, types.ErrDiscontinuousCheckpoint.Error())
 	})
@@ -165,7 +165,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	)
 
 	// send checkpoint to handler
-	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.NoError(err)
 
 	err = keeper.SetCheckpointBuffer(ctx, header)
@@ -180,7 +180,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 
 	// send new checkpoint which should replace old one
 	// send checkpoint to handler
-	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.NoError(err)
 }
 
@@ -226,14 +226,14 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	)
 
 	// send checkpoint to handler
-	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.NoError(err)
 
 	err = keeper.SetCheckpointBuffer(ctx, header)
 	require.NoError(err)
 
 	// send checkpoint to handler
-	_, err = msgServer.Checkpoint(ctx, &msgCheckpoint)
+	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.ErrorContains(err, types.ErrNoAck.Error())
 }
 

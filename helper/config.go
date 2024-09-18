@@ -956,3 +956,15 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 func SetTestConfig(_conf Configuration) {
 	conf = _conf
 }
+
+// TEST PURPOSE ONLY
+// SetTestPrivPubKey sets test priv and pub key for testing
+func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
+	privKeyObject = privKey
+	privKeyObject.PubKey()
+	pubKey, ok := privKeyObject.PubKey().(secp256k1.PubKey)
+	if !ok {
+		panic("pub key is not of type secp256k1.PrivKey")
+	}
+	pubKeyObject = pubKey
+}

@@ -26,8 +26,8 @@ func NewMsgCheckpointBlock(
 	rootHash hmTypes.HeimdallHash,
 	accountRootHash hmTypes.HeimdallHash,
 	borChainID string,
-) MsgCheckpoint {
-	return MsgCheckpoint{
+) *MsgCheckpoint {
+	return &MsgCheckpoint{
 		Proposer:        proposer,
 		StartBlock:      startBlock,
 		EndBlock:        endBlock,

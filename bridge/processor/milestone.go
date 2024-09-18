@@ -12,6 +12,7 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/google/uuid"
 )
 
@@ -135,7 +136,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	blocksConfirmation := helper.MaticChainMilestoneConfirmation
 
 	// Get latest matic block
-	block, err := mp.contractCaller.GetMaticChainBlock(nil)
+	block, err := mp.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		return err
 	}
@@ -149,7 +150,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	endNum := latestNum - blocksConfirmation
 
 	//fetch the endBlock+1 number instead of endBlock so that we can directly get the hash of endBlock using parent hash
-	block, err = mp.contractCaller.GetMaticChainBlock(big.NewInt(int64(endNum + 1)))
+	block, err = mp.contractCaller.GetBorChainBlock(big.NewInt(int64(endNum + 1)))
 	if err != nil {
 		return fmt.Errorf("error while fetching %d block %w", endNum+1, err)
 	}
@@ -185,9 +186,15 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	)
 
 	//broadcast to heimdall
-	if err := mp.txBroadcaster.BroadcastToHeimdall(&msg, nil); err != nil {
+	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+	if err != nil {
 		mp.Logger.Error("Error while broadcasting milestone to heimdall", "error", err)
 		return err
+	}
+
+	if txRes.Code != uint32(abci.CodeTypeOK) {
+		mp.Logger.Error("milestone tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		return fmt.Errorf("milestone tx failed, tx response code: %v", txRes.Code)
 	}
 
 	return nil
@@ -260,9 +267,15 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 	)
 
 	// return broadcast to heimdall
-	if err := mp.txBroadcaster.BroadcastToHeimdall(&msg, nil); err != nil {
+	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+	if err != nil {
 		mp.Logger.Error("Error while broadcasting milestone timeout to heimdall", "error", err)
 		return err
+	}
+
+	if txRes.Code != uint32(abci.CodeTypeOK) {
+		mp.Logger.Error("milestone timeout tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		return fmt.Errorf("milestone timeout tx failed, tx response code: %v", txRes.Code)
 	}
 
 	return nil
@@ -290,7 +303,7 @@ func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) 
 
 // getCurrentChildBlock gets the current child block
 func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := mp.contractCaller.GetMaticChainBlock(nil)
+	childBlock, err := mp.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		return 0, err
 	}

@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"fmt"
 	"time"
 
 	"cosmossdk.io/math"
@@ -11,6 +12,7 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	stakingTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -135,10 +137,17 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		}
 
 		// return broadcast to heimdall
-		if err := sp.txBroadcaster.BroadcastToHeimdall(msg, event); err != nil {
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
+		if err != nil {
 			sp.Logger.Error("Error while broadcasting unstakeInit to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
+
+		if txRes.Code != uint32(abci.CodeTypeOK) {
+			sp.Logger.Error("validator-join tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("validator-join tx failed, tx response code: %v", txRes.Code)
+		}
+
 	}
 
 	return nil
@@ -211,10 +220,17 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 		}
 
 		// return broadcast to heimdall
-		if err := sp.txBroadcaster.BroadcastToHeimdall(msg, event); err != nil {
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
+		if err != nil {
 			sp.Logger.Error("Error while broadcasting unstakeInit to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
+
+		if txRes.Code != uint32(abci.CodeTypeOK) {
+			sp.Logger.Error("unstakeInit tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("unstakeInit tx failed, tx response code: %v", txRes.Code)
+		}
+
 	}
 
 	return nil
@@ -282,10 +298,17 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 		}
 
 		// return broadcast to heimdall
-		if err := sp.txBroadcaster.BroadcastToHeimdall(msg, event); err != nil {
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
+		if err != nil {
 			sp.Logger.Error("Error while broadcasting stakeupdate to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
+
+		if txRes.Code != uint32(abci.CodeTypeOK) {
+			sp.Logger.Error("stakeupdate tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("stakeupdate tx failed, tx response code: %v", txRes.Code)
+		}
+
 	}
 
 	return nil
@@ -362,10 +385,17 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		}
 
 		// return broadcast to heimdall
-		if err := sp.txBroadcaster.BroadcastToHeimdall(msg, event); err != nil {
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
+		if err != nil {
 			sp.Logger.Error("Error while broadcasting signerChainge to heimdall", "msg", msg, "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
+
+		if txRes.Code != uint32(abci.CodeTypeOK) {
+			sp.Logger.Error("signerChange tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+			return fmt.Errorf("signerChange tx failed, tx response code: %v", txRes.Code)
+		}
+
 	}
 
 	return nil
