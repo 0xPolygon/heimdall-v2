@@ -22,9 +22,9 @@ const (
 	DefaultLimit = 30 // should be consistent with tendermint/tendermint/rpc/core/pipe.go:19
 )
 
-// NewResponseWithHeight creates a new ResponseWithHeight instance
-func NewResponseWithHeight(height int64, result json.RawMessage) ResponseWithHeight {
-	return ResponseWithHeight{
+// NewResponse creates a new Response instance
+func NewResponse(height int64, result json.RawMessage) Response {
+	return Response{
 		Result: result,
 	}
 }
@@ -218,7 +218,7 @@ func PostProcessResponse(w http.ResponseWriter, cliCtx client.Context, resp inte
 		}
 	}
 
-	wrappedResp := NewResponseWithHeight(cliCtx.Height, result)
+	wrappedResp := NewResponse(cliCtx.Height, result)
 
 	var (
 		output []byte
