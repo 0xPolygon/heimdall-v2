@@ -36,8 +36,8 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 		BlockNumber:     14475337,
 		ContractAddress: "0x401f6c983ea34274ec46f84d70b31c151321188b",
 		Data:            hmTypes.HexBytes{HexBytes: []byte{}},
-		ID:              1897091,
-		ChainID:         "15001",
+		Id:              1897091,
+		ChainId:         "15001",
 	}
 
 	// adding clerk messages and errors for testing
