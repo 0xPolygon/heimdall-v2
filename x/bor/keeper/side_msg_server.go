@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"strconv"
 
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -164,10 +165,10 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeProposeSpan,
-			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                       // action
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),     // module name
-			sdk.NewAttribute(types.AttributeKeyTxHash, common.BytesToHash(hash).Hex()), // tx hash
-			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),    // result
+			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                               // action
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),             // module name
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.BytesToHash(hash).Hex()), // tx hash
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),    // result
 			sdk.NewAttribute(types.AttributeKeySpanID, strconv.FormatUint(msg.SpanId, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanEndBlock, strconv.FormatUint(msg.EndBlock, 10)),

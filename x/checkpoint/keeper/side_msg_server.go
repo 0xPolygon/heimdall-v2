@@ -273,8 +273,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyRootHash, string(msg.RootHash)),
-			sdk.NewAttribute(types.AttributeKeyAccountHash, string(msg.AccountRootHash)),
+			sdk.NewAttribute(types.AttributeKeyRootHash, common.Bytes2Hex(msg.RootHash)),
+			sdk.NewAttribute(types.AttributeKeyAccountHash, common.Bytes2Hex(msg.AccountRootHash)),
 		),
 	})
 }

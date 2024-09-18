@@ -214,7 +214,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyHash, string(msg.Hash)),
+			sdk.NewAttribute(types.AttributeKeyHash, common.Bytes2Hex(msg.Hash)),
 			sdk.NewAttribute(types.AttributeKeyMilestoneID, msg.MilestoneId),
 		),
 	})

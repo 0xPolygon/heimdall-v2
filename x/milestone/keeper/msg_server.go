@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"github.com/ethereum/go-ethereum/common"
 	"math"
 	"strconv"
 	"time"
@@ -128,7 +129,7 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyHash, string(msg.Hash)),
+			sdk.NewAttribute(types.AttributeKeyHash, common.Bytes2Hex(msg.Hash)),
 		),
 	})
 

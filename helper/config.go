@@ -920,8 +920,7 @@ func DecorateWithCometBFTFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	}
 }
 
-// TODO HV2 Please update the switch case with Amoy also
-// UpdateCometBFTConfig updates tenedermint config with flags and default values if needed
+// UpdateCometBFTConfig updates cometBFT config with flags and default values if needed
 func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 	// update cometBFTConfig.P2P.Seeds
 	seedsFlagValue := v.GetString(SeedsFlag)
@@ -934,6 +933,8 @@ func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 		case MainChain:
 			cometBFTConfig.P2P.Seeds = DefaultMainnetSeeds
 		case MumbaiChain:
+			cometBFTConfig.P2P.Seeds = DefaultTestnetSeeds
+		case AmoyChain:
 			cometBFTConfig.P2P.Seeds = DefaultTestnetSeeds
 		}
 	}

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"math/big"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -200,8 +201,8 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			types.EventTypeTopup,
 			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),
-			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyRecipient, msg.User),
 			sdk.NewAttribute(types.AttributeKeyTopupAmount, msg.Fee.String()),

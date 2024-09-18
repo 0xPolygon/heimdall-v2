@@ -47,7 +47,6 @@ func TestHeimdallAppExport(t *testing.T) {
 	require.NoError(t, err)
 }
 
-//nolint:tparallel
 func TestRunMigrations(t *testing.T) {
 	t.Skip("TODO HV2: fix and enable this test if required")
 	t.Parallel()

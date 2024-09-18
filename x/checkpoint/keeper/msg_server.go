@@ -29,8 +29,6 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// TODO HV2: split `Checkpoint` function in 4 different utilities methods (getCheckpoint, IsValidCheckpoint, validateAccountHash, validateProposer).
-
 // Checkpoint function handles the checkpoint msg
 func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
 	logger := srv.Logger(ctx)
@@ -146,8 +144,8 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyRootHash, string(msg.RootHash)),
-			sdk.NewAttribute(types.AttributeKeyAccountHash, string(msg.AccountRootHash)),
+			sdk.NewAttribute(types.AttributeKeyRootHash, common.Bytes2Hex(msg.RootHash)),
+			sdk.NewAttribute(types.AttributeKeyAccountHash, common.Bytes2Hex(msg.AccountRootHash)),
 		),
 	})
 
@@ -179,8 +177,8 @@ func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpoint
 			"startReceived", msg.StartBlock,
 			"endExpected", headerBlock.EndBlock,
 			"endReceived", msg.StartBlock,
-			"rootExpected", string(headerBlock.RootHash),
-			"rootReceived", string(msg.RootHash),
+			"rootExpected", common.Bytes2Hex(headerBlock.RootHash),
+			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
 		return nil, types.ErrBadAck
 	}

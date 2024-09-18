@@ -26,7 +26,11 @@ func GetAccountRootHash(dividendAccounts []DividendAccount) ([]byte, error) {
 // GetAccountTree returns rootHash of Validator Account State Tree
 func GetAccountTree(dividendAccounts []DividendAccount) (*merkletree.MerkleTree, error) {
 	// Sort the dividendAccounts by ID
-	dividendAccounts = SortDividendAccountByAddress(dividendAccounts)
+	dividendAccounts, err := SortDividendAccountByAddress(dividendAccounts)
+	if err != nil {
+		return nil, err
+	}
+
 	list := make([]merkletree.Content, len(dividendAccounts))
 
 	for i := 0; i < len(dividendAccounts); i++ {
@@ -60,7 +64,10 @@ func VerifyAccountProof(dividendAccounts []DividendAccount, userAddr, proofToVer
 // GetAccountProof returns proof of dividend Account
 func GetAccountProof(dividendAccounts []DividendAccount, userAddr string) ([]byte, uint64, error) {
 	// Sort the dividendAccounts by user address
-	dividendAccounts = SortDividendAccountByAddress(dividendAccounts)
+	dividendAccounts, err := SortDividendAccountByAddress(dividendAccounts)
+	if err != nil {
+		return nil, 0, err
+	}
 
 	var (
 		list    = make([]merkletree.Content, len(dividendAccounts))
@@ -91,18 +98,24 @@ func GetAccountProof(dividendAccounts []DividendAccount, userAddr string) ([]byt
 	return proof, index, err
 }
 
-// SortDividendAccountByAddress - Sorts DividendAccounts  By  Address
-func SortDividendAccountByAddress(dividendAccounts []DividendAccount) []DividendAccount {
+// SortDividendAccountByAddress sorts DividendAccounts by address
+func SortDividendAccountByAddress(dividendAccounts []DividendAccount) ([]DividendAccount, error) {
+	var sortErr error
+
 	sort.Slice(dividendAccounts, func(i, j int) bool {
-		// TODO HV2 Try to catch the err in the following or we can just assume that
-		//  these dividendAccounts[i].User is of correct form.
-		divAccBytesI, _ := addCodec.NewHexCodec().StringToBytes(dividendAccounts[i].User)
-		divAccBytesJ, _ := addCodec.NewHexCodec().StringToBytes(dividendAccounts[j].User)
+		divAccBytesI, err := addCodec.NewHexCodec().StringToBytes(dividendAccounts[i].User)
+		if err != nil {
+			sortErr = err
+		}
+		divAccBytesJ, err := addCodec.NewHexCodec().StringToBytes(dividendAccounts[j].User)
+		if err != nil {
+			sortErr = err
+		}
 
 		return bytes.Compare(divAccBytesI, divAccBytesJ) < 0
 	})
 
-	return dividendAccounts
+	return dividendAccounts, sortErr
 }
 
 func AppendBytes32(data ...[]byte) []byte {
@@ -131,10 +144,11 @@ func convertTo32(input []byte) (output [32]byte, err error) {
 
 // CalculateHash hashes the values of a DividendAccount
 func (da DividendAccount) CalculateHash() ([]byte, error) {
-	// TODO HV2 Please try to catch the error or We can assume these
-	//  following values are correct in format
 	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
-	addressBytes, _ := addCodec.NewHexCodec().StringToBytes(da.User)
+	addressBytes, err := addCodec.NewHexCodec().StringToBytes(da.User)
+	if err != nil {
+		return nil, err
+	}
 
 	divAccountHash := crypto.Keccak256(AppendBytes32(
 		addressBytes,
