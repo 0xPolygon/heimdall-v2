@@ -35,6 +35,7 @@ var (
 	_ module.HasABCIGenesis      = AppModule{}
 	_ module.HasABCIEndBlock     = AppModule{}
 	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the stake module.

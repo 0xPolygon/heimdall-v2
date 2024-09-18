@@ -25,8 +25,12 @@ const ConsensusVersion = 1
 var (
 	// TODO HV2: implement simulation for milestone
 	//_ module.AppModuleSimulation = AppModule{}
-	_ module.HasServices  = AppModule{}
-	_ appmodule.AppModule = AppModule{}
+	_ module.HasGenesis     = AppModule{}
+	_ module.HasServices    = AppModule{}
+	_ module.AppModuleBasic = AppModule{}
+
+	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModule implements an application module for the milestone module.

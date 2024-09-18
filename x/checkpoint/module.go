@@ -22,11 +22,12 @@ import (
 const ConsensusVersion = 1
 
 var (
-	// TODO HV2 implement checkpoint simulation
-	//_ module.AppModuleSimulation = AppModule{}
-	_ module.HasServices = AppModule{}
+	_ module.HasGenesis     = AppModule{}
+	_ module.HasServices    = AppModule{}
+	_ module.AppModuleBasic = AppModule{}
 
-	_ appmodule.AppModule = AppModule{}
+	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModule implements an application module for the checkpoint module.
@@ -65,7 +66,7 @@ func (AppModule) DefaultGenesis(cdc codec.JSONCodec) json.RawMessage {
 }
 
 // ValidateGenesis performs genesis state validation for the checkpoint module.
-func (AppModule) ValidateGenesis(cdc codec.JSONCodec, bz json.RawMessage) error {
+func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig, bz json.RawMessage) error {
 	var data types.GenesisState
 	if err := cdc.UnmarshalJSON(bz, &data); err != nil {
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)

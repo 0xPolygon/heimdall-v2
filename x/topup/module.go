@@ -32,6 +32,7 @@ var (
 	_ module.HasServices         = AppModule{}
 	_ module.AppModuleBasic      = AppModule{}
 	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModule implements an application module for the topup module.

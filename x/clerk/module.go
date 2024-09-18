@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 
 	"cosmossdk.io/core/appmodule"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -24,7 +25,9 @@ var (
 	_ module.HasGenesis     = AppModule{}
 	_ module.HasServices    = AppModule{}
 	_ module.AppModuleBasic = AppModule{}
-	_ appmodule.AppModule   = AppModule{}
+
+	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModule implements an application module for the clerk module.
@@ -79,6 +82,11 @@ func (am AppModule) IsAppModule() {}
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg, keeper.NewMsgServerImpl(am.keeper))
 	types.RegisterQueryServer(cfg, keeper.NewQueryServer(am.keeper))
+}
+
+// RegisterSideMsgServices registers side handler module services.
+func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
+	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
 // NewAppModule creates a new AppModule object
