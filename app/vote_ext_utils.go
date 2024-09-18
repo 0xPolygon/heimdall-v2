@@ -2,10 +2,12 @@ package app
 
 import (
 	"bytes"
-	"cosmossdk.io/log"
-	"cosmossdk.io/math"
 	"errors"
 	"fmt"
+	"sort"
+
+	"cosmossdk.io/log"
+	"cosmossdk.io/math"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
@@ -14,7 +16,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
-	"sort"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
@@ -196,34 +197,33 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 			return nil, err
 		}
 
+		if validatorToTxMap[addr] != nil {
+			return nil, fmt.Errorf("duplicate vote received from %s", addr)
+		}
+		validatorToTxMap[addr] = make(map[string]struct{})
+
 		// iterate through vote extensions and accumulate voting power for YES/NO/UNSPECIFIED votes
 		for _, res := range ve.SideTxResponses {
 			txHashStr := common.Bytes2Hex(res.TxHash)
 
-			// TODO HV2: (once slashing is enabled) do we slash in case a validator maliciously adds conflicting votes ?
+			// TODO HV2: (once slashing is enabled) we should slash in case a validator maliciously adds conflicting votes
 			//  Given that we also check for duplicate votes during VerifyVoteExtensionHandler, is this redundant ?
-			if _, hasVoted := validatorToTxMap[addr][txHashStr]; !hasVoted {
-
-				if voteByTxHash[txHashStr] == nil {
-					voteByTxHash[txHashStr] = make(map[sidetxs.Vote]int64)
-				}
-
-				if !isVoteValid(res.Result) {
-					return nil, fmt.Errorf("invalid vote received for side tx %s", txHashStr)
-				}
-
-				voteByTxHash[txHashStr][res.Result] += vote.Validator.Power
-
-				// validator's vote received; mark it to avoid duplicated votes
-				if validatorToTxMap[addr] == nil {
-					validatorToTxMap[addr] = make(map[string]struct{})
-				}
-				validatorToTxMap[addr][txHashStr] = struct{}{}
-			} else {
+			if _, hasVoted := validatorToTxMap[addr][txHashStr]; hasVoted {
 				logger.Error("multiple votes received for side tx",
 					"txHash", txHashStr, "validatorAddress", addr)
+				continue
+			}
+			if !isVoteValid(res.Result) {
+				return nil, fmt.Errorf("invalid vote received for side tx %s", txHashStr)
 			}
 
+			if voteByTxHash[txHashStr] == nil {
+				voteByTxHash[txHashStr] = make(map[sidetxs.Vote]int64)
+			}
+			voteByTxHash[txHashStr][res.Result] += vote.Validator.Power
+
+			// validator's vote received; mark it to avoid duplicated votes
+			validatorToTxMap[addr][txHashStr] = struct{}{}
 		}
 
 	}
