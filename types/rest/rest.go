@@ -25,7 +25,6 @@ const (
 // NewResponseWithHeight creates a new ResponseWithHeight instance
 func NewResponseWithHeight(height int64, result json.RawMessage) ResponseWithHeight {
 	return ResponseWithHeight{
-		Height: height,
 		Result: result,
 	}
 }
@@ -79,7 +78,7 @@ func (br BaseReq) ValidateBasic(w http.ResponseWriter) bool {
 	if !br.Simulate {
 		switch {
 		case len(br.ChainID) == 0:
-			WriteErrorResponse(w, http.StatusUnauthorized, "chain-id required but not specified")
+			WriteErrorResponse(w, http.StatusBadRequest, "chain-id required but not specified")
 			return false
 
 		case !br.Fees.IsZero() && !br.GasPrices.IsZero():
@@ -88,8 +87,8 @@ func (br BaseReq) ValidateBasic(w http.ResponseWriter) bool {
 			return false
 
 		case !br.Fees.IsValid() && !br.GasPrices.IsValid():
-			// neither fees or gas prices were provided
-			WriteErrorResponse(w, http.StatusPaymentRequired, "invalid fees or gas prices provided")
+			// neither fees nor gas prices were provided
+			WriteErrorResponse(w, http.StatusBadRequest, "invalid fees or gas prices provided")
 			return false
 		}
 	}
@@ -155,7 +154,10 @@ func WriteSimulationResponse(w http.ResponseWriter, cdc codec.Codec, gas uint64)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(resp)
+	_, err = w.Write(resp)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+	}
 }
 
 // errorResponse defines the attributes of a JSON error response.
@@ -174,7 +176,10 @@ func newErrorResponse(code int, err string) errorResponse {
 func writeErrorResponse(w http.ResponseWriter, status int, err string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	_, _ = w.Write(legacy.Cdc.MustMarshalJSON(newErrorResponse(0, err)))
+	_, err1 := w.Write(legacy.Cdc.MustMarshalJSON(newErrorResponse(0, err)))
+	if err1 != nil {
+		panic(err1)
+	}
 }
 
 // ReturnNotFoundIfNoContent returns not found error if no content
@@ -189,7 +194,7 @@ func ReturnNotFoundIfNoContent(w http.ResponseWriter, data []byte, message strin
 
 // Not needed (autocli)
 /*
-// PostProcessResponse performs post processing for a REST response. The result
+// PostProcessResponse performs post-processing for a REST response. The result
 // returned to clients will contain two fields, the height at which the resource
 // was queried at and the original result.
 func PostProcessResponse(w http.ResponseWriter, cliCtx client.Context, resp interface{}) {
@@ -228,7 +233,10 @@ func PostProcessResponse(w http.ResponseWriter, cliCtx client.Context, resp inte
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(output)
+	_, err = w.Write(output)
+	if err != nil {
+		WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
+	}
 }
 */
 

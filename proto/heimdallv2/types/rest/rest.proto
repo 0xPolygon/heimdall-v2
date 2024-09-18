@@ -3,9 +3,6 @@ package heimdallv2.types.rest;
 
 option go_package = "github.com/0xPolygon/heimdall-v2/types/rest";
 
-message ResponseWithHeight {
-  int64 height = 1;
-  bytes result = 2;
-}
+message ResponseWithHeight { bytes result = 1; }
 
 message GasEstimateResponse { uint64 gas_estimate = 1; }
