@@ -25,7 +25,7 @@ var (
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.
-func NewSideMsgServerImpl(keeper Keeper) types.SideMsgServer {
+func NewSideMsgServerImpl(keeper Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 

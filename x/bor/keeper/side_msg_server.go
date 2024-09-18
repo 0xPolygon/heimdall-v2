@@ -3,8 +3,9 @@ package keeper
 import (
 	"bytes"
 	"context"
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"strconv"
+
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -22,10 +23,10 @@ type sideMsgServer struct {
 	k *Keeper
 }
 
-var _ types.SideMsgServer = sideMsgServer{}
+var _ sidetxs.SideMsgServer = sideMsgServer{}
 
 // NewSideMsgServerImpl returns an implementation of the x/bor SideMsgServer interface for the provided Keeper.
-func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{
 		k: keeper,
 	}

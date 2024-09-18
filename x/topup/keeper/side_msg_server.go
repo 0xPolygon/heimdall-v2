@@ -2,8 +2,9 @@ package keeper
 
 import (
 	"bytes"
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"math/big"
+
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
@@ -23,7 +24,7 @@ type sideMsgServer struct {
 }
 
 // NewSideMsgServerImpl returns an implementation of the x/topup SideMsgServer interface for the provided Keeper.
-func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{k: keeper}
 }
 

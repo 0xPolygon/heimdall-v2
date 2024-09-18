@@ -1,8 +1,9 @@
 package keeper
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"strconv"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -21,7 +22,7 @@ var (
 
 // NewSideMsgServerImpl returns an implementation of the milestone MsgServer interface
 // for the provided Keeper.
-func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{Keeper: keeper}
 }
 
