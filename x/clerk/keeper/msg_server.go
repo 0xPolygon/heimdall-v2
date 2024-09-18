@@ -30,7 +30,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	logger.Debug("✅ Validating clerk msg",
 		"id", msg.Id,
 		"contract", msg.ContractAddress,
-		"data", msg.Data.String(),
+		"data", string(msg.Data),
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,

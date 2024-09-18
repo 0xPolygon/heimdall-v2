@@ -5,7 +5,6 @@ import "amino/amino.proto";
 import "cosmos/msg/v1/msg.proto";
 import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
-import "heimdallv2/types/hash.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
@@ -34,7 +33,7 @@ message MsgEventRecordRequest {
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  heimdallv2.types.HexBytes data = 6 [ (gogoproto.nullable) = false ];
+  bytes data = 6;
   uint64 id = 7;
   string chain_id = 8;
 }

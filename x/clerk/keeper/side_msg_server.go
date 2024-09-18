@@ -108,12 +108,12 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if !bytes.Equal(eventLog.Data, msg.Data.GetHexBytes()) {
-		if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data.HexBytes, []byte(""))) {
+	if !bytes.Equal(eventLog.Data, msg.Data) {
+		if !(len(eventLog.Data) > helper.MaxStateSyncSize && bytes.Equal(msg.Data, []byte(""))) {
 			srv.Logger(ctx).Error(
 				"Data from event does not match with Msg Data",
 				"EventData", hex.EncodeToString(eventLog.Data),
-				"MsgData", msg.Data.String(),
+				"MsgData", string(msg.Data),
 			)
 
 			return sidetxs.Vote_VOTE_NO

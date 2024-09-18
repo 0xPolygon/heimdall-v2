@@ -43,9 +43,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
+		make([]byte, 0),
 		chainID,
 	)
 
@@ -84,11 +82,9 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 
 	t.Run("EventSizeExceed", func(t *testing.T) {
 		const letterBytes = "abcdefABCDEF"
-		b := hmTypes.HexBytes{
-			HexBytes: make([]byte, helper.MaxStateSyncSize+3),
-		}
-		for i := range b.HexBytes {
-			b.HexBytes[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b := make([]byte, helper.MaxStateSyncSize+3)
+		for i := range b {
+			b[i] = letterBytes[rand.Intn(len(letterBytes))]
 		}
 
 		msg.Data = b
@@ -119,9 +115,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 		r.Uint64(),
 		r.Uint64(),
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
+		make([]byte, 0),
 		chainID,
 	)
 
@@ -161,9 +155,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 		r.Uint64(),
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
+		make([]byte, 0),
 		"random chain id",
 	)
 

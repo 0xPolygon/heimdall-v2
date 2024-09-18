@@ -2,8 +2,6 @@ package types
 
 import (
 	"time"
-
-	"github.com/0xPolygon/heimdall-v2/types"
 )
 
 // NewEventRecord creates new record
@@ -12,7 +10,7 @@ func NewEventRecord(
 	logIndex uint64,
 	id uint64,
 	contract string,
-	data types.HexBytes,
+	data []byte,
 	chainID string,
 	recordTime time.Time,
 ) EventRecord {

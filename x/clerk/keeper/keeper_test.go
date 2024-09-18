@@ -21,7 +21,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -89,7 +88,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
 
-	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", time.Now())
 	testRecord1.RecordTime = testRecord1.RecordTime.UTC()
 
 	// SetEventRecord
@@ -126,7 +125,7 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 	var testRecords []types.EventRecord
 
 	for i = 0; i < 60; i++ {
-		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1", time.Now())
 		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
@@ -168,7 +167,7 @@ func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
 	var i uint64
 
 	for i = 0; i < 30; i++ {
-		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Unix(int64(i), 0))
+		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1", time.Unix(int64(i), 0))
 		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
@@ -218,7 +217,7 @@ func (suite *KeeperTestSuite) TestInitExportGenesis() {
 		recordSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 
-	testEventRecord := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+	testEventRecord := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", time.Now())
 	testEventRecord.RecordTime = testEventRecord.RecordTime.UTC()
 	eventRecords[0] = testEventRecord
 

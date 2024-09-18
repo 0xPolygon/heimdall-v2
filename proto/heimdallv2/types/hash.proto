@@ -16,8 +16,3 @@ message TxHash {
   option (gogoproto.equal) = true;
   bytes hash = 1;
 }
-
-message HexBytes {
-  option (gogoproto.equal) = true;
-  bytes hex_bytes = 1;
-}

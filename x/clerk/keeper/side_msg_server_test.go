@@ -62,9 +62,7 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
+		make([]byte, 0),
 		chainID,
 	)
 
@@ -76,7 +74,7 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	event := &statesender.StatesenderStateSynced{
 		Id:              new(big.Int).SetUint64(msg.Id),
 		ContractAddress: common.HexToAddress(msg.ContractAddress),
-		Data:            msg.Data.HexBytes,
+		Data:            msg.Data,
 	}
 	contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
@@ -114,9 +112,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
+			make([]byte, 0),
 			suite.chainID,
 		)
 
@@ -125,7 +121,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.HexToAddress(msg.ContractAddress),
-			Data:            msg.Data.HexBytes,
+			Data:            msg.Data,
 		}
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
@@ -151,9 +147,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
+			make([]byte, 0),
 			suite.chainID,
 		)
 
@@ -181,9 +175,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
+			make([]byte, 0),
 			suite.chainID,
 		)
 
@@ -219,9 +211,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: []byte(""),
-			},
+			[]byte(""),
 			suite.chainID,
 		)
 
@@ -271,9 +261,7 @@ func (suite *KeeperTestSuite) TestPostHandler() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
+		make([]byte, 0),
 		chainID,
 	)
 
@@ -306,9 +294,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
+		make([]byte, 0),
 		suite.chainID,
 	)
 
@@ -355,9 +341,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
+			make([]byte, 0),
 			suite.chainID,
 		)
 
