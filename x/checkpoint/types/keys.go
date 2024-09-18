@@ -3,8 +3,6 @@ package types
 import (
 	"cosmossdk.io/collections"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/0xPolygon/heimdall-v2/types"
 )
 
 const (
@@ -35,4 +33,4 @@ var (
 )
 
 // ZeroHeimdallHash represents empty pub key
-var ZeroHeimdallHash = types.HeimdallHash{Hash: common.Hash{}.Bytes()}
+var ZeroHeimdallHash = common.Hash{}.Bytes()

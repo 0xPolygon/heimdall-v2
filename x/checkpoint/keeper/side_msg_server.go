@@ -155,7 +155,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	if msg.StartBlock != start ||
 		msg.EndBlock != end ||
 		strings.ToLower(msg.Proposer) != strings.ToLower(proposer) ||
-		!bytes.Equal(msg.RootHash.Hash, root.Bytes()) {
+		!bytes.Equal(msg.RootHash, root.Bytes()) {
 		logger.Error("invalid message as it doesn't match with contract state",
 			"checkpointNumber", msg.Number,
 			"message start block", msg.StartBlock,
@@ -164,7 +164,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			"rootChain checkpoint end block", end,
 			"message proposer", msg.Proposer,
 			"rootChain checkpoint proposer", proposer,
-			"message root hash", msg.RootHash,
+			"message root hash", string(msg.RootHash),
 			"rootChain checkpoint root hash", root,
 			"error", err,
 		)
@@ -273,8 +273,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyRootHash, msg.RootHash.String()),
-			sdk.NewAttribute(types.AttributeKeyAccountHash, msg.AccountRootHash.String()),
+			sdk.NewAttribute(types.AttributeKeyRootHash, string(msg.RootHash)),
+			sdk.NewAttribute(types.AttributeKeyAccountHash, string(msg.AccountRootHash)),
 		),
 	})
 }
@@ -309,14 +309,14 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// return err if start and end matches but contract root hash doesn't match
-	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !msg.RootHash.Equal(checkpointObj.RootHash) {
+	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !bytes.Equal(msg.RootHash, checkpointObj.RootHash) {
 		logger.Error("invalid ACK",
 			"startExpected", checkpointObj.StartBlock,
 			"startReceived", msg.StartBlock,
 			"endExpected", checkpointObj.EndBlock,
 			"endReceived", msg.StartBlock,
-			"rootExpected", checkpointObj.RootHash.String(),
-			"rootReceived", msg.RootHash.String(),
+			"rootExpected", string(checkpointObj.RootHash),
+			"rootReceived", string(msg.RootHash),
 		)
 
 		return

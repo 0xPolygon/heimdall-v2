@@ -23,7 +23,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -45,7 +44,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
-	txHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	txHash := common.Hash{}.Bytes()
 	index := simulation.RandIntBetween(r1, 0, 100)
 	logIndex := uint64(index)
 	validatorId := uint64(1)
@@ -95,7 +94,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -133,7 +132,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(nil, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(nil, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -161,7 +160,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 
 		require.NoError(err)
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(nil, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -198,7 +197,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -235,7 +234,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -272,7 +271,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
@@ -311,7 +310,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -349,7 +348,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -387,7 +386,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -425,7 +424,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := s.sideHandler(ctx, msgValJoin)
@@ -470,7 +469,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	require.True(ok)
 
 	// gen msg
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 
 	s.Run("Success", func() {
 		s.contractCaller.Mock = mock.Mock{}
@@ -479,7 +478,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -502,7 +501,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		s.contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(nil, nil)
 
@@ -526,7 +525,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -547,7 +546,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -568,7 +567,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -589,7 +588,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -610,7 +609,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -634,7 +633,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	chainParams, err := s.cmKeeper.GetParams(ctx)
 	require.NoError(err)
 	logIndex := uint64(0)
@@ -652,7 +651,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -687,7 +686,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(nil, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(nil, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -724,7 +723,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		validators[0].EndEpoch = 10
 
@@ -753,7 +752,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
 			User:              validator0Address,
@@ -787,7 +786,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -822,7 +821,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -856,7 +855,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -901,7 +900,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	chainParams, err := s.cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
 	nonce := big.NewInt(1)
 
@@ -918,7 +917,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -944,7 +943,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(nil, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(nil, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -971,7 +970,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		s.contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(nil, nil)
 
 		result := s.sideHandler(ctx, msg)
@@ -991,7 +990,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -1018,7 +1017,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -1045,7 +1044,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -1071,7 +1070,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		s.contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -1090,7 +1089,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
-	txHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	txHash := common.Hash{}.Bytes()
 	index := simulation.RandIntBetween(r1, 0, 100)
 	logIndex := uint64(index)
 	validatorId := uint64(1)
@@ -1219,7 +1218,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	nonce := big.NewInt(5)
 
 	// gen msg
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 
 	newSigner0Pk, ok := newSigner[0].PubKey.GetCachedValue().(cryptotypes.PubKey)
 	require.True(ok)
@@ -1276,7 +1275,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 	s.bankKeeper.EXPECT().SendCoins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
 	nonce := big.NewInt(9)
 
@@ -1334,7 +1333,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
 	nonce := big.NewInt(1)
 	newAmount := new(big.Int).SetInt64(2000000000000000000)

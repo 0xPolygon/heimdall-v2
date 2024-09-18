@@ -85,8 +85,8 @@ func (s QueryServer) RecordSequence(ctx context.Context, request *types.RecordSe
 	}
 
 	// get main tx receipt
-	txHash := heimdallTypes.TxHash{Hash: common.FromHex(request.TxHash)}
-	receipt, err := s.K.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash.Hash), chainParams.GetMainChainTxConfirmations())
+	txHash := common.FromHex(request.TxHash)
+	receipt, err := s.K.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}

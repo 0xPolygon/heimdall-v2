@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
@@ -55,7 +56,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should succeed")
@@ -79,7 +80,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(false, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(false, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
@@ -103,7 +104,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
@@ -126,7 +127,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, milestone.Hash.String(), milestone.MilestoneId).Return(true, nil)
+		s.contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := s.sideHandler(ctx, &msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")

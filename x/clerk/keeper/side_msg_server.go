@@ -172,15 +172,15 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 
 	// tx bytes
 	txBytes := ctx.TxBytes()
-	hash := heimdallTypes.TxHash{Hash: txBytes}
+	hash := txBytes
 
 	// add events
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeRecord,
-			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                   // action
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory), // module name
-			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, hash.String()),      // tx hash
+			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                       // action
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),     // module name
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.Bytes2Hex(hash)), // tx hash
 			sdk.NewAttribute(types.AttributeKeyRecordTxLogIndex, strconv.FormatUint(msg.LogIndex, 10)),
 			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()), // result
 			sdk.NewAttribute(types.AttributeKeyRecordID, strconv.FormatUint(msg.Id, 10)),

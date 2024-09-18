@@ -79,7 +79,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	s.k.Logger(ctx).Debug("✅ validating external call for validator join msg",
-		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
+		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -96,7 +96,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		s.k.Logger(ctx).Error("can't get confirmed tx receipt", "err", err)
 		return sidetxs.Vote_VOTE_NO
@@ -216,7 +216,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 	}
 
 	s.k.Logger(ctx).Debug("✅ validating external call for stake update msg",
-		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
+		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -229,7 +229,7 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 
 	// get main tx receipt
 	contractCaller := s.k.contractCaller
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
 		return sidetxs.Vote_VOTE_NO
@@ -288,7 +288,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	}
 
 	s.k.Logger(ctx).Debug("✅ Validating External call for signer update msg",
-		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
+		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -302,7 +302,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 
 	// get main tx receipt
 	contractCaller := s.k.contractCaller
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
 		return sidetxs.Vote_VOTE_NO
@@ -365,7 +365,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	s.k.Logger(ctx).Debug("✅ validating external call for validator exit msg",
-		"txHash", common.Bytes2Hex(msg.TxHash.Hash),
+		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -382,7 +382,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
+	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
 		return sidetxs.Vote_VOTE_NO

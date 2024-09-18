@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"strconv"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -202,18 +203,18 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 
 	// TX bytes
 	txBytes := ctx.TxBytes()
-	hash := hmTypes.TxHash{Hash: txBytes}
+	hash := txBytes
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeMilestone,
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, hash.String()),
+			sdk.NewAttribute(hmTypes.AttributeKeyTxHash, common.Bytes2Hex(hash)),
 			sdk.NewAttribute(hmTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyHash, msg.Hash.String()),
+			sdk.NewAttribute(types.AttributeKeyHash, string(msg.Hash)),
 			sdk.NewAttribute(types.AttributeKeyMilestoneID, msg.MilestoneId),
 		),
 	})

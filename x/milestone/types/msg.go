@@ -5,8 +5,6 @@ import (
 
 	"cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 var _ sdk.Msg = &MsgMilestone{}
@@ -17,7 +15,7 @@ func NewMsgMilestoneBlock(
 	proposer string,
 	startBlock uint64,
 	endBlock uint64,
-	hash hmTypes.HeimdallHash,
+	hash []byte,
 	borChainID string,
 	milestoneID string,
 ) MsgMilestone {
@@ -32,8 +30,8 @@ func NewMsgMilestoneBlock(
 }
 
 func (msg MsgMilestone) ValidateBasic(ac address.Codec) error {
-	if bytes.Equal(msg.Hash.GetHash(), ZeroHeimdallHash.GetHash()) {
-		return ErrInvalidMsg.Wrapf("invalid roothash %v", msg.Hash.String())
+	if bytes.Equal(msg.Hash, ZeroHeimdallHash) {
+		return ErrInvalidMsg.Wrapf("invalid roothash %v", string(msg.Hash))
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.Proposer)

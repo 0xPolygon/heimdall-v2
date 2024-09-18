@@ -1,19 +1,17 @@
 package keeper_test
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
 )
 
 func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {
@@ -58,7 +56,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		)
 
 		s.contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
-		s.contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash.GetHash(), nil)
+		s.contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash, nil)
 
 		result := s.sideHandler(ctx, &msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_YES)
@@ -150,13 +148,13 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 		rootChainInstance := &rootchain.Rootchain{}
 
 		s.contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
-		s.contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(common.Hash(header.RootHash.GetHash()), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
+		s.contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(common.Hash(header.RootHash), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := s.sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should pass")
@@ -173,8 +171,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 		rootChainInstance := &rootchain.Rootchain{}
@@ -282,7 +280,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -315,7 +313,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 
 			uint64(1),
 		)
@@ -338,7 +336,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -373,7 +371,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header2.StartBlock,
 			header2.EndBlock,
 			header2.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -414,7 +412,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header5.StartBlock,
 			header5.EndBlock-1,
 			header5.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -460,7 +458,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header6.StartBlock,
 			header6.EndBlock+1,
 			header6.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 

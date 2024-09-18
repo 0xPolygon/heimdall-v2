@@ -41,7 +41,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 
-	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
+	accountRoot := accRootHash
 
 	s.Run("Success", func() {
 		msgCheckpoint := types.NewMsgCheckpointBlock(
@@ -153,7 +153,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
+	accountRoot := accRootHash
 
 	msgCheckpoint := types.NewMsgCheckpointBlock(
 		header.Proposer,
@@ -214,7 +214,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
+	accountRoot := accRootHash
 
 	msgCheckpoint := types.NewMsgCheckpointBlock(
 		header.Proposer,
@@ -268,7 +268,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -288,7 +288,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -307,7 +307,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(123),
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -322,8 +322,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 

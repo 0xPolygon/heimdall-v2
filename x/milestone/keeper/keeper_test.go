@@ -17,7 +17,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -89,7 +88,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"
@@ -130,7 +129,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"

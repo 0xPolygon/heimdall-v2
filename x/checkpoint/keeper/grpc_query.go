@@ -150,8 +150,8 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		Proposer:        proposer.Signer,
 		StartBlock:      start,
 		EndBlock:        endBlockNumber,
-		RootHash:        hmTypes.HeimdallHash{Hash: rootHash},
-		AccountRootHash: hmTypes.HeimdallHash{Hash: accRootHash},
+		RootHash:        rootHash,
+		AccountRootHash: accRootHash,
 		BorChainId:      req.BorChainId,
 	}
 

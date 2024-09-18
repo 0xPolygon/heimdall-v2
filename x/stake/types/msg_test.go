@@ -12,7 +12,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -37,7 +36,7 @@ func TestMsgDecode(t *testing.T) {
 		uint64(1),
 		math.NewInt(int64(1000000000000000000)),
 		pk1,
-		hmTypes.TxHash{},
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),
@@ -61,7 +60,7 @@ func TestMsgDecode(t *testing.T) {
 		pk1.Address().String(),
 		uint64(1),
 		pk1,
-		hmTypes.TxHash{},
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),
@@ -83,7 +82,7 @@ func TestMsgDecode(t *testing.T) {
 		pk1.Address().String(),
 		uint64(1),
 		math.NewInt(int64(100000)),
-		hmTypes.TxHash{},
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),
@@ -105,7 +104,7 @@ func TestMsgDecode(t *testing.T) {
 		pk1.Address().String(),
 		uint64(1),
 		uint64(1),
-		hmTypes.TxHash{},
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),

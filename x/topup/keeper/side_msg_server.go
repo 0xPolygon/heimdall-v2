@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -58,7 +57,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	logger.Debug("validating external call for topup msg",
-		"txHash", msg.TxHash.GetHash(),
+		"txHash", string(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -77,7 +76,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
+	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
 		return sidetxs.Vote_VOTE_NO
 	}
@@ -195,14 +194,13 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	txBytes := ctx.TxBytes()
-	hash := hTypes.TxHash{Hash: txBytes}.Hash
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeTopup,
 			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
+			sdk.NewAttribute(types.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),
 			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyRecipient, msg.User),

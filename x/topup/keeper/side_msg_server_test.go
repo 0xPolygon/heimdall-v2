@@ -18,7 +18,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -52,7 +51,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
-		hash := hTypes.TxHash{Hash: []byte(TxHash)}
+		hash := []byte(TxHash)
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
@@ -93,7 +92,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 	t.Run("no receipt", func(t *testing.T) {
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
-		hash := hTypes.TxHash{Hash: []byte(TxHash)}
+		hash := []byte(TxHash)
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
@@ -121,7 +120,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
-		hash := hTypes.TxHash{Hash: []byte(TxHash)}
+		hash := []byte(TxHash)
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
@@ -149,7 +148,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
 		}
-		hash := hTypes.TxHash{Hash: []byte(TxHash)}
+		hash := []byte(TxHash)
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
@@ -182,7 +181,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
-		hash := hTypes.TxHash{Hash: []byte(TxHash)}
+		hash := []byte(TxHash)
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
@@ -215,7 +214,7 @@ func (suite *KeeperTestSuite) TestSideHandleTopupTx() {
 		txReceipt := &ethTypes.Receipt{
 			BlockNumber: new(big.Int).SetUint64(blockNumber),
 		}
-		hash := hTypes.TxHash{Hash: []byte(TxHash)}
+		hash := []byte(TxHash)
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
@@ -261,7 +260,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 
 	logIndex := rand.Uint64()
 	blockNumber := rand.Uint64()
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+	hash := []byte(TxHash)
 
 	t.Run("no result", func(t *testing.T) {
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
@@ -323,7 +322,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		blockNumber := rand.Uint64()
 
 		txHash := common.HexToHash("0x000000000000000000000000000000000000000000000000000000000001dead")
-		hash := hTypes.TxHash{Hash: txHash.Bytes()}
+		hash := txHash.Bytes()
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
@@ -359,7 +358,7 @@ func (suite *KeeperTestSuite) TestPostHandleTopupTx() {
 		logIndex := rand.Uint64()
 		blockNumber := rand.Uint64()
 		txHash := "0x000000000000000000000000000000000000000000000000000000000002dead"
-		hash := hTypes.TxHash{Hash: []byte(txHash)}
+		hash := []byte(txHash)
 
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)

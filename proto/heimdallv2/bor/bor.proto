@@ -3,7 +3,7 @@ package heimdallv2.bor;
 
 import "gogoproto/gogo.proto";
 // import "cosmos_proto/cosmos.proto";
-import "heimdallv2/stake/v1/validator.proto";
+import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 
@@ -12,9 +12,9 @@ message Span {
   uint64 id = 1;
   uint64 start_block = 2;
   uint64 end_block = 3;
-  heimdallv2.stake.v1.ValidatorSet validator_set = 4
+  heimdallv2.stake.ValidatorSet validator_set = 4
       [ (gogoproto.nullable) = false ];
-  repeated heimdallv2.stake.v1.Validator selected_producers = 5
+  repeated heimdallv2.stake.Validator selected_producers = 5
       [ (gogoproto.nullable) = false ];
   string chain_id = 6;
 }

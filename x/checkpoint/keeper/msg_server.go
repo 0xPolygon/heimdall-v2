@@ -107,7 +107,7 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	logger.Debug("Validator account root hash generated", "accountRootHash", common.Bytes2Hex(accountRoot))
 
 	// Compare stored root hash to msg root hash
-	if !bytes.Equal(accountRoot, msg.AccountRootHash.GetHash()) {
+	if !bytes.Equal(accountRoot, msg.AccountRootHash) {
 		logger.Error(
 			"AccountRootHash of current state doesn't match from msg",
 			"hash", common.Bytes2Hex(accountRoot),
@@ -146,8 +146,8 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyRootHash, msg.RootHash.String()),
-			sdk.NewAttribute(types.AttributeKeyAccountHash, msg.AccountRootHash.String()),
+			sdk.NewAttribute(types.AttributeKeyRootHash, string(msg.RootHash)),
+			sdk.NewAttribute(types.AttributeKeyAccountHash, string(msg.AccountRootHash)),
 		),
 	})
 
@@ -173,14 +173,14 @@ func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpoint
 	// return err if start and end match but contract root hash doesn't match
 	if msg.StartBlock == headerBlock.StartBlock &&
 		msg.EndBlock == headerBlock.EndBlock &&
-		!msg.RootHash.Equal(headerBlock.RootHash) {
+		!bytes.Equal(msg.RootHash, headerBlock.RootHash) {
 		logger.Error("Invalid ACK",
 			"startExpected", headerBlock.StartBlock,
 			"startReceived", msg.StartBlock,
 			"endExpected", headerBlock.EndBlock,
 			"endReceived", msg.StartBlock,
-			"rootExpected", headerBlock.RootHash.String(),
-			"rootReceived", msg.RootHash.String(),
+			"rootExpected", string(headerBlock.RootHash),
+			"rootReceived", string(msg.RootHash),
 		)
 		return nil, types.ErrBadAck
 	}

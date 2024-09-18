@@ -13,7 +13,6 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/golang/mock/gomock"
 
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -26,7 +25,7 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
 
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+	hash := []byte(TxHash)
 	logIndex := r1.Uint64()
 	blockNumber := r1.Uint64()
 

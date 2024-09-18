@@ -17,7 +17,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -101,7 +100,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	headerBlockNumber := uint64(2000)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	rootHash := testutil.RandomBytes()
 	proposerAddress := common.Address{}.String()
 	timestamp := uint64(time.Now().Unix())
 

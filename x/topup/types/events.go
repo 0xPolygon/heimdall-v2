@@ -12,7 +12,7 @@ const (
 	AttributeKeyTopupAmount       = "topup-amount"
 	AttributeKeyFeeWithdrawAmount = "fee-withdraw-amount"
 
-	// TODO HV2: move the following to heimdall-v2/types as they are not specific to topup
+	// TODO HV2: move the following to heimdallv2/types as they are not specific to topup
 
 	AttributeKeyTxHash       = "txhash"
 	AttributeKeySideTxResult = "side-tx-result"

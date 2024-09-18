@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"strconv"
 
@@ -9,7 +10,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/types"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 var (
@@ -23,8 +23,8 @@ func NewMsgCheckpointBlock(
 	proposer string,
 	startBlock uint64,
 	endBlock uint64,
-	rootHash hmTypes.HeimdallHash,
-	accountRootHash hmTypes.HeimdallHash,
+	rootHash []byte,
+	accountRootHash []byte,
 	borChainID string,
 ) MsgCheckpoint {
 	return MsgCheckpoint{
@@ -38,12 +38,12 @@ func NewMsgCheckpointBlock(
 }
 
 func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
-	if bytes.Equal(msg.RootHash.GetHash(), ZeroHeimdallHash.GetHash()) {
-		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
+	if bytes.Equal(msg.RootHash, ZeroHeimdallHash) {
+		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
 	}
 
-	if len(msg.RootHash.Hash) != types.HashLength {
-		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash.Hash))
+	if len(msg.RootHash) != common.HashLength {
+		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash))
 	}
 
 	addrBytes, err := ac.StringToBytes(msg.Proposer)
@@ -73,8 +73,8 @@ func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 		[]byte(msg.Proposer),
 		new(big.Int).SetUint64(msg.StartBlock).Bytes(),
 		new(big.Int).SetUint64(msg.EndBlock).Bytes(),
-		msg.RootHash.GetHash(),
-		msg.AccountRootHash.GetHash(),
+		msg.RootHash,
+		msg.AccountRootHash,
 		new(big.Int).SetUint64(borChainID).Bytes(),
 	)
 }
@@ -87,8 +87,8 @@ func NewMsgCheckpointAck(
 	proposer string,
 	startBlock uint64,
 	endBlock uint64,
-	rootHash types.HeimdallHash,
-	txHash types.HeimdallHash,
+	rootHash []byte,
+	txHash []byte,
 	logIndex uint64,
 ) MsgCheckpointAck {
 	return MsgCheckpointAck{
@@ -125,8 +125,8 @@ func (msg MsgCheckpointAck) ValidateBasic(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
-	if bytes.Equal(msg.RootHash.GetHash(), ZeroHeimdallHash.GetHash()) {
-		return ErrInvalidMsg.Wrapf("Invalid roothash %v", msg.RootHash.String())
+	if bytes.Equal(msg.RootHash, ZeroHeimdallHash) {
+		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
 	}
 
 	return nil
