@@ -5,14 +5,14 @@ import (
 	_ "cosmossdk.io/api/cosmos/crypto/secp256k1" // register so that it shows up in protoregistry.GlobalTypes
 	_ "cosmossdk.io/api/cosmos/crypto/secp256r1" // register so that it shows up in protoregistry.GlobalTypes
 
-	topupv1 "github.com/0xPolygon/heimdall-v2/api/heimdallv2/topup"
+	"github.com/0xPolygon/heimdall-v2/api/heimdallv2/topup"
 )
 
 // AutoCLIOptions returns the auto cli options for the module (query and tx)
 func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 	return &autocliv1.ModuleOptions{
 		Query: &autocliv1.ServiceCommandDescriptor{
-			Service: topupv1.Query_ServiceDesc.ServiceName,
+			Service: topup.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod:      "GetTopupTxSequence",
@@ -53,26 +53,26 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 			},
 		},
-		// TODO HV2: Fix this
-		//Tx: &autocliv1.ServiceCommandDescriptor{
-		//	Service: topupv1.Msg_ServiceDesc.ServiceName,
-		//	RpcCommandOptions: []*autocliv1.RpcCommandOptions{
-		//		{
-		//			RpcMethod: "HandleTopupTx",
-		//			Use:       "handle-topup-tx [proposer] [user] [fee] [tx_hash] [log_index] [block_number]",
-		//			Short:     "Handle a topup tx",
-		//			PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-		//				{ProtoField: "proposer"}, {ProtoField: "user"}, {ProtoField: "fee"},
-		//				{ProtoField: "tx_hash"}, {ProtoField: "log_index"}, {ProtoField: "block_number"}},
-		//		},
-		//		{
-		//			RpcMethod: "WithdrawFeeTx",
-		//			Use:       "withdraw-fee [proposer] [fee]",
-		//			Short:     "Withdraw fee",
-		//			PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-		//				{ProtoField: "proposer"}, {ProtoField: "fee"}},
-		//		},
-		//	},
-		//},
+		Tx: &autocliv1.ServiceCommandDescriptor{
+			Service:              topup.Msg_ServiceDesc.ServiceName,
+			EnhanceCustomCommand: false,
+			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
+				{
+					RpcMethod: "HandleTopupTx",
+					Use:       "handle-topup-tx [proposer] [user] [fee] [tx_hash] [log_index] [block_number]",
+					Short:     "Handle a topup tx",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "proposer"}, {ProtoField: "user"}, {ProtoField: "fee"},
+						{ProtoField: "tx_hash"}, {ProtoField: "log_index"}, {ProtoField: "block_number"}},
+				},
+				{
+					RpcMethod: "WithdrawFeeTx",
+					Use:       "withdraw-fee [proposer] [amount]",
+					Short:     "Withdraw fee",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "proposer"}, {ProtoField: "amount"}},
+				},
+			},
+		},
 	}
 }
