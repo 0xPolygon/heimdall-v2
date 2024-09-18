@@ -238,7 +238,7 @@ func areSideTxResponsesValid(sideTxResponses []*sidetxs.SideTxResponse) (bool, [
 
 	for _, res := range sideTxResponses {
 		// check txHash is well-formed
-		if len(res.TxHash) == 0 || len(res.TxHash) != common.HashLength {
+		if len(res.TxHash) != common.HashLength {
 			_ = fmt.Errorf("invalid tx hash received")
 			return false, res.TxHash
 		}
