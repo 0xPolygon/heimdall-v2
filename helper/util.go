@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	"io"
 	"math/big"
 	"math/bits"
 	"net/http"
 	"net/url"
 	"path"
 
+	"github.com/0xPolygon/heimdall-v2/types/rest"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -17,8 +20,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	// TODO HV2 Uncomment the following import once the rest is implemented in rest
-	//"github.com/maticnetwork/heimdall/types/rest"
 )
 
 //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
@@ -218,10 +219,8 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return u.String()
 }
 
-// TODO HV2 Please uncomment the following fn once the rest is implemented in types.
-/*
 // FetchFromAPI fetches data from any URL
-func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHeight, err error) {
+func FetchFromAPI(cliCtx client.Context, URL string) (result rest.Response, err error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
 		return result, err
@@ -237,7 +236,7 @@ func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHe
 		}
 
 		// unmarshall data from buffer
-		var response rest.ResponseWithHeight
+		var response rest.Response
 		if err = cliCtx.Codec.UnmarshalJSON(body, &response); err != nil {
 			return result, err
 		}
@@ -249,7 +248,6 @@ func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHe
 
 	return result, fmt.Errorf("error while fetching data from url: %v, status: %v", URL, resp.StatusCode)
 }
-*/
 
 // IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
 // It must be 0x04 for uncompressed public keys

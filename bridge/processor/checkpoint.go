@@ -582,17 +582,11 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash hmTypes.HeimdallHash, err error) {
 	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
-		if err != nil {
-			cp.Logger.Error("Error Fetching accountroothash from HeimdallServer ", "error", err)
-			return accountroothash, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
+	if err != nil {
+		cp.Logger.Error("Error Fetching accountroothash from HeimdallServer ", "error", err)
+		return accountroothash, err
+	}
 
 	cp.Logger.Info("Divident account root fetched")
 
@@ -633,17 +627,11 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 }
 
 func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.LastNoAckURL))
-		if err != nil {
-			cp.Logger.Error("Error while sending request for last no-ack", "Error", err)
-			return 0
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.LastNoAckURL))
+	if err != nil {
+		cp.Logger.Error("Error while sending request for last no-ack", "Error", err)
+		return 0
+	}
 
 	var noAckObject Result
 	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &noAckObject); err != nil {

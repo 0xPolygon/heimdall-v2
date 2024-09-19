@@ -133,25 +133,17 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 		endpoint = helper.GetHeimdallServerEndpoint(util.SlashingTxStatusURL)
 	}
 
-	// TODO HV2 - uncomment when we uncomment the below `helper.FetchFromAPI` call
-	// url, err := util.CreateURLWithQuery(endpoint, queryParam)
-	_, err := util.CreateURLWithQuery(endpoint, queryParam)
+	url, err := util.CreateURLWithQuery(endpoint, queryParam)
 	if err != nil {
 		bp.Logger.Error("Error in creating url", "endpoint", endpoint, "error", err)
 		return false, err
 	}
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		res, err := helper.FetchFromAPI(bp.cliCtx, url)
-		if err != nil {
-			bp.Logger.Error("Error fetching tx status", "url", url, "error", err)
-			return false, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var res struct{ Result []byte }
+	res, err := helper.FetchFromAPI(bp.cliCtx, url)
+	if err != nil {
+		bp.Logger.Error("Error fetching tx status", "url", url, "error", err)
+		return false, err
+	}
 
 	var status bool
 	if err := jsoniter.ConfigFastest.Unmarshal(res.Result, &status); err != nil {

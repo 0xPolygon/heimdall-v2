@@ -402,7 +402,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 }
 
 func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64) (bool, uint64, error) {
-	currentNonce, currentHeight, err := util.GetValidatorNonce(sp.cliCtx, validatorId)
+	currentNonce, err := util.GetValidatorNonce(sp.cliCtx, validatorId)
 	if err != nil {
 		sp.Logger.Error("Failed to fetch validator nonce and height data from API", "validatorId", validatorId)
 		return false, 0, err
@@ -419,21 +419,21 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 		return false, diff, nil
 	}
 
-	stakingTxnCount, err := queryTxCount(sp.cliCtx, validatorId, currentHeight)
+	stakingTxnCount, err := queryTxCount(sp.cliCtx, validatorId)
 	if err != nil {
 		sp.Logger.Error("Failed to query stake txns by txquery for the given validator", "validatorId", validatorId)
 		return false, 0, err
 	}
 
 	if stakingTxnCount != 0 {
-		sp.Logger.Info("Recent staking txn count for the given validator is not zero", "validatorId", validatorId, "currentNonce", currentNonce, "txnNonce", txnNonce, "currentHeight", currentHeight)
+		sp.Logger.Info("Recent staking txn count for the given validator is not zero", "validatorId", validatorId, "currentNonce", currentNonce, "txnNonce", txnNonce)
 		return false, 1, nil
 	}
 
 	return true, 0, nil
 }
 
-func queryTxCount(cliCtx client.Context, validatorId uint64, currentHeight int64) (int, error) {
+func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	const (
 		defaultPage  = 1
 		defaultLimit = 30 // should be consistent with tendermint/tendermint/rpc/core/pipe.go:19
@@ -453,7 +453,7 @@ func queryTxCount(cliCtx client.Context, validatorId uint64, currentHeight int64
 			events := []string{
 				fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg),
 				fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId),
-				fmt.Sprintf("%s.%s>%d", "tx", "height", currentHeight-3),
+				// fmt.Sprintf("%s.%s>%d", "tx", "height", currentHeight-3),
 			}
 		*/
 

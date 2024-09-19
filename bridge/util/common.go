@@ -90,23 +90,16 @@ func IsProposer(cliCtx client.Context) (bool, error) {
 	logger := Logger()
 	var (
 		proposers []staketypes.Validator
-		// count     = uint64(1)
+		count     = uint64(1)
 	)
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		result, err := helper.FetchFromAPI(cliCtx,
-			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))),
-		)
-		if err != nil {
-			logger.Error("Error fetching proposers", "url", ProposersURL, "error", err)
-			return false, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var result struct{ Result []byte }
-	var err error
+	result, err := helper.FetchFromAPI(cliCtx,
+		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))),
+	)
+	if err != nil {
+		logger.Error("Error fetching proposers", "url", ProposersURL, "error", err)
+		return false, err
+	}
 
 	err = jsoniter.ConfigFastest.Unmarshal(result.Result, &proposers)
 	if err != nil {
@@ -127,23 +120,16 @@ func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
 
 	var (
 		proposers []staketypes.Validator
-		// count     = uint64(1)
+		count     = uint64(1)
 	)
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		result, err := helper.FetchFromAPI(cliCtx,
-			helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
-		)
-		if err != nil {
-			logger.Error("Error fetching milestone proposers", "url", MilestoneProposersURL, "error", err)
-			return false, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var result struct{ Result []byte }
-	var err error
+	result, err := helper.FetchFromAPI(cliCtx,
+		helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
+	)
+	if err != nil {
+		logger.Error("Error fetching milestone proposers", "url", MilestoneProposersURL, "error", err)
+		return false, err
+	}
 
 	err = jsoniter.ConfigFastest.Unmarshal(result.Result, &proposers)
 	if err != nil {
@@ -169,20 +155,14 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count+1, 10))),
-		)
-		if err != nil {
-			logger.Error("Unable to send request for next proposers", "url", ProposersURL, "error", err)
-			return false, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count+1, 10))),
+	)
+	if err != nil {
+		logger.Error("Unable to send request for next proposers", "url", ProposersURL, "error", err)
+		return false, err
+	}
 
 	// unmarshall data from buffer
 	var proposers []staketypes.Validator
@@ -208,20 +188,14 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
-		)
-		if err != nil {
-			logger.Error("Unable to send request for next proposers", "url", MilestoneProposersURL, "error", err)
-			return false, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
+	)
+	if err != nil {
+		logger.Error("Unable to send request for next proposers", "url", MilestoneProposersURL, "error", err)
+		return false, err
+	}
 
 	// unmarshall data from buffer
 	var proposers []staketypes.Validator
@@ -291,18 +265,11 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 
 	var proposer staketypes.Validator
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		result, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentProposerURL))
-		if err != nil {
-			logger.Error("Error fetching proposers", "error", err)
-			return false, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var result struct{ Result []byte }
-	var err error
+	result, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentProposerURL))
+	if err != nil {
+		logger.Error("Error fetching proposers", "error", err)
+		return false, err
+	}
 
 	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &proposer); err != nil {
 		logger.Error("error unmarshalling validator", "error", err)
@@ -326,20 +293,13 @@ func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
 
 	var validator staketypes.Validator
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		result, err := helper.FetchFromAPI(cliCtx,
-			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
-		)
-		if err != nil {
-			logger.Error("Error fetching proposers", "error", err)
-			return false
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var result struct{ Result []byte }
-	var err error
+	result, err := helper.FetchFromAPI(cliCtx,
+		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
+	)
+	if err != nil {
+		logger.Error("Error fetching proposers", "error", err)
+		return false
+	}
 
 	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &validator); err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
@@ -424,18 +384,11 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 
 	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		// call account rest api
-		response, err := helper.FetchFromAPI(cliCtx, url)
-		if err != nil {
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
-	var err error
+	// call account rest api
+	response, err := helper.FetchFromAPI(cliCtx, url)
+	if err != nil {
+		return nil, err
+	}
 
 	var account sdk.AccountI
 	if err = cliCtx.Codec.UnmarshalJSON(response.Result, account); err != nil {
@@ -450,21 +403,14 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(ChainManagerParamsURL),
-		)
-		if err != nil {
-			logger.Error("Error fetching chainmanager params", "err", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
-	var err error
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(ChainManagerParamsURL),
+	)
+	if err != nil {
+		logger.Error("Error fetching chainmanager params", "err", err)
+		return nil, err
+	}
 
 	var params chainmanagertypes.Params
 	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &params); err != nil {
@@ -479,20 +425,14 @@ func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, er
 func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(CheckpointParamsURL),
-		)
-		if err != nil {
-			logger.Error("Error fetching Checkpoint params", "err", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(CheckpointParamsURL),
+	)
+	if err != nil {
+		logger.Error("Error fetching Checkpoint params", "err", err)
+		return nil, err
+	}
 
 	var params checkpointTypes.Params
 	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &params); err != nil {
@@ -507,21 +447,15 @@ func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error)
 func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(MilestoneParamsURL),
-		)
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(MilestoneParamsURL),
+	)
 
-		if err != nil {
-			logger.Error("Error fetching Milestone params", "err", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	if err != nil {
+		logger.Error("Error fetching Milestone params", "err", err)
+		return nil, err
+	}
 
 	var params milestoneTypes.Params
 	if err := json.Unmarshal(response.Result, &params); err != nil {
@@ -536,20 +470,14 @@ func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(BufferedCheckpointURL),
-		)
-		if err != nil {
-			logger.Debug("Error fetching buffered checkpoint", "err", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(BufferedCheckpointURL),
+	)
+	if err != nil {
+		logger.Debug("Error fetching buffered checkpoint", "err", err)
+		return nil, err
+	}
 
 	var checkpoint checkpointTypes.Checkpoint
 	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &checkpoint); err != nil {
@@ -564,21 +492,14 @@ func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, 
 func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(LatestCheckpointURL),
-		)
-		if err != nil {
-			logger.Debug("Error fetching latest checkpoint", "err", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
-	var err error
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(LatestCheckpointURL),
+	)
+	if err != nil {
+		logger.Debug("Error fetching latest checkpoint", "err", err)
+		return nil, err
+	}
 
 	var checkpoint checkpointTypes.Checkpoint
 	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &checkpoint); err != nil {
@@ -593,21 +514,14 @@ func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, er
 func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(LatestMilestoneURL),
-		)
-		if err != nil {
-			logger.Debug("Error fetching latest milestone", "err", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
-	var err error
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(LatestMilestoneURL),
+	)
+	if err != nil {
+		logger.Debug("Error fetching latest milestone", "err", err)
+		return nil, err
+	}
 
 	var milestone milestoneTypes.Milestone
 	if err = json.Unmarshal(response.Result, &milestone); err != nil {
@@ -622,20 +536,14 @@ func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error
 func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(MilestoneCountURL),
-		)
-		if err != nil {
-			logger.Error("Error fetching Milestone count", "err", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(MilestoneCountURL),
+	)
+	if err != nil {
+		logger.Error("Error fetching Milestone count", "err", err)
+		return nil, err
+	}
 
 	var count milestoneTypes.MilestoneCount
 	if err := json.Unmarshal(response.Result, &count); err != nil {
@@ -658,55 +566,38 @@ func AppendPrefix(signerPubKey []byte) []byte {
 }
 
 // GetValidatorNonce fetches validator nonce and height
-func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, int64, error) {
+func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error) {
 	logger := Logger()
 
 	var validator staketypes.Validator
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		result, err := helper.FetchFromAPI(cliCtx,
-			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
-		)
-		if err != nil {
-			logger.Error("Error fetching validator data", "error", err)
-			return 0, 0, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var result struct {
-		Height int64
-		Result []byte
+	result, err := helper.FetchFromAPI(cliCtx,
+		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
+	)
+	if err != nil {
+		logger.Error("Error fetching validator data", "error", err)
+		return 0, err
 	}
-	var err error
 
 	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &validator); err != nil {
 		logger.Error("error unmarshalling validator data", "error", err)
-		return 0, 0, err
+		return 0, err
 	}
 
 	logger.Debug("Validator data received ", "validator", validator.String())
 
-	return validator.Nonce, result.Height, nil
+	return validator.Nonce, nil
 }
 
 // GetValidatorSet fetches the current validator set
 func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
-		if err != nil {
-			logger.Error("Unable to send request for current validatorset", "url", CurrentValidatorSetURL, "error", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
-	var err error
+	response, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
+	if err != nil {
+		logger.Error("Unable to send request for current validatorset", "url", CurrentValidatorSetURL, "error", err)
+		return nil, err
+	}
 
 	var validatorSet staketypes.ValidatorSet
 	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &validatorSet); err != nil {
@@ -717,47 +608,18 @@ func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 	return &validatorSet, nil
 }
 
-// GetBlockHeight return last successful checkpoint
-func GetBlockHeight(cliCtx client.Context) int64 {
-	// logger := Logger()
-
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(CountCheckpointURL),
-		)
-		if err != nil {
-			logger.Debug("Error fetching latest block height", "err", err)
-			return 0
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Height int64 }
-
-	return response.Height
-}
-
 // GetClerkEventRecord return last successful checkpoint
 func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(
-			cliCtx,
-			helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)),
-		)
-		if err != nil {
-			logger.Error("Error fetching event record by state ID", "error", err)
-			return nil, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
-	var err error
+	response, err := helper.FetchFromAPI(
+		cliCtx,
+		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)),
+	)
+	if err != nil {
+		logger.Error("Error fetching event record by state ID", "error", err)
+		return nil, err
+	}
 
 	var eventRecord clerktypes.EventRecord
 	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &eventRecord); err != nil {
