@@ -64,7 +64,7 @@ func TestGetPowerFromAmount(t *testing.T) {
 	for k, v := range scenarios1 {
 		bv, _ := big.NewInt(0).SetString(k, 10)
 		p, err := GetPowerFromAmount(bv)
-		require.Nil(t, err, "Error must be null for input %v, output %v", k, v)
+		require.Nil(t, err, "Error must be null", "input:", k, "output", v)
 		require.Equal(t, p.String(), v, "Power must match")
 	}
 }

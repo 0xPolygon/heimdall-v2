@@ -93,6 +93,11 @@ func TestValidateVoteExtensions(t *testing.T) {
 }
 
 func TestTallyVotes(t *testing.T) {
+	// TODO add more tests:
+	//  1. add some SKIP votes to test that too
+	//  2. tx approved with just enough voting power (maybe using big numbers, to test the int-aliasing we do in the function). An example: totalVP: 9999, vote_YES 6667, vote_NO 3333
+	//  3. tx rejected with almost enough voting power. Example: totalVP: 9999, vote_YES 6666, vote_NO 10
+	//  4. sum of the votes exceeds the total voting power. Example: totalVP: 100, vote_YES 90, vote_NO 11
 	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
 	require.NoError(t, err)
 	val2, err := address.NewHexCodec().StringToBytes(ValAddr2)
@@ -266,7 +271,7 @@ func TestValidateSideTxResponses(t *testing.T) {
 	tests := []struct {
 		name            string
 		sideTxResponses []*sidetxs.SideTxResponse
-		expectedValid   bool
+		expectedError   bool
 		expectedTxHash  []byte
 	}{
 		{
@@ -276,7 +281,7 @@ func TestValidateSideTxResponses(t *testing.T) {
 				{TxHash: common.Hex2Bytes(TxHash2)},
 				{TxHash: common.Hex2Bytes(TxHash3)},
 			},
-			expectedValid:  true,
+			expectedError:  false,
 			expectedTxHash: nil,
 		},
 		{
@@ -287,15 +292,17 @@ func TestValidateSideTxResponses(t *testing.T) {
 				{TxHash: common.Hex2Bytes(TxHash3)},
 				{TxHash: common.Hex2Bytes(TxHash3)},
 			},
-			expectedValid:  false,
+			expectedError:  true,
 			expectedTxHash: common.Hex2Bytes(TxHash3),
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			responsesValid, txHash := areSideTxResponsesValid(tc.sideTxResponses)
-			require.Equal(t, tc.expectedValid, responsesValid)
+			txHash, err := validateSideTxResponses(tc.sideTxResponses)
+			if tc.expectedError {
+				require.Error(t, err)
+			}
 			require.Equal(t, tc.expectedTxHash, txHash)
 		})
 	}
@@ -309,7 +316,7 @@ func TestIsVoteValid(t *testing.T) {
 	require.False(t, isVoteValid(-1))
 }
 
-func TestMustAddSpecialTransaction(t *testing.T) {
+func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
 	VoteExtEnableHeight := 100
 	key := storetypes.NewKVStoreKey("testStoreKey")
 	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
@@ -321,7 +328,7 @@ func TestMustAddSpecialTransaction(t *testing.T) {
 		panics bool
 	}{
 		{"height is less than VoteExtensionsEnableHeight", int64(VoteExtEnableHeight) - 1, true},
-		{"height is equal to VoteExtensionsEnableHeight", int64(VoteExtEnableHeight), true},
+		{"height is equal to VoteExtensionsEnableHeight", int64(VoteExtEnableHeight), false},
 		{"height is greater than VoteExtensionsEnableHeight", int64(VoteExtEnableHeight) + 1, false},
 	}
 
@@ -330,12 +337,12 @@ func TestMustAddSpecialTransaction(t *testing.T) {
 
 			if !tt.panics {
 				require.NotPanics(t, func() {
-					mustAddSpecialTransaction(ctx, tt.height)
-				}, "mustAddSpecialTransaction panicked unexpectedly")
+					panicOnVoteExtensionsDisabled(ctx, tt.height)
+				}, "panicOnVoteExtensionsDisabled panicked unexpectedly")
 			} else {
 				require.Panics(t, func() {
-					mustAddSpecialTransaction(ctx, tt.height)
-				}, "mustAddSpecialTransaction did not panic, but it should have")
+					panicOnVoteExtensionsDisabled(ctx, tt.height)
+				}, "panicOnVoteExtensionsDisabled did not panic, but it should have")
 			}
 		})
 	}

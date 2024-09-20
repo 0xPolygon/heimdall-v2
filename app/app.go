@@ -138,9 +138,6 @@ type HeimdallApp struct {
 
 	configurator module.Configurator
 
-	// Vote Extension handler
-	VoteExtensionProcessor *VoteExtensionProcessor
-
 	// SideTxConfigurator
 	sideTxCfg sidetxs.SideTxConfigurator
 }
@@ -371,13 +368,9 @@ func NewHeimdallApp(
 	sideTxCfg := sidetxs.NewSideTxConfigurator()
 	app.RegisterSideMsgServices(sideTxCfg)
 
-	// Create the voteExtProcessor using sideTxCfg
-	voteExtProcessor := NewVoteExtensionProcessor()
-	app.VoteExtensionProcessor = voteExtProcessor
-
 	// Set the voteExtension methods to HeimdallApp
-	bApp.SetExtendVoteHandler(app.VoteExtensionProcessor.ExtendVoteHandler())
-	bApp.SetVerifyVoteExtensionHandler(app.VoteExtensionProcessor.VerifyVoteExtensionHandler())
+	bApp.SetExtendVoteHandler(app.ExtendVoteHandler())
+	bApp.SetVerifyVoteExtensionHandler(app.VerifyVoteExtensionHandler())
 
 	// TODO HV2: is this order correct?
 	app.ModuleManager.SetOrderBeginBlockers(

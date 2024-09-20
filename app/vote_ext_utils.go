@@ -22,14 +22,13 @@ import (
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
-// It checks the signature of the proposer (during PrepareProposal) or validators (during ProcessProposal)
+// It checks the signature of each vote extension with its signer's public key
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
 func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
-	currentHeight := ctx.BlockHeight()
 
 	// check if VEs are enabled
-	mustAddSpecialTransaction(ctx, reqHeight+1)
+	panicOnVoteExtensionsDisabled(ctx, reqHeight+1)
 
 	// Fetch validatorSet from previous block
 	// TODO HV2: Heimdall as of now uses validator set from current height.
@@ -42,28 +41,34 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 		return errors.New("no validators found in validator set")
 	}
 
-	var totalVP = validatorSet.GetTotalVotingPower()
+	var totalVotingPower = validatorSet.GetTotalVotingPower()
 	sumVP := math.NewInt(0)
+
+	// Map to track seen validator addresses
+	seenValidators := make(map[string]struct{})
 
 	for _, vote := range extVoteInfo {
 		// make sure the BlockIdFlag is valid
-		if vote.BlockIdFlag == cmtTypes.BlockIDFlagUnknown {
-			return fmt.Errorf("received vote with unknown block ID flag at height %d", currentHeight)
+		if vote.BlockIdFlag != cmtTypes.BlockIDFlagAbsent && vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit && vote.BlockIdFlag != cmtTypes.BlockIDFlagNil {
+			return fmt.Errorf("received vote with invalid block ID %s flag at height %d", vote.BlockIdFlag.String(), reqHeight)
 		}
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
 		}
 		if len(vote.ExtensionSignature) == 0 {
-			return fmt.Errorf("received empty vote extension signature at height %d", currentHeight)
+			return fmt.Errorf("received empty vote extension signature at height %d from validator %s", reqHeight, common.Bytes2Hex(proposerAddress))
 		}
 		var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-		if err := proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
+		if err = proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
 			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
-		responsesValid, txHash := areSideTxResponsesValid(consolidatedSideTxResponse.SideTxResponses)
-		if !responsesValid {
-			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s", string(proposerAddress), string(txHash))
+		if consolidatedSideTxResponse.Height != reqHeight-1 {
+			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, consolidatedSideTxResponse.Height)
+		}
+		txHash, err := validateSideTxResponses(consolidatedSideTxResponse.SideTxResponses)
+		if err != nil {
+			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", common.Bytes2Hex(proposerAddress), common.Bytes2Hex(txHash), err)
 		}
 
 		codec := address.HexCodec{}
@@ -71,6 +76,13 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 		if err != nil {
 			return err
 		}
+
+		// Check for duplicate votes by the same validator
+		if _, found := seenValidators[valAddrStr]; found {
+			return fmt.Errorf("duplicate vote detected from validator %s at height %d", valAddrStr, reqHeight)
+		}
+		// Add validator address to the map
+		seenValidators[valAddrStr] = struct{}{}
 
 		validator, err := stakeKeeper.GetValidatorInfo(ctx, valAddrStr)
 		if err != nil {
@@ -89,7 +101,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 
 		cve := cmtTypes.CanonicalVoteExtension{
 			Extension: vote.VoteExtension,
-			Height:    currentHeight - 1, // the vote extension was signed in the previous height
+			Height:    reqHeight - 1, // the vote extension was signed in the previous height
 			Round:     int64(round),
 			ChainId:   ctx.ChainID(),
 		}
@@ -116,7 +128,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 	}
 
 	// Ensure we have at least 2/3 voting power for the submitted vote extensions in each side tx
-	majorityVP := totalVP * 2 / 3
+	majorityVP := totalVotingPower * 2 / 3
 	if sumVP.Int64() <= majorityVP {
 		return fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", sumVP.Int64(), majorityVP)
 	}
@@ -126,7 +138,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 
 // tallyVotes tallies the votes received for the side tx
 // It returns the lists of txs which got >2/3+ YES, NO and UNSPECIFIED votes respectively
-func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, totalVP int64, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
+func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, totalVotingPower int64, currentHeight int64) ([][]byte, [][]byte, [][]byte, error) {
 	logger.Debug("Tallying votes")
 
 	voteByTxHash, err := aggregateVotes(extVoteInfo, currentHeight, logger)
@@ -144,10 +156,19 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 
 	approvedTxs, rejectedTxs, skippedTxs := make([][]byte, 0, len(txHashList)), make([][]byte, 0, len(txHashList)), make([][]byte, 0, len(txHashList))
 
-	majorityVP := totalVP * 2 / 3
+	majorityVP := totalVotingPower * 2 / 3
 
 	for _, txHash := range txHashList {
 		voteMap := voteByTxHash[txHash]
+
+		// calculate the total voting power in the voteMap
+		power := voteMap[sidetxs.Vote_VOTE_YES] + voteMap[sidetxs.Vote_VOTE_NO] + voteMap[sidetxs.Vote_UNSPECIFIED]
+		// ensure the total votes do not exceed the total voting power
+		if power > totalVotingPower {
+			logger.Error("the votes power exceeds the total voting power", "txHash", txHash, "power", power, "totalVotingPower", totalVotingPower)
+			return nil, nil, nil, fmt.Errorf("votes power %d exceeds total voting power %d for txHash %s", power, totalVotingPower, txHash)
+		}
+
 		if voteMap[sidetxs.Vote_VOTE_YES] > majorityVP {
 			// approved
 			logger.Debug("Approved side-tx", "txHash", txHash)
@@ -172,10 +193,11 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 	return approvedTxs, rejectedTxs, skippedTxs, nil
 }
 
-// aggregateVotes collates votes received for a side tx
+// aggregateVotes collates votes received for side txs
 func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int64, logger log.Logger) (map[string]map[sidetxs.Vote]int64, error) {
 	voteByTxHash := make(map[string]map[sidetxs.Vote]int64)  // track votes for a side tx
 	validatorToTxMap := make(map[string]map[string]struct{}) // ensure a validator doesn't procure conflicting votes for a side tx
+	var blockHash []byte                                     // store the block hash to make sure all votes are for the same block
 
 	for _, vote := range extVoteInfo {
 
@@ -192,6 +214,22 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 		if ve.Height != currentHeight-1 {
 			return nil, fmt.Errorf("invalid height received for vote extension")
 		}
+
+		// blockHash consistency check
+		if blockHash == nil {
+			// store the block hash from the first vote
+			blockHash = ve.BlockHash
+		} else {
+			// compare the current block hash with the stored block hash
+			if !bytes.Equal(blockHash, ve.BlockHash) {
+				logger.Error("invalid block hash found for vote extension",
+					"expectedBlockHash", common.Bytes2Hex(blockHash),
+					"receivedBlockHash", common.Bytes2Hex(ve.BlockHash),
+					"validator", common.Bytes2Hex(vote.Validator.Address))
+				return nil, fmt.Errorf("mismatching block hash for vote extension from validator %s", common.Bytes2Hex(vote.Validator.Address))
+			}
+		}
+
 		addr, err := address.NewHexCodec().BytesToString(vote.Validator.Address)
 		if err != nil {
 			return nil, err
@@ -211,10 +249,10 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 			if _, hasVoted := validatorToTxMap[addr][txHashStr]; hasVoted {
 				logger.Error("multiple votes received for side tx",
 					"txHash", txHashStr, "validatorAddress", addr)
-				continue
+				return nil, fmt.Errorf("multiple votes received for side tx %s from validator %s", txHashStr, addr)
 			}
 			if !isVoteValid(res.Result) {
-				return nil, fmt.Errorf("invalid vote received for side tx %s", txHashStr)
+				return nil, fmt.Errorf("invalid vote %v received for side tx %s", res.Result, txHashStr)
 			}
 
 			if voteByTxHash[txHashStr] == nil {
@@ -231,44 +269,53 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 	return voteByTxHash, nil
 }
 
-// areSideTxResponsesValid validates the SideTxResponses and return true/false for valid/invalid responses, plus the txHash of the first invalid tx detected
-func areSideTxResponsesValid(sideTxResponses []*sidetxs.SideTxResponse) (bool, []byte) {
+// validateSideTxResponses validates the SideTxResponses and returns the txHash of the first invalid tx detected, plus the error
+func validateSideTxResponses(sideTxResponses []*sidetxs.SideTxResponse) ([]byte, error) {
 	// track votes of the validator
 	txVoteMap := make(map[string]struct{})
 
 	for _, res := range sideTxResponses {
 		// check txHash is well-formed
 		if len(res.TxHash) != common.HashLength {
-			_ = fmt.Errorf("invalid tx hash received")
-			return false, res.TxHash
+			return res.TxHash, errors.New(fmt.Sprintf("invalid tx hash received: %s", common.Bytes2Hex(res.TxHash)))
 		}
 
 		// check if the validator has already voted for the side tx
-		if _, ok := txVoteMap[string(res.TxHash)]; ok {
-			_ = fmt.Errorf("duplicated votes detected")
-			return false, res.TxHash
+		if _, found := txVoteMap[string(res.TxHash)]; found {
+			return res.TxHash, errors.New(fmt.Sprintf("duplicated votes detected for side tx %s", common.Bytes2Hex(res.TxHash)))
 		}
 
 		txVoteMap[string(res.TxHash)] = struct{}{}
 	}
 
-	return true, nil
+	return nil, nil
 }
 
-// mustAddSpecialTransaction indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
-// Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height.
-// We can use this function in case further checks are needed. Anyway, VoteExtensionsEnableHeight wil be set to 1 (first block)
-func mustAddSpecialTransaction(ctx sdk.Context, height int64) {
+// panicOnVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
+// Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
+func panicOnVoteExtensionsDisabled(ctx sdk.Context, height int64) {
 	consensusParams := ctx.ConsensusParams()
 	voteExtensionsEnableHeight := consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
 	if voteExtensionsEnableHeight == 0 {
-		panic("VoteExtensions are disabled!")
+		panic("VoteExtensions are disabled: VoteExtensionsEnableHeight is set to 0")
 	}
-	if height <= voteExtensionsEnableHeight {
-		panic("mustAddSpecialTransaction should not be called before VoteExtensionsEnableHeight")
+	if height < voteExtensionsEnableHeight {
+		panic(fmt.Sprintf("vote extensions are disabled: current height is %d, and VoteExtensionsEnableHeight is set to %d", height, voteExtensionsEnableHeight))
 	}
 }
 
 func isVoteValid(v sidetxs.Vote) bool {
 	return v == sidetxs.Vote_UNSPECIFIED || v == sidetxs.Vote_VOTE_YES || v == sidetxs.Vote_VOTE_NO
+}
+
+// checkTx invokes the ABCI method to check the tx by using the AnteHandler, it returns the result of the check and the eventual error
+func checkTx(app *HeimdallApp, tx []byte) (*abciTypes.ResponseCheckTx, error) {
+	res, err := app.CheckTx(&abciTypes.RequestCheckTx{
+		Tx:   tx,
+		Type: abciTypes.CheckTxType_New,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
