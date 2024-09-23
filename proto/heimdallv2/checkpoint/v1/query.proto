@@ -3,6 +3,7 @@ package heimdallv2.checkpoint.v1;
 
 import "amino/amino.proto";
 import "cosmos/query/v1/query.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/checkpoint/v1/checkpoint.proto";
@@ -62,13 +63,20 @@ service Query {
   rpc GetCurrentProposer(QueryCurrentProposerRequest)
       returns (QueryCurrentProposerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoint/current-proposer";
+    option (google.api.http).get = "/checkpoint/proposers/current";
   }
 
-  // GetProposer queries for the proposer
-  rpc GetProposer(QueryProposerRequest) returns (QueryProposerResponse) {
+  // GetProposers queries for the proposers
+  rpc GetProposers(QueryProposerRequest) returns (QueryProposerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoint/proposer/{times}";
+    option (google.api.http).get = "/checkpoint/proposers/{times}";
+  }
+
+  // GetCheckpointList queries for the list of checkpoints
+  rpc GetCheckpointList(QueryCheckpointListRequest)
+      returns (QueryCheckpointListResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/list";
   }
 }
 
@@ -167,4 +175,17 @@ message QueryProposerRequest {
 message QueryProposerResponse {
   repeated heimdallv2.stake.v1.Validator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// QueryCheckpointListRequest defines the gRPC request structure for querying
+// a list of checkpoints.
+message QueryCheckpointListRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1;
+}
+
+// QueryCheckpointListResponse defines the gRPC response structure for querying
+// a list of checkpoints.
+message QueryCheckpointListResponse {
+  repeated Checkpoint checkpoint_list = 1 [ (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2;
 }

@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 
 	"cosmossdk.io/core/address"
 	sdkmath "cosmossdk.io/math"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )

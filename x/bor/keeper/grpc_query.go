@@ -11,19 +11,21 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
-type QueryServer struct {
-	Keeper
+var _ types.QueryServer = queryServer{}
+
+type queryServer struct {
+	k *Keeper
 }
 
-var _ types.QueryServer = QueryServer{}
-
-func NewQueryServer(keeper Keeper) QueryServer {
-	return QueryServer{Keeper: keeper}
+func NewQueryServer(k *Keeper) types.QueryServer {
+	return queryServer{
+		k: k,
+	}
 }
 
-func (q QueryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
+func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
 
-	spans, err := q.GetAllSpans(ctx)
+	spans, err := q.k.GetAllSpans(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -36,12 +38,12 @@ func (q QueryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpan
 	return &types.QueryLatestSpanResponse{Span: latestSpan}, nil
 }
 
-func (q QueryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
+func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	lastSpan, err := q.GetLastSpan(ctx)
+	lastSpan, err := q.k.GetLastSpan(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -59,24 +61,24 @@ func (q QueryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	}
 
 	// fetch params
-	params, err := q.FetchParams(ctx)
+	params, err := q.k.FetchParams(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	// fetch current validator set
-	validatorSet, err := q.sk.GetValidatorSet(ctx)
+	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	// fetch next selected block producers
-	nextSpanSeed, err := q.FetchNextSpanSeed(ctx)
+	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	selectedProducers, err := q.SelectNextProducers(ctx, nextSpanSeed)
+	selectedProducers, err := q.k.SelectNextProducers(ctx, nextSpanSeed)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -96,10 +98,11 @@ func (q QueryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	return &types.QueryNextSpanResponse{Span: nextSpan}, nil
 }
 
-func (q QueryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
+// GetNextSpanSeed returns the next span seed
+func (q queryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
 
 	// fetch next span seed
-	nextSpanSeed, err := q.FetchNextSpanSeed(ctx)
+	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -107,9 +110,10 @@ func (q QueryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpan
 	return &types.QueryNextSpanSeedResponse{Seed: nextSpanSeed.String()}, nil
 }
 
-func (q QueryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetParams returns the bor module parameters
+func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 
-	params, err := q.FetchParams(ctx)
+	params, err := q.k.FetchParams(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -117,7 +121,8 @@ func (q QueryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 	return &types.QueryParamsResponse{Params: &params}, nil
 }
 
-func (q QueryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
+// GetSpanById returns the span by id
+func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -127,7 +132,7 @@ func (q QueryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRe
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	span, err := q.GetSpan(ctx, uint64(spanId))
+	span, err := q.k.GetSpan(ctx, uint64(spanId))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -135,20 +140,21 @@ func (q QueryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRe
 	return &types.QuerySpanByIdResponse{Span: &span}, nil
 }
 
-func (q QueryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
+// GetSpanList returns the list of spans
+func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRequest) (*types.QuerySpanListResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
 	if req.Pagination != nil && req.Pagination.Limit > 1000 {
-		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 20")
+		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
 
 	spans, pageRes, err := query.CollectionPaginate(
 		ctx,
-		q.spans,
+		q.k.spans,
 		req.Pagination, func(id uint64, span types.Span) (types.Span, error) {
-			return q.GetSpan(ctx, id)
+			return q.k.GetSpan(ctx, id)
 		},
 	)
 

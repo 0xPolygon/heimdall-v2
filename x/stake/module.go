@@ -20,6 +20,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	stakeSimulation "github.com/0xPolygon/heimdall-v2/x/stake/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -51,6 +52,11 @@ func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) Ap
 		keeper:         keeper,
 		contractCaller: contractCaller,
 	}
+}
+
+// GetTxCmd returns the root tx command for the bor module.
+func (am AppModule) GetTxCmd() *cobra.Command {
+	return cli.NewTxCmd()
 }
 
 // Name returns the stake module's name.
@@ -91,13 +97,6 @@ func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwrunt
 	}
 }
 
-// GetTxCmd returns the root tx command for the stake module.
-func (am AppModule) GetTxCmd() *cobra.Command {
-	return nil
-	// TODO HV2: implement the cli
-	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
-}
-
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
@@ -111,6 +110,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
+
+// QuerierRoute returns the stake module's querier route name.
+func (AppModule) QuerierRoute() string { return types.RouterKey }
 
 // InitGenesis performs genesis initialization for the stake module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {

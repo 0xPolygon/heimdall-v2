@@ -27,7 +27,8 @@ const (
 	Query_GetLastNoAck_FullMethodName        = "/heimdallv2.checkpoint.v1.Query/GetLastNoAck"
 	Query_GetNextCheckpoint_FullMethodName   = "/heimdallv2.checkpoint.v1.Query/GetNextCheckpoint"
 	Query_GetCurrentProposer_FullMethodName  = "/heimdallv2.checkpoint.v1.Query/GetCurrentProposer"
-	Query_GetProposer_FullMethodName         = "/heimdallv2.checkpoint.v1.Query/GetProposer"
+	Query_GetProposers_FullMethodName        = "/heimdallv2.checkpoint.v1.Query/GetProposers"
+	Query_GetCheckpointList_FullMethodName   = "/heimdallv2.checkpoint.v1.Query/GetCheckpointList"
 )
 
 // QueryClient is the client API for Query service.
@@ -50,8 +51,10 @@ type QueryClient interface {
 	GetNextCheckpoint(ctx context.Context, in *QueryNextCheckpointRequest, opts ...grpc.CallOption) (*QueryNextCheckpointResponse, error)
 	// GetCurrentProposer queries validator info for the current proposer
 	GetCurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error)
-	// GetProposer queries for the proposer
-	GetProposer(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error)
+	// GetProposers queries for the proposers
+	GetProposers(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error)
+	// GetCheckpointList queries for the list of checkpoints
+	GetCheckpointList(ctx context.Context, in *QueryCheckpointListRequest, opts ...grpc.CallOption) (*QueryCheckpointListResponse, error)
 }
 
 type queryClient struct {
@@ -134,9 +137,18 @@ func (c *queryClient) GetCurrentProposer(ctx context.Context, in *QueryCurrentPr
 	return out, nil
 }
 
-func (c *queryClient) GetProposer(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error) {
+func (c *queryClient) GetProposers(ctx context.Context, in *QueryProposerRequest, opts ...grpc.CallOption) (*QueryProposerResponse, error) {
 	out := new(QueryProposerResponse)
-	err := c.cc.Invoke(ctx, Query_GetProposer_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetProposers_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetCheckpointList(ctx context.Context, in *QueryCheckpointListRequest, opts ...grpc.CallOption) (*QueryCheckpointListResponse, error) {
+	out := new(QueryCheckpointListResponse)
+	err := c.cc.Invoke(ctx, Query_GetCheckpointList_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -163,8 +175,10 @@ type QueryServer interface {
 	GetNextCheckpoint(context.Context, *QueryNextCheckpointRequest) (*QueryNextCheckpointResponse, error)
 	// GetCurrentProposer queries validator info for the current proposer
 	GetCurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error)
-	// GetProposer queries for the proposer
-	GetProposer(context.Context, *QueryProposerRequest) (*QueryProposerResponse, error)
+	// GetProposers queries for the proposers
+	GetProposers(context.Context, *QueryProposerRequest) (*QueryProposerResponse, error)
+	// GetCheckpointList queries for the list of checkpoints
+	GetCheckpointList(context.Context, *QueryCheckpointListRequest) (*QueryCheckpointListResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -196,8 +210,11 @@ func (UnimplementedQueryServer) GetNextCheckpoint(context.Context, *QueryNextChe
 func (UnimplementedQueryServer) GetCurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentProposer not implemented")
 }
-func (UnimplementedQueryServer) GetProposer(context.Context, *QueryProposerRequest) (*QueryProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProposer not implemented")
+func (UnimplementedQueryServer) GetProposers(context.Context, *QueryProposerRequest) (*QueryProposerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProposers not implemented")
+}
+func (UnimplementedQueryServer) GetCheckpointList(context.Context, *QueryCheckpointListRequest) (*QueryCheckpointListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCheckpointList not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -356,20 +373,38 @@ func _Query_GetCurrentProposer_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_GetProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetProposers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryProposerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetProposer(ctx, in)
+		return srv.(QueryServer).GetProposers(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_GetProposer_FullMethodName,
+		FullMethod: Query_GetProposers_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetProposer(ctx, req.(*QueryProposerRequest))
+		return srv.(QueryServer).GetProposers(ctx, req.(*QueryProposerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetCheckpointList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCheckpointListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetCheckpointList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetCheckpointList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetCheckpointList(ctx, req.(*QueryCheckpointListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -414,8 +449,12 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetCurrentProposer_Handler,
 		},
 		{
-			MethodName: "GetProposer",
-			Handler:    _Query_GetProposer_Handler,
+			MethodName: "GetProposers",
+			Handler:    _Query_GetProposers_Handler,
+		},
+		{
+			MethodName: "GetCheckpointList",
+			Handler:    _Query_GetCheckpointList_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -73,7 +73,7 @@ func (suite *KeeperTestSuite) SetupTest() {
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	types.RegisterQueryServer(queryHelper, keeper.QueryServer{Keeper: suite.borKeeper})
+	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&suite.borKeeper))
 	queryClient := types.NewQueryClient(queryHelper)
 
 	suite.queryClient = queryClient
