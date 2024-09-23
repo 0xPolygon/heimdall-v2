@@ -43,7 +43,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.chainmanagerKeeper = chainmanagerKeeper
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	types.RegisterQueryServer(queryHelper, keeper.Querier{Keeper: chainmanagerKeeper})
+	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&chainmanagerKeeper))
 	s.queryClient = types.NewQueryClient(queryHelper)
 	s.msgServer = keeper.NewMsgServerImpl(chainmanagerKeeper)
 }

@@ -127,11 +127,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 	return &types.QueryDividendAccountResponse{DividendAccount: dividendAccount}, nil
 }
 
-func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	}
-
+func (q queryServer) GetDividendAccountRootHash(ctx context.Context, _ *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)

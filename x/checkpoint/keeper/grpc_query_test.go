@@ -190,7 +190,7 @@ func (s *KeeperTestSuite) TestHandleQueryProposer() {
 	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	req := &types.QueryProposerRequest{Times: 2}
 
-	res, err := queryClient.GetProposer(ctx, req)
+	res, err := queryClient.GetProposers(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
