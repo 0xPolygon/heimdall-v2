@@ -72,11 +72,7 @@ func (q queryServer) Milestone(ctx context.Context, req *types.QueryMilestoneReq
 }
 
 // LatestNoAckMilestone fetches the latest no-ack milestone
-func (q queryServer) LatestNoAckMilestone(ctx context.Context, req *types.QueryLatestNoAckMilestoneRequest) (*types.QueryLatestNoAckMilestoneResponse, error) {
-	if req == nil {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
-	}
-
+func (q queryServer) LatestNoAckMilestone(ctx context.Context, _ *types.QueryLatestNoAckMilestoneRequest) (*types.QueryLatestNoAckMilestoneResponse, error) {
 	res, err := q.k.GetLastNoAckMilestone(ctx)
 
 	return &types.QueryLatestNoAckMilestoneResponse{Result: res}, err
