@@ -16,39 +16,39 @@ service Query {
   rpc CurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/validator-set";
+    option (google.api.http).get = "/stake/validator-set";
   }
 
   // Signer queries validator info for a given validator address.
   rpc Signer(QuerySignerRequest) returns (QuerySignerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/signer/{val_address}";
+    option (google.api.http).get = "/stake/signer/{val_address}";
   }
 
   // Validator queries validator info for a given validator id.
   rpc Validator(QueryValidatorRequest) returns (QueryValidatorResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/validator/{id}";
+    option (google.api.http).get = "/stake/validator/{id}";
   }
 
   // ValidatorStatus queries validator status for given validator val_address.
   rpc ValidatorStatus(QueryValidatorStatusRequest)
       returns (QueryValidatorStatusResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/validator-status/{val_address}";
+    option (google.api.http).get = "/stake/validator-status/{val_address}";
   }
 
   // TotalPower queries the total power of a validator set
   rpc TotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/total-power";
+    option (google.api.http).get = "/stake/total-power";
   }
 
   // StakingSequence queries for the staking sequence
   rpc StakingIsOldTx(QueryStakingIsOldTxRequest)
       returns (QueryStakingIsOldTxResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/staking/is-old-tx";
+    option (google.api.http).get = "/stake/is-old-tx";
   }
 }
 

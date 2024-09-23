@@ -14,33 +14,33 @@ service Query {
 
   rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/span/{id}";
+    option (google.api.http).get = "/bor/span/{id}";
   }
 
   rpc GetSpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/span/list";
+    option (google.api.http).get = "/bor/span/list";
   }
 
   rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/span/latest";
+    option (google.api.http).get = "/bor/span/latest";
   }
 
   rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
       returns (QueryNextSpanSeedResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/span/seed";
+    option (google.api.http).get = "/bor/span/seed";
   }
 
   rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/span/prepare";
+    option (google.api.http).get = "/bor/span/prepare";
   }
 
   rpc GetParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/bor/params";
+    option (google.api.http).get = "/bor/params";
   }
 }
 

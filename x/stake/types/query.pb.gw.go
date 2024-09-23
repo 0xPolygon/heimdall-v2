@@ -576,17 +576,17 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_CurrentValidatorSet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"staking", "validator-set"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_CurrentValidatorSet_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"stake", "validator-set"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Signer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"staking", "signer", "val_address"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_Signer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"stake", "signer", "val_address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_Validator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"staking", "validator", "id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_Validator_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"stake", "validator", "id"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_ValidatorStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"staking", "validator-status", "val_address"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_ValidatorStatus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"stake", "validator-status", "val_address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_TotalPower_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"staking", "total-power"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_TotalPower_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"stake", "total-power"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_StakingIsOldTx_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"staking", "is-old-tx"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_StakingIsOldTx_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"stake", "is-old-tx"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

@@ -612,17 +612,17 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_IsTopupTxOld_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"heimdallv2", "topup", "isoldtx"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_IsTopupTxOld_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"topup", "isoldtx"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetTopupTxSequence_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"heimdallv2", "topup", "sequence"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetTopupTxSequence_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"topup", "sequence"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetDividendAccountByAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"heimdallv2", "topup", "dividend-account", "address"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetDividendAccountByAddress_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"topup", "dividend-account", "address"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetDividendAccountRootHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"heimdallv2", "topup", "dividend-account-root"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetDividendAccountRootHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"topup", "dividend-account-root"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_VerifyAccountProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3, 2, 4}, []string{"heimdallv2", "topup", "account-proof", "address", "verify"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_VerifyAccountProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"topup", "account-proof", "address", "verify"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetAccountProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"heimdallv2", "topup", "account-proof", "address"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetAccountProof_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"topup", "account-proof", "address"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
