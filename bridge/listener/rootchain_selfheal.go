@@ -87,7 +87,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 		go func(id uint64) {
 			defer wg.Done()
 
-			nonce, _, err := util.GetValidatorNonce(rl.cliCtx, id)
+			nonce, err := util.GetValidatorNonce(rl.cliCtx, id)
 			if err != nil {
 				rl.Logger.Error("Error getting nonce for validator from heimdall", "error", err, "id", id)
 				return
