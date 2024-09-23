@@ -12,6 +12,7 @@ import (
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -57,7 +58,7 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 }
 
 // BroadcastToHeimdall broadcast to heimdall
-func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, testOpts ...*helper.TestOpts) (sdk.TxResponse, error) {
+func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, testOpts ...*helper.TestOpts) (*sdk.TxResponse, error) {
 	tb.heimdallMutex.Lock()
 	defer tb.heimdallMutex.Unlock()
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "BroadcastToHeimdall", time.Now())
@@ -75,35 +76,36 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	txBldr := txCfg.NewTxBuilder()
 	err := txBldr.SetMsgs(msg)
 	if err != nil {
-		return sdk.TxResponse{}, err
+		return &sdk.TxResponse{}, err
 	}
 
 	signMode, err := authsign.APISignModeToInternal(txCfg.SignModeHandler().DefaultMode())
 	if err != nil {
-		return sdk.TxResponse{}, err
+		return &sdk.TxResponse{}, err
 	}
 
 	err = txBldr.SetSignatures(helper.GetSignature(signMode, tb.lastSeqNo))
 	if err != nil {
-		return sdk.TxResponse{}, err
+		return &sdk.TxResponse{}, err
 	}
 	txBldr.SetMemo(viper.GetString("memo"))
-	// TODO HV2 - what should be the gas limit and fee amount?
+	// TODO HV2 - what should be the gas limit and fee amount? How?
 	/*
 		txBldr.SetFeeAmount(feeAmt)
 		txBldr.SetGasLimit(gas)
 	*/
 
-	/*
-		// get TxBuilder
-		txBldr := authTypes.NewTxBuilderFromCLI().
-			WithTxEncoder(txEncoder).
-			WithAccountNumber(tb.accNum).
-			WithSequence(tb.lastSeqNo).
-			WithChainID(chainID)
-	*/
+	// create a factory
+	txf := clienttx.Factory{}
+	txf = txf.WithTxConfig(tb.CliCtx.TxConfig)
+	txf = txf.WithAccountRetriever(tb.CliCtx.AccountRetriever)
+	txf = txf.WithChainID(tb.CliCtx.ChainID)
+	txf = txf.WithSignMode(signMode)
+	txf = txf.WithAccountNumber(tb.accNum)
+	txf = txf.WithSequence(tb.lastSeqNo)
+	txf = txf.WithKeybase(tb.CliCtx.Keyring)
 
-	txResponse, err := helper.BuildAndBroadcastMsgs(tb.CliCtx, txBldr, []sdk.Msg{msg}, testOpts...)
+	txResponse, err := helper.BroadcastTx(tb.CliCtx, txf, msg)
 	if err != nil || txResponse.Code != uint32(abci.CodeTypeOK) {
 		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err, "txResponse", txResponse.Code)
 

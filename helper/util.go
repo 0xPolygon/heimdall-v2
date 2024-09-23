@@ -1,8 +1,10 @@
 package helper
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +12,7 @@ import (
 	"math/bits"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 
 	"github.com/0xPolygon/heimdall-v2/types/rest"
@@ -18,7 +21,13 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/input"
+	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
@@ -256,4 +265,212 @@ func IsPubKeyFirstByteValid(pubKey []byte) bool {
 	prefix[0] = byte(0x04)
 
 	return bytes.Equal(prefix, pubKey[0:1])
+}
+
+// BroadcastTx attempts to generate, sign and broadcast a transaction with the
+// given set of messages. It will also simulate gas requirements if necessary.
+// It will return an error upon failure.
+// HV2 - This function is taken from cosmos-sdk, and it now returns TxResponse as well
+func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg) (*sdk.TxResponse, error) {
+	txf, err := txf.Prepare(clientCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if txf.SimulateAndExecute() || clientCtx.Simulate {
+		if clientCtx.Offline {
+			return nil, errors.New("cannot estimate gas in offline mode")
+		}
+
+		_, adjusted, err := clienttx.CalculateGas(clientCtx, txf, msgs...)
+		if err != nil {
+			return nil, err
+		}
+
+		txf = txf.WithGas(adjusted)
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", clienttx.GasEstimateResponse{GasEstimate: txf.Gas()})
+	}
+
+	if clientCtx.Simulate {
+		return nil, nil
+	}
+
+	tx, err := txf.BuildUnsignedTx(msgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	if !clientCtx.SkipConfirm {
+		// TODO HV2 - create a function
+		// func (f Factory) GetTxConfig() client.TxConfig { return f.txConfig }
+		/*
+			encoder := txf.GetTxConfig().TxJSONEncoder()
+			if encoder == nil {
+				return errors.New("failed to encode transaction: tx json encoder is nil")
+			}
+		*/
+
+		// Maybe the above code can be replaced with this
+		encoder := clientCtx.TxConfig.TxEncoder()
+
+		txBytes, err := encoder(tx.GetTx())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode transaction: %w", err)
+		}
+
+		if err := clientCtx.PrintRaw(json.RawMessage(txBytes)); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error: %v\n%s\n", err, txBytes)
+		}
+
+		buf := bufio.NewReader(os.Stdin)
+		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error: %v\ncanceled transaction\n", err)
+			return nil, err
+		}
+		if !ok {
+			_, _ = fmt.Fprintln(os.Stderr, "canceled transaction")
+			return nil, nil
+		}
+	}
+
+	if err = clienttx.Sign(clientCtx.CmdContext, txf, clientCtx.FromName, tx, true); err != nil {
+		return nil, err
+	}
+
+	txBytes, err := clientCtx.TxConfig.TxEncoder()(tx.GetTx())
+	if err != nil {
+		return nil, err
+	}
+
+	// broadcast to a CometBFT node
+	res, err := clientCtx.BroadcastTx(txBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// TODO HV2 - I don't think we need this anymore
+// Keep it for now, will remove later once everything is working
+/*
+// BuildAndBroadcastMsgs creates transaction and broadcasts it
+func BuildAndBroadcastMsgs(cliCtx client.Context,
+	txBldr client.TxBuilder,
+	msgs []sdk.Msg,
+	testOpts ...*TestOpts,
+) (*sdk.TxResponse, error) {
+	txBytes, err := GetSignedTxBytes(cliCtx, txBldr, msgs, testOpts...)
+	if err != nil {
+		return &sdk.TxResponse{}, err
+	}
+	// just simulate
+	if cliCtx.Simulate {
+		if len(testOpts) == 0 || testOpts[0].app == nil {
+			return &sdk.TxResponse{TxHash: "0x" + hex.EncodeToString(txBytes)}, nil
+		}
+
+		// Using cliCtx.GetNode() instead of this
+		// m := mock.ABCIApp{
+		// 	App: testOpts[0].app,
+		// }
+
+		node, err := cliCtx.GetNode()
+		if err != nil {
+			return &sdk.TxResponse{}, err
+		}
+
+		res, err := node.BroadcastTxSync(cliCtx.CmdContext, txBytes)
+		return sdk.NewResponseFormatBroadcastTx(res), err
+	}
+	// broadcast to a CometBFT node
+	return BroadcastTxBytes(cliCtx, txBytes, "")
+}
+
+// BroadcastTxBytes sends request to cometbft using CLI
+func BroadcastTxBytes(cliCtx client.Context, txBytes []byte, mode string) (*sdk.TxResponse, error) {
+	Logger.Debug("Broadcasting tx bytes to CometBFT", "txBytes", hex.EncodeToString(txBytes), "txHash", hex.EncodeToString(cmtTypes.Tx(txBytes).Hash()))
+
+	if mode != "" {
+		cliCtx.BroadcastMode = mode
+	}
+
+	return cliCtx.BroadcastTx(txBytes)
+}
+
+// GetSignedTxBytes returns signed tx bytes
+func GetSignedTxBytes(cliCtx client.Context,
+	txBldr client.TxBuilder,
+	msgs []sdk.Msg,
+	testOpts ...*TestOpts,
+) ([]byte, error) {
+
+	txFactory := tx.Factory{}
+	txFactory = txFactory.
+		WithChainID(testOpts[0].chainId)
+
+	// just simulate (useful for testing)
+	if cliCtx.Simulate {
+		if len(testOpts) == 0 || testOpts[0].chainId == "" {
+			return nil, nil
+		}
+
+		// We are no longer able to set ChainID
+		// txBldr = txBldr.WithChainID(testOpts[0].chainId)
+
+		return txBldr.BuildAndSign(GetPrivKey(), msgs)
+	}
+
+	// TODO HV2 - I don't think we need this anymore
+	// txBldr, err := PrepareTxBuilder(cliCtx, txBldr)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	fromName := cliCtx.GetFromName()
+	if fromName == "" {
+		return txBldr.BuildAndSign(GetPrivKey(), msgs)
+	}
+
+	if !cliCtx.SkipConfirm {
+		stdSignMsg, err := txBldr.BuildSignMsg(msgs)
+		if err != nil {
+			return nil, err
+		}
+
+		json := cliCtx.Codec.MustMarshalJSON(stdSignMsg)
+
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", json)
+
+		buf := bufio.NewReader(os.Stdin)
+
+		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf)
+		if err != nil || !ok {
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n", "cancelled transaction")
+			return nil, err
+		}
+	}
+
+	passphrase, err := keys.GetPassphrase(fromName)
+	if err != nil {
+		return nil, err
+	}
+	// build and sign the transaction
+	return txBldr.BuildAndSignWithPassphrase(fromName, passphrase, msgs)
+}
+*/
+
+func GetSignature(signMode signing.SignMode, accSeq uint64) signingtypes.SignatureV2 {
+	priv := GetPrivKey()
+
+	sig := signing.SignatureV2{
+		PubKey: priv.PubKey().(cryptotypes.PubKey),
+		Data: &signing.SingleSignatureData{
+			SignMode: signMode,
+		},
+		Sequence: accSeq,
+	}
+
+	return sig
 }
