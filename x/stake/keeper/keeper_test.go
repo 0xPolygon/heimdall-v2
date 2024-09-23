@@ -511,6 +511,7 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 
 	require.NotNil(initValSet)
 	initValSet.IncrementProposerPriority(1)
+	require.NotNil(initValSet)
 	_proposer := initValSet.Proposer
 
 	currentValSet, err := keeper.GetMilestoneValidatorSet(ctx)

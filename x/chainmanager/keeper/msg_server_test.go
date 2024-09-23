@@ -16,9 +16,9 @@ const (
 	StateSenderAddress    = "0x28e4f3a7f651294b9564800b2d01f35189a5bfbe"
 )
 
-func (suite *KeeperTestSuite) TestMsgUpdateParams() {
+func (s *KeeperTestSuite) TestMsgUpdateParams() {
 
-	params := suite.getParams()
+	params := s.getParams()
 
 	testCases := []struct {
 		name      string
@@ -38,7 +38,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateParams() {
 		{
 			name: "invalid params",
 			input: &types.MsgUpdateParams{
-				Authority: suite.chainmanagerKeeper.GetAuthority(),
+				Authority: s.chainmanagerKeeper.GetAuthority(),
 				Params: types.Params{
 					ChainParams: types.ChainParams{
 						MaticTokenAddress: "def",
@@ -51,7 +51,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateParams() {
 		{
 			name: "all good",
 			input: &types.MsgUpdateParams{
-				Authority: suite.chainmanagerKeeper.GetAuthority(),
+				Authority: s.chainmanagerKeeper.GetAuthority(),
 				Params:    params,
 			},
 			expErr: false,
@@ -60,26 +60,26 @@ func (suite *KeeperTestSuite) TestMsgUpdateParams() {
 
 	for _, tc := range testCases {
 		tc := tc
-		suite.Run(tc.name, func() {
-			_, err := suite.msgServer.UpdateParams(suite.ctx, tc.input)
+		s.Run(tc.name, func() {
+			_, err := s.msgServer.UpdateParams(s.ctx, tc.input)
 
 			if tc.expErr {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
+				s.Require().Error(err)
+				s.Require().Contains(err.Error(), tc.expErrMsg)
 			} else {
-				suite.Require().Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), suite.chainmanagerKeeper.GetAuthority())
-				suite.Require().NoError(err)
+				s.Require().Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), s.chainmanagerKeeper.GetAuthority())
+				s.Require().NoError(err)
 
-				res, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
-				suite.Require().NoError(err)
-				suite.Require().Equal(params, res.Params)
+				res, err := s.queryClient.Params(s.ctx, &types.QueryParamsRequest{})
+				s.Require().NoError(err)
+				s.Require().Equal(params, res.Params)
 			}
 		})
 	}
 }
 
-func (suite *KeeperTestSuite) getParams() types.Params {
-	suite.T().Helper()
+func (s *KeeperTestSuite) getParams() types.Params {
+	s.T().Helper()
 
 	// default params
 	params := types.DefaultParams()

@@ -5,7 +5,7 @@ import "fmt"
 // Default parameter values
 const (
 	DefaultSprintDuration    uint64 = 16
-	DefaultSpanDuration      uint64 = 100 * DefaultSprintDuration
+	DefaultSpanDuration             = 100 * DefaultSprintDuration
 	DefaultFirstSpanDuration uint64 = 256
 	DefaultProducerCount     uint64 = 4
 )

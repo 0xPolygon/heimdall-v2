@@ -207,7 +207,7 @@ func aggregateVotes(extVoteInfo []abci.ExtendedVoteInfo) (map[string]map[mod.Vot
 // checkDuplicateVotes detects duplicate votes by a validator for a side tx
 func checkDuplicateVotes(sideTxResponses []*mod.SideTxResponse) (bool, []byte) {
 	// track votes of the validator
-	txVoteMap := make(map[string]struct{}, 0)
+	txVoteMap := make(map[string]struct{})
 
 	for _, res := range sideTxResponses {
 		if _, ok := txVoteMap[string(res.TxHash)]; ok {

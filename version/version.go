@@ -23,15 +23,15 @@ import (
 )
 
 var (
-	// application's name
+	// Name is the application's name
 	Name = ""
-	// server binary name
+	// ServerName is the server binary name
 	ServerName = "<appd>"
-	// client binary name
+	// ClientName is the client binary name
 	ClientName = "<appcli>"
-	// application's version string
+	// Version is the app's version string
 	Version = ""
-	// commit
+	// Commit is the app's commit hash
 	Commit = ""
 )
 

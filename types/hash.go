@@ -1,7 +1,7 @@
 package types
 
 import (
-	bytes "bytes"
+	"bytes"
 
 	"github.com/ethereum/go-ethereum/common"
 )
