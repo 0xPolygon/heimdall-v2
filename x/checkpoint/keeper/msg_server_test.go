@@ -14,20 +14,20 @@ import (
 )
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, msgServer := s.ctx, s.Require(), s.msgServer
+	keeper, topupKeeper, stakeKeeper := s.checkpointKeeper, s.topupKeeper, s.stakeKeeper
 
 	start := uint64(0)
 	borChainId := "1234"
 	params, _ := keeper.GetParams(ctx)
 
-	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
-	dividendAccounts, err := s.topupKeeper.GetAllDividendAccounts(ctx)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	dividendAccounts, err := topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -121,8 +121,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, msgServer := s.ctx, s.Require(), s.msgServer
+	keeper, topupKeeper, stakeKeeper := s.checkpointKeeper, s.topupKeeper, s.stakeKeeper
 
 	start := uint64(0)
 	maxSize := uint64(256)
@@ -131,14 +131,14 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	require.NoError(err)
 	checkpointBufferTime := params.CheckpointBufferTime
 
-	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
-	dividendAccounts, err := s.topupKeeper.GetAllDividendAccounts(ctx)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	dividendAccounts, err := topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
 	// generate proposer for validator set
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -185,21 +185,21 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, msgServer := s.ctx, s.Require(), s.msgServer
+	keeper, topupKeeper, stakeKeeper := s.checkpointKeeper, s.topupKeeper, s.stakeKeeper
 
 	start := uint64(0)
 	maxSize := uint64(256)
 
 	borChainId := "1234"
 
-	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
-	dividendAccounts, err := s.topupKeeper.GetAllDividendAccounts(ctx)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	dividendAccounts, err := topupKeeper.GetAllDividendAccounts(ctx)
 	require.NoError(err)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -238,15 +238,15 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, msgServer := s.ctx, s.Require(), s.msgServer
+	keeper, stakeKeeper := s.checkpointKeeper, s.stakeKeeper
 
 	start := uint64(0)
 	maxSize := uint64(256)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {
@@ -333,9 +333,9 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.checkpointKeeper
-	require := s.Require()
-	//stakeKeeper := s.stakeKeeper
+	ctx, require, msgServer := s.ctx, s.Require(), s.msgServer
+	keeper, stakeKeeper := s.checkpointKeeper, s.stakeKeeper
+
 	start := uint64(0)
 	maxSize := uint64(256)
 	params, err := keeper.GetParams(ctx)
@@ -344,9 +344,9 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 
 	validatorSet := stakeSim.GetRandomValidatorSet(4)
 
-	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
-	s.stakeKeeper.EXPECT().IncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
+	stakeKeeper.EXPECT().IncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 	if err == nil {

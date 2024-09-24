@@ -95,8 +95,7 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 func (s *KeeperTestSuite) TestAddCheckpoint() {
-	ctx, keeper := s.ctx, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 
 	headerBlockNumber := uint64(2000)
 	startBlock := uint64(0)
@@ -122,8 +121,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {
-	ctx, keeper := s.ctx, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 
 	err := keeper.FlushCheckpointBuffer(ctx)
 	require.Nil(err)

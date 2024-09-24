@@ -20,9 +20,8 @@ const (
 )
 
 func (s *KeeperTestSuite) TestHandleMsgMilestone() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
-	require := s.Require()
-	stakingKeeper := s.stakeKeeper
+	ctx, require, msgServer, keeper, stakeKeeper := s.ctx, s.Require(), s.msgServer, s.milestoneKeeper, s.stakeKeeper
+
 	start := uint64(0)
 	milestoneID := "0000"
 	params := types.DefaultParams()
@@ -32,8 +31,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	minMilestoneLength := params.MinMilestoneLength
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+	stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
@@ -56,7 +55,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.ErrorContains(err, types.ErrProposerMismatch.Error())
 	})
 
-	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
+	milestoneValidatorSet, err := stakeKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
 
 	// add current proposer to header
@@ -182,9 +181,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
-	require := s.Require()
-	stakingKeeper := s.stakeKeeper
+	ctx, require, msgServer, keeper, stakeKeeper := s.ctx, s.Require(), s.msgServer, s.milestoneKeeper, s.stakeKeeper
+
 	start := uint64(0)
 
 	params := types.DefaultParams()
@@ -192,10 +190,10 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	minMilestoneLength := params.MinMilestoneLength
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+	stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
-	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
+	milestoneValidatorSet, err := stakeKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
 
 	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
@@ -233,14 +231,13 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, msgServer, keeper, stakeKeeper := s.ctx, s.Require(), s.msgServer, s.milestoneKeeper, s.stakeKeeper
 
 	params := types.DefaultParams()
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+	stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)

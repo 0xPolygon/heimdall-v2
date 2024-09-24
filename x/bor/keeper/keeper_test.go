@@ -43,54 +43,53 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (s *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(types.StoreKey)
-	testCtx := testutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
 	storeService := runtime.NewKVStoreService(key)
 
-	ctrl := gomock.NewController(suite.T())
+	ctrl := gomock.NewController(s.T())
 	chainManagerKeeper := bortestutil.NewMockChainManagerKeeper(ctrl)
-	suite.chainManagerKeeper = chainManagerKeeper
+	s.chainManagerKeeper = chainManagerKeeper
 
 	stakeKeeper := bortestutil.NewMockStakeKeeper(ctrl)
-	suite.stakeKeeper = stakeKeeper
+	s.stakeKeeper = stakeKeeper
 
-	suite.contractCaller = mocks.IContractCaller{}
+	s.contractCaller = mocks.IContractCaller{}
+	s.ctx = ctx
 
-	suite.ctx = ctx
-
-	suite.borKeeper = keeper.NewKeeper(
+	s.borKeeper = keeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
-		suite.chainManagerKeeper,
-		suite.stakeKeeper,
-		&suite.contractCaller,
+		s.chainManagerKeeper,
+		s.stakeKeeper,
+		&s.contractCaller,
 	)
 
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&suite.borKeeper))
+	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&s.borKeeper))
 	queryClient := types.NewQueryClient(queryHelper)
 
-	suite.queryClient = queryClient
-	suite.msgServer = keeper.NewMsgServerImpl(suite.borKeeper)
-	suite.encCfg = encCfg
+	s.queryClient = queryClient
+	s.msgServer = keeper.NewMsgServerImpl(s.borKeeper)
+	s.encCfg = encCfg
 
-	msgServer := keeper.NewMsgServerImpl(suite.borKeeper)
-	suite.msgServer = msgServer
+	msgServer := keeper.NewMsgServerImpl(s.borKeeper)
+	s.msgServer = msgServer
 
-	sideMsgServer := keeper.NewSideMsgServerImpl(&suite.borKeeper)
-	suite.sideMsgServer = sideMsgServer
+	sideMsgServer := keeper.NewSideMsgServerImpl(&s.borKeeper)
+	s.sideMsgServer = sideMsgServer
 
 }
 
-func (suite *KeeperTestSuite) TestAddNewSpan() {
-	require := suite.Require()
-	spans := suite.genTestSpans(2)
+func (s *KeeperTestSuite) TestAddNewSpan() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+	spans := s.genTestSpans(2)
 
 	testcases := []struct {
 		name string
@@ -107,29 +106,29 @@ func (suite *KeeperTestSuite) TestAddNewSpan() {
 	}
 
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 
-			err := suite.borKeeper.AddNewSpan(suite.ctx, &tc.span)
+			err := borKeeper.AddNewSpan(ctx, &tc.span)
 			require.NoError(err)
 
-			hasSpan, err := suite.borKeeper.HasSpan(suite.ctx, tc.span.Id)
+			hasSpan, err := borKeeper.HasSpan(ctx, tc.span.Id)
 			require.NoError(err)
 			require.True(hasSpan)
 
-			span, err := suite.borKeeper.GetSpan(suite.ctx, tc.span.Id)
+			span, err := borKeeper.GetSpan(ctx, tc.span.Id)
 			require.NoError(err)
 			require.Equal(tc.span, span)
 
-			lastSpan, err := suite.borKeeper.GetLastSpan(suite.ctx)
+			lastSpan, err := borKeeper.GetLastSpan(ctx)
 			require.NoError(err)
 			require.Equal(tc.span, lastSpan)
 		})
 	}
 }
 
-func (suite *KeeperTestSuite) TestAddNewRawSpan() {
-	require := suite.Require()
-	spans := suite.genTestSpans(2)
+func (s *KeeperTestSuite) TestAddNewRawSpan() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+	spans := s.genTestSpans(2)
 
 	testcases := []struct {
 		name string
@@ -146,20 +145,20 @@ func (suite *KeeperTestSuite) TestAddNewRawSpan() {
 	}
 
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 
-			err := suite.borKeeper.AddNewRawSpan(suite.ctx, &tc.span)
+			err := borKeeper.AddNewRawSpan(ctx, &tc.span)
 			require.NoError(err)
 
-			hasSpan, err := suite.borKeeper.HasSpan(suite.ctx, tc.span.Id)
+			hasSpan, err := borKeeper.HasSpan(ctx, tc.span.Id)
 			require.NoError(err)
 			require.True(hasSpan)
 
-			span, err := suite.borKeeper.GetSpan(suite.ctx, tc.span.Id)
+			span, err := borKeeper.GetSpan(ctx, tc.span.Id)
 			require.NoError(err)
 			require.Equal(tc.span, span)
 
-			lastSpan, err := suite.borKeeper.GetLastSpan(suite.ctx)
+			lastSpan, err := borKeeper.GetLastSpan(ctx)
 			if tc.span.Id == spans[0].Id {
 				require.Error(err)
 				require.Empty(lastSpan)
@@ -170,31 +169,31 @@ func (suite *KeeperTestSuite) TestAddNewRawSpan() {
 			}
 
 			if tc.span.Id == spans[0].Id {
-				err = suite.borKeeper.AddNewSpan(suite.ctx, &tc.span)
+				err = borKeeper.AddNewSpan(ctx, &tc.span)
 				require.NoError(err)
 			}
 		})
 	}
 }
 
-func (suite *KeeperTestSuite) TestGetAllSpans() {
-	require := suite.Require()
-	spans := suite.genTestSpans(2)
+func (s *KeeperTestSuite) TestGetAllSpans() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+	spans := s.genTestSpans(2)
 
-	for _, s := range spans {
-		err := suite.borKeeper.AddNewSpan(suite.ctx, s)
+	for _, span := range spans {
+		err := borKeeper.AddNewSpan(ctx, span)
 		require.NoError(err)
 	}
 
-	resSpans, err := suite.borKeeper.GetAllSpans(suite.ctx)
+	resSpans, err := borKeeper.GetAllSpans(ctx)
 	require.NoError(err)
 	require.Equal(spans, resSpans)
 }
 
-func (suite *KeeperTestSuite) TestFreezeSet() {
-	require := suite.Require()
+func (s *KeeperTestSuite) TestFreezeSet() {
+	require, stakeKeeper, borKeeper, ctx := s.Require(), s.stakeKeeper, s.borKeeper, s.ctx
 
-	valSet, vals := suite.genTestValidators()
+	valSet, vals := s.genTestValidators()
 
 	params := types.DefaultParams()
 
@@ -230,9 +229,9 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 		},
 	}
 
-	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).Return(vals).Times(len(testcases))
-	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).Return(valSet, nil).Times(len(testcases))
-	suite.stakeKeeper.EXPECT().GetValidatorFromValID(suite.ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (staketypes.Validator, error) {
+	stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(len(testcases))
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(len(testcases))
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (staketypes.Validator, error) {
 		for _, v := range vals {
 			if v.ValId == valID {
 				return v, nil
@@ -242,19 +241,19 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 	}).AnyTimes()
 
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 			params.ProducerCount = tc.producerCount
-			err := suite.borKeeper.SetParams(suite.ctx, params)
+			err := borKeeper.SetParams(ctx, params)
 			require.NoError(err)
 
-			resLastEthBlock, err := suite.borKeeper.GetLastEthBlock(suite.ctx)
+			resLastEthBlock, err := borKeeper.GetLastEthBlock(ctx)
 			require.NoError(err)
 			require.Equal(tc.expLastEthBlock, resLastEthBlock)
 
-			err = suite.borKeeper.FreezeSet(suite.ctx, tc.id, tc.startBlock, tc.endBlock, "test-chain", tc.seed)
+			err = borKeeper.FreezeSet(ctx, tc.id, tc.startBlock, tc.endBlock, "test-chain", tc.seed)
 			require.NoError(err)
 
-			resSpan, err := suite.borKeeper.GetSpan(suite.ctx, tc.id)
+			resSpan, err := borKeeper.GetSpan(ctx, tc.id)
 			require.NoError(err)
 			require.Equal(tc.id, resSpan.Id)
 			require.Equal(tc.startBlock, resSpan.StartBlock)
@@ -263,7 +262,7 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 			require.Equal(tc.expValSet, resSpan.ValidatorSet)
 			require.LessOrEqual(uint64(len(resSpan.SelectedProducers)), tc.producerCount)
 
-			resLastEthBlock, err = suite.borKeeper.GetLastEthBlock(suite.ctx)
+			resLastEthBlock, err = borKeeper.GetLastEthBlock(ctx)
 			require.NoError(err)
 			require.Equal(tc.expLastEthBlock.Add(tc.expLastEthBlock, big.NewInt(1)), resLastEthBlock)
 		})
@@ -271,13 +270,13 @@ func (suite *KeeperTestSuite) TestFreezeSet() {
 
 }
 
-func (suite *KeeperTestSuite) TestUpdateLastSpan() {
-	require := suite.Require()
+func (s *KeeperTestSuite) TestUpdateLastSpan() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
 
-	spans := suite.genTestSpans(2)
+	spans := s.genTestSpans(2)
 
-	for _, s := range spans {
-		err := suite.borKeeper.AddNewSpan(suite.ctx, s)
+	for _, span := range spans {
+		err := borKeeper.AddNewSpan(ctx, span)
 		require.NoError(err)
 	}
 
@@ -294,15 +293,15 @@ func (suite *KeeperTestSuite) TestUpdateLastSpan() {
 	}
 
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			resLastSpan, err := suite.borKeeper.GetLastSpan(suite.ctx)
+		s.T().Run(tc.name, func(t *testing.T) {
+			resLastSpan, err := borKeeper.GetLastSpan(ctx)
 			require.NoError(err)
 			require.Equal(tc.expPrevLastSpan, &resLastSpan)
 
-			err = suite.borKeeper.UpdateLastSpan(suite.ctx, tc.expNewLastSpan.Id)
+			err = borKeeper.UpdateLastSpan(ctx, tc.expNewLastSpan.Id)
 			require.NoError(err)
 
-			resLastSpan, err = suite.borKeeper.GetLastSpan(suite.ctx)
+			resLastSpan, err = borKeeper.GetLastSpan(ctx)
 			require.NoError(err)
 			require.Equal(tc.expNewLastSpan, &resLastSpan)
 
@@ -310,8 +309,8 @@ func (suite *KeeperTestSuite) TestUpdateLastSpan() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestIncrementLastEthBlock() {
-	require := suite.Require()
+func (s *KeeperTestSuite) TestIncrementLastEthBlock() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
 
 	testcases := []struct {
 		name            string
@@ -331,16 +330,16 @@ func (suite *KeeperTestSuite) TestIncrementLastEthBlock() {
 	}
 
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 			if tc.setLastEthBlock != nil {
-				err := suite.borKeeper.SetLastEthBlock(suite.ctx, tc.setLastEthBlock)
+				err := borKeeper.SetLastEthBlock(ctx, tc.setLastEthBlock)
 				require.NoError(err)
 			}
 
-			err := suite.borKeeper.IncrementLastEthBlock(suite.ctx)
+			err := borKeeper.IncrementLastEthBlock(ctx)
 			require.NoError(err)
 
-			resLastEthBlock, err := suite.borKeeper.GetLastEthBlock(suite.ctx)
+			resLastEthBlock, err := borKeeper.GetLastEthBlock(ctx)
 			require.NoError(err)
 			require.Equal(tc.expLastEthBlock, resLastEthBlock)
 
@@ -348,24 +347,24 @@ func (suite *KeeperTestSuite) TestIncrementLastEthBlock() {
 	}
 }
 
-func (suite *KeeperTestSuite) TestFetchNextSpanSeed() {
-	require := suite.Require()
+func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
+	require, ctx, borKeeper, contractCaller := s.Require(), s.ctx, s.borKeeper, &s.contractCaller
+
 	lastEthBlock := big.NewInt(10)
 	nextEthBlock := big.NewInt(11)
 	nextEthBlockHeader := &ethTypes.Header{Number: big.NewInt(11)}
 	nextEthBlockHash := nextEthBlockHeader.Hash()
-	err := suite.borKeeper.SetLastEthBlock(suite.ctx, lastEthBlock)
+	err := borKeeper.SetLastEthBlock(ctx, lastEthBlock)
 	require.NoError(err)
-	suite.contractCaller.On("GetMainChainBlock", nextEthBlock).Return(nextEthBlockHeader, nil).Times(1)
+	contractCaller.On("GetMainChainBlock", nextEthBlock).Return(nextEthBlockHeader, nil).Times(1)
 
-	res, err := suite.borKeeper.FetchNextSpanSeed(suite.ctx)
+	res, err := borKeeper.FetchNextSpanSeed(ctx)
 	require.NoError(err)
 	require.Equal(nextEthBlockHash, res)
 }
 
-func (suite *KeeperTestSuite) TestParamsGetterSetter() {
-	ctx, borKeeper := suite.ctx, suite.borKeeper
-	require := suite.Require()
+func (s *KeeperTestSuite) TestParamsGetterSetter() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
 
 	expParams := types.DefaultParams()
 	expParams.ProducerCount = 66
@@ -377,9 +376,9 @@ func (suite *KeeperTestSuite) TestParamsGetterSetter() {
 	require.True(expParams.Equal(resParams))
 }
 
-func (suite *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
-	suite.T().Helper()
-	valSet, vals := suite.genTestValidators()
+func (s *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
+	s.T().Helper()
+	valSet, vals := s.genTestValidators()
 
 	spans := make([]*types.Span, 0, num)
 	startBlock, endBlock := uint64(0), uint64(0)
@@ -401,8 +400,8 @@ func (suite *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
 	return spans
 }
 
-func (suite *KeeperTestSuite) genTestValidators() (staketypes.ValidatorSet, []staketypes.Validator) {
-	suite.T().Helper()
+func (s *KeeperTestSuite) genTestValidators() (staketypes.ValidatorSet, []staketypes.Validator) {
+	s.T().Helper()
 
 	validators := make([]*staketypes.Validator, 0, len(keeper.TestValidators))
 	for _, v := range keeper.TestValidators {

@@ -7,8 +7,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-func (suite *KeeperTestSuite) TestGetGRPCRecord_Success() {
-	ctx, ck, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
+func (s *KeeperTestSuite) TestGetGRPCRecord_Success() {
+	ctx, ck, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
 
 	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
 	testRecord1.RecordTime = testRecord1.RecordTime.UTC()
@@ -26,8 +26,8 @@ func (suite *KeeperTestSuite) TestGetGRPCRecord_Success() {
 
 }
 
-func (suite *KeeperTestSuite) TestGetGRPCRecord_NotFound() {
-	ctx, queryClient, require := suite.ctx, suite.queryClient, suite.Require()
+func (s *KeeperTestSuite) TestGetGRPCRecord_NotFound() {
+	ctx, queryClient, require := s.ctx, s.queryClient, s.Require()
 
 	req := &types.RecordRequest{
 		RecordId: 1,

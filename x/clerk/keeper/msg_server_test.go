@@ -17,12 +17,10 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
-	t, ctx, ck, chainID := suite.T(), suite.ctx, suite.keeper, suite.chainID
+func (s *KeeperTestSuite) TestHandleMsgEventRecord() {
+	t, ctx, ck, msgServer, chainId := s.T(), s.ctx, s.keeper, s.msgServer, s.chainId
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -46,12 +44,12 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 		hmTypes.HexBytes{
 			HexBytes: make([]byte, 0),
 		},
-		chainID,
+		chainId,
 	)
 
 	t.Run("Success", func(t *testing.T) {
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-		_, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+		_, err := msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.NoError(t, err)
 
 		// there should be no stored event record
@@ -77,7 +75,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 		require.NoError(t, err)
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-		_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+		_, err = msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.Error(t, err)
 		require.Equal(t, types.ErrEventRecordAlreadySynced, err)
 	})
@@ -98,12 +96,10 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	})
 }
 
-func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
-	t, ctx, ck, chainID := suite.T(), suite.ctx, suite.keeper, suite.chainID
+func (s *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
+	t, ctx, ck, msgServer, chainId := s.T(), s.ctx, s.keeper, s.msgServer, s.chainId
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -122,7 +118,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 		hmTypes.HexBytes{
 			HexBytes: make([]byte, 0),
 		},
-		chainID,
+		chainId,
 	)
 
 	// sequence id
@@ -132,17 +128,14 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	ck.SetRecordSequence(ctx, sequence.String())
 
 	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+	_, err = msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
-	// require.Equal(t, common.ErrOldTx(types.ModuleName), err)
 }
 
-func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
+	t, ctx, ck, msgServer := s.T(), s.ctx, s.keeper, s.msgServer
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -168,7 +161,7 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 	)
 
 	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+	_, err = msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
 
 	// there should be no stored event record

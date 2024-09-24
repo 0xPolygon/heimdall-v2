@@ -18,17 +18,14 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-func (suite *KeeperTestSuite) TestCreateTopupTx() {
-	msgServer, require, keeper, ctx, t := suite.msgServer, suite.Require(), suite.keeper, suite.ctx, suite.T()
+func (s *KeeperTestSuite) TestCreateTopupTx() {
+	msgServer, require, keeper, ctx, t := s.msgServer, s.Require(), s.keeper, s.ctx, s.T()
 
 	var msg types.MsgTopupTx
-
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	hash := hTypes.TxHash{Hash: []byte(TxHash)}
-	logIndex := r1.Uint64()
-	blockNumber := r1.Uint64()
+	logIndex := r.Uint64()
+	blockNumber := r.Uint64()
 
 	_, _, addr := testdata.KeyTestPubAddr()
 	fee := math.NewInt(100000000000000000)
@@ -59,8 +56,8 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 	})
 }
 
-func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
-	msgServer, require, keeper, ctx, t := suite.msgServer, suite.Require(), suite.keeper, suite.ctx, suite.T()
+func (s *KeeperTestSuite) TestWithdrawFeeTx() {
+	msgServer, require, keeper, ctx, t := s.msgServer, s.Require(), s.keeper, s.ctx, s.T()
 
 	var msg types.MsgWithdrawFeeTx
 

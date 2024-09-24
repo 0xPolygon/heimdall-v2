@@ -52,27 +52,27 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (s *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(topupTypes.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
 
-	testCtx := cosmostestutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := cosmostestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	ctrl := gomock.NewController(suite.T())
+	ctrl := gomock.NewController(s.T())
 	defer ctrl.Finish()
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
 	chainKeeper := testutil.NewMockChainKeeper(ctrl)
 
-	suite.contractCaller = mocks.IContractCaller{}
+	s.contractCaller = mocks.IContractCaller{}
 
 	keeper := topupKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		bankKeeper,
 		chainKeeper,
-		&suite.contractCaller,
+		&s.contractCaller,
 	)
 
 	topupGenesis := topupTypes.DefaultGenesisState()
@@ -81,22 +81,20 @@ func (suite *KeeperTestSuite) SetupTest() {
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
 	topupTypes.RegisterQueryServer(queryHelper, topupKeeper.NewQueryServer(&keeper))
 
-	suite.ctx = ctx
-	suite.keeper = keeper
-	suite.queryClient = topupTypes.NewQueryClient(queryHelper)
-	suite.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
-	suite.sideMsgCfg = mod.NewSideTxConfigurator()
+	s.ctx = ctx
+	s.keeper = keeper
+	s.queryClient = topupTypes.NewQueryClient(queryHelper)
+	s.msgServer = topupKeeper.NewMsgServerImpl(&keeper)
+	s.sideMsgCfg = mod.NewSideTxConfigurator()
 
-	topupTypes.RegisterSideMsgServer(suite.sideMsgCfg, topupKeeper.NewSideMsgServerImpl(&keeper))
+	topupTypes.RegisterSideMsgServer(s.sideMsgCfg, topupKeeper.NewSideMsgServerImpl(&keeper))
 }
 
-func (suite *KeeperTestSuite) TestTopupSequenceSet() {
-	ctx, tk, require := suite.ctx, suite.keeper, suite.Require()
+func (s *KeeperTestSuite) TestTopupSequenceSet() {
+	ctx, tk, require := s.ctx, s.keeper, s.Require()
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-
-	topupSequence := strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	topupSequence := strconv.Itoa(simulation.RandIntBetween(r, 1000, 100000))
 	err := tk.SetTopupSequence(ctx, topupSequence)
 	require.Nil(err)
 
@@ -110,8 +108,8 @@ func (suite *KeeperTestSuite) TestTopupSequenceSet() {
 	require.Equal(topupSequence, sequences[0])
 }
 
-func (suite *KeeperTestSuite) TestDividendAccount() {
-	ctx, tk, require := suite.ctx, suite.keeper, suite.Require()
+func (s *KeeperTestSuite) TestDividendAccount() {
+	ctx, tk, require := s.ctx, s.keeper, s.Require()
 
 	dividendAccount := types.DividendAccount{
 		User:      AccountHash,
@@ -129,8 +127,8 @@ func (suite *KeeperTestSuite) TestDividendAccount() {
 	require.Equal(dividendAccount, dividendAccounts[0])
 }
 
-func (suite *KeeperTestSuite) TestAddFeeToDividendAccount() {
-	ctx, tk, require := suite.ctx, suite.keeper, suite.Require()
+func (s *KeeperTestSuite) TestAddFeeToDividendAccount() {
+	ctx, tk, require := s.ctx, s.keeper, s.Require()
 
 	amount, _ := big.NewInt(0).SetString("0", 10)
 	err := tk.AddFeeToDividendAccount(ctx, AccountHash, amount)
@@ -142,8 +140,8 @@ func (suite *KeeperTestSuite) TestAddFeeToDividendAccount() {
 	require.Equal(amount, actualResult)
 }
 
-func (suite *KeeperTestSuite) TestDividendAccountTree() {
-	require := suite.Require()
+func (s *KeeperTestSuite) TestDividendAccountTree() {
+	require := s.Require()
 	codec := address.NewHexCodec()
 
 	divAccounts := make([]types.DividendAccount, 5)

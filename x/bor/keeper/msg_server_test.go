@@ -9,12 +9,12 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
-func (suite *KeeperTestSuite) TestProposeSpan() {
-	require := suite.Require()
+func (s *KeeperTestSuite) TestProposeSpan() {
+	require, ctx, borKeeper, cmKeeper, msgServer := s.Require(), s.ctx, s.borKeeper, s.chainManagerKeeper, s.msgServer
 
 	testChainParams := chainmanagertypes.DefaultParams()
-	testSpan := suite.genTestSpans(1)[0]
-	err := suite.borKeeper.AddNewSpan(suite.ctx, testSpan)
+	testSpan := s.genTestSpans(1)[0]
+	err := borKeeper.AddNewSpan(ctx, testSpan)
 	require.NoError(err)
 
 	testcases := []struct {
@@ -115,11 +115,11 @@ func (suite *KeeperTestSuite) TestProposeSpan() {
 		},
 	}
 
-	suite.chainManagerKeeper.EXPECT().GetParams(suite.ctx).Return(testChainParams, nil).AnyTimes()
+	cmKeeper.EXPECT().GetParams(ctx).Return(testChainParams, nil).AnyTimes()
 
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			res, err := suite.msgServer.ProposeSpan(suite.ctx, &tc.span)
+		s.T().Run(tc.name, func(t *testing.T) {
+			res, err := msgServer.ProposeSpan(ctx, &tc.span)
 			require.Equal(tc.expRes, res)
 			if tc.expErr == "" {
 				require.NoError(err)

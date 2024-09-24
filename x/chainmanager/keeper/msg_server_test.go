@@ -17,8 +17,7 @@ const (
 )
 
 func (s *KeeperTestSuite) TestMsgUpdateParams() {
-
-	params := s.getParams()
+	ctx, require, cmKeeper, queryClient, msgServer, params := s.ctx, s.Require(), s.cmKeeper, s.queryClient, s.msgServer, s.getParams()
 
 	testCases := []struct {
 		name      string
@@ -38,7 +37,7 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 		{
 			name: "invalid params",
 			input: &types.MsgUpdateParams{
-				Authority: s.chainmanagerKeeper.GetAuthority(),
+				Authority: cmKeeper.GetAuthority(),
 				Params: types.Params{
 					ChainParams: types.ChainParams{
 						MaticTokenAddress: "def",
@@ -51,7 +50,7 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 		{
 			name: "all good",
 			input: &types.MsgUpdateParams{
-				Authority: s.chainmanagerKeeper.GetAuthority(),
+				Authority: cmKeeper.GetAuthority(),
 				Params:    params,
 			},
 			expErr: false,
@@ -61,18 +60,18 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 	for _, tc := range testCases {
 		tc := tc
 		s.Run(tc.name, func() {
-			_, err := s.msgServer.UpdateParams(s.ctx, tc.input)
+			_, err := msgServer.UpdateParams(ctx, tc.input)
 
 			if tc.expErr {
-				s.Require().Error(err)
-				s.Require().Contains(err.Error(), tc.expErrMsg)
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
 			} else {
-				s.Require().Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), s.chainmanagerKeeper.GetAuthority())
-				s.Require().NoError(err)
+				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), cmKeeper.GetAuthority())
+				require.NoError(err)
 
-				res, err := s.queryClient.Params(s.ctx, &types.QueryParamsRequest{})
-				s.Require().NoError(err)
-				s.Require().Equal(params, res.Params)
+				res, err := queryClient.Params(ctx, &types.QueryParamsRequest{})
+				require.NoError(err)
+				require.Equal(params, res.Params)
 			}
 		})
 	}
@@ -81,7 +80,6 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 func (s *KeeperTestSuite) getParams() types.Params {
 	s.T().Helper()
 
-	// default params
 	params := types.DefaultParams()
 	params.ChainParams.MaticTokenAddress = MaticTokenAddress
 	params.ChainParams.StakingManagerAddress = StakingManagerAddress

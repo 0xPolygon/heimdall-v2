@@ -84,8 +84,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *KeeperTestSuite) TestAddMilestone() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
@@ -121,8 +120,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 }
 
 func (s *KeeperTestSuite) TestGetMilestoneCount() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	result, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
@@ -153,8 +151,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 }
 
 func (s *KeeperTestSuite) TestGetNoAckMilestone() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	result, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
@@ -191,8 +188,7 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 }
 
 func (s *KeeperTestSuite) TestLastNoAckMilestone() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	result, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
@@ -221,8 +217,7 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 }
 
 func (s *KeeperTestSuite) TestGetMilestoneTimout() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	val, err := keeper.GetLastMilestoneTimeout(ctx)
 	require.NoError(err)

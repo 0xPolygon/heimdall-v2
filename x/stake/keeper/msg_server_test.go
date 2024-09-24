@@ -93,11 +93,11 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
-	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
+	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
+	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
@@ -164,11 +164,11 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
-	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
+	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
+	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := common.Hex2Bytes(TxHash)
@@ -232,8 +232,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	pk1 := secp256k1.GenPrivKey().PubKey()
 	require.NotNil(pk1)
@@ -243,7 +242,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 
 	addr := pk1.Address().String()
 
-	index := simulation.RandIntBetween(r1, 0, 100)
+	index := simulation.RandIntBetween(r, 0, 100)
 	logIndex := uint64(index)
 
 	validatorId := uint64(1)

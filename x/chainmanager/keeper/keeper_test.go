@@ -22,10 +22,10 @@ import (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx                sdk.Context
-	chainmanagerKeeper keeper.Keeper
-	queryClient        types.QueryClient
-	msgServer          types.MsgServer
+	ctx         sdk.Context
+	cmKeeper    keeper.Keeper
+	queryClient types.QueryClient
+	msgServer   types.MsgServer
 }
 
 func (s *KeeperTestSuite) SetupTest() {
@@ -36,16 +36,16 @@ func (s *KeeperTestSuite) SetupTest() {
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
 
-	chainmanagerKeeper := keeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress(govtypes.ModuleName).String())
-	require.NoError(chainmanagerKeeper.SetParams(ctx, types.DefaultParams()))
+	cmKeeper := keeper.NewKeeper(encCfg.Codec, storeService, authtypes.NewModuleAddress(govtypes.ModuleName).String())
+	require.NoError(cmKeeper.SetParams(ctx, types.DefaultParams()))
 
 	s.ctx = ctx
-	s.chainmanagerKeeper = chainmanagerKeeper
+	s.cmKeeper = cmKeeper
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&chainmanagerKeeper))
+	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&cmKeeper))
 	s.queryClient = types.NewQueryClient(queryHelper)
-	s.msgServer = keeper.NewMsgServerImpl(chainmanagerKeeper)
+	s.msgServer = keeper.NewMsgServerImpl(cmKeeper)
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -54,20 +54,19 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *KeeperTestSuite) TestParamsGetterSetter() {
-	ctx, chainmanagerKeeper := s.ctx, s.chainmanagerKeeper
-	require := s.Require()
+	ctx, require, cmKeeper := s.ctx, s.Require(), s.cmKeeper
 
 	expParams := types.DefaultParams()
 	// check that the empty keeper loads the default
-	resParams, err := chainmanagerKeeper.GetParams(ctx)
+	resParams, err := cmKeeper.GetParams(ctx)
 	require.NoError(err)
 	require.Equal(expParams, resParams)
 
 	expParams.BorChainTxConfirmations = 256
 	expParams.MainChainTxConfirmations = 512
 	expParams.ChainParams.BorChainId = "1337"
-	require.NoError(chainmanagerKeeper.SetParams(ctx, expParams))
-	resParams, err = chainmanagerKeeper.GetParams(ctx)
+	require.NoError(cmKeeper.SetParams(ctx, expParams))
+	resParams, err = cmKeeper.GetParams(ctx)
 	require.NoError(err)
 	require.True(expParams.Equal(resParams))
 }
