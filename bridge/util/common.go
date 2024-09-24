@@ -93,9 +93,7 @@ func IsProposer(cliCtx client.Context) (bool, error) {
 		count     = uint64(1)
 	)
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {
 		logger.Error("Error fetching proposers", "url", ProposersURL, "error", err)
 		return false, err
@@ -123,9 +121,7 @@ func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
 		count     = uint64(1)
 	)
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {
 		logger.Error("Error fetching milestone proposers", "url", MilestoneProposersURL, "error", err)
 		return false, err
@@ -155,10 +151,7 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count+1, 10))),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count+1, 10))))
 	if err != nil {
 		logger.Error("Unable to send request for next proposers", "url", ProposersURL, "error", err)
 		return false, err
@@ -188,10 +181,7 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {
 		logger.Error("Unable to send request for next proposers", "url", MilestoneProposersURL, "error", err)
 		return false, err
@@ -265,7 +255,7 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 
 	var proposer staketypes.Validator
 
-	result, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentProposerURL))
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentProposerURL))
 	if err != nil {
 		logger.Error("Error fetching proposers", "error", err)
 		return false, err
@@ -293,9 +283,7 @@ func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
 
 	var validator staketypes.Validator
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
 		logger.Error("Error fetching proposers", "error", err)
 		return false
@@ -385,7 +373,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
 
 	// call account rest api
-	response, err := helper.FetchFromAPI(cliCtx, url)
+	response, err := helper.FetchFromAPI(url)
 	if err != nil {
 		return nil, err
 	}
@@ -403,10 +391,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(ChainManagerParamsURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(ChainManagerParamsURL))
 	if err != nil {
 		logger.Error("Error fetching chainmanager params", "err", err)
 		return nil, err
@@ -425,10 +410,7 @@ func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, er
 func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(CheckpointParamsURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CheckpointParamsURL))
 	if err != nil {
 		logger.Error("Error fetching Checkpoint params", "err", err)
 		return nil, err
@@ -447,10 +429,7 @@ func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error)
 func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(MilestoneParamsURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneParamsURL))
 
 	if err != nil {
 		logger.Error("Error fetching Milestone params", "err", err)
@@ -470,10 +449,7 @@ func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(BufferedCheckpointURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(BufferedCheckpointURL))
 	if err != nil {
 		logger.Debug("Error fetching buffered checkpoint", "err", err)
 		return nil, err
@@ -492,10 +468,7 @@ func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, 
 func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(LatestCheckpointURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestCheckpointURL))
 	if err != nil {
 		logger.Debug("Error fetching latest checkpoint", "err", err)
 		return nil, err
@@ -514,10 +487,7 @@ func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, er
 func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(LatestMilestoneURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
 	if err != nil {
 		logger.Debug("Error fetching latest milestone", "err", err)
 		return nil, err
@@ -536,10 +506,7 @@ func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error
 func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(MilestoneCountURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
 	if err != nil {
 		logger.Error("Error fetching Milestone count", "err", err)
 		return nil, err
@@ -571,9 +538,7 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error
 
 	var validator staketypes.Validator
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
 		logger.Error("Error fetching validator data", "error", err)
 		return 0, err
@@ -593,7 +558,7 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error
 func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
 	if err != nil {
 		logger.Error("Unable to send request for current validatorset", "url", CurrentValidatorSetURL, "error", err)
 		return nil, err
@@ -612,10 +577,7 @@ func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
 	if err != nil {
 		logger.Error("Error fetching event record by state ID", "error", err)
 		return nil, err
