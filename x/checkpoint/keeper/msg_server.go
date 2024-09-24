@@ -29,8 +29,6 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-// TODO HV2: split `Checkpoint` function in 4 different utilities methods (getCheckpoint, IsValidCheckpoint, validateAccountHash, validateProposer).
-
 // Checkpoint function handles the checkpoint msg
 func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
 	logger := srv.Logger(ctx)
@@ -107,7 +105,7 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	logger.Debug("Validator account root hash generated", "accountRootHash", common.Bytes2Hex(accountRoot))
 
 	// Compare stored root hash to msg root hash
-	if !bytes.Equal(accountRoot, msg.AccountRootHash.GetHash()) {
+	if !bytes.Equal(accountRoot, msg.AccountRootHash) {
 		logger.Error(
 			"AccountRootHash of current state doesn't match from msg",
 			"hash", common.Bytes2Hex(accountRoot),
@@ -117,7 +115,7 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	}
 
 	// Check proposer in message
-	validatorSet, err := srv.sk.GetValidatorSet(ctx)
+	validatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
@@ -146,8 +144,8 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 			sdk.NewAttribute(types.AttributeKeyProposer, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeyEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
-			sdk.NewAttribute(types.AttributeKeyRootHash, msg.RootHash.String()),
-			sdk.NewAttribute(types.AttributeKeyAccountHash, msg.AccountRootHash.String()),
+			sdk.NewAttribute(types.AttributeKeyRootHash, common.Bytes2Hex(msg.RootHash)),
+			sdk.NewAttribute(types.AttributeKeyAccountHash, common.Bytes2Hex(msg.AccountRootHash)),
 		),
 	})
 
@@ -173,14 +171,14 @@ func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpoint
 	// return err if start and end match but contract root hash doesn't match
 	if msg.StartBlock == headerBlock.StartBlock &&
 		msg.EndBlock == headerBlock.EndBlock &&
-		!msg.RootHash.Equal(headerBlock.RootHash) {
+		!bytes.Equal(msg.RootHash, headerBlock.RootHash) {
 		logger.Error("Invalid ACK",
 			"startExpected", headerBlock.StartBlock,
 			"startReceived", msg.StartBlock,
 			"endExpected", headerBlock.EndBlock,
 			"endReceived", msg.StartBlock,
-			"rootExpected", headerBlock.RootHash.String(),
-			"rootReceived", msg.RootHash.String(),
+			"rootExpected", common.Bytes2Hex(headerBlock.RootHash),
+			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
 		return nil, types.ErrBadAck
 	}
@@ -242,7 +240,7 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 
 	isProposer := false
 
-	currentValidatorSet, err := srv.sk.GetValidatorSet(ctx)
+	currentValidatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error while fetching validator set")
 	}
@@ -290,14 +288,14 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
 
 	// increment accum (selects new proposer)
-	err = srv.sk.IncrementAccum(ctx, 1)
+	err = srv.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
 
 	}
 
 	// get new proposer
-	vs, err := srv.sk.GetValidatorSet(ctx)
+	vs, err := srv.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
 

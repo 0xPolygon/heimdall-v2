@@ -20,8 +20,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
@@ -39,7 +38,7 @@ type KeeperTestSuite struct {
 	keeper         clerkKeeper.Keeper
 	chainId        string
 	msgServer      types.MsgServer
-	sideMsgCfg     hmModule.SideTxConfigurator
+	sideMsgCfg     sidetxs.SideTxConfigurator
 	queryClient    types.QueryClient
 	contractCaller mocks.IContractCaller
 }
@@ -82,14 +81,14 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.queryClient = types.NewQueryClient(queryHelper)
 	s.msgServer = clerkKeeper.NewMsgServerImpl(keeper)
 
-	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
+	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, clerkKeeper.NewSideMsgServerImpl(keeper))
 }
 
 func (s *KeeperTestSuite) TestHasGetSetEventRecord() {
 	t, ctx, ck := s.T(), s.ctx, s.keeper
 
-	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", time.Now())
 	testRecord1.RecordTime = testRecord1.RecordTime.UTC()
 
 	// SetEventRecord
@@ -126,7 +125,7 @@ func (s *KeeperTestSuite) TestGetEventRecordList() {
 	var testRecords []types.EventRecord
 
 	for i = 0; i < 60; i++ {
-		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1", time.Now())
 		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
@@ -168,7 +167,7 @@ func (s *KeeperTestSuite) TestGetEventRecordListTime() {
 	var i uint64
 
 	for i = 0; i < 30; i++ {
-		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Unix(int64(i), 0))
+		testRecord := types.NewEventRecord(TxHash1, i, i, Address1, make([]byte, 1), "1", time.Unix(int64(i), 0))
 		testRecord.RecordTime = testRecord.RecordTime.UTC()
 		err := ck.SetEventRecord(ctx, testRecord)
 		require.NoError(t, err)
@@ -218,7 +217,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 		recordSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 
-	testEventRecord := types.NewEventRecord(TxHash1, 1, 1, Address1, hmTypes.HexBytes{HexBytes: make([]byte, 1)}, "1", time.Now())
+	testEventRecord := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", time.Now())
 	testEventRecord.RecordTime = testEventRecord.RecordTime.UTC()
 	eventRecords[0] = testEventRecord
 

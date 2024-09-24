@@ -41,15 +41,13 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 
-	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
-
 	s.Run("Success", func() {
 		msgCheckpoint := types.NewMsgCheckpointBlock(
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			accountRoot,
+			accRootHash,
 			borChainId,
 		)
 
@@ -74,7 +72,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			accountRoot,
+			accRootHash,
 			borChainId,
 		)
 
@@ -109,7 +107,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 			start,
 			start+256,
 			header.RootHash,
-			accountRoot,
+			accRootHash,
 			borChainId,
 		)
 
@@ -153,14 +151,12 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
-
 	msgCheckpoint := types.NewMsgCheckpointBlock(
 		header.Proposer,
 		header.StartBlock,
 		header.EndBlock,
 		header.RootHash,
-		accountRoot,
+		accRootHash,
 		borChainId,
 	)
 
@@ -214,14 +210,12 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
-	accountRoot := hmTypes.HeimdallHash{Hash: accRootHash}
-
 	msgCheckpoint := types.NewMsgCheckpointBlock(
 		header.Proposer,
 		header.StartBlock,
 		header.EndBlock,
 		header.RootHash,
-		accountRoot,
+		accRootHash,
 		borChainId,
 	)
 
@@ -268,7 +262,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -288,7 +282,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -307,7 +301,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(123),
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
@@ -322,8 +316,8 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 

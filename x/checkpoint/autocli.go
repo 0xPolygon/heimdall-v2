@@ -5,7 +5,7 @@ import (
 	_ "cosmossdk.io/api/cosmos/crypto/secp256k1" // register so that it shows up in protoregistry.GlobalTypes
 	_ "cosmossdk.io/api/cosmos/crypto/secp256r1" // register so that it shows up in protoregistry.GlobalTypes
 
-	checkpoint "github.com/0xPolygon/heimdall-v2/api/heimdallv2/checkpoint/v1"
+	"github.com/0xPolygon/heimdall-v2/api/heimdallv2/checkpoint"
 )
 
 // AutoCLIOptions returns the auto cli options for the module (query and tx)

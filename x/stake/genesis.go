@@ -3,6 +3,11 @@ package stake
 import (
 	"errors"
 
+	cmttypes "github.com/cometbft/cometbft/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -22,4 +27,34 @@ func ValidateGenesis(data *types.GenesisState) error {
 	}
 
 	return nil
+}
+
+// WriteValidators returns a slice of comet genesis validators.
+func WriteValidators(ctx sdk.Context, keeper *keeper.Keeper) (vals []cmttypes.GenesisValidator, returnErr error) {
+	validators := keeper.GetAllValidators(ctx)
+	for _, validator := range validators {
+		pk, err := validator.ConsPubKey()
+		if err != nil {
+			returnErr = err
+			return
+		}
+		cmtPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
+		if err != nil {
+			returnErr = err
+			return
+		}
+		if cmtPk == nil {
+			returnErr = errors.New("invalid public key")
+			return
+		}
+
+		vals = append(vals, cmttypes.GenesisValidator{
+			Address: sdk.ConsAddress(cmtPk.Address()).Bytes(),
+			PubKey:  cmtPk,
+			Power:   validator.GetVotingPower(),
+			Name:    validator.Signer,
+		})
+	}
+
+	return
 }

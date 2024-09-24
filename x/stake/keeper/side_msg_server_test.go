@@ -22,20 +22,19 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var addressCodec = address.HexCodec{}
 
-func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
+func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {
 	cfg := s.sideMsgCfg
 	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
-func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
+func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs.Vote) {
 	cfg := s.sideMsgCfg
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
@@ -44,7 +43,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	ctx, require, cmKeeper, contractCaller, sideHandler := s.ctx, s.Require(), s.cmKeeper, s.contractCaller, s.sideHandler
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	txHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	txHash := common.Hash{}.Bytes()
 	index := simulation.RandIntBetween(r, 0, 100)
 	logIndex := uint64(index)
 	validatorId := uint64(1)
@@ -94,11 +93,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_YES)
+		require.Equal(result, sidetxs.Vote_VOTE_YES)
 	})
 
 	s.Run("No receipt", func() {
@@ -132,11 +131,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(nil, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(nil, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 
 	})
 
@@ -160,11 +159,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 
 		require.NoError(err)
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(nil, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Signer pubKey", func() {
@@ -197,11 +196,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Signer addr", func() {
@@ -234,11 +233,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Validator Id", func() {
@@ -271,11 +270,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Activation Epoch", func() {
@@ -309,11 +308,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Amount", func() {
@@ -347,11 +346,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Block Number", func() {
@@ -385,11 +384,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid nonce", func() {
@@ -423,11 +422,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 			SignerPubkey:    pubKey.Bytes()[1:],
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorJoinEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, msgValJoin.LogIndex).Return(stakingInfoStaked, nil)
 
 		result := sideHandler(ctx, msgValJoin)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 }
 
@@ -469,7 +468,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	require.True(ok)
 
 	// gen msg
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
@@ -478,7 +477,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -491,7 +490,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should Pass")
+		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should Pass")
 	})
 
 	s.Run("No event log", func() {
@@ -501,11 +500,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(nil, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 
 	})
 
@@ -524,7 +523,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -536,7 +535,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid validator", func() {
@@ -545,7 +544,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -557,7 +556,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid signer pubKey", func() {
@@ -566,7 +565,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -578,7 +577,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid new signer address", func() {
@@ -587,7 +586,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -599,7 +598,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
 		result := s.sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid nonce", func() {
@@ -608,7 +607,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		signerUpdateEvent := &stakinginfo.StakinginfoSignerChange{
 			ValidatorId:  new(big.Int).SetUint64(oldSigner.ValId),
@@ -620,7 +619,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 }
 
@@ -633,7 +632,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	chainParams, err := cmKeeper.GetParams(ctx)
 	require.NoError(err)
 	logIndex := uint64(0)
@@ -651,7 +650,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -677,7 +676,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 		require.NoError(err)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should Fail")
 	})
 
 	s.Run("No Receipt", func() {
@@ -686,7 +685,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(nil, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(nil, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -712,7 +711,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 		require.NoError(err)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("No event log", func() {
@@ -721,7 +720,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		validators[0].EndEpoch = 10
 
@@ -739,7 +738,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 		require.NoError(err)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid BlockNumber", func() {
@@ -750,7 +749,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
 			User:              validator0Address,
@@ -775,7 +774,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 		require.NoError(err)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid validatorId", func() {
@@ -784,7 +783,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -810,7 +809,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 		require.NoError(err)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid DeactivationEpoch", func() {
@@ -819,7 +818,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -844,7 +843,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 		require.NoError(err)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Nonce", func() {
@@ -853,7 +852,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 			BlockNumber: blockNumber,
 		}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		amount, _ := big.NewInt(0).SetString("10000000000000000000", 10)
 		stakingInfoUnstakeInit := &stakinginfo.StakinginfoUnstakeInit{
@@ -879,7 +878,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 		require.NoError(err)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 }
 
@@ -899,7 +898,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	chainParams, err := cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
 	nonce := big.NewInt(1)
 
@@ -916,7 +915,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -926,7 +925,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(stakingInfoStakeUpdate, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should succeed")
+		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should succeed")
 	})
 
 	s.Run("No Receipt", func() {
@@ -942,7 +941,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(nil, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(nil, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -952,7 +951,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(stakingInfoStakeUpdate, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("No event log", func() {
@@ -969,11 +968,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 		contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(nil, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid BlockNumber", func() {
@@ -989,7 +988,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -999,7 +998,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(stakingInfoStakeUpdate, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid ValidatorID", func() {
@@ -1016,7 +1015,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -1026,7 +1025,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(stakingInfoStakeUpdate, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Amount", func() {
@@ -1043,7 +1042,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -1053,7 +1052,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(stakingInfoStakeUpdate, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 
 	s.Run("Invalid Nonce", func() {
@@ -1069,7 +1068,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
-		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+		contractCaller.On("GetConfirmedTxReceipt", common.Hash(msgTxHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 		stakingInfoStakeUpdate := &stakinginfo.StakinginfoStakeUpdate{
 			ValidatorId: new(big.Int).SetUint64(oldVal.ValId),
@@ -1079,7 +1078,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 		contractCaller.On("DecodeValidatorStakeUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(stakingInfoStakeUpdate, nil)
 
 		result := sideHandler(ctx, msg)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 	})
 }
 
@@ -1088,7 +1087,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 	ctx, require, contractCaller := s.ctx, s.Require(), s.contractCaller
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	txHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	txHash := common.Hash{}.Bytes()
 	index := simulation.RandIntBetween(r, 0, 100)
 	logIndex := uint64(index)
 	validatorId := uint64(1)
@@ -1115,7 +1114,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 		)
 		require.NoError(err)
 
-		postHandler(ctx, msgValJoin, hmModule.Vote_VOTE_NO)
+		postHandler(ctx, msgValJoin, sidetxs.Vote_VOTE_NO)
 
 		_, err = keeper.GetValidatorFromValID(ctx, validatorId)
 		require.Errorf(err, "Should not add validator")
@@ -1137,7 +1136,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 
 		require.NoError(err)
 
-		postHandler(ctx, msgValJoin, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, msgValJoin, sidetxs.Vote_VOTE_YES)
 
 		actualResult, err := keeper.GetValidatorFromValID(ctx, validatorId)
 		require.Nil(err, "Should add validator")
@@ -1161,13 +1160,13 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 		)
 		require.NoError(err)
 
-		postHandler(ctx, msgValJoin, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, msgValJoin, sidetxs.Vote_VOTE_YES)
 
 		actualResult, err := keeper.GetValidatorFromValID(ctx, validatorId)
 		require.Nil(err, "Should add validator")
 		require.NotNil(actualResult, "got %v", actualResult)
 
-		postHandler(ctx, msgValJoin, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, msgValJoin, sidetxs.Vote_VOTE_YES)
 	})
 
 	s.Run("Invalid Power", func() {
@@ -1185,7 +1184,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 		)
 		require.NoError(err)
 
-		postHandler(ctx, msgValJoin, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, msgValJoin, sidetxs.Vote_VOTE_YES)
 	})
 }
 
@@ -1218,7 +1217,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	nonce := big.NewInt(5)
 
 	// gen msg
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 
 	newSigner0Pk, ok := newSigner[0].PubKey.GetCachedValue().(cryptotypes.PubKey)
 	require.True(ok)
@@ -1228,14 +1227,14 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
-		postHandler(ctx, msg, hmModule.Vote_VOTE_NO)
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_NO)
 	})
 
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 
-		postHandler(ctx, msg, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 
 		newValidators := keeper.GetCurrentValidators(ctx)
 		require.Equal(len(oldValSet.Validators), len(newValidators), "Number of current validators should be equal")
@@ -1276,7 +1275,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 	bankKeeper.EXPECT().SendCoins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
 	nonce := big.NewInt(9)
 
@@ -1294,7 +1293,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 		)
 		require.NoError(err)
 
-		postHandler(ctx, msg, hmModule.Vote_VOTE_NO)
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_NO)
 	})
 
 	s.Run("Success", func() {
@@ -1311,7 +1310,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 		)
 		require.NoError(err)
 
-		postHandler(ctx, msg, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 
 		currentVals := keeper.GetCurrentValidators(ctx)
 		require.Equal(4, len(currentVals), "Number of current validators should exist before epoch passes")
@@ -1335,7 +1334,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := hmTypes.TxHash{Hash: common.Hash{}.Bytes()}
+	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
 	nonce := big.NewInt(1)
 	newAmount := new(big.Int).SetInt64(2000000000000000000)
@@ -1352,7 +1351,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 			nonce.Uint64())
 		require.NoError(err)
 
-		postHandler(ctx, msg, hmModule.Vote_VOTE_NO)
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_NO)
 
 		updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer)
 		require.Empty(err, "unable to fetch validator info %v-", err)
@@ -1374,7 +1373,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 			nonce.Uint64())
 		require.NoError(err)
 
-		postHandler(ctx, msg, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 
 		updatedVal, err := keeper.GetValidatorInfo(ctx, oldVal.Signer)
 		require.Empty(err, "unable to fetch validator info %v-", err)

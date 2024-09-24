@@ -139,7 +139,7 @@ const (
 
 	MilestonePruneNumber = uint64(100)
 
-	MaticChainMilestoneConfirmation = uint64(16)
+	PolygonPosChainMilestoneConfirmation = uint64(16)
 
 	// MilestoneBufferLength defines the condition to propose the
 	// milestoneTimeout if this many bor blocks have passed since
@@ -209,9 +209,9 @@ var conf Configuration
 var mainChainClient *ethclient.Client
 var mainRPCClient *rpc.Client
 
-// BorClient stores eth/rpc client for Matic Network
-var borClient *ethclient.Client
-var borRPCClient *rpc.Client
+// polygonPosClient stores eth/rpc client for Polygon Pos Network
+var polygonPosClient *ethclient.Client
+var polygonPosRPCClient *rpc.Client
 
 // private key object
 var privKeyObject secp256k1.PrivKey
@@ -227,7 +227,7 @@ var GenesisDoc cmTypes.GenesisDoc
 var milestoneBorBlockHeight uint64 = 0
 
 type ChainManagerAddressMigration struct {
-	MaticTokenAddress     string
+	PolTokenAddress       string
 	RootChainAddress      string
 	StakingManagerAddress string
 	SlashManagerAddress   string
@@ -356,11 +356,11 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if borRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
+	if polygonPosRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
-	borClient = ethclient.NewClient(borRPCClient)
+	polygonPosClient = ethclient.NewClient(polygonPosRPCClient)
 	// Loading genesis doc
 	genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
 	if err != nil {
@@ -434,7 +434,7 @@ func GetGenesisDoc() cmTypes.GenesisDoc {
 }
 
 //
-// Get main/matic clients
+// Get main/pos clients
 //
 
 // GetMainChainRPCClient returns main chain RPC client
@@ -447,14 +447,14 @@ func GetMainClient() *ethclient.Client {
 	return mainChainClient
 }
 
-// GetBorClient returns bor's eth client
-func GetBorClient() *ethclient.Client {
-	return borClient
+// GetPolygonPosClient returns polygon pos' eth client
+func GetPolygonPosClient() *ethclient.Client {
+	return polygonPosClient
 }
 
-// GetBorRPCClient returns bor's RPC client
-func GetBorRPCClient() *rpc.Client {
-	return borRPCClient
+// GetPolygonPosRPCClient returns polygon pos RPC client
+func GetPolygonPosRPCClient() *rpc.Client {
+	return polygonPosRPCClient
 }
 
 // GetPrivKey returns priv key object
@@ -920,8 +920,7 @@ func DecorateWithCometBFTFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	}
 }
 
-// TODO HV2 Please update the switch case with Amoy also
-// UpdateCometBFTConfig updates tenedermint config with flags and default values if needed
+// UpdateCometBFTConfig updates cometBFT config with flags and default values if needed
 func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 	// update cometBFTConfig.P2P.Seeds
 	seedsFlagValue := v.GetString(SeedsFlag)
@@ -934,6 +933,8 @@ func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 		case MainChain:
 			cometBFTConfig.P2P.Seeds = DefaultMainnetSeeds
 		case MumbaiChain:
+			cometBFTConfig.P2P.Seeds = DefaultTestnetSeeds
+		case AmoyChain:
 			cometBFTConfig.P2P.Seeds = DefaultTestnetSeeds
 		}
 	}

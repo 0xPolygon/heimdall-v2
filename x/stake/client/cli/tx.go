@@ -16,7 +16,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -137,8 +136,7 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("public key mismatch with event log")
 			}
 
-			// TODO HV2: replace hmTypes.TxHash{Hash: common.Hex2Bytes(txHash)} with common.HexToHash(txHash) once VEs PR is merged
-			msg, err := types.NewMsgValidatorJoin(proposer, event.ValidatorId.Uint64(), event.ActivationEpoch.Uint64(), amount, &pubKey, hmTypes.TxHash{Hash: common.Hex2Bytes(txHash)}, logIndex, receipt.BlockNumber.Uint64(), event.Nonce.Uint64())
+			msg, err := types.NewMsgValidatorJoin(proposer, event.ValidatorId.Uint64(), event.ActivationEpoch.Uint64(), amount, &pubKey, common.Hex2Bytes(txHash), logIndex, receipt.BlockNumber.Uint64(), event.Nonce.Uint64())
 			if err != nil {
 				return err
 			}
@@ -226,8 +224,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("public key first byte mismatch")
 			}
 
-			// TODO HV2: replace hmTypes.TxHash{Hash: common.Hex2Bytes(txHash)} with common.HexToHash(txHash) once VEs PR is merged
-			msg, err := types.NewMsgSignerUpdate(proposer, valId, &pubKey, hmTypes.TxHash{Hash: common.Hex2Bytes(txHash)}, viper.GetUint64(FlagLogIndex), viper.GetUint64(FlagBlockNumber), viper.GetUint64(FlagNonce))
+			msg, err := types.NewMsgSignerUpdate(proposer, valId, &pubKey, common.Hex2Bytes(txHash), viper.GetUint64(FlagLogIndex), viper.GetUint64(FlagBlockNumber), viper.GetUint64(FlagNonce))
 			if err != nil {
 				return err
 			}

@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -38,7 +37,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pubKey,
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -59,7 +58,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pubKey,
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -132,7 +131,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 		From:            newSigner[0].Signer,
 		ValId:           uint64(1),
 		NewSignerPubKey: newSigner[0].GetPubKey(),
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        uint64(0),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -178,7 +177,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 		From:              validators[0].Signer,
 		ValId:             uint64(1),
 		DeactivationEpoch: validators[0].EndEpoch,
-		TxHash:            hmTypes.TxHash{Hash: msgTxHash},
+		TxHash:            msgTxHash,
 		LogIndex:          uint64(0),
 		BlockNumber:       uint64(0),
 		Nonce:             uint64(1),
@@ -215,7 +214,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 		From:        oldVal.Signer,
 		ValId:       oldVal.ValId,
 		NewAmount:   newAmount,
-		TxHash:      hmTypes.TxHash{Hash: msgTxHash},
+		TxHash:      msgTxHash,
 		LogIndex:    uint64(0),
 		BlockNumber: uint64(0),
 		Nonce:       uint64(1),
@@ -273,7 +272,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(100000)),
 		SignerPubKey:    pubKey,
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        logIndex,
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),

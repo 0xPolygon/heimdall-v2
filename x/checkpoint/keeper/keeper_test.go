@@ -16,8 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -41,7 +40,7 @@ type KeeperTestSuite struct {
 	cmKeeper         *testutil.MockChainManagerKeeper
 	queryClient      checkpointTypes.QueryClient
 	msgServer        checkpointTypes.MsgServer
-	sideMsgCfg       hmModule.SideTxConfigurator
+	sideMsgCfg       sidetxs.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) Run(_ string, fn func()) {
@@ -87,7 +86,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.queryClient = checkpointTypes.NewQueryClient(queryHelper)
 	s.msgServer = checkpointKeeper.NewMsgServerImpl(&keeper)
 
-	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
+	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, checkpointKeeper.NewSideMsgServerImpl(&keeper))
 }
 
@@ -100,7 +99,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	headerBlockNumber := uint64(2000)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	rootHash := testutil.RandomBytes()
 	proposerAddress := common.Address{}.String()
 	timestamp := uint64(time.Now().Unix())
 

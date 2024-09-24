@@ -1,0 +1,133 @@
+syntax = "proto3";
+package heimdallv2.stake;
+
+import "google/protobuf/any.proto";
+import "gogoproto/gogo.proto";
+
+import "cosmos_proto/cosmos.proto";
+import "cosmos/msg/v1/msg.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
+
+// Msg defines the staking Msg service.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  // ValidatorJoin defines a method for a new validator to join
+  rpc ValidatorJoin(MsgValidatorJoin) returns (MsgValidatorJoinResponse);
+
+  // StakeUpdate defines a method for updating an existing validator's stake.
+  rpc StakeUpdate(MsgStakeUpdate) returns (MsgStakeUpdateResponse);
+
+  // SignerUpdate defines a method for updating an existing validator's signer.
+  rpc SignerUpdate(MsgSignerUpdate) returns (MsgSignerUpdateResponse);
+
+  // ValidatorExit defines a method for exiting an existing validator
+  rpc ValidatorExit(MsgValidatorExit) returns (MsgValidatorExitResponse);
+}
+
+//  MsgValidatorJoin defines a message for a new validator to join the network
+message MsgValidatorJoin {
+  option (amino.name) = "heimdallv2/MsgValidatorJoin";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
+  uint64 activation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  string amount = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (amino.dont_omitempty) = true
+  ];
+  google.protobuf.Any signer_pub_key = 5
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+  bytes tx_hash = 6 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgValidatorJoinResponse defines the Msg/ValidatorJoin response type.
+message MsgValidatorJoinResponse {}
+
+// MsgStakeUpdate defines a message for performing a stake update
+message MsgStakeUpdate {
+  option (amino.name) = "heimdallv2/MsgStakeUpdate";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
+  string new_amount = 3 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.customtype) = "cosmossdk.io/math.Int"
+  ];
+  bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
+
+  // TODO HV2: the following fields are repeated frequently in the messages.
+  //  Consider wrapping them in a separate proto message (see
+  //  https://polygon.atlassian.net/browse/POS-2615)
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgStakeUpdateResponse defines the Msg/StakeUpdate response type.
+message MsgStakeUpdateResponse {}
+
+// MsgSignerUpdate defines a message for updating signer of the existing
+// validator
+message MsgSignerUpdate {
+  option (amino.name) = "heimdallv2/MsgSignerUpdate";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
+  google.protobuf.Any new_signer_pub_key = 3
+      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+  bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgSignerUpdateResponse defines the Msg/SignerUpdate response type.
+message MsgSignerUpdateResponse {}
+
+// MsgValidatorExit defines a message for exiting the validator
+message MsgValidatorExit {
+  option (amino.name) = "heimdallv2/MsgValidatorExit";
+
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
+  uint64 deactivation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
+}
+
+// MsgValidatorExitResponse defines the Msg/ValidatorExit response type.
+message MsgValidatorExitResponse {}

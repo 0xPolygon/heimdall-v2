@@ -13,7 +13,6 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/golang/mock/gomock"
 
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -23,7 +22,7 @@ func (s *KeeperTestSuite) TestCreateTopupTx() {
 
 	var msg types.MsgTopupTx
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+	hash := []byte(TxHash)
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
 
@@ -86,7 +85,7 @@ func (s *KeeperTestSuite) TestWithdrawFeeTx() {
 		coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin(authTypes.FeeToken, math.ZeroInt())).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -98,7 +97,7 @@ func (s *KeeperTestSuite) TestWithdrawFeeTx() {
 	t.Run("fail with insufficient funds", func(t *testing.T) {
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin(authTypes.FeeToken, math.ZeroInt())).Times(1)
 
 		_, err := msgServer.WithdrawFeeTx(ctx, &msg)
 		require.Error(err)

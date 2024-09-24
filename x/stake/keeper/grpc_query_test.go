@@ -10,7 +10,6 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -123,14 +122,14 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	chainParams, err := s.cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	txHash := hmTypes.TxHash{Hash: make([]byte, 32)}
+	txHash := make([]byte, 32)
 
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	logIndex := uint64(simulation.RandIntBetween(r, 0, 100))
 
 	req := &types.QueryStakingIsOldTxRequest{
-		TxHash:   common.Bytes2Hex(txHash.Hash),
+		TxHash:   common.Bytes2Hex(txHash),
 		LogIndex: logIndex,
 	}
 
@@ -140,7 +139,7 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	err = keeper.SetStakingSequence(ctx, sequence.String())
 	require.NoError(err)
 
-	contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash.Hash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+	contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 	res, err := queryClient.StakingIsOldTx(ctx, req)
 

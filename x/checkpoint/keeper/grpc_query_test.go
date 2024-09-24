@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
@@ -56,7 +55,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	rootHash := testutil.RandomBytes()
 	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
 
@@ -90,7 +89,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	rootHash := testutil.RandomBytes()
 	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
 
@@ -137,7 +136,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	rootHash := testutil.RandomBytes()
 	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
 
@@ -150,7 +149,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 		timestamp,
 	)
 
-	contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash.Hash, nil)
+	contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
 	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
 	require.NoError(err)
 

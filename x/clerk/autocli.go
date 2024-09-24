@@ -19,7 +19,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "record [record-id]",
 					Short:     "Query a record by its ID.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "record_i_d"},
+						{ProtoField: "record_id"},
 					},
 				},
 				{
@@ -67,8 +67,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 						{ProtoField: "block_number"},
 						{ProtoField: "contract_address"},
 						{ProtoField: "data"},
-						{ProtoField: "i_d"},
-						{ProtoField: "chain_i_d"},
+						{ProtoField: "id"},
+						{ProtoField: "chain_id"},
 					},
 				},
 			},

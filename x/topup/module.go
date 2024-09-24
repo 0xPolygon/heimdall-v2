@@ -17,11 +17,14 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	mod "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupSimulation "github.com/0xPolygon/heimdall-v2/x/topup/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
+
+// ConsensusVersion defines the current x/topup module consensus version.
+const ConsensusVersion = 1
 
 var (
 	_ module.AppModuleSimulation = AppModule{}
@@ -29,6 +32,7 @@ var (
 	_ module.HasServices         = AppModule{}
 	_ module.AppModuleBasic      = AppModule{}
 	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModule implements an application module for the topup module.
@@ -56,7 +60,7 @@ func (AppModule) RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
 }
 
 // RegisterSideMsgServices registers side handler module services.
-func (am AppModule) RegisterSideMsgServices(sideCfg mod.SideTxConfigurator) {
+func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
 
@@ -130,4 +134,9 @@ func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {
 // WeightedOperations returns the all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
 	return nil
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

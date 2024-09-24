@@ -14,16 +14,23 @@ import (
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
+// ConsensusVersion defines the current x/milestone module consensus version.
+const ConsensusVersion = 1
+
 var (
 	// TODO HV2: implement simulation for milestone
 	//_ module.AppModuleSimulation = AppModule{}
-	_ module.HasServices  = AppModule{}
-	_ appmodule.AppModule = AppModule{}
+	_ module.HasGenesis     = AppModule{}
+	_ module.HasServices    = AppModule{}
+	_ module.AppModuleBasic = AppModule{}
+
+	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModule implements an application module for the milestone module.
@@ -96,7 +103,7 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // RegisterSideMsgServices registers side handler module services.
-func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
+func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
@@ -115,4 +122,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 // module.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	return cdc.MustMarshalJSON(am.keeper.ExportGenesis(ctx))
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

@@ -96,7 +96,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	}
 
 	// get validator set
-	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
+	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -151,8 +151,8 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		Proposer:        proposer.Signer,
 		StartBlock:      start,
 		EndBlock:        endBlockNumber,
-		RootHash:        hmTypes.HeimdallHash{Hash: rootHash},
-		AccountRootHash: hmTypes.HeimdallHash{Hash: accRootHash},
+		RootHash:        rootHash,
+		AccountRootHash: accRootHash,
 		BorChainId:      req.BorChainId,
 	}
 
@@ -161,7 +161,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 
 // GetCurrentProposer queries validator info for the current proposer
 func (q queryServer) GetCurrentProposer(ctx context.Context, _ *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
-	proposer := q.k.sk.GetCurrentProposer(ctx)
+	proposer := q.k.stakeKeeper.GetCurrentProposer(ctx)
 
 	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
 }
@@ -173,7 +173,7 @@ func (q queryServer) GetProposers(ctx context.Context, req *types.QueryProposerR
 	}
 
 	// get validator set
-	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
+	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		q.k.Logger(ctx).Error("could not get get validators set", "error", err)
 		return nil, status.Errorf(codes.Internal, err.Error())

@@ -9,7 +9,7 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 
-	hModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
@@ -32,7 +32,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 	testcases := []struct {
 		name    string
 		msg     sdk.Msg
-		expVote hModule.Vote
+		expVote sidetxs.Vote
 		mockFn  func()
 	}{
 		{
@@ -45,7 +45,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       common.HexToHash("invalidSeed").Bytes(),
 			},
-			expVote: hModule.Vote_VOTE_NO,
+			expVote: sidetxs.Vote_VOTE_NO,
 		},
 		{
 			name: "span is not in turn (current child block is less than last span start block)",
@@ -57,9 +57,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       nextEthBlockHeader.Hash().Bytes(),
 			},
-			expVote: hModule.Vote_VOTE_NO,
+			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
+				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
 			},
 		},
 		{
@@ -72,9 +72,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       nextEthBlockHeader.Hash().Bytes(),
 			},
-			expVote: hModule.Vote_VOTE_NO,
+			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
+				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
 			},
 		},
 		{
@@ -87,9 +87,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       nextEthBlockHeader.Hash().Bytes(),
 			},
-			expVote: hModule.Vote_VOTE_YES,
+			expVote: sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
-				contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
+				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
 			},
 		},
 	}
@@ -127,7 +127,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 	testcases := []struct {
 		name          string
 		msg           sdk.Msg
-		vote          hModule.Vote
+		vote          sidetxs.Vote
 		expLastSpanId uint64
 	}{
 		{
@@ -140,7 +140,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
-			vote:          hModule.Vote_VOTE_NO,
+			vote:          sidetxs.Vote_VOTE_NO,
 			expLastSpanId: spans[0].Id,
 		},
 		{
@@ -153,7 +153,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
-			vote:          hModule.Vote_VOTE_YES,
+			vote:          sidetxs.Vote_VOTE_YES,
 			expLastSpanId: spans[0].Id,
 		},
 		{
@@ -166,7 +166,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       common.HexToHash("testSeed1").Bytes(),
 			},
-			vote:          hModule.Vote_VOTE_YES,
+			vote:          sidetxs.Vote_VOTE_YES,
 			expLastSpanId: 2,
 		},
 	}

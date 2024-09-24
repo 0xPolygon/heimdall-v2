@@ -1,26 +1,26 @@
 package keeper_test
 
 import (
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
 )
 
-func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
+func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {
 	cfg := s.sideMsgCfg
 	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
-func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
+func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs.Vote) {
 	cfg := s.sideMsgCfg
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
@@ -41,7 +41,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 	chainParams, err := cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	maticTxConfirmations := chainParams.BorChainTxConfirmations
+	polygonPosTxConfirmations := chainParams.BorChainTxConfirmations
 
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
@@ -56,11 +56,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", header.EndBlock+maticTxConfirmations).Return(true)
-		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash.GetHash(), nil)
+		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
+		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash, nil)
 
 		result := sideHandler(ctx, &msgCheckpoint)
-		require.Equal(result, hmModule.Vote_VOTE_YES)
+		require.Equal(result, sidetxs.Vote_VOTE_YES)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -83,11 +83,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", header.EndBlock+maticTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(nil, nil)
 
 		result := sideHandler(ctx, &msgCheckpoint)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should Fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -110,11 +110,11 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", header.EndBlock+maticTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return([]byte{1}, nil)
 
 		result := sideHandler(ctx, &msgCheckpoint)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -150,16 +150,16 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 		rootChainInstance := &rootchain.Rootchain{}
 
 		contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
-		contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(common.Hash(header.RootHash.GetHash()), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
+		contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(common.Hash(header.RootHash), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := sideHandler(ctx, &msgCheckpointAck)
-		require.Equal(result, hmModule.Vote_VOTE_YES, "Side tx handler should pass")
+		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should pass")
 
 	})
 
@@ -173,8 +173,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 			header.Proposer,
 			header.StartBlock,
 			header.EndBlock,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 		rootChainInstance := &rootchain.Rootchain{}
@@ -183,7 +183,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 		contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(nil, header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := sideHandler(ctx, &msgCheckpointAck)
-		require.Equal(result, hmModule.Vote_VOTE_NO, "Side tx handler should fail")
+		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 
 	})
 }
@@ -223,7 +223,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		postHandler(ctx, &msgCheckpoint, hmModule.Vote_VOTE_NO)
+		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_NO)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -244,7 +244,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		postHandler(ctx, &msgCheckpoint, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
 		require.Equal(bufferedHeader.StartBlock, header.StartBlock)
@@ -282,11 +282,11 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
-		postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_NO)
+		postHandler(ctx, &msgCheckpointAck, sidetxs.Vote_VOTE_NO)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -306,7 +306,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			"1234",
 		)
 
-		postHandler(ctx, &msgCheckpoint, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),
@@ -315,12 +315,12 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 
 			uint64(1),
 		)
 
-		postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpointAck, sidetxs.Vote_VOTE_YES)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -338,11 +338,11 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header.StartBlock,
 			header.EndBlock,
 			header.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
-		postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpointAck, sidetxs.Vote_VOTE_YES)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -364,7 +364,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			"1234",
 		)
 
-		postHandler(ctx, &msgCheckpoint, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),
@@ -373,11 +373,11 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header2.StartBlock,
 			header2.EndBlock,
 			header2.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
-		postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpointAck, sidetxs.Vote_VOTE_YES)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -405,7 +405,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		ctx = ctx.WithBlockHeight(int64(1))
 
-		postHandler(ctx, &msgCheckpoint, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),
@@ -414,11 +414,11 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header5.StartBlock,
 			header5.EndBlock-1,
 			header5.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
-		postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpointAck, sidetxs.Vote_VOTE_YES)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -451,7 +451,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		ctx = ctx.WithBlockHeight(int64(1))
 
-		postHandler(ctx, &msgCheckpoint, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),
@@ -460,11 +460,11 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			header6.StartBlock,
 			header6.EndBlock+1,
 			header6.RootHash,
-			hmTypes.HeimdallHash{Hash: testutil.RandomBytes()},
+			testutil.RandomBytes(),
 			uint64(1),
 		)
 
-		postHandler(ctx, &msgCheckpointAck, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msgCheckpointAck, sidetxs.Vote_VOTE_YES)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)

@@ -16,8 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -34,7 +33,7 @@ type KeeperTestSuite struct {
 	contractCaller  *mocks.IContractCaller
 	queryClient     milestoneTypes.QueryClient
 	msgServer       milestoneTypes.MsgServer
-	sideMsgCfg      hmModule.SideTxConfigurator
+	sideMsgCfg      sidetxs.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) Run(_ string, fn func()) {
@@ -75,7 +74,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
 	s.msgServer = milestoneKeeper.NewMsgServerImpl(&keeper)
 
-	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
+	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, milestoneKeeper.NewSideMsgServerImpl(&keeper))
 }
 
@@ -88,7 +87,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"
@@ -128,7 +127,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"

@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -241,7 +240,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(0)
 	milestoneID := "0000"

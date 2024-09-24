@@ -21,7 +21,6 @@ func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	logIndex := uint64(simulation.RandIntBetween(r, 0, 100))
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 	sequence := new(big.Int).Mul(txReceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
@@ -32,7 +31,7 @@ func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 
@@ -47,14 +46,13 @@ func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	logIndex := r.Uint64()
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 
@@ -68,7 +66,6 @@ func (s *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	logIndex := r.Uint64()
 	blockNumber := r.Uint64()
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	blockN := new(big.Int).SetUint64(blockNumber)
 	sequence := new(big.Int).Mul(blockN, big.NewInt(types.DefaultLogIndexUnit))
 	txReceipt := &ethTypes.Receipt{BlockNumber: blockN}
@@ -79,7 +76,7 @@ func (s *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 
@@ -92,14 +89,13 @@ func (s *KeeperTestSuite) TestGRPCIsTopupTxOld_IsNotOld() {
 	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	logIndex := r.Uint64()
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 

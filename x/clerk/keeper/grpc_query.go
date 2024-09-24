@@ -18,8 +18,7 @@ type queryServer struct {
 	k *Keeper
 }
 
-// NewQueryServer creates a new querier for topup clients.
-// It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
+// NewQueryServer creates a new querier for clerk clients.
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
@@ -91,8 +90,8 @@ func (q queryServer) RecordSequence(ctx context.Context, request *types.RecordSe
 	}
 
 	// get main tx receipt
-	txHash := heimdallTypes.TxHash{Hash: common.FromHex(request.TxHash)}
-	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash.Hash), chainParams.GetMainChainTxConfirmations())
+	txHash := common.FromHex(request.TxHash)
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
 	if err != nil || receipt == nil {
 		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
 	}

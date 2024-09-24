@@ -5,6 +5,8 @@ import (
 
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/stake"
 )
 
 // ExportAppStateAndValidators exports the state of the application for a genesis
@@ -21,7 +23,7 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 	// We export at last height + 1, because that's the height at which
 	// Tendermint will start InitChain.
 	height := app.LastBlockHeight() + 1
-	genState, err := app.mm.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
+	genState, err := app.ModuleManager.ExportGenesisForModules(ctx, app.appCodec, modulesToExport)
 	if err != nil {
 		return servertypes.ExportedApp{}, err
 	}
@@ -30,13 +32,11 @@ func (app *HeimdallApp) ExportAppStateAndValidators(
 		return servertypes.ExportedApp{}, err
 	}
 
-	// TODO HV2: uncomment when implemented
-	// validators, err := staking.WriteValidators(ctx, app.StakingKeeper)
+	validators, err := stake.WriteValidators(ctx, &app.StakeKeeper)
 	return servertypes.ExportedApp{
-		AppState: appState,
-		// TODO HV2: uncomment when implemented
-		// Validators:      validators,
+		AppState:        appState,
 		Height:          height,
+		Validators:      validators,
 		ConsensusParams: app.BaseApp.GetConsensusParams(ctx),
 	}, err
 }

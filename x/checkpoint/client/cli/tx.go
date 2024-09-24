@@ -3,7 +3,6 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"strconv"
@@ -123,8 +122,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("account root hash cannot be empty")
 			}
 
-			// TODO HV2: replace hmTypes.HeimdallHash{Hash: common.Hex2Bytes(*)} with common.HexToHash(*) once VEs PR is merged
-			msg := checkpointTypes.NewMsgCheckpointBlock(proposer, startBlock, endBlock, hmTypes.HeimdallHash{Hash: common.Hex2Bytes(rootHashStr)}, hmTypes.HeimdallHash{Hash: common.Hex2Bytes(accountRootHashStr)}, borChainID)
+			msg := checkpointTypes.NewMsgCheckpointBlock(proposer, startBlock, endBlock, common.Hex2Bytes(rootHashStr), common.Hex2Bytes(accountRootHashStr), borChainID)
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
 		},
@@ -219,8 +217,7 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("invalid transaction for header block. Error: %v", err)
 			}
 
-			// TODO HV2: replace hmTypes.* with common.* once VEs PR is merged
-			msg := checkpointTypes.NewMsgCheckpointAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), hmTypes.HeimdallHash{Hash: res.Root[:]}, hmTypes.HeimdallHash{Hash: txHash.Bytes()}, uint64(viper.GetInt64(FlagCheckpointLogIndex)))
+			msg := checkpointTypes.NewMsgCheckpointAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
 		},

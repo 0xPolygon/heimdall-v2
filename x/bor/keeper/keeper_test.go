@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	bortestutil "github.com/0xPolygon/heimdall-v2/x/bor/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -35,7 +36,7 @@ type KeeperTestSuite struct {
 	contractCaller     mocks.IContractCaller
 	queryClient        types.QueryClient
 	msgServer          types.MsgServer
-	sideMsgServer      types.SideMsgServer
+	sideMsgServer      sidetxs.SideMsgServer
 	encCfg             moduletestutil.TestEncodingConfig
 }
 

@@ -7,7 +7,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -23,7 +22,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	ackCount := simulation.RandIntBetween(r1, 1, 5)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	rootHash := testutil.RandomBytes()
 
 	proposerAddress := common.Address{}.String()
 	timestamp := uint64(time.Now().Unix())
