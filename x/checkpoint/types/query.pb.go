@@ -718,7 +718,7 @@ func (m *QueryCurrentProposerResponse) GetValidator() types.Validator {
 	return types.Validator{}
 }
 
-// QuerySignerRequest is request type for the proposer RPC method
+// QueryProposerRequest is request type for the proposer RPC method
 type QueryProposerRequest struct {
 	Times uint64 `protobuf:"varint,1,opt,name=times,proto3" json:"times,omitempty"`
 }

@@ -166,7 +166,7 @@ message QueryCurrentProposerResponse {
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QuerySignerRequest is request type for the proposer RPC method
+// QueryProposerRequest is request type for the proposer RPC method
 message QueryProposerRequest {
   uint64 times = 1 [ (amino.dont_omitempty) = true ];
 }

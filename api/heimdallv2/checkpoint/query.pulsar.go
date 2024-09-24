@@ -8851,7 +8851,7 @@ func (x *QueryCurrentProposerResponse) GetValidator() *stake.Validator {
 	return nil
 }
 
-// QuerySignerRequest is request type for the proposer RPC method
+// QueryProposerRequest is request type for the proposer RPC method
 type QueryProposerRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
