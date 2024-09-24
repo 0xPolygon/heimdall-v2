@@ -1,15 +1,32 @@
 package heimdalld
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
+	"cosmossdk.io/x/tx/signing"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/types"
+	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
 )
 
+// TODO HV2: Initially in heimdall v2 we used HexBytes, HeimdallHash and TxHash
+// types which were removed in favor of using bytes in proto definitions.
+// Because default encoding for bytes in proto is base64 instead of hex encoding like in heimdall v1,
+// it could be breaking change for anyone querying the node API.
 func MigrateCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "migrate [genesis-file]",
@@ -28,6 +45,22 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(genesisFileV1); os.IsNotExist(err) {
 		return fmt.Errorf("genesis file does not exist: %s", genesisFileV1)
 	}
+
+	// TODO: This should be done in root command PreRunE?
+	interfaceRegistry, err := codecTypes.NewInterfaceRegistryWithOptions(codecTypes.InterfaceRegistryOptions{
+		ProtoFiles: proto.HybridResolver,
+		SigningOptions: signing.Options{
+			AddressCodec:          address.HexCodec{},
+			ValidatorAddressCodec: address.HexCodec{},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create interface registry: %w", err)
+	}
+
+	appCodec = codec.NewProtoCodec(interfaceRegistry)
+	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	authTypes.RegisterInterfaces(interfaceRegistry)
 
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
@@ -64,9 +97,397 @@ func performMigrations(genesisData map[string]interface{}) error {
 		return err
 	}
 
-	if err := renameModules(genesisData); err != nil {
+	if err := migrateClerkModule(genesisData); err != nil {
 		return err
 	}
+
+	if err := migrateBorModule(genesisData); err != nil {
+		return err
+	}
+
+	if err := migrateCheckpointModule(genesisData); err != nil {
+		return err
+	}
+
+	if err := migrateAuthModule(genesisData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func migrateAuthModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating auth module...")
+
+	authModule, ok := genesisData["app_state"].(map[string]interface{})["auth"]
+	if !ok {
+		return fmt.Errorf("auth module not found in app_state")
+	}
+
+	authData, ok := authModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast auth module data")
+	}
+
+	baseAccounts, err := migrateAccounts(authData)
+	if err != nil {
+		return err
+	}
+
+	params, err := migrateParams(authData)
+	if err != nil {
+		return err
+	}
+
+	genesisState := authTypes.GenesisState{
+		Accounts: baseAccounts,
+		Params:   *params,
+	}
+
+	marshaledGenesisState := appCodec.MustMarshalJSON(&genesisState)
+
+	genesisData["app_state"].(map[string]interface{})["auth"] = json.RawMessage(marshaledGenesisState)
+
+	logger.Info("Auth module migration completed successfully")
+
+	return nil
+}
+
+func migrateAccounts(authData map[string]interface{}) ([]*codecTypes.Any, error) {
+
+	accounts, ok := authData["accounts"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("accounts not found or invalid format")
+	}
+
+	var baseAccounts authTypes.GenesisAccounts
+
+	for i, account := range accounts {
+		accountMap, ok := account.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid account format at index %d", i)
+		}
+
+		module_name, _ := accountMap["module_name"].(string)
+		if module_name != "" {
+			// TODO: We skip module accounts, because heimdall v2 will initialize them from zero anyways
+			continue
+		}
+
+		address, _ := accountMap["address"].(string)
+		accountNumberStr, _ := accountMap["account_number"].(string)
+		sequenceNumberStr, _ := accountMap["sequence_number"].(string)
+
+		accountNumber, err := strconv.ParseUint(accountNumberStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse account number at index %d: %w", i, err)
+		}
+		sequenceNumber, err := strconv.ParseUint(sequenceNumberStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse sequence number at index %d: %w", i, err)
+		}
+
+		addr, err := types.AccAddressFromHex(address)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse address at index %d: %w", i, err)
+		}
+
+		baseAccounts = append(baseAccounts, authTypes.NewBaseAccount(addr, nil, accountNumber, sequenceNumber))
+	}
+
+	packedAccounts, err := authTypes.PackAccounts(baseAccounts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to pack accounts: %w", err)
+	}
+
+	return packedAccounts, nil
+}
+
+func migrateParams(authData map[string]interface{}) (*authTypes.Params, error) {
+	paramsData, ok := authData["params"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("params not found in auth module")
+	}
+
+	params := authTypes.Params{
+		MaxMemoCharacters:      parseUint(paramsData["max_memo_characters"]),
+		TxSigLimit:             parseUint(paramsData["tx_sig_limit"]),
+		TxSizeCostPerByte:      parseUint(paramsData["tx_size_cost_per_byte"]),
+		SigVerifyCostED25519:   parseUint(paramsData["sig_verify_cost_ed25519"]),
+		SigVerifyCostSecp256k1: parseUint(paramsData["sig_verify_cost_secp256k1"]),
+		MaxTxGas:               parseUint(paramsData["max_tx_gas"]),
+		TxFees:                 paramsData["tx_fees"].(string),
+	}
+
+	return &params, nil
+}
+
+func parseUint(value interface{}) uint64 {
+	switch v := value.(type) {
+	case string:
+		parsedValue, err := strconv.ParseUint(v, 10, 64)
+		if err != nil {
+			panic(fmt.Sprintf("failed to parse string to uint64: %v", err))
+		}
+		return parsedValue
+	case float64:
+		return uint64(v)
+	default:
+		panic(fmt.Sprintf("unexpected type for uint64 parsing: %T", value))
+	}
+}
+
+func migrateCheckpointModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating checkpoint module...")
+
+	checkpointModule, ok := genesisData["app_state"].(map[string]interface{})["checkpoint"]
+	if !ok {
+		return fmt.Errorf("bor module not found in app_state")
+	}
+
+	checkpointData, ok := checkpointModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast checkpoint module data")
+	}
+
+	params, ok := checkpointData["params"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("checkpoint params not found")
+	}
+
+	// Get the current checkpoint_buffer_time (which is in nanoseconds)
+	checkpointBufferTimeStr, ok := params["checkpoint_buffer_time"].(string)
+	if !ok {
+		return fmt.Errorf("checkpoint_buffer_time not found or invalid format")
+	}
+
+	// Convert the checkpoint_buffer_time from string to int64 (nanoseconds)
+	checkpointBufferTimeNs, err := strconv.ParseInt(checkpointBufferTimeStr, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse checkpoint_buffer_time: %w", err)
+	}
+
+	// Convert nanoseconds to time.Duration
+	checkpointBufferTimeDuration := time.Duration(checkpointBufferTimeNs)
+
+	// Convert the duration to a human-readable format (e.g., seconds)
+	checkpointBufferTimeReadable := fmt.Sprintf("%ds", int64(checkpointBufferTimeDuration.Seconds()))
+
+	// Update the checkpoint_buffer_time with the human-readable value
+	params["checkpoint_buffer_time"] = checkpointBufferTimeReadable
+
+	if err := renameProperty(params, ".", "child_chain_block_interval", "child_block_interval"); err != nil {
+		return fmt.Errorf("failed to rename child_chain_block_interval field: %w", err)
+	}
+
+	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
+	if !ok {
+		return fmt.Errorf("checkpoints not found in checkpoint module")
+	}
+
+	for i, checkpoint := range checkpoints {
+		checkpointMap, ok := checkpoint.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid checkpoint format at index %d", i)
+		}
+
+		rootHashHex, ok := checkpointMap["root_hash"].(string)
+		if !ok || !strings.HasPrefix(rootHashHex, "0x") {
+			return fmt.Errorf("invalid or missing root_hash at index %d", i)
+		}
+
+		rootHashHex = rootHashHex[2:]
+
+		rootHashBytes, err := hex.DecodeString(rootHashHex)
+		if err != nil {
+			return fmt.Errorf("failed to decode root_hash at index %d: %w", i, err)
+		}
+
+		rootHashBase64 := base64.StdEncoding.EncodeToString(rootHashBytes)
+
+		checkpointMap["root_hash"] = rootHashBase64
+	}
+
+	logger.Info("Checkpoint module migration completed successfully")
+
+	return nil
+}
+
+func migrateBorModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating bor module...")
+
+	borModule, ok := genesisData["app_state"].(map[string]interface{})["bor"]
+	if !ok {
+		return fmt.Errorf("bor module not found in app_state")
+	}
+
+	borData, ok := borModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast bor module data")
+	}
+
+	spans, ok := borData["spans"].([]interface{})
+	if !ok {
+		return fmt.Errorf("failed to find spans in bor module")
+	}
+
+	for _, span := range spans {
+		spanMap, ok := span.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("failed to cast span data")
+		}
+
+		if err := renameProperty(spanMap, ".", "bor_chain_id", "chain_id"); err != nil {
+			return fmt.Errorf("failed to rename bor_chain_id field: %w", err)
+		}
+
+		if err := renameProperty(spanMap, ".", "span_id", "id"); err != nil {
+			return fmt.Errorf("failed to rename bor_chain_id field: %w", err)
+		}
+
+		producers, ok := spanMap["selected_producers"].([]interface{})
+		if !ok {
+			return fmt.Errorf("failed to find selected_producers in span")
+		}
+
+		for i, producer := range producers {
+			producerMap, ok := producer.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("failed to cast producer data")
+			}
+
+			if err := migrateValidator(producerMap); err != nil {
+				return fmt.Errorf("failed to migrate producer at index %d: %w", i, err)
+			}
+		}
+
+		validatorSet, ok := spanMap["validator_set"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("failed to find validator_set in span")
+		}
+
+		proposer, ok := validatorSet["proposer"].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("failed to find proposer in validator_set")
+		}
+
+		if err := migrateValidator(proposer); err != nil {
+			return fmt.Errorf("failed to migrate proposer: %w", err)
+		}
+
+		validators, ok := validatorSet["validators"].([]interface{})
+		if !ok {
+			return fmt.Errorf("failed to find validators in validator_set")
+		}
+		for i, validator := range validators {
+			validatorMap, ok := validator.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("failed to cast validator data at index %d", i)
+			}
+
+			if err := migrateValidator(validatorMap); err != nil {
+				return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
+			}
+		}
+	}
+
+	logger.Info("Bor module migration completed successfully")
+
+	return nil
+}
+
+func migrateValidator(validator map[string]interface{}) error {
+	if err := renameProperty(validator, ".", "power", "voting_power"); err != nil {
+		return fmt.Errorf("failed to rename power field: %w", err)
+	}
+
+	if err := renameProperty(validator, ".", "accum", "proposer_priority"); err != nil {
+		return fmt.Errorf("failed to rename accum field: %w", err)
+	}
+
+	if err := renameProperty(validator, ".", "ID", "val_id"); err != nil {
+		return fmt.Errorf("failed to rename ID field: %w", err)
+	}
+
+	pubKeyStr, ok := validator["pubKey"].(string)
+	if !ok {
+		return fmt.Errorf("public key not found")
+	}
+
+	migratedKey, err := migratePubKey(pubKeyStr)
+	if err != nil {
+		return fmt.Errorf("failed to migrate pubKey: %w", err)
+	}
+
+	validator["pubKey"] = json.RawMessage(migratedKey)
+
+	return nil
+}
+
+func migratePubKey(pubKeyStr string) (json.RawMessage, error) {
+
+	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(pubKeyStr, "0x"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode hex public key: %w", err)
+	}
+
+	secpKey := secp256k1.PubKey{Key: pubKeyBytes}
+
+	anyPubKey, err := codecTypes.NewAnyWithValue(&secpKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Any type for pubKey: %w", err)
+	}
+
+	return appCodec.MustMarshalJSON(anyPubKey), nil
+}
+
+func migrateClerkModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating clerk module...")
+
+	clerkModule, ok := genesisData["app_state"].(map[string]interface{})["clerk"]
+	if !ok {
+		return fmt.Errorf("clerk module not found in app_state")
+	}
+
+	clerkData, ok := clerkModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast clerk module data")
+	}
+
+	eventRecords, ok := clerkData["event_records"]
+	if !ok || eventRecords == nil {
+		return fmt.Errorf("event_records not found in clerk module")
+	}
+
+	records, ok := eventRecords.([]interface{})
+	if !ok {
+		return fmt.Errorf("invalid event_records format")
+	}
+
+	for i, record := range records {
+		recMap, ok := record.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid record format at index %d", i)
+		}
+
+		dataHex, ok := recMap["data"].(string)
+		if !ok {
+			return fmt.Errorf("data field not found or invalid at index %d", i)
+		}
+
+		dataHex = strings.TrimPrefix(dataHex, "0x")
+
+		decodedData, err := hex.DecodeString(dataHex)
+		if err != nil {
+			return fmt.Errorf("failed to decode hex data at index %d: %w", i, err)
+		}
+
+		base64Data := base64.StdEncoding.EncodeToString(decodedData)
+
+		recMap["data"] = base64Data
+	}
+
+	logger.Info("Clerk module migration completed successfully")
 
 	return nil
 }
@@ -105,17 +526,6 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	return nil
 }
 
-func renameModules(genesisData map[string]interface{}) error {
-	logger.Info("Renaming modules...")
-
-	// The custom staking module was renamed to stake in heimdallv2
-	if err := renameProperty(genesisData, "app_state", "staking", "stake"); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func loadJSONFromFile(filename string) (map[string]interface{}, error) {
 	data := make(map[string]interface{})
 
@@ -136,6 +546,8 @@ func loadJSONFromFile(filename string) (map[string]interface{}, error) {
 }
 
 func saveJSONToFile(data map[string]interface{}, filename string) error {
+	logger.Info("Saving migrated genesis file...", "file", filename)
+
 	fileContent, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
@@ -149,6 +561,10 @@ func saveJSONToFile(data map[string]interface{}, filename string) error {
 }
 
 func traversePath(data map[string]interface{}, path string) (map[string]interface{}, error) {
+	if path == "." {
+		return data, nil
+	}
+
 	keys := strings.Split(path, ".")
 	current := data
 
@@ -200,3 +616,5 @@ func addProperty(data map[string]interface{}, path string, key string, value int
 	current[key] = value
 	return nil
 }
+
+var appCodec *codec.ProtoCodec
