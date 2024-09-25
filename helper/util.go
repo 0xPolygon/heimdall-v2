@@ -1,8 +1,10 @@
 package helper
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +21,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/input"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -297,41 +300,40 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 		return nil, err
 	}
 
-	// This if block is not needed (discussed with informal)
-	// if `clientCtx.SkipConfirm` is false then BroadcastTx might cause a cancelled transaction
-	/*
-		if !clientCtx.SkipConfirm {
-			// // TODO HV2 - create a function
-			//  // func (f Factory) GetTxConfig() client.TxConfig { return f.txConfig }
-			// encoder := txf.GetTxConfig().TxJSONEncoder()
-			// if encoder == nil {
-			// 	return errors.New("failed to encode transaction: tx json encoder is nil")
-			// }
-
-			// Maybe the above code can be replaced with this
-			encoder := clientCtx.TxConfig.TxEncoder()
-
-			txBytes, err := encoder(tx.GetTx())
-			if err != nil {
-				return nil, fmt.Errorf("failed to encode transaction: %w", err)
+	if !clientCtx.SkipConfirm {
+		// TODO HV2 - create a function
+		// func (f Factory) GetTxConfig() client.TxConfig { return f.txConfig }
+		// I guess this is no longer needed as this if block is never used
+		/*
+			encoder := txf.GetTxConfig().TxJSONEncoder()
+			if encoder == nil {
+				return errors.New("failed to encode transaction: tx json encoder is nil")
 			}
+		*/
 
-			if err := clientCtx.PrintRaw(json.RawMessage(txBytes)); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "error: %v\n%s\n", err, txBytes)
-			}
+		// Maybe the above code can be replaced with this
+		encoder := clientCtx.TxConfig.TxEncoder()
 
-			buf := bufio.NewReader(os.Stdin)
-			ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
-			if err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "error: %v\ncanceled transaction\n", err)
-				return nil, err
-			}
-			if !ok {
-				_, _ = fmt.Fprintln(os.Stderr, "canceled transaction")
-				return nil, nil
-			}
+		txBytes, err := encoder(tx.GetTx())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode transaction: %w", err)
 		}
-	*/
+
+		if err := clientCtx.PrintRaw(json.RawMessage(txBytes)); err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error: %v\n%s\n", err, txBytes)
+		}
+
+		buf := bufio.NewReader(os.Stdin)
+		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error: %v\ncanceled transaction\n", err)
+			return nil, err
+		}
+		if !ok {
+			_, _ = fmt.Fprintln(os.Stderr, "canceled transaction")
+			return nil, nil
+		}
+	}
 
 	if err = clienttx.Sign(clientCtx.CmdContext, txf, clientCtx.FromName, tx, true); err != nil {
 		return nil, err
