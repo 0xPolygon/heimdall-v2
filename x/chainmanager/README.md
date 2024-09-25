@@ -9,7 +9,7 @@
 
 The chainmanager module is responsible for fetching the PoS protocol parameters. These params include addresses of contracts deployed on mainchain (Ethereum) and borchain (Bor), chain ids, mainchain and borchain confirmation blocks.
 
-```
+```protobuf
 // ChainParams contains contract addresses and other chain specific parameters
 message ChainParams {
   option (gogoproto.equal) = true;
@@ -35,7 +35,9 @@ message Params {
 }
 ```
 
-## Query commands (TODO HV2: revisit once we have the CLI running)
+<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
+
+## Query commands
 
 One can run the following query commands from the chainmanager module :
 
@@ -43,12 +45,12 @@ One can run the following query commands from the chainmanager module :
 
 ### CLI commands
 
-```
+```bash
 heimdalld query chainmanager params
 ```
 
 ### REST endpoints
 
-```
+```bash
 curl localhost:1317/heimdallv2/chainmanager/params
 ```
