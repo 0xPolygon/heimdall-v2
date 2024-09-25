@@ -15,6 +15,7 @@ import (
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/0xPolygon/heimdall-v2/app"
+	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 	cmtcfg "github.com/cometbft/cometbft/config"
@@ -47,8 +48,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	// TODO HV2 - uncomment when we have the client package
-	// hmTxCli "github.com/0xPolygon/heimdall-v2/client/tx"
 )
 
 const (
@@ -229,8 +228,7 @@ func initRootCmd(
 	rootCmd.AddCommand(showPrivateKeyCmd())
 	// TODO HV2 - uncomment when we have server implemented
 	// rootCmd.AddCommand(restServer.ServeCommands(shutdownCtx, cdc, restServer.RegisterRoutes))
-	// TODO HV2 - uncomment when we have bridge implemented
-	// rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
+	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
 	// TODO HV2 - I guess we are safe to remove this, as `genutilcli.InitCmd(basicManager, app.DefaultNodeHome)`
@@ -275,11 +273,6 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 		server.QueryBlockResultsCmd(),
 		rpc.ValidatorCommand(),
-		// TODO HV2 - uncomment when we have the client package
-		/*
-			hmTxCli.QueryTxsByEventsCmd(),
-			hmTxCli.QueryTxCmd(),
-		*/
 	)
 
 	return cmd
@@ -305,11 +298,6 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 		authcmd.GetSimulateCmd(),
 		authcmd.GetSignCommand(),
-		// TODO HV2 - uncomment when we have the client package
-		/*
-			hmTxCli.GetBroadcastCommand(),
-			hmTxCli.GetEncodeCommand(),
-		*/
 	)
 
 	return cmd

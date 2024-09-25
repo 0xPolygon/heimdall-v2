@@ -8,6 +8,7 @@ import (
 
 	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 	"github.com/cometbft/cometbft/crypto"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -58,14 +59,11 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			// get total number of validators to be generated
 			totalValidators := totalValidators()
 
-			// TODO HV2 - uncomment once staking module is available
-			/*
-				// first validators start ID
-				startID := viper.GetInt64(stakingcli.FlagValidatorID)
-				if startID == 0 {
-					startID = 1
-				}
-			*/
+			// first validators start ID
+			startID := viper.GetInt64(stakingcli.FlagValidatorID)
+			if startID == 0 {
+				startID = 1
+			}
 
 			// signers data to dump in the signer-dump file
 			signers := make([]ValidatorAccountFormatter, totalValidators)
