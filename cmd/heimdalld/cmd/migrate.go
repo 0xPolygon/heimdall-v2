@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"cosmossdk.io/math"
 	"cosmossdk.io/x/tx/signing"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -19,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
 )
@@ -109,11 +111,164 @@ func performMigrations(genesisData map[string]interface{}) error {
 		return err
 	}
 
+	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
+	// they are deleted from the genesis during auth module migration
+	if err := migrateBankModule(genesisData); err != nil {
+		return err
+	}
+
 	if err := migrateAuthModule(genesisData); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func migrateBankModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating bank module...")
+
+	bankModule, ok := genesisData["app_state"].(map[string]interface{})["bank"]
+	if !ok {
+		return fmt.Errorf("bank module not found in app_state")
+	}
+
+	bankData, ok := bankModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast bank module data")
+	}
+
+	authModule, ok := genesisData["app_state"].(map[string]interface{})["auth"]
+	if !ok {
+		return fmt.Errorf("auth module not found in app_state")
+	}
+
+	authData, ok := authModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast auth module data")
+	}
+
+	accounts, ok := authData["accounts"].([]interface{})
+	if !ok {
+		return fmt.Errorf("accounts not found or invalid format")
+	}
+
+	balances, err := migrateAuthAccountsToBankBalances(accounts)
+	if err != nil {
+		return err
+	}
+
+	sendEnabled, ok := bankData["send_enabled"].(bool)
+	if !ok {
+		return fmt.Errorf("send_enabled not found in bank module")
+	}
+
+	totalSupply, err := getTotalSupply(genesisData)
+	if err != nil {
+		return err
+	}
+
+	newBankGenesis := bankTypes.GenesisState{
+		Params:        bankTypes.NewParams(sendEnabled),
+		Balances:      balances,
+		Supply:        []types.Coin{totalSupply},
+		DenomMetadata: []bankTypes.Metadata{},
+		SendEnabled:   []bankTypes.SendEnabled{},
+	}
+
+	marshaledGenesisState := appCodec.MustMarshalJSON(&newBankGenesis)
+
+	genesisData["app_state"].(map[string]interface{})["bank"] = json.RawMessage(marshaledGenesisState)
+
+	logger.Info("Bank module migration completed successfully")
+
+	return nil
+}
+
+func getTotalSupply(genesisData map[string]interface{}) (types.Coin, error) {
+	supplyModule, ok := genesisData["app_state"].(map[string]interface{})["supply"]
+	if !ok {
+		return types.Coin{}, fmt.Errorf("supply module not found in app_state")
+	}
+
+	supplyData, ok := supplyModule.(map[string]interface{})["supply"].(map[string]interface{})
+	if !ok {
+		return types.Coin{}, fmt.Errorf("failed to cast supply module data")
+	}
+
+	totalSupply, ok := supplyData["total"].([]interface{})
+	if !ok {
+		return types.Coin{}, fmt.Errorf("total supply not found in supply module")
+	}
+
+	coin, ok := totalSupply[0].(map[string]interface{})
+	if !ok {
+		return types.Coin{}, fmt.Errorf("invalid coin format")
+	}
+
+	denom, ok := coin["denom"].(string)
+	if !ok {
+		return types.Coin{}, fmt.Errorf("denom not found in total supply")
+	}
+
+	amountStr, ok := coin["amount"].(string)
+	if !ok {
+		return types.Coin{}, fmt.Errorf("amount not found in total supply")
+	}
+
+	amount, ok := math.NewIntFromString(amountStr)
+	if !ok {
+		return types.Coin{}, fmt.Errorf("failed to parse amount: %s", amountStr)
+	}
+
+	return types.NewCoin(denom, amount), nil
+}
+
+func migrateAuthAccountsToBankBalances(authAccounts []interface{}) ([]bankTypes.Balance, error) {
+
+	addressCoins := map[string]types.Coins{}
+
+	for i, account := range authAccounts {
+		accountMap, ok := account.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("invalid account format at index %d", i)
+		}
+
+		address, _ := accountMap["address"].(string)
+		coins, _ := accountMap["coins"].([]interface{})
+
+		for _, coin := range coins {
+			coinMap, ok := coin.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("invalid coin format at index %d", i)
+			}
+
+			denom, _ := coinMap["denom"].(string)
+			amountStr, _ := coinMap["amount"].(string)
+
+			amount, ok := math.NewIntFromString(amountStr)
+			if !ok {
+				return nil, fmt.Errorf("failed to parse amount at index %d: %s", i, amountStr)
+			}
+
+			if coins, ok := addressCoins[address]; ok {
+				addressCoins[address] = append(coins, types.NewCoin(denom, amount))
+			} else {
+				addressCoins[address] = types.NewCoins(types.NewCoin(denom, amount))
+			}
+		}
+	}
+
+	var balances []bankTypes.Balance
+
+	for address, coins := range addressCoins {
+		balances = append(balances,
+			bankTypes.Balance{
+				Address: address,
+				Coins:   coins,
+			})
+	}
+
+	return balances, nil
 }
 
 func migrateAuthModule(genesisData map[string]interface{}) error {
@@ -129,7 +284,7 @@ func migrateAuthModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to cast auth module data")
 	}
 
-	baseAccounts, err := migrateAccounts(authData)
+	baseAccounts, err := migrateAuthAccounts(authData)
 	if err != nil {
 		return err
 	}
@@ -153,7 +308,7 @@ func migrateAuthModule(genesisData map[string]interface{}) error {
 	return nil
 }
 
-func migrateAccounts(authData map[string]interface{}) ([]*codecTypes.Any, error) {
+func migrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, error) {
 
 	accounts, ok := authData["accounts"].([]interface{})
 	if !ok {

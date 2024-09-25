@@ -38,14 +38,16 @@ Iterating over all the ```spans``` and renaming ```bor_chain_id``` to ```chain_i
 Converting every ```validator``` in every ```span``` by renaming following properties, ```power``` to ```voting_power```,
 ```accum``` to ```proposer_priority```, ```ID``` to ```val_id``` and converting each ```pubKey``` from plain string to ```secp256k1.PubKey```.  
 
-### auth
-
-In a lot of the migrations we can see logic regarding vesting accounts. Thats not of interest to us since vesting logic is disabled in heimdall and we don't have such accounts.
-We skip the modules accounts during the migration because the heimdall v2 will initialize them from zero anyways.
+### Cosmos SDK modules
 
 #### v0.37 - v0.38
 
 No migration required, genesis files are comptabile. [Link](https://github.com/cosmos/cosmos-sdk/blob/37b7221abdda540270adb2d51bdc87a22e417339/x/genutil/client/cli/migrate.go#L31)
+
+### auth
+
+In a lot of the migrations we can see logic regarding vesting accounts. Thats not of interest to us since vesting logic is disabled in heimdall and we don't have such accounts.
+We skip the modules accounts during the migration because the heimdall v2 will initialize them from zero anyways.
 
 #### v0.38 - v0.39
 
@@ -74,3 +76,29 @@ There is migration executed on the database, it moves params from x/params modul
 #### v0.47 - v0.50
 
 There is migration executed on the database, that changes how global account number is stored. Its not interesting to us because during the import of the genesis, the auth module will find the highest account number and store it in the appropriate key. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.50.6/x/auth/migrations/v5/migrate.go)
+
+### bank
+
+#### v0.38 - v0.39
+
+There is no migration for the bank module. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.41.2/x/genutil/legacy/v039/migrate.go)
+
+#### v0.39 - v0.40
+
+Majority of the changes in the bank module state happen in this migration. Users balances are moved from auth to bank, there is supply module that holds the total supply, that is also moved into bank module. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.41.2/x/genutil/legacy/v040/migrate.go)
+
+#### v0.40 - v0.41
+
+There is no Cosmos SDK migration but there is Gaia migration to add denom metadata. This data is useful only for clients and wallets that display different denoms from the network, to know their exponent, its not of use for us. [Link](https://github.com/cosmos/gaia/blob/6d46572f3273423ad9562cf249a86ecc8206e207/app/migrate.go#L133-L150)
+
+#### v0.41 - v0.43
+
+There is migration but its only in database, pruning zero balance accounts, change different prefixes. It doesnt concern us. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/x/bank/legacy/v043/store.go)
+
+#### v0.43 - v0.45
+
+There is migration but its only in database, adding some additional prefixes. It doesnt concern us. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.50.10/x/bank/migrations/v3/store.go)
+
+#### v0.47 - v0.50
+
+There is migration but its only in database, migrating some parameters from params module to the bank module store. It doesnt concern us. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.50.10/x/bank/migrations/v4/store.go)
