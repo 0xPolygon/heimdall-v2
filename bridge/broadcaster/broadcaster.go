@@ -105,6 +105,10 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	txf = txf.WithSequence(tb.lastSeqNo)
 	txf = txf.WithKeybase(tb.CliCtx.Keyring)
 
+	// setting this to true to as the if block in BroadcastTx
+	// might cause a cancelled transaction.
+	tb.CliCtx.SkipConfirm = true
+
 	txResponse, err := helper.BroadcastTx(tb.CliCtx, txf, msg)
 	if err != nil || txResponse.Code != uint32(abci.CodeTypeOK) {
 		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err, "txResponse", txResponse.Code)
