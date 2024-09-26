@@ -15,38 +15,38 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: stake.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod:      "CurrentValidatorSet",
+					RpcMethod:      "GetCurrentValidatorSet",
 					Use:            "current-validator-set",
 					Short:          "Query all validators which are currently active in validator set",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod:      "Signer",
+					RpcMethod:      "GetSignerByAddress",
 					Use:            "signer [val_address]",
 					Short:          "Query validator info for given validator address",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "val_address"}},
 				},
 				{
-					RpcMethod:      "Validator",
+					RpcMethod:      "GetValidatorById",
 					Use:            "validator [id]",
 					Short:          "Query validator info for a given validator id",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}},
 				},
 				{
-					RpcMethod: "ValidatorStatus",
+					RpcMethod: "GetValidatorStatusByAddress",
 					Use:       "validator-status [val_address]",
 					Short:     "Query validator status for given validator address",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
 						{ProtoField: "val_address"}},
 				},
 				{
-					RpcMethod:      "TotalPower",
+					RpcMethod:      "GetTotalPower",
 					Use:            "total-power",
 					Short:          "Query total power of the validator set",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod:      "StakingIsOldTx",
+					RpcMethod:      "IsStakeTxOld",
 					Use:            "is-old-tx [txHash] [logIndex]",
 					Short:          "Check if a tx is old (already submitted)",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "tx_hash"}, {ProtoField: "log_index"}},

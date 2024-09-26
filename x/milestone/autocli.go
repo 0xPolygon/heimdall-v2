@@ -15,31 +15,31 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: milestone.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod:      "Params",
+					RpcMethod:      "GetParams",
 					Use:            "get-params",
 					Short:          "Get milestone params",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod:      "Count",
+					RpcMethod:      "GetMilestoneCount",
 					Use:            "get-count",
 					Short:          "Get milestone count",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod:      "LatestMilestone",
+					RpcMethod:      "GetLatestMilestone",
 					Use:            "get-latest-milestone",
 					Short:          "Get latest milestone",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod:      "Milestone",
+					RpcMethod:      "GetMilestoneByNumber",
 					Use:            "get-milestone-by-number",
 					Short:          "Get milestone by number",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "number"}},
 				},
 				{
-					RpcMethod:      "MilestoneProposer",
+					RpcMethod:      "GetMilestoneProposerByTimes",
 					Use:            "get-milestone-proposer",
 					Short:          "Get milestone proposer",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "times"}},
