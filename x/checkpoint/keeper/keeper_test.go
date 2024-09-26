@@ -11,6 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
@@ -68,6 +70,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	keeper := checkpointKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.stakeKeeper,
 		s.cmKeeper,
 		s.topupKeeper,

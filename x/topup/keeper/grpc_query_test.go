@@ -193,7 +193,7 @@ func (s *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 		Address: AccountHash,
 		Proof:   AccountHashProof,
 	}
-	res, err := queryClient.VerifyAccountProof(ctx, req)
+	res, err := queryClient.VerifyAccountProofByAddress(ctx, req)
 	require.NoError(err)
 	require.True(res.IsVerified)
 }
@@ -223,7 +223,7 @@ func (s *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 		Address: AccountHash,
 	}
 
-	res, err := queryClient.GetAccountProof(ctx, req)
+	res, err := queryClient.GetAccountProofByAddress(ctx, req)
 	require.NoError(err)
 	require.NotNil(res.Proof)
 }

@@ -25,7 +25,7 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-func (q queryServer) Record(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
+func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 
@@ -40,7 +40,7 @@ func (q queryServer) Record(ctx context.Context, request *types.RecordRequest) (
 	return &types.RecordResponse{Record: record}, nil
 }
 
-func (q queryServer) RecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
+func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 
@@ -59,7 +59,7 @@ func (q queryServer) RecordList(ctx context.Context, request *types.RecordListRe
 	return &types.RecordListResponse{EventRecords: newRecords}, nil
 }
 
-func (q queryServer) RecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
+func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 
@@ -78,7 +78,7 @@ func (q queryServer) RecordListWithTime(ctx context.Context, request *types.Reco
 	return &types.RecordListWithTimeResponse{EventRecords: newRecords}, nil
 }
 
-func (q queryServer) RecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
+func (q queryServer) GetRecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 

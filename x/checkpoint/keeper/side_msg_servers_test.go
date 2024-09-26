@@ -156,7 +156,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 		rootChainInstance := &rootchain.Rootchain{}
 
 		contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
-		contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(common.Hash(header.RootHash), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
+		contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildChainBlockInterval).Return(common.Hash(header.RootHash), header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should pass")
@@ -180,7 +180,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 		rootChainInstance := &rootchain.Rootchain{}
 
 		contractCaller.On("GetRootChainInstance", mock.Anything).Return(rootChainInstance, nil)
-		contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildBlockInterval).Return(nil, header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
+		contractCaller.On("GetHeaderInfo", headerId, rootChainInstance, params.ChildChainBlockInterval).Return(nil, header.StartBlock, header.EndBlock, header.Timestamp, header.Proposer, nil)
 
 		result := sideHandler(ctx, &msgCheckpointAck)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")

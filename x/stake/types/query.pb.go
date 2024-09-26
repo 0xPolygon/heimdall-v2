@@ -480,25 +480,25 @@ func (m *QueryValidatorStatusResponse) GetIsOld() bool {
 	return false
 }
 
-// QueryStakingIsOldTxRequest is request type for the Query/StakingIsOldTx
+// QueryStakeIsOldTxRequest is request type for the Query/IsStakeTxOld
 // RPC method
-type QueryStakingIsOldTxRequest struct {
+type QueryStakeIsOldTxRequest struct {
 	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
-func (m *QueryStakingIsOldTxRequest) Reset()         { *m = QueryStakingIsOldTxRequest{} }
-func (m *QueryStakingIsOldTxRequest) String() string { return proto.CompactTextString(m) }
-func (*QueryStakingIsOldTxRequest) ProtoMessage()    {}
-func (*QueryStakingIsOldTxRequest) Descriptor() ([]byte, []int) {
+func (m *QueryStakeIsOldTxRequest) Reset()         { *m = QueryStakeIsOldTxRequest{} }
+func (m *QueryStakeIsOldTxRequest) String() string { return proto.CompactTextString(m) }
+func (*QueryStakeIsOldTxRequest) ProtoMessage()    {}
+func (*QueryStakeIsOldTxRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_64a607450adf12fe, []int{10}
 }
-func (m *QueryStakingIsOldTxRequest) XXX_Unmarshal(b []byte) error {
+func (m *QueryStakeIsOldTxRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryStakingIsOldTxRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryStakeIsOldTxRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryStakingIsOldTxRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryStakeIsOldTxRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -508,51 +508,51 @@ func (m *QueryStakingIsOldTxRequest) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *QueryStakingIsOldTxRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryStakingIsOldTxRequest.Merge(m, src)
+func (m *QueryStakeIsOldTxRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryStakeIsOldTxRequest.Merge(m, src)
 }
-func (m *QueryStakingIsOldTxRequest) XXX_Size() int {
+func (m *QueryStakeIsOldTxRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryStakingIsOldTxRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryStakingIsOldTxRequest.DiscardUnknown(m)
+func (m *QueryStakeIsOldTxRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryStakeIsOldTxRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryStakingIsOldTxRequest proto.InternalMessageInfo
+var xxx_messageInfo_QueryStakeIsOldTxRequest proto.InternalMessageInfo
 
-func (m *QueryStakingIsOldTxRequest) GetTxHash() string {
+func (m *QueryStakeIsOldTxRequest) GetTxHash() string {
 	if m != nil {
 		return m.TxHash
 	}
 	return ""
 }
 
-func (m *QueryStakingIsOldTxRequest) GetLogIndex() uint64 {
+func (m *QueryStakeIsOldTxRequest) GetLogIndex() uint64 {
 	if m != nil {
 		return m.LogIndex
 	}
 	return 0
 }
 
-// QueryStakingIsOldTxResponse is response type for the Query/StakingIsOldTx
+// QueryStakeIsOldTxResponse is response type for the Query/IsStakeTxOld
 // RPC method
-type QueryStakingIsOldTxResponse struct {
+type QueryStakeIsOldTxResponse struct {
 	// status define the active status of validator
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
-func (m *QueryStakingIsOldTxResponse) Reset()         { *m = QueryStakingIsOldTxResponse{} }
-func (m *QueryStakingIsOldTxResponse) String() string { return proto.CompactTextString(m) }
-func (*QueryStakingIsOldTxResponse) ProtoMessage()    {}
-func (*QueryStakingIsOldTxResponse) Descriptor() ([]byte, []int) {
+func (m *QueryStakeIsOldTxResponse) Reset()         { *m = QueryStakeIsOldTxResponse{} }
+func (m *QueryStakeIsOldTxResponse) String() string { return proto.CompactTextString(m) }
+func (*QueryStakeIsOldTxResponse) ProtoMessage()    {}
+func (*QueryStakeIsOldTxResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_64a607450adf12fe, []int{11}
 }
-func (m *QueryStakingIsOldTxResponse) XXX_Unmarshal(b []byte) error {
+func (m *QueryStakeIsOldTxResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryStakingIsOldTxResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *QueryStakeIsOldTxResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryStakingIsOldTxResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_QueryStakeIsOldTxResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -562,19 +562,19 @@ func (m *QueryStakingIsOldTxResponse) XXX_Marshal(b []byte, deterministic bool) 
 		return b[:n], nil
 	}
 }
-func (m *QueryStakingIsOldTxResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryStakingIsOldTxResponse.Merge(m, src)
+func (m *QueryStakeIsOldTxResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryStakeIsOldTxResponse.Merge(m, src)
 }
-func (m *QueryStakingIsOldTxResponse) XXX_Size() int {
+func (m *QueryStakeIsOldTxResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryStakingIsOldTxResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryStakingIsOldTxResponse.DiscardUnknown(m)
+func (m *QueryStakeIsOldTxResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryStakeIsOldTxResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryStakingIsOldTxResponse proto.InternalMessageInfo
+var xxx_messageInfo_QueryStakeIsOldTxResponse proto.InternalMessageInfo
 
-func (m *QueryStakingIsOldTxResponse) GetIsOld() bool {
+func (m *QueryStakeIsOldTxResponse) GetIsOld() bool {
 	if m != nil {
 		return m.IsOld
 	}
@@ -592,60 +592,62 @@ func init() {
 	proto.RegisterType((*QueryTotalPowerResponse)(nil), "heimdallv2.stake.QueryTotalPowerResponse")
 	proto.RegisterType((*QueryValidatorStatusRequest)(nil), "heimdallv2.stake.QueryValidatorStatusRequest")
 	proto.RegisterType((*QueryValidatorStatusResponse)(nil), "heimdallv2.stake.QueryValidatorStatusResponse")
-	proto.RegisterType((*QueryStakingIsOldTxRequest)(nil), "heimdallv2.stake.QueryStakingIsOldTxRequest")
-	proto.RegisterType((*QueryStakingIsOldTxResponse)(nil), "heimdallv2.stake.QueryStakingIsOldTxResponse")
+	proto.RegisterType((*QueryStakeIsOldTxRequest)(nil), "heimdallv2.stake.QueryStakeIsOldTxRequest")
+	proto.RegisterType((*QueryStakeIsOldTxResponse)(nil), "heimdallv2.stake.QueryStakeIsOldTxResponse")
 }
 
 func init() { proto.RegisterFile("heimdallv2/stake/query.proto", fileDescriptor_64a607450adf12fe) }
 
 var fileDescriptor_64a607450adf12fe = []byte{
-	// 733 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x95, 0xcd, 0x6e, 0xd3, 0x4a,
-	0x14, 0xc7, 0xe3, 0xdc, 0xdb, 0xdc, 0x66, 0x7a, 0x81, 0x32, 0xfd, 0x94, 0x93, 0xba, 0xad, 0x45,
-	0x3f, 0x40, 0xc4, 0xa6, 0x61, 0x49, 0x37, 0x2d, 0x20, 0xb5, 0x1b, 0x28, 0x6d, 0xc5, 0x02, 0x24,
-	0xc2, 0xb4, 0x1e, 0x39, 0xa3, 0x3a, 0x9e, 0xd4, 0x33, 0x09, 0xae, 0xaa, 0x0a, 0xa9, 0x2b, 0x16,
-	0x2c, 0x90, 0x78, 0x00, 0x36, 0x2c, 0x58, 0xf2, 0x18, 0x5d, 0x56, 0x62, 0xc3, 0x0a, 0xa1, 0x16,
-	0x09, 0x89, 0xa7, 0x40, 0x1e, 0x8f, 0xed, 0xc4, 0x69, 0x48, 0x2a, 0xb1, 0xa9, 0xaa, 0x39, 0xff,
-	0x73, 0xfe, 0xbf, 0x39, 0x67, 0x8e, 0x03, 0x8a, 0x55, 0x4c, 0x6a, 0x16, 0x72, 0x9c, 0x66, 0xd9,
-	0x64, 0x1c, 0xed, 0x61, 0x73, 0xbf, 0x81, 0xbd, 0x03, 0xa3, 0xee, 0x51, 0x4e, 0xe1, 0x70, 0x12,
-	0x35, 0x44, 0x54, 0x1d, 0xb5, 0xa9, 0x4d, 0x45, 0xd0, 0x0c, 0xfe, 0x0b, 0x75, 0x6a, 0xd1, 0xa6,
-	0xd4, 0x76, 0xb0, 0x89, 0xea, 0xc4, 0x44, 0xae, 0x4b, 0x39, 0xe2, 0x84, 0xba, 0x4c, 0x46, 0x0b,
-	0xbb, 0x94, 0xd5, 0x28, 0x0b, 0x2b, 0x9b, 0xcd, 0xa5, 0x56, 0x0b, 0xf5, 0x3a, 0xaa, 0x11, 0x97,
-	0x9a, 0xe2, 0xaf, 0x3c, 0x9a, 0xe9, 0x60, 0x6a, 0x22, 0x87, 0x58, 0x88, 0x53, 0x2f, 0x54, 0xe8,
-	0xb3, 0x60, 0xfa, 0x49, 0x50, 0xe3, 0x7e, 0xc3, 0xf3, 0xb0, 0xcb, 0x9f, 0x46, 0xe1, 0x2d, 0xcc,
-	0x37, 0xf1, 0x7e, 0x03, 0x33, 0xae, 0x7b, 0x60, 0xa6, 0xbb, 0x84, 0xd5, 0xa9, 0xcb, 0x30, 0x7c,
-	0x04, 0xae, 0xc4, 0x95, 0x2b, 0x0c, 0xf3, 0x49, 0x65, 0x46, 0x59, 0x1c, 0x2a, 0x6b, 0x46, 0xfa,
-	0xda, 0x46, 0x6b, 0xfa, 0x6a, 0xfe, 0xe4, 0xdb, 0x74, 0xe6, 0xd3, 0xcf, 0xcf, 0xb7, 0x94, 0xcd,
-	0xff, 0x9b, 0x2d, 0x01, 0x7d, 0x19, 0x40, 0xe1, 0xb9, 0x45, 0x6c, 0x17, 0x7b, 0x92, 0x04, 0xce,
-	0x83, 0xa1, 0x26, 0x72, 0x2a, 0xc8, 0xb2, 0x3c, 0xcc, 0x98, 0xf0, 0xc8, 0xaf, 0x0e, 0x84, 0xf9,
-	0xa0, 0x89, 0x9c, 0x95, 0x30, 0xa0, 0x3f, 0x07, 0x23, 0x6d, 0xd9, 0x12, 0xf2, 0x01, 0xc8, 0xc7,
-	0x26, 0x12, 0xb0, 0xf0, 0x07, 0xc0, 0x56, 0xba, 0x24, 0x51, 0x37, 0xc0, 0x98, 0x28, 0x1e, 0xeb,
-	0x22, 0xba, 0x31, 0x90, 0x25, 0x96, 0xa8, 0xfb, 0x6f, 0x04, 0x95, 0x25, 0x96, 0xfe, 0x02, 0x8c,
-	0xa7, 0xf5, 0x7f, 0x95, 0x67, 0x52, 0xd6, 0xdf, 0xa6, 0x1c, 0x39, 0x1b, 0xf4, 0x55, 0xdc, 0x2e,
-	0x7d, 0x05, 0x4c, 0x74, 0x44, 0xa4, 0xf5, 0x3c, 0x18, 0xe2, 0xc1, 0x69, 0xa5, 0x1e, 0x1c, 0x0b,
-	0xf3, 0x7f, 0xe2, 0x4e, 0xf2, 0x58, 0xaf, 0x3f, 0x04, 0x85, 0x76, 0xf8, 0x2d, 0x8e, 0x78, 0x83,
-	0x5d, 0x76, 0x20, 0xcb, 0xa0, 0x78, 0x71, 0x19, 0x89, 0x53, 0x04, 0x39, 0xc2, 0x2a, 0xd4, 0x09,
-	0xdb, 0x37, 0x18, 0x95, 0x18, 0x20, 0xec, 0xb1, 0x63, 0xe9, 0x2f, 0x81, 0x1a, 0x8e, 0x93, 0xa3,
-	0x3d, 0xe2, 0xda, 0xeb, 0xc1, 0xe1, 0xb6, 0x1f, 0x31, 0x68, 0xe0, 0x3f, 0xee, 0x57, 0xaa, 0x88,
-	0x55, 0xdb, 0xfd, 0x73, 0xdc, 0x5f, 0x43, 0xac, 0x0a, 0x75, 0x90, 0x77, 0xa8, 0x5d, 0x21, 0xae,
-	0x85, 0xfd, 0xc9, 0x6c, 0xeb, 0x74, 0x06, 0x1d, 0x6a, 0xaf, 0x07, 0xc7, 0xfa, 0x3d, 0x79, 0xcd,
-	0xb4, 0x43, 0x3f, 0x78, 0xe5, 0x5f, 0x39, 0x30, 0x20, 0xb2, 0xe1, 0x07, 0x05, 0x8c, 0x5c, 0xb0,
-	0x25, 0x70, 0xa9, 0x73, 0xaa, 0x3d, 0x96, 0x4e, 0x2d, 0x5f, 0x26, 0x25, 0xc4, 0xd4, 0x67, 0xdf,
-	0x04, 0x58, 0xc7, 0x5f, 0x7e, 0xbc, 0xcf, 0x8e, 0xc3, 0xd1, 0xf4, 0xc2, 0x97, 0x18, 0xe6, 0xf0,
-	0x35, 0xc8, 0x85, 0x4b, 0x01, 0x6f, 0x74, 0x31, 0x68, 0xdb, 0x38, 0x75, 0xae, 0x87, 0x4a, 0x3a,
-	0x2f, 0x26, 0xce, 0x53, 0xb0, 0x20, 0x9d, 0x99, 0xd0, 0x98, 0x87, 0x2d, 0x2f, 0xe4, 0x08, 0x1e,
-	0x2b, 0x20, 0x1f, 0xc3, 0xc3, 0x85, 0x2e, 0xe5, 0xd3, 0xbb, 0xa5, 0x2e, 0xf6, 0x16, 0x4a, 0x14,
-	0x3d, 0x41, 0x99, 0x80, 0x63, 0xe9, 0x26, 0x98, 0x87, 0xc4, 0x3a, 0x82, 0x1f, 0x15, 0x70, 0x2d,
-	0xf5, 0x14, 0x61, 0xa9, 0x97, 0x43, 0xdb, 0xcb, 0x57, 0x8d, 0x7e, 0xe5, 0x12, 0xab, 0x9c, 0x60,
-	0x2d, 0xc0, 0xb9, 0xce, 0xd9, 0x08, 0x75, 0x67, 0xaf, 0x40, 0xb2, 0xbb, 0xb0, 0x5b, 0x0f, 0x3a,
-	0x16, 0x5f, 0xbd, 0xd9, 0x87, 0x52, 0x72, 0x4d, 0x27, 0x5c, 0xa3, 0x10, 0x4a, 0x2e, 0xf1, 0x01,
-	0x28, 0x89, 0x4f, 0x03, 0x7c, 0xab, 0x80, 0xab, 0xed, 0x6b, 0x01, 0x6f, 0x77, 0x7b, 0x14, 0x17,
-	0xed, 0xa7, 0x5a, 0xea, 0x53, 0x2d, 0x81, 0xa6, 0x12, 0x20, 0x08, 0x87, 0x25, 0x10, 0x61, 0x25,
-	0xea, 0x58, 0x25, 0xee, 0xaf, 0xae, 0x9d, 0x9c, 0x69, 0xca, 0xe9, 0x99, 0xa6, 0x7c, 0x3f, 0xd3,
-	0x94, 0x77, 0xe7, 0x5a, 0xe6, 0xf4, 0x5c, 0xcb, 0x7c, 0x3d, 0xd7, 0x32, 0xcf, 0x0c, 0x9b, 0xf0,
-	0x6a, 0x63, 0xc7, 0xd8, 0xa5, 0x35, 0xf3, 0x8e, 0xbf, 0x41, 0x9d, 0x03, 0x9b, 0xba, 0x66, 0xe4,
-	0x5d, 0x6a, 0x96, 0x4d, 0x3f, 0xba, 0xde, 0x41, 0x1d, 0xb3, 0x9d, 0x9c, 0xf8, 0x01, 0xbc, 0xfb,
-	0x3b, 0x00, 0x00, 0xff, 0xff, 0xd6, 0x9e, 0xd6, 0xf3, 0xb8, 0x07, 0x00, 0x00,
+	// 758 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x95, 0x4b, 0x6f, 0xd3, 0x4a,
+	0x14, 0xc7, 0xe3, 0xdc, 0xdb, 0x47, 0xa6, 0xad, 0xd4, 0x3b, 0xb7, 0x8f, 0xe0, 0xa4, 0x6e, 0x6b,
+	0xd1, 0x07, 0x45, 0xb1, 0x69, 0x58, 0x21, 0x75, 0xd3, 0x00, 0x4a, 0xb3, 0xa1, 0xa5, 0xad, 0x58,
+	0x80, 0x44, 0x34, 0xad, 0x47, 0x8e, 0xc5, 0xc4, 0x93, 0x7a, 0x26, 0xc1, 0x51, 0xd5, 0x0d, 0x12,
+	0x88, 0xc7, 0x06, 0x89, 0x6f, 0xc0, 0x8a, 0x65, 0x3f, 0x46, 0x97, 0x95, 0xd8, 0xb0, 0x42, 0xa8,
+	0x45, 0xe2, 0x6b, 0x20, 0x8f, 0x27, 0x71, 0x1e, 0x0d, 0x49, 0x25, 0x36, 0x55, 0x35, 0xe7, 0x7f,
+	0xce, 0xff, 0xe7, 0x73, 0xe6, 0x4c, 0x40, 0xba, 0x84, 0x9d, 0xb2, 0x85, 0x08, 0xa9, 0x65, 0x4d,
+	0xc6, 0xd1, 0x0b, 0x6c, 0x1e, 0x55, 0xb1, 0x57, 0x37, 0x2a, 0x1e, 0xe5, 0x14, 0x4e, 0x46, 0x51,
+	0x43, 0x44, 0xd5, 0x29, 0x9b, 0xda, 0x54, 0x04, 0xcd, 0xe0, 0xbf, 0x50, 0xa7, 0xa6, 0x6d, 0x4a,
+	0x6d, 0x82, 0x4d, 0x54, 0x71, 0x4c, 0xe4, 0xba, 0x94, 0x23, 0xee, 0x50, 0x97, 0xc9, 0x68, 0xea,
+	0x90, 0xb2, 0x32, 0x65, 0x61, 0x65, 0xb3, 0xb6, 0xde, 0x6a, 0xa1, 0xfe, 0x87, 0xca, 0x8e, 0x4b,
+	0x4d, 0xf1, 0x57, 0x1e, 0x2d, 0x74, 0x31, 0xd5, 0x10, 0x71, 0x2c, 0xc4, 0xa9, 0x17, 0x2a, 0xf4,
+	0x45, 0x30, 0xff, 0x38, 0xa8, 0x71, 0xbf, 0xea, 0x79, 0xd8, 0xe5, 0x4f, 0x1a, 0xe1, 0x3d, 0xcc,
+	0x77, 0xf1, 0x51, 0x15, 0x33, 0xae, 0x7b, 0x60, 0xa1, 0xb7, 0x84, 0x55, 0xa8, 0xcb, 0x30, 0x7c,
+	0x04, 0x26, 0x9a, 0x95, 0x8b, 0x0c, 0xf3, 0xa4, 0xb2, 0xa0, 0xac, 0x8e, 0x65, 0x35, 0xa3, 0xf3,
+	0xb3, 0x8d, 0xd6, 0xf4, 0x5c, 0xe2, 0xec, 0xfb, 0x7c, 0xec, 0xcb, 0xaf, 0xd3, 0x35, 0x65, 0x77,
+	0xbc, 0xd6, 0x12, 0xd0, 0x37, 0x00, 0x14, 0x9e, 0x7b, 0x8e, 0xed, 0x62, 0x4f, 0x92, 0xc0, 0x65,
+	0x30, 0x56, 0x43, 0xa4, 0x88, 0x2c, 0xcb, 0xc3, 0x8c, 0x09, 0x8f, 0x44, 0x6e, 0x28, 0xcc, 0x07,
+	0x35, 0x44, 0x36, 0xc3, 0x80, 0xfe, 0x0c, 0xfc, 0xdf, 0x96, 0x2d, 0x21, 0x1f, 0x80, 0x44, 0xd3,
+	0x44, 0x02, 0xa6, 0xfe, 0x00, 0xd8, 0x4a, 0x17, 0x25, 0xea, 0x06, 0x98, 0x16, 0xc5, 0x9b, 0xba,
+	0x06, 0xdd, 0x34, 0x88, 0x3b, 0x96, 0xa8, 0xfb, 0x6f, 0x03, 0x2a, 0xee, 0x58, 0xfa, 0x73, 0x30,
+	0xd3, 0xa9, 0xff, 0xab, 0x3c, 0x49, 0x59, 0x7f, 0x9f, 0x72, 0x44, 0x76, 0xe8, 0xcb, 0x66, 0xbb,
+	0xf4, 0x4d, 0x30, 0xdb, 0x15, 0x91, 0xd6, 0xcb, 0x60, 0x8c, 0x07, 0xa7, 0xc5, 0x4a, 0x70, 0x2c,
+	0xcc, 0xff, 0x69, 0x76, 0x92, 0x37, 0xf5, 0xfa, 0x43, 0x90, 0x6a, 0x87, 0xdf, 0xe3, 0x88, 0x57,
+	0xd9, 0x75, 0x07, 0xb2, 0x01, 0xd2, 0x57, 0x97, 0x91, 0x38, 0x69, 0x30, 0xec, 0xb0, 0x22, 0x25,
+	0x61, 0xfb, 0x46, 0x1b, 0x25, 0x86, 0x1c, 0xb6, 0x4d, 0x82, 0x0e, 0x26, 0xc3, 0x71, 0x06, 0xfd,
+	0x28, 0x04, 0x47, 0xfb, 0x7e, 0x83, 0x40, 0x03, 0x23, 0xdc, 0x2f, 0x96, 0x10, 0x2b, 0xb5, 0xbb,
+	0x0f, 0x73, 0x7f, 0x0b, 0xb1, 0x12, 0xd4, 0x41, 0x82, 0x50, 0xbb, 0xe8, 0xb8, 0x16, 0xf6, 0x93,
+	0xf1, 0xd6, 0xd9, 0x8c, 0x12, 0x6a, 0x17, 0x82, 0x63, 0xfd, 0x1e, 0xb8, 0x71, 0x45, 0xfd, 0x41,
+	0xd0, 0xb2, 0xef, 0x47, 0xc0, 0x90, 0xc8, 0x85, 0x9f, 0x15, 0x30, 0x93, 0xc7, 0xfc, 0x8a, 0x25,
+	0x81, 0xeb, 0xdd, 0x43, 0xed, 0xb3, 0x73, 0x6a, 0xf6, 0x3a, 0x29, 0x21, 0xa9, 0xbe, 0xf8, 0x36,
+	0x20, 0x7b, 0xf5, 0xf5, 0xe7, 0xa7, 0xf8, 0x0c, 0x9c, 0xea, 0xdc, 0xf7, 0x0c, 0xc3, 0x1c, 0x7e,
+	0x50, 0x00, 0xcc, 0x63, 0x1e, 0xee, 0x45, 0xae, 0x2e, 0xc7, 0x03, 0x6f, 0xf6, 0x70, 0x6b, 0xdb,
+	0x3e, 0x75, 0xa9, 0x8f, 0x4a, 0x62, 0xac, 0x46, 0x18, 0x73, 0x30, 0x25, 0x31, 0x98, 0xd0, 0x98,
+	0xc7, 0x2d, 0xb7, 0xe5, 0x04, 0xbe, 0x53, 0xc0, 0x64, 0x1e, 0x47, 0x1f, 0x93, 0xab, 0x17, 0x2c,
+	0xb8, 0xd2, 0xc3, 0xa5, 0x73, 0xdd, 0xd4, 0xd5, 0xfe, 0x42, 0x49, 0xa4, 0x47, 0x44, 0xb3, 0x70,
+	0xba, 0xb3, 0x31, 0xe6, 0xb1, 0x63, 0x9d, 0xc0, 0x53, 0x05, 0xa4, 0x5a, 0x59, 0xc2, 0x0b, 0x1a,
+	0xb5, 0x28, 0xd3, 0xcf, 0xad, 0x6d, 0x31, 0x54, 0x63, 0x50, 0xb9, 0x44, 0xcc, 0x46, 0x88, 0x2b,
+	0x70, 0xa9, 0x7b, 0x76, 0x42, 0xdd, 0xd1, 0xbe, 0xd7, 0x0a, 0x98, 0xc8, 0x63, 0x1e, 0x6d, 0x37,
+	0xec, 0xd5, 0x92, 0xae, 0xa7, 0x41, 0xbd, 0x35, 0x80, 0x52, 0xa2, 0xcd, 0x47, 0x68, 0x53, 0x10,
+	0x4a, 0x34, 0xf1, 0x44, 0x64, 0xc4, 0xe3, 0x01, 0xdf, 0x28, 0x60, 0xbc, 0xc0, 0xc4, 0xf2, 0xec,
+	0xfb, 0xdb, 0xc4, 0x82, 0x6b, 0xbd, 0x2e, 0x4a, 0xf7, 0xfe, 0xaa, 0xb7, 0x07, 0xd2, 0x4a, 0x94,
+	0xb9, 0x08, 0x05, 0xc2, 0x49, 0x89, 0xe2, 0xb0, 0x0c, 0x25, 0x56, 0x86, 0xfb, 0xb9, 0xad, 0xb3,
+	0x0b, 0x4d, 0x39, 0xbf, 0xd0, 0x94, 0x1f, 0x17, 0x9a, 0xf2, 0xf1, 0x52, 0x8b, 0x9d, 0x5f, 0x6a,
+	0xb1, 0x6f, 0x97, 0x5a, 0xec, 0xa9, 0x61, 0x3b, 0xbc, 0x54, 0x3d, 0x30, 0x0e, 0x69, 0xd9, 0xbc,
+	0xe3, 0xef, 0x50, 0x52, 0xb7, 0xa9, 0x6b, 0x36, 0x9c, 0x33, 0xb5, 0xac, 0xe9, 0x37, 0x3e, 0xac,
+	0x5e, 0xc1, 0xec, 0x60, 0x58, 0xfc, 0x38, 0xde, 0xfd, 0x1d, 0x00, 0x00, 0xff, 0xff, 0xe3, 0x18,
+	0x89, 0x7c, 0xd4, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -661,17 +663,17 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
 	// CurrentValidatorSet queries for the current validator set
-	CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
+	GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
 	// Signer queries validator info for a given validator address.
-	Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
+	GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
 	// Validator queries validator info for a given validator id.
-	Validator(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
+	GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
-	ValidatorStatus(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
+	GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
 	// TotalPower queries the total power of a validator set
-	TotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
-	// StakingSequence queries for the staking sequence
-	StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakingIsOldTxResponse, error)
+	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
+	// IsStakeTxOld queries for the staking sequence
+	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
 }
 
 type queryClient struct {
@@ -682,54 +684,54 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error) {
+func (c *queryClient) GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error) {
 	out := new(QueryCurrentValidatorSetResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/CurrentValidatorSet", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/GetCurrentValidatorSet", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error) {
+func (c *queryClient) GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error) {
 	out := new(QuerySignerResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/Signer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/GetSignerByAddress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Validator(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error) {
+func (c *queryClient) GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error) {
 	out := new(QueryValidatorResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/Validator", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/GetValidatorById", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) ValidatorStatus(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error) {
+func (c *queryClient) GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error) {
 	out := new(QueryValidatorStatusResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/ValidatorStatus", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/GetValidatorStatusByAddress", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) TotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error) {
+func (c *queryClient) GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error) {
 	out := new(QueryTotalPowerResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/TotalPower", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/GetTotalPower", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakingIsOldTxResponse, error) {
-	out := new(QueryStakingIsOldTxResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/StakingIsOldTx", in, out, opts...)
+func (c *queryClient) IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error) {
+	out := new(QueryStakeIsOldTxResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/IsStakeTxOld", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -739,150 +741,150 @@ func (c *queryClient) StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldT
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// CurrentValidatorSet queries for the current validator set
-	CurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
+	GetCurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
 	// Signer queries validator info for a given validator address.
-	Signer(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
+	GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
 	// Validator queries validator info for a given validator id.
-	Validator(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
+	GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
-	ValidatorStatus(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
+	GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
 	// TotalPower queries the total power of a validator set
-	TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
-	// StakingSequence queries for the staking sequence
-	StakingIsOldTx(context.Context, *QueryStakingIsOldTxRequest) (*QueryStakingIsOldTxResponse, error)
+	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
+	// IsStakeTxOld queries for the staking sequence
+	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
-func (*UnimplementedQueryServer) CurrentValidatorSet(ctx context.Context, req *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CurrentValidatorSet not implemented")
+func (*UnimplementedQueryServer) GetCurrentValidatorSet(ctx context.Context, req *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentValidatorSet not implemented")
 }
-func (*UnimplementedQueryServer) Signer(ctx context.Context, req *QuerySignerRequest) (*QuerySignerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Signer not implemented")
+func (*UnimplementedQueryServer) GetSignerByAddress(ctx context.Context, req *QuerySignerRequest) (*QuerySignerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSignerByAddress not implemented")
 }
-func (*UnimplementedQueryServer) Validator(ctx context.Context, req *QueryValidatorRequest) (*QueryValidatorResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Validator not implemented")
+func (*UnimplementedQueryServer) GetValidatorById(ctx context.Context, req *QueryValidatorRequest) (*QueryValidatorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorById not implemented")
 }
-func (*UnimplementedQueryServer) ValidatorStatus(ctx context.Context, req *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ValidatorStatus not implemented")
+func (*UnimplementedQueryServer) GetValidatorStatusByAddress(ctx context.Context, req *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorStatusByAddress not implemented")
 }
-func (*UnimplementedQueryServer) TotalPower(ctx context.Context, req *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TotalPower not implemented")
+func (*UnimplementedQueryServer) GetTotalPower(ctx context.Context, req *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTotalPower not implemented")
 }
-func (*UnimplementedQueryServer) StakingIsOldTx(ctx context.Context, req *QueryStakingIsOldTxRequest) (*QueryStakingIsOldTxResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StakingIsOldTx not implemented")
+func (*UnimplementedQueryServer) IsStakeTxOld(ctx context.Context, req *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsStakeTxOld not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
 }
 
-func _Query_CurrentValidatorSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetCurrentValidatorSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryCurrentValidatorSetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).CurrentValidatorSet(ctx, in)
+		return srv.(QueryServer).GetCurrentValidatorSet(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.stake.Query/CurrentValidatorSet",
+		FullMethod: "/heimdallv2.stake.Query/GetCurrentValidatorSet",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).CurrentValidatorSet(ctx, req.(*QueryCurrentValidatorSetRequest))
+		return srv.(QueryServer).GetCurrentValidatorSet(ctx, req.(*QueryCurrentValidatorSetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Signer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetSignerByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QuerySignerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Signer(ctx, in)
+		return srv.(QueryServer).GetSignerByAddress(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.stake.Query/Signer",
+		FullMethod: "/heimdallv2.stake.Query/GetSignerByAddress",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Signer(ctx, req.(*QuerySignerRequest))
+		return srv.(QueryServer).GetSignerByAddress(ctx, req.(*QuerySignerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Validator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetValidatorById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryValidatorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Validator(ctx, in)
+		return srv.(QueryServer).GetValidatorById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.stake.Query/Validator",
+		FullMethod: "/heimdallv2.stake.Query/GetValidatorById",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Validator(ctx, req.(*QueryValidatorRequest))
+		return srv.(QueryServer).GetValidatorById(ctx, req.(*QueryValidatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ValidatorStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetValidatorStatusByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryValidatorStatusRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ValidatorStatus(ctx, in)
+		return srv.(QueryServer).GetValidatorStatusByAddress(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.stake.Query/ValidatorStatus",
+		FullMethod: "/heimdallv2.stake.Query/GetValidatorStatusByAddress",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ValidatorStatus(ctx, req.(*QueryValidatorStatusRequest))
+		return srv.(QueryServer).GetValidatorStatusByAddress(ctx, req.(*QueryValidatorStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_TotalPower_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetTotalPower_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryTotalPowerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).TotalPower(ctx, in)
+		return srv.(QueryServer).GetTotalPower(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.stake.Query/TotalPower",
+		FullMethod: "/heimdallv2.stake.Query/GetTotalPower",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).TotalPower(ctx, req.(*QueryTotalPowerRequest))
+		return srv.(QueryServer).GetTotalPower(ctx, req.(*QueryTotalPowerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_StakingIsOldTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryStakingIsOldTxRequest)
+func _Query_IsStakeTxOld_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryStakeIsOldTxRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).StakingIsOldTx(ctx, in)
+		return srv.(QueryServer).IsStakeTxOld(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.stake.Query/StakingIsOldTx",
+		FullMethod: "/heimdallv2.stake.Query/IsStakeTxOld",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).StakingIsOldTx(ctx, req.(*QueryStakingIsOldTxRequest))
+		return srv.(QueryServer).IsStakeTxOld(ctx, req.(*QueryStakeIsOldTxRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -892,28 +894,28 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CurrentValidatorSet",
-			Handler:    _Query_CurrentValidatorSet_Handler,
+			MethodName: "GetCurrentValidatorSet",
+			Handler:    _Query_GetCurrentValidatorSet_Handler,
 		},
 		{
-			MethodName: "Signer",
-			Handler:    _Query_Signer_Handler,
+			MethodName: "GetSignerByAddress",
+			Handler:    _Query_GetSignerByAddress_Handler,
 		},
 		{
-			MethodName: "Validator",
-			Handler:    _Query_Validator_Handler,
+			MethodName: "GetValidatorById",
+			Handler:    _Query_GetValidatorById_Handler,
 		},
 		{
-			MethodName: "ValidatorStatus",
-			Handler:    _Query_ValidatorStatus_Handler,
+			MethodName: "GetValidatorStatusByAddress",
+			Handler:    _Query_GetValidatorStatusByAddress_Handler,
 		},
 		{
-			MethodName: "TotalPower",
-			Handler:    _Query_TotalPower_Handler,
+			MethodName: "GetTotalPower",
+			Handler:    _Query_GetTotalPower_Handler,
 		},
 		{
-			MethodName: "StakingIsOldTx",
-			Handler:    _Query_StakingIsOldTx_Handler,
+			MethodName: "IsStakeTxOld",
+			Handler:    _Query_IsStakeTxOld_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1214,7 +1216,7 @@ func (m *QueryValidatorStatusResponse) MarshalToSizedBuffer(dAtA []byte) (int, e
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryStakingIsOldTxRequest) Marshal() (dAtA []byte, err error) {
+func (m *QueryStakeIsOldTxRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1224,12 +1226,12 @@ func (m *QueryStakingIsOldTxRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryStakingIsOldTxRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryStakeIsOldTxRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryStakingIsOldTxRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryStakeIsOldTxRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1249,7 +1251,7 @@ func (m *QueryStakingIsOldTxRequest) MarshalToSizedBuffer(dAtA []byte) (int, err
 	return len(dAtA) - i, nil
 }
 
-func (m *QueryStakingIsOldTxResponse) Marshal() (dAtA []byte, err error) {
+func (m *QueryStakeIsOldTxResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1259,12 +1261,12 @@ func (m *QueryStakingIsOldTxResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryStakingIsOldTxResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *QueryStakeIsOldTxResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *QueryStakingIsOldTxResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *QueryStakeIsOldTxResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1406,7 +1408,7 @@ func (m *QueryValidatorStatusResponse) Size() (n int) {
 	return n
 }
 
-func (m *QueryStakingIsOldTxRequest) Size() (n int) {
+func (m *QueryStakeIsOldTxRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1422,7 +1424,7 @@ func (m *QueryStakingIsOldTxRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryStakingIsOldTxResponse) Size() (n int) {
+func (m *QueryStakeIsOldTxResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2161,7 +2163,7 @@ func (m *QueryValidatorStatusResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryStakingIsOldTxRequest) Unmarshal(dAtA []byte) error {
+func (m *QueryStakeIsOldTxRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2184,10 +2186,10 @@ func (m *QueryStakingIsOldTxRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryStakingIsOldTxRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryStakeIsOldTxRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryStakingIsOldTxRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryStakeIsOldTxRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2262,7 +2264,7 @@ func (m *QueryStakingIsOldTxRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryStakingIsOldTxResponse) Unmarshal(dAtA []byte) error {
+func (m *QueryStakeIsOldTxResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2285,10 +2287,10 @@ func (m *QueryStakingIsOldTxResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryStakingIsOldTxResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: QueryStakeIsOldTxResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryStakingIsOldTxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: QueryStakeIsOldTxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

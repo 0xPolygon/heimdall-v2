@@ -1,0 +1,14 @@
+syntax = "proto3";
+package heimdallv2.topup;
+
+import "cosmos_proto/cosmos.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
+
+// AccountProof embeds user and account info for the the
+// QueryAccountProofResponse
+message AccountProof {
+  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  bytes account_proof = 2;
+  uint64 index = 3;
+}

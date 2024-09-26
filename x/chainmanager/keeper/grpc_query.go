@@ -23,8 +23,8 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-// Params implements the gRPC service handler for querying x/chainmanager parameters.
-func (q queryServer) Params(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetParams implements the gRPC service handler for querying x/chainmanager parameters.
+func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	params, err := q.k.GetParams(sdkCtx)
 	if err != nil {

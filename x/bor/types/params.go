@@ -30,58 +30,30 @@ func DefaultParams() Params {
 
 // Validate checks that the bor parameters have valid values.
 func (p Params) Validate() error {
-	if err := validateSprintDuration(p.SprintDuration); err != nil {
+	if err := validatePositiveIntForParam(p.SprintDuration, "sprint duration"); err != nil {
 		return err
 	}
 
-	if err := validateSpanDuration(p.SprintDuration); err != nil {
+	if err := validatePositiveIntForParam(p.SpanDuration, "span duration"); err != nil {
 		return err
 	}
 
-	if err := validateProducerCount(p.SprintDuration); err != nil {
+	if err := validatePositiveIntForParam(p.ProducerCount, "producer count"); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// validateSprintDuration checks if the sprint duration is valid
-func validateSprintDuration(i interface{}) error {
+// validatePositiveIntForParam checks if the provided value is a positive integer
+func validatePositiveIntForParam(i interface{}, paramName string) error {
 	v, ok := i.(uint64)
 	if !ok {
-		return fmt.Errorf("invalid sprint duration parameter type: %T", i)
+		return fmt.Errorf("invalid type provided %T for bor param %s", i, paramName)
 	}
 
 	if v == 0 {
-		return fmt.Errorf("invalid sprint duration: %d", v)
-	}
-
-	return nil
-}
-
-// validateSpanDuration checks if the span duration is valid
-func validateSpanDuration(i interface{}) error {
-	v, ok := i.(uint64)
-	if !ok {
-		return fmt.Errorf("invalid span duration parameter type: %T", i)
-	}
-
-	if v == 0 {
-		return fmt.Errorf("invalid span duration: %d", v)
-	}
-
-	return nil
-}
-
-// validateProducerCount checks if the producer count is valid
-func validateProducerCount(i interface{}) error {
-	v, ok := i.(uint64)
-	if !ok {
-		return fmt.Errorf("invalid producer count parameter type: %T", i)
-	}
-
-	if v == 0 {
-		return fmt.Errorf("invalid producers count: %d", v)
+		return fmt.Errorf("invalid value provided %d for bor param %s", v, paramName)
 	}
 
 	return nil

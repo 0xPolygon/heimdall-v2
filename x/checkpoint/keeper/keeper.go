@@ -1,7 +1,12 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
@@ -17,6 +22,7 @@ import (
 type Keeper struct {
 	storeService storetypes.KVStoreService
 	cdc          codec.BinaryCodec
+	authority    string
 	schema       collections.Schema
 
 	stakeKeeper     types.StakeKeeper
@@ -35,17 +41,30 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
+	authority string,
 	stakingKeeper types.StakeKeeper,
 	cmKeeper types.ChainManagerKeeper,
 	topupKeeper types.TopupKeeper,
 	contractCaller helper.IContractCaller,
 
 ) Keeper {
+
+	bz, err := address.NewHexCodec().StringToBytes(authority)
+	if err != nil {
+		panic(fmt.Errorf("invalid checkpoint authority address: %w", err))
+	}
+
+	// ensure only gov has the authority to update the params
+	if !bytes.Equal(bz, authtypes.NewModuleAddress(govtypes.ModuleName)) {
+		panic(fmt.Errorf("invalid checkpoint authority address: %s", authority))
+	}
+
 	sb := collections.NewSchemaBuilder(storeService)
 
 	k := Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
+		authority:       authority,
 		stakeKeeper:     stakingKeeper,
 		ck:              cmKeeper,
 		topupKeeper:     topupKeeper,
@@ -72,6 +91,11 @@ func NewKeeper(
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
+}
+
+// GetAuthority returns x/bor module's authority
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
 
 // SetParams sets the x/checkpoint module parameters.

@@ -95,7 +95,7 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 
 			// fetch params
 			queryClient := chainmanagerTypes.NewQueryClient(clientCtx)
-			cmParams, err := queryClient.Params(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
+			cmParams, err := queryClient.GetParams(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

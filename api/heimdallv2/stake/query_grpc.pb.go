@@ -19,12 +19,12 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_CurrentValidatorSet_FullMethodName = "/heimdallv2.stake.Query/CurrentValidatorSet"
-	Query_Signer_FullMethodName              = "/heimdallv2.stake.Query/Signer"
-	Query_Validator_FullMethodName           = "/heimdallv2.stake.Query/Validator"
-	Query_ValidatorStatus_FullMethodName     = "/heimdallv2.stake.Query/ValidatorStatus"
-	Query_TotalPower_FullMethodName          = "/heimdallv2.stake.Query/TotalPower"
-	Query_StakingIsOldTx_FullMethodName      = "/heimdallv2.stake.Query/StakingIsOldTx"
+	Query_GetCurrentValidatorSet_FullMethodName      = "/heimdallv2.stake.Query/GetCurrentValidatorSet"
+	Query_GetSignerByAddress_FullMethodName          = "/heimdallv2.stake.Query/GetSignerByAddress"
+	Query_GetValidatorById_FullMethodName            = "/heimdallv2.stake.Query/GetValidatorById"
+	Query_GetValidatorStatusByAddress_FullMethodName = "/heimdallv2.stake.Query/GetValidatorStatusByAddress"
+	Query_GetTotalPower_FullMethodName               = "/heimdallv2.stake.Query/GetTotalPower"
+	Query_IsStakeTxOld_FullMethodName                = "/heimdallv2.stake.Query/IsStakeTxOld"
 )
 
 // QueryClient is the client API for Query service.
@@ -32,17 +32,17 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
 	// CurrentValidatorSet queries for the current validator set
-	CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
+	GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
 	// Signer queries validator info for a given validator address.
-	Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
+	GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
 	// Validator queries validator info for a given validator id.
-	Validator(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
+	GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
-	ValidatorStatus(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
+	GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
 	// TotalPower queries the total power of a validator set
-	TotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
-	// StakingSequence queries for the staking sequence
-	StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakingIsOldTxResponse, error)
+	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
+	// IsStakeTxOld queries for the staking sequence
+	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
 }
 
 type queryClient struct {
@@ -53,54 +53,54 @@ func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) CurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error) {
+func (c *queryClient) GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error) {
 	out := new(QueryCurrentValidatorSetResponse)
-	err := c.cc.Invoke(ctx, Query_CurrentValidatorSet_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetCurrentValidatorSet_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Signer(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error) {
+func (c *queryClient) GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error) {
 	out := new(QuerySignerResponse)
-	err := c.cc.Invoke(ctx, Query_Signer_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetSignerByAddress_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Validator(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error) {
+func (c *queryClient) GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error) {
 	out := new(QueryValidatorResponse)
-	err := c.cc.Invoke(ctx, Query_Validator_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetValidatorById_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) ValidatorStatus(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error) {
+func (c *queryClient) GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error) {
 	out := new(QueryValidatorStatusResponse)
-	err := c.cc.Invoke(ctx, Query_ValidatorStatus_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetValidatorStatusByAddress_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) TotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error) {
+func (c *queryClient) GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error) {
 	out := new(QueryTotalPowerResponse)
-	err := c.cc.Invoke(ctx, Query_TotalPower_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetTotalPower_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakingIsOldTxResponse, error) {
-	out := new(QueryStakingIsOldTxResponse)
-	err := c.cc.Invoke(ctx, Query_StakingIsOldTx_FullMethodName, in, out, opts...)
+func (c *queryClient) IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error) {
+	out := new(QueryStakeIsOldTxResponse)
+	err := c.cc.Invoke(ctx, Query_IsStakeTxOld_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -112,17 +112,17 @@ func (c *queryClient) StakingIsOldTx(ctx context.Context, in *QueryStakingIsOldT
 // for forward compatibility
 type QueryServer interface {
 	// CurrentValidatorSet queries for the current validator set
-	CurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
+	GetCurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
 	// Signer queries validator info for a given validator address.
-	Signer(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
+	GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
 	// Validator queries validator info for a given validator id.
-	Validator(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
+	GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
 	// ValidatorStatus queries validator status for given validator val_address.
-	ValidatorStatus(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
+	GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
 	// TotalPower queries the total power of a validator set
-	TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
-	// StakingSequence queries for the staking sequence
-	StakingIsOldTx(context.Context, *QueryStakingIsOldTxRequest) (*QueryStakingIsOldTxResponse, error)
+	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
+	// IsStakeTxOld queries for the staking sequence
+	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -130,23 +130,23 @@ type QueryServer interface {
 type UnimplementedQueryServer struct {
 }
 
-func (UnimplementedQueryServer) CurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CurrentValidatorSet not implemented")
+func (UnimplementedQueryServer) GetCurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentValidatorSet not implemented")
 }
-func (UnimplementedQueryServer) Signer(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Signer not implemented")
+func (UnimplementedQueryServer) GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSignerByAddress not implemented")
 }
-func (UnimplementedQueryServer) Validator(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Validator not implemented")
+func (UnimplementedQueryServer) GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorById not implemented")
 }
-func (UnimplementedQueryServer) ValidatorStatus(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ValidatorStatus not implemented")
+func (UnimplementedQueryServer) GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorStatusByAddress not implemented")
 }
-func (UnimplementedQueryServer) TotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method TotalPower not implemented")
+func (UnimplementedQueryServer) GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTotalPower not implemented")
 }
-func (UnimplementedQueryServer) StakingIsOldTx(context.Context, *QueryStakingIsOldTxRequest) (*QueryStakingIsOldTxResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method StakingIsOldTx not implemented")
+func (UnimplementedQueryServer) IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsStakeTxOld not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -161,110 +161,110 @@ func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
 	s.RegisterService(&Query_ServiceDesc, srv)
 }
 
-func _Query_CurrentValidatorSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetCurrentValidatorSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryCurrentValidatorSetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).CurrentValidatorSet(ctx, in)
+		return srv.(QueryServer).GetCurrentValidatorSet(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_CurrentValidatorSet_FullMethodName,
+		FullMethod: Query_GetCurrentValidatorSet_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).CurrentValidatorSet(ctx, req.(*QueryCurrentValidatorSetRequest))
+		return srv.(QueryServer).GetCurrentValidatorSet(ctx, req.(*QueryCurrentValidatorSetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Signer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetSignerByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QuerySignerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Signer(ctx, in)
+		return srv.(QueryServer).GetSignerByAddress(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_Signer_FullMethodName,
+		FullMethod: Query_GetSignerByAddress_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Signer(ctx, req.(*QuerySignerRequest))
+		return srv.(QueryServer).GetSignerByAddress(ctx, req.(*QuerySignerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Validator_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetValidatorById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryValidatorRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Validator(ctx, in)
+		return srv.(QueryServer).GetValidatorById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_Validator_FullMethodName,
+		FullMethod: Query_GetValidatorById_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Validator(ctx, req.(*QueryValidatorRequest))
+		return srv.(QueryServer).GetValidatorById(ctx, req.(*QueryValidatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_ValidatorStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetValidatorStatusByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryValidatorStatusRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).ValidatorStatus(ctx, in)
+		return srv.(QueryServer).GetValidatorStatusByAddress(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_ValidatorStatus_FullMethodName,
+		FullMethod: Query_GetValidatorStatusByAddress_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).ValidatorStatus(ctx, req.(*QueryValidatorStatusRequest))
+		return srv.(QueryServer).GetValidatorStatusByAddress(ctx, req.(*QueryValidatorStatusRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_TotalPower_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetTotalPower_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryTotalPowerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).TotalPower(ctx, in)
+		return srv.(QueryServer).GetTotalPower(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_TotalPower_FullMethodName,
+		FullMethod: Query_GetTotalPower_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).TotalPower(ctx, req.(*QueryTotalPowerRequest))
+		return srv.(QueryServer).GetTotalPower(ctx, req.(*QueryTotalPowerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_StakingIsOldTx_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryStakingIsOldTxRequest)
+func _Query_IsStakeTxOld_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryStakeIsOldTxRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).StakingIsOldTx(ctx, in)
+		return srv.(QueryServer).IsStakeTxOld(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_StakingIsOldTx_FullMethodName,
+		FullMethod: Query_IsStakeTxOld_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).StakingIsOldTx(ctx, req.(*QueryStakingIsOldTxRequest))
+		return srv.(QueryServer).IsStakeTxOld(ctx, req.(*QueryStakeIsOldTxRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -277,28 +277,28 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CurrentValidatorSet",
-			Handler:    _Query_CurrentValidatorSet_Handler,
+			MethodName: "GetCurrentValidatorSet",
+			Handler:    _Query_GetCurrentValidatorSet_Handler,
 		},
 		{
-			MethodName: "Signer",
-			Handler:    _Query_Signer_Handler,
+			MethodName: "GetSignerByAddress",
+			Handler:    _Query_GetSignerByAddress_Handler,
 		},
 		{
-			MethodName: "Validator",
-			Handler:    _Query_Validator_Handler,
+			MethodName: "GetValidatorById",
+			Handler:    _Query_GetValidatorById_Handler,
 		},
 		{
-			MethodName: "ValidatorStatus",
-			Handler:    _Query_ValidatorStatus_Handler,
+			MethodName: "GetValidatorStatusByAddress",
+			Handler:    _Query_GetValidatorStatusByAddress_Handler,
 		},
 		{
-			MethodName: "TotalPower",
-			Handler:    _Query_TotalPower_Handler,
+			MethodName: "GetTotalPower",
+			Handler:    _Query_GetTotalPower_Handler,
 		},
 		{
-			MethodName: "StakingIsOldTx",
-			Handler:    _Query_StakingIsOldTx_Handler,
+			MethodName: "IsStakeTxOld",
+			Handler:    _Query_IsStakeTxOld_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

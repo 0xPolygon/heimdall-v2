@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -125,6 +127,93 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 				require.NoError(err)
 			} else {
 				require.ErrorContains(err, tc.expErr)
+			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestMsgUpdateParams() {
+	ctx, require, keeper, queryClient, msgServer, params := s.ctx, s.Require(), s.borKeeper, s.queryClient, s.msgServer, types.DefaultParams()
+
+	testCases := []struct {
+		name      string
+		input     *types.MsgUpdateParams
+		expErr    bool
+		expErrMsg string
+	}{
+		{
+			name: "invalid authority",
+			input: &types.MsgUpdateParams{
+				Authority: "invalid",
+				Params:    params,
+			},
+			expErr:    true,
+			expErrMsg: "invalid authority",
+		},
+		{
+			name: "invalid sprint duration",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					SprintDuration: 0,
+					SpanDuration:   types.DefaultSpanDuration,
+					ProducerCount:  types.DefaultProducerCount,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "invalid value provided 0 for bor param sprint duration",
+		},
+		{
+			name: "invalid span duration",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					SprintDuration: types.DefaultSprintDuration,
+					SpanDuration:   0,
+					ProducerCount:  types.DefaultProducerCount,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "invalid value provided 0 for bor param span duration",
+		},
+		{
+			name: "invalid producer count",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					SprintDuration: types.DefaultSprintDuration,
+					SpanDuration:   types.DefaultSpanDuration,
+					ProducerCount:  0,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "invalid value provided 0 for bor param producer count",
+		},
+		{
+			name: "all good",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params:    params,
+			},
+			expErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		s.Run(tc.name, func() {
+			_, err := msgServer.UpdateParams(ctx, tc.input)
+
+			if tc.expErr {
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
+			} else {
+				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), keeper.GetAuthority())
+				require.NoError(err)
+
+				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+				require.NoError(err)
+				require.Equal(params, *res.Params)
 			}
 		})
 	}

@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -409,4 +411,108 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	require.NoError(err)
 
 	require.Equal(ackCount, updatedAckCount, "Should not update state")
+}
+
+func (s *KeeperTestSuite) TestMsgUpdateParams() {
+	ctx, require, keeper, queryClient, msgServer, params := s.ctx, s.Require(), s.checkpointKeeper, s.queryClient, s.msgServer, types.DefaultParams()
+
+	testCases := []struct {
+		name      string
+		input     *types.MsgUpdateParams
+		expErr    bool
+		expErrMsg string
+	}{
+		{
+			name: "invalid authority",
+			input: &types.MsgUpdateParams{
+				Authority: "invalid",
+				Params:    params,
+			},
+			expErr:    true,
+			expErrMsg: "invalid authority",
+		},
+		{
+			name: "invalid max checkpoint length",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MaxCheckpointLength:     0,
+					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
+					AvgCheckpointLength:     types.DefaultAvgCheckpointLength,
+					ChildChainBlockInterval: types.DefaultChildChainBlockInterval,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "max checkpoint length should be non-zero",
+		},
+		{
+			name: "invalid avg checkpoint length",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MaxCheckpointLength:     types.DefaultMaxCheckpointLength,
+					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
+					AvgCheckpointLength:     0,
+					ChildChainBlockInterval: types.DefaultChildChainBlockInterval,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "value of avg checkpoint length should be non-zero",
+		},
+		{
+			name: "invalid avg checkpoint length against max checkpoint length",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MaxCheckpointLength:     types.DefaultMaxCheckpointLength,
+					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
+					AvgCheckpointLength:     types.DefaultMaxCheckpointLength + 1,
+					ChildChainBlockInterval: types.DefaultChildChainBlockInterval,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "avg checkpoint length should not be greater than max checkpoint length",
+		},
+		{
+			name: "invalid child chain block interval",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MaxCheckpointLength:     types.DefaultMaxCheckpointLength,
+					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
+					AvgCheckpointLength:     types.DefaultAvgCheckpointLength,
+					ChildChainBlockInterval: 0,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "child chain block interval should be greater than zero",
+		},
+		{
+			name: "all good",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params:    params,
+			},
+			expErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		s.Run(tc.name, func() {
+			_, err := msgServer.UpdateParams(ctx, tc.input)
+
+			if tc.expErr {
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
+			} else {
+				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), keeper.GetAuthority())
+				require.NoError(err)
+
+				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+				require.NoError(err)
+				require.Equal(params, res.Params)
+			}
+		})
+	}
 }

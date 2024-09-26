@@ -1,13 +1,18 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -40,6 +45,17 @@ func NewKeeper(
 	stakingKeeper types.StakeKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
+
+	bz, err := address.NewHexCodec().StringToBytes(authority)
+	if err != nil {
+		panic(fmt.Errorf("invalid milestone authority address: %w", err))
+	}
+
+	// ensure only gov has the authority to update the params
+	if !bytes.Equal(bz, authtypes.NewModuleAddress(govtypes.ModuleName)) {
+		panic(fmt.Errorf("invalid milestone authority address: %s", authority))
+	}
+
 	sb := collections.NewSchemaBuilder(storeService)
 
 	k := Keeper{
@@ -72,6 +88,11 @@ func NewKeeper(
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
+}
+
+// GetAuthority returns x/milestone module's authority
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
 
 // SetParams sets the x/milestone module parameters.

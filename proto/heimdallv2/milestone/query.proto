@@ -23,46 +23,47 @@ in v1. A (maybe non-exhaustive) list of changed API routes here:
 service Query {
 
   // Params queries for the milestone parameters
-  rpc Params(QueryParamsRequest) returns (QueryParamsResponse) {
+  rpc GetParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/params";
   }
 
   // Count queries for the milestone count
-  rpc Count(QueryCountRequest) returns (QueryCountResponse) {
+  rpc GetMilestoneCount(QueryCountRequest) returns (QueryCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/count";
   }
 
   // LatestMilestone queries for the latest milestone
-  rpc LatestMilestone(QueryLatestMilestoneRequest)
+  rpc GetLatestMilestone(QueryLatestMilestoneRequest)
       returns (QueryLatestMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/latest";
   }
 
   // Milestone queries for the milestone based on the number
-  rpc Milestone(QueryMilestoneRequest) returns (QueryMilestoneResponse) {
+  rpc GetMilestoneByNumber(QueryMilestoneRequest)
+      returns (QueryMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/{number}";
   }
 
   // LatestNoAckMilestone query for the LatestNoAck
-  rpc LatestNoAckMilestone(QueryLatestNoAckMilestoneRequest)
+  rpc GetLatestNoAckMilestone(QueryLatestNoAckMilestoneRequest)
       returns (QueryLatestNoAckMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/last-no-ack";
   }
 
   // NoAckMilestoneByID query for the no-ack by ID
-  rpc NoAckMilestoneByID(QueryNoAckMilestoneByIDRequest)
+  rpc GetNoAckMilestoneById(QueryNoAckMilestoneByIDRequest)
       returns (QueryNoAckMilestoneByIDResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/no-ack/{id}";
   }
 
   // MilestoneProposer queries for the milestone proposer
-  rpc MilestoneProposer(QueryMilestoneProposerRequest)
+  rpc GetMilestoneProposerByTimes(QueryMilestoneProposerRequest)
       returns (QueryMilestoneProposerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/proposer/{times}";

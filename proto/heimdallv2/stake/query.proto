@@ -13,40 +13,40 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 service Query {
 
   // CurrentValidatorSet queries for the current validator set
-  rpc CurrentValidatorSet(QueryCurrentValidatorSetRequest)
+  rpc GetCurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator-set";
   }
 
   // Signer queries validator info for a given validator address.
-  rpc Signer(QuerySignerRequest) returns (QuerySignerResponse) {
+  rpc GetSignerByAddress(QuerySignerRequest) returns (QuerySignerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/signer/{val_address}";
   }
 
   // Validator queries validator info for a given validator id.
-  rpc Validator(QueryValidatorRequest) returns (QueryValidatorResponse) {
+  rpc GetValidatorById(QueryValidatorRequest) returns (QueryValidatorResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator/{id}";
   }
 
   // ValidatorStatus queries validator status for given validator val_address.
-  rpc ValidatorStatus(QueryValidatorStatusRequest)
+  rpc GetValidatorStatusByAddress(QueryValidatorStatusRequest)
       returns (QueryValidatorStatusResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator-status/{val_address}";
   }
 
   // TotalPower queries the total power of a validator set
-  rpc TotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
+  rpc GetTotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/total-power";
   }
 
-  // StakingSequence queries for the staking sequence
-  rpc StakingIsOldTx(QueryStakingIsOldTxRequest)
-      returns (QueryStakingIsOldTxResponse) {
+  // IsStakeTxOld queries for the staking sequence
+  rpc IsStakeTxOld(QueryStakeIsOldTxRequest)
+      returns (QueryStakeIsOldTxResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/is-old-tx";
   }
@@ -116,16 +116,16 @@ message QueryValidatorStatusResponse {
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryStakingIsOldTxRequest is request type for the Query/StakingIsOldTx
+// QueryStakeIsOldTxRequest is request type for the Query/IsStakeTxOld
 // RPC method
-message QueryStakingIsOldTxRequest {
+message QueryStakeIsOldTxRequest {
   string tx_hash = 1 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryStakingIsOldTxResponse is response type for the Query/StakingIsOldTx
+// QueryStakeIsOldTxResponse is response type for the Query/IsStakeTxOld
 // RPC method
-message QueryStakingIsOldTxResponse {
+message QueryStakeIsOldTxResponse {
   // status define the active status of validator
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }

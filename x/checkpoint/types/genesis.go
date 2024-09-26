@@ -11,10 +11,10 @@ import (
 // Default parameter values
 const (
 	// DefaultCheckpointBufferTime represents the time a checkpoint is allowed to stay in the buffer (1000s ~ 17m)
-	DefaultCheckpointBufferTime        = 1000 * time.Second
-	DefaultAvgCheckpointLength  uint64 = 256
-	DefaultMaxCheckpointLength  uint64 = 1024
-	DefaultChildBlockInterval   uint64 = 10000
+	DefaultCheckpointBufferTime           = 1000 * time.Second
+	DefaultAvgCheckpointLength     uint64 = 256
+	DefaultMaxCheckpointLength     uint64 = 1024
+	DefaultChildChainBlockInterval uint64 = 10000
 )
 
 // NewGenesisState creates a new genesis state.
@@ -71,9 +71,9 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 // DefaultParams returns a default set of parameters.
 func DefaultParams() Params {
 	return Params{
-		CheckpointBufferTime: DefaultCheckpointBufferTime,
-		AvgCheckpointLength:  DefaultAvgCheckpointLength,
-		MaxCheckpointLength:  DefaultMaxCheckpointLength,
-		ChildBlockInterval:   DefaultChildBlockInterval,
+		CheckpointBufferTime:    DefaultCheckpointBufferTime,
+		AvgCheckpointLength:     DefaultAvgCheckpointLength,
+		MaxCheckpointLength:     DefaultMaxCheckpointLength,
+		ChildChainBlockInterval: DefaultChildChainBlockInterval,
 	}
 }

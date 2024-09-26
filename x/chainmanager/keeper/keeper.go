@@ -74,7 +74,6 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 // GetAuthority returns x/chainmanager module's authority
 func (k Keeper) GetAuthority() string {
 	return k.authority
-
 }
 
 // Params

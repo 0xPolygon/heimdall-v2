@@ -10,8 +10,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
@@ -21,7 +24,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 )
 
 type KeeperTestSuite struct {
@@ -56,7 +58,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	keeper := milestoneKeeper.NewKeeper(
 		encCfg.Codec,
-		"authority",
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		storeService,
 		s.stakeKeeper,
 		s.contractCaller,
@@ -228,4 +230,108 @@ func (s *KeeperTestSuite) TestGetMilestoneTimout() {
 	val, err = keeper.GetLastMilestoneTimeout(ctx)
 	require.NoError(err)
 	require.Equal(uint64(21), val)
+}
+
+func (s *KeeperTestSuite) TestMsgUpdateParams() {
+	ctx, require, keeper, queryClient, msgServer, params := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient, s.msgServer, types.DefaultParams()
+
+	testCases := []struct {
+		name      string
+		input     *types.MsgUpdateParams
+		expErr    bool
+		expErrMsg string
+	}{
+		{
+			name: "invalid authority",
+			input: &types.MsgUpdateParams{
+				Authority: "invalid",
+				Params:    params,
+			},
+			expErr:    true,
+			expErrMsg: "invalid authority",
+		},
+		{
+			name: "invalid min milestone length",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       0,
+					MilestoneBufferTime:      params.MilestoneBufferTime,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: params.MilestoneTxConfirmations,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "min milestone length should not be zero",
+		},
+		{
+			name: "invalid milestone buffer time",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       params.MinMilestoneLength,
+					MilestoneBufferTime:      0,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: params.MilestoneTxConfirmations,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "milestone buffer time should not be zero",
+		},
+		{
+			name: "invalid milestone tx confirmations",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       params.MinMilestoneLength,
+					MilestoneBufferTime:      params.MilestoneBufferTime,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: 0,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "milestone tx confirmations should not be zero",
+		},
+		{
+			name: "invalid milestone buffer time",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       params.MinMilestoneLength,
+					MilestoneBufferTime:      0,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: params.MilestoneTxConfirmations,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "milestone buffer time should not be zero",
+		},
+		{
+			name: "all good",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params:    params,
+			},
+			expErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		s.Run(tc.name, func() {
+			_, err := msgServer.UpdateParams(ctx, tc.input)
+
+			if tc.expErr {
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
+			} else {
+				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), keeper.GetAuthority())
+				require.NoError(err)
+
+				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+				require.NoError(err)
+				require.Equal(params, res.Params)
+			}
+		})
+	}
 }
