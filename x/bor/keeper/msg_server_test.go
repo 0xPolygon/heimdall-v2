@@ -1,10 +1,10 @@
 package keeper_test
 
 import (
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"testing"
 
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -156,8 +156,8 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				Authority: keeper.GetAuthority(),
 				Params: types.Params{
 					SprintDuration: 0,
-					SpanDuration:   types.DefaultSpanDuration,
-					ProducerCount:  types.DefaultProducerCount,
+					SpanDuration:   params.SpanDuration,
+					ProducerCount:  params.ProducerCount,
 				},
 			},
 			expErr:    true,
@@ -168,9 +168,9 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 			input: &types.MsgUpdateParams{
 				Authority: keeper.GetAuthority(),
 				Params: types.Params{
-					SprintDuration: types.DefaultSprintDuration,
+					SprintDuration: params.SprintDuration,
 					SpanDuration:   0,
-					ProducerCount:  types.DefaultProducerCount,
+					ProducerCount:  params.ProducerCount,
 				},
 			},
 			expErr:    true,
@@ -181,8 +181,8 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 			input: &types.MsgUpdateParams{
 				Authority: keeper.GetAuthority(),
 				Params: types.Params{
-					SprintDuration: types.DefaultSprintDuration,
-					SpanDuration:   types.DefaultSpanDuration,
+					SprintDuration: params.SprintDuration,
+					SpanDuration:   params.SpanDuration,
 					ProducerCount:  0,
 				},
 			},

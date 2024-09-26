@@ -437,9 +437,9 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				Authority: keeper.GetAuthority(),
 				Params: types.Params{
 					MaxCheckpointLength:     0,
-					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
-					AvgCheckpointLength:     types.DefaultAvgCheckpointLength,
-					ChildChainBlockInterval: types.DefaultChildChainBlockInterval,
+					CheckpointBufferTime:    params.CheckpointBufferTime,
+					AvgCheckpointLength:     params.AvgCheckpointLength,
+					ChildChainBlockInterval: params.ChildChainBlockInterval,
 				},
 			},
 			expErr:    true,
@@ -450,10 +450,10 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 			input: &types.MsgUpdateParams{
 				Authority: keeper.GetAuthority(),
 				Params: types.Params{
-					MaxCheckpointLength:     types.DefaultMaxCheckpointLength,
-					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
+					MaxCheckpointLength:     params.MaxCheckpointLength,
+					CheckpointBufferTime:    params.CheckpointBufferTime,
 					AvgCheckpointLength:     0,
-					ChildChainBlockInterval: types.DefaultChildChainBlockInterval,
+					ChildChainBlockInterval: params.ChildChainBlockInterval,
 				},
 			},
 			expErr:    true,
@@ -464,10 +464,10 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 			input: &types.MsgUpdateParams{
 				Authority: keeper.GetAuthority(),
 				Params: types.Params{
-					MaxCheckpointLength:     types.DefaultMaxCheckpointLength,
-					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
-					AvgCheckpointLength:     types.DefaultMaxCheckpointLength + 1,
-					ChildChainBlockInterval: types.DefaultChildChainBlockInterval,
+					MaxCheckpointLength:     params.MaxCheckpointLength,
+					CheckpointBufferTime:    params.CheckpointBufferTime,
+					AvgCheckpointLength:     params.MaxCheckpointLength + 1,
+					ChildChainBlockInterval: params.ChildChainBlockInterval,
 				},
 			},
 			expErr:    true,
@@ -478,9 +478,9 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 			input: &types.MsgUpdateParams{
 				Authority: keeper.GetAuthority(),
 				Params: types.Params{
-					MaxCheckpointLength:     types.DefaultMaxCheckpointLength,
-					CheckpointBufferTime:    types.DefaultCheckpointBufferTime,
-					AvgCheckpointLength:     types.DefaultAvgCheckpointLength,
+					MaxCheckpointLength:     params.MaxCheckpointLength,
+					CheckpointBufferTime:    params.CheckpointBufferTime,
+					AvgCheckpointLength:     params.AvgCheckpointLength,
 					ChildChainBlockInterval: 0,
 				},
 			},
