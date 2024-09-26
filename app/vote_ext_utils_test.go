@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -117,21 +118,36 @@ func TestTallyVotes(t *testing.T) {
 			votingPower: 31,
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1,
+						),
+					),
 					[]byte("signature"),
 					abci.Validator{
 						Address: val1,
 						Power:   10,
 					}),
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1,
+						),
+					),
 					[]byte("signature"),
 					abci.Validator{
 						Address: val2,
 						Power:   20,
 					}),
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1,
+						),
+					),
 					[]byte("signature"),
 					abci.Validator{
 						Address: val3,
@@ -147,56 +163,48 @@ func TestTallyVotes(t *testing.T) {
 			votingPower: 75,
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1, TxHash3,
+						),
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_NO,
+							TxHash2,
+						),
+					),
 					[]byte("signature"),
 					abci.Validator{
 						Address: val1,
 						Power:   40,
 					}),
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash2),
-					[]byte("signature"),
-					abci.Validator{
-						Address: val1,
-						Power:   40,
-					}),
-				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash3),
-					[]byte("signature"),
-					abci.Validator{
-						Address: val1,
-						Power:   40,
-					}),
-				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash1),
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1,
+						),
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_NO,
+							TxHash2, TxHash3,
+						),
+					),
 					[]byte("signature"),
 					abci.Validator{
 						Address: val2,
 						Power:   30,
 					}),
 				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash2),
-					[]byte("signature"),
-					abci.Validator{
-						Address: val2,
-						Power:   30,
-					}),
-				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash3),
-					[]byte("signature"),
-					abci.Validator{
-						Address: val2,
-						Power:   30,
-					}),
-				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_NO, TxHash1),
-					[]byte("signature"),
-					abci.Validator{
-						Address: val3,
-						Power:   5,
-					}),
-				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
-					mustMarshalSideTxResponses(t, sidetxs.Vote_VOTE_YES, TxHash2),
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_NO,
+							TxHash1,
+						),
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash2,
+						),
+					),
 					[]byte("signature"),
 					abci.Validator{
 						Address: val3,
@@ -218,6 +226,43 @@ func TestTallyVotes(t *testing.T) {
 			require.Equal(t, tc.expectedSkip, skippedTxs)
 		})
 	}
+}
+
+func TestTallyVotesErrorDuplicateVote(t *testing.T) {
+	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
+	require.NoError(t, err)
+
+	extVoteInfo := []abci.ExtendedVoteInfo{
+		returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+			mustMarshalSideTxResponses(t,
+				createSideTxResponses(
+					sidetxs.Vote_VOTE_YES,
+					TxHash1,
+				),
+			),
+			[]byte("signature"),
+			abci.Validator{
+				Address: val1,
+				Power:   10,
+			}),
+		returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+			mustMarshalSideTxResponses(t,
+				createSideTxResponses(
+					sidetxs.Vote_VOTE_NO,
+					TxHash2,
+				),
+			),
+			[]byte("signature"),
+			abci.Validator{
+				Address: val1,
+				Power:   20,
+			}),
+	}
+
+	_, _, _, err = tallyVotes(extVoteInfo, log.NewTestLogger(t), 30, CurrentHeight)
+	require.Error(t, err)
+	//require.Equal(t, err.Error(), fmt.Sprintf("duplicate vote received from %s", ValAddr1))
+	require.Equal(t, err.Error(), fmt.Sprintf("duplicate vote received from %s", strings.ToLower(ValAddr1)))
 }
 
 func TestAggregateVotes(t *testing.T) {

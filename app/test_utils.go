@@ -126,13 +126,11 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	return app, db, logger
 }
 
-func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...string) []byte {
-	responses := make([]*sidetxs.SideTxResponse, len(txHashes))
-	for i, txHash := range txHashes {
-		responses[i] = &sidetxs.SideTxResponse{
-			TxHash: common.Hex2Bytes(txHash),
-			Result: vote,
-		}
+func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]*sidetxs.SideTxResponse) []byte {
+	t.Helper()
+	responses := make([]*sidetxs.SideTxResponse, 0)
+	for _, r := range respVotes {
+		responses = append(responses, r...)
 	}
 
 	sideTxResponses := sidetxs.ConsolidatedSideTxResponse{
@@ -143,6 +141,17 @@ func mustMarshalSideTxResponses(t *testing.T, vote sidetxs.Vote, txHashes ...str
 	voteExtension, err := proto.Marshal(&sideTxResponses)
 	require.NoError(t, err)
 	return voteExtension
+}
+
+func createSideTxResponses(vote sidetxs.Vote, txHashes ...string) []*sidetxs.SideTxResponse {
+	responses := make([]*sidetxs.SideTxResponse, len(txHashes))
+	for i, txHash := range txHashes {
+		responses[i] = &sidetxs.SideTxResponse{
+			TxHash: common.Hex2Bytes(txHash),
+			Result: vote,
+		}
+	}
+	return responses
 }
 
 // GenesisStateWithValSet returns a new genesis state with the validator set
