@@ -166,27 +166,12 @@ func initRootCmd(
 				startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
 			},
 			PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
-				// start rest
-				if viper.GetBool(helper.RestServerFlag) {
-					waitForREST := make(chan struct{})
-
-					g.Go(func() error {
-						return nil
-						// TODO HV2 - uncomment when we have server implemented
-						// return restServer.StartRestServer(ctx, cdc, restServer.RegisterRoutes, waitForREST)
-					})
-
-					// hang here for a while, and wait for REST server to start
-					<-waitForREST
-				}
-
 				// start bridge
 				if viper.GetBool(helper.BridgeFlag) {
-					// TODO HV2 - uncomment when we have bridge implemented
-					// // bridgeCmd.AdjustBridgeDBValue(cmd, viper.GetViper())
-					// g.Go(func() error {
-					// 	return bridgeCmd.StartBridgeWithCtx(ctx)
-					// })
+					bridgeCmd.AdjustBridgeDBValue(rootCmd)
+					g.Go(func() error {
+						return bridgeCmd.StartBridgeWithCtx(ctx)
+					})
 				}
 
 				return nil
@@ -226,8 +211,6 @@ func initRootCmd(
 	)
 
 	rootCmd.AddCommand(showPrivateKeyCmd())
-	// TODO HV2 - uncomment when we have server implemented
-	// rootCmd.AddCommand(restServer.ServeCommands(shutdownCtx, cdc, restServer.RegisterRoutes))
 	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
