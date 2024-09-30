@@ -30,6 +30,7 @@ import (
 
 type BridgeEvent string
 
+// TODO HV2 - review these URLs proto/heimdallv2/<moduleName>/query.proto/ service Query.
 const (
 	AccountDetailsURL       = "/auth/accounts/%v"
 	LastNoAckURL            = "/checkpoints/last-no-ack"
