@@ -137,6 +137,32 @@ func performMigrations(genesisData map[string]interface{}) error {
 		return err
 	}
 
+	if err := migrateTopupModule(genesisData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func migrateTopupModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating topup module...")
+
+	topupModule, ok := genesisData["app_state"].(map[string]interface{})["topup"]
+	if !ok {
+		return fmt.Errorf("topup module not found in app_state")
+	}
+
+	topupData, ok := topupModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast topup module data")
+	}
+
+	if err := renameProperty(topupData, ".", "tx_sequences", "topup_sequences"); err != nil {
+		return fmt.Errorf("failed to rename topup_sequences field: %w", err)
+	}
+
+	logger.Info("Topup module migration completed successfully")
+
 	return nil
 }
 
