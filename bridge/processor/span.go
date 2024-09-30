@@ -144,7 +144,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	// // fetch latest start block from heimdall via rest query
-	// result, err := helper.FetchFromAPI(sp.cliCtx, helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
+	// result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
 	// if err != nil {
 	// 	sp.Logger.Error("Error while fetching latest span")
 	// 	return nil, err
@@ -211,7 +211,7 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	// // fetch next span details
-	// result, err := helper.FetchFromAPI(sp.cliCtx, req.URL.String())
+	// result, err := helper.FetchFromAPI(req.URL.String())
 	// if err != nil {
 	// 	sp.Logger.Error("Error fetching proposers", "error", err)
 	// 	return nil, err
@@ -238,7 +238,7 @@ func (sp *SpanProcessor) fetchNextSpanSeed() (nextSpanSeed common.Hash, err erro
 
 	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
 	/*
-		response, err := helper.FetchFromAPI(sp.cliCtx, helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL))
+		response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL))
 		if err != nil {
 			sp.Logger.Error("Error Fetching nextspanseed from HeimdallServer ", "error", err)
 			return nextSpanSeed, err

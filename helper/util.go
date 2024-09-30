@@ -23,7 +23,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/input"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
+	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -229,13 +232,22 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 }
 
 // FetchFromAPI fetches data from any URL
-func FetchFromAPI(cliCtx client.Context, URL string) (result rest.Response, err error) {
+func FetchFromAPI(URL string) (result rest.Response, err error) {
+	// create codec
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+
 	resp, err := Client.Get(URL)
 	if err != nil {
 		return result, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			Logger.Error("Error closing response body:", err)
+		}
+	}()
 
 	// response
 	if resp.StatusCode == 200 {
@@ -246,7 +258,7 @@ func FetchFromAPI(cliCtx client.Context, URL string) (result rest.Response, err 
 
 		// unmarshall data from buffer
 		var response rest.Response
-		if err = cliCtx.Codec.UnmarshalJSON(body, &response); err != nil {
+		if err = cdc.UnmarshalJSON(body, &response); err != nil {
 			return result, err
 		}
 

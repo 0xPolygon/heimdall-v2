@@ -25,12 +25,12 @@ import (
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/pkg/errors"
 )
 
 type BridgeEvent string
 
+// TODO HV2 - review these URLs proto/heimdallv2/<moduleName>/query.proto/ service Query.
 const (
 	AccountDetailsURL       = "/auth/accounts/%v"
 	LastNoAckURL            = "/checkpoints/last-no-ack"
@@ -86,22 +86,20 @@ func Logger() log.Logger {
 }
 
 // IsProposer checks if we are proposer
-func IsProposer(cliCtx client.Context) (bool, error) {
+func IsProposer() (bool, error) {
 	logger := Logger()
 	var (
 		proposers []staketypes.Validator
 		count     = uint64(1)
 	)
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {
 		logger.Error("Error fetching proposers", "url", ProposersURL, "error", err)
 		return false, err
 	}
 
-	err = jsoniter.ConfigFastest.Unmarshal(result.Result, &proposers)
+	err = json.Unmarshal(result.Result, &proposers)
 	if err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false, err
@@ -123,15 +121,13 @@ func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
 		count     = uint64(1)
 	)
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {
 		logger.Error("Error fetching milestone proposers", "url", MilestoneProposersURL, "error", err)
 		return false, err
 	}
 
-	err = jsoniter.ConfigFastest.Unmarshal(result.Result, &proposers)
+	err = json.Unmarshal(result.Result, &proposers)
 	if err != nil {
 		logger.Error("error unmarshalling milestone proposer slice", "error", err)
 		return false, err
@@ -155,10 +151,7 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count+1, 10))),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count+1, 10))))
 	if err != nil {
 		logger.Error("Unable to send request for next proposers", "url", ProposersURL, "error", err)
 		return false, err
@@ -166,7 +159,7 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	// unmarshall data from buffer
 	var proposers []staketypes.Validator
-	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &proposers); err != nil {
+	if err := json.Unmarshal(response.Result, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -188,10 +181,7 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {
 		logger.Error("Unable to send request for next proposers", "url", MilestoneProposersURL, "error", err)
 		return false, err
@@ -199,7 +189,7 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 	// unmarshall data from buffer
 	var proposers []staketypes.Validator
-	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &proposers); err != nil {
+	if err := json.Unmarshal(response.Result, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -265,13 +255,13 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 
 	var proposer staketypes.Validator
 
-	result, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentProposerURL))
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentProposerURL))
 	if err != nil {
 		logger.Error("Error fetching proposers", "error", err)
 		return false, err
 	}
 
-	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &proposer); err != nil {
+	if err = json.Unmarshal(result.Result, &proposer); err != nil {
 		logger.Error("error unmarshalling validator", "error", err)
 		return false, err
 	}
@@ -293,15 +283,13 @@ func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
 
 	var validator staketypes.Validator
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
 		logger.Error("Error fetching proposers", "error", err)
 		return false
 	}
 
-	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &validator); err != nil {
+	if err = json.Unmarshal(result.Result, &validator); err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false
 	}
@@ -385,7 +373,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
 
 	// call account rest api
-	response, err := helper.FetchFromAPI(cliCtx, url)
+	response, err := helper.FetchFromAPI(url)
 	if err != nil {
 		return nil, err
 	}
@@ -403,17 +391,14 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(ChainManagerParamsURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(ChainManagerParamsURL))
 	if err != nil {
 		logger.Error("Error fetching chainmanager params", "err", err)
 		return nil, err
 	}
 
 	var params chainmanagertypes.Params
-	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &params); err != nil {
+	if err = json.Unmarshal(response.Result, &params); err != nil {
 		logger.Error("Error unmarshalling chainmanager params", "url", ChainManagerParamsURL, "err", err)
 		return nil, err
 	}
@@ -425,17 +410,14 @@ func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, er
 func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(CheckpointParamsURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CheckpointParamsURL))
 	if err != nil {
 		logger.Error("Error fetching Checkpoint params", "err", err)
 		return nil, err
 	}
 
 	var params checkpointTypes.Params
-	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &params); err != nil {
+	if err := json.Unmarshal(response.Result, &params); err != nil {
 		logger.Error("Error unmarshalling Checkpoint params", "url", CheckpointParamsURL)
 		return nil, err
 	}
@@ -447,10 +429,7 @@ func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error)
 func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(MilestoneParamsURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneParamsURL))
 
 	if err != nil {
 		logger.Error("Error fetching Milestone params", "err", err)
@@ -470,17 +449,14 @@ func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(BufferedCheckpointURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(BufferedCheckpointURL))
 	if err != nil {
 		logger.Debug("Error fetching buffered checkpoint", "err", err)
 		return nil, err
 	}
 
 	var checkpoint checkpointTypes.Checkpoint
-	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &checkpoint); err != nil {
+	if err := json.Unmarshal(response.Result, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling buffered checkpoint", "url", BufferedCheckpointURL, "err", err)
 		return nil, err
 	}
@@ -492,17 +468,14 @@ func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, 
 func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(LatestCheckpointURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestCheckpointURL))
 	if err != nil {
 		logger.Debug("Error fetching latest checkpoint", "err", err)
 		return nil, err
 	}
 
 	var checkpoint checkpointTypes.Checkpoint
-	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &checkpoint); err != nil {
+	if err = json.Unmarshal(response.Result, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling latest checkpoint", "url", LatestCheckpointURL, "err", err)
 		return nil, err
 	}
@@ -514,10 +487,7 @@ func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, er
 func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(LatestMilestoneURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
 	if err != nil {
 		logger.Debug("Error fetching latest milestone", "err", err)
 		return nil, err
@@ -536,10 +506,7 @@ func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error
 func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(MilestoneCountURL),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
 	if err != nil {
 		logger.Error("Error fetching Milestone count", "err", err)
 		return nil, err
@@ -571,15 +538,13 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error
 
 	var validator staketypes.Validator
 
-	result, err := helper.FetchFromAPI(cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))),
-	)
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
 		logger.Error("Error fetching validator data", "error", err)
 		return 0, err
 	}
 
-	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &validator); err != nil {
+	if err = json.Unmarshal(result.Result, &validator); err != nil {
 		logger.Error("error unmarshalling validator data", "error", err)
 		return 0, err
 	}
@@ -593,14 +558,14 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error
 func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(cliCtx, helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
 	if err != nil {
 		logger.Error("Unable to send request for current validatorset", "url", CurrentValidatorSetURL, "error", err)
 		return nil, err
 	}
 
 	var validatorSet staketypes.ValidatorSet
-	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &validatorSet); err != nil {
+	if err = json.Unmarshal(response.Result, &validatorSet); err != nil {
 		logger.Error("Error unmarshalling current validatorset data ", "error", err)
 		return nil, err
 	}
@@ -612,17 +577,14 @@ func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(
-		cliCtx,
-		helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)),
-	)
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
 	if err != nil {
 		logger.Error("Error fetching event record by state ID", "error", err)
 		return nil, err
 	}
 
 	var eventRecord clerktypes.EventRecord
-	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &eventRecord); err != nil {
+	if err = json.Unmarshal(response.Result, &eventRecord); err != nil {
 		logger.Error("Error unmarshalling event record", "error", err)
 		return nil, err
 	}
@@ -658,7 +620,7 @@ func GetUnconfirmedTxnCount(event interface{}) int {
 	// a minimal response of the unconfirmed txs
 	var response CometBFTUnconfirmedTxs
 
-	err = jsoniter.ConfigFastest.Unmarshal(body, &response)
+	err = json.Unmarshal(body, &response)
 	if err != nil {
 		logger.Error("Error unmarshalling response received from Heimdall Server", "error", err)
 		return 0

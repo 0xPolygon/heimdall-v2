@@ -116,7 +116,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 
 	cp.Logger.Info("Processing new header", "headerNumber", header.Number)
 
-	isProposer, err := util.IsProposer(cp.cliCtx)
+	isProposer, err := util.IsProposer()
 	if err != nil {
 		cp.Logger.Error("Error checking isProposer in HeaderBlock handler", "error", err)
 		return err
@@ -582,7 +582,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash hmTypes.HeimdallHash, err error) {
 	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
 
-	response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
 	if err != nil {
 		cp.Logger.Error("Error Fetching accountroothash from HeimdallServer ", "error", err)
 		return accountroothash, err
@@ -627,7 +627,7 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 }
 
 func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
-	response, err := helper.FetchFromAPI(cp.cliCtx, helper.GetHeimdallServerEndpoint(util.LastNoAckURL))
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.LastNoAckURL))
 	if err != nil {
 		cp.Logger.Error("Error while sending request for last no-ack", "Error", err)
 		return 0

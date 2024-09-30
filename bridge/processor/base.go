@@ -139,7 +139,7 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 		return false, err
 	}
 
-	res, err := helper.FetchFromAPI(bp.cliCtx, url)
+	res, err := helper.FetchFromAPI(url)
 	if err != nil {
 		bp.Logger.Error("Error fetching tx status", "url", url, "error", err)
 		return false, err
