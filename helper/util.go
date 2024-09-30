@@ -243,7 +243,11 @@ func FetchFromAPI(URL string) (result rest.Response, err error) {
 		return result, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			Logger.Error("Error closing response body:", err)
+		}
+	}()
 
 	// response
 	if resp.StatusCode == 200 {

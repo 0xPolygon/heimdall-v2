@@ -113,7 +113,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 
 				genFiles[i] = config.GenesisFile()
-				newPubkey := valPubKeys[i]
+				newPubKey := valPubKeys[i]
 
 				if i < numValidators {
 					// create validator account
@@ -123,7 +123,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 						0,
 						1,
 						10000,
-						newPubkey.(cryptotypes.PubKey),
+						newPubKey.(cryptotypes.PubKey),
 						valPubKeys[i].Address().String(),
 					)
 					if err != nil {

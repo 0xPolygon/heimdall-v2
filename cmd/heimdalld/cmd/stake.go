@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math/big"
 
+	bridge "github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
@@ -12,8 +13,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
-
-const chainmanagerEndpoint = "/chainmanager/params"
 
 // StakeCmd stakes for a validator
 func StakeCmd() *cobra.Command {
@@ -31,19 +30,19 @@ func StakeCmd() *cobra.Command {
 
 			// validator str
 			if validatorStr == "" {
-				return errors.New("Validator address is required")
+				return errors.New("validator address is required")
 			}
 
 			// stake amount
 			stakeAmount, ok := big.NewInt(0).SetString(stakeAmountStr, 10)
 			if !ok {
-				return errors.New("Invalid stake amount")
+				return errors.New("invalid stake amount")
 			}
 
 			// fee amount
 			feeAmount, ok := big.NewInt(0).SetString(feeAmountStr, 10)
 			if !ok {
-				return errors.New("Invalid fee amount")
+				return errors.New("invalid fee amount")
 			}
 
 			// contract caller
@@ -97,13 +96,13 @@ func ApproveCmd() *cobra.Command {
 			// stake amount
 			stakeAmount, ok := big.NewInt(0).SetString(stakeAmountStr, 10)
 			if !ok {
-				return errors.New("Invalid stake amount")
+				return errors.New("invalid stake amount")
 			}
 
 			// fee amount
 			feeAmount, ok := big.NewInt(0).SetString(feeAmountStr, 10)
 			if !ok {
-				return errors.New("Invalid fee amount")
+				return errors.New("invalid fee amount")
 			}
 
 			contractCaller, err := helper.NewContractCaller()
@@ -136,7 +135,7 @@ func ApproveCmd() *cobra.Command {
 
 // GetChainManagerParams return configManager params
 func GetChainManagerParams() (*chainmanagertypes.Params, error) {
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(chainmanagerEndpoint))
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(bridge.ChainManagerParamsURL))
 
 	if err != nil {
 		return nil, err
