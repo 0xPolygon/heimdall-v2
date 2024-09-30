@@ -478,6 +478,13 @@ func GetSignature(signMode signing.SignMode, accSeq uint64) signingtypes.Signatu
 	priv := GetPrivKey()
 
 	sig := signing.SignatureV2{
+		/*
+			TODO HV2 - resolve the issue with this
+			impossible type assertion: no type can implement both
+			github.com/cometbft/cometbft/crypto.PubKey and
+			github.com/cosmos/cosmos-sdk/crypto/types.PubKey
+			(conflicting types for Equals method)
+		*/
 		PubKey: priv.PubKey().(cryptotypes.PubKey),
 		Data: &signing.SingleSignatureData{
 			SignMode: signMode,
