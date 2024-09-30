@@ -13,6 +13,9 @@ import (
 
 	"cosmossdk.io/math"
 	"cosmossdk.io/x/tx/signing"
+	v034gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v034"
+	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
+	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -21,6 +24,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govTypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
+	govTypesV1Beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
+	paramTypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
 )
@@ -63,6 +69,12 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	appCodec = codec.NewProtoCodec(interfaceRegistry)
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
 	authTypes.RegisterInterfaces(interfaceRegistry)
+	govTypes.RegisterInterfaces(interfaceRegistry)
+	paramTypes.RegisterInterfaces(interfaceRegistry)
+
+	legacyAmino = codec.NewLegacyAmino()
+	v036gov.RegisterLegacyAminoCodec(legacyAmino)
+	v036params.RegisterLegacyAminoCodec(legacyAmino)
 
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
@@ -121,7 +133,184 @@ func performMigrations(genesisData map[string]interface{}) error {
 		return err
 	}
 
+	if err := migrateGovModule(genesisData); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func migrateGovModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating gov module...")
+
+	govModule, ok := genesisData["app_state"].(map[string]interface{})["gov"]
+	if !ok {
+		return fmt.Errorf("gov module not found in app_state")
+	}
+
+	govJSON, err := json.Marshal(govModule)
+	if err != nil {
+		return fmt.Errorf("failed to marshal gov module: %w", err)
+	}
+
+	oldGovState := v036gov.GenesisState{}
+
+	legacyAmino.MustUnmarshalJSON(govJSON, &oldGovState)
+
+	newDeposits := make([]*govTypes.Deposit, len(oldGovState.Deposits))
+	for i, oldDeposit := range oldGovState.Deposits {
+		newDeposits[i] = &govTypes.Deposit{
+			ProposalId: oldDeposit.ProposalID,
+			Depositor:  oldDeposit.Depositor.String(),
+			Amount:     oldDeposit.Amount,
+		}
+	}
+
+	newVotes := make([]*govTypes.Vote, len(oldGovState.Votes))
+	for i, oldVote := range oldGovState.Votes {
+		newVotes[i] = &govTypes.Vote{
+			ProposalId: oldVote.ProposalID,
+			Voter:      oldVote.Voter.String(),
+			Options:    govTypes.NewNonSplitVoteOption(migrateVoteOption(oldVote.Option)),
+		}
+	}
+
+	newProposals := make([]*govTypes.Proposal, len(oldGovState.Proposals))
+	for i, oldProposal := range oldGovState.Proposals {
+
+		newProposals[i] = &govTypes.Proposal{
+			Id:       oldProposal.ProposalID,
+			Messages: []*codecTypes.Any{migrateContent(oldProposal.Content)},
+			Title:    oldProposal.GetTitle(),
+			Summary:  oldProposal.GetDescription(),
+			Status:   govTypes.ProposalStatus(oldProposal.Status),
+			FinalTallyResult: &govTypes.TallyResult{
+				YesCount:        oldProposal.FinalTallyResult.Yes,
+				AbstainCount:    oldProposal.FinalTallyResult.Abstain,
+				NoCount:         oldProposal.FinalTallyResult.No,
+				NoWithVetoCount: oldProposal.FinalTallyResult.NoWithVeto,
+			},
+			SubmitTime:      &oldProposal.SubmitTime,
+			DepositEndTime:  &oldProposal.DepositEndTime,
+			TotalDeposit:    oldProposal.TotalDeposit,
+			VotingStartTime: &oldProposal.VotingStartTime,
+			VotingEndTime:   &oldProposal.VotingEndTime,
+		}
+	}
+
+	defaultParams := govTypes.DefaultParams()
+
+	params := govTypes.NewParams(
+		oldGovState.DepositParams.MinDeposit,
+		defaultParams.ExpeditedMinDeposit,
+		oldGovState.DepositParams.MaxDepositPeriod,
+		oldGovState.VotingParams.VotingPeriod,
+		*defaultParams.ExpeditedVotingPeriod,
+		oldGovState.TallyParams.Quorum,
+		oldGovState.TallyParams.Threshold,
+		defaultParams.ExpeditedThreshold,
+		oldGovState.TallyParams.Veto,
+		defaultParams.MinInitialDepositRatio,
+		defaultParams.ProposalCancelRatio,
+		defaultParams.ProposalCancelDest,
+		defaultParams.BurnProposalDepositPrevote,
+		defaultParams.BurnVoteQuorum,
+		defaultParams.BurnVoteVeto,
+		defaultParams.MinDepositRatio,
+	)
+
+	newGovState := govTypes.GenesisState{
+		StartingProposalId: oldGovState.StartingProposalID,
+		Deposits:           newDeposits,
+		Votes:              newVotes,
+		Proposals:          newProposals,
+		Params:             &params,
+		Constitution:       "This chain has no constitution.", // TODO HV2: This should be updated with the actual constitution
+	}
+
+	newGovStateMarshaled := appCodec.MustMarshalJSON(&newGovState)
+
+	genesisData["app_state"].(map[string]interface{})["gov"] = json.RawMessage(newGovStateMarshaled)
+
+	logger.Info("Gov module migration completed successfully")
+
+	return nil
+}
+
+func migrateContent(oldContent v036gov.Content) *codecTypes.Any {
+	authority := authTypes.NewModuleAddress(v036gov.ModuleName).String()
+
+	var protoProposal proto.Message
+
+	switch oldContent := oldContent.(type) {
+	case v036gov.TextProposal:
+		{
+			protoProposal = &govTypesV1Beta1.TextProposal{
+				Title:       oldContent.Title,
+				Description: oldContent.Description,
+			}
+			contentAny, err := codecTypes.NewAnyWithValue(protoProposal)
+			if err != nil {
+				panic(err)
+			}
+			return contentAny
+		}
+	case v036params.ParameterChangeProposal:
+		{
+			newChanges := make([]paramTypes.ParamChange, len(oldContent.Changes))
+			for i, oldChange := range oldContent.Changes {
+				newChanges[i] = paramTypes.ParamChange{
+					Subspace: oldChange.Subspace,
+					Key:      oldChange.Key,
+					Value:    oldChange.Value,
+				}
+			}
+
+			protoProposal = &paramTypes.ParameterChangeProposal{
+				Description: oldContent.Description,
+				Title:       oldContent.Title,
+				Changes:     newChanges,
+			}
+		}
+	default:
+		panic(fmt.Errorf("%T is not a valid proposal content type", oldContent))
+	}
+
+	any, err := codecTypes.NewAnyWithValue(protoProposal)
+	if err != nil {
+		panic(fmt.Errorf("failed to create Any type for proposal content: %w", err))
+	}
+
+	msg := govTypes.NewMsgExecLegacyContent(any, authority)
+
+	msgAny, err := codecTypes.NewAnyWithValue(msg)
+	if err != nil {
+		panic(fmt.Errorf("failed to create Any type for proposal content: %w", err))
+	}
+
+	return msgAny
+}
+
+func migrateVoteOption(oldVoteOption v034gov.VoteOption) govTypes.VoteOption {
+	switch oldVoteOption {
+	case v034gov.OptionEmpty:
+		return govTypes.OptionEmpty
+
+	case v034gov.OptionYes:
+		return govTypes.OptionYes
+
+	case v034gov.OptionAbstain:
+		return govTypes.OptionAbstain
+
+	case v034gov.OptionNo:
+		return govTypes.OptionNo
+
+	case v034gov.OptionNoWithVeto:
+		return govTypes.OptionNoWithVeto
+
+	default:
+		panic(fmt.Errorf("'%s' is not a valid vote option", oldVoteOption))
+	}
 }
 
 func migrateBankModule(genesisData map[string]interface{}) error {
@@ -773,3 +962,4 @@ func addProperty(data map[string]interface{}, path string, key string, value int
 }
 
 var appCodec *codec.ProtoCodec
+var legacyAmino *codec.LegacyAmino

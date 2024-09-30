@@ -5,6 +5,8 @@ Progress regarding the migration command.
 ## Modules status
 
 - [x] auth
+- [x] bank
+- [x] gov
 - [x] checkpoint
 - [x] clerk
 - [x] bor
@@ -61,11 +63,7 @@ In this migration the ```Coins``` property was dropped and accounts start to get
 
 None of the changes concern us in this migration, its just about vesting accounts. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.45.16/x/auth/legacy/v043/store.go)
 
-#### v0.43 - v0.45
-
-No migration.
-
-#### v0.45 - v0.46
+#### v0.43 - v0.46
 
 There migration executed on the database that is just creating mapping from account address to account id. This is not interesting to us because such mappings are internal to the module and never exported. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.45.16/x/auth/legacy/v043/store.go)
 
@@ -79,11 +77,7 @@ There is migration executed on the database, that changes how global account num
 
 ### bank
 
-#### v0.38 - v0.39
-
-There is no migration for the bank module. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.41.2/x/genutil/legacy/v039/migrate.go)
-
-#### v0.39 - v0.40
+#### v0.38 - v0.40
 
 Majority of the changes in the bank module state happen in this migration. Users balances are moved from auth to bank, there is supply module that holds the total supply, that is also moved into bank module. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.41.2/x/genutil/legacy/v040/migrate.go)
 
@@ -102,3 +96,25 @@ There is migration but its only in database, adding some additional prefixes. It
 #### v0.47 - v0.50
 
 There is migration but its only in database, migrating some parameters from params module to the bank module store. It doesnt concern us. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.50.10/x/bank/migrations/v4/store.go)
+
+### gov
+
+#### v0.38 - v0.40
+
+In this migration there are a lot of changes on the gov module state. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.41.2/x/gov/legacy/v040/migrate.go)
+
+#### v0.40 - v0.43
+
+In this migration only proposal votes structure is modified, movign from simple votes to weighted votes. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/x/gov/legacy/v043/json.go)
+
+#### v0.43 - v0.46
+
+In this migration the genesis structure is changed from the v1beta1 version to v1 version. Proposals are moved to message based structure. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.50.10/x/gov/migrations/v3/json.go)
+
+#### v0.46 - v0.47
+
+More parameters introduced, DepositParams, VotingParams, TallyParams are being deprecated in favor of new Params property. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.50.10/x/gov/migrations/v4/json.go)
+
+#### v0.47 - v0.50
+
+Adding some of the same parameters that were added during the previous migration and also introduced the Constitution property. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.50.10/x/gov/migrations/v5/store.go)
