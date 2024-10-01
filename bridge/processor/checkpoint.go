@@ -207,8 +207,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 	var (
 		startBlock uint64
 		endBlock   uint64
-		// TODO HV2 - uncomment when we uncomment the below code snippet
-		// txHash     string
+		txHash     string
 	)
 
 	for _, attr := range event.Attributes {
@@ -221,8 +220,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 		}
 
 		if attr.Key == hmTypes.AttributeKeyTxHash {
-			// TODO HV2 - uncomment when we uncomment the below code snippet
-			// txHash = attr.Value
+			txHash = attr.Value
 		}
 	}
 
@@ -237,14 +235,11 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 	}
 
 	if shouldSend && isCurrentProposer {
-		// TODO HV2 - uncomment when we uncomment createAndSendCheckpointToRootchain()
-		/*
-			txHash := common.FromHex(txHash)
-			if err := cp.createAndSendCheckpointToRootchain(checkpointContext, startBlock, endBlock, blockHeight, txHash); err != nil {
-				cp.Logger.Error("Error sending checkpoint to rootchain", "error", err)
-				return err
-			}
-		*/
+		txHash := common.FromHex(txHash)
+		if err := cp.createAndSendCheckpointToRootchain(checkpointContext, startBlock, endBlock, blockHeight, txHash); err != nil {
+			cp.Logger.Error("Error sending checkpoint to rootchain", "error", err)
+			return err
+		}
 	}
 
 	cp.Logger.Info("I am not the current proposer or checkpoint already sent. Ignoring", "eventType", event.Type)

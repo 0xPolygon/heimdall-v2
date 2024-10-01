@@ -3,10 +3,15 @@ package processor
 import (
 	"bytes"
 	"context"
+	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/common"
 	jsoniter "github.com/json-iterator/go"
 )
@@ -51,8 +56,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 		select {
 		case <-ticker.C:
 			// nolint: contextcheck
-			// TODO HV2 - uncomment when bor is merged
-			// sp.checkAndPropose()
+			sp.checkAndPropose()
 		case <-ctx.Done():
 			sp.Logger.Info("Polling stopped")
 			ticker.Stop()
@@ -62,8 +66,6 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 	}
 }
 
-// TODO HV2 - uncomment when bor is merged
-/*
 // checkAndPropose - will check if current user is span proposer and proposes the span
 func (sp *SpanProcessor) checkAndPropose() {
 	lastSpan, err := sp.getLastSpan()
@@ -76,11 +78,11 @@ func (sp *SpanProcessor) checkAndPropose() {
 		return
 	}
 
-	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.ID, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
+	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.Id, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
 
-	nextSpanMsg, err := sp.fetchNextSpanDetails(lastSpan.ID+1, lastSpan.EndBlock+1)
+	nextSpanMsg, err := sp.fetchNextSpanDetails(lastSpan.Id+1, lastSpan.EndBlock+1)
 	if err != nil {
-		sp.Logger.Error("Unable to fetch next span details", "error", err, "lastSpanId", lastSpan.ID)
+		sp.Logger.Error("Unable to fetch next span details", "error", err, "lastSpanId", lastSpan.Id)
 		return
 	}
 
@@ -89,10 +91,7 @@ func (sp *SpanProcessor) checkAndPropose() {
 		go sp.propose(lastSpan, nextSpanMsg)
 	}
 }
-*/
 
-// TODO HV2 - uncomment when bor is merged
-/*
 // propose producers for next span if needed
 func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) {
 	// call with last span on record + new span duration and see if it has been proposed
@@ -104,7 +103,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 
 	if lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock {
 		// log new span
-		sp.Logger.Info("✅ Proposing new span", "spanId", nextSpanMsg.ID, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock)
+		sp.Logger.Info("✅ Proposing new span", "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock)
 
 		seed, err := sp.fetchNextSpanSeed()
 		if err != nil {
@@ -113,19 +112,19 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 		}
 
 		// broadcast to heimdall
-		msg := borTypes.MsgProposeSpan{
-			ID:         nextSpanMsg.ID,
+		msg := types.MsgProposeSpanRequest{
+			SpanId:     nextSpanMsg.Id,
 			Proposer:   string(helper.GetAddress()[:]),
 			StartBlock: nextSpanMsg.StartBlock,
 			EndBlock:   nextSpanMsg.EndBlock,
-			ChainID:    nextSpanMsg.ChainID,
-			Seed:       seed,
+			ChainId:    nextSpanMsg.ChainId,
+			Seed:       seed.Bytes(),
 		}
 
 		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil)
 		if err != nil {
-			sp.Logger.Error("Error while broadcasting span to heimdall", "spanId", nextSpanMsg.ID, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock, "error", err)
+			sp.Logger.Error("Error while broadcasting span to heimdall", "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock, "error", err)
 			return
 		}
 
@@ -136,23 +135,15 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 
 	}
 }
-*/
 
-// TODO HV2 - uncomment when bor is merged
-/*
 // checks span status
 func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	// // fetch latest start block from heimdall via rest query
-	// result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
-	// if err != nil {
-	// 	sp.Logger.Error("Error while fetching latest span")
-	// 	return nil, err
-	// }
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var result struct{ Result []byte }
-	var err error
+	// fetch latest start block from heimdall via rest query
+	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
+	if err != nil {
+		sp.Logger.Error("Error while fetching latest span")
+		return nil, err
+	}
 
 	var lastSpan types.Span
 	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &lastSpan); err != nil {
@@ -162,7 +153,6 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 
 	return &lastSpan, nil
 }
-*/
 
 // getCurrentChildBlock gets the current child block
 func (sp *SpanProcessor) getCurrentChildBlock() (uint64, error) {
@@ -186,8 +176,6 @@ func (sp *SpanProcessor) isSpanProposer(nextSpanProducers []stakeTypes.Validator
 	return false
 }
 
-// TODO HV2 - uncomment when bor is merged
-/*
 // fetch next span details from heimdall.
 func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.Span, error) {
 	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(util.NextSpanInfoURL), nil)
@@ -209,16 +197,12 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 	q.Add("proposer", helper.GetFromAddress(sp.cliCtx))
 	req.URL.RawQuery = q.Encode()
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	// // fetch next span details
-	// result, err := helper.FetchFromAPI(req.URL.String())
-	// if err != nil {
-	// 	sp.Logger.Error("Error fetching proposers", "error", err)
-	// 	return nil, err
-	// }
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var result struct{ Result []byte }
+	// fetch next span details
+	result, err := helper.FetchFromAPI(req.URL.String())
+	if err != nil {
+		sp.Logger.Error("Error fetching proposers", "error", err)
+		return nil, err
+	}
 
 	var msg types.Span
 	if err = jsoniter.ConfigFastest.Unmarshal(result.Result, &msg); err != nil {
@@ -230,23 +214,16 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 
 	return &msg, nil
 }
-*/
 
 // fetchNextSpanSeed - fetches seed for next span
 func (sp *SpanProcessor) fetchNextSpanSeed() (nextSpanSeed common.Hash, err error) {
 	sp.Logger.Info("Sending Rest call to Get Seed for next span")
 
-	// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-	/*
-		response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL))
-		if err != nil {
-			sp.Logger.Error("Error Fetching nextspanseed from HeimdallServer ", "error", err)
-			return nextSpanSeed, err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var response struct{ Result []byte }
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL))
+	if err != nil {
+		sp.Logger.Error("Error Fetching nextspanseed from HeimdallServer ", "error", err)
+		return nextSpanSeed, err
+	}
 
 	sp.Logger.Info("Next span seed fetched")
 
