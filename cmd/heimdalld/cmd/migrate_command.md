@@ -10,6 +10,10 @@ Progress regarding the migration command.
 - [x] checkpoint
 - [x] clerk
 - [x] bor
+- [x] topup
+- [x] milestone
+- [x] chainmanager
+- [x] stake
 
 ## Modules app state size on mainnet
 

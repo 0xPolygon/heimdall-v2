@@ -16,6 +16,7 @@ import (
 	v034gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v034"
 	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
 	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -140,6 +141,132 @@ func performMigrations(genesisData map[string]interface{}) error {
 	if err := migrateTopupModule(genesisData); err != nil {
 		return err
 	}
+
+	if err := migrateMilestoneModule(genesisData); err != nil {
+		return err
+	}
+
+	if err := migrateChainmanagerModule(genesisData); err != nil {
+		return err
+	}
+
+	if err := migrateStakeModule(genesisData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func migrateStakeModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating stake module...")
+
+	// TODO: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initilization we should call GetTotalVotingPower
+	// because it gets calculated if its zero
+	if err := renameProperty(genesisData, "app_state", "staking", "stake"); err != nil {
+		return fmt.Errorf("failed to rename staking module: %w", err)
+	}
+
+	stakeModule, ok := genesisData["app_state"].(map[string]interface{})["stake"]
+	if !ok {
+		return fmt.Errorf("stake module not found in app_state")
+	}
+
+	stakeData, ok := stakeModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast stake module data")
+	}
+
+	if err := renameProperty(stakeData, ".", "current_val_set", "current_validator_set"); err != nil {
+		return fmt.Errorf("failed to rename current_val_set field: %w", err)
+	}
+
+	// TODO: There are couple of places where we iterate and migrate validators, we should refactor this to a single function
+	validators, ok := stakeData["validators"].([]interface{})
+	if !ok {
+		return fmt.Errorf("failed to find validators in stake module")
+	}
+	for i, validator := range validators {
+		validatorMap, ok := validator.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("failed to cast validator data at index %d", i)
+		}
+
+		if err := migrateValidator(validatorMap); err != nil {
+			return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
+		}
+	}
+
+	currentValidatorSet, ok := stakeData["current_validator_set"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to find current_validator_set in stake module")
+	}
+
+	validators, ok = currentValidatorSet["validators"].([]interface{})
+	if !ok {
+		return fmt.Errorf("failed to find validators in current_validator_set")
+	}
+	for i, validator := range validators {
+		validatorMap, ok := validator.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("failed to cast validator data at index %d", i)
+		}
+
+		if err := migrateValidator(validatorMap); err != nil {
+			return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
+		}
+	}
+
+	proposer, ok := currentValidatorSet["proposer"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to find proposer in current_validator_set")
+	}
+
+	if err := migrateValidator(proposer); err != nil {
+		return fmt.Errorf("failed to migrate proposer: %w", err)
+	}
+
+	logger.Info("Stake module migration completed successfully")
+
+	return nil
+}
+
+func migrateChainmanagerModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating chainmanager module...")
+
+	chainmanagerModule, ok := genesisData["app_state"].(map[string]interface{})["chainmanager"]
+	if !ok {
+		return fmt.Errorf("chainmanager module not found in app_state")
+	}
+
+	chainmanagerData, ok := chainmanagerModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast chainmanager module data")
+	}
+
+	if err := renameProperty(chainmanagerData, "params", "mainchain_tx_confirmations", "main_chain_tx_confirmations"); err != nil {
+		return fmt.Errorf("failed to rename mainchain_tx_confirmations field: %w", err)
+	}
+
+	if err := renameProperty(chainmanagerData, "params", "maticchain_tx_confirmations", "bor_chain_tx_confirmations"); err != nil {
+		return fmt.Errorf("failed to rename mainchain_tx_timeout field: %w", err)
+	}
+
+	logger.Info("Chainmanager module migration completed successfully")
+
+	return nil
+}
+
+func migrateMilestoneModule(genesisData map[string]interface{}) error {
+	logger.Info("Migrating milestone module...")
+
+	params := milestoneTypes.DefaultParams()
+	milestoneState := milestoneTypes.NewGenesisState(&params)
+
+	milestoneStateMarshled := appCodec.MustMarshalJSON(&milestoneState)
+
+	genesisData["app_state"].(map[string]interface{})["milestone"] = json.RawMessage(milestoneStateMarshled)
+
+	logger.Info("Milestone module migration completed successfully")
 
 	return nil
 }
