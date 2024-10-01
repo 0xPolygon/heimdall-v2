@@ -96,14 +96,14 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	*/
 
 	// create a factory
-	txf := clienttx.Factory{}
-	txf = txf.WithTxConfig(tb.CliCtx.TxConfig)
-	txf = txf.WithAccountRetriever(tb.CliCtx.AccountRetriever)
-	txf = txf.WithChainID(tb.CliCtx.ChainID)
-	txf = txf.WithSignMode(signMode)
-	txf = txf.WithAccountNumber(tb.accNum)
-	txf = txf.WithSequence(tb.lastSeqNo)
-	txf = txf.WithKeybase(tb.CliCtx.Keyring)
+	txf := clienttx.Factory{}.
+		WithTxConfig(tb.CliCtx.TxConfig).
+		WithAccountRetriever(tb.CliCtx.AccountRetriever).
+		WithChainID(tb.CliCtx.ChainID).
+		WithSignMode(signMode).
+		WithAccountNumber(tb.accNum).
+		WithSequence(tb.lastSeqNo).
+		WithKeybase(tb.CliCtx.Keyring)
 
 	// setting this to true to as the if block in BroadcastTx
 	// might cause a cancelled transaction.
