@@ -239,6 +239,13 @@ func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context)
 	// TODO HV2 - this is unused, remove it?
 	// coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}
 
+	/*
+		TODO HV2 - resolve the issue with this
+		impossible type assertion: no type can implement both
+		github.com/cometbft/cometbft/crypto.PubKey and
+		github.com/cosmos/cosmos-sdk/crypto/types.PubKey
+		(conflicting types for Equals method)
+	*/
 	acc := authTypes.NewBaseAccount(sdk.AccAddress(heimdallAddressBytes), pubKey.(cryptotypes.PubKey), 0, 0)
 
 	hApp.AccountKeeper.SetAccount(ctx, acc)
