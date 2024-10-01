@@ -63,14 +63,6 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	defer tb.heimdallMutex.Unlock()
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "BroadcastToHeimdall", time.Now())
 
-	// TODO HV2 - is this needed?
-	/*
-		// tx encoder
-		txEncoder := authlegacytx.DefaultTxEncoder(tb.CliCtx.LegacyAmino)
-		// chain id
-		chainID := helper.GetGenesisDoc().ChainID
-	*/
-
 	txCfg := tb.CliCtx.TxConfig
 
 	txBldr := txCfg.NewTxBuilder()

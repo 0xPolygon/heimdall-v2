@@ -69,17 +69,13 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 
 				// Querying and processing Begin events
 				for i := fromBlock; i <= toBlock; i++ {
-					// TODO HV2 - GetBeginBlockEvents was removed from helper
-					/*
-						// nolint: contextcheck
-						events, err := helper.GetBeginBlockEvents(hl.httpClient, int64(i))
-						if err != nil {
-							hl.Logger.Error("Error fetching begin block events", "error", err)
-						}
-						for _, event := range events {
-							hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(i))
-						}
-					*/
+					events, err := helper.GetBeginBlockEvents(hl.httpClient, int64(i))
+					if err != nil {
+						hl.Logger.Error("Error fetching begin block events", "error", err)
+					}
+					for _, event := range events {
+						hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(i))
+					}
 				}
 
 				// set last block to storage
