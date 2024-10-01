@@ -15,6 +15,8 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authTx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	jsoniter "github.com/json-iterator/go"
@@ -433,6 +435,7 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 	return true, 0, nil
 }
 
+// TODO HV2 - this function was modified a bit, please review carefully
 func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	const (
 		defaultPage  = 1
@@ -446,30 +449,19 @@ func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 		"validator-exit":         "validator-exit",
 	}
 
-	// TODO HV2 - replace _, _ with msg, action
-	for _, _ = range stakingTxnMsgMap {
-		/*
-			for msg, action := range stakingTxnMsgMap {
-			events := []string{
-				fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg),
-				fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId),
-				// fmt.Sprintf("%s.%s>%d", "tx", "height", currentHeight-3),
-			}
-		*/
+	for msg, action := range stakingTxnMsgMap {
+		event1 := fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg)
 
-		// TODO HV2 - uncomment the following fn once it is uncommented in helper.
-		/*
-			searchResult, err := helper.QueryTxsByEvents(cliCtx, events, defaultPage, defaultLimit)
-			if err != nil {
-				return 0, err
-			}
-		*/
+		event2 := fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId)
 
-		// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-		var searchResult struct{ TotalCount int }
+		searchResult1, err1 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event1, "")
+		searchResult2, err2 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event2, "")
+		if err1 != nil && err2 != nil {
+			return 0, fmt.Errorf(err1.Error() + err2.Error())
+		}
 
-		if searchResult.TotalCount != 0 {
-			return searchResult.TotalCount, nil
+		if searchResult1.TotalCount != 0 || searchResult2.TotalCount != 0 {
+			return int(searchResult1.TotalCount + searchResult2.TotalCount), nil
 		}
 	}
 
