@@ -62,51 +62,51 @@ func NewRootCmd() *cobra.Command {
 		Use:           "heimdalld",
 		Short:         "Heimdall Daemon (server)",
 		SilenceErrors: true,
-		// PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-		// 	// set the default command outputs
-		// 	cmd.SetOut(cmd.OutOrStdout())
-		// 	cmd.SetErr(cmd.ErrOrStderr())
+		/* PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			// set the default command outputs
+			cmd.SetOut(cmd.OutOrStdout())
+			cmd.SetErr(cmd.ErrOrStderr())
 
-		// 	initClientCtx = initClientCtx.WithCmdContext(cmd.Context())
-		// 	initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
-		// 	if err != nil {
-		// 		return err
-		// 	}
+			initClientCtx = initClientCtx.WithCmdContext(cmd.Context())
+			initClientCtx, err := client.ReadPersistentCommandFlags(initClientCtx, cmd.Flags())
+			if err != nil {
+				return err
+			}
 
-		// 	initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
-		// 	if err != nil {
-		// 		return err
-		// 	}
+			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
+			if err != nil {
+				return err
+			}
 
-		// 	// This needs to go after ReadFromClientConfig, as that function
-		// 	// sets the RPC client needed for SIGN_MODE_TEXTUAL. This sign mode
-		// 	// is only available if the client is online.
-		// 	if !initClientCtx.Offline {
-		// 		enabledSignModes := append(tx.DefaultSignModes, signing.SignMode_SIGN_MODE_TEXTUAL)
-		// 		txConfigOpts := tx.ConfigOptions{
-		// 			EnabledSignModes:           enabledSignModes,
-		// 			TextualCoinMetadataQueryFn: txmodule.NewGRPCCoinMetadataQueryFn(initClientCtx),
-		// 		}
-		// 		txConfig, err := tx.NewTxConfigWithOptions(
-		// 			initClientCtx.Codec,
-		// 			txConfigOpts,
-		// 		)
-		// 		if err != nil {
-		// 			return err
-		// 		}
+			// This needs to go after ReadFromClientConfig, as that function
+			// sets the RPC client needed for SIGN_MODE_TEXTUAL. This sign mode
+			// is only available if the client is online.
+			if !initClientCtx.Offline {
+				enabledSignModes := append(tx.DefaultSignModes, signing.SignMode_SIGN_MODE_TEXTUAL)
+				txConfigOpts := tx.ConfigOptions{
+					EnabledSignModes:           enabledSignModes,
+					TextualCoinMetadataQueryFn: txmodule.NewGRPCCoinMetadataQueryFn(initClientCtx),
+				}
+				txConfig, err := tx.NewTxConfigWithOptions(
+					initClientCtx.Codec,
+					txConfigOpts,
+				)
+				if err != nil {
+					return err
+				}
 
-		// 		initClientCtx = initClientCtx.WithTxConfig(txConfig)
-		// 	}
+				initClientCtx = initClientCtx.WithTxConfig(txConfig)
+			}
 
-		// 	if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
-		// 		return err
-		// 	}
+			if err := client.SetCmdClientContextHandler(initClientCtx, cmd); err != nil {
+				return err
+			}
 
-		// 	customAppTemplate, customAppConfig := initAppConfig()
-		// 	customCMTConfig := initCometBFTConfig()
+			customAppTemplate, customAppConfig := initAppConfig()
+			customCMTConfig := initCometBFTConfig()
 
-		// 	return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
-		// },
+			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+		}, */
 	}
 
 	// adding heimdall configuration flags to root command
