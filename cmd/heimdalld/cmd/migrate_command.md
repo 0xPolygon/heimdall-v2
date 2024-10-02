@@ -17,6 +17,9 @@ The command will take as input Heimdall v1 genesis and do all the necessary tran
 
 ## Modules app state size on mainnet
 
+We don't have the exact height at which the export was generated but the most recent checkpoint in the genesis
+was generated at timestamp 1706745464 (Wednesday, January 31, 2024 11:57:44 PM).
+
 - **auth**: 0.10 MB (107260 bytes)
 - **bank**: 0.00 MB (27 bytes)
 - **gov**: 0.01 MB (13407 bytes)
