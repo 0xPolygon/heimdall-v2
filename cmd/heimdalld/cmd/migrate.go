@@ -36,6 +36,8 @@ import (
 // types which were removed in favor of using bytes in proto definitions.
 // Because default encoding for bytes in proto is base64 instead of hex encoding like in heimdall v1,
 // it could be breaking change for anyone querying the node API.
+
+// MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
 	return &cobra.Command{
 		Use:   "migrate [genesis-file]",
@@ -55,7 +57,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("genesis file does not exist: %s", genesisFileV1)
 	}
 
-	// TODO: This should be done in root command PreRunE?
+	// TODO HV2: This should be done in root command PreRunE?
 	interfaceRegistry, err := codecTypes.NewInterfaceRegistryWithOptions(codecTypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -160,7 +162,7 @@ func performMigrations(genesisData map[string]interface{}) error {
 func migrateStakeModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating stake module...")
 
-	// TODO: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initilization we should call GetTotalVotingPower
+	// TODO HV2: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initilization we should call GetTotalVotingPower
 	// because it gets calculated if its zero
 	if err := renameProperty(genesisData, "app_state", "staking", "stake"); err != nil {
 		return fmt.Errorf("failed to rename staking module: %w", err)
@@ -180,7 +182,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to rename current_val_set field: %w", err)
 	}
 
-	// TODO: There are couple of places where we iterate and migrate validators, we should refactor this to a single function
+	// TODO HV2: There are couple of places where we iterate and migrate validators, we should refactor this to a single function
 	validators, ok := stakeData["validators"].([]interface{})
 	if !ok {
 		return fmt.Errorf("failed to find validators in stake module")
@@ -667,7 +669,7 @@ func migrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, er
 
 		module_name, _ := accountMap["module_name"].(string)
 		if module_name != "" {
-			// TODO: We skip module accounts, because heimdall v2 will initialize them from zero anyways
+			// We skip module accounts, because heimdall v2 will initialize them from zero anyways
 			continue
 		}
 
