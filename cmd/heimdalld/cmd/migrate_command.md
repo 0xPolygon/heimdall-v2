@@ -1,6 +1,6 @@
 # Migration command
 
-Progress regarding the migration command.
+The command will take as input heimdall v1 genesis and do all the necessary transformations to make it compatible with heimdall v2.
 
 ## Modules status
 
@@ -26,6 +26,11 @@ Progress regarding the migration command.
 - **clerk**: 2355.08 MB (2469477639 bytes)
 - **checkpoint**: 15.85 MB (16620086 bytes)
 
+## Consensus parameters
+
+The following missing parameters, required by CometBFT are added: ```consensus_params.evidence.max_age_num_blocks```, ```consensus_params.evidence.max_age_duration```, ```consensus_params.evidence.max_bytes```.
+The following Tendermint parameters that are not used by CometBFT are removed: ```consensus_params.evidence.max_age```, ```consensus_params.block.time_iota_ms```.
+
 ## Modules migration steps
 
 ### checkpoint
@@ -41,8 +46,27 @@ Iterating over all the ```records```, decoding the hex-encoded ```data``` proper
 ### bor
 
 Iterating over all the ```spans``` and renaming ```bor_chain_id``` to ```chain_id```, ```span_id``` to ```id```.
-Converting every ```validator``` in every ```span``` by renaming following properties, ```power``` to ```voting_power```,
-```accum``` to ```proposer_priority```, ```ID``` to ```val_id``` and converting each ```pubKey``` from plain string to ```secp256k1.PubKey```.  
+Converting every ```validator``` object by renaming following properties, ```power``` to ```voting_power```,
+```accum``` to ```proposer_priority```, ```ID``` to ```val_id``` and converting each ```pubKey``` from plain string to ```secp256k1.PubKey```.
+
+### topup
+
+Renaming ```tx_sequences``` to ```topup_sequences```.
+
+### milestone
+
+Milestone genesis is not exported from heimdall v1 so we just add it to the genesis, it has just one propery ```params``` and we initialize it with the default params from heimdall v2.
+
+### chainmanager
+
+Renaming ```params.mainchain_tx_confirmations``` to ```params.main_chain_tx_confirmations``` and ```params.maticchain_tx_confirmations``` to ```params.bor_chain_tx_confirmations```.
+
+### stake
+
+Change the module name from ```staking``` to ```stake``` in the gensis itself.
+Renaming ```current_val_set``` to ```current_validator_set```.
+Converting every ```validator``` object by renaming following properties, ```power``` to ```voting_power```,
+```accum``` to ```proposer_priority```, ```ID``` to ```val_id``` and converting each ```pubKey``` from plain string to ```secp256k1.PubKey```.
 
 ### Cosmos SDK modules
 

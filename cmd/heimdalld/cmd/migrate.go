@@ -112,18 +112,6 @@ func performMigrations(genesisData map[string]interface{}) error {
 		return err
 	}
 
-	if err := migrateClerkModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateBorModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateCheckpointModule(genesisData); err != nil {
-		return err
-	}
-
 	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
 	// they are deleted from the genesis during auth module migration
 	if err := migrateBankModule(genesisData); err != nil {
@@ -135,6 +123,18 @@ func performMigrations(genesisData map[string]interface{}) error {
 	}
 
 	if err := migrateGovModule(genesisData); err != nil {
+		return err
+	}
+
+	if err := migrateClerkModule(genesisData); err != nil {
+		return err
+	}
+
+	if err := migrateBorModule(genesisData); err != nil {
+		return err
+	}
+
+	if err := migrateCheckpointModule(genesisData); err != nil {
 		return err
 	}
 
