@@ -577,7 +577,7 @@ func migrateAuthAccountsToBankBalances(authAccounts []interface{}) ([]bankTypes.
 			return nil, fmt.Errorf("invalid account format at index %d", i)
 		}
 
-		address, _ := accountMap["address"].(string)
+		accAddress, _ := accountMap["address"].(string)
 		coins, _ := accountMap["coins"].([]interface{})
 
 		for _, coin := range coins {
@@ -594,20 +594,20 @@ func migrateAuthAccountsToBankBalances(authAccounts []interface{}) ([]bankTypes.
 				return nil, fmt.Errorf("failed to parse amount at index %d: %s", i, amountStr)
 			}
 
-			if coins, ok := addressCoins[address]; ok {
-				addressCoins[address] = append(coins, types.NewCoin(denom, amount))
+			if coins, ok := addressCoins[accAddress]; ok {
+				addressCoins[accAddress] = append(coins, types.NewCoin(denom, amount))
 			} else {
-				addressCoins[address] = types.NewCoins(types.NewCoin(denom, amount))
+				addressCoins[accAddress] = types.NewCoins(types.NewCoin(denom, amount))
 			}
 		}
 	}
 
 	var balances []bankTypes.Balance
 
-	for address, coins := range addressCoins {
+	for accAddress, coins := range addressCoins {
 		balances = append(balances,
 			bankTypes.Balance{
-				Address: address,
+				Address: accAddress,
 				Coins:   coins,
 			})
 	}
@@ -673,7 +673,7 @@ func migrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, er
 			continue
 		}
 
-		address, _ := accountMap["address"].(string)
+		accAddress, _ := accountMap["address"].(string)
 		accountNumberStr, _ := accountMap["account_number"].(string)
 		sequenceNumberStr, _ := accountMap["sequence_number"].(string)
 
@@ -686,7 +686,7 @@ func migrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, er
 			return nil, fmt.Errorf("failed to parse sequence number at index %d: %w", i, err)
 		}
 
-		addr, err := types.AccAddressFromHex(address)
+		addr, err := types.AccAddressFromHex(accAddress)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse address at index %d: %w", i, err)
 		}
