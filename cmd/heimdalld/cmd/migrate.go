@@ -791,8 +791,12 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 		}
 
 		rootHashHex, ok := checkpointMap["root_hash"].(string)
-		if !ok || !strings.HasPrefix(rootHashHex, "0x") {
-			return fmt.Errorf("invalid or missing root_hash at index %d", i)
+		if !ok {
+			return fmt.Errorf("root_hash not found in checkpoint at index %d", i)
+		}
+
+		if !strings.HasPrefix(rootHashHex, "0x") {
+			return fmt.Errorf("invalid root_hash format at index %d", i)
 		}
 
 		rootHashHex = rootHashHex[2:]
