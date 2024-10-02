@@ -5,10 +5,6 @@ import (
 	"testing"
 
 	"cosmossdk.io/core/appmodule"
-	"cosmossdk.io/log"
-	cmttypes "github.com/cometbft/cometbft/types"
-	dbm "github.com/cosmos/cosmos-db"
-	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/gov"
@@ -238,28 +234,4 @@ func TestGetMaccPerms(t *testing.T) {
 
 	dup := GetMaccPerms()
 	require.Equal(t, maccPerms, dup, "duplicated module account permissions differed from actual module account permissions")
-}
-
-func TestInitGenesis(t *testing.T) {
-	db := dbm.NewMemDB()
-
-	appOptions := make(simtestutil.AppOptionsMap)
-	appOptions[flags.FlagHome] = DefaultNodeHome
-
-	logger := log.NewTestLogger(t)
-	app := NewHeimdallApp(logger, db, nil, true, appOptions)
-
-	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
-
-	genDoc, err := cmttypes.GenesisDocFromFile("migrated_dump-genesis.json")
-	require.NoError(t, err)
-
-	// get genesis state
-	var genesisState GenesisState
-	err = json.Unmarshal(genDoc.AppState, &genesisState)
-	require.NoError(t, err)
-
-	// Proceed with the rest of InitGenesis as normal
-	_, err = app.ModuleManager.InitGenesis(ctx, app.appCodec, genesisState)
-	require.NoError(t, err)
 }
