@@ -182,20 +182,8 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to rename current_val_set field: %w", err)
 	}
 
-	// TODO HV2: There are couple of places where we iterate and migrate validators, we should refactor this to a single function
-	validators, ok := stakeData["validators"].([]interface{})
-	if !ok {
-		return fmt.Errorf("failed to find validators in stake module")
-	}
-	for i, validator := range validators {
-		validatorMap, ok := validator.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("failed to cast validator data at index %d", i)
-		}
-
-		if err := migrateValidator(validatorMap); err != nil {
-			return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
-		}
+	if err := migrateValidators(stakeData["validators"]); err != nil {
+		return fmt.Errorf("failed to migrate validators in stake module: %w", err)
 	}
 
 	currentValidatorSet, ok := stakeData["current_validator_set"].(map[string]interface{})
@@ -203,19 +191,8 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to find current_validator_set in stake module")
 	}
 
-	validators, ok = currentValidatorSet["validators"].([]interface{})
-	if !ok {
-		return fmt.Errorf("failed to find validators in current_validator_set")
-	}
-	for i, validator := range validators {
-		validatorMap, ok := validator.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("failed to cast validator data at index %d", i)
-		}
-
-		if err := migrateValidator(validatorMap); err != nil {
-			return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
-		}
+	if err := migrateValidators(currentValidatorSet["validators"]); err != nil {
+		return fmt.Errorf("failed to migrate validators in current_validator_set: %w", err)
 	}
 
 	proposer, ok := currentValidatorSet["proposer"].(map[string]interface{})
@@ -848,20 +825,8 @@ func migrateBorModule(genesisData map[string]interface{}) error {
 			return fmt.Errorf("failed to rename bor_chain_id field: %w", err)
 		}
 
-		producers, ok := spanMap["selected_producers"].([]interface{})
-		if !ok {
-			return fmt.Errorf("failed to find selected_producers in span")
-		}
-
-		for i, producer := range producers {
-			producerMap, ok := producer.(map[string]interface{})
-			if !ok {
-				return fmt.Errorf("failed to cast producer data")
-			}
-
-			if err := migrateValidator(producerMap); err != nil {
-				return fmt.Errorf("failed to migrate producer at index %d: %w", i, err)
-			}
+		if err := migrateValidators(spanMap["selected_producers"]); err != nil {
+			return fmt.Errorf("failed to migrate selected_producers in span: %w", err)
 		}
 
 		validatorSet, ok := spanMap["validator_set"].(map[string]interface{})
@@ -878,24 +843,31 @@ func migrateBorModule(genesisData map[string]interface{}) error {
 			return fmt.Errorf("failed to migrate proposer: %w", err)
 		}
 
-		validators, ok := validatorSet["validators"].([]interface{})
-		if !ok {
-			return fmt.Errorf("failed to find validators in validator_set")
-		}
-		for i, validator := range validators {
-			validatorMap, ok := validator.(map[string]interface{})
-			if !ok {
-				return fmt.Errorf("failed to cast validator data at index %d", i)
-			}
-
-			if err := migrateValidator(validatorMap); err != nil {
-				return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
-			}
+		if err := migrateValidators(validatorSet["validators"]); err != nil {
+			return fmt.Errorf("failed to migrate validators in validator_set: %w", err)
 		}
 	}
 
 	logger.Info("Bor module migration completed successfully")
 
+	return nil
+}
+
+func migrateValidators(validatorsInterface interface{}) error {
+	validators, ok := validatorsInterface.([]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast validators")
+	}
+	for i, validator := range validators {
+		validatorMap, ok := validator.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("failed to cast validator data at index %d", i)
+		}
+
+		if err := migrateValidator(validatorMap); err != nil {
+			return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
+		}
+	}
 	return nil
 }
 
