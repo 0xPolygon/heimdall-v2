@@ -15,7 +15,7 @@ import (
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 )
 
-func TestInitGenesis(t *testing.T) {
+func TestValidateGenesisAfterMigration(t *testing.T) {
 	db := dbm.NewMemDB()
 
 	appOptions := make(simtestutil.AppOptionsMap)
