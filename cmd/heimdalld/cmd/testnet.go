@@ -16,7 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
@@ -113,7 +113,8 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 
 				genFiles[i] = config.GenesisFile()
-				newPubKey := valPubKeys[i]
+
+				cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: privKeys[i].Bytes()}
 
 				if i < numValidators {
 					// create validator account
@@ -123,14 +124,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 						0,
 						1,
 						10000,
-						/*
-							TODO HV2 - resolve the issue with this
-							impossible type assertion: no type can implement both
-							github.com/cometbft/cometbft/crypto.PubKey and
-							github.com/cosmos/cosmos-sdk/crypto/types.PubKey
-							(conflicting types for Equals method)
-						*/
-						newPubKey.(cryptotypes.PubKey),
+						cosmosPrivKey.PubKey(),
 						valPubKeys[i].Address().String(),
 					)
 					if err != nil {

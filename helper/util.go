@@ -27,10 +27,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
-	signingtypes "github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
@@ -474,18 +473,13 @@ func GetSignedTxBytes(cliCtx client.Context,
 }
 */
 
-func GetSignature(signMode signing.SignMode, accSeq uint64) signingtypes.SignatureV2 {
+func GetSignature(signMode signing.SignMode, accSeq uint64) signing.SignatureV2 {
 	priv := GetPrivKey()
+	var cosmosPrivKey cosmossecp256k1.PrivKey
+	cosmosPrivKey.Key = priv
 
 	sig := signing.SignatureV2{
-		/*
-			TODO HV2 - resolve the issue with this
-			impossible type assertion: no type can implement both
-			github.com/cometbft/cometbft/crypto.PubKey and
-			github.com/cosmos/cosmos-sdk/crypto/types.PubKey
-			(conflicting types for Equals method)
-		*/
-		PubKey: priv.PubKey().(cryptotypes.PubKey),
+		PubKey: cosmosPrivKey.PubKey(),
 		Data: &signing.SingleSignatureData{
 			SignMode: signMode,
 		},

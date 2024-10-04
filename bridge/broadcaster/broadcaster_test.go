@@ -22,7 +22,7 @@ import (
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/golang/mock/gomock"
@@ -32,6 +32,7 @@ import (
 
 var (
 	privKey                 = secp256k1.GenPrivKey()
+	cosmosPrivKey           = &cosmossecp256k1.PrivKey{Key: privKey}
 	pubKey                  = privKey.PubKey()
 	address                 = pubKey.Address()
 	heimdallAddress         = address.String()
@@ -239,14 +240,7 @@ func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context)
 	// TODO HV2 - this is unused, remove it?
 	// coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}
 
-	/*
-		TODO HV2 - resolve the issue with this
-		impossible type assertion: no type can implement both
-		github.com/cometbft/cometbft/crypto.PubKey and
-		github.com/cosmos/cosmos-sdk/crypto/types.PubKey
-		(conflicting types for Equals method)
-	*/
-	acc := authTypes.NewBaseAccount(sdk.AccAddress(heimdallAddressBytes), pubKey.(cryptotypes.PubKey), 0, 0)
+	acc := authTypes.NewBaseAccount(sdk.AccAddress(heimdallAddressBytes), cosmosPrivKey.PubKey(), 0, 0)
 
 	hApp.AccountKeeper.SetAccount(ctx, acc)
 
