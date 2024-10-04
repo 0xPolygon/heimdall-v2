@@ -10,7 +10,6 @@ import (
 	addresscodec "cosmossdk.io/core/address"
 	abci "github.com/cometbft/cometbft/abci/types"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -110,7 +109,7 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.V
 
 func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error) {
 	k.PanicIfSetupIsIncomplete()
-	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator cosmosTypes.ValidatorI) bool {
+	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator types.Validator) bool {
 		totalPower += validator.GetBondedTokens().Int64()
 		return true
 	})
@@ -456,7 +455,7 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 }
 
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
-func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
+func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator types.Validator) bool) error {
 	k.PanicIfSetupIsIncomplete()
 	// TODO HV2: this function is imported from v1, we need to check how the `stop` function behaves
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
@@ -466,7 +465,7 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 	}
 
 	for _, v := range currentValidatorSet.Validators {
-		if stop := f(v); !stop {
+		if stop := f(*v); !stop {
 			return nil
 		}
 	}
