@@ -1649,7 +1649,7 @@
       "topup_sequences": null
     }
   },
-  "chain_id": "heimdall-sCCAH4",
+  "chain_id": "heimdall-1337",
   "consensus_params": {
     "block": {
       "max_bytes": "22020096",
@@ -1666,5 +1666,6 @@
       ]
     }
   },
-  "genesis_time": "2024-09-13T08:54:11.342700084Z"
+  "genesis_time": "2020-01-01T00:00:00Z",
+  "initial_height": 31337
 }

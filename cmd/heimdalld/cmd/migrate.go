@@ -36,17 +36,45 @@ import (
 
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
-	return &cobra.Command{
-		Use:   "migrate [genesis-file]",
+	cmd := cobra.Command{
+		Use:   "migrate [genesis-file] --chain-id=[chain-id] --genesis-time=[genesis-time] --initial-height=[initial-height]",
 		Short: "Migrate application state",
 		Long:  `Run migrations to update the application state (e.g., for a chain upgrade) based on the provided genesis file.`,
 		Args:  cobra.ExactArgs(1),
 		RunE:  runMigrate,
 	}
+
+	cmd.Flags().String(flagChainId, "", "The new network chain id")
+	cmd.Flags().String(flagGenesisTime, "", "The new network genesis time")
+	cmd.Flags().Uint64(flagInitialHeight, 0, "The new network initial height")
+
+	return &cmd
 }
 
 // runMigrate handles the execution of the migrate command, performing the migration process.
 func runMigrate(cmd *cobra.Command, args []string) error {
+	chainId, err := cmd.Flags().GetString(flagChainId)
+	if err != nil {
+		return err
+	}
+
+	genesisTime, err := cmd.Flags().GetString(flagGenesisTime)
+	if err != nil {
+		return err
+	}
+
+	initialHeight, err := cmd.Flags().GetUint64(flagInitialHeight)
+	if err != nil {
+		return err
+	}
+
+	flagsToCheck := []string{flagChainId, flagGenesisTime, flagInitialHeight}
+	for _, flag := range flagsToCheck {
+		if !cmd.Flags().Changed(flag) {
+			return fmt.Errorf("flag --%s must be provided", flag)
+		}
+	}
+
 	genesisFileV1 := args[0]
 
 	logger.Info("Starting migration...")
@@ -88,6 +116,10 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		logger.Error("Migration failed", "error", err)
 		return err
 	}
+
+	genesisData["chain_id"] = chainId
+	genesisData["genesis_time"] = genesisTime
+	genesisData["initial_height"] = initialHeight
 
 	dir := filepath.Dir(genesisFileV1)
 	base := filepath.Base(genesisFileV1)
@@ -723,3 +755,9 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 
 var appCodec *codec.ProtoCodec
 var legacyAmino *codec.LegacyAmino
+
+const (
+	flagChainId       = "chain-id"
+	flagGenesisTime   = "genesis-time"
+	flagInitialHeight = "initial-height"
+)
