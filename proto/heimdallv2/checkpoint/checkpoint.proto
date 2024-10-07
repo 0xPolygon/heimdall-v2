@@ -42,5 +42,5 @@ message Params {
   ];
   uint64 avg_checkpoint_length = 2 [ (amino.dont_omitempty) = true ];
   uint64 max_checkpoint_length = 3 [ (amino.dont_omitempty) = true ];
-  uint64 child_block_interval = 4 [ (amino.dont_omitempty) = true ];
+  uint64 child_chain_block_interval = 4 [ (amino.dont_omitempty) = true ];
 }

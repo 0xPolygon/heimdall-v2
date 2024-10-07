@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
@@ -19,9 +21,8 @@ const (
 )
 
 func (s *KeeperTestSuite) TestHandleMsgMilestone() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
-	require := s.Require()
-	stakingKeeper := s.stakeKeeper
+	ctx, require, msgServer, keeper, stakeKeeper := s.ctx, s.Require(), s.msgServer, s.milestoneKeeper, s.stakeKeeper
+
 	start := uint64(0)
 	milestoneID := "0000"
 	params := types.DefaultParams()
@@ -31,8 +32,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	minMilestoneLength := params.MinMilestoneLength
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+	stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
 
@@ -55,7 +56,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		require.ErrorContains(err, types.ErrProposerMismatch.Error())
 	})
 
-	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
+	milestoneValidatorSet, err := stakeKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
 
 	// add current proposer to header
@@ -181,9 +182,8 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
-	require := s.Require()
-	stakingKeeper := s.stakeKeeper
+	ctx, require, msgServer, keeper, stakeKeeper := s.ctx, s.Require(), s.msgServer, s.milestoneKeeper, s.stakeKeeper
+
 	start := uint64(0)
 
 	params := types.DefaultParams()
@@ -191,10 +191,10 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	minMilestoneLength := params.MinMilestoneLength
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+	stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
-	milestoneValidatorSet, err := stakingKeeper.GetMilestoneValidatorSet(ctx)
+	milestoneValidatorSet, err := stakeKeeper.GetMilestoneValidatorSet(ctx)
 	require.NoError(err)
 
 	header := milestoneSim.GenRandMilestone(start, minMilestoneLength)
@@ -232,14 +232,13 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
-	ctx, msgServer, keeper := s.ctx, s.msgServer, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, msgServer, keeper, stakeKeeper := s.ctx, s.Require(), s.msgServer, s.milestoneKeeper, s.stakeKeeper
 
 	params := types.DefaultParams()
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+	stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
@@ -295,4 +294,108 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	res, err = msgServer.MilestoneTimeout(ctx, &msgMilestoneTimeout)
 	require.NotNil(res)
 	require.Nil(err)
+}
+
+func (s *KeeperTestSuite) TestMsgUpdateParams() {
+	ctx, require, keeper, queryClient, msgServer, params := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient, s.msgServer, types.DefaultParams()
+
+	testCases := []struct {
+		name      string
+		input     *types.MsgUpdateParams
+		expErr    bool
+		expErrMsg string
+	}{
+		{
+			name: "invalid authority",
+			input: &types.MsgUpdateParams{
+				Authority: "invalid",
+				Params:    params,
+			},
+			expErr:    true,
+			expErrMsg: "invalid authority",
+		},
+		{
+			name: "invalid min milestone length",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       0,
+					MilestoneBufferTime:      params.MilestoneBufferTime,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: params.MilestoneTxConfirmations,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "min milestone length should not be zero",
+		},
+		{
+			name: "invalid milestone buffer time",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       params.MinMilestoneLength,
+					MilestoneBufferTime:      0,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: params.MilestoneTxConfirmations,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "milestone buffer time should not be zero",
+		},
+		{
+			name: "invalid milestone tx confirmations",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       params.MinMilestoneLength,
+					MilestoneBufferTime:      params.MilestoneBufferTime,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: 0,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "milestone tx confirmations should not be zero",
+		},
+		{
+			name: "invalid milestone buffer time",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params: types.Params{
+					MinMilestoneLength:       params.MinMilestoneLength,
+					MilestoneBufferTime:      0,
+					MilestoneBufferLength:    params.MilestoneBufferLength,
+					MilestoneTxConfirmations: params.MilestoneTxConfirmations,
+				},
+			},
+			expErr:    true,
+			expErrMsg: "milestone buffer time should not be zero",
+		},
+		{
+			name: "all good",
+			input: &types.MsgUpdateParams{
+				Authority: keeper.GetAuthority(),
+				Params:    params,
+			},
+			expErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		s.Run(tc.name, func() {
+			_, err := msgServer.UpdateParams(ctx, tc.input)
+
+			if tc.expErr {
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
+			} else {
+				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), keeper.GetAuthority())
+				require.NoError(err)
+
+				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+				require.NoError(err)
+				require.Equal(params, res.Params)
+			}
+		})
+	}
 }

@@ -12,14 +12,12 @@ import (
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {
-	ctx, queryClient := s.ctx, s.queryClient
-	require := s.Require()
+	ctx, require, queryClient := s.ctx, s.Require(), s.queryClient
 
 	req := &types.QueryParamsRequest{}
-
 	defaultParams := types.DefaultParams()
 
-	res, err := queryClient.Params(ctx, req)
+	res, err := queryClient.GetParams(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
@@ -27,8 +25,7 @@ func (s *KeeperTestSuite) TestQueryParams() {
 }
 
 func (s *KeeperTestSuite) TestQueryLatestMilestone() {
-	ctx, keeper, queryClient := s.ctx, s.milestoneKeeper, s.queryClient
-	require := s.Require()
+	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient
 
 	reqLatest := &types.QueryLatestMilestoneRequest{}
 	reqByNumber := &types.QueryMilestoneRequest{Number: uint64(1)}
@@ -51,17 +48,17 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 		timestamp,
 	)
 
-	res, err := queryClient.LatestMilestone(ctx, reqLatest)
+	res, err := queryClient.GetLatestMilestone(ctx, reqLatest)
 
 	require.Error(err)
 	require.Nil(res)
 
-	resByNum, err := queryClient.Milestone(ctx, reqByNumber)
+	resByNum, err := queryClient.GetMilestoneByNumber(ctx, reqByNumber)
 
 	require.Error(err)
 	require.Nil(res)
 
-	res, err = queryClient.LatestMilestone(ctx, reqLatest)
+	res, err = queryClient.GetLatestMilestone(ctx, reqLatest)
 
 	require.Error(err)
 	require.Nil(res)
@@ -69,19 +66,19 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	err = keeper.AddMilestone(ctx, milestoneBlock)
 	require.NoError(err)
 
-	res, err = queryClient.LatestMilestone(ctx, reqLatest)
+	res, err = queryClient.GetLatestMilestone(ctx, reqLatest)
 
 	require.NoError(err)
 	require.NotNil(res)
 	require.Equal(res.Milestone, milestoneBlock)
 
-	resByNum, err = queryClient.Milestone(ctx, reqByNumber)
+	resByNum, err = queryClient.GetMilestoneByNumber(ctx, reqByNumber)
 
 	require.NoError(err)
 	require.NotNil(res)
 	require.Equal(resByNum.Milestone, milestoneBlock)
 
-	resCount, err := queryClient.Count(ctx, reqCount)
+	resCount, err := queryClient.GetMilestoneCount(ctx, reqCount)
 
 	require.NoError(err)
 	require.NotNil(resCount)
@@ -90,19 +87,17 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 }
 
 func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
-	ctx, keeper, queryClient := s.ctx, s.milestoneKeeper, s.queryClient
-	require := s.Require()
+	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient
 
 	req := &types.QueryLatestNoAckMilestoneRequest{}
-
-	res, err := queryClient.LatestNoAckMilestone(ctx, req)
+	res, err := queryClient.GetLatestNoAckMilestone(ctx, req)
 	require.Nil(res)
 
 	milestoneID := "00000"
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
 
-	res, err = queryClient.LatestNoAckMilestone(ctx, req)
+	res, err = queryClient.GetLatestNoAckMilestone(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
@@ -112,20 +107,19 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
 
-	res, err = queryClient.LatestNoAckMilestone(ctx, req)
+	res, err = queryClient.GetLatestNoAckMilestone(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
 	require.Equal(res.Result, milestoneID)
 }
 func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
-	ctx, keeper, queryClient := s.ctx, s.milestoneKeeper, s.queryClient
-	require := s.Require()
+	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient
 
 	milestoneID := "00000"
 	req := &types.QueryNoAckMilestoneByIDRequest{Id: milestoneID}
 
-	res, err := queryClient.NoAckMilestoneByID(ctx, req)
+	res, err := queryClient.GetNoAckMilestoneById(ctx, req)
 	require.NotNil(res)
 	require.Nil(err)
 
@@ -134,7 +128,7 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
 
-	res, err = queryClient.NoAckMilestoneByID(ctx, req)
+	res, err = queryClient.GetNoAckMilestoneById(ctx, req)
 	require.NotNil(res)
 	require.Nil(err)
 
@@ -147,7 +141,7 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 
 	req = &types.QueryNoAckMilestoneByIDRequest{Id: milestoneID}
 
-	res, err = queryClient.NoAckMilestoneByID(ctx, req)
+	res, err = queryClient.GetNoAckMilestoneById(ctx, req)
 	require.NotNil(res)
 	require.Nil(err)
 
@@ -155,16 +149,15 @@ func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryMilestoneProposer() {
-	ctx, queryClient := s.ctx, s.queryClient
-	require := s.Require()
+	ctx, require, queryClient, stakeKeeper := s.ctx, s.Require(), s.queryClient, s.stakeKeeper
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	s.stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
+	stakeKeeper.EXPECT().GetMilestoneValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().MilestoneIncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return()
 
 	req := &types.QueryMilestoneProposerRequest{Times: 1}
 
-	res, err := queryClient.MilestoneProposer(ctx, req)
+	res, err := queryClient.GetMilestoneProposerByTimes(ctx, req)
 	require.NotNil(res)
 	require.Nil(err)
 

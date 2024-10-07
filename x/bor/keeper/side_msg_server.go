@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"bytes"
-	"context"
 	"strconv"
 
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -38,7 +37,6 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	case SpanProposeMsgTypeURL:
 		return s.SideHandleMsgSpan
 	default:
-		s.k.Logger(context.Background()).Error("unrecognized side message type", "method", methodName)
 		return nil
 	}
 }
@@ -117,7 +115,6 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	case SpanProposeMsgTypeURL:
 		return s.PostHandleMsgSpan
 	default:
-		s.k.Logger(context.Background()).Error("unrecognized side message type", "method", methodName)
 		return nil
 	}
 }

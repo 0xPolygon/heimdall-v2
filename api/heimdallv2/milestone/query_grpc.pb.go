@@ -19,13 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_Params_FullMethodName               = "/heimdallv2.milestone.Query/Params"
-	Query_Count_FullMethodName                = "/heimdallv2.milestone.Query/Count"
-	Query_LatestMilestone_FullMethodName      = "/heimdallv2.milestone.Query/LatestMilestone"
-	Query_Milestone_FullMethodName            = "/heimdallv2.milestone.Query/Milestone"
-	Query_LatestNoAckMilestone_FullMethodName = "/heimdallv2.milestone.Query/LatestNoAckMilestone"
-	Query_NoAckMilestoneByID_FullMethodName   = "/heimdallv2.milestone.Query/NoAckMilestoneByID"
-	Query_MilestoneProposer_FullMethodName    = "/heimdallv2.milestone.Query/MilestoneProposer"
+	Query_GetParams_FullMethodName                   = "/heimdallv2.milestone.Query/GetParams"
+	Query_GetMilestoneCount_FullMethodName           = "/heimdallv2.milestone.Query/GetMilestoneCount"
+	Query_GetLatestMilestone_FullMethodName          = "/heimdallv2.milestone.Query/GetLatestMilestone"
+	Query_GetMilestoneByNumber_FullMethodName        = "/heimdallv2.milestone.Query/GetMilestoneByNumber"
+	Query_GetLatestNoAckMilestone_FullMethodName     = "/heimdallv2.milestone.Query/GetLatestNoAckMilestone"
+	Query_GetNoAckMilestoneById_FullMethodName       = "/heimdallv2.milestone.Query/GetNoAckMilestoneById"
+	Query_GetMilestoneProposerByTimes_FullMethodName = "/heimdallv2.milestone.Query/GetMilestoneProposerByTimes"
 )
 
 // QueryClient is the client API for Query service.
@@ -33,19 +33,19 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
 	// Params queries for the milestone parameters
-	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// Count queries for the milestone count
-	Count(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
+	GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
 	// LatestMilestone queries for the latest milestone
-	LatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
+	GetLatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
 	// Milestone queries for the milestone based on the number
-	Milestone(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error)
+	GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error)
 	// LatestNoAckMilestone query for the LatestNoAck
-	LatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error)
+	GetLatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error)
 	// NoAckMilestoneByID query for the no-ack by ID
-	NoAckMilestoneByID(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error)
+	GetNoAckMilestoneById(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error)
 	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error)
+	GetMilestoneProposerByTimes(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error)
 }
 
 type queryClient struct {
@@ -56,63 +56,63 @@ func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
+func (c *queryClient) GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
-	err := c.cc.Invoke(ctx, Query_Params_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetParams_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Count(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error) {
+func (c *queryClient) GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error) {
 	out := new(QueryCountResponse)
-	err := c.cc.Invoke(ctx, Query_Count_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetMilestoneCount_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) LatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error) {
+func (c *queryClient) GetLatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error) {
 	out := new(QueryLatestMilestoneResponse)
-	err := c.cc.Invoke(ctx, Query_LatestMilestone_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetLatestMilestone_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Milestone(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error) {
+func (c *queryClient) GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error) {
 	out := new(QueryMilestoneResponse)
-	err := c.cc.Invoke(ctx, Query_Milestone_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetMilestoneByNumber_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) LatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error) {
+func (c *queryClient) GetLatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error) {
 	out := new(QueryLatestNoAckMilestoneResponse)
-	err := c.cc.Invoke(ctx, Query_LatestNoAckMilestone_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetLatestNoAckMilestone_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) NoAckMilestoneByID(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error) {
+func (c *queryClient) GetNoAckMilestoneById(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error) {
 	out := new(QueryNoAckMilestoneByIDResponse)
-	err := c.cc.Invoke(ctx, Query_NoAckMilestoneByID_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetNoAckMilestoneById_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error) {
+func (c *queryClient) GetMilestoneProposerByTimes(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error) {
 	out := new(QueryMilestoneProposerResponse)
-	err := c.cc.Invoke(ctx, Query_MilestoneProposer_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetMilestoneProposerByTimes_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,19 +124,19 @@ func (c *queryClient) MilestoneProposer(ctx context.Context, in *QueryMilestoneP
 // for forward compatibility
 type QueryServer interface {
 	// Params queries for the milestone parameters
-	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	GetParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// Count queries for the milestone count
-	Count(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
+	GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
 	// LatestMilestone queries for the latest milestone
-	LatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)
+	GetLatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)
 	// Milestone queries for the milestone based on the number
-	Milestone(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
+	GetMilestoneByNumber(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
 	// LatestNoAckMilestone query for the LatestNoAck
-	LatestNoAckMilestone(context.Context, *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error)
+	GetLatestNoAckMilestone(context.Context, *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error)
 	// NoAckMilestoneByID query for the no-ack by ID
-	NoAckMilestoneByID(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error)
+	GetNoAckMilestoneById(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error)
 	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
+	GetMilestoneProposerByTimes(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -144,26 +144,26 @@ type QueryServer interface {
 type UnimplementedQueryServer struct {
 }
 
-func (UnimplementedQueryServer) Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
+func (UnimplementedQueryServer) GetParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetParams not implemented")
 }
-func (UnimplementedQueryServer) Count(context.Context, *QueryCountRequest) (*QueryCountResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Count not implemented")
+func (UnimplementedQueryServer) GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneCount not implemented")
 }
-func (UnimplementedQueryServer) LatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LatestMilestone not implemented")
+func (UnimplementedQueryServer) GetLatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestMilestone not implemented")
 }
-func (UnimplementedQueryServer) Milestone(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Milestone not implemented")
+func (UnimplementedQueryServer) GetMilestoneByNumber(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneByNumber not implemented")
 }
-func (UnimplementedQueryServer) LatestNoAckMilestone(context.Context, *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LatestNoAckMilestone not implemented")
+func (UnimplementedQueryServer) GetLatestNoAckMilestone(context.Context, *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestNoAckMilestone not implemented")
 }
-func (UnimplementedQueryServer) NoAckMilestoneByID(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NoAckMilestoneByID not implemented")
+func (UnimplementedQueryServer) GetNoAckMilestoneById(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNoAckMilestoneById not implemented")
 }
-func (UnimplementedQueryServer) MilestoneProposer(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MilestoneProposer not implemented")
+func (UnimplementedQueryServer) GetMilestoneProposerByTimes(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneProposerByTimes not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -178,128 +178,128 @@ func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
 	s.RegisterService(&Query_ServiceDesc, srv)
 }
 
-func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryParamsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Params(ctx, in)
+		return srv.(QueryServer).GetParams(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_Params_FullMethodName,
+		FullMethod: Query_GetParams_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Params(ctx, req.(*QueryParamsRequest))
+		return srv.(QueryServer).GetParams(ctx, req.(*QueryParamsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Count_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetMilestoneCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryCountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Count(ctx, in)
+		return srv.(QueryServer).GetMilestoneCount(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_Count_FullMethodName,
+		FullMethod: Query_GetMilestoneCount_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Count(ctx, req.(*QueryCountRequest))
+		return srv.(QueryServer).GetMilestoneCount(ctx, req.(*QueryCountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_LatestMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetLatestMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryLatestMilestoneRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).LatestMilestone(ctx, in)
+		return srv.(QueryServer).GetLatestMilestone(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_LatestMilestone_FullMethodName,
+		FullMethod: Query_GetLatestMilestone_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).LatestMilestone(ctx, req.(*QueryLatestMilestoneRequest))
+		return srv.(QueryServer).GetLatestMilestone(ctx, req.(*QueryLatestMilestoneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Milestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetMilestoneByNumber_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryMilestoneRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Milestone(ctx, in)
+		return srv.(QueryServer).GetMilestoneByNumber(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_Milestone_FullMethodName,
+		FullMethod: Query_GetMilestoneByNumber_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Milestone(ctx, req.(*QueryMilestoneRequest))
+		return srv.(QueryServer).GetMilestoneByNumber(ctx, req.(*QueryMilestoneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_LatestNoAckMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetLatestNoAckMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryLatestNoAckMilestoneRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).LatestNoAckMilestone(ctx, in)
+		return srv.(QueryServer).GetLatestNoAckMilestone(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_LatestNoAckMilestone_FullMethodName,
+		FullMethod: Query_GetLatestNoAckMilestone_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).LatestNoAckMilestone(ctx, req.(*QueryLatestNoAckMilestoneRequest))
+		return srv.(QueryServer).GetLatestNoAckMilestone(ctx, req.(*QueryLatestNoAckMilestoneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_NoAckMilestoneByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetNoAckMilestoneById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryNoAckMilestoneByIDRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).NoAckMilestoneByID(ctx, in)
+		return srv.(QueryServer).GetNoAckMilestoneById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_NoAckMilestoneByID_FullMethodName,
+		FullMethod: Query_GetNoAckMilestoneById_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).NoAckMilestoneByID(ctx, req.(*QueryNoAckMilestoneByIDRequest))
+		return srv.(QueryServer).GetNoAckMilestoneById(ctx, req.(*QueryNoAckMilestoneByIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_MilestoneProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetMilestoneProposerByTimes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryMilestoneProposerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).MilestoneProposer(ctx, in)
+		return srv.(QueryServer).GetMilestoneProposerByTimes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_MilestoneProposer_FullMethodName,
+		FullMethod: Query_GetMilestoneProposerByTimes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).MilestoneProposer(ctx, req.(*QueryMilestoneProposerRequest))
+		return srv.(QueryServer).GetMilestoneProposerByTimes(ctx, req.(*QueryMilestoneProposerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -312,32 +312,32 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Params",
-			Handler:    _Query_Params_Handler,
+			MethodName: "GetParams",
+			Handler:    _Query_GetParams_Handler,
 		},
 		{
-			MethodName: "Count",
-			Handler:    _Query_Count_Handler,
+			MethodName: "GetMilestoneCount",
+			Handler:    _Query_GetMilestoneCount_Handler,
 		},
 		{
-			MethodName: "LatestMilestone",
-			Handler:    _Query_LatestMilestone_Handler,
+			MethodName: "GetLatestMilestone",
+			Handler:    _Query_GetLatestMilestone_Handler,
 		},
 		{
-			MethodName: "Milestone",
-			Handler:    _Query_Milestone_Handler,
+			MethodName: "GetMilestoneByNumber",
+			Handler:    _Query_GetMilestoneByNumber_Handler,
 		},
 		{
-			MethodName: "LatestNoAckMilestone",
-			Handler:    _Query_LatestNoAckMilestone_Handler,
+			MethodName: "GetLatestNoAckMilestone",
+			Handler:    _Query_GetLatestNoAckMilestone_Handler,
 		},
 		{
-			MethodName: "NoAckMilestoneByID",
-			Handler:    _Query_NoAckMilestoneByID_Handler,
+			MethodName: "GetNoAckMilestoneById",
+			Handler:    _Query_GetNoAckMilestoneById_Handler,
 		},
 		{
-			MethodName: "MilestoneProposer",
-			Handler:    _Query_MilestoneProposer_Handler,
+			MethodName: "GetMilestoneProposerByTimes",
+			Handler:    _Query_GetMilestoneProposerByTimes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

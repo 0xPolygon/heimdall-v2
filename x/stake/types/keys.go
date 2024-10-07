@@ -7,8 +7,13 @@ import (
 const (
 	// ModuleName is the name of the staking module
 	ModuleName = "stake"
+
 	// StoreKey is the string store representation
 	StoreKey = ModuleName
+
+	// RouterKey is the msg router key for the stake module
+	RouterKey = ModuleName
+
 	// DefaultLogIndexUnit represents the default unit for txHash + logIndex
 	DefaultLogIndexUnit = 100000
 )

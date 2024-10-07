@@ -107,6 +107,9 @@ func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) 
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
 
+// QuerierRoute returns the milestone module's querier route name.
+func (AppModule) QuerierRoute() string { return types.RouterKey }
+
 // InitGenesis performs genesis initialization for the milestone module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	var genesisState types.GenesisState

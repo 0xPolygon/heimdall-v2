@@ -6,6 +6,7 @@ import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/types/dividend_account.proto";
+import "heimdallv2/topup/topup.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
@@ -16,41 +17,39 @@ service Query {
   rpc IsTopupTxOld(QueryTopupSequenceRequest)
       returns (QueryIsTopupTxOldResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/topup/isoldtx";
+    option (google.api.http).get = "/topup/isoldtx";
   }
   // GetTopupTxSequence queries for a specific topup tx and returns its sequence
   rpc GetTopupTxSequence(QueryTopupSequenceRequest)
       returns (QueryTopupSequenceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/topup/sequence";
+    option (google.api.http).get = "/topup/sequence";
   }
   // GetDividendAccountByAddress queries for a specific DividendAccount by its
   // address
   rpc GetDividendAccountByAddress(QueryDividendAccountRequest)
       returns (QueryDividendAccountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get =
-        "/heimdallv2/topup/dividend-account/{address}";
+    option (google.api.http).get = "/topup/dividend-account/{address}";
   }
   // GetDividendAccountRootHash calculates and returns the dividend account root
   // hash
   rpc GetDividendAccountRootHash(QueryDividendAccountRootHashRequest)
       returns (QueryDividendAccountRootHashResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/topup/dividend-account-root";
+    option (google.api.http).get = "/topup/dividend-account-root";
   }
   // VerifyAccountProof queries for the proof of an account given its address
-  rpc VerifyAccountProof(QueryVerifyAccountProofRequest)
+  rpc VerifyAccountProofByAddress(QueryVerifyAccountProofRequest)
       returns (QueryVerifyAccountProofResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get =
-        "/heimdallv2/topup/account-proof/{address}/verify";
+    option (google.api.http).get = "/topup/account-proof/{address}/verify";
   }
   // GetAccountProof queries for the account proof of a given address
-  rpc GetAccountProof(QueryAccountProofRequest)
+  rpc GetAccountProofByAddress(QueryAccountProofRequest)
       returns (QueryAccountProofResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/heimdallv2/topup/account-proof/{address}";
+    option (google.api.http).get = "/topup/account-proof/{address}";
   }
 }
 
@@ -110,11 +109,3 @@ message QueryAccountProofRequest {
 // QueryAccountProofResponse the is response type for the GetAccountProof RPC
 // method
 message QueryAccountProofResponse { AccountProof proof = 1; }
-
-// AccountProof embeds user and account info for the the
-// QueryAccountProofResponse
-message AccountProof {
-  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  bytes account_proof = 2;
-  uint64 index = 3;
-}

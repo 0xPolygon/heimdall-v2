@@ -750,55 +750,57 @@ func init() {
 func init() { proto.RegisterFile("heimdallv2/milestone/query.proto", fileDescriptor_2569eb9c5aa780c5) }
 
 var fileDescriptor_2569eb9c5aa780c5 = []byte{
-	// 759 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0xcd, 0x6e, 0xd3, 0x4a,
-	0x14, 0x8e, 0x7b, 0x6f, 0xa2, 0xe6, 0x74, 0x71, 0x6f, 0x26, 0x69, 0x6f, 0xe5, 0x34, 0x6e, 0xae,
-	0x41, 0x22, 0xfc, 0x34, 0xa6, 0x6e, 0x69, 0x37, 0x48, 0x40, 0xe8, 0x02, 0xa4, 0x82, 0x4a, 0x17,
-	0x5d, 0xb0, 0x73, 0x92, 0x21, 0xb5, 0x6a, 0x7b, 0x5c, 0xcf, 0x24, 0x6a, 0x54, 0x65, 0xc3, 0xaa,
-	0x4b, 0x24, 0x36, 0x3c, 0x01, 0xaa, 0x10, 0x0b, 0x1e, 0xa3, 0xcb, 0x4a, 0x6c, 0x58, 0x21, 0xd4,
-	0x22, 0xf1, 0x1a, 0x28, 0xe3, 0x71, 0xec, 0x38, 0x6e, 0xd2, 0x2c, 0xd8, 0x54, 0xd6, 0x99, 0xf3,
-	0xfd, 0x9c, 0x33, 0xfd, 0x46, 0x81, 0xf2, 0x3e, 0x36, 0xed, 0xa6, 0x61, 0x59, 0x1d, 0x5d, 0xb3,
-	0x4d, 0x0b, 0x53, 0x46, 0x1c, 0xac, 0x1d, 0xb6, 0xb1, 0xd7, 0xad, 0xba, 0x1e, 0x61, 0x04, 0x15,
-	0xc2, 0x8e, 0xea, 0xa0, 0x43, 0x2e, 0xb4, 0x48, 0x8b, 0xf0, 0x06, 0xad, 0xff, 0xe5, 0xf7, 0xca,
-	0x4b, 0x2d, 0x42, 0x5a, 0x16, 0xd6, 0x0c, 0xd7, 0xd4, 0x0c, 0xc7, 0x21, 0xcc, 0x60, 0x26, 0x71,
-	0xa8, 0x38, 0x2d, 0x36, 0x08, 0xb5, 0x09, 0xf5, 0xd9, 0xb5, 0xce, 0x6a, 0x54, 0x46, 0xce, 0x19,
-	0xb6, 0xe9, 0x10, 0x8d, 0xff, 0x15, 0xa5, 0x9b, 0x89, 0xde, 0x06, 0x5f, 0xa2, 0x2b, 0x3a, 0x01,
-	0x65, 0xc6, 0x01, 0xd6, 0x3a, 0x86, 0x65, 0x36, 0x0d, 0x46, 0x3c, 0xbf, 0x43, 0x2d, 0x00, 0x7a,
-	0xd5, 0x57, 0xda, 0x31, 0x3c, 0xc3, 0xa6, 0xbb, 0xf8, 0xb0, 0x8d, 0x29, 0x53, 0xf7, 0x20, 0x3f,
-	0x54, 0xa5, 0x2e, 0x71, 0x28, 0x46, 0x8f, 0x20, 0xe3, 0xf2, 0xca, 0xa2, 0x54, 0x96, 0x2a, 0x73,
-	0xfa, 0x52, 0x35, 0x69, 0xfe, 0xaa, 0x8f, 0xaa, 0x65, 0xcf, 0xbe, 0x2f, 0xa7, 0x4e, 0x7f, 0x7d,
-	0xb9, 0x23, 0xed, 0x0a, 0x98, 0x9a, 0x87, 0x1c, 0xe7, 0x7d, 0x4a, 0xda, 0x0e, 0x0b, 0xc4, 0x56,
-	0x85, 0x05, 0x51, 0x14, 0x5a, 0x45, 0x48, 0x37, 0xfa, 0x05, 0x2e, 0xf5, 0x77, 0x2d, 0xed, 0x13,
-	0xf9, 0x35, 0xf5, 0x3f, 0x98, 0xe7, 0x90, 0x6d, 0x83, 0xb2, 0x97, 0xe4, 0x49, 0xe3, 0x20, 0xe0,
-	0xda, 0x84, 0x85, 0xf8, 0x81, 0xe0, 0x2b, 0x41, 0xc6, 0xc3, 0xb4, 0x6d, 0xc5, 0x08, 0x45, 0x51,
-	0x2d, 0x41, 0x51, 0x00, 0x19, 0xa6, 0xec, 0x45, 0x30, 0x4b, 0xc0, 0xbb, 0x0f, 0x4b, 0xc9, 0xc7,
-	0x82, 0xfd, 0x19, 0x64, 0x07, 0xf3, 0x8b, 0xe5, 0x2c, 0x27, 0x2f, 0x67, 0x80, 0x8d, 0xee, 0x27,
-	0x04, 0xab, 0x1b, 0x62, 0xb4, 0xb8, 0x85, 0xfe, 0x00, 0x4e, 0xdb, 0xae, 0x63, 0x2f, 0x36, 0x80,
-	0x5f, 0x54, 0xeb, 0x62, 0xf2, 0x3f, 0xe9, 0x4d, 0x85, 0x72, 0x64, 0x0b, 0x7c, 0xbf, 0x23, 0x9b,
-	0xaa, 0xc1, 0xff, 0x63, 0x7a, 0x12, 0x2f, 0x23, 0x1b, 0xbf, 0x8c, 0x4d, 0x50, 0x38, 0xc7, 0x30,
-	0xba, 0xd6, 0x7d, 0xbe, 0x15, 0x2c, 0x63, 0x1e, 0x66, 0xcc, 0xe6, 0x30, 0x78, 0xc6, 0x6c, 0xaa,
-	0x8f, 0x61, 0xf9, 0x4a, 0x60, 0xa2, 0xf4, 0x6c, 0x5c, 0xfa, 0x21, 0x94, 0x86, 0xd7, 0xb8, 0xe3,
-	0x11, 0x97, 0x50, 0xec, 0x05, 0xca, 0x45, 0x48, 0x33, 0xd3, 0xc6, 0x34, 0xf6, 0x7f, 0xc9, 0x6b,
-	0xea, 0x1b, 0x61, 0x3c, 0x01, 0x2d, 0xe4, 0xb7, 0x20, 0xeb, 0x8a, 0x5a, 0x9f, 0xe2, 0xaf, 0xca,
-	0x9c, 0x5e, 0x8c, 0x5e, 0x06, 0x4f, 0x69, 0x75, 0x2f, 0x48, 0xe9, 0xd0, 0x45, 0x0c, 0x80, 0xfa,
-	0xa7, 0x59, 0x48, 0x73, 0x21, 0xd4, 0x83, 0x8c, 0x1f, 0x37, 0x54, 0x49, 0xbe, 0xd3, 0xd1, 0x74,
-	0xcb, 0xb7, 0xaf, 0xd1, 0xe9, 0xdb, 0x55, 0x95, 0x93, 0xbe, 0xf4, 0xdb, 0xaf, 0x3f, 0xdf, 0xcf,
-	0xe4, 0x51, 0x2e, 0xf2, 0xd2, 0xf8, 0x81, 0x46, 0x5d, 0x48, 0xf3, 0xd8, 0xa2, 0x5b, 0x63, 0x38,
-	0xa3, 0x69, 0x97, 0x2b, 0x93, 0x1b, 0x85, 0x76, 0x29, 0xd4, 0x46, 0xe8, 0xdf, 0x88, 0x36, 0x7f,
-	0x03, 0xd0, 0x07, 0x09, 0xfe, 0x89, 0xc5, 0x11, 0xad, 0x8e, 0x21, 0x4f, 0x4e, 0xb6, 0xac, 0x4f,
-	0x03, 0x99, 0xb4, 0x15, 0x8b, 0x03, 0xd0, 0x89, 0x04, 0xd9, 0xd0, 0xd4, 0xdd, 0x31, 0x0a, 0x23,
-	0x76, 0xee, 0x5d, 0xaf, 0x59, 0x18, 0x29, 0x87, 0x46, 0xe6, 0x51, 0x3e, 0x62, 0xe4, 0xd8, 0x7f,
-	0x15, 0x7a, 0xe8, 0xb3, 0x04, 0x85, 0xa4, 0x28, 0xa2, 0x8d, 0x89, 0x73, 0x27, 0xe6, 0x5b, 0xde,
-	0x9c, 0x1a, 0x27, 0xbc, 0xde, 0x08, 0xbd, 0x2e, 0xa2, 0x85, 0xa1, 0xa5, 0x51, 0xb6, 0xe2, 0x90,
-	0x15, 0xa3, 0x71, 0x80, 0x3e, 0x4a, 0x80, 0x46, 0xc3, 0x8b, 0xd6, 0xc7, 0x88, 0x5e, 0xf9, 0x48,
-	0xc8, 0x0f, 0xa6, 0x44, 0x4d, 0x32, 0xea, 0x7b, 0xd4, 0x8e, 0xcd, 0x66, 0x0f, 0x9d, 0x4a, 0x90,
-	0x1b, 0x49, 0x39, 0x5a, 0xbb, 0xce, 0xed, 0xc5, 0x5e, 0x14, 0x79, 0x7d, 0x3a, 0x90, 0x70, 0x59,
-	0x09, 0x5d, 0x96, 0x50, 0x31, 0x9a, 0x4c, 0xd1, 0xa9, 0x1d, 0xf3, 0x37, 0xa9, 0x57, 0xdb, 0x3e,
-	0xbb, 0x50, 0xa4, 0xf3, 0x0b, 0x45, 0xfa, 0x71, 0xa1, 0x48, 0xef, 0x2e, 0x95, 0xd4, 0xf9, 0xa5,
-	0x92, 0xfa, 0x76, 0xa9, 0xa4, 0x5e, 0xeb, 0x2d, 0x93, 0xed, 0xb7, 0xeb, 0xd5, 0x06, 0xb1, 0xb5,
-	0xfb, 0x47, 0x3b, 0xc4, 0xea, 0xb6, 0x88, 0xa3, 0x05, 0x6e, 0x56, 0x3a, 0xba, 0x76, 0x14, 0x21,
-	0x66, 0x5d, 0x17, 0xd3, 0x7a, 0x86, 0xff, 0x6e, 0x58, 0xfb, 0x1d, 0x00, 0x00, 0xff, 0xff, 0x85,
-	0xda, 0x7e, 0xde, 0x1d, 0x09, 0x00, 0x00,
+	// 790 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0x4f, 0x6b, 0x13, 0x5f,
+	0x14, 0xcd, 0xf4, 0xf7, 0x4b, 0x69, 0x6e, 0x37, 0xe6, 0x25, 0x69, 0xcb, 0xa4, 0x99, 0xc6, 0x51,
+	0x30, 0xfe, 0x69, 0xc6, 0xa6, 0xb5, 0xdd, 0x08, 0x6a, 0x2c, 0x44, 0xa1, 0x96, 0x5a, 0xa4, 0x0b,
+	0x77, 0x93, 0xe4, 0x99, 0x0e, 0x9d, 0x99, 0x97, 0xce, 0x7b, 0x09, 0x0d, 0xa5, 0x20, 0x82, 0xe0,
+	0x52, 0xe8, 0xd2, 0x2f, 0xa0, 0x2b, 0xc5, 0x4f, 0xd1, 0x65, 0xc1, 0x8d, 0x6e, 0x44, 0x5a, 0xc1,
+	0xaf, 0x21, 0x79, 0xf3, 0x26, 0x99, 0x99, 0x4c, 0x93, 0x66, 0xe1, 0xa6, 0x0c, 0xf7, 0xdd, 0x73,
+	0xcf, 0xb9, 0xf7, 0xf6, 0x5c, 0x02, 0xf9, 0x5d, 0x6c, 0x58, 0x75, 0xdd, 0x34, 0xdb, 0x25, 0xcd,
+	0x32, 0x4c, 0x4c, 0x19, 0xb1, 0xb1, 0xb6, 0xdf, 0xc2, 0x4e, 0xa7, 0xd8, 0x74, 0x08, 0x23, 0x28,
+	0xdd, 0xcf, 0x28, 0xf6, 0x32, 0xe4, 0x74, 0x83, 0x34, 0x08, 0x4f, 0xd0, 0xba, 0x5f, 0x6e, 0xae,
+	0x3c, 0xdf, 0x20, 0xa4, 0x61, 0x62, 0x4d, 0x6f, 0x1a, 0x9a, 0x6e, 0xdb, 0x84, 0xe9, 0xcc, 0x20,
+	0x36, 0x15, 0xaf, 0xd9, 0x1a, 0xa1, 0x16, 0xa1, 0x6e, 0x75, 0xad, 0xbd, 0xe4, 0xa7, 0x91, 0x93,
+	0xba, 0x65, 0xd8, 0x44, 0xe3, 0x7f, 0x45, 0xe8, 0x7a, 0xa4, 0xb6, 0xde, 0x97, 0xc8, 0xf2, 0x77,
+	0x40, 0x99, 0xbe, 0x87, 0xb5, 0xb6, 0x6e, 0x1a, 0x75, 0x9d, 0x11, 0xc7, 0xcd, 0x50, 0xd3, 0x80,
+	0x9e, 0x77, 0x99, 0xb6, 0x74, 0x47, 0xb7, 0xe8, 0x36, 0xde, 0x6f, 0x61, 0xca, 0xd4, 0x1d, 0x48,
+	0x05, 0xa2, 0xb4, 0x49, 0x6c, 0x8a, 0xd1, 0x03, 0x98, 0x6c, 0xf2, 0xc8, 0x9c, 0x94, 0x97, 0x0a,
+	0xd3, 0xa5, 0xf9, 0x62, 0x54, 0xff, 0x45, 0x17, 0x55, 0x4e, 0x9c, 0xfc, 0x5c, 0x88, 0x7d, 0xfc,
+	0xf3, 0xe5, 0x96, 0xb4, 0x2d, 0x60, 0x6a, 0x0a, 0x92, 0xbc, 0xee, 0x63, 0xd2, 0xb2, 0x99, 0x47,
+	0xb6, 0x24, 0x24, 0x88, 0xa0, 0xe0, 0xca, 0x42, 0xbc, 0xd6, 0x0d, 0x70, 0xaa, 0xff, 0xcb, 0x71,
+	0xb7, 0x90, 0x1b, 0x53, 0x67, 0x21, 0xc3, 0x21, 0x1b, 0x3a, 0x65, 0x9b, 0xe4, 0x51, 0x6d, 0xcf,
+	0xab, 0xb5, 0x06, 0x33, 0xe1, 0x07, 0x51, 0x2f, 0x07, 0x93, 0x0e, 0xa6, 0x2d, 0x33, 0x54, 0x50,
+	0x04, 0xd5, 0x1c, 0x64, 0x05, 0x90, 0x61, 0xca, 0x9e, 0x79, 0xbd, 0x78, 0x75, 0x77, 0x61, 0x3e,
+	0xfa, 0x59, 0x54, 0x7f, 0x02, 0x89, 0x5e, 0xff, 0x62, 0x38, 0x0b, 0xd1, 0xc3, 0xe9, 0x61, 0xfd,
+	0xf3, 0xe9, 0x83, 0xd5, 0x55, 0xd1, 0x5a, 0x58, 0x42, 0xb7, 0x01, 0xbb, 0x65, 0x55, 0xb1, 0x13,
+	0x6a, 0xc0, 0x0d, 0xaa, 0x55, 0xd1, 0xf9, 0xbf, 0xd4, 0xa6, 0x42, 0xde, 0x37, 0x05, 0x3e, 0xdf,
+	0x81, 0x49, 0x95, 0xe1, 0xea, 0x90, 0x9c, 0xc8, 0x65, 0x24, 0xc2, 0xcb, 0x58, 0x03, 0x85, 0xd7,
+	0x08, 0xa2, 0xcb, 0x9d, 0xa7, 0xeb, 0xde, 0x30, 0x32, 0x30, 0x61, 0xd4, 0x83, 0xe0, 0x09, 0xa3,
+	0xae, 0x3e, 0x84, 0x85, 0x0b, 0x81, 0x91, 0xd4, 0x53, 0x61, 0xea, 0xfb, 0x90, 0x0b, 0x8e, 0x71,
+	0xcb, 0x21, 0x4d, 0x42, 0xb1, 0xe3, 0x31, 0x67, 0x21, 0xce, 0x0c, 0x0b, 0xd3, 0xd0, 0xff, 0x25,
+	0x8f, 0xa9, 0xaf, 0x84, 0xf0, 0x08, 0xb4, 0xa0, 0x5f, 0x87, 0x44, 0x53, 0xc4, 0xba, 0x25, 0xfe,
+	0x2b, 0x4c, 0x97, 0xb2, 0xfe, 0x65, 0x70, 0x97, 0x16, 0x77, 0x3c, 0x97, 0x06, 0x16, 0xd1, 0x03,
+	0x96, 0x7e, 0x4c, 0x41, 0x9c, 0x13, 0xa1, 0xd7, 0x12, 0x24, 0x2a, 0x98, 0xb9, 0x96, 0x43, 0x85,
+	0xe8, 0xbd, 0x0e, 0x3a, 0x5c, 0xbe, 0x79, 0x89, 0x4c, 0x57, 0xb2, 0xaa, 0xbc, 0xeb, 0xd2, 0xbf,
+	0xf9, 0xf6, 0xfb, 0x78, 0x22, 0x85, 0x92, 0xbe, 0x6b, 0xe3, 0x9a, 0x1a, 0xbd, 0x95, 0x20, 0x59,
+	0xc1, 0x7d, 0x53, 0x70, 0x1f, 0xa3, 0x1b, 0x43, 0x08, 0xfc, 0xf6, 0x97, 0x0b, 0xa3, 0x13, 0x85,
+	0x90, 0x5c, 0x5f, 0x08, 0x42, 0x57, 0x7c, 0x42, 0xf8, 0x51, 0x40, 0x1f, 0x24, 0x40, 0x15, 0xcc,
+	0x42, 0x16, 0x45, 0x4b, 0x43, 0xea, 0x47, 0xbb, 0x5d, 0x2e, 0x8d, 0x03, 0x19, 0x35, 0x25, 0x93,
+	0x03, 0xd0, 0xb1, 0x04, 0x69, 0xff, 0x94, 0xca, 0x9d, 0x4d, 0x6e, 0x5c, 0x74, 0x7b, 0x08, 0xd9,
+	0x80, 0xb2, 0x3b, 0x97, 0x4b, 0x16, 0x9a, 0xf2, 0x7d, 0x4d, 0x19, 0x94, 0xf2, 0x69, 0x3a, 0x74,
+	0x8f, 0xc6, 0x11, 0xfa, 0x2c, 0xc1, 0x6c, 0x6f, 0x66, 0x41, 0xd7, 0xa0, 0xd5, 0x91, 0x53, 0x88,
+	0xbc, 0x00, 0xf2, 0xda, 0xd8, 0x38, 0x21, 0xf7, 0x5a, 0x5f, 0xee, 0x1c, 0x9a, 0x09, 0x8c, 0x90,
+	0xb2, 0x45, 0x9b, 0x2c, 0xea, 0xb5, 0x3d, 0xf4, 0x49, 0x82, 0x4c, 0x05, 0xb3, 0x01, 0x87, 0xd7,
+	0xd1, 0xca, 0x10, 0xde, 0x0b, 0x2f, 0x89, 0x7c, 0x6f, 0x4c, 0xd4, 0x28, 0xad, 0xae, 0x4c, 0xed,
+	0xd0, 0xa8, 0x1f, 0xa1, 0xaf, 0x12, 0x64, 0xfd, 0x3b, 0xf7, 0xae, 0x41, 0xb9, 0xf3, 0xa2, 0x7b,
+	0x2e, 0xd0, 0xf2, 0x65, 0xb6, 0x19, 0x3a, 0x40, 0xf2, 0xca, 0x78, 0x20, 0xa1, 0xb7, 0xd0, 0xd7,
+	0x9b, 0x43, 0x59, 0xbf, 0x89, 0x45, 0xa6, 0x76, 0xc8, 0x4f, 0xd8, 0x51, 0x79, 0xe3, 0xe4, 0x4c,
+	0x91, 0x4e, 0xcf, 0x14, 0xe9, 0xd7, 0x99, 0x22, 0xbd, 0x3f, 0x57, 0x62, 0xa7, 0xe7, 0x4a, 0xec,
+	0xfb, 0xb9, 0x12, 0x7b, 0x59, 0x6a, 0x18, 0x6c, 0xb7, 0x55, 0x2d, 0xd6, 0x88, 0xa5, 0xdd, 0x3d,
+	0xd8, 0x22, 0x66, 0xa7, 0x41, 0x6c, 0xcd, 0x53, 0xb3, 0xd8, 0x2e, 0x69, 0x07, 0xbe, 0xc2, 0xac,
+	0xd3, 0xc4, 0xb4, 0x3a, 0xc9, 0x7f, 0x66, 0x2c, 0xff, 0x0d, 0x00, 0x00, 0xff, 0xff, 0xe7, 0xe8,
+	0x7c, 0x5e, 0x4c, 0x09, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -814,19 +816,19 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
 	// Params queries for the milestone parameters
-	Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// Count queries for the milestone count
-	Count(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
+	GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
 	// LatestMilestone queries for the latest milestone
-	LatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
+	GetLatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error)
 	// Milestone queries for the milestone based on the number
-	Milestone(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error)
+	GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error)
 	// LatestNoAckMilestone query for the LatestNoAck
-	LatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error)
+	GetLatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error)
 	// NoAckMilestoneByID query for the no-ack by ID
-	NoAckMilestoneByID(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error)
+	GetNoAckMilestoneById(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error)
 	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error)
+	GetMilestoneProposerByTimes(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error)
 }
 
 type queryClient struct {
@@ -837,63 +839,63 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) Params(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
+func (c *queryClient) GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/Params", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetParams", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Count(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error) {
+func (c *queryClient) GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error) {
 	out := new(QueryCountResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/Count", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetMilestoneCount", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) LatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error) {
+func (c *queryClient) GetLatestMilestone(ctx context.Context, in *QueryLatestMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestMilestoneResponse, error) {
 	out := new(QueryLatestMilestoneResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/LatestMilestone", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetLatestMilestone", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) Milestone(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error) {
+func (c *queryClient) GetMilestoneByNumber(ctx context.Context, in *QueryMilestoneRequest, opts ...grpc.CallOption) (*QueryMilestoneResponse, error) {
 	out := new(QueryMilestoneResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/Milestone", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetMilestoneByNumber", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) LatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error) {
+func (c *queryClient) GetLatestNoAckMilestone(ctx context.Context, in *QueryLatestNoAckMilestoneRequest, opts ...grpc.CallOption) (*QueryLatestNoAckMilestoneResponse, error) {
 	out := new(QueryLatestNoAckMilestoneResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/LatestNoAckMilestone", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetLatestNoAckMilestone", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) NoAckMilestoneByID(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error) {
+func (c *queryClient) GetNoAckMilestoneById(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error) {
 	out := new(QueryNoAckMilestoneByIDResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/NoAckMilestoneByID", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetNoAckMilestoneById", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) MilestoneProposer(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error) {
+func (c *queryClient) GetMilestoneProposerByTimes(ctx context.Context, in *QueryMilestoneProposerRequest, opts ...grpc.CallOption) (*QueryMilestoneProposerResponse, error) {
 	out := new(QueryMilestoneProposerResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/MilestoneProposer", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetMilestoneProposerByTimes", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -903,173 +905,173 @@ func (c *queryClient) MilestoneProposer(ctx context.Context, in *QueryMilestoneP
 // QueryServer is the server API for Query service.
 type QueryServer interface {
 	// Params queries for the milestone parameters
-	Params(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	GetParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// Count queries for the milestone count
-	Count(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
+	GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
 	// LatestMilestone queries for the latest milestone
-	LatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)
+	GetLatestMilestone(context.Context, *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error)
 	// Milestone queries for the milestone based on the number
-	Milestone(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
+	GetMilestoneByNumber(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
 	// LatestNoAckMilestone query for the LatestNoAck
-	LatestNoAckMilestone(context.Context, *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error)
+	GetLatestNoAckMilestone(context.Context, *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error)
 	// NoAckMilestoneByID query for the no-ack by ID
-	NoAckMilestoneByID(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error)
+	GetNoAckMilestoneById(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error)
 	// MilestoneProposer queries for the milestone proposer
-	MilestoneProposer(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
+	GetMilestoneProposerByTimes(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
-func (*UnimplementedQueryServer) Params(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Params not implemented")
+func (*UnimplementedQueryServer) GetParams(ctx context.Context, req *QueryParamsRequest) (*QueryParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetParams not implemented")
 }
-func (*UnimplementedQueryServer) Count(ctx context.Context, req *QueryCountRequest) (*QueryCountResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Count not implemented")
+func (*UnimplementedQueryServer) GetMilestoneCount(ctx context.Context, req *QueryCountRequest) (*QueryCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneCount not implemented")
 }
-func (*UnimplementedQueryServer) LatestMilestone(ctx context.Context, req *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LatestMilestone not implemented")
+func (*UnimplementedQueryServer) GetLatestMilestone(ctx context.Context, req *QueryLatestMilestoneRequest) (*QueryLatestMilestoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestMilestone not implemented")
 }
-func (*UnimplementedQueryServer) Milestone(ctx context.Context, req *QueryMilestoneRequest) (*QueryMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Milestone not implemented")
+func (*UnimplementedQueryServer) GetMilestoneByNumber(ctx context.Context, req *QueryMilestoneRequest) (*QueryMilestoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneByNumber not implemented")
 }
-func (*UnimplementedQueryServer) LatestNoAckMilestone(ctx context.Context, req *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LatestNoAckMilestone not implemented")
+func (*UnimplementedQueryServer) GetLatestNoAckMilestone(ctx context.Context, req *QueryLatestNoAckMilestoneRequest) (*QueryLatestNoAckMilestoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestNoAckMilestone not implemented")
 }
-func (*UnimplementedQueryServer) NoAckMilestoneByID(ctx context.Context, req *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method NoAckMilestoneByID not implemented")
+func (*UnimplementedQueryServer) GetNoAckMilestoneById(ctx context.Context, req *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNoAckMilestoneById not implemented")
 }
-func (*UnimplementedQueryServer) MilestoneProposer(ctx context.Context, req *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method MilestoneProposer not implemented")
+func (*UnimplementedQueryServer) GetMilestoneProposerByTimes(ctx context.Context, req *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneProposerByTimes not implemented")
 }
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
 }
 
-func _Query_Params_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryParamsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Params(ctx, in)
+		return srv.(QueryServer).GetParams(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/Params",
+		FullMethod: "/heimdallv2.milestone.Query/GetParams",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Params(ctx, req.(*QueryParamsRequest))
+		return srv.(QueryServer).GetParams(ctx, req.(*QueryParamsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Count_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetMilestoneCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryCountRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Count(ctx, in)
+		return srv.(QueryServer).GetMilestoneCount(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/Count",
+		FullMethod: "/heimdallv2.milestone.Query/GetMilestoneCount",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Count(ctx, req.(*QueryCountRequest))
+		return srv.(QueryServer).GetMilestoneCount(ctx, req.(*QueryCountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_LatestMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetLatestMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryLatestMilestoneRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).LatestMilestone(ctx, in)
+		return srv.(QueryServer).GetLatestMilestone(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/LatestMilestone",
+		FullMethod: "/heimdallv2.milestone.Query/GetLatestMilestone",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).LatestMilestone(ctx, req.(*QueryLatestMilestoneRequest))
+		return srv.(QueryServer).GetLatestMilestone(ctx, req.(*QueryLatestMilestoneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_Milestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetMilestoneByNumber_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryMilestoneRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Milestone(ctx, in)
+		return srv.(QueryServer).GetMilestoneByNumber(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/Milestone",
+		FullMethod: "/heimdallv2.milestone.Query/GetMilestoneByNumber",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Milestone(ctx, req.(*QueryMilestoneRequest))
+		return srv.(QueryServer).GetMilestoneByNumber(ctx, req.(*QueryMilestoneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_LatestNoAckMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetLatestNoAckMilestone_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryLatestNoAckMilestoneRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).LatestNoAckMilestone(ctx, in)
+		return srv.(QueryServer).GetLatestNoAckMilestone(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/LatestNoAckMilestone",
+		FullMethod: "/heimdallv2.milestone.Query/GetLatestNoAckMilestone",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).LatestNoAckMilestone(ctx, req.(*QueryLatestNoAckMilestoneRequest))
+		return srv.(QueryServer).GetLatestNoAckMilestone(ctx, req.(*QueryLatestNoAckMilestoneRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_NoAckMilestoneByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetNoAckMilestoneById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryNoAckMilestoneByIDRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).NoAckMilestoneByID(ctx, in)
+		return srv.(QueryServer).GetNoAckMilestoneById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/NoAckMilestoneByID",
+		FullMethod: "/heimdallv2.milestone.Query/GetNoAckMilestoneById",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).NoAckMilestoneByID(ctx, req.(*QueryNoAckMilestoneByIDRequest))
+		return srv.(QueryServer).GetNoAckMilestoneById(ctx, req.(*QueryNoAckMilestoneByIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_MilestoneProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetMilestoneProposerByTimes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryMilestoneProposerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).MilestoneProposer(ctx, in)
+		return srv.(QueryServer).GetMilestoneProposerByTimes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/MilestoneProposer",
+		FullMethod: "/heimdallv2.milestone.Query/GetMilestoneProposerByTimes",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).MilestoneProposer(ctx, req.(*QueryMilestoneProposerRequest))
+		return srv.(QueryServer).GetMilestoneProposerByTimes(ctx, req.(*QueryMilestoneProposerRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1079,32 +1081,32 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Params",
-			Handler:    _Query_Params_Handler,
+			MethodName: "GetParams",
+			Handler:    _Query_GetParams_Handler,
 		},
 		{
-			MethodName: "Count",
-			Handler:    _Query_Count_Handler,
+			MethodName: "GetMilestoneCount",
+			Handler:    _Query_GetMilestoneCount_Handler,
 		},
 		{
-			MethodName: "LatestMilestone",
-			Handler:    _Query_LatestMilestone_Handler,
+			MethodName: "GetLatestMilestone",
+			Handler:    _Query_GetLatestMilestone_Handler,
 		},
 		{
-			MethodName: "Milestone",
-			Handler:    _Query_Milestone_Handler,
+			MethodName: "GetMilestoneByNumber",
+			Handler:    _Query_GetMilestoneByNumber_Handler,
 		},
 		{
-			MethodName: "LatestNoAckMilestone",
-			Handler:    _Query_LatestNoAckMilestone_Handler,
+			MethodName: "GetLatestNoAckMilestone",
+			Handler:    _Query_GetLatestNoAckMilestone_Handler,
 		},
 		{
-			MethodName: "NoAckMilestoneByID",
-			Handler:    _Query_NoAckMilestoneByID_Handler,
+			MethodName: "GetNoAckMilestoneById",
+			Handler:    _Query_GetNoAckMilestoneById_Handler,
 		},
 		{
-			MethodName: "MilestoneProposer",
-			Handler:    _Query_MilestoneProposer_Handler,
+			MethodName: "GetMilestoneProposerByTimes",
+			Handler:    _Query_GetMilestoneProposerByTimes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

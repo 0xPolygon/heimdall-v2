@@ -36,7 +36,7 @@ type KeeperTestSuite struct {
 
 	ctx            sdk.Context
 	keeper         clerkKeeper.Keeper
-	chainID        string
+	chainId        string
 	msgServer      types.MsgServer
 	sideMsgCfg     sidetxs.SideTxConfigurator
 	queryClient    types.QueryClient
@@ -48,28 +48,28 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (suite *KeeperTestSuite) SetupTest() {
+func (s *KeeperTestSuite) SetupTest() {
 	key := storetypes.NewKVStoreKey(types.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
-	testCtx := cosmostestutil.DefaultContextWithDB(suite.T(), key, storetypes.NewTransientStoreKey("transient_test"))
+	testCtx := cosmostestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
 	encCfg := moduletestutil.MakeTestEncodingConfig()
-	ctrl := gomock.NewController(suite.T())
+	ctrl := gomock.NewController(s.T())
 	defer ctrl.Finish()
 	chainKeeper := testutil.NewMockChainKeeper(ctrl)
-	suite.contractCaller = mocks.IContractCaller{}
+	s.contractCaller = mocks.IContractCaller{}
 
 	keeper := clerkKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
 		chainKeeper,
-		&suite.contractCaller,
+		&s.contractCaller,
 	)
 
-	suite.ctx = ctx
-	suite.keeper = keeper
+	s.ctx = ctx
+	s.keeper = keeper
 
-	suite.chainID = "15001"
+	s.chainId = "15001"
 
 	clerkGenesis := types.DefaultGenesisState()
 
@@ -77,16 +77,16 @@ func (suite *KeeperTestSuite) SetupTest() {
 
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	types.RegisterQueryServer(queryHelper, clerkKeeper.QueryServer{K: keeper})
-	suite.queryClient = types.NewQueryClient(queryHelper)
-	suite.msgServer = clerkKeeper.NewMsgServerImpl(keeper)
+	types.RegisterQueryServer(queryHelper, clerkKeeper.NewQueryServer(&keeper))
+	s.queryClient = types.NewQueryClient(queryHelper)
+	s.msgServer = clerkKeeper.NewMsgServerImpl(keeper)
 
-	suite.sideMsgCfg = sidetxs.NewSideTxConfigurator()
-	types.RegisterSideMsgServer(suite.sideMsgCfg, clerkKeeper.NewSideMsgServerImpl(keeper))
+	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
+	types.RegisterSideMsgServer(s.sideMsgCfg, clerkKeeper.NewSideMsgServerImpl(keeper))
 }
 
-func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestHasGetSetEventRecord() {
+	t, ctx, ck := s.T(), s.ctx, s.keeper
 
 	testRecord1 := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", time.Now())
 	testRecord1.RecordTime = testRecord1.RecordTime.UTC()
@@ -117,8 +117,8 @@ func (suite *KeeperTestSuite) TestHasGetSetEventRecord() {
 	require.Len(t, recordList, 1)
 }
 
-func (suite *KeeperTestSuite) TestGetEventRecordList() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestGetEventRecordList() {
+	t, ctx, ck := s.T(), s.ctx, s.keeper
 
 	var i uint64
 
@@ -161,8 +161,8 @@ func (suite *KeeperTestSuite) TestGetEventRecordList() {
 	require.Len(t, recordList, 10)
 }
 
-func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestGetEventRecordListTime() {
+	t, ctx, ck := s.T(), s.ctx, s.keeper
 
 	var i uint64
 
@@ -189,8 +189,8 @@ func (suite *KeeperTestSuite) TestGetEventRecordListTime() {
 	require.Equal(t, int64(19), recordList[len(recordList)-1].RecordTime.Unix())
 }
 
-func (suite *KeeperTestSuite) TestSetHasGetRecordSequence() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestSetHasGetRecordSequence() {
+	t, ctx, ck := s.T(), s.ctx, s.keeper
 
 	testSeq := "testseq"
 
@@ -205,8 +205,8 @@ func (suite *KeeperTestSuite) TestSetHasGetRecordSequence() {
 	require.Len(t, recordSequences, 1)
 }
 
-func (suite *KeeperTestSuite) TestInitExportGenesis() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestInitExportGenesis() {
+	t, ctx, ck := s.T(), s.ctx, s.keeper
 
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)

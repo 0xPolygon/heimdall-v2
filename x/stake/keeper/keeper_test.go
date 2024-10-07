@@ -42,9 +42,8 @@ var (
 type KeeperTestSuite struct {
 	suite.Suite
 
-	ctx         sdk.Context
-	stakeKeeper *stakeKeeper.Keeper
-
+	ctx              sdk.Context
+	stakeKeeper      *stakeKeeper.Keeper
 	contractCaller   *mocks.IContractCaller
 	checkpointKeeper *testUtil.MockCheckpointKeeper
 	bankKeeper       *testUtil.MockBankKeeper
@@ -108,12 +107,11 @@ func TestKeeperTestSuite(t *testing.T) {
 func (s *KeeperTestSuite) TestValidator() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	n := 5
 
 	validators := make([]*types.Validator, n)
-	accounts := simulation.RandomAccounts(r1, n)
+	accounts := simulation.RandomAccounts(r, n)
 
 	var err error
 
@@ -123,7 +121,7 @@ func (s *KeeperTestSuite) TestValidator() {
 			0,
 			0,
 			1,
-			int64(simulation.RandIntBetween(r1, 10, 100)), // power
+			int64(simulation.RandIntBetween(r, 10, 100)), // power
 			pk,
 			accounts[i].Address.String(),
 		)
@@ -135,7 +133,7 @@ func (s *KeeperTestSuite) TestValidator() {
 	}
 
 	// get random validator ID
-	valId := simulation.RandIntBetween(r1, 0, n)
+	valId := simulation.RandIntBetween(r, 0, n)
 
 	// get validator info from state
 	valInfo, err := keeper.GetValidatorInfo(ctx, validators[valId].Signer)
@@ -152,14 +150,13 @@ func (s *KeeperTestSuite) TestValidator() {
 
 // tests VotingPower change, validator creation, validator set update when signer changes
 func (s *KeeperTestSuite) TestUpdateSigner() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	n := 5
 
 	validators := make([]*types.Validator, n)
-	accounts := simulation.RandomAccounts(r1, n)
+	accounts := simulation.RandomAccounts(r, n)
 
 	var err error
 	for i := range validators {
@@ -168,14 +165,14 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 			0,
 			0,
 			1,
-			int64(simulation.RandIntBetween(r1, 10, 100)), // power
+			int64(simulation.RandIntBetween(r, 10, 100)), // power
 			pk,
 			accounts[i].Address.String(),
 		)
 
 		require.NoError(err)
 
-		err := keeper.AddValidator(ctx, *validators[i])
+		err = keeper.AddValidator(ctx, *validators[i])
 		require.NoErrorf(err, "Error while adding validator to store")
 	}
 
@@ -213,54 +210,51 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	require.LessOrEqual(6, len(totalValidators), "Total Validators should be six.")
 
 	// check current validators
-	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(1)
+	checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(1)
 	currentValidators := keeper.GetCurrentValidators(ctx)
 	require.LessOrEqual(5, len(currentValidators), "Current Validators should be five.")
 }
 
 func (s *KeeperTestSuite) TestCurrentValidator() {
 
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	ctx, keeper, require, sKeeper, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.stakeKeeper, s.checkpointKeeper
 
-	sKeeper := s.stakeKeeper
-
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	n := 5
 
-	accounts := simulation.RandomAccounts(r1, n)
+	accounts := simulation.RandomAccounts(r, n)
 
 	type TestDataItem struct {
 		name        string
-		startblock  uint64
+		startBlock  uint64
 		VotingPower int64
-		ackcount    uint64
+		ackCount    uint64
 		result      bool
-		resultmsg   string
+		resultMsg   string
 	}
 
 	dataItems := []TestDataItem{
 		{
 			name:        "VotingPower zero",
-			startblock:  uint64(0),
+			startBlock:  uint64(0),
 			VotingPower: int64(0),
-			ackcount:    uint64(1),
+			ackCount:    uint64(1),
 			result:      false,
-			resultmsg:   "should not be current validator as VotingPower is zero.",
+			resultMsg:   "should not be current validator as VotingPower is zero.",
 		},
 		{
-			name:        "start epoch greater than ackcount",
-			startblock:  uint64(3),
+			name:        "start epoch greater than ackCount",
+			startBlock:  uint64(3),
 			VotingPower: int64(10),
-			ackcount:    uint64(1),
+			ackCount:    uint64(1),
 			result:      false,
-			resultmsg:   "should not be current validator as start epoch greater than ackcount.",
+			resultMsg:   "should not be current validator as start epoch greater than ackCount.",
 		},
 	}
 
 	for i, item := range dataItems {
 		s.Run(item.name, func() {
-			newVal, err := types.NewValidator(1+uint64(i), item.startblock, item.startblock, uint64(0), item.VotingPower, accounts[i].PubKey, accounts[i].Address.String())
+			newVal, err := types.NewValidator(1+uint64(i), item.startBlock, item.startBlock, uint64(0), item.VotingPower, accounts[i].PubKey, accounts[i].Address.String())
 
 			require.NoError(err)
 
@@ -268,10 +262,10 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 			err = sKeeper.AddValidator(ctx, *newVal)
 			require.NoError(err)
 
-			s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(item.ackcount, nil).Times(1)
+			checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(item.ackCount, nil).Times(1)
 
 			isCurrentVal := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer)
-			require.Equal(item.result, isCurrentVal, item.resultmsg)
+			require.Equal(item.result, isCurrentVal, item.resultMsg)
 		})
 	}
 }
@@ -377,11 +371,11 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 }
 
 func (s *KeeperTestSuite) TestGetCurrentValidators() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
 
-	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
+	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, strings.ToLower(validators[0].Signer))
@@ -410,10 +404,10 @@ func (s *KeeperTestSuite) TestGetNextProposer() {
 }
 
 func (s *KeeperTestSuite) TestGetValidatorFromValID() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
+	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 
@@ -423,10 +417,10 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 }
 
 func (s *KeeperTestSuite) TestGetLastUpdated() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	testUtil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 10)
-	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
+	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
 
@@ -436,17 +430,17 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 }
 
 func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
 
 	// Test ActCount = 0
-	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(1)
+	checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(1)
 
 	valActCount0 := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(valActCount0), 4)
 
-	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(20)
+	checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(20)
 
 	validators := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(validators), 4)
@@ -511,6 +505,7 @@ func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
 
 	require.NotNil(initValSet)
 	initValSet.IncrementProposerPriority(1)
+	require.NotNil(initValSet)
 	_proposer := initValSet.Proposer
 
 	currentValSet, err := keeper.GetMilestoneValidatorSet(ctx)

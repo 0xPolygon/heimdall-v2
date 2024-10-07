@@ -101,6 +101,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&am.keeper))
 }
 
+// QuerierRoute returns the stake module's querier route name.
+func (AppModule) QuerierRoute() string { return types.RouterKey }
+
 // InitGenesis performs genesis initialization for the x/topup module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	start := time.Now()

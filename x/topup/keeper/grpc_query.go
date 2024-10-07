@@ -127,11 +127,8 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 	return &types.QueryDividendAccountResponse{DividendAccount: dividendAccount}, nil
 }
 
-func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
-	}
-
+// GetDividendAccountRootHash implements the gRPC service handler to query the root hash of all dividend accounts
+func (q queryServer) GetDividendAccountRootHash(ctx context.Context, _ *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
@@ -150,7 +147,8 @@ func (q queryServer) GetDividendAccountRootHash(ctx context.Context, req *types.
 	return &types.QueryDividendAccountRootHashResponse{AccountRootHash: accountRoot}, nil
 }
 
-func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVerifyAccountProofRequest) (*types.QueryVerifyAccountProofResponse, error) {
+// VerifyAccountProofByAddress implements the gRPC service handler to verify the account proof by its address
+func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types.QueryVerifyAccountProofRequest) (*types.QueryVerifyAccountProofResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
@@ -172,7 +170,8 @@ func (q queryServer) VerifyAccountProof(ctx context.Context, req *types.QueryVer
 
 }
 
-func (q queryServer) GetAccountProof(ctx context.Context, req *types.QueryAccountProofRequest) (*types.QueryAccountProofResponse, error) {
+// GetAccountProofByAddress implements the gRPC service handler to get the account proof by its address
+func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.QueryAccountProofRequest) (*types.QueryAccountProofResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}

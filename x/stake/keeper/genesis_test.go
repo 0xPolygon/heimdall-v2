@@ -14,15 +14,14 @@ import (
 func (s *KeeperTestSuite) TestInitExportGenesis() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	n := 5
 
 	stakingSequence := make([]string, n)
-	accounts := simulation.RandomAccounts(r1, n)
+	accounts := simulation.RandomAccounts(r, n)
 
 	for i := range stakingSequence {
-		stakingSequence[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+		stakingSequence[i] = strconv.Itoa(simulation.RandIntBetween(r, 1000, 100000))
 	}
 
 	validators := make([]*types.Validator, n)
@@ -34,7 +33,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 			0,
 			0,
 			uint64(i),
-			int64(simulation.RandIntBetween(r1, 10, 100)), // power
+			int64(simulation.RandIntBetween(r, 10, 100)), // power
 			pk1,
 			accounts[i].Address.String(),
 		)
@@ -49,6 +48,6 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 
 	actualParams := keeper.ExportGenesis(ctx)
 	require.NotNil(actualParams)
-	require.LessOrEqual(5, len(actualParams.Validators))
+	require.LessOrEqual(n, len(actualParams.Validators))
 	require.True(genesisState.CurrentValidatorSet.Equal(actualParams.CurrentValidatorSet))
 }

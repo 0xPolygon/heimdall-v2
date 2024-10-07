@@ -14,18 +14,16 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
-func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
-	ctx := suite.ctx
-	require := suite.Require()
+func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
+	ctx, require, borKeeper, sideMsgServer := s.ctx, s.Require(), s.borKeeper, s.sideMsgServer
+	testChainParams, contractCaller := chainmanagertypes.DefaultParams(), &s.contractCaller
 
-	testChainParams := chainmanagertypes.DefaultParams()
-
-	spans := suite.genTestSpans(1)
-	err := suite.borKeeper.AddNewSpan(suite.ctx, spans[0])
+	spans := s.genTestSpans(1)
+	err := borKeeper.AddNewSpan(ctx, spans[0])
 	require.NoError(err)
 
 	lastEthBlock := big.NewInt(100)
-	err = suite.borKeeper.SetLastEthBlock(ctx, lastEthBlock)
+	err = borKeeper.SetLastEthBlock(ctx, lastEthBlock)
 	require.NoError(err)
 
 	nextEthBlock := lastEthBlock.Add(lastEthBlock, big.NewInt(1))
@@ -61,7 +59,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				suite.contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
+				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
 			},
 		},
 		{
@@ -76,7 +74,7 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				suite.contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
+				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
 			},
 		},
 		{
@@ -91,39 +89,39 @@ func (suite *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
-				suite.contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
+				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
 			},
 		},
 	}
 
-	suite.contractCaller.On("GetMainChainBlock", nextEthBlock).Return(nextEthBlockHeader, nil).Times(len(testcases))
+	contractCaller.On("GetMainChainBlock", nextEthBlock).Return(nextEthBlockHeader, nil).Times(len(testcases))
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
+		s.T().Run(tc.name, func(t *testing.T) {
 
 			if tc.mockFn != nil {
 				tc.mockFn()
 			}
-			sideHandler := suite.sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
-			res := sideHandler(suite.ctx, tc.msg)
+			sideHandler := sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
+			res := sideHandler(s.ctx, tc.msg)
 			require.Equal(tc.expVote, res)
 		})
 	}
 }
 
-func (suite *KeeperTestSuite) TestPostHandleMsgEventSpan() {
-	require := suite.Require()
+func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
+	require, ctx, stakeKeeper, borKeeper, sideMsgServer := s.Require(), s.ctx, s.stakeKeeper, s.borKeeper, s.sideMsgServer
 
-	suite.stakeKeeper.EXPECT().GetSpanEligibleValidators(suite.ctx).Times(1)
-	suite.stakeKeeper.EXPECT().GetValidatorSet(suite.ctx).Times(1)
-	suite.stakeKeeper.EXPECT().GetValidatorFromValID(suite.ctx, gomock.Any()).AnyTimes()
+	stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Times(1)
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).Times(1)
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).AnyTimes()
 
 	borParams := types.DefaultParams()
-	err := suite.borKeeper.SetParams(suite.ctx, borParams)
+	err := borKeeper.SetParams(ctx, borParams)
 	require.NoError(err)
 
 	testChainParams := chainmanagertypes.DefaultParams()
-	spans := suite.genTestSpans(1)
-	err = suite.borKeeper.AddNewSpan(suite.ctx, spans[0])
+	spans := s.genTestSpans(1)
+	err = borKeeper.AddNewSpan(ctx, spans[0])
 	require.NoError(err)
 
 	testcases := []struct {
@@ -174,11 +172,11 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 	}
 
 	for _, tc := range testcases {
-		suite.T().Run(tc.name, func(t *testing.T) {
-			postHandler := suite.sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
-			postHandler(suite.ctx, tc.msg, tc.vote)
+		s.T().Run(tc.name, func(t *testing.T) {
+			postHandler := sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
+			postHandler(ctx, tc.msg, tc.vote)
 
-			lastSpan, err := suite.borKeeper.GetLastSpan(suite.ctx)
+			lastSpan, err := borKeeper.GetLastSpan(ctx)
 			require.NoError(err)
 			require.Equal(tc.expLastSpanId, lastSpan.Id)
 		})

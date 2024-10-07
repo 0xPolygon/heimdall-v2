@@ -50,6 +50,7 @@ func TestPermCheck(t *testing.T) {
 		err = PermCheck(c.filePath, c.validPerm)
 		assert.Equal(t, c.expErr, err)
 
-		os.Remove(c.filePath) // clean up
+		err = os.Remove(c.filePath) // clean up
+		assert.Nil(t, err)
 	}
 }

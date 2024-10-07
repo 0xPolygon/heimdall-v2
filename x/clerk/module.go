@@ -81,7 +81,7 @@ func (am AppModule) IsAppModule() {}
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
 	types.RegisterMsgServer(cfg, keeper.NewMsgServerImpl(am.keeper))
-	types.RegisterQueryServer(cfg, keeper.NewQueryServer(am.keeper))
+	types.RegisterQueryServer(cfg, keeper.NewQueryServer(&am.keeper))
 }
 
 // RegisterSideMsgServices registers side handler module services.

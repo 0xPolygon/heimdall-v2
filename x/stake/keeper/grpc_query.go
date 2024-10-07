@@ -26,8 +26,8 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-// CurrentValidatorSet queries all validators which are currently active in validator set
-func (q queryServer) CurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
+// GetCurrentValidatorSet queries all validators which are currently active in validator set
+func (q queryServer) GetCurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
 	validatorSet, err := q.k.GetValidatorSet(ctx)
 
 	return &types.QueryCurrentValidatorSetResponse{
@@ -35,8 +35,8 @@ func (q queryServer) CurrentValidatorSet(ctx context.Context, _ *types.QueryCurr
 	}, err
 }
 
-// Signer queries validator info for given validator address.
-func (q queryServer) Signer(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
+// GetSignerByAddress queries validator info for given validator address.
+func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -50,8 +50,8 @@ func (q queryServer) Signer(ctx context.Context, req *types.QuerySignerRequest) 
 	return &types.QuerySignerResponse{Validator: validator}, nil
 }
 
-// Validator queries validator info for a given validator id.
-func (q queryServer) Validator(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
+// GetValidatorById queries validator info for a given validator id.
+func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -65,8 +65,8 @@ func (q queryServer) Validator(ctx context.Context, req *types.QueryValidatorReq
 	return &types.QueryValidatorResponse{Validator: validator}, nil
 }
 
-// ValidatorStatus queries validator status for given validator address.
-func (q queryServer) ValidatorStatus(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
+// GetValidatorStatusByAddress queries validator status for given validator address.
+func (q queryServer) GetValidatorStatusByAddress(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -74,8 +74,8 @@ func (q queryServer) ValidatorStatus(ctx context.Context, req *types.QueryValida
 	return &types.QueryValidatorStatusResponse{IsOld: q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)}, nil
 }
 
-// TotalPower queries the total power of a validator set
-func (q queryServer) TotalPower(ctx context.Context, _ *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
+// GetTotalPower queries the total power of a validator set
+func (q queryServer) GetTotalPower(ctx context.Context, _ *types.QueryTotalPowerRequest) (*types.QueryTotalPowerResponse, error) {
 	totalPower, err := q.k.GetTotalPower(ctx)
 	if err != nil {
 		return nil, err
@@ -84,8 +84,8 @@ func (q queryServer) TotalPower(ctx context.Context, _ *types.QueryTotalPowerReq
 	return &types.QueryTotalPowerResponse{TotalPower: totalPower}, nil
 }
 
-// StakingIsOldTx queries for the staking sequence
-func (q queryServer) StakingIsOldTx(ctx context.Context, req *types.QueryStakingIsOldTxRequest) (*types.QueryStakingIsOldTxResponse, error) {
+// IsStakeTxOld queries for the staking sequence
+func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOldTxRequest) (*types.QueryStakeIsOldTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
@@ -109,8 +109,8 @@ func (q queryServer) StakingIsOldTx(ctx context.Context, req *types.QueryStaking
 
 	// check if incoming tx already exists
 	if !q.k.HasStakingSequence(ctx, sequence.String()) {
-		return &types.QueryStakingIsOldTxResponse{IsOld: false}, nil
+		return &types.QueryStakeIsOldTxResponse{IsOld: false}, nil
 	}
 
-	return &types.QueryStakingIsOldTxResponse{IsOld: true}, nil
+	return &types.QueryStakeIsOldTxResponse{IsOld: true}, nil
 }

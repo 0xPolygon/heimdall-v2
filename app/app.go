@@ -310,6 +310,7 @@ func NewHeimdallApp(
 	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[checkpointTypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		&app.StakeKeeper,
 		app.ChainManagerKeeper,
 		&app.TopupKeeper,
@@ -327,6 +328,7 @@ func NewHeimdallApp(
 	app.BorKeeper = borKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[borTypes.StoreKey]),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		&app.ChainManagerKeeper,
 		&app.StakeKeeper,
 		&app.caller,

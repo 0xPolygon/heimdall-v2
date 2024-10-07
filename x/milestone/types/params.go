@@ -16,7 +16,7 @@ func (p Params) Validate() error {
 	}
 
 	if p.MilestoneTxConfirmations == 0 {
-		return fmt.Errorf("milestone tx confirmation should not be zero")
+		return fmt.Errorf("milestone tx confirmations should not be zero")
 	}
 
 	if p.MilestoneBufferTime.Microseconds() == 0 {

@@ -39,13 +39,13 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod:      "GetAccountProof",
+					RpcMethod:      "GetAccountProofByAddress",
 					Use:            "account-proof [address]",
 					Short:          "Query account proof",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "address"}},
 				},
 				{
-					RpcMethod: "VerifyAccountProof",
+					RpcMethod: "VerifyAccountProofByAddress",
 					Use:       "verify-account-proof [address] [proof]",
 					Short:     "Verify account proof",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{

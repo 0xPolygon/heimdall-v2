@@ -6,15 +6,15 @@ import (
 
 // TestInitExportGenesis test import and export genesis state
 func (s *KeeperTestSuite) TestInitExportGenesis() {
-	chainmanagerKeeper, ctx := s.chainmanagerKeeper, s.ctx
+	cmKeeper, ctx := s.cmKeeper, s.ctx
 	require := s.Require()
 	params := types.DefaultParams()
 
 	genesisState := &types.GenesisState{
 		Params: params,
 	}
-	chainmanagerKeeper.InitGenesis(ctx, genesisState)
+	cmKeeper.InitGenesis(ctx, genesisState)
 
-	actualParams := chainmanagerKeeper.ExportGenesis(ctx)
+	actualParams := cmKeeper.ExportGenesis(ctx)
 	require.Equal(genesisState, actualParams)
 }

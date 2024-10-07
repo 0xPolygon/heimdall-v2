@@ -12,8 +12,10 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/cobra"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -42,6 +44,11 @@ func NewAppModule(
 	return AppModule{
 		keeper: keeper,
 	}
+}
+
+// GetTxCmd returns the root tx command for the bor module.
+func (am AppModule) GetTxCmd() *cobra.Command {
+	return cli.NewTxCmd()
 }
 
 // Name returns the checkpoint module's name.
@@ -96,6 +103,9 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(am.keeper))
 }
+
+// QuerierRoute returns the checkpoint module's querier route name.
+func (AppModule) QuerierRoute() string { return types.RouterKey }
 
 // InitGenesis performs genesis initialization for the checkpoint module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {

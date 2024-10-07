@@ -23,8 +23,8 @@ const (
 	Query_GetTopupTxSequence_FullMethodName          = "/heimdallv2.topup.Query/GetTopupTxSequence"
 	Query_GetDividendAccountByAddress_FullMethodName = "/heimdallv2.topup.Query/GetDividendAccountByAddress"
 	Query_GetDividendAccountRootHash_FullMethodName  = "/heimdallv2.topup.Query/GetDividendAccountRootHash"
-	Query_VerifyAccountProof_FullMethodName          = "/heimdallv2.topup.Query/VerifyAccountProof"
-	Query_GetAccountProof_FullMethodName             = "/heimdallv2.topup.Query/GetAccountProof"
+	Query_VerifyAccountProofByAddress_FullMethodName = "/heimdallv2.topup.Query/VerifyAccountProofByAddress"
+	Query_GetAccountProofByAddress_FullMethodName    = "/heimdallv2.topup.Query/GetAccountProofByAddress"
 )
 
 // QueryClient is the client API for Query service.
@@ -43,9 +43,9 @@ type QueryClient interface {
 	// hash
 	GetDividendAccountRootHash(ctx context.Context, in *QueryDividendAccountRootHashRequest, opts ...grpc.CallOption) (*QueryDividendAccountRootHashResponse, error)
 	// VerifyAccountProof queries for the proof of an account given its address
-	VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
+	VerifyAccountProofByAddress(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error)
 	// GetAccountProof queries for the account proof of a given address
-	GetAccountProof(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error)
+	GetAccountProofByAddress(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error)
 }
 
 type queryClient struct {
@@ -92,18 +92,18 @@ func (c *queryClient) GetDividendAccountRootHash(ctx context.Context, in *QueryD
 	return out, nil
 }
 
-func (c *queryClient) VerifyAccountProof(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error) {
+func (c *queryClient) VerifyAccountProofByAddress(ctx context.Context, in *QueryVerifyAccountProofRequest, opts ...grpc.CallOption) (*QueryVerifyAccountProofResponse, error) {
 	out := new(QueryVerifyAccountProofResponse)
-	err := c.cc.Invoke(ctx, Query_VerifyAccountProof_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_VerifyAccountProofByAddress_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) GetAccountProof(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error) {
+func (c *queryClient) GetAccountProofByAddress(ctx context.Context, in *QueryAccountProofRequest, opts ...grpc.CallOption) (*QueryAccountProofResponse, error) {
 	out := new(QueryAccountProofResponse)
-	err := c.cc.Invoke(ctx, Query_GetAccountProof_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetAccountProofByAddress_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,9 +126,9 @@ type QueryServer interface {
 	// hash
 	GetDividendAccountRootHash(context.Context, *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error)
 	// VerifyAccountProof queries for the proof of an account given its address
-	VerifyAccountProof(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error)
+	VerifyAccountProofByAddress(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error)
 	// GetAccountProof queries for the account proof of a given address
-	GetAccountProof(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error)
+	GetAccountProofByAddress(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -148,11 +148,11 @@ func (UnimplementedQueryServer) GetDividendAccountByAddress(context.Context, *Qu
 func (UnimplementedQueryServer) GetDividendAccountRootHash(context.Context, *QueryDividendAccountRootHashRequest) (*QueryDividendAccountRootHashResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDividendAccountRootHash not implemented")
 }
-func (UnimplementedQueryServer) VerifyAccountProof(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method VerifyAccountProof not implemented")
+func (UnimplementedQueryServer) VerifyAccountProofByAddress(context.Context, *QueryVerifyAccountProofRequest) (*QueryVerifyAccountProofResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method VerifyAccountProofByAddress not implemented")
 }
-func (UnimplementedQueryServer) GetAccountProof(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetAccountProof not implemented")
+func (UnimplementedQueryServer) GetAccountProofByAddress(context.Context, *QueryAccountProofRequest) (*QueryAccountProofResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAccountProofByAddress not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -239,38 +239,38 @@ func _Query_GetDividendAccountRootHash_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_VerifyAccountProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_VerifyAccountProofByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryVerifyAccountProofRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).VerifyAccountProof(ctx, in)
+		return srv.(QueryServer).VerifyAccountProofByAddress(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_VerifyAccountProof_FullMethodName,
+		FullMethod: Query_VerifyAccountProofByAddress_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).VerifyAccountProof(ctx, req.(*QueryVerifyAccountProofRequest))
+		return srv.(QueryServer).VerifyAccountProofByAddress(ctx, req.(*QueryVerifyAccountProofRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_GetAccountProof_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetAccountProofByAddress_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryAccountProofRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetAccountProof(ctx, in)
+		return srv.(QueryServer).GetAccountProofByAddress(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_GetAccountProof_FullMethodName,
+		FullMethod: Query_GetAccountProofByAddress_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetAccountProof(ctx, req.(*QueryAccountProofRequest))
+		return srv.(QueryServer).GetAccountProofByAddress(ctx, req.(*QueryAccountProofRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -299,12 +299,12 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetDividendAccountRootHash_Handler,
 		},
 		{
-			MethodName: "VerifyAccountProof",
-			Handler:    _Query_VerifyAccountProof_Handler,
+			MethodName: "VerifyAccountProofByAddress",
+			Handler:    _Query_VerifyAccountProofByAddress_Handler,
 		},
 		{
-			MethodName: "GetAccountProof",
-			Handler:    _Query_GetAccountProof_Handler,
+			MethodName: "GetAccountProofByAddress",
+			Handler:    _Query_GetAccountProofByAddress_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"math"
 	"strconv"
 	"strings"
@@ -319,4 +320,21 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 	})
 
 	return &types.MsgCheckpointNoAckResponse{}, nil
+}
+
+// UpdateParams defines a method to update the params in x/checkpoint module.
+func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams) (*types.MsgUpdateParamsResponse, error) {
+	if m.authority != msg.Authority {
+		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
+	}
+
+	if err := msg.Params.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := m.SetParams(ctx, msg.Params); err != nil {
+		return nil, err
+	}
+
+	return &types.MsgUpdateParamsResponse{}, nil
 }

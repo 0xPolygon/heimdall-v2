@@ -22,6 +22,7 @@ const (
 	Msg_Checkpoint_FullMethodName      = "/heimdallv2.checkpoint.Msg/Checkpoint"
 	Msg_CheckpointAck_FullMethodName   = "/heimdallv2.checkpoint.Msg/CheckpointAck"
 	Msg_CheckpointNoAck_FullMethodName = "/heimdallv2.checkpoint.Msg/CheckpointNoAck"
+	Msg_UpdateParams_FullMethodName    = "/heimdallv2.checkpoint.Msg/UpdateParams"
 )
 
 // MsgClient is the client API for Msg service.
@@ -34,6 +35,8 @@ type MsgClient interface {
 	CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opts ...grpc.CallOption) (*MsgCheckpointAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
 	CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error)
+	// CheckpointNoAck defines a method for checkpoint no ack
+	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
 
 type msgClient struct {
@@ -71,6 +74,15 @@ func (c *msgClient) CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck,
 	return out, nil
 }
 
+func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error) {
+	out := new(MsgUpdateParamsResponse)
+	err := c.cc.Invoke(ctx, Msg_UpdateParams_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MsgServer is the server API for Msg service.
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
@@ -81,6 +93,8 @@ type MsgServer interface {
 	CheckpointAck(context.Context, *MsgCheckpointAck) (*MsgCheckpointAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
 	CheckpointNoAck(context.Context, *MsgCheckpointNoAck) (*MsgCheckpointNoAckResponse, error)
+	// CheckpointNoAck defines a method for checkpoint no ack
+	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -96,6 +110,9 @@ func (UnimplementedMsgServer) CheckpointAck(context.Context, *MsgCheckpointAck) 
 }
 func (UnimplementedMsgServer) CheckpointNoAck(context.Context, *MsgCheckpointNoAck) (*MsgCheckpointNoAckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckpointNoAck not implemented")
+}
+func (UnimplementedMsgServer) UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateParams not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
 
@@ -164,6 +181,24 @@ func _Msg_CheckpointNoAck_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Msg_UpdateParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MsgUpdateParams)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MsgServer).UpdateParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Msg_UpdateParams_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MsgServer).UpdateParams(ctx, req.(*MsgUpdateParams))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Msg_ServiceDesc is the grpc.ServiceDesc for Msg service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -182,6 +217,10 @@ var Msg_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckpointNoAck",
 			Handler:    _Msg_CheckpointNoAck_Handler,
+		},
+		{
+			MethodName: "UpdateParams",
+			Handler:    _Msg_UpdateParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

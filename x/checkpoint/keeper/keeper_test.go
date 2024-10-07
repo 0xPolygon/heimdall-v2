@@ -11,6 +11,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
@@ -68,6 +70,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	keeper := checkpointKeeper.NewKeeper(
 		encCfg.Codec,
 		storeService,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.stakeKeeper,
 		s.cmKeeper,
 		s.topupKeeper,
@@ -94,8 +97,7 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 func (s *KeeperTestSuite) TestAddCheckpoint() {
-	ctx, keeper := s.ctx, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 
 	headerBlockNumber := uint64(2000)
 	startBlock := uint64(0)
@@ -121,8 +123,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {
-	ctx, keeper := s.ctx, s.checkpointKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 
 	err := keeper.FlushCheckpointBuffer(ctx)
 	require.Nil(err)

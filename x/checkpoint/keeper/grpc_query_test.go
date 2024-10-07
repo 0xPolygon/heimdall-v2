@@ -3,10 +3,13 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
+	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
+	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
@@ -76,8 +79,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
-	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
-	require := s.Require()
+	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.checkpointKeeper, s.queryClient
 
 	req := &types.QueryCheckpointBufferRequest{}
 
@@ -109,8 +111,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 }
 
 func (s *KeeperTestSuite) TestQueryLastNoAck() {
-	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
-	require := s.Require()
+	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.checkpointKeeper, s.queryClient
 
 	noAck := uint64(time.Now().Unix())
 	err := keeper.SetLastNoAck(ctx, noAck)
@@ -126,11 +127,11 @@ func (s *KeeperTestSuite) TestQueryLastNoAck() {
 }
 
 func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
-	ctx, keeper, queryClient := s.ctx, s.checkpointKeeper, s.queryClient
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
+	topupKeeper, stakeKeeper, queryClient, contractCaller := s.topupKeeper, s.stakeKeeper, s.queryClient, s.contractCaller
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	s.topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
 
 	headerNumber := uint64(1)
 	startBlock := uint64(0)
@@ -148,13 +149,13 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 		timestamp,
 	)
 
-	s.contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
+	contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
 	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
 	require.NoError(err)
 
 	req := types.QueryNextCheckpointRequest{BorChainId: BorChainID}
 
-	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	res, err := queryClient.GetNextCheckpoint(ctx, &req)
 	require.NoError(err)
 
@@ -165,12 +166,11 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 }
 
 func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
-	ctx, queryClient := s.ctx, s.queryClient
-	require := s.Require()
+	ctx, require, stakeKeeper, queryClient := s.ctx, s.Require(), s.stakeKeeper, s.queryClient
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
 
-	s.stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
+	stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
 	req := &types.QueryCurrentProposerRequest{}
 
 	res, err := queryClient.GetCurrentProposer(ctx, req)
@@ -181,19 +181,48 @@ func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
 }
 
 func (s *KeeperTestSuite) TestHandleQueryProposer() {
-	ctx, queryClient := s.ctx, s.queryClient
-	require := s.Require()
+	ctx, require, queryClient, stakeKeeper := s.ctx, s.Require(), s.queryClient, s.stakeKeeper
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
 
-	s.stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
+	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	req := &types.QueryProposerRequest{Times: 2}
 
-	res, err := queryClient.GetProposer(ctx, req)
+	res, err := queryClient.GetProposers(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
 	require.Equal(len(res.Proposers), 2)
 
 	require.Equal(res.Proposers[0].Signer, validatorSet.Proposer.Signer)
+}
+
+func (s *KeeperTestSuite) TestGetCheckpointList() {
+	ctx, keeper, cmKeeper, queryClient, require := s.ctx, s.checkpointKeeper, s.cmKeeper, s.queryClient, s.Require()
+
+	start := uint64(0)
+	maxSize := uint64(256)
+
+	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
+
+	var checkpoints []*types.Checkpoint
+	for i := 0; i < 5; i++ {
+		header := chSim.GenRandCheckpoint(start, maxSize)
+		checkpoints = append(checkpoints, &header)
+	}
+
+	expCheckpoints := make([]types.Checkpoint, 0, len(checkpoints))
+	for i, cp := range checkpoints {
+		expCheckpoints = append(expCheckpoints, *cp)
+		err := keeper.AddCheckpoint(ctx, uint64(i), *cp)
+		require.NoError(err)
+	}
+
+	res, err := queryClient.GetCheckpointList(ctx, &types.QueryCheckpointListRequest{Pagination: &query.PageRequest{Limit: 5}})
+	require.NoError(err)
+	require.Equal(expCheckpoints, res.CheckpointList)
+
+	res, err = queryClient.GetCheckpointList(ctx, &types.QueryCheckpointListRequest{Pagination: &query.PageRequest{Limit: 2}})
+	require.NoError(err)
+	require.Equal(expCheckpoints[:2], res.CheckpointList)
 }

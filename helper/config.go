@@ -188,7 +188,7 @@ type Configuration struct {
 	ClerkPollInterval        time.Duration `mapstructure:"clerk_poll_interval"`
 	SpanPollInterval         time.Duration `mapstructure:"span_poll_interval"`
 	MilestonePollInterval    time.Duration `mapstructure:"milestone_poll_interval"`
-	EnableSH                 bool          `mapstructure:"enable_self_heal"`         // Enable self healing
+	EnableSH                 bool          `mapstructure:"enable_self_heal"`         // Enable self-healing
 	SHStateSyncedInterval    time.Duration `mapstructure:"sh_state_synced_interval"` // Interval to self-heal StateSynced events if missing
 	SHStakeUpdateInterval    time.Duration `mapstructure:"sh_stake_update_interval"` // Interval to self-heal StakeUpdate events if missing
 	SHMaxDepthDuration       time.Duration `mapstructure:"sh_max_depth_duration"`    // Max duration that allows to suggest self-healing is not needed
@@ -286,7 +286,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		log.Fatalln("unable to unmarshall config", "Error", err)
 	}
 
-	//  if there is a file with overrides submitted via flags => read it an merge it with the alreadey read standard configuration
+	//  if there is a file with overrides submitted via flags => read it and merge it with the already read standard configuration
 	if heimdallConfigFileFromFlag != "" {
 		heimdallViperFromFlag := viper.New()
 		heimdallViperFromFlag.SetConfigFile(heimdallConfigFileFromFlag) // set flag config file explicitly
@@ -816,7 +816,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 		c.MainchainGasLimit = uint64ConfgValue
 	}
 
-	// get mainchain max gas price from viper/cobra. if it is greater then  zero => set it as configuration parameter
+	// get mainchain max gas price from viper/cobra. if it is greater than  zero => set it as configuration parameter
 	int64ConfgValue := v.GetInt64(MainchainMaxGasPriceFlag)
 	if int64ConfgValue > 0 {
 		c.MainchainMaxGasPrice = int64ConfgValue
