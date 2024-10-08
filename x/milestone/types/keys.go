@@ -2,7 +2,6 @@ package types
 
 import (
 	"cosmossdk.io/collections"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -14,6 +13,8 @@ const (
 
 	// RouterKey is the msg router key for the milestone module
 	RouterKey = ModuleName
+
+	StartBlock uint64 = 0
 )
 
 var (
@@ -25,8 +26,3 @@ var (
 	MilestoneNoAckPrefixKey        = collections.NewPrefix([]byte{0x86})
 	MilestoneLastNoAckKeyPrefixKey = collections.NewPrefix([]byte{0x87})
 )
-
-const StartBlock uint64 = 0
-
-// ZeroHeimdallHash represents empty heimdall hash
-var ZeroHeimdallHash = common.Hash{}.Bytes()

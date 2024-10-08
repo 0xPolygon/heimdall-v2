@@ -389,16 +389,16 @@ func NewHeimdallApp(
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
-		staketypes.ModuleName,
 		govtypes.ModuleName,
-		paramstypes.ModuleName,
-		consensusparamtypes.ModuleName,
 		chainmanagertypes.ModuleName,
-		topupTypes.ModuleName,
+		staketypes.ModuleName,
 		checkpointTypes.ModuleName,
 		milestoneTypes.ModuleName,
-		clerktypes.ModuleName,
 		borTypes.ModuleName,
+		clerktypes.ModuleName,
+		topupTypes.ModuleName,
+		paramstypes.ModuleName,
+		consensusparamtypes.ModuleName,
 	}
 
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
@@ -579,60 +579,6 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		err := app.AccountKeeper.RemoveBlockProposer(ctx)
 		if err != nil {
 			app.Logger().Error("EndBlocker | RemoveBlockProposer", "error", err)
-		}
-	}
-
-	var tmValUpdates []abci.ValidatorUpdate
-
-	// Start updating new validators
-	currentValidatorSet, err := app.StakeKeeper.GetValidatorSet(ctx)
-	if err != nil {
-		return sdk.EndBlock{}, err
-	}
-
-	allValidators := app.StakeKeeper.GetAllValidators(ctx)
-	ackCount, err := app.CheckpointKeeper.GetAckCount(ctx)
-	if err != nil {
-		return sdk.EndBlock{}, err
-	}
-
-	// get validator updates
-	setUpdates := staketypes.GetUpdatedValidators(
-		&currentValidatorSet, // pointer to current validator set -- UpdateValidators will modify it
-		allValidators,        // All validators
-		ackCount,             // ack count
-	)
-
-	if len(setUpdates) > 0 {
-		// create new validator set
-		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
-			// return with nothing
-			app.Logger().Error("unable to update current validator set", "error", err)
-			return sdk.EndBlock{}, err
-		}
-
-		// validator set change
-		app.Logger().Debug("Updated current validator set in EndBlocker", "proposer", currentValidatorSet.GetProposer())
-
-		// save set in store
-		if err := app.StakeKeeper.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
-			// return with nothing
-			app.Logger().Error("unable to update current validator set in state", "error", err)
-			return sdk.EndBlock{}, err
-		}
-
-		// convert updates from map to array
-		for _, v := range setUpdates {
-			cmtProtoPk, err := v.CmtConsPublicKey()
-			if err != nil {
-				// return with nothing
-				app.Logger().Error("unable to get validator public key", "error", err)
-				return sdk.EndBlock{}, err
-			}
-			tmValUpdates = append(tmValUpdates, abci.ValidatorUpdate{
-				Power:  v.VotingPower,
-				PubKey: cmtProtoPk,
-			})
 		}
 	}
 

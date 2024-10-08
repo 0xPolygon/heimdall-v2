@@ -119,9 +119,14 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	signer := pubKey.Address()
 	ac := addrCodec.NewHexCodec()
-	_, err = ac.BytesToString(signer.Bytes())
+	signerBytes, err := ac.StringToBytes(signer.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting signer address to string", "err", err)
+		s.k.Logger(ctx).Error("error in converting signer address to bytes", "err", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+	eventLogSignerBytes, err := ac.StringToBytes(eventLog.Signer.String())
+	if err != nil {
+		s.k.Logger(ctx).Error("error in converting event log signer address to bytes", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -145,9 +150,9 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// check signer corresponding to pubKey matches signer from event
-	if !bytes.Equal(signer.Bytes(), eventLog.Signer.Bytes()) {
+	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
 		s.k.Logger(ctx).Error(
-			"Signer Address from PubKey does not match",
+			"Signer address does not match event log signer address",
 			"Validator", signer.String(),
 			"mainChainValidator", eventLog.Signer.Hex(),
 		)
@@ -339,9 +344,22 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	}
 
 	newSigner := newPubKey.Address()
+
+	ac := addrCodec.NewHexCodec()
+	signerBytes, err := ac.StringToBytes(newSigner.String())
+	if err != nil {
+		s.k.Logger(ctx).Error("error in converting signer address to bytes", "err", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+	eventLogSignerBytes, err := ac.StringToBytes(eventLog.NewSigner.String())
+	if err != nil {
+		s.k.Logger(ctx).Error("error in converting event log signer address to bytes", "err", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	// check signer corresponding to pubKey matches signer from event
-	if !bytes.Equal(newSigner.Bytes(), eventLog.NewSigner.Bytes()) {
-		s.k.Logger(ctx).Error("signer address from pubKey does not match", "validator", newSigner.String(), "mainChainValidator", eventLog.NewSigner.Hex())
+	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
+		s.k.Logger(ctx).Error("signer address does not match event log signer address", "validator", newSigner.String(), "mainChainValidator", eventLog.NewSigner.Hex())
 		return sidetxs.Vote_VOTE_NO
 	}
 

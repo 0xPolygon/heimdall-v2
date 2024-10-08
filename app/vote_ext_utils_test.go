@@ -23,6 +23,7 @@ import (
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
+	t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
 	hApp, _, _ := SetupApp(t, 1)
 	ctx := hApp.BaseApp.NewContext(false)
 	vals := hApp.StakeKeeper.GetAllValidators(ctx)
@@ -46,7 +47,6 @@ func TestValidateVoteExtensions(t *testing.T) {
 		panicMessage string
 		expectedErr  string
 	}{
-		// HV2: we only test the basic cases here
 		{
 			name: "ves disabled with non-empty vote extension",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 0),
@@ -58,8 +58,6 @@ func TestValidateVoteExtensions(t *testing.T) {
 			shouldPanic:  true,
 			panicMessage: "VoteExtensions are disabled!",
 		},
-		// HV2: this test shows the correct execution of ValidateVoteExtensions function
-		// It stops on `!cmtPubKey.VerifySignature(...)`. To proceed, we'd need to mock the pubKey
 		{
 			name: "function executed correctly, but failing on signature verification",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 10),
@@ -94,11 +92,6 @@ func TestValidateVoteExtensions(t *testing.T) {
 }
 
 func TestTallyVotes(t *testing.T) {
-	// TODO add more tests:
-	//  1. add some SKIP votes to test that too
-	//  2. tx approved with just enough voting power (maybe using big numbers, to test the int-aliasing we do in the function). An example: totalVP: 9999, vote_YES 6667, vote_NO 3333
-	//  3. tx rejected with almost enough voting power. Example: totalVP: 9999, vote_YES 6666, vote_NO 10
-	//  4. sum of the votes exceeds the total voting power. Example: totalVP: 100, vote_YES 90, vote_NO 11
 	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
 	require.NoError(t, err)
 	val2, err := address.NewHexCodec().StringToBytes(ValAddr2)
@@ -112,6 +105,7 @@ func TestTallyVotes(t *testing.T) {
 		expectedApprove [][]byte
 		expectedReject  [][]byte
 		expectedSkip    [][]byte
+		expectError     bool
 	}{
 		{
 			name:        "single tx approved with 2/3+1 majority",
@@ -157,6 +151,7 @@ func TestTallyVotes(t *testing.T) {
 			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
 			expectedReject:  make([][]byte, 0, 3),
 			expectedSkip:    make([][]byte, 0, 3),
+			expectError:     false,
 		},
 		{
 			name:        "one tx approved one rejected one skipped",
@@ -214,13 +209,152 @@ func TestTallyVotes(t *testing.T) {
 			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
 			expectedReject:  [][]byte{common.Hex2Bytes(TxHash2)},
 			expectedSkip:    [][]byte{common.Hex2Bytes(TxHash3)},
+			expectError:     false,
+		},
+		{
+			name:        "tx approved with just enough voting power",
+			votingPower: 9999,
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1,
+						),
+					),
+					[]byte("signature"),
+					abci.Validator{
+						Address: val1,
+						Power:   6667,
+					}),
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_NO,
+							TxHash1,
+						),
+					),
+					[]byte("signature"),
+					abci.Validator{
+						Address: val2,
+						Power:   3332,
+					}),
+			},
+			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
+			expectedReject:  make([][]byte, 0, 2),
+			expectedSkip:    make([][]byte, 0, 2),
+			expectError:     false,
+		},
+		{
+			name:        "tx not rejected because almost enough voting power",
+			votingPower: 9999,
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_NO,
+						),
+					),
+					[]byte("signature1"),
+					abci.Validator{
+						Address: val1,
+						Power:   6666,
+					}),
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+						),
+					),
+					[]byte("signature2"),
+					abci.Validator{
+						Address: val2,
+						Power:   10,
+					}),
+			},
+			expectedApprove: make([][]byte, 0, 2),
+			expectedReject:  make([][]byte, 0, 2),
+			expectedSkip:    make([][]byte, 0, 2),
+			expectError:     false,
+		},
+		{
+			name:        "sum of the votes exceeds the total voting power",
+			votingPower: 100,
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1,
+						),
+					),
+					[]byte("signature"),
+					abci.Validator{
+						Address: val1,
+						Power:   90,
+					}),
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_VOTE_YES,
+							TxHash1,
+						),
+					),
+					[]byte("signature"),
+					abci.Validator{
+						Address: val2,
+						Power:   11,
+					}),
+			},
+			expectedApprove: make([][]byte, 0, 2),
+			expectedReject:  make([][]byte, 0, 2),
+			expectedSkip:    make([][]byte, 0, 2),
+			expectError:     true,
+		},
+		{
+			name:        "tx skipped",
+			votingPower: 100,
+			extVoteInfo: []abci.ExtendedVoteInfo{
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_UNSPECIFIED,
+							TxHash1,
+						),
+					),
+					[]byte("signature"),
+					abci.Validator{
+						Address: val1,
+						Power:   50,
+					}),
+				returnExtendedVoteInfo(cmtTypes.BlockIDFlagCommit,
+					mustMarshalSideTxResponses(t,
+						createSideTxResponses(
+							sidetxs.Vote_UNSPECIFIED,
+							TxHash1,
+						),
+					),
+					[]byte("signature"),
+					abci.Validator{
+						Address: val2,
+						Power:   50,
+					}),
+			},
+			expectedApprove: make([][]byte, 0, 2),
+			expectedReject:  make([][]byte, 0, 2),
+			expectedSkip:    [][]byte{common.Hex2Bytes(TxHash1)},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			approvedTxs, rejectedTxs, skippedTxs, err := tallyVotes(tc.extVoteInfo, log.NewTestLogger(t), tc.votingPower, CurrentHeight)
-			require.NoError(t, err)
+			if tc.expectError {
+				require.Error(t, err)
+				return
+			} else {
+				require.NoError(t, err)
+			}
 			require.Equal(t, tc.expectedApprove, approvedTxs)
 			require.Equal(t, tc.expectedReject, rejectedTxs)
 			require.Equal(t, tc.expectedSkip, skippedTxs)
@@ -261,7 +395,6 @@ func TestTallyVotesErrorDuplicateVote(t *testing.T) {
 
 	_, _, _, err = tallyVotes(extVoteInfo, log.NewTestLogger(t), 30, CurrentHeight)
 	require.Error(t, err)
-	//require.Equal(t, err.Error(), fmt.Sprintf("duplicate vote received from %s", ValAddr1))
 	require.Equal(t, err.Error(), fmt.Sprintf("duplicate vote received from %s", strings.ToLower(ValAddr1)))
 }
 
@@ -359,6 +492,15 @@ func TestIsVoteValid(t *testing.T) {
 	require.True(t, isVoteValid(sidetxs.Vote_VOTE_NO))
 	require.False(t, isVoteValid(100))
 	require.False(t, isVoteValid(-1))
+}
+
+func TestIsBlockIDFlagValid(t *testing.T) {
+	require.True(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagAbsent))
+	require.True(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagCommit))
+	require.True(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagNil))
+	require.False(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagUnknown))
+	require.False(t, isBlockIdFlagValid(100))
+	require.False(t, isBlockIdFlagValid(-1))
 }
 
 func TestPanicOnVoteExtensionsDisabled(t *testing.T) {

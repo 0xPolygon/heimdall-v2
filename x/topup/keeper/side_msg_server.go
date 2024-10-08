@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"math/big"
 
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -95,10 +96,11 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// TODO HV2: ensure addresses/keys consistency (see https://polygon.atlassian.net/browse/POS-2622)
-	msgAddr := common.HexToAddress(msg.User)
+	ac := address.NewHexCodec()
+	msgAddrBytes, err := ac.StringToBytes(msg.User)
+	eventLogBytes, err := ac.StringToBytes(eventLog.User.String())
 
-	if !bytes.Equal(eventLog.User.Bytes(), msgAddr.Bytes()) {
+	if !bytes.Equal(eventLogBytes, msgAddrBytes) {
 		logger.Error(
 			"user address from contract event log does not match with user from topup message",
 			"eventUser", eventLog.User.String(),

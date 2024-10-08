@@ -3,8 +3,6 @@ package cli
 import (
 	"bytes"
 	"fmt"
-	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"strconv"
 
 	"cosmossdk.io/core/address"
@@ -16,6 +14,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -65,7 +65,12 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 					return err
 				}
 
-				if !bytes.Equal(common.Hex2Bytes(proposer.Validator.Signer), helper.GetAddress()) {
+				signerBytes, err := ac.StringToBytes(proposer.Validator.Signer)
+				if err != nil {
+					return fmt.Errorf("the validator signer address is invalid: %v", err)
+				}
+
+				if !bytes.Equal(signerBytes, helper.GetAddress()) {
 					return fmt.Errorf("please wait for your turn to propose checkpoint. Checkpoint proposer: %v", proposer.Validator.Signer)
 				}
 

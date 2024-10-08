@@ -244,13 +244,40 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 	return nil
 }
 
-// GetValidatorSet returns current Validator Set from store
+// GetValidatorSet returns current validator set from store
 func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
 	k.PanicIfSetupIsIncomplete()
 	// get current validator set from store
 	validatorSet, err = k.validatorSet.Get(ctx, types.CurrentValidatorSetKey)
 	if err != nil {
 		k.Logger(ctx).Error("error in fetching current validator set from store", "error", err)
+		return validatorSet, err
+	}
+
+	// return validator set
+	return validatorSet, nil
+}
+
+// UpdatePreviousBlockValidatorSetInStore adds previous block's validator set to store
+func (k *Keeper) UpdatePreviousBlockValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
+	k.PanicIfSetupIsIncomplete()
+	// set validator set with CurrentValidatorSetKey as key in store
+	err := k.validatorSet.Set(ctx, types.PreviousBlockValidatorSetKey, newValidatorSet)
+	if err != nil {
+		k.Logger(ctx).Error("error in setting the previous block's validator set in store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+// GetPreviousBlockValidatorSet returns the previous block's validator set from store
+func (k *Keeper) GetPreviousBlockValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
+	k.PanicIfSetupIsIncomplete()
+	// get current validator set from store
+	validatorSet, err = k.validatorSet.Get(ctx, types.PreviousBlockValidatorSetKey)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching the previous block's validator set from store", "error", err)
 		return validatorSet, err
 	}
 
@@ -535,6 +562,13 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while calling the GetValidatorSet fn", "err", err)
+		return cmtValUpdates, err
+	}
+
+	// save previous block's validator set
+	err = k.UpdatePreviousBlockValidatorSetInStore(ctx, currentValidatorSet)
+	if err != nil {
+		k.Logger(ctx).Error("unable to set previous block's validator set in state", "error", err)
 		return cmtValUpdates, err
 	}
 

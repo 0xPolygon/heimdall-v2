@@ -26,10 +26,6 @@ const (
 	PriorityWindowSizeFactor = 2
 )
 
-var (
-	zeroAddress = common.Address{}.String()
-)
-
 // TODO HV2: compare the implementation of ValidatorSet with the one in the original cometBFT codebase
 //  See https://polygon.atlassian.net/browse/POS-2625
 
@@ -266,7 +262,7 @@ func (vals *ValidatorSet) GetByAddress(address string) (index int, val *Validato
 // len(ValidatorSet.Validators).
 func (vals *ValidatorSet) GetByIndex(index int) (address string, val *Validator) {
 	if index < 0 || index >= len(vals.Validators) {
-		return zeroAddress, nil
+		return common.Address{}.String(), nil
 	}
 
 	val = vals.Validators[index]

@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"math/big"
 	"strconv"
 
@@ -95,10 +96,25 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// TODO HV2: ensure addresses/keys consistency (see https://polygon.atlassian.net/browse/POS-2622)
-	msgContractAddr := common.HexToAddress(msg.ContractAddress)
+	ac := address.NewHexCodec()
+	msgContractAddrBytes, err := ac.StringToBytes(msg.ContractAddress)
+	if err != nil {
+		srv.Logger(ctx).Error(
+			"Could not generate bytes from msg contract address",
+			"MsgContractAddress", msg.ContractAddress,
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+	eventLogContractAddrBytes, err := ac.StringToBytes(msg.ContractAddress)
+	if err != nil {
+		srv.Logger(ctx).Error(
+			"Could not generate bytes from event logs contract address",
+			"EventContractAddress", eventLog.ContractAddress.String(),
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
 
-	if !bytes.Equal(eventLog.ContractAddress.Bytes(), msgContractAddr.Bytes()) {
+	if !bytes.Equal(eventLogContractAddrBytes, msgContractAddrBytes) {
 		srv.Logger(ctx).Error(
 			"ContractAddress from event does not match with Msg ContractAddress",
 			"EventContractAddress", eventLog.ContractAddress.String(),

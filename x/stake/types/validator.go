@@ -73,7 +73,7 @@ func (v *Validator) ValidateBasic() bool {
 		return false
 	}
 
-	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
+	if bytes.Equal(pk.Bytes(), EmptyPubKey[:]) {
 		return false
 	}
 

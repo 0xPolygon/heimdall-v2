@@ -2,12 +2,12 @@ package types
 
 import (
 	"bytes"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"strconv"
 
 	"cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/types"
 )
@@ -38,7 +38,7 @@ func NewMsgCheckpointBlock(
 }
 
 func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
-	if bytes.Equal(msg.RootHash, ZeroHeimdallHash) {
+	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
 	}
 
@@ -125,7 +125,7 @@ func (msg MsgCheckpointAck) ValidateBasic(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
-	if bytes.Equal(msg.RootHash, ZeroHeimdallHash) {
+	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
 	}
 

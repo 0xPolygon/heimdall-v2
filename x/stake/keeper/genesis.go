@@ -27,6 +27,12 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 	if len(vals) != 0 {
 		resultValSet := types.NewValidatorSet(vals)
 
+		// at genesis, previous validator set will be equal to current validator set
+		err := k.UpdatePreviousBlockValidatorSetInStore(ctx, *resultValSet)
+		if err != nil {
+			panic(fmt.Errorf("error updating previous validator set in store while initializing stake genesis: %w", err))
+		}
+
 		// add validators in store
 		for _, validator := range resultValSet.Validators {
 			// Add individual validator to state

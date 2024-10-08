@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -71,7 +72,7 @@ func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 	}
 
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
+	if bytes.Equal(pk.Bytes(), EmptyPubKey[:]) {
 		return ErrInvalidMsg.Wrap("signer public key can't be of zero bytes")
 	}
 
@@ -169,7 +170,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 	}
 
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
+	if bytes.Equal(pk.Bytes(), EmptyPubKey[:]) {
 		return ErrInvalidMsg.Wrap("new signer public key can't be of zero bytes")
 	}
 

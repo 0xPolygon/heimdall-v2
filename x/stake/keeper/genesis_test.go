@@ -45,6 +45,11 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 
 	genesisState := types.NewGenesisState(validators, *validatorSet, stakingSequence)
 	keeper.InitGenesis(ctx, genesisState)
+	valSet, err := keeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(err)
+	require.Equal(validatorSet.Len(), valSet.Len())
+	require.Equal(validatorSet.Proposer.Signer, valSet.Proposer.Signer)
+	require.Equal(validatorSet.TotalVotingPower, valSet.TotalVotingPower)
 
 	actualParams := keeper.ExportGenesis(ctx)
 	require.NotNil(actualParams)

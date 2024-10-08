@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"math/rand"
 	"strings"
 	"testing"
@@ -381,6 +383,147 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, strings.ToLower(validators[0].Signer))
 	require.NoError(err)
 	require.Equal(validators[0], activeValidatorInfo)
+}
+
+func (s *KeeperTestSuite) TestGetPreviousBlockValidatorSet() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	// Load 4 validators into state
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+
+	// Get the current validator set
+	currentValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Update the previous block validator set in store
+	err = keeper.UpdatePreviousBlockValidatorSetInStore(ctx, currentValSet)
+	require.NoError(err)
+
+	// Retrieve the previous block validator set
+	prevValSet, err := keeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the previous block validator set matches the current validator set
+	require.Equal(currentValSet, prevValSet, "Previous block validator set should match the current validator set")
+
+	// Call IncrementAccum, which affects the current validator set but not the previous one
+	err = keeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
+
+	// Get the updated current validator set
+	updatedValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Retrieve the previous block validator set again
+	prevValSetAfterIncrement, err := keeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the previous block validator set has not changed
+	require.Equal(prevValSet, prevValSetAfterIncrement, "Previous block validator set should not change after IncrementAccum")
+
+	// Check if the current validator set has changed
+	require.NotEqual(currentValSet, updatedValSet, "Current validator set should change after IncrementAccum")
+}
+
+func (s *KeeperTestSuite) TestUpdatePreviousBlockValidatorSetInStore() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	// Load 4 validators into state
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+
+	// Get the current validator set
+	currentValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Update the previous block validator set in store
+	err = keeper.UpdatePreviousBlockValidatorSetInStore(ctx, currentValSet)
+	require.NoError(err)
+
+	// Retrieve the previous block validator set
+	prevValSet, err := keeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the previous block validator set matches the current validator set
+	require.Equal(currentValSet, prevValSet, "Previous block validator set should match the current validator set")
+
+	// Modify the current validator set
+	currentValSet.Validators[0].VotingPower += 10
+
+	// Update the previous block validator set in store again
+	err = keeper.UpdatePreviousBlockValidatorSetInStore(ctx, currentValSet)
+	require.NoError(err)
+
+	// Retrieve the updated previous block validator set
+	updatedPrevValSet, err := keeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the updated previous block validator set matches the modified current validator set
+	require.Equal(currentValSet, updatedPrevValSet, "Updated previous block validator set should match the modified current validator set")
+
+	// Call IncrementAccum which affects the current validator set but not the previous one
+	err = keeper.IncrementAccum(ctx, 1)
+	require.NoError(err)
+
+	// Get the updated current validator set
+	updatedValSet, err := keeper.GetValidatorSet(ctx)
+	require.NoError(err)
+
+	// Retrieve the previous block validator set again
+	prevValSetAfterIncrement, err := keeper.GetPreviousBlockValidatorSet(ctx)
+	require.NoError(err)
+
+	// Check if the previous block validator set has not changed
+	require.Equal(updatedPrevValSet, prevValSetAfterIncrement, "Previous block validator set should not change after IncrementAccum")
+
+	// Check if the current validator set has changed
+	require.NotEqual(currentValSet, updatedValSet, "Current validator set should change after IncrementAccum")
+}
+
+func (s *KeeperTestSuite) TestSetAndGetLastBlockTxs() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+
+	// first height
+	height := int64(100)
+	txs := [][]byte{
+		common.Hex2Bytes(TxHash1),
+		common.Hex2Bytes(TxHash2),
+	}
+
+	// check that GetLastBlockTxs returns an error before setting them
+	retrievedTxs, err := keeper.GetLastBlockTxs(ctx, height)
+	require.Error(err, "Getting last block txs should produce an error")
+	require.Contains(err.Error(), fmt.Sprintf("not found: key '%d'", height), "Error message should indicate that the key was not found")
+
+	// set and get txs for height 100
+	err = keeper.SetLastBlockTxs(ctx, height, txs)
+	require.NoError(err, "Setting last block txs should not produce an error")
+	retrievedTxs, err = keeper.GetLastBlockTxs(ctx, height)
+	require.NoError(err, "Getting last block txs should not produce an error")
+	require.Equal(txs, retrievedTxs.Txs, "Retrieved txs should match the set txs")
+
+	// second height
+	subsequentHeight := int64(101)
+	subsequentTxs := [][]byte{
+		common.Hex2Bytes(TxHash3),
+		common.Hex2Bytes(TxHash4),
+	}
+
+	// check that GetLastBlockTxs returns an error before setting them for the subsequent height
+	retrievedSubsequentTxs, err := keeper.GetLastBlockTxs(ctx, subsequentHeight)
+	require.Error(err, "Getting last block txs should produce an error")
+	require.Contains(err.Error(), fmt.Sprintf("not found: key '%d'", subsequentHeight), "Error message should indicate that the key was not found")
+
+	// set and get txs for height 101
+	err = keeper.SetLastBlockTxs(ctx, subsequentHeight, subsequentTxs)
+	require.NoError(err, "Setting last block txs should not produce an error")
+	retrievedSubsequentTxs, err = keeper.GetLastBlockTxs(ctx, subsequentHeight)
+	require.NoError(err, "Getting last block txs should not produce an error")
+	require.Equal(subsequentTxs, retrievedSubsequentTxs.Txs, "Retrieved txs should match the set txs for the subsequent height")
+
+	// ensure fetching the initial height (100) again returns the correct txs
+	retrievedTxs, err = keeper.GetLastBlockTxs(ctx, height)
+	require.NoError(err, "Getting last block txs should not produce an error")
+	require.Equal(txs, retrievedTxs.Txs, "Retrieved txs for the initial height should match the set txs")
 }
 
 func (s *KeeperTestSuite) TestGetCurrentProposer() {

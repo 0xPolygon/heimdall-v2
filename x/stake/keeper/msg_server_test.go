@@ -18,7 +18,10 @@ import (
 )
 
 const (
-	TxHash = "0x000000000000000000000000000000000000000000000000000000000000dead"
+	TxHash1 = "0x000000000000000000000000000000000000000000000000000000000000dead"
+	TxHash2 = "0x000000000000000000000000000000000000000000000000000000000001dead"
+	TxHash3 = "0x000000000000000000000000000000000000000000000000000000000002dead"
+	TxHash4 = "0x000000000000000000000000000000000000000000000000000000000003dead"
 )
 
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
@@ -170,7 +173,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := common.Hex2Bytes(TxHash)
+	msgTxHash := common.Hex2Bytes(TxHash1)
 
 	validators[0].EndEpoch = 10
 	msgValidatorExit := stakingtypes.MsgValidatorExit{
@@ -207,7 +210,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := common.Hex2Bytes(TxHash)
+	msgTxHash := common.Hex2Bytes(TxHash1)
 	newAmount := math.NewInt(2000000000000000000)
 
 	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
