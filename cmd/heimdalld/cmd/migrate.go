@@ -20,7 +20,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
-	"github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	govTypes "github.com/cosmos/cosmos-sdk/x/gov/types/v1"
@@ -63,7 +62,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	initialHeight, err := cmd.Flags().GetString(flagInitialHeight)
+	initialHeight, err := cmd.Flags().GetUint64(flagInitialHeight)
 	if err != nil {
 		return err
 	}
@@ -119,7 +118,8 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 
 	genesisData["chain_id"] = chainId
 	genesisData["genesis_time"] = genesisTime
-	genesisData["initial_height"] = initialHeight
+	strInitialHeight := strconv.FormatUint(initialHeight, 10)
+	genesisData["initial_height"] = strInitialHeight
 
 	dir := filepath.Dir(genesisFileV1)
 	base := filepath.Base(genesisFileV1)
@@ -450,15 +450,9 @@ func migrateBankModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("send_enabled not found in bank module")
 	}
 
-	totalSupply, err := utils.GetTotalSupply(genesisData)
-	if err != nil {
-		return err
-	}
-
 	newBankGenesis := bankTypes.GenesisState{
 		Params:        bankTypes.NewParams(sendEnabled),
 		Balances:      balances,
-		Supply:        []types.Coin{totalSupply},
 		DenomMetadata: []bankTypes.Metadata{},
 		SendEnabled:   []bankTypes.SendEnabled{},
 	}
@@ -529,7 +523,7 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 
 	checkpointModule, ok := genesisData["app_state"].(map[string]interface{})["checkpoint"]
 	if !ok {
-		return fmt.Errorf("bor module not found in app_state")
+		return fmt.Errorf("checkpoint module not found in app_state")
 	}
 
 	checkpointData, ok := checkpointModule.(map[string]interface{})
@@ -566,6 +560,30 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 	if err := utils.RenameProperty(params, ".", "child_chain_block_interval", "child_block_interval"); err != nil {
 		return fmt.Errorf("failed to rename child_chain_block_interval field: %w", err)
 	}
+
+	bufferedCheckpoint, ok := checkpointData["buffered_checkpoint"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("buffered_checkpoint not found or invalid format")
+	}
+
+	bufferedRootHashHex, ok := bufferedCheckpoint["root_hash"].(string)
+	if !ok {
+		return fmt.Errorf("root_hash not found in buffered_checkpoint")
+	}
+
+	if !strings.HasPrefix(bufferedRootHashHex, "0x") {
+		return fmt.Errorf("invalid root_hash format in buffered_checkpoint")
+	}
+
+	bufferedRootHashHex = bufferedRootHashHex[2:]
+
+	bufferedRootHashBytes, err := hex.DecodeString(bufferedRootHashHex)
+	if err != nil {
+		return fmt.Errorf("failed to decode buffered root_hash: %w", err)
+	}
+
+	bufferedRootHashBase64 := base64.StdEncoding.EncodeToString(bufferedRootHashBytes)
+	bufferedCheckpoint["root_hash"] = bufferedRootHashBase64
 
 	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
 	if !ok {

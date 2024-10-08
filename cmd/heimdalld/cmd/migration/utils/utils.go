@@ -279,46 +279,6 @@ func ParseUint(value interface{}) uint64 {
 	}
 }
 
-// GetTotalSupply returns the total supply by fetching it from deprecated supply module.
-func GetTotalSupply(genesisData map[string]interface{}) (types.Coin, error) {
-	supplyModule, ok := genesisData["app_state"].(map[string]interface{})["supply"]
-	if !ok {
-		return types.Coin{}, fmt.Errorf("supply module not found in app_state")
-	}
-
-	supplyData, ok := supplyModule.(map[string]interface{})["supply"].(map[string]interface{})
-	if !ok {
-		return types.Coin{}, fmt.Errorf("failed to cast supply module data")
-	}
-
-	totalSupply, ok := supplyData["total"].([]interface{})
-	if !ok {
-		return types.Coin{}, fmt.Errorf("total supply not found in supply module")
-	}
-
-	coin, ok := totalSupply[0].(map[string]interface{})
-	if !ok {
-		return types.Coin{}, fmt.Errorf("invalid coin format")
-	}
-
-	denom, ok := coin["denom"].(string)
-	if !ok {
-		return types.Coin{}, fmt.Errorf("denom not found in total supply")
-	}
-
-	amountStr, ok := coin["amount"].(string)
-	if !ok {
-		return types.Coin{}, fmt.Errorf("amount not found in total supply")
-	}
-
-	amount, ok := math.NewIntFromString(amountStr)
-	if !ok {
-		return types.Coin{}, fmt.Errorf("failed to parse amount: %s", amountStr)
-	}
-
-	return types.NewCoin(denom, amount), nil
-}
-
 // MigrateAuthAccountsToBankBalances converts the auth accounts to bank balances.
 func MigrateAuthAccountsToBankBalances(authAccounts []interface{}) ([]bankTypes.Balance, error) {
 
