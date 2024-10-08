@@ -63,7 +63,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	initialHeight, err := cmd.Flags().GetUint64(flagInitialHeight)
+	initialHeight, err := cmd.Flags().GetString(flagInitialHeight)
 	if err != nil {
 		return err
 	}

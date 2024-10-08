@@ -1667,5 +1667,5 @@
     }
   },
   "genesis_time": "2020-01-01T00:00:00Z",
-  "initial_height": 31337
+  "initial_height": "31337"
 }
