@@ -194,6 +194,18 @@ func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, 
 		return
 	}
 
+	if inputDataMap["sigs"] == nil {
+		inputDataMap["sigs"] = []byte{}
+	}
+
+	if inputDataMap["txData"] == nil {
+		inputDataMap["txData"] = []byte{}
+	}
+
+	if inputDataMap["vote"] == nil {
+		inputDataMap["vote"] = []byte{}
+	}
+
 	sigs = inputDataMap["sigs"].([]byte)
 	checkpointData = inputDataMap["txData"].([]byte)
 	votes = inputDataMap["vote"].([]byte)

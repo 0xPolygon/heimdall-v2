@@ -1,15 +1,19 @@
 package helper
 
 import (
+	"encoding/hex"
 	"math/big"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 )
 
-// TODO HV2 Please write this test once authtypes is finalised and RecoverPubKey is implemented inside
-/*
 func TestUnpackSigAndVotes(t *testing.T) {
+	t.Skip("Skipped because RecoverPubKey is not actively used in cosmos-sdk and GetCheckpointSign (invoking UnpackSigAndVotes) is not used in Heimdall")
 	t.Parallel()
 
 	// Signer Address List for below SubmitHeaderBlock Transaction Payload
@@ -20,7 +24,7 @@ func TestUnpackSigAndVotes(t *testing.T) {
 	decodedPayload, err := hex.DecodeString(payload)
 	require.Empty(t, err, "Error while decoding payload")
 
-	abi, err := getABI(rootchain.RootchainABI)
+	abi, err := getABI(rootchain.RootchainMetaData.ABI)
 	require.Empty(t, err, "Error while getting RootChainABI")
 
 	// Unpacking the Payload
@@ -33,10 +37,11 @@ func TestUnpackSigAndVotes(t *testing.T) {
 
 	// Validating the Unpack Output
 	for i, j := 0, 0; i < len(signerAddresses); i, j = i+1, j+signatureLen {
-		pubKey, err := authTypes.RecoverPubkey(voteSignBytes, inputSigs[j:j+signatureLen])
+		// TODO HV2: Note that RecoverPubKey is not actively used in cosmos-sdk and GetCheckpointSign (invoking UnpackSigAndVotes) is not used in heimdall
+		pubKey, err := signing.RecoverPubKey(voteSignBytes, inputSigs[j:j+signatureLen])
 		require.Empty(t, err, "Error while recovering pubkey from signature. voteSignBytes = %v, Signature=%v ", voteSignBytes, hex.EncodeToString(inputSigs[i:i+signatureLen]))
 
-		pKey := types.NewPubKey(pubKey)
+		pKey := secp256k1.PubKey{Key: pubKey}
 		signerAddress := pKey.Address().Bytes()
 
 		t.Log("Pubkey Recovered", hex.EncodeToString(pubKey))
@@ -45,7 +50,6 @@ func TestUnpackSigAndVotes(t *testing.T) {
 		require.Equal(t, signerAddresses[i], hex.EncodeToString(signerAddress), "Signer Address Doesn't match")
 	}
 }
-*/
 
 func TestGetPowerFromAmount(t *testing.T) {
 	t.Parallel()
