@@ -68,6 +68,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
+			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			_, _, _, err = app.RunTx(execModePrepareProposal, proposedTx)
 			if err != nil {
 				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
@@ -148,8 +149,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				continue
 			}
 
-			// check the txs via the AnteHandler
-			// skip the first tx as it contains the ExtendedVoteInfo and may not have an AnteHandler
+			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			_, _, _, err = app.RunTx(execModeProcessProposal, tx)
 			if err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
