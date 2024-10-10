@@ -358,6 +358,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 				if bytes.Equal(approvedTx, txBytes.Hash()) {
 
+					// execute post handlers for the approved side txs' msgs
 					msgs := decodedTx.GetMsgs()
 					for _, msg := range msgs {
 						postHandler := app.sideTxCfg.GetPostHandler(msg)
