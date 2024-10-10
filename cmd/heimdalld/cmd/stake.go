@@ -116,14 +116,14 @@ func ApproveCmd() *cobra.Command {
 			}
 
 			stakingManagerAddress := params.ChainParams.StakingManagerAddress
-			maticTokenAddress := params.ChainParams.MaticTokenAddress
+			polygonPosTokenAddress := params.ChainParams.PolygonPosTokenAddress
 
-			maticTokenInstance, err := contractCaller.GetPolygonPosTokenInstance(maticTokenAddress)
+			polygonPosTokenInstance, err := contractCaller.GetPolygonPosTokenInstance(polygonPosTokenAddress)
 			if err != nil {
 				return err
 			}
 
-			return contractCaller.ApproveTokens(stakeAmount.Add(stakeAmount, feeAmount), common.HexToAddress(stakingManagerAddress), common.HexToAddress(maticTokenAddress), maticTokenInstance)
+			return contractCaller.ApproveTokens(stakeAmount.Add(stakeAmount, feeAmount), common.HexToAddress(stakingManagerAddress), common.HexToAddress(polygonPosTokenAddress), polygonPosTokenInstance)
 		},
 	}
 

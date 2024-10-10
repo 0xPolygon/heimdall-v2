@@ -227,12 +227,12 @@ var GenesisDoc cmTypes.GenesisDoc
 var milestoneBorBlockHeight uint64 = 0
 
 type ChainManagerAddressMigration struct {
-	PolTokenAddress       string
-	RootChainAddress      string
-	StakingManagerAddress string
-	SlashManagerAddress   string
-	StakingInfoAddress    string
-	StateSenderAddress    string
+	PolygonPosTokenAddress string
+	RootChainAddress       string
+	StakingManagerAddress  string
+	SlashManagerAddress    string
+	StakingInfoAddress     string
+	StateSenderAddress     string
 }
 
 var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigration{

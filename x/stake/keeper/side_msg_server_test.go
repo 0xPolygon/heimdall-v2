@@ -1199,7 +1199,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	amount := math.NewInt(1)
 
 	coin := sdk.Coin{
-		Denom:  "matic",
+		Denom:  "pol",
 		Amount: amount,
 	}
 
@@ -1267,7 +1267,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 	amount := math.NewInt(1)
 
 	coin := sdk.Coin{
-		Denom:  "matic",
+		Denom:  "pol",
 		Amount: amount,
 	}
 
