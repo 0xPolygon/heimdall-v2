@@ -266,7 +266,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 	if err = helper.UnpackLog(cp.rootchainAbi, event, eventName, &log); err != nil {
 		cp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
 	} else {
-		checkpointNumber := big.NewInt(0).Div(event.HeaderBlockId, big.NewInt(0).SetUint64(checkpointContext.CheckpointParams.ChildBlockInterval))
+		checkpointNumber := big.NewInt(0).Div(event.HeaderBlockId, big.NewInt(0).SetUint64(checkpointContext.CheckpointParams.ChildChainBlockInterval))
 
 		cp.Logger.Info(
 			"✅ Received task to send checkpoint-ack to heimdall",
@@ -296,8 +296,8 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 			event.Proposer.String(),
 			event.Start.Uint64(),
 			event.End.Uint64(),
-			hmTypes.HeimdallHash{Hash: event.Root[:]},
-			hmTypes.HeimdallHash{Hash: log.TxHash.Bytes()},
+			event.Root[:],
+			log.TxHash.Bytes(),
 			uint64(log.Index),
 		)
 
@@ -366,7 +366,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	}
 
 	// fetch current header block from mainchain contract
-	_currentHeaderBlock, err := cp.contractCaller.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildBlockInterval)
+	_currentHeaderBlock, err := cp.contractCaller.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block number from rootchain", "error", err)
 		return nil, err
@@ -376,7 +376,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	currentHeaderBlockNumber := big.NewInt(0).SetUint64(_currentHeaderBlock)
 
 	// get header info
-	_, currentStart, currentEnd, lastCheckpointTime, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildBlockInterval)
+	_, currentStart, currentEnd, lastCheckpointTime, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block object from rootchain", "error", err)
 		return nil, err
@@ -461,7 +461,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 
 	cp.Logger.Info("Root hash calculated", "rootHash", string(root[:]))
 
-	var accountRootHash hmTypes.HeimdallHash
+	var accountRootHash []byte
 	//Get DividendAccountRoot from HeimdallServer
 	if accountRootHash, err = cp.fetchDividendAccountRoot(); err != nil {
 		cp.Logger.Info("Error while fetching initial account root hash from HeimdallServer", "err", err)
@@ -482,7 +482,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		string(helper.GetAddress()[:]),
 		start,
 		end,
-		hmTypes.HeimdallHash{Hash: root},
+		root,
 		accountRootHash,
 		chainParams.BorChainId,
 	)
@@ -574,7 +574,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 }
 
 // fetchDividendAccountRoot - fetches dividend accountroothash
-func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash hmTypes.HeimdallHash, err error) {
+func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash []byte, err error) {
 	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
@@ -605,14 +605,14 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 	}
 
 	// fetch last header number
-	lastHeaderNumber, err := cp.contractCaller.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildBlockInterval)
+	lastHeaderNumber, err := cp.contractCaller.CurrentHeaderBlock(rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block number", "error", err)
 		return 0, err
 	}
 
 	// header block
-	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildBlockInterval)
+	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching header block object", "error", err)
 		return 0, err

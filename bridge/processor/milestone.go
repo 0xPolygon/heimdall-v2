@@ -9,7 +9,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -133,10 +132,10 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext *MilestoneContext, startNum uint64, milestoneLength uint64) error {
 	mp.Logger.Debug("Initiating milestone to Heimdall", "start", startNum, "milestoneLength", milestoneLength)
 
-	blocksConfirmation := helper.MaticChainMilestoneConfirmation
+	blocksConfirmation := helper.PolygonPosChainMilestoneConfirmation
 
 	// Get latest matic block
-	block, err := mp.contractCaller.GetBorChainBlock(nil)
+	block, err := mp.contractCaller.GetPolygonPosChainBlock(nil)
 	if err != nil {
 		return err
 	}
@@ -150,7 +149,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	endNum := latestNum - blocksConfirmation
 
 	//fetch the endBlock+1 number instead of endBlock so that we can directly get the hash of endBlock using parent hash
-	block, err = mp.contractCaller.GetBorChainBlock(big.NewInt(int64(endNum + 1)))
+	block, err = mp.contractCaller.GetPolygonPosChainBlock(big.NewInt(int64(endNum + 1)))
 	if err != nil {
 		return fmt.Errorf("error while fetching %d block %w", endNum+1, err)
 	}
@@ -180,7 +179,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 		string(helper.GetAddress()[:]),
 		startNum,
 		endNum,
-		hmTypes.HeimdallHash{Hash: endHash[:]},
+		endHash[:],
 		chainParams.BorChainId,
 		milestoneId,
 	)
@@ -303,7 +302,7 @@ func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) 
 
 // getCurrentChildBlock gets the current child block
 func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := mp.contractCaller.GetBorChainBlock(nil)
+	childBlock, err := mp.contractCaller.GetPolygonPosChainBlock(nil)
 	if err != nil {
 		return 0, err
 	}

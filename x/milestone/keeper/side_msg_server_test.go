@@ -50,7 +50,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
-		result := sideHandler(ctx, &msgMilestone)
+		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should succeed")
 
 		milestoneReceived, _ := keeper.GetLastMilestone(ctx)
@@ -73,7 +73,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(false, nil)
 
-		result := sideHandler(ctx, &msgMilestone)
+		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 
 		header, err := keeper.GetLastMilestone(ctx)
@@ -96,7 +96,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
-		result := sideHandler(ctx, &msgMilestone)
+		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 	})
 
@@ -118,7 +118,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
-		result := sideHandler(ctx, &msgMilestone)
+		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 	})
 }
@@ -160,7 +160,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestoneId,
 		)
 
-		postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_NO)
+		postHandler(ctx, msgMilestone, sidetxs.Vote_VOTE_NO)
 
 		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		require.Nil(lastMilestone)
@@ -192,7 +192,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			milestoneId,
 		)
 
-		postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgMilestone, sidetxs.Vote_VOTE_YES)
 
 		lastMilestone, err := keeper.GetLastMilestone(ctx)
 		require.Nil(lastMilestone)
@@ -223,7 +223,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgMilestone, sidetxs.Vote_VOTE_YES)
 
 		bufferedHeader, err := keeper.GetLastMilestone(ctx)
 		require.NoError(err)
@@ -255,7 +255,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgMilestone, sidetxs.Vote_VOTE_YES)
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
 		require.Equal(lastNoAckMilestone, milestoneId)
@@ -277,7 +277,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgMilestone, sidetxs.Vote_VOTE_YES)
 
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
@@ -301,7 +301,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 			BorChainId,
 			milestoneId,
 		)
-		postHandler(ctx, &msgMilestone, sidetxs.Vote_VOTE_NO)
+		postHandler(ctx, msgMilestone, sidetxs.Vote_VOTE_NO)
 		lastNoAckMilestone, err := keeper.GetLastNoAckMilestone(ctx)
 		require.NoError(err)
 		require.Equal(lastNoAckMilestone, "00004")

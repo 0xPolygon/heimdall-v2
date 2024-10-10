@@ -12,7 +12,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -95,15 +94,15 @@ var (
 			heimdallAddress,
 			0,
 			63,
-			hmTypes.HeimdallHash{Hash: []byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e")},
-			hmTypes.HeimdallHash{Hash: []byte("0xd10b5c16c25efe0b0f5b3d75038834223934ae8c2ec2b63a62bbe42aa21e2d2d")},
+			[]byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e"),
+			[]byte("0xd10b5c16c25efe0b0f5b3d75038834223934ae8c2ec2b63a62bbe42aa21e2d2d"),
 			"borChainID",
 		),
 		milestoneTypes.NewMsgMilestoneBlock(
 			heimdallAddress,
 			0,
 			63,
-			hmTypes.HeimdallHash{Hash: []byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e")},
+			[]byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e"),
 			"testBorChainID",
 			"testMilestoneID",
 		),

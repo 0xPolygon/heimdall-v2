@@ -9,7 +9,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/common/tracing"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -135,7 +134,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 			vLog.BlockNumber,
 			event.Id.Uint64(),
 			event.ContractAddress.Bytes(),
-			hmTypes.HexBytes{HexBytes: event.Data},
+			event.Data,
 			chainParams.BorChainId,
 		)
 

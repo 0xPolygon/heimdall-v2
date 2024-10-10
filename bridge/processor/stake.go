@@ -9,7 +9,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	stakingTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -128,7 +127,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			event.ActivationEpoch.Uint64(),
 			math.NewIntFromBigInt(event.Amount),
 			&secp256k1.PubKey{Key: signerPubKey},
-			hmTypes.TxHash{Hash: vLog.TxHash.Bytes()},
+			vLog.TxHash.Bytes(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,
 			event.Nonce.Uint64(),
@@ -210,7 +209,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 			string(helper.GetAddress()[:]),
 			event.ValidatorId.Uint64(),
 			event.DeactivationEpoch.Uint64(),
-			hmTypes.TxHash{Hash: vLog.TxHash.Bytes()},
+			vLog.TxHash.Bytes(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,
 			event.Nonce.Uint64(),
@@ -289,7 +288,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 			string(helper.GetAddress()[:]),
 			event.ValidatorId.Uint64(),
 			math.NewIntFromBigInt(event.NewAmount),
-			hmTypes.TxHash{Hash: vLog.TxHash.Bytes()},
+			vLog.TxHash.Bytes(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,
 			event.Nonce.Uint64(),
@@ -376,7 +375,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			string(helper.GetAddress()[:]),
 			event.ValidatorId.Uint64(),
 			&secp256k1.PubKey{Key: newSignerPubKey},
-			hmTypes.TxHash{Hash: vLog.TxHash.Bytes()},
+			vLog.TxHash.Bytes(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,
 			event.Nonce.Uint64(),

@@ -137,7 +137,7 @@ func (tb *TxBroadcaster) BroadcastToMatic(msg ethereum.CallMsg) error {
 	defer tb.maticMutex.Unlock()
 
 	// get matic client
-	maticClient := helper.GetBorClient()
+	maticClient := helper.GetPolygonPosClient()
 
 	// get auth
 	auth, err := helper.GenerateAuthObj(maticClient, *msg.To, msg.Data)

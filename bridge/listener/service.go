@@ -35,7 +35,7 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, h
 	listenerService.listeners = append(listenerService.listeners, rootchainListener)
 
 	maticchainListener := &MaticChainListener{}
-	maticchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetBorClient(), MaticChainListenerStr, maticchainListener)
+	maticchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetPolygonPosClient(), MaticChainListenerStr, maticchainListener)
 	listenerService.listeners = append(listenerService.listeners, maticchainListener)
 
 	heimdallListener := &HeimdallListener{}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -35,7 +34,7 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 		LogIndex:        71,
 		BlockNumber:     14475337,
 		ContractAddress: "0x401f6c983ea34274ec46f84d70b31c151321188b",
-		Data:            hmTypes.HexBytes{HexBytes: []byte{}},
+		Data:            []byte{},
 		Id:              1897091,
 		ChainId:         "15001",
 	}

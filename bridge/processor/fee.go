@@ -7,7 +7,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -77,7 +76,7 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 		)
 
 		// create msg checkpoint ack message
-		msg := topupTypes.NewMsgTopupTx(helper.GetFromAddress(fp.cliCtx), event.User.String(), math.NewIntFromBigInt(event.Fee), hmTypes.TxHash{Hash: vLog.TxHash.Bytes()}, uint64(vLog.Index), vLog.BlockNumber)
+		msg := topupTypes.NewMsgTopupTx(helper.GetFromAddress(fp.cliCtx), event.User.String(), math.NewIntFromBigInt(event.Fee), vLog.TxHash.Bytes(), uint64(vLog.Index), vLog.BlockNumber)
 
 		// return broadcast to heimdall
 		txRes, err := fp.txBroadcaster.BroadcastToHeimdall(msg, event)

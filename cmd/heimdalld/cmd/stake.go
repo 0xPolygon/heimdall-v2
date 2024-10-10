@@ -115,8 +115,8 @@ func ApproveCmd() *cobra.Command {
 				return err
 			}
 
-			stakingManagerAddress := params.ChainParams.StakingManagerAddress.EthAddress()
-			maticTokenAddress := params.ChainParams.PolTokenAddress.EthAddress()
+			stakingManagerAddress := params.ChainParams.StakingManagerAddress
+			maticTokenAddress := params.ChainParams.MaticTokenAddress
 
 			maticTokenInstance, err := contractCaller.GetPolygonPosTokenInstance(maticTokenAddress)
 			if err != nil {
