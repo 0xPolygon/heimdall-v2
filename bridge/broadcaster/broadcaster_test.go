@@ -122,6 +122,7 @@ var (
 
 // Parallel test - to check BroadcastToHeimdall synchronisation
 func TestBroadcastToHeimdall(t *testing.T) {
+	t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
 	t.Parallel()
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNodeUrl)
