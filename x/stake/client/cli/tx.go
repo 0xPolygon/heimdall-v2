@@ -224,7 +224,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("public key first byte mismatch")
 			}
 
-			msg, err := types.NewMsgSignerUpdate(proposer, valId, &pubKey, common.Hex2Bytes(txHash), viper.GetUint64(FlagLogIndex), viper.GetUint64(FlagBlockNumber), viper.GetUint64(FlagNonce))
+			msg, err := types.NewMsgSignerUpdate(proposer, valId, pubKey.Bytes(), common.Hex2Bytes(txHash), viper.GetUint64(FlagLogIndex), viper.GetUint64(FlagBlockNumber), viper.GetUint64(FlagNonce))
 			if err != nil {
 				return err
 			}

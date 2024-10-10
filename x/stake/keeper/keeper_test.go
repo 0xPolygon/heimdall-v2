@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"math/rand"
 	"strings"
 	"testing"
@@ -13,7 +12,6 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil"
@@ -22,6 +20,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
@@ -182,12 +181,9 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	valInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	require.NoErrorf(err, "Error while fetching Validator Info from store")
 
-	pkAny2, err := codectypes.NewAnyWithValue(pk2)
-	require.NoError(err)
-
 	addr2 := strings.ToLower(valAddr2.String())
 
-	err = keeper.UpdateSigner(ctx, addr2, pkAny2, valInfo.Signer)
+	err = keeper.UpdateSigner(ctx, addr2, pk2.Bytes(), valInfo.Signer)
 	require.NoErrorf(err, "Error while updating Signer Address ")
 
 	// check validator info of prev signer

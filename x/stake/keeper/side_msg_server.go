@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -110,12 +110,8 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	}
 
 	// Generate PubKey from PubKey in message and signer
-	anyPk := msg.SignerPubKey
-	pubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		s.k.Logger(ctx).Error("error in interfacing out pub key")
-		return sidetxs.Vote_VOTE_NO
-	}
+	pk := msg.SignerPubKey
+	pubKey := secp256k1.PubKey{Key: pk}
 
 	signer := pubKey.Address()
 	ac := addrCodec.NewHexCodec()
@@ -313,14 +309,6 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// Generate PubKey from PubKey in message and signer
-	anyPk := msg.NewSignerPubKey
-	newPubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		s.k.Logger(ctx).Error("error in interfacing out pub key")
-		return sidetxs.Vote_VOTE_NO
-	}
-
 	chainParams := params.ChainParams
 	eventLog, err := contractCaller.DecodeSignerUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
@@ -338,11 +326,12 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	if !bytes.Equal(eventLog.SignerPubkey, newPubKey.Bytes()[1:]) {
-		s.k.Logger(ctx).Error("newSigner pubKey in txHash and msg dont match", "msgPubKey", newPubKey.String(), "pubKeyTx", eventLog.SignerPubkey[:])
+	if !bytes.Equal(eventLog.SignerPubkey, msg.NewSignerPubKey[1:]) {
+		s.k.Logger(ctx).Error("newSigner pubKey in txHash and msg dont match", "msgPubKey", common.Bytes2Hex(msg.NewSignerPubKey), "pubKeyTx", eventLog.SignerPubkey[:])
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	newPubKey := secp256k1.PubKey{Key: msg.NewSignerPubKey}
 	newSigner := newPubKey.Address()
 
 	ac := addrCodec.NewHexCodec()
@@ -466,13 +455,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 
 	s.k.Logger(ctx).Debug("adding validator to state", "sideTxResult", sideTxResult)
 
-	// Generate PubKey from PubKey in message and signer
-	anyPk := msg.SignerPubKey
-	pubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		s.k.Logger(ctx).Error("error in interfacing out pub key")
-		return
-	}
+	pubKey := secp256k1.PubKey{Key: msg.SignerPubKey}
 
 	if pubKey.Type() != types.Secp256k1Type {
 		s.k.Logger(ctx).Error("public key is invalid")
@@ -495,7 +478,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		EndEpoch:    0,
 		Nonce:       msg.Nonce,
 		VotingPower: votingPower.Int64(),
-		PubKey:      anyPk,
+		PubKey:      pubKey.Bytes(),
 		Signer:      signer,
 		LastUpdated: sequence.String(),
 	}
@@ -636,12 +619,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	s.k.Logger(ctx).Debug("persisting signer update", "sideTxResult", sideTxResult)
 
 	// Generate PubKey from PubKey in message and signer
-	anyPk := msg.NewSignerPubKey
-	newPubKey, ok := anyPk.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		s.k.Logger(ctx).Error("error in interfacing out pub key")
-		return
-	}
+	newPubKey := secp256k1.PubKey{Key: msg.NewSignerPubKey}
 
 	if newPubKey.Type() != types.Secp256k1Type {
 		s.k.Logger(ctx).Error("public key is invalid")
@@ -665,7 +643,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	// check if we are actually updating signer
 	if newSigner != validator.Signer {
 		validator.Signer = newSigner
-		validator.PubKey = anyPk
+		validator.PubKey = newPubKey.Bytes()
 
 		s.k.Logger(ctx).Debug("updating new signer", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
 

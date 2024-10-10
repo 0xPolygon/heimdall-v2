@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"strings"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
@@ -20,11 +19,6 @@ func GenRandomVals(count int, startBlock uint64, power int64, timeAlive uint64, 
 		pubKey := secp256k1.GenPrivKey().PubKey()
 		addr := strings.ToLower(pubKey.Address().String())
 
-		pkAny, err := codectypes.NewAnyWithValue(pubKey)
-		if err != nil {
-			return
-		}
-
 		if randomise {
 			startBlock = generateRandNumber(10)
 			power = int64(generateRandNumber(100))
@@ -36,7 +30,7 @@ func GenRandomVals(count int, startBlock uint64, power int64, timeAlive uint64, 
 			EndEpoch:         startBlock + timeAlive,
 			VotingPower:      power,
 			Signer:           addr,
-			PubKey:           pkAny,
+			PubKey:           pubKey.Bytes(),
 			ProposerPriority: 0,
 		}
 		validators = append(validators, newVal)

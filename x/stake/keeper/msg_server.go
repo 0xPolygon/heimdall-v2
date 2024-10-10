@@ -9,9 +9,10 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -33,7 +34,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		"validatorId", msg.ValId,
 		"activationEpoch", msg.ActivationEpoch,
 		"amount", msg.Amount,
-		"SignerPubKey", msg.SignerPubKey.String(),
+		"SignerPubKey", common.Bytes2Hex(msg.SignerPubKey),
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -41,10 +42,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 
 	// Generate PubKey from PubKey in message and signer
 	pubKey := msg.SignerPubKey
-	pk, ok := pubKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "error in interfacing out pub key")
-	}
+	pk := secp256k1.PubKey{Key: pubKey}
 
 	if pk.Type() != types.Secp256k1Type {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "pub key is invalid")
@@ -58,7 +56,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	}
 
 	// check if validator has been validator before
-	if ok, err = m.k.DoesValIdExist(ctx, msg.ValId); ok {
+	if ok, err := m.k.DoesValIdExist(ctx, msg.ValId); ok {
 		m.k.Logger(ctx).Error("validator has been a validator before, hence cannot join with same id", "validatorId", msg.ValId, "err", err)
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator corresponding to the val id already exists in store")
 	}
@@ -162,7 +160,7 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
 	m.k.Logger(ctx).Debug("✅ Validating signer update msg",
 		"validatorID", msg.ValId,
-		"NewSignerPubKey", msg.NewSignerPubKey.String(),
+		"NewSignerPubKey", common.Bytes2Hex(msg.NewSignerPubKey),
 		"txHash", msg.TxHash,
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -170,20 +168,16 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	// Generate PubKey from PubKey in message and signer
 	pubKey := msg.NewSignerPubKey
-	pk, ok := pubKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "error in interfacing out pub key")
-	}
+	pk := &secp256k1.PubKey{Key: pubKey}
 
 	if pk.Type() != types.Secp256k1Type {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "pub key is invalid")
 	}
 
 	newSigner, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
-
 	if err != nil {
-		m.k.Logger(ctx).Error("signer is invalid", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid")
+		m.k.Logger(ctx).Error("new signer is invalid", "error", err, "newSigner", newSigner)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "new signer is invalid")
 	}
 
 	// pull validator from store
@@ -191,6 +185,19 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	if err != nil {
 		m.k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId, "error", err)
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "Fetching of validator from store failed")
+	}
+
+	// make oldSigner address compatible with newSigner address
+	oldSignerBytes, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
+	if err != nil {
+		m.k.Logger(ctx).Error("oldSigner bytes are invalid", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "old signer bytes are invalid")
+	}
+
+	oldSignerStr, err := addrCodec.NewHexCodec().BytesToString(oldSignerBytes)
+	if err != nil {
+		m.k.Logger(ctx).Error("oldSigner address is invalid", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "old signer address is invalid")
 	}
 
 	// add sequence
@@ -205,7 +212,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	}
 
 	// check if new signer address is same as existing signer
-	if strings.EqualFold(newSigner, validator.Signer) {
+	if strings.EqualFold(newSigner, oldSignerStr) {
 		// No signer change
 		m.k.Logger(ctx).Error("new signer is the same as old signer")
 		return nil, errorsmod.Wrap(types.ErrNoSignerChange, "newSigner same as oldSigner")
