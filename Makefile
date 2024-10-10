@@ -96,11 +96,11 @@ mock:
 build-docker: # TODO-HV2: check this command once we have a proper docker build
 	@echo Fetching latest tag: $(LATEST_GIT_TAG)
 	git checkout $(LATEST_GIT_TAG)
-	docker build -t "maticnetwork/heimdall:$(LATEST_GIT_TAG)" -f Dockerfile .
+	docker build -t "0xpolygon/heimdall:$(LATEST_GIT_TAG)" -f Dockerfile .
 
 push-docker: # TODO-HV2: check this command once we have a proper docker push
 	@echo Pushing docker tag image: $(LATEST_GIT_TAG)
-	docker push "maticnetwork/heimdall:$(LATEST_GIT_TAG)"
+	docker push "0xpolygon/heimdall:$(LATEST_GIT_TAG)"
 
 ###############################################################################
 ###                                release                                  ###

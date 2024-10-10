@@ -12,14 +12,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const (
-	TxHash = "0x000000000000000000000000000000000000000000000000000000000000dead"
+	TxHash1 = "0x000000000000000000000000000000000000000000000000000000000000dead"
+	TxHash2 = "0x000000000000000000000000000000000000000000000000000000000001dead"
+	TxHash3 = "0x000000000000000000000000000000000000000000000000000000000002dead"
+	TxHash4 = "0x000000000000000000000000000000000000000000000000000000000003dead"
 )
 
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
@@ -38,7 +40,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pubKey,
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -59,7 +61,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pubKey,
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -93,11 +95,11 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
-	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
+	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
+	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
@@ -132,7 +134,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 		From:            newSigner[0].Signer,
 		ValId:           uint64(1),
 		NewSignerPubKey: newSigner[0].GetPubKey(),
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        uint64(0),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -164,21 +166,21 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 }
 
 func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
-	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
+	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	// pass 0 as time alive to generate non de-activated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
-	s.checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
+	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := common.Hex2Bytes(TxHash)
+	msgTxHash := common.Hex2Bytes(TxHash1)
 
 	validators[0].EndEpoch = 10
 	msgValidatorExit := stakingtypes.MsgValidatorExit{
 		From:              validators[0].Signer,
 		ValId:             uint64(1),
 		DeactivationEpoch: validators[0].EndEpoch,
-		TxHash:            hmTypes.TxHash{Hash: msgTxHash},
+		TxHash:            msgTxHash,
 		LogIndex:          uint64(0),
 		BlockNumber:       uint64(0),
 		Nonce:             uint64(1),
@@ -208,14 +210,14 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := common.Hex2Bytes(TxHash)
+	msgTxHash := common.Hex2Bytes(TxHash1)
 	newAmount := math.NewInt(2000000000000000000)
 
 	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
 		From:        oldVal.Signer,
 		ValId:       oldVal.ValId,
 		NewAmount:   newAmount,
-		TxHash:      hmTypes.TxHash{Hash: msgTxHash},
+		TxHash:      msgTxHash,
 		LogIndex:    uint64(0),
 		BlockNumber: uint64(0),
 		Nonce:       uint64(1),
@@ -232,8 +234,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	pk1 := secp256k1.GenPrivKey().PubKey()
 	require.NotNil(pk1)
@@ -243,7 +244,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 
 	addr := pk1.Address().String()
 
-	index := simulation.RandIntBetween(r1, 0, 100)
+	index := simulation.RandIntBetween(r, 0, 100)
 	logIndex := uint64(index)
 
 	validatorId := uint64(1)
@@ -274,7 +275,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(100000)),
 		SignerPubKey:    pubKey,
-		TxHash:          hmTypes.TxHash{},
+		TxHash:          []byte{},
 		LogIndex:        logIndex,
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),

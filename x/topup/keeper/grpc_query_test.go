@@ -17,13 +17,11 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
+func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
+	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
-	logIndex := uint64(simulation.RandIntBetween(r1, 0, 100))
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	logIndex := uint64(simulation.RandIntBetween(r, 0, 100))
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 	sequence := new(big.Int).Mul(txReceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(logIndex))
@@ -33,7 +31,7 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 
@@ -43,20 +41,18 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	require.Equal(sequence.String(), res.Sequence)
 }
 
-func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
+func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
+	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
 
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	logIndex := r1.Uint64()
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	logIndex := r.Uint64()
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 
@@ -65,13 +61,11 @@ func (suite *KeeperTestSuite) TestGRPCGetTopupTxSequence_NotFound() {
 	require.Nil(res)
 }
 
-func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	logIndex := r1.Uint64()
-	blockNumber := r1.Uint64()
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+func (s *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
+	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	logIndex := r.Uint64()
+	blockNumber := r.Uint64()
 	blockN := new(big.Int).SetUint64(blockNumber)
 	sequence := new(big.Int).Mul(blockN, big.NewInt(types.DefaultLogIndexUnit))
 	txReceipt := &ethTypes.Receipt{BlockNumber: blockN}
@@ -82,7 +76,7 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 
@@ -91,19 +85,17 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsOld() {
 	require.True(res.IsOld)
 }
 
-func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsNotOld() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	logIndex := r1.Uint64()
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
+func (s *KeeperTestSuite) TestGRPCIsTopupTxOld_IsNotOld() {
+	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	logIndex := r.Uint64()
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   hash.String(),
+		TxHash:   TxHash,
 		LogIndex: logIndex,
 	}
 
@@ -112,8 +104,8 @@ func (suite *KeeperTestSuite) TestGRPCIsTopupTxOld_IsNotOld() {
 	require.False(res.IsOld)
 }
 
-func (suite *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_Success() {
-	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
+func (s *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_Success() {
+	ctx, tk, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
 
 	dividendAccount := hTypes.DividendAccount{
 		User:      AccountHash,
@@ -134,8 +126,8 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_Success() {
 	require.Equal(res.DividendAccount, dividendAccount)
 }
 
-func (suite *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_NotFound() {
-	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
+func (s *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_NotFound() {
+	ctx, tk, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
 
 	dividendAccount := hTypes.DividendAccount{
 		User:      AccountHash,
@@ -155,8 +147,8 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_NotFound() {
 	require.Empty(res)
 }
 
-func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_Success() {
-	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
+func (s *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_Success() {
+	ctx, tk, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
 
 	dividendAccount := hTypes.DividendAccount{
 		User:      AccountHash,
@@ -173,8 +165,8 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_Success() {
 	require.NotEmpty(res.AccountRootHash)
 }
 
-func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_NotFound() {
-	ctx, queryClient, require := suite.ctx, suite.queryClient, suite.Require()
+func (s *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_NotFound() {
+	ctx, queryClient, require := s.ctx, s.queryClient, s.Require()
 
 	req := &types.QueryDividendAccountRootHashRequest{}
 
@@ -184,8 +176,8 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountRootHash_NotFound() {
 	require.Nil(res)
 }
 
-func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
-	ctx, tk, queryClient, require := suite.ctx, suite.keeper, suite.queryClient, suite.Require()
+func (s *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
+	ctx, tk, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
 
 	dividendAccount := hTypes.DividendAccount{
 		User:      AccountHash,
@@ -201,13 +193,13 @@ func (suite *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 		Address: AccountHash,
 		Proof:   AccountHashProof,
 	}
-	res, err := queryClient.VerifyAccountProof(ctx, req)
+	res, err := queryClient.VerifyAccountProofByAddress(ctx, req)
 	require.NoError(err)
 	require.True(res.IsVerified)
 }
 
-func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
-	ctx, tk, queryClient, require, contractCaller := suite.ctx, suite.keeper, suite.queryClient, suite.Require(), &suite.contractCaller
+func (s *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
+	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
 
 	var accountRoot [32]byte
 	stakingInfo := &stakinginfo.Stakinginfo{}
@@ -231,7 +223,7 @@ func (suite *KeeperTestSuite) TestGRPCGetDividendAccountProof_Success() {
 		Address: AccountHash,
 	}
 
-	res, err := queryClient.GetAccountProof(ctx, req)
+	res, err := queryClient.GetAccountProofByAddress(ctx, req)
 	require.NoError(err)
 	require.NotNil(res.Proof)
 }

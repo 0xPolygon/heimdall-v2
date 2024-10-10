@@ -10,19 +10,20 @@ import (
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/runtime"
+	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 )
 
 type KeeperTestSuite struct {
@@ -34,7 +35,7 @@ type KeeperTestSuite struct {
 	contractCaller  *mocks.IContractCaller
 	queryClient     milestoneTypes.QueryClient
 	msgServer       milestoneTypes.MsgServer
-	sideMsgCfg      hmModule.SideTxConfigurator
+	sideMsgCfg      sidetxs.SideTxConfigurator
 }
 
 func (s *KeeperTestSuite) Run(_ string, fn func()) {
@@ -57,7 +58,7 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	keeper := milestoneKeeper.NewKeeper(
 		encCfg.Codec,
-		"authority",
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		storeService,
 		s.stakeKeeper,
 		s.contractCaller,
@@ -75,7 +76,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
 	s.msgServer = milestoneKeeper.NewMsgServerImpl(&keeper)
 
-	s.sideMsgCfg = hmModule.NewSideTxConfigurator()
+	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, milestoneKeeper.NewSideMsgServerImpl(&keeper))
 }
 
@@ -84,12 +85,11 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *KeeperTestSuite) TestAddMilestone() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"
@@ -121,8 +121,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 }
 
 func (s *KeeperTestSuite) TestGetMilestoneCount() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	result, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
@@ -130,7 +129,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(63)
-	hash := hmTypes.HeimdallHash{Hash: testutil.RandomBytes()}
+	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"
@@ -153,8 +152,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 }
 
 func (s *KeeperTestSuite) TestGetNoAckMilestone() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	result, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
@@ -191,8 +189,7 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 }
 
 func (s *KeeperTestSuite) TestLastNoAckMilestone() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	result, err := keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
@@ -221,8 +218,7 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 }
 
 func (s *KeeperTestSuite) TestGetMilestoneTimout() {
-	ctx, keeper := s.ctx, s.milestoneKeeper
-	require := s.Require()
+	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	val, err := keeper.GetLastMilestoneTimeout(ctx)
 	require.NoError(err)

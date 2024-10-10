@@ -19,24 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_Record_FullMethodName             = "/heimdallv2.clerk.Query/Record"
-	Query_RecordList_FullMethodName         = "/heimdallv2.clerk.Query/RecordList"
-	Query_RecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/RecordListWithTime"
-	Query_RecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/RecordSequence"
+	Query_GetRecordById_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordById"
+	Query_GetRecordList_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordList"
+	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
+	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
 )
 
 // QueryClient is the client API for Query service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// TODO HV2 - check url
-	Record(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
-	// TODO HV2 - check url
-	RecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
-	// TODO HV2 - check url
-	RecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
-	// TODO HV2 - check url
-	RecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
+	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
+	GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
+	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
 }
 
 type queryClient struct {
@@ -47,36 +43,36 @@ func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) Record(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
+func (c *queryClient) GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
 	out := new(RecordResponse)
-	err := c.cc.Invoke(ctx, Query_Record_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetRecordById_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) RecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error) {
+func (c *queryClient) GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error) {
 	out := new(RecordListResponse)
-	err := c.cc.Invoke(ctx, Query_RecordList_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetRecordList_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) RecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error) {
+func (c *queryClient) GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error) {
 	out := new(RecordListWithTimeResponse)
-	err := c.cc.Invoke(ctx, Query_RecordListWithTime_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetRecordListWithTime_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) RecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error) {
+func (c *queryClient) GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error) {
 	out := new(RecordSequenceResponse)
-	err := c.cc.Invoke(ctx, Query_RecordSequence_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetRecordSequence_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,14 +83,10 @@ func (c *queryClient) RecordSequence(ctx context.Context, in *RecordSequenceRequ
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// TODO HV2 - check url
-	Record(context.Context, *RecordRequest) (*RecordResponse, error)
-	// TODO HV2 - check url
-	RecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
-	// TODO HV2 - check url
-	RecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
-	// TODO HV2 - check url
-	RecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
+	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
+	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
+	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
+	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -102,17 +94,17 @@ type QueryServer interface {
 type UnimplementedQueryServer struct {
 }
 
-func (UnimplementedQueryServer) Record(context.Context, *RecordRequest) (*RecordResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Record not implemented")
+func (UnimplementedQueryServer) GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordById not implemented")
 }
-func (UnimplementedQueryServer) RecordList(context.Context, *RecordListRequest) (*RecordListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RecordList not implemented")
+func (UnimplementedQueryServer) GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordList not implemented")
 }
-func (UnimplementedQueryServer) RecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RecordListWithTime not implemented")
+func (UnimplementedQueryServer) GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordListWithTime not implemented")
 }
-func (UnimplementedQueryServer) RecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method RecordSequence not implemented")
+func (UnimplementedQueryServer) GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordSequence not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -127,74 +119,74 @@ func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
 	s.RegisterService(&Query_ServiceDesc, srv)
 }
 
-func _Query_Record_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetRecordById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RecordRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).Record(ctx, in)
+		return srv.(QueryServer).GetRecordById(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_Record_FullMethodName,
+		FullMethod: Query_GetRecordById_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).Record(ctx, req.(*RecordRequest))
+		return srv.(QueryServer).GetRecordById(ctx, req.(*RecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_RecordList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetRecordList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RecordListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).RecordList(ctx, in)
+		return srv.(QueryServer).GetRecordList(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_RecordList_FullMethodName,
+		FullMethod: Query_GetRecordList_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).RecordList(ctx, req.(*RecordListRequest))
+		return srv.(QueryServer).GetRecordList(ctx, req.(*RecordListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_RecordListWithTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetRecordListWithTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RecordListWithTimeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).RecordListWithTime(ctx, in)
+		return srv.(QueryServer).GetRecordListWithTime(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_RecordListWithTime_FullMethodName,
+		FullMethod: Query_GetRecordListWithTime_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).RecordListWithTime(ctx, req.(*RecordListWithTimeRequest))
+		return srv.(QueryServer).GetRecordListWithTime(ctx, req.(*RecordListWithTimeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_RecordSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetRecordSequence_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RecordSequenceRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).RecordSequence(ctx, in)
+		return srv.(QueryServer).GetRecordSequence(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_RecordSequence_FullMethodName,
+		FullMethod: Query_GetRecordSequence_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).RecordSequence(ctx, req.(*RecordSequenceRequest))
+		return srv.(QueryServer).GetRecordSequence(ctx, req.(*RecordSequenceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -207,20 +199,20 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Record",
-			Handler:    _Query_Record_Handler,
+			MethodName: "GetRecordById",
+			Handler:    _Query_GetRecordById_Handler,
 		},
 		{
-			MethodName: "RecordList",
-			Handler:    _Query_RecordList_Handler,
+			MethodName: "GetRecordList",
+			Handler:    _Query_GetRecordList_Handler,
 		},
 		{
-			MethodName: "RecordListWithTime",
-			Handler:    _Query_RecordListWithTime_Handler,
+			MethodName: "GetRecordListWithTime",
+			Handler:    _Query_GetRecordListWithTime_Handler,
 		},
 		{
-			MethodName: "RecordSequence",
-			Handler:    _Query_RecordSequence_Handler,
+			MethodName: "GetRecordSequence",
+			Handler:    _Query_GetRecordSequence_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

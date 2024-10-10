@@ -18,7 +18,7 @@ import (
 func StakeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stake",
-		Short: "Stake matic tokens for your account",
+		Short: "Stake polygon pos tokens for your account",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			helper.InitHeimdallConfig("")
@@ -115,10 +115,10 @@ func ApproveCmd() *cobra.Command {
 				return err
 			}
 
-			stakingManagerAddress := params.ChainParams.StakingManagerAddress
-			maticTokenAddress := params.ChainParams.MaticTokenAddress
+			stakingManagerAddress := params.ChainParams.StakingManagerAddress.EthAddress()
+			maticTokenAddress := params.ChainParams.PolTokenAddress.EthAddress()
 
-			maticTokenInstance, err := contractCaller.GetMaticTokenInstance(maticTokenAddress)
+			maticTokenInstance, err := contractCaller.GetPolygonPosTokenInstance(maticTokenAddress)
 			if err != nil {
 				return err
 			}

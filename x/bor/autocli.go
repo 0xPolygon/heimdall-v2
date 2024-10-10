@@ -15,7 +15,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "span-by-id [id]",
 					Short:     "Query bor span by id",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "span_id"},
+						{ProtoField: "id"},
 					},
 				},
 				{

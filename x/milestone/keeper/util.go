@@ -3,13 +3,13 @@ package keeper
 import (
 	"errors"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 // ValidateMilestone - Validates if milestone rootHash matches or not
-func ValidateMilestone(start uint64, end uint64, hash hmTypes.HeimdallHash, milestoneID string, contractCaller helper.IContractCaller, minMilestoneLength uint64, confirmations uint64) (bool, error) {
+func ValidateMilestone(start uint64, end uint64, hash []byte, milestoneID string, contractCaller helper.IContractCaller, minMilestoneLength uint64, confirmations uint64) (bool, error) {
 	msgMilestoneLength := int64(end) - int64(start) + 1
 
 	// Check for the minimum length of the milestone
@@ -23,7 +23,7 @@ func ValidateMilestone(start uint64, end uint64, hash hmTypes.HeimdallHash, mile
 	}
 
 	// Get the vote on hash of milestone from Bor
-	vote, err := contractCaller.GetVoteOnHash(start, end, hash.String(), milestoneID)
+	vote, err := contractCaller.GetVoteOnHash(start, end, common.Bytes2Hex(hash), milestoneID)
 	if err != nil {
 		return false, err
 	}

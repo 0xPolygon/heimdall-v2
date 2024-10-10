@@ -1,0 +1,22 @@
+syntax = "proto3";
+package heimdallv2.stake;
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
+
+import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+import "heimdallv2/stake/validator.proto";
+
+// GenesisState defines the staking module's genesis state.
+message GenesisState {
+  // validators defines the validator set at genesis.
+  repeated Validator validators = 1
+      [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
+
+  // current_validator_set defines the active current validator set at genesis.
+  ValidatorSet current_validator_set = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+
+  // staking_sequences defines the staking sequences at genesis.
+  repeated string staking_sequences = 3 [ (amino.dont_omitempty) = true ];
+}

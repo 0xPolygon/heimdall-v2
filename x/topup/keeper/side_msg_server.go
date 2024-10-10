@@ -2,15 +2,17 @@ package keeper
 
 import (
 	"bytes"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"math/big"
+
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	mod "github.com/0xPolygon/heimdall-v2/module"
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
@@ -23,12 +25,12 @@ type sideMsgServer struct {
 }
 
 // NewSideMsgServerImpl returns an implementation of the x/topup SideMsgServer interface for the provided Keeper.
-func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{k: keeper}
 }
 
 // SideTxHandler redirects to the right sideMsgServer side_handler based on methodName
-func (s sideMsgServer) SideTxHandler(methodName string) mod.SideTxHandler {
+func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
 		return s.SideHandleTopupTx
@@ -38,7 +40,7 @@ func (s sideMsgServer) SideTxHandler(methodName string) mod.SideTxHandler {
 }
 
 // PostTxHandler redirects to the right sideMsgServer post_handler based on methodName
-func (s sideMsgServer) PostTxHandler(methodName string) mod.PostTxHandler {
+func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case topupMsgTypeURL:
 		return s.PostHandleTopupTx
@@ -48,17 +50,17 @@ func (s sideMsgServer) PostTxHandler(methodName string) mod.PostTxHandler {
 }
 
 // SideHandleTopupTx handles the side tx for a validator's topup tx
-func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote {
+func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
 		logger.Error("type mismatch for MsgTopupTx")
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	logger.Debug("validating external call for topup msg",
-		"txHash", msg.TxHash.GetHash(),
+		"txHash", string(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
@@ -67,58 +69,59 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) mod.Vote
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
 		logger.Error("default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	params, err := s.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 	chainParams := params.ChainParams
 
 	// get main tx receipt
-	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash.Hash), params.MainChainTxConfirmations)
+	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	// get event log for topup
 	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
 		logger.Error("error fetching log from txHash for DecodeValidatorTopupFeesEvent")
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		logger.Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
-	// TODO HV2: ensure addresses/keys consistency (see https://polygon.atlassian.net/browse/POS-2622)
-	msgAddr := common.HexToAddress(msg.User)
+	ac := address.NewHexCodec()
+	msgAddrBytes, err := ac.StringToBytes(msg.User)
+	eventLogBytes, err := ac.StringToBytes(eventLog.User.String())
 
-	if !bytes.Equal(eventLog.User.Bytes(), msgAddr.Bytes()) {
+	if !bytes.Equal(eventLogBytes, msgAddrBytes) {
 		logger.Error(
 			"user address from contract event log does not match with user from topup message",
 			"eventUser", eventLog.User.String(),
 			"msgUser", msg.User,
 		)
 
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.Fee.Cmp(msg.Fee.BigInt()) != 0 {
 		logger.Error("fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
-		return mod.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	logger.Debug("Successfully validated external call for topup msg")
 
-	return mod.Vote_VOTE_YES
+	return sidetxs.Vote_VOTE_YES
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup tx
-func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult mod.Vote) {
+func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
@@ -128,7 +131,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	// skip handler if topup is not approved
-	if sideTxResult != mod.Vote_VOTE_YES {
+	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
 		return
 	}
@@ -195,15 +198,14 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	txBytes := ctx.TxBytes()
-	hash := hTypes.TxHash{Hash: txBytes}.Hash
 
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeTopup,
 			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
 			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
-			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.Bytes2Hex(txBytes)),
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),
 			sdk.NewAttribute(types.AttributeKeySender, msg.Proposer),
 			sdk.NewAttribute(types.AttributeKeyRecipient, msg.User),
 			sdk.NewAttribute(types.AttributeKeyTopupAmount, msg.Fee.String()),

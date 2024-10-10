@@ -76,7 +76,7 @@ func TendermintTxDecode(txString string) ([]byte, error) {
 // GetMerkleProofList return proof array
 // each proof has one byte for direction: 0x0 for left and 0x1 for right
 func GetMerkleProofList(proof *merkle.Proof) [][]byte {
-	result := [][]byte{}
+	var result [][]byte
 	computeHashFromAunts(proof.Index, proof.Total, proof.LeafHash, proof.Aunts, &result)
 
 	return result
@@ -101,8 +101,6 @@ func computeHashFromAunts(index int64, total int64, leafHash []byte, innerHashes
 	}
 
 	switch total {
-	case 0:
-		panic("Cannot call computeHashFromAunts() with 0 total")
 	case 1:
 		if len(innerHashes) != 0 {
 			return nil
@@ -204,6 +202,18 @@ func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, 
 		return
 	}
 
+	if inputDataMap["sigs"] == nil {
+		inputDataMap["sigs"] = []byte{}
+	}
+
+	if inputDataMap["txData"] == nil {
+		inputDataMap["txData"] = []byte{}
+	}
+
+	if inputDataMap["vote"] == nil {
+		inputDataMap["vote"] = []byte{}
+	}
+
 	sigs = inputDataMap["sigs"].([]byte)
 	checkpointData = inputDataMap["txData"].([]byte)
 	votes = inputDataMap["vote"].([]byte)
@@ -211,7 +221,7 @@ func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, 
 	return
 }
 
-// EventByID looks up a event by the topic id
+// EventByID looks up an event by the topic id
 func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
 	for _, event := range abiObject.Events {
 		if bytes.Equal(event.ID.Bytes(), sigdata) {

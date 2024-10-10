@@ -16,9 +16,8 @@ const (
 	StateSenderAddress    = "0x28e4f3a7f651294b9564800b2d01f35189a5bfbe"
 )
 
-func (suite *KeeperTestSuite) TestMsgUpdateParams() {
-
-	params := suite.getParams()
+func (s *KeeperTestSuite) TestMsgUpdateParams() {
+	ctx, require, cmKeeper, queryClient, msgServer, params := s.ctx, s.Require(), s.cmKeeper, s.queryClient, s.msgServer, s.getParams()
 
 	testCases := []struct {
 		name      string
@@ -38,7 +37,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateParams() {
 		{
 			name: "invalid params",
 			input: &types.MsgUpdateParams{
-				Authority: suite.chainmanagerKeeper.GetAuthority(),
+				Authority: cmKeeper.GetAuthority(),
 				Params: types.Params{
 					ChainParams: types.ChainParams{
 						MaticTokenAddress: "def",
@@ -51,7 +50,7 @@ func (suite *KeeperTestSuite) TestMsgUpdateParams() {
 		{
 			name: "all good",
 			input: &types.MsgUpdateParams{
-				Authority: suite.chainmanagerKeeper.GetAuthority(),
+				Authority: cmKeeper.GetAuthority(),
 				Params:    params,
 			},
 			expErr: false,
@@ -60,28 +59,27 @@ func (suite *KeeperTestSuite) TestMsgUpdateParams() {
 
 	for _, tc := range testCases {
 		tc := tc
-		suite.Run(tc.name, func() {
-			_, err := suite.msgServer.UpdateParams(suite.ctx, tc.input)
+		s.Run(tc.name, func() {
+			_, err := msgServer.UpdateParams(ctx, tc.input)
 
 			if tc.expErr {
-				suite.Require().Error(err)
-				suite.Require().Contains(err.Error(), tc.expErrMsg)
+				require.Error(err)
+				require.Contains(err.Error(), tc.expErrMsg)
 			} else {
-				suite.Require().Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), suite.chainmanagerKeeper.GetAuthority())
-				suite.Require().NoError(err)
+				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), cmKeeper.GetAuthority())
+				require.NoError(err)
 
-				res, err := suite.queryClient.Params(suite.ctx, &types.QueryParamsRequest{})
-				suite.Require().NoError(err)
-				suite.Require().Equal(params, res.Params)
+				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+				require.NoError(err)
+				require.Equal(params, res.Params)
 			}
 		})
 	}
 }
 
-func (suite *KeeperTestSuite) getParams() types.Params {
-	suite.T().Helper()
+func (s *KeeperTestSuite) getParams() types.Params {
+	s.T().Helper()
 
-	// default params
 	params := types.DefaultParams()
 	params.ChainParams.MaticTokenAddress = MaticTokenAddress
 	params.ChainParams.StakingManagerAddress = StakingManagerAddress

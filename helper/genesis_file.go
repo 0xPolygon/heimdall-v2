@@ -43,9 +43,9 @@ func readPrealloc(filename string) (result cmTypes.GenesisDoc, err error) {
 		return
 	}
 	defer func(f fs.File) {
-		err := f.Close()
+		err = f.Close()
 		if err != nil {
-			Logger.Error("error while closing file handler: %v", err)
+			Logger.Error("error while closing file handler")
 		}
 	}(f)
 

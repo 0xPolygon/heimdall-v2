@@ -13,21 +13,21 @@ import (
 )
 
 // TestInitExportGenesis tests import and export of genesis state
-func (suite *KeeperTestSuite) TestInitExportGenesis() {
-	keeper, ctx, require := suite.keeper, suite.ctx, suite.Require()
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
+func (s *KeeperTestSuite) TestInitExportGenesis() {
+	keeper, ctx, require := s.keeper, s.ctx, s.Require()
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	num := 5
 
-	topupSequences := make([]string, 5)
-	dividendAccounts := make([]types.DividendAccount, 5)
-	accounts := simulation.RandomAccounts(r1, 5)
+	topupSequences := make([]string, num)
+	dividendAccounts := make([]types.DividendAccount, num)
+	accounts := simulation.RandomAccounts(r, num)
 
 	for i := range topupSequences {
-		topupSequences[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+		topupSequences[i] = strconv.Itoa(simulation.RandIntBetween(r, 1000, 100000))
 	}
 	for i := range dividendAccounts {
 		dividendAccounts[i].User = accounts[i].Address.String()
-		dividendAccounts[i].FeeAmount = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
+		dividendAccounts[i].FeeAmount = strconv.Itoa(simulation.RandIntBetween(r, 1000, 100000))
 	}
 
 	genesisState := topupTypes.GenesisState{

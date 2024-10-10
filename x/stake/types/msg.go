@@ -8,8 +8,6 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 var (
@@ -23,7 +21,7 @@ var (
 // NewMsgValidatorJoin creates a new MsgCreateValidator instance.
 func NewMsgValidatorJoin(
 	from string, id uint64, activationEpoch uint64,
-	amount math.Int, pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
+	amount math.Int, pubKey cryptotypes.PubKey, txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorJoin, error) {
 
@@ -74,7 +72,7 @@ func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 	}
 
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
+	if bytes.Equal(pk.Bytes(), EmptyPubKey[:]) {
 		return ErrInvalidMsg.Wrap("signer public key can't be of zero bytes")
 	}
 
@@ -89,7 +87,7 @@ func (msg MsgValidatorJoin) UnpackInterfaces(unpacker codectypes.AnyUnpacker) er
 
 // NewMsgStakeUpdate creates a new MsgStakeUpdate instance
 func NewMsgStakeUpdate(from string, id uint64,
-	newAmount math.Int, txHash hmTypes.TxHash, logIndex uint64,
+	newAmount math.Int, txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgStakeUpdate, error) {
 	return &MsgStakeUpdate{
 		From:        from,
@@ -124,7 +122,7 @@ func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
 
 // NewMsgSignerUpdate creates a new MsgSignerUpdate instance.
 func NewMsgSignerUpdate(from string, id uint64,
-	pubKey cryptotypes.PubKey, txHash hmTypes.TxHash, logIndex uint64,
+	pubKey cryptotypes.PubKey, txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgSignerUpdate, error) {
 	var pkAny *codectypes.Any
 	if pubKey != nil {
@@ -172,7 +170,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 	}
 
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
+	if bytes.Equal(pk.Bytes(), EmptyPubKey[:]) {
 		return ErrInvalidMsg.Wrap("new signer public key can't be of zero bytes")
 	}
 
@@ -182,7 +180,7 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 // NewMsgValidatorExit creates a new MsgValidatorExit instance.
 func NewMsgValidatorExit(
 	from string, id uint64, deactivationEpoch uint64,
-	txHash hmTypes.TxHash, logIndex uint64,
+	txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorExit, error) {
 	return &MsgValidatorExit{
