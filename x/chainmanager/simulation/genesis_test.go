@@ -32,7 +32,7 @@ func TestRandomizedGenState(t *testing.T) {
 		Cdc:          cdc,
 		Rand:         r,
 		NumBonded:    3,
-		BondDenom:    "matic",
+		BondDenom:    "pol",
 		Accounts:     simtypes.RandomAccounts(r, 3),
 		InitialStake: sdkmath.NewInt(1000),
 		GenState:     make(map[string]json.RawMessage),
@@ -44,7 +44,7 @@ func TestRandomizedGenState(t *testing.T) {
 	simState.Cdc.MustUnmarshalJSON(simState.GenState[types.ModuleName], &cmGenesis)
 
 	require.Equal(t, "646203300", cmGenesis.Params.ChainParams.BorChainId)
-	require.Equal(t, "0x00000000000000000000000041f27Cc6F3875D04", cmGenesis.Params.ChainParams.MaticTokenAddress)
+	require.Equal(t, "0x00000000000000000000000041f27Cc6F3875D04", cmGenesis.Params.ChainParams.PolygonPosTokenAddress)
 	require.Equal(t, "0x00000000000000000000000068255aaf95e94627", cmGenesis.Params.ChainParams.StakingManagerAddress)
 	require.Equal(t, "0x0000000000000000000000001B6cffa2BA517936", cmGenesis.Params.ChainParams.SlashManagerAddress)
 	require.Equal(t, "0x00000000000000000000000030b95fF183c471d4", cmGenesis.Params.ChainParams.RootChainAddress)

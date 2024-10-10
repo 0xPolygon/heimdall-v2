@@ -76,8 +76,8 @@ func StakeCmd() *cobra.Command {
 	// TODO HV2 - uncomment when we have staking
 	/*
 		cmd.Flags().String(stakingcli.FlagValidatorAddress, "", "--validator=<validator address here>")
-		cmd.Flags().String(stakingcli.FlagAmount, "10000000000000000000", "--staked-amount=<stake amount>, if left blank it will be assigned as 10 matic tokens")
-		cmd.Flags().String(stakingcli.FlagFeeAmount, "5000000000000000000", "--fee-amount=<heimdall fee amount>, if left blank will be assigned as 5 matic tokens")
+		cmd.Flags().String(stakingcli.FlagAmount, "10000000000000000000", "--staked-amount=<stake amount>, if left blank it will be assigned as 10 pol tokens")
+		cmd.Flags().String(stakingcli.FlagFeeAmount, "5000000000000000000", "--fee-amount=<heimdall fee amount>, if left blank will be assigned as 5 pol tokens")
 		cmd.Flags().Bool(stakingcli.FlagAcceptDelegation, true, "--accept-delegation=<accept delegation>, if left blank will be assigned as true")
 	*/
 
@@ -121,14 +121,14 @@ func ApproveCmd() *cobra.Command {
 				}
 
 				stakingManagerAddress := params.ChainParams.StakingManagerAddress.EthAddress()
-				maticTokenAddress := params.ChainParams.PolTokenAddress.EthAddress()
+				polygonPosTokenAddress := params.ChainParams.PolygonPosTokenAddress.EthAddress()
 
-				maticTokenInstance, err := contractCaller.GetPolygonPosTokenInstance(maticTokenAddress)
+				polygonPosTokenInstance, err := contractCaller.GetPolygonPosTokenInstance(polygonPosTokenAddress)
 				if err != nil {
 					return err
 				}
 
-				return contractCaller.ApproveTokens(stakeAmount.Add(stakeAmount, feeAmount), stakingManagerAddress, maticTokenAddress, maticTokenInstance)
+				return contractCaller.ApproveTokens(stakeAmount.Add(stakeAmount, feeAmount), stakingManagerAddress, polygonPosTokenAddress, polygonPosTokenInstance)
 			*/
 			return nil
 		},
@@ -136,8 +136,8 @@ func ApproveCmd() *cobra.Command {
 
 	// TODO HV2 - uncomment when we have staking
 	/*
-		cmd.Flags().String(stakingcli.FlagAmount, "10000000000000000000", "--staked-amount=<stake amount>, if left blank will be assigned as 10 matic tokens")
-		cmd.Flags().String(stakingcli.FlagFeeAmount, "5000000000000000000", "--fee-amount=<heimdall fee amount>, if left blank will be assigned as 5 matic tokens")
+		cmd.Flags().String(stakingcli.FlagAmount, "10000000000000000000", "--staked-amount=<stake amount>, if left blank will be assigned as 10 pol tokens")
+		cmd.Flags().String(stakingcli.FlagFeeAmount, "5000000000000000000", "--fee-amount=<heimdall fee amount>, if left blank will be assigned as 5 pol tokens")
 	*/
 
 	return cmd
