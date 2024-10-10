@@ -28,6 +28,9 @@ import (
 )
 
 func BenchmarkSendStateSyncedToHeimdall(b *testing.B) {
+	// TODO HV2: fix this test as it currently depends on the config file
+	//  See https://polygon.atlassian.net/browse/POS-2626
+	b.Skip("to be enabled")
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
@@ -65,6 +68,9 @@ func BenchmarkSendStateSyncedToHeimdall(b *testing.B) {
 }
 
 func BenchmarkIsOldTx(b *testing.B) {
+	// TODO HV2: fix this test as it currently depends on the config file
+	//  See https://polygon.atlassian.net/browse/POS-2626
+	b.Skip("to be enabled")
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
@@ -145,6 +151,9 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 }
 
 func BenchmarkCalculateTaskDelay(b *testing.B) {
+	// TODO HV2: fix this test as it currently depends on the config file
+	//  See https://polygon.atlassian.net/browse/POS-2626
+	b.Skip("to be enabled")
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
