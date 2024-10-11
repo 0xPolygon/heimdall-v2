@@ -374,7 +374,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		msg, err := stakingTypes.NewMsgSignerUpdate(
 			string(helper.GetAddress()[:]),
 			event.ValidatorId.Uint64(),
-			&secp256k1.PubKey{Key: newSignerPubKey},
+			newSignerPubKey,
 			vLog.TxHash.Bytes(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,
