@@ -5,6 +5,7 @@ import (
 
 	cmttypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
@@ -38,7 +39,8 @@ func WriteValidators(ctx sdk.Context, keeper *keeper.Keeper) (vals []cmttypes.Ge
 			returnErr = err
 			return
 		}
-		cmtPk, err := cryptocodec.ToCmtPubKeyInterface(pk)
+		pubKey := secp256k1.PubKey{Key: pk}
+		cmtPk, err := cryptocodec.ToCmtPubKeyInterface(&pubKey)
 		if err != nil {
 			returnErr = err
 			return

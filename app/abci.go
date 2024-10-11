@@ -36,6 +36,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// prepare the proposal with the vote extensions and the validators set's votes
 		var txs [][]byte
+		// TODO HV2: shouldn't we be using proto.Marshal instead of json.Marshal?
 		bz, err := json.Marshal(req.LocalLastCommit.Votes)
 		if err != nil {
 			logger.Error("Error occurred while marshaling the ExtendedVoteInfo in prepare proposal", "error", err)
@@ -68,6 +69,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
+			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			_, _, _, err = app.RunTx(execModePrepareProposal, proposedTx)
 			if err != nil {
 				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
@@ -101,6 +103,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		// extract the ExtendedVoteInfo from the txs (it is encoded at the beginning, index 0)
 		var extVoteInfo []abci.ExtendedVoteInfo
 		extendedVoteTx := req.Txs[0]
+		// TODO HV2: shouldn't we be using proto.Unmarshal instead of json.Unmarshal?
 		if err := json.Unmarshal(extendedVoteTx, &extVoteInfo); err != nil {
 			// returning an error here would cause consensus to panic. Reject the proposal instead if a proposer
 			// deliberately does not include ExtendedVoteInfo at the beginning of the txs slice
@@ -148,8 +151,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				continue
 			}
 
-			// check the txs via the AnteHandler
-			// skip the first tx as it contains the ExtendedVoteInfo and may not have an AnteHandler
+			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			_, _, _, err = app.RunTx(execModeProcessProposal, tx)
 			if err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
@@ -179,6 +181,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		// check whether ExtendedVoteInfo is encoded at the beginning
 		bz := req.Txs[0]
+		// TODO HV2: shouldn't we be using proto.Unmarshal instead of json.Unmarshal?
 		if err := json.Unmarshal(bz, &extVoteInfos); err != nil {
 			logger.Error("Error occurred while decoding ExtendedVoteInfo", "error", err)
 			// abnormal behavior since the block got >2/3 pre-votes, so the special tx should have been added
@@ -299,6 +302,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	bz := req.Txs[0]
+	// TODO HV2: shouldn't we be using proto.Unmarshal instead of json.Unmarshal?
 	if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
 		logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
 		return nil, err
@@ -358,6 +362,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 				if bytes.Equal(approvedTx, txBytes.Hash()) {
 
+					// execute post handlers for the approved side txs' msgs
 					msgs := decodedTx.GetMsgs()
 					for _, msg := range msgs {
 						postHandler := app.sideTxCfg.GetPostHandler(msg)

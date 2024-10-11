@@ -32,14 +32,7 @@ func TestHeimdallAppExport(t *testing.T) {
 	t.Parallel()
 	app, db, logger := SetupApp(t, 1)
 
-	// finalize block so we have CheckTx state set
-	_, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 100,
-	})
-
-	require.NoError(t, err)
-
-	_, err = app.Commit()
+	_, err := app.Commit()
 	require.NoError(t, err)
 
 	// Making a new app object with the db, so that InitChain hasn't been called
@@ -219,7 +212,6 @@ func TestInitGenesisOnMigration(t *testing.T) {
 }
 
 func TestValidateGenesis(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test if required")
 	t.Parallel()
 
 	hApp, _, _ := SetupApp(t, 1)

@@ -1,6 +1,7 @@
 package types_test
 
 import (
+	"bytes"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -52,14 +53,14 @@ func TestMsgDecode(t *testing.T) {
 	msgValJoin2, ok := msgUnmarshalled.(*types.MsgValidatorJoin)
 	require.True(t, ok)
 	require.Equal(t, msgValJoin.From, msgValJoin2.From)
-	require.True(t, msgValJoin.SignerPubKey.Equal(msgValJoin2.SignerPubKey))
+	require.True(t, bytes.Equal(msgValJoin.SignerPubKey, msgValJoin2.SignerPubKey))
 	require.Equal(t, msgValJoin.ActivationEpoch, msgValJoin2.ActivationEpoch)
 	require.Equal(t, msgValJoin.ValId, msgValJoin2.ValId)
 
 	msgSignerUpdate, err := types.NewMsgSignerUpdate(
 		pk1.Address().String(),
 		uint64(1),
-		pk1,
+		pk1.Bytes(),
 		[]byte{},
 		uint64(1),
 		uint64(0),
@@ -75,7 +76,7 @@ func TestMsgDecode(t *testing.T) {
 	msgSignerUpdate2, ok := msgUnmarshalled.(*types.MsgSignerUpdate)
 	require.True(t, ok)
 	require.Equal(t, msgSignerUpdate.From, msgSignerUpdate2.From)
-	require.True(t, msgSignerUpdate.NewSignerPubKey.Equal(msgSignerUpdate2.NewSignerPubKey))
+	require.True(t, bytes.Equal(msgSignerUpdate.NewSignerPubKey, msgSignerUpdate2.NewSignerPubKey))
 	require.Equal(t, msgSignerUpdate.ValId, msgSignerUpdate2.ValId)
 
 	msgStakeUpdate, err := types.NewMsgStakeUpdate(

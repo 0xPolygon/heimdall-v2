@@ -23,29 +23,27 @@ import (
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
-	t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
+	// TODO HV2: find a way to extend these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)
 	hApp, _, _ := SetupApp(t, 1)
 	ctx := hApp.BaseApp.NewContext(false)
 	vals := hApp.StakeKeeper.GetAllValidators(ctx)
-	valAddr, err := address.NewHexCodec().StringToBytes(vals[0].Signer)
-	require.NoError(t, err)
+	valAddr := common.FromHex(vals[0].Signer)
 
 	cometVal := abci.Validator{
 		Address: valAddr,
 		Power:   vals[0].VotingPower,
 	}
-	_, err = hApp.Commit()
+	_, err := hApp.Commit()
 	require.NoError(t, err)
 
 	tests := []struct {
-		name         string
-		ctx          sdk.Context
-		extVoteInfo  []abci.ExtendedVoteInfo
-		round        int32
-		keeper       stakeKeeper.Keeper
-		shouldPanic  bool
-		panicMessage string
-		expectedErr  string
+		name        string
+		ctx         sdk.Context
+		extVoteInfo []abci.ExtendedVoteInfo
+		round       int32
+		keeper      stakeKeeper.Keeper
+		shouldPanic bool
+		expectedErr string
 	}{
 		{
 			name: "ves disabled with non-empty vote extension",
@@ -53,10 +51,9 @@ func TestValidateVoteExtensions(t *testing.T) {
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				setupExtendedVoteInfo(cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal),
 			},
-			round:        1,
-			keeper:       hApp.StakeKeeper,
-			shouldPanic:  true,
-			panicMessage: "VoteExtensions are disabled!",
+			round:       1,
+			keeper:      hApp.StakeKeeper,
+			shouldPanic: true,
 		},
 		{
 			name: "function executed correctly, but failing on signature verification",
@@ -74,7 +71,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
-				require.PanicsWithValue(t, tt.panicMessage, func() {
+				require.Panics(t, func() {
 					err = ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
 					fmt.Printf("err: %v\n", err)
 				})

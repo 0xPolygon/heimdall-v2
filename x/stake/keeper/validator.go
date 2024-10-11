@@ -9,10 +9,13 @@ import (
 	"cosmossdk.io/collections"
 	addresscodec "cosmossdk.io/core/address"
 	abci "github.com/cometbft/cometbft/abci/types"
-	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
+
+// TODO HV2: Make sure we always same the same format in the stores (for all modules)
+//  when it comes to addresses' string/bytes so that we can use the addressCodec without problems
+//  See https://polygon.atlassian.net/browse/POS-2703
 
 // AddValidator adds validator indexed with address
 func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
@@ -191,7 +194,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 }
 
 // UpdateSigner updates validator fields in store
-func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey *codecTypes.Any, prevSigner string) error {
+func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey []byte, prevSigner string) error {
 	k.PanicIfSetupIsIncomplete()
 	// get old validator from state and make power 0
 	validator, err := k.GetValidatorInfo(ctx, prevSigner)

@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/stretchr/testify/assert"
 )
@@ -49,14 +48,9 @@ func TestValidateBasic(t *testing.T) {
 
 	accounts := simulation.RandomAccounts(r1, n)
 
-	pks := make([]*codectypes.Any, n)
+	pks := make([][]byte, n)
 	for i, acc := range accounts {
-		pkAny, err := codectypes.NewAnyWithValue(acc.PubKey)
-		if err != nil {
-			t.Error()
-		}
-
-		pks[i] = pkAny
+		pks[i] = acc.PubKey.Bytes()
 	}
 
 	tc := []struct {

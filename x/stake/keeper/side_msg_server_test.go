@@ -11,7 +11,6 @@ import (
 	"cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
@@ -461,19 +460,13 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	newSigner0Address := common.BytesToAddress(newSigner0Bytes)
 
-	newSigner0Pk, ok := newSigner[0].PubKey.GetCachedValue().(cryptotypes.PubKey)
-	require.True(ok)
-
-	newSigner1Pk, ok := newSigner[1].PubKey.GetCachedValue().(cryptotypes.PubKey)
-	require.True(ok)
-
 	// gen msg
 	msgTxHash := common.Hash{}.Bytes()
 
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
 
-		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
@@ -484,7 +477,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 			Nonce:        nonce,
 			OldSigner:    oldSignerAddress,
 			NewSigner:    newSigner0Address,
-			SignerPubkey: newSigner0Pk.Bytes()[1:],
+			SignerPubkey: newSigner[0].PubKey[1:],
 		}
 
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
@@ -495,7 +488,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	s.Run("No event log", func() {
 		contractCaller.Mock = mock.Mock{}
-		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
@@ -513,7 +506,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 		msg, err := types.NewMsgSignerUpdate(
 			newSigner[0].Signer,
 			oldSigner.ValId,
-			newSigner0Pk,
+			newSigner[0].PubKey,
 			msgTxHash,
 			0,
 			uint64(9),
@@ -530,7 +523,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 			Nonce:        nonce,
 			OldSigner:    oldSignerAddress,
 			NewSigner:    newSigner0Address,
-			SignerPubkey: newSigner0Pk.Bytes()[1:],
+			SignerPubkey: newSigner[0].PubKey[1:],
 		}
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
@@ -540,7 +533,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	s.Run("Invalid validator", func() {
 		contractCaller.Mock = mock.Mock{}
-		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, uint64(6), newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, uint64(6), newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
@@ -551,7 +544,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 			Nonce:        nonce,
 			OldSigner:    oldSignerAddress,
 			NewSigner:    newSigner0Address,
-			SignerPubkey: newSigner0Pk.Bytes()[1:],
+			SignerPubkey: newSigner[0].PubKey[1:],
 		}
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
@@ -561,7 +554,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	s.Run("Invalid signer pubKey", func() {
 		contractCaller.Mock = mock.Mock{}
-		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner1Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[1].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
@@ -572,7 +565,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 			Nonce:        nonce,
 			OldSigner:    oldSignerAddress,
 			NewSigner:    newSigner0Address,
-			SignerPubkey: newSigner0Pk.Bytes()[1:],
+			SignerPubkey: newSigner[0].PubKey[1:],
 		}
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
@@ -582,7 +575,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	s.Run("Invalid new signer address", func() {
 		contractCaller.Mock = mock.Mock{}
-		msg, err := types.NewMsgSignerUpdate(common.Address{}.Hex(), oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		msg, err := types.NewMsgSignerUpdate(common.Address{}.Hex(), oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
@@ -593,7 +586,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 			Nonce:        nonce,
 			OldSigner:    oldSignerAddress,
 			NewSigner:    common.Address{},
-			SignerPubkey: newSigner0Pk.Bytes()[1:],
+			SignerPubkey: newSigner[0].PubKey[1:],
 		}
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
@@ -603,7 +596,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 	s.Run("Invalid nonce", func() {
 		contractCaller.Mock = mock.Mock{}
-		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), uint64(12))
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), uint64(12))
 		require.NoError(err)
 
 		txReceipt := &ethTypes.Receipt{BlockNumber: blockNumber}
@@ -614,7 +607,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 			Nonce:        nonce,
 			OldSigner:    oldSignerAddress,
 			NewSigner:    newSigner0Address,
-			SignerPubkey: newSigner0Pk.Bytes()[1:],
+			SignerPubkey: newSigner[0].PubKey[1:],
 		}
 		contractCaller.On("DecodeSignerUpdateEvent", chainParams.ChainParams.StakingInfoAddress, txReceipt, uint64(0)).Return(signerUpdateEvent, nil)
 
@@ -1219,12 +1212,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	// gen msg
 	msgTxHash := common.Hash{}.Bytes()
 
-	newSigner0Pk, ok := newSigner[0].PubKey.GetCachedValue().(cryptotypes.PubKey)
-	require.True(ok)
-
 	s.Run("No Success", func() {
 		contractCaller.Mock = mock.Mock{}
-		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		require.NoError(err)
 
 		postHandler(ctx, msg, sidetxs.Vote_VOTE_NO)
@@ -1232,7 +1222,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
-		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner0Pk, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 
 		postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 
@@ -1246,7 +1236,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 		require.NoError(err)
 
 		ValFrmID, err := keeper.GetValidatorFromValID(ctx, oldSigner.ValId)
-		require.NoErrorf(err, "new signer should be found, got %v", ok)
+		require.NoErrorf(err, "new signer should be found")
 		require.Equal(ValFrmID.Signer, newSigner[0].Signer, "New Signer should be mapped to old validator ID")
 		require.Equalf(ValFrmID.VotingPower, oldSigner.VotingPower, "VotingPower of new signer %v should be equal to old signer %v", ValFrmID.VotingPower, oldSigner.VotingPower)
 

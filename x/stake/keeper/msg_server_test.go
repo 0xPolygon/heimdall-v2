@@ -2,10 +2,10 @@ package keeper_test
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 
 	"cosmossdk.io/math"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
@@ -30,44 +30,39 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	pk1 := ed25519.GenPrivKey().PubKey()
 	require.NotNil(pk1)
 
-	pubKey, err := codectypes.NewAnyWithValue(pk1)
-	require.NoError(err)
-
 	// Msg with wrong pub key
 	msgValJoin := stakingtypes.MsgValidatorJoin{
 		From:            pk1.Address().String(),
 		ValId:           uint64(1),
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
-		SignerPubKey:    pubKey,
+		SignerPubKey:    pk1.Bytes(),
 		TxHash:          []byte{},
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
 	}
 
-	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
-	require.Error(err)
+	require.Panics(func() {
+		msgServer.ValidatorJoin(ctx, &msgValJoin)
+	})
 
 	pk1 = secp256k1.GenPrivKey().PubKey()
 	require.NotNil(pk1)
-
-	pubKey, err = codectypes.NewAnyWithValue(pk1)
-	require.NoError(err)
 
 	msgValJoin = stakingtypes.MsgValidatorJoin{
 		From:            pk1.Address().String(),
 		ValId:           uint64(1),
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
-		SignerPubKey:    pubKey,
+		SignerPubKey:    pk1.Bytes(),
 		TxHash:          []byte{},
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
 	}
 
-	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
+	_, err := msgServer.ValidatorJoin(ctx, &msgValJoin)
 	require.NoError(err)
 
 	_, err = keeper.GetValidatorFromValID(ctx, uint64(1))
@@ -109,26 +104,19 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 
-	//TODO HV2 Please look into this testcase, this should give error because
-	// old signer is equal to new signer but this is giving error because of interfacing
-	// issue which shouldn't be the case
+	msgSignerUpdateSameKey := stakingtypes.MsgSignerUpdate{
+		From:            oldSigner.Signer,
+		ValId:           oldSigner.ValId,
+		NewSignerPubKey: oldSigner.GetPubKey(),
+		TxHash:          []byte{},
+		LogIndex:        uint64(0),
+		BlockNumber:     uint64(0),
+		Nonce:           uint64(1),
+	}
 
-	/*
-		msgSignerUpdate := stakingtypes.MsgSignerUpdate{
-			From:            oldSigner.Signer,
-			ValId:           uint64(1),
-			NewSignerPubKey: oldSigner.GetPubKey(),
-			TxHash:          hmTypes.TxHash{},
-			LogIndex:        uint64(0),
-			BlockNumber:     uint64(0),
-			Nonce:           uint64(1),
-		}
-
-		result, err := msgServer.SignerUpdate(ctx, &msgSignerUpdate)
-
-
-		require.Error(err)
-	*/
+	result, err := msgServer.SignerUpdate(ctx, &msgSignerUpdateSameKey)
+	require.Error(err)
+	require.Contains(err.Error(), "newSigner same as oldSigner")
 
 	msgSignerUpdate := stakingtypes.MsgSignerUpdate{
 		From:            newSigner[0].Signer,
@@ -140,7 +128,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 		Nonce:           uint64(1),
 	}
 
-	result, err := msgServer.SignerUpdate(ctx, &msgSignerUpdate)
+	result, err = msgServer.SignerUpdate(ctx, &msgSignerUpdate)
 
 	require.NoErrorf(err, "expected validator update to be ok, got %v", result)
 
@@ -239,9 +227,6 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	pk1 := secp256k1.GenPrivKey().PubKey()
 	require.NotNil(pk1)
 
-	pubKey, err := codectypes.NewAnyWithValue(pk1)
-	require.NoError(err)
-
 	addr := pk1.Address().String()
 
 	index := simulation.RandIntBetween(r, 0, 100)
@@ -274,7 +259,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		ValId:           validatorId,
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(100000)),
-		SignerPubKey:    pubKey,
+		SignerPubKey:    pk1.Bytes(),
 		TxHash:          []byte{},
 		LogIndex:        logIndex,
 		BlockNumber:     uint64(0),
@@ -283,4 +268,14 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 
 	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
 	require.NotNil(err)
+}
+
+func (s *KeeperTestSuite) TestValidatorPubKey() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	testutil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 0)
+	valPubKey := keeper.GetAllValidators(ctx)[0].GetPubKey()
+	valAddr := keeper.GetAllValidators(ctx)[0].Signer
+	modPubKey := secp256k1.PubKey{Key: valPubKey}
+	require.Equal(valPubKey, modPubKey.Bytes())
+	require.True(strings.EqualFold(valAddr, modPubKey.Address().String()))
 }

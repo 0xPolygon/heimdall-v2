@@ -88,11 +88,8 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", proposerAdd, common.Bytes2Hex(txHash), err)
 		}
 
-		codec := address.HexCodec{}
-		valAddrStr, err := codec.BytesToString(vote.Validator.Address)
-		if err != nil {
-			return err
-		}
+		// TODO HV2: See https://polygon.atlassian.net/browse/POS-2703
+		valAddrStr := common.Bytes2Hex(vote.Validator.Address)
 
 		// Check for duplicate votes by the same validator
 		if _, found := seenValidators[valAddrStr]; found {

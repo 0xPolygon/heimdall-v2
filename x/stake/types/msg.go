@@ -5,17 +5,15 @@ import (
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 var (
-	_ sdk.Msg                            = &MsgValidatorJoin{}
-	_ codectypes.UnpackInterfacesMessage = (*MsgValidatorJoin)(nil)
-	_ sdk.Msg                            = &MsgStakeUpdate{}
-	_ sdk.Msg                            = &MsgSignerUpdate{}
-	_ sdk.Msg                            = &MsgValidatorExit{}
+	_ sdk.Msg = &MsgValidatorJoin{}
+	_ sdk.Msg = &MsgStakeUpdate{}
+	_ sdk.Msg = &MsgSignerUpdate{}
+	_ sdk.Msg = &MsgValidatorExit{}
 )
 
 // NewMsgValidatorJoin creates a new MsgCreateValidator instance.
@@ -24,20 +22,12 @@ func NewMsgValidatorJoin(
 	amount math.Int, pubKey cryptotypes.PubKey, txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorJoin, error) {
-
-	var pkAny *codectypes.Any
-	if pubKey != nil {
-		var err error
-		if pkAny, err = codectypes.NewAnyWithValue(pubKey); err != nil {
-			return nil, err
-		}
-	}
 	return &MsgValidatorJoin{
 		From:            from,
 		ValId:           id,
 		ActivationEpoch: activationEpoch,
 		Amount:          amount,
-		SignerPubKey:    pkAny,
+		SignerPubKey:    pubKey.Bytes(),
 		TxHash:          txHash,
 		LogIndex:        logIndex,
 		BlockNumber:     blockNumber,
@@ -66,23 +56,12 @@ func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 		return ErrInvalidMsg.Wrap("signer public key can't be nil")
 	}
 
-	pk, ok := msg.SignerPubKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return ErrInvalidMsg.Wrap("error in unwrapping the public key")
-	}
-
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), EmptyPubKey[:]) {
+	if bytes.Equal(msg.SignerPubKey, EmptyPubKey[:]) {
 		return ErrInvalidMsg.Wrap("signer public key can't be of zero bytes")
 	}
 
 	return nil
-}
-
-// UnpackInterfaces implements UnpackInterfacesMessage.UnpackInterfaces
-func (msg MsgValidatorJoin) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	var pubKey cryptotypes.PubKey
-	return unpacker.UnpackAny(msg.SignerPubKey, &pubKey)
 }
 
 // NewMsgStakeUpdate creates a new MsgStakeUpdate instance
@@ -122,20 +101,12 @@ func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
 
 // NewMsgSignerUpdate creates a new MsgSignerUpdate instance.
 func NewMsgSignerUpdate(from string, id uint64,
-	pubKey cryptotypes.PubKey, txHash []byte, logIndex uint64,
+	pubKey []byte, txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgSignerUpdate, error) {
-	var pkAny *codectypes.Any
-	if pubKey != nil {
-		var err error
-		if pkAny, err = codectypes.NewAnyWithValue(pubKey); err != nil {
-			return nil, err
-		}
-	}
-
 	return &MsgSignerUpdate{
 		From:            from,
 		ValId:           id,
-		NewSignerPubKey: pkAny,
+		NewSignerPubKey: pubKey,
 		TxHash:          txHash,
 		LogIndex:        logIndex,
 		BlockNumber:     blockNumber,
@@ -164,13 +135,8 @@ func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
 		return ErrInvalidMsg.Wrap("signer public key can't be nil")
 	}
 
-	pk, ok := msg.NewSignerPubKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return ErrInvalidMsg.Wrap("error in unwrapping the public key")
-	}
-
 	// TODO HV2: Should we implement the check for the size here
-	if bytes.Equal(pk.Bytes(), EmptyPubKey[:]) {
+	if bytes.Equal(msg.NewSignerPubKey, EmptyPubKey[:]) {
 		return ErrInvalidMsg.Wrap("new signer public key can't be of zero bytes")
 	}
 
