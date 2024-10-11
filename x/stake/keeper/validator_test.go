@@ -1,7 +1,10 @@
 package keeper_test
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -59,4 +62,14 @@ func TestSortValidatorByAddress(t *testing.T) {
 	if validatorSet.Len() != 3 {
 		t.Error(err)
 	}
+}
+
+func (s *KeeperTestSuite) TestValidatorPubKey() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	testutil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 0)
+	valPubKey := keeper.GetAllValidators(ctx)[0].GetPubKey()
+	valAddr := keeper.GetAllValidators(ctx)[0].Signer
+	modPubKey := secp256k1.PubKey{Key: valPubKey}
+	require.Equal(valPubKey, modPubKey.Bytes())
+	require.True(strings.EqualFold(valAddr, modPubKey.Address().String()))
 }
