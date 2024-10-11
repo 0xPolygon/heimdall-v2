@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 
 	"cosmossdk.io/math"
@@ -267,4 +268,14 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 
 	_, err = msgServer.ValidatorJoin(ctx, &msgValJoin)
 	require.NotNil(err)
+}
+
+func (s *KeeperTestSuite) TestValidatorPubKey() {
+	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
+	testutil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 0)
+	valPubKey := keeper.GetAllValidators(ctx)[0].GetPubKey()
+	valAddr := keeper.GetAllValidators(ctx)[0].Signer
+	modPubKey := secp256k1.PubKey{Key: valPubKey}
+	require.Equal(valPubKey, modPubKey.Bytes())
+	require.True(strings.EqualFold(valAddr, modPubKey.Address().String()))
 }
