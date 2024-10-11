@@ -1,10 +1,12 @@
 package processor
 
+import "github.com/0xPolygon/heimdall-v2/bridge/util"
+
 const (
 	dummyCometBFTNode      = "http://localhost:26657"
 	dummyHeimdallServerUrl = "https://dummy-heimdall-api-testnet.polygon.technology"
 
-	chainManagerParamsUrl      = dummyHeimdallServerUrl + "/chainmanager/params"
+	chainManagerParamsUrl      = dummyHeimdallServerUrl + util.ChainManagerParamsURL
 	chainManagerParamsResponse = `
 	{
 	"height": "0",
@@ -54,7 +56,7 @@ const (
 		"result": false
 	}`
 
-	checkpointCountUrl      = dummyHeimdallServerUrl + "/checkpoints/count"
+	checkpointCountUrl      = dummyHeimdallServerUrl + util.CountCheckpointURL
 	checkpointCountResponse = `
 	{
   		"height": "11384858",

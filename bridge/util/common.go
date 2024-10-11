@@ -30,35 +30,37 @@ import (
 
 type BridgeEvent string
 
-// TODO HV2 - review these URLs proto/heimdallv2/<moduleName>/query.proto/ service Query.
 const (
-	AccountDetailsURL       = "/auth/accounts/%v"
-	LastNoAckURL            = "/checkpoints/last-no-ack"
-	CheckpointParamsURL     = "/checkpoints/params"
-	MilestoneParamsURL      = "/milestone/params"
-	MilestoneCountURL       = "/milestone/count"
-	ChainManagerParamsURL   = "/chainmanager/params"
-	ProposersURL            = "/staking/proposer/%v"
-	MilestoneProposersURL   = "/staking/milestoneProposer/%v"
-	BufferedCheckpointURL   = "/checkpoints/buffer"
-	LatestCheckpointURL     = "/checkpoints/latest"
-	LatestMilestoneURL      = "/milestone/latest"
-	CountCheckpointURL      = "/checkpoints/count"
-	CurrentProposerURL      = "/staking/current-proposer"
-	LatestSpanURL           = "/bor/latest-span"
-	NextSpanInfoURL         = "/bor/prepare-next-span"
-	NextSpanSeedURL         = "/bor/next-span-seed"
-	DividendAccountRootURL  = "/topup/dividend-account-root"
-	ValidatorURL            = "/staking/validator/%v"
-	CurrentValidatorSetURL  = "staking/validator-set"
-	StakingTxStatusURL      = "/staking/isoldtx"
-	TopupTxStatusURL        = "/topup/isoldtx"
-	ClerkTxStatusURL        = "/clerk/isoldtx"
-	ClerkEventRecordURL     = "/clerk/event-record/%d"
-	LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
-	TickSlashInfoListURL    = "/slashing/tick_slash_infos"
-	SlashingTxStatusURL     = "/slashing/isoldtx"
-	SlashingTickCountURL    = "/slashing/tick-count"
+	AccountDetailsURL      = "/cosmos/auth/v1beta1/accounts/%v"
+	LastNoAckURL           = "/checkpoints/last-no-ack"
+	CheckpointParamsURL    = "/checkpoints/params"
+	MilestoneParamsURL     = "/milestone/params"
+	MilestoneCountURL      = "/milestone/count"
+	ChainManagerParamsURL  = "/chainmanager/params"
+	ProposersURL           = "/stake/proposer/%v"
+	MilestoneProposersURL  = "/milestone/proposer/%v"
+	BufferedCheckpointURL  = "/checkpoints/buffer"
+	LatestCheckpointURL    = "/checkpoints/latest"
+	LatestMilestoneURL     = "/milestone/latest"
+	CountCheckpointURL     = "/checkpoints/count"
+	CurrentProposerURL     = "/checkpoint/proposers/current"
+	LatestSpanURL          = "/bor/span/latest"
+	NextSpanInfoURL        = "/bor/span/prepare"
+	NextSpanSeedURL        = "/bor/span/seed"
+	DividendAccountRootURL = "/topup/dividend-account-root"
+	ValidatorURL           = "/stake/validator/%v"
+	CurrentValidatorSetURL = "/stake/validator-set"
+	StakingTxStatusURL     = "/stake/is-old-tx"
+	TopupTxStatusURL       = "/topup/isoldtx"
+	ClerkTxStatusURL       = "/clerk/isoldtx"
+	ClerkEventRecordURL    = "/clerk/event-record/%d"
+	// TODO HV2 - not adding slashing
+	/*
+		LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
+		TickSlashInfoListURL    = "/slashing/tick_slash_infos"
+		SlashingTxStatusURL     = "/slashing/isoldtx"
+		SlashingTickCountURL    = "/slashing/tick-count"
+	*/
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
@@ -72,10 +74,11 @@ const (
 	mempoolTxnCountDivisor = 1000
 
 	// Bridge event types
-	StakingEvent  BridgeEvent = "staking"
-	TopupEvent    BridgeEvent = "topup"
-	ClerkEvent    BridgeEvent = "clerk"
-	SlashingEvent BridgeEvent = "slashing"
+	StakingEvent BridgeEvent = "staking"
+	TopupEvent   BridgeEvent = "topup"
+	ClerkEvent   BridgeEvent = "clerk"
+	// TODO HV2 - not adding slashing
+	// SlashingEvent BridgeEvent = "slashing"
 
 	BridgeDBFlag = "bridge-db"
 )
