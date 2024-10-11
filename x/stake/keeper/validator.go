@@ -13,6 +13,10 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+// TODO HV2: Make sure we always same the same format in the stores (for all modules)
+//  when it comes to addresses' string/bytes so that we can use the addressCodec without problems
+//  See https://polygon.atlassian.net/browse/POS-2703
+
 // AddValidator adds validator indexed with address
 func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
 	k.PanicIfSetupIsIncomplete()

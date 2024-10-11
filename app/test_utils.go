@@ -112,15 +112,9 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: simtestutil.DefaultConsensusParams,
 		AppStateBytes:   stateBytes,
-		InitialHeight:   99,
+		InitialHeight:   100,
 	},
 	)
-	require.NoError(t, err)
-
-	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 99,
-		Hash:   app.LastCommitID().Hash,
-	})
 	require.NoError(t, err)
 
 	return app, db, logger
