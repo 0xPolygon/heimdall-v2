@@ -480,7 +480,7 @@ func GetPubKey() secp256k1.PubKey {
 
 // GetAddress returns address object
 func GetAddress() []byte {
-	return GetPubKey().Address().Bytes()
+	return GetPubKey().Address()
 }
 
 // GetValidChains returns all the valid chains

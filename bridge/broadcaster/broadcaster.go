@@ -17,6 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/spf13/viper"
 )
@@ -44,7 +45,7 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 
 	var account sdk.AccountI
 
-	account, err := util.GetAccount(cliCtx, string(address[:]))
+	account, err := util.GetAccount(cliCtx, common.BytesToAddress(address).String())
 	if err != nil {
 		panic("Error connecting to rest-server, please start server before bridge.")
 	}

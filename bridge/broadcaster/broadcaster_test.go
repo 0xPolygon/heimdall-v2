@@ -24,6 +24,7 @@ import (
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
@@ -40,7 +41,7 @@ var (
 	testChainId             = "testChainId"
 	dummyCometBFTNodeUrl    = "http://localhost:26657"
 	dummyHeimdallServerUrl  = "https://dummy-heimdall-api-testnet.polygon.technology"
-	getAccountUrl           = dummyHeimdallServerUrl + "/auth/accounts/" + address.String()
+	getAccountUrl           = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/accounts/" + common.BytesToAddress(address).String()
 	getAccountResponse      = fmt.Sprintf(`
 	{
 		"height": "11384869",
@@ -122,7 +123,7 @@ var (
 
 // Parallel test - to check BroadcastToHeimdall synchronisation
 func TestBroadcastToHeimdall(t *testing.T) {
-	t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
+	// t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
 	t.Parallel()
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNodeUrl)
