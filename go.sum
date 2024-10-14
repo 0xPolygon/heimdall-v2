@@ -32,10 +32,10 @@ cosmossdk.io/x/upgrade v0.1.1/go.mod h1:MNLptLPcIFK9CWt7Ra//8WUZAxweyRDNcbs5nkOc
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 filippo.io/edwards25519 v1.0.0 h1:0wAIcmJUqRdI8IJ/3eGi5/HwXZWPujYXXlkrQogz0Ek=
 filippo.io/edwards25519 v1.0.0/go.mod h1:N1IkdkCkiLB6tki+MYJoSx2JTY9NUlxZE7eHn5EwJns=
-github.com/0xPolygon/cometbft v0.1.0-beta.0.20240917125325-d367048102fb h1:6lS4eqSZ7iJaU7muoQo5YLyrj1/rQODzjT72zGxStVM=
-github.com/0xPolygon/cometbft v0.1.0-beta.0.20240917125325-d367048102fb/go.mod h1:9mQ6UO7icJQz/mjetNQglxzY9AcRc9+ikj3r77LNb5c=
-github.com/0xPolygon/cosmos-sdk v0.50.3-0.20241014073544-4fb1b9e8ea9e h1:g5QNMyU2krSnRousEN63MYcmtaoYds/nJcQghW04zCY=
-github.com/0xPolygon/cosmos-sdk v0.50.3-0.20241014073544-4fb1b9e8ea9e/go.mod h1:ZOnFzPOKhdLRYJMFBBicHnaH19IcYz4pZlLhs7/vvGQ=
+github.com/0xPolygon/cometbft v0.1.1-beta-polygon h1:vk5Wxo1w/Fd5BtBW7ulDVV35eBEVXvcXl5eACvIifh8=
+github.com/0xPolygon/cometbft v0.1.1-beta-polygon/go.mod h1:bl5bYf51Vd0A6K//9pxwUpQSnmqKRHwro8D+kl+BHsk=
+github.com/0xPolygon/cosmos-sdk v0.1.4-beta-polygon h1:8KCgy7H1sn7+njEmjM3vslqEl8uc1KrloVvPUdAaB3k=
+github.com/0xPolygon/cosmos-sdk v0.1.4-beta-polygon/go.mod h1:ZOnFzPOKhdLRYJMFBBicHnaH19IcYz4pZlLhs7/vvGQ=
 github.com/0xPolygon/cosmos-sdk/api v0.7.2 h1:IfqNe3Lff83clkZJTYXzttUkC3YVpkZHIobqw8SoMJs=
 github.com/0xPolygon/cosmos-sdk/api v0.7.2/go.mod h1:IcxpYS5fMemZGqyYtErK7OqvdM0C8kdW3dq8Q/XIG38=
 github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.1 h1:XV7f44uAJ1p1w9j15uzm2S8VOSusHFJ1UWvkUj0EK7g=
