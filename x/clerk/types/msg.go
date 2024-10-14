@@ -6,7 +6,6 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hm2types "github.com/0xPolygon/heimdall-v2/types"
 )
 
 // NewMsgEventRecord - construct state msg
@@ -17,7 +16,7 @@ func NewMsgEventRecord(
 	blockNumber uint64,
 	id uint64,
 	contractAddress sdk.AccAddress,
-	data hm2types.HexBytes,
+	data []byte,
 	chainID string,
 
 ) MsgEventRecordRequest {
@@ -67,7 +66,7 @@ func (msg MsgEventRecordRequest) ValidateBasic() error {
 
 	// TODO HV2: Double check this
 	// DO NOT REMOVE THIS CHANGE
-	if msg.Data.Size() > helper.MaxStateSyncSize {
+	if len(msg.Data) > helper.MaxStateSyncSize {
 		return ErrSizeExceed
 	}
 

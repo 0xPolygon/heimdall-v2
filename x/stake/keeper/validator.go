@@ -9,17 +9,19 @@ import (
 	"cosmossdk.io/collections"
 	addresscodec "cosmossdk.io/core/address"
 	abci "github.com/cometbft/cometbft/abci/types"
-	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+// TODO HV2: Make sure we always same the same format in the stores (for all modules)
+//  when it comes to addresses' string/bytes so that we can use the addressCodec without problems
+//  See https://polygon.atlassian.net/browse/POS-2703
+
 // AddValidator adds validator indexed with address
 func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
-
+	k.PanicIfSetupIsIncomplete()
 	// store validator with address prefixed with validator key as index
-	err := k.validators.Set(ctx, validator.Signer, validator)
+	err := k.validators.Set(ctx, strings.ToLower(validator.Signer), validator)
 	if err != nil {
 		k.Logger(ctx).Error("error while setting the validator in store", "err", err)
 		return err
@@ -35,6 +37,7 @@ func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) er
 
 // IsCurrentValidatorByAddress check if validator is in current validator set by signer address
 func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) bool {
+	k.PanicIfSetupIsIncomplete()
 	// get ack count
 	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
@@ -53,6 +56,7 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 
 // GetValidatorInfo returns the validator info given its address
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
+	k.PanicIfSetupIsIncomplete()
 	validator, err = k.validators.Get(ctx, strings.ToLower(address))
 
 	if err != nil {
@@ -64,6 +68,7 @@ func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validato
 
 // GetActiveValidatorInfo returns active validator
 func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
+	k.PanicIfSetupIsIncomplete()
 	validator, err = k.GetValidatorInfo(ctx, address)
 	if err != nil {
 		return validator, err
@@ -84,6 +89,7 @@ func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (va
 
 // GetCurrentValidators returns all validators who are in validator set
 func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.Validator) {
+	k.PanicIfSetupIsIncomplete()
 	// get ack count
 	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
@@ -105,7 +111,8 @@ func (k *Keeper) GetCurrentValidators(ctx context.Context) (validators []types.V
 }
 
 func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error) {
-	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator cosmosTypes.ValidatorI) bool {
+	k.PanicIfSetupIsIncomplete()
+	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator types.Validator) bool {
 		totalPower += validator.GetBondedTokens().Int64()
 		return true
 	})
@@ -118,6 +125,7 @@ func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error
 
 // GetSpanEligibleValidators returns current validators who are not getting deactivated in between next span
 func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []types.Validator) {
+	k.PanicIfSetupIsIncomplete()
 	// get ack count
 	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
@@ -139,6 +147,7 @@ func (k *Keeper) GetSpanEligibleValidators(ctx context.Context) (validators []ty
 
 // GetAllValidators returns all validators
 func (k *Keeper) GetAllValidators(ctx context.Context) (validators []*types.Validator) {
+	k.PanicIfSetupIsIncomplete()
 	// iterate through validators and create validator update array
 	k.IterateValidatorsAndApplyFn(ctx, func(validator types.Validator) error {
 		// append to list of validatorUpdates
@@ -151,6 +160,7 @@ func (k *Keeper) GetAllValidators(ctx context.Context) (validators []*types.Vali
 
 // IterateValidatorsAndApplyFn iterate validators and apply the given function.
 func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validator types.Validator) error) {
+	k.PanicIfSetupIsIncomplete()
 	// get validator iterator
 	iterator, err := k.validators.Iterate(ctx, nil)
 
@@ -184,7 +194,8 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 }
 
 // UpdateSigner updates validator fields in store
-func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey *codecTypes.Any, prevSigner string) error {
+func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey []byte, prevSigner string) error {
+	k.PanicIfSetupIsIncomplete()
 	// get old validator from state and make power 0
 	validator, err := k.GetValidatorInfo(ctx, prevSigner)
 	if err != nil {
@@ -218,6 +229,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey *
 
 // UpdateValidatorSetInStore adds validator set to store
 func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
+	k.PanicIfSetupIsIncomplete()
 	// set validator set with CurrentValidatorSetKey as key in store
 	err := k.validatorSet.Set(ctx, types.CurrentValidatorSetKey, newValidatorSet)
 	if err != nil {
@@ -235,8 +247,9 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 	return nil
 }
 
-// GetValidatorSet returns current Validator Set from store
+// GetValidatorSet returns current validator set from store
 func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
+	k.PanicIfSetupIsIncomplete()
 	// get current validator set from store
 	validatorSet, err = k.validatorSet.Get(ctx, types.CurrentValidatorSetKey)
 	if err != nil {
@@ -248,8 +261,36 @@ func (k *Keeper) GetValidatorSet(ctx context.Context) (validatorSet types.Valida
 	return validatorSet, nil
 }
 
+// UpdatePreviousBlockValidatorSetInStore adds previous block's validator set to store
+func (k *Keeper) UpdatePreviousBlockValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
+	k.PanicIfSetupIsIncomplete()
+	// set validator set with CurrentValidatorSetKey as key in store
+	err := k.validatorSet.Set(ctx, types.PreviousBlockValidatorSetKey, newValidatorSet)
+	if err != nil {
+		k.Logger(ctx).Error("error in setting the previous block's validator set in store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+// GetPreviousBlockValidatorSet returns the previous block's validator set from store
+func (k *Keeper) GetPreviousBlockValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
+	k.PanicIfSetupIsIncomplete()
+	// get current validator set from store
+	validatorSet, err = k.validatorSet.Get(ctx, types.PreviousBlockValidatorSetKey)
+	if err != nil {
+		k.Logger(ctx).Error("error in fetching the previous block's validator set from store", "error", err)
+		return validatorSet, err
+	}
+
+	// return validator set
+	return validatorSet, nil
+}
+
 // IncrementAccum increments accum for validator set by n times and replace validator set in store
 func (k *Keeper) IncrementAccum(ctx context.Context, times int) error {
+	k.PanicIfSetupIsIncomplete()
 	// get validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
@@ -270,6 +311,7 @@ func (k *Keeper) IncrementAccum(ctx context.Context, times int) error {
 
 // GetNextProposer returns next proposer
 func (k *Keeper) GetNextProposer(ctx context.Context) *types.Validator {
+	k.PanicIfSetupIsIncomplete()
 	// get validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
@@ -286,6 +328,7 @@ func (k *Keeper) GetNextProposer(ctx context.Context) *types.Validator {
 
 // GetCurrentProposer returns the current proposer from the validator set
 func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
+	k.PanicIfSetupIsIncomplete()
 	// get validator set
 	validatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
@@ -298,7 +341,7 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 
 // SetValidatorIDToSignerAddr sets mapping for validator ID to signer address
 func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, signerAddr string) {
-	err := k.signer.Set(ctx, valID, signerAddr)
+	err := k.signer.Set(ctx, valID, strings.ToLower(signerAddr))
 	if err != nil {
 		k.Logger(ctx).Error("key or value is nil", "error", err)
 	}
@@ -306,6 +349,7 @@ func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, s
 
 // GetSignerFromValidatorID gets the signer address from the validator id
 func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (string, error) {
+	k.PanicIfSetupIsIncomplete()
 	signer, err := k.signer.Get(ctx, valID)
 	if err != nil {
 		k.Logger(ctx).Error("error while getting fetching signer address", "error", err)
@@ -318,11 +362,13 @@ func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (st
 
 // DoesValIdExist checks if validator ID exists in store
 func (k *Keeper) DoesValIdExist(ctx context.Context, valID uint64) (bool, error) {
+	k.PanicIfSetupIsIncomplete()
 	return k.signer.Has(ctx, valID)
 }
 
 // GetValidatorFromValID returns signer from validator ID
 func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (validator types.Validator, err error) {
+	k.PanicIfSetupIsIncomplete()
 	signerAddr, err := k.GetSignerFromValidatorID(ctx, valID)
 	if err != nil {
 		return validator, err
@@ -339,6 +385,7 @@ func (k *Keeper) GetValidatorFromValID(ctx context.Context, valID uint64) (valid
 
 // GetLastUpdated get last updated at for validator
 func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt string, err error) {
+	k.PanicIfSetupIsIncomplete()
 	// get validator
 	validator, err := k.GetValidatorFromValID(ctx, valID)
 	if err != nil {
@@ -350,11 +397,13 @@ func (k *Keeper) GetLastUpdated(ctx context.Context, valID uint64) (updatedAt st
 
 // SetStakingSequence sets staking sequence
 func (k *Keeper) SetStakingSequence(ctx context.Context, sequence string) error {
+	k.PanicIfSetupIsIncomplete()
 	return k.sequences.Set(ctx, sequence, true)
 }
 
 // HasStakingSequence checks if staking sequence already exists
 func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
+	k.PanicIfSetupIsIncomplete()
 	res, err := k.sequences.Has(ctx, sequence)
 	if err != nil {
 		k.Logger(ctx).Error("error while checking for the existence of staking key in store", "error", err)
@@ -366,6 +415,7 @@ func (k *Keeper) HasStakingSequence(ctx context.Context, sequence string) bool {
 
 // GetStakingSequences returns all the sequences appended together
 func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string, err error) {
+	k.PanicIfSetupIsIncomplete()
 	err = k.IterateStakingSequencesAndApplyFn(ctx, func(sequence string) error {
 		sequences = append(sequences, sequence)
 		return nil
@@ -380,6 +430,7 @@ func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string, e
 
 // IterateStakingSequencesAndApplyFn iterates staking sequences and applies the given function.
 func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(sequence string) error) (e error) {
+	k.PanicIfSetupIsIncomplete()
 	// get staking sequence iterator
 	iterator, err := k.sequences.Iterate(ctx, nil)
 	defer func(iterator collections.Iterator[string, bool]) {
@@ -413,6 +464,7 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 
 // GetValIdFromAddress returns a validator's id given its address string
 func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint64, error) {
+	k.PanicIfSetupIsIncomplete()
 	// get ack count
 	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
@@ -433,8 +485,9 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 }
 
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
-func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator cosmosTypes.ValidatorI) bool) error {
-	//TODO HV2: this function is imported from v1, we need to check how the stop function behaves
+func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator types.Validator) bool) error {
+	k.PanicIfSetupIsIncomplete()
+	// TODO HV2: this function is imported from v1, we need to check how the `stop` function behaves
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
@@ -442,7 +495,7 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 	}
 
 	for _, v := range currentValidatorSet.Validators {
-		if stop := f(v); !stop {
+		if stop := f(*v); !stop {
 			return nil
 		}
 	}
@@ -451,6 +504,7 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 
 // MilestoneIncrementAccum increments accum for milestone validator set by n times and replace validator set in store
 func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
+	k.PanicIfSetupIsIncomplete()
 	// get milestone validator set
 	validatorSet, err := k.GetMilestoneValidatorSet(ctx)
 	if err != nil {
@@ -468,6 +522,7 @@ func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
 
 // GetMilestoneValidatorSet returns current milestone Validator Set from store
 func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
+	k.PanicIfSetupIsIncomplete()
 	// get the current milestone validator set
 	validatorSet, err = k.validatorSet.Get(ctx, types.CurrentMilestoneValidatorSetKey)
 	if err != nil {
@@ -481,12 +536,14 @@ func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet typ
 
 // UpdateMilestoneValidatorSetInStore adds milestone validator set to store
 func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
+	k.PanicIfSetupIsIncomplete()
 	// set validator set with CurrentMilestoneValidatorSetKey as key in store
 	return k.validatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
 }
 
 // GetMilestoneCurrentProposer returns current proposer
 func (k *Keeper) GetMilestoneCurrentProposer(ctx context.Context) *types.Validator {
+	k.PanicIfSetupIsIncomplete()
 	// get validator set
 	validatorSet, err := k.GetMilestoneValidatorSet(ctx)
 	if err != nil {
@@ -503,12 +560,19 @@ func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 }
 
 func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates []abci.ValidatorUpdate, err error) {
+	k.PanicIfSetupIsIncomplete()
 	var cmtValUpdates []abci.ValidatorUpdate
-
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while calling the GetValidatorSet fn", "err", err)
-		return cmtValUpdates, err
+		return nil, err
+	}
+
+	// save previous block's validator set
+	err = k.UpdatePreviousBlockValidatorSetInStore(ctx, currentValidatorSet)
+	if err != nil {
+		k.Logger(ctx).Error("unable to set previous block's validator set in state", "error", err)
+		return nil, err
 	}
 
 	allValidators := k.GetAllValidators(ctx)
@@ -525,17 +589,17 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 
 	if len(setUpdates) > 0 {
 		// create new validator set
-		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
+		if err = currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
 			// return error
 			k.Logger(ctx).Error("unable to update current validator set", "error", err)
-			return cmtValUpdates, err
+			return nil, err
 		}
 
 		// save set in store
-		if err := k.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
+		if err = k.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
 			// return with nothing
 			k.Logger(ctx).Error("unable to update current validator set in state", "error", err)
-			return cmtValUpdates, err
+			return nil, err
 		}
 
 		// convert updates from map to array

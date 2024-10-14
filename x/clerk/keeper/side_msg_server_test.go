@@ -15,32 +15,28 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-func (suite *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) hmModule.Vote {
-	cfg := suite.sideMsgCfg
+func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {
+	cfg := s.sideMsgCfg
 	return cfg.GetSideHandler(msg)(ctx, msg)
 }
 
-func (suite *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote hmModule.Vote) {
-	cfg := suite.sideMsgCfg
+func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs.Vote) {
+	cfg := s.sideMsgCfg
 
 	cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
-// Test cases
+func (s *KeeperTestSuite) TestSideHandler() {
+	t, ctx, ck, sideHandler, contractCaller, chainId := s.T(), s.ctx, s.keeper, s.sideHandler, &s.contractCaller, s.chainId
 
-func (suite *KeeperTestSuite) TestSideHandler() {
-	t, ctx, ck, contractCaller, chainID := suite.T(), suite.ctx, suite.keeper, &suite.contractCaller, suite.chainID
-
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -62,10 +58,8 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
-		chainID,
+		make([]byte, 0),
+		chainId,
 	)
 
 	txReceipt := &ethTypes.Receipt{
@@ -76,20 +70,18 @@ func (suite *KeeperTestSuite) TestSideHandler() {
 	event := &statesender.StatesenderStateSynced{
 		Id:              new(big.Int).SetUint64(msg.Id),
 		ContractAddress: common.HexToAddress(msg.ContractAddress),
-		Data:            msg.Data.HexBytes,
+		Data:            msg.Data,
 	}
 	contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
-	result := suite.sideHandler(ctx, &msg)
-	require.Equal(t, hmModule.Vote_VOTE_YES, result)
+	result := sideHandler(ctx, &msg)
+	require.Equal(t, sidetxs.Vote_VOTE_YES, result)
 }
 
-func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
-	t, ctx, ck, contractCaller := suite.T(), suite.ctx, suite.keeper, &suite.contractCaller
+func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
+	t, ctx, ck, sideHandler, contractCaller, chainId := s.T(), s.ctx, s.keeper, s.sideHandler, &s.contractCaller, s.chainId
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -114,10 +106,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
-			suite.chainID,
+			make([]byte, 0),
+			chainId,
 		)
 
 		// mock external calls
@@ -125,14 +115,14 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		event := &statesender.StatesenderStateSynced{
 			Id:              new(big.Int).SetUint64(msg.Id),
 			ContractAddress: common.HexToAddress(msg.ContractAddress),
-			Data:            msg.Data.HexBytes,
+			Data:            msg.Data,
 		}
 		contractCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
-		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_YES, result)
+		result := sideHandler(ctx, &msg)
+		require.Equal(t, sidetxs.Vote_VOTE_YES, result)
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -151,10 +141,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
-			suite.chainID,
+			make([]byte, 0),
+			chainId,
 		)
 
 		// mock external calls -- no receipt
@@ -163,8 +151,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		// execute handler
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_NO, result)
+		result := sideHandler(ctx, &msg)
+		require.Equal(t, sidetxs.Vote_VOTE_NO, result)
 	})
 
 	t.Run("NoLog", func(t *testing.T) {
@@ -181,10 +169,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
-			suite.chainID,
+			make([]byte, 0),
+			chainId,
 		)
 
 		// mock external calls -- no receipt
@@ -193,8 +179,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
-		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_NO, result)
+		result := sideHandler(ctx, &msg)
+		require.Equal(t, sidetxs.Vote_VOTE_NO, result)
 	})
 
 	t.Run("EventDataExceed", func(t *testing.T) {
@@ -219,10 +205,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: []byte(""),
-			},
-			suite.chainID,
+			[]byte(""),
+			chainId,
 		)
 
 		// mock external calls
@@ -236,8 +220,8 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 		// execute handler
-		result := suite.sideHandler(ctx, &msg)
-		require.Equal(t, hmModule.Vote_VOTE_NO, result)
+		result := sideHandler(ctx, &msg)
+		require.Equal(t, sidetxs.Vote_VOTE_NO, result)
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -246,12 +230,10 @@ func (suite *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	})
 }
 
-func (suite *KeeperTestSuite) TestPostHandler() {
-	t, ctx, chainID := suite.T(), suite.ctx, suite.chainID
+func (s *KeeperTestSuite) TestPostHandler() {
+	t, ctx, postHandler, chainId := s.T(), s.ctx, s.postHandler, s.chainId
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -271,22 +253,18 @@ func (suite *KeeperTestSuite) TestPostHandler() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
-		chainID,
+		make([]byte, 0),
+		chainId,
 	)
 
 	// Post handler should fail
-	suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+	postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 }
 
-func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
+	t, ctx, ck, postHandler, chainId := s.T(), s.ctx, s.keeper, s.postHandler, s.chainId
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -306,15 +284,13 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
-		suite.chainID,
+		make([]byte, 0),
+		chainId,
 	)
 
 	t.Run("NoResult", func(t *testing.T) {
 		// Post handler should fail
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_NO)
+		postHandler(ctx, &msg, sidetxs.Vote_VOTE_NO)
 
 		// there should be no stored event record
 		storedEventRecord, err := ck.GetEventRecord(ctx, id)
@@ -324,7 +300,7 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 
 	t.Run("YesResult", func(t *testing.T) {
 		// Post handler should succeed
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
 		// sequence id
 		blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -355,16 +331,14 @@ func (suite *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 			blockNumber,
 			id,
 			addrBz2,
-			hmTypes.HexBytes{
-				HexBytes: make([]byte, 0),
-			},
-			suite.chainID,
+			make([]byte, 0),
+			chainId,
 		)
 
 		// Post handler should succeed
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
 		// Post handler should prevent replay attack
-		suite.postHandler(ctx, &msg, hmModule.Vote_VOTE_YES)
+		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 	})
 }

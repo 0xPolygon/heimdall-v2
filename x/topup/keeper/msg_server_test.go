@@ -13,22 +13,18 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/golang/mock/gomock"
 
-	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-func (suite *KeeperTestSuite) TestCreateTopupTx() {
-	msgServer, require, keeper, ctx, t := suite.msgServer, suite.Require(), suite.keeper, suite.ctx, suite.T()
+func (s *KeeperTestSuite) TestCreateTopupTx() {
+	msgServer, require, keeper, ctx, t := s.msgServer, s.Require(), s.keeper, s.ctx, s.T()
 
 	var msg types.MsgTopupTx
-
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-
-	hash := hTypes.TxHash{Hash: []byte(TxHash)}
-	logIndex := r1.Uint64()
-	blockNumber := r1.Uint64()
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	hash := []byte(TxHash)
+	logIndex := r.Uint64()
+	blockNumber := r.Uint64()
 
 	_, _, addr := testdata.KeyTestPubAddr()
 	fee := math.NewInt(100000000000000000)
@@ -59,8 +55,8 @@ func (suite *KeeperTestSuite) TestCreateTopupTx() {
 	})
 }
 
-func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
-	msgServer, require, keeper, ctx, t := suite.msgServer, suite.Require(), suite.keeper, suite.ctx, suite.T()
+func (s *KeeperTestSuite) TestWithdrawFeeTx() {
+	msgServer, require, keeper, ctx, t := s.msgServer, s.Require(), s.keeper, s.ctx, s.T()
 
 	var msg types.MsgWithdrawFeeTx
 
@@ -89,7 +85,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 		coins = coins.Sub(sdk.Coin{Denom: authTypes.FeeToken, Amount: amt})
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), coins.AmountOf(authTypes.FeeToken))
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin(authTypes.FeeToken, math.ZeroInt())).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -101,7 +97,7 @@ func (suite *KeeperTestSuite) TestWithdrawFeeTx() {
 	t.Run("fail with insufficient funds", func(t *testing.T) {
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin("matic", math.ZeroInt())).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin(authTypes.FeeToken, math.ZeroInt())).Times(1)
 
 		_, err := msgServer.WithdrawFeeTx(ctx, &msg)
 		require.Error(err)

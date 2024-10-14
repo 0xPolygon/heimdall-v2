@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
@@ -20,7 +19,7 @@ var TestValidators = []staketypes.Validator{
 		StartEpoch:  0,
 		EndEpoch:    0,
 		VotingPower: 10000,
-		PubKey:      &types.Any{TypeUrl: keyTypeURL, Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
 		Signer:      "0x1c4f0f054a0d6a1415382dc0fd83c6535188b220",
 		LastUpdated: "0",
 	},
@@ -29,7 +28,7 @@ var TestValidators = []staketypes.Validator{
 		StartEpoch:  0,
 		EndEpoch:    0,
 		VotingPower: 10000,
-		PubKey:      &types.Any{TypeUrl: keyTypeURL, Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
 		Signer:      "0x461295d3d9249215e758e939a150ab180950720b",
 		LastUpdated: "0",
 	},
@@ -38,7 +37,7 @@ var TestValidators = []staketypes.Validator{
 		StartEpoch:  0,
 		EndEpoch:    0,
 		VotingPower: 10000,
-		PubKey:      &types.Any{TypeUrl: keyTypeURL, Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
 		Signer:      "0x836fe3e3dd0a5f77d9d5b0f67e48048aaafcd5a0",
 		LastUpdated: "0",
 	},
@@ -47,7 +46,7 @@ var TestValidators = []staketypes.Validator{
 		StartEpoch:  0,
 		EndEpoch:    0,
 		VotingPower: 10000,
-		PubKey:      &types.Any{TypeUrl: keyTypeURL, Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
 		Signer:      "0x925a91f8003aaeabea6037103123b93c50b86ca3",
 		LastUpdated: "0",
 	},
@@ -56,7 +55,7 @@ var TestValidators = []staketypes.Validator{
 		StartEpoch:  0,
 		EndEpoch:    0,
 		VotingPower: 10000,
-		PubKey:      &types.Any{TypeUrl: keyTypeURL, Value: secp256k1.GenPrivKey().PubKey().Bytes()},
+		PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
 		Signer:      "0xc787af4624cb3e80ee23ae7faac0f2acea2be34c",
 		LastUpdated: "0",
 	},

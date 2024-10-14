@@ -10,24 +10,23 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
-type Querier struct {
-	Keeper
+var _ types.QueryServer = queryServer{}
+
+type queryServer struct {
+	k *Keeper
 }
 
-var _ types.QueryServer = Querier{}
-
-func NewQuerier(keeper *Keeper) Querier {
-	return Querier{Keeper: *keeper}
-}
-
-// Params implements the gRPC service handler for querying x/chainmanager parameters.
-func (k Querier) Params(ctx context.Context, req *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	if req == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+// NewQueryServer creates a new querier for chainmanager clients.
+func NewQueryServer(k *Keeper) types.QueryServer {
+	return queryServer{
+		k: k,
 	}
+}
 
+// GetParams implements the gRPC service handler for querying x/chainmanager parameters.
+func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	params, err := k.GetParams(sdkCtx) //nolint:contextcheck
+	params, err := q.k.GetParams(sdkCtx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get params: %s", err)
 	}

@@ -17,19 +17,22 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
+
+// ConsensusVersion defines the current x/bor module consensus version.
+const ConsensusVersion = 1
 
 var (
 	_ module.HasGenesis     = AppModule{}
 	_ module.HasServices    = AppModule{}
 	_ module.AppModuleBasic = AppModule{}
 
-	_ appmodule.AppModule         = AppModule{}
-	_ hmModule.HasSideMsgServices = AppModule{}
+	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // Name returns the bor module's name.
@@ -69,7 +72,7 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 }
 
 // RegisterSideMsgServices registers the side message services for the bor module.
-func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
+func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
 
@@ -92,7 +95,7 @@ func (am AppModule) IsAppModule() {}
 
 // RegisterServices registers module services.
 func (am AppModule) RegisterServices(cfg module.Configurator) {
-	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(am.keeper))
+	types.RegisterQueryServer(cfg.QueryServer(), keeper.NewQueryServer(&am.keeper))
 	types.RegisterMsgServer(cfg.MsgServer(), keeper.NewMsgServerImpl(am.keeper))
 }
 
@@ -126,4 +129,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	gs := am.keeper.ExportGenesis(ctx)
 	return cdc.MustMarshalJSON(gs)
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

@@ -17,12 +17,10 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
-	t, ctx, ck, chainID := suite.T(), suite.ctx, suite.keeper, suite.chainID
+func (s *KeeperTestSuite) TestHandleMsgEventRecord() {
+	t, ctx, ck, msgServer, chainId := s.T(), s.ctx, s.keeper, s.msgServer, s.chainId
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -43,15 +41,13 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 		blockNumber,
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
-		chainID,
+		make([]byte, 0),
+		chainId,
 	)
 
 	t.Run("Success", func(t *testing.T) {
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-		_, err := suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+		_, err := msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.NoError(t, err)
 
 		// there should be no stored event record
@@ -77,18 +73,16 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 		require.NoError(t, err)
 
 		ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-		_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+		_, err = msgServer.HandleMsgEventRecord(ctx, &msg)
 		require.Error(t, err)
 		require.Equal(t, types.ErrEventRecordAlreadySynced, err)
 	})
 
 	t.Run("EventSizeExceed", func(t *testing.T) {
 		const letterBytes = "abcdefABCDEF"
-		b := hmTypes.HexBytes{
-			HexBytes: make([]byte, helper.MaxStateSyncSize+3),
-		}
-		for i := range b.HexBytes {
-			b.HexBytes[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b := make([]byte, helper.MaxStateSyncSize+3)
+		for i := range b {
+			b[i] = letterBytes[rand.Intn(len(letterBytes))]
 		}
 
 		msg.Data = b
@@ -98,12 +92,10 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecord() {
 	})
 }
 
-func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
-	t, ctx, ck, chainID := suite.T(), suite.ctx, suite.keeper, suite.chainID
+func (s *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
+	t, ctx, ck, msgServer, chainId := s.T(), s.ctx, s.keeper, s.msgServer, s.chainId
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -119,10 +111,8 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 		r.Uint64(),
 		r.Uint64(),
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
-		chainID,
+		make([]byte, 0),
+		chainId,
 	)
 
 	// sequence id
@@ -132,17 +122,14 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	ck.SetRecordSequence(ctx, sequence.String())
 
 	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+	_, err = msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
-	// require.Equal(t, common.ErrOldTx(types.ModuleName), err)
 }
 
-func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
-	t, ctx, ck := suite.T(), suite.ctx, suite.keeper
+func (s *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
+	t, ctx, ck, msgServer := s.T(), s.ctx, s.keeper, s.msgServer
 
-	s := rand.NewSource(1)
-	r := rand.New(s)
-
+	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
 	addrBz1, err := ac.StringToBytes(Address1)
@@ -161,14 +148,12 @@ func (suite *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 		r.Uint64(),
 		id,
 		addrBz2,
-		hmTypes.HexBytes{
-			HexBytes: make([]byte, 0),
-		},
+		make([]byte, 0),
 		"random chain id",
 	)
 
 	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
-	_, err = suite.msgServer.HandleMsgEventRecord(ctx, &msg)
+	_, err = msgServer.HandleMsgEventRecord(ctx, &msg)
 	require.Error(t, err)
 
 	// there should be no stored event record

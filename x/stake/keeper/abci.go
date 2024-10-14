@@ -12,6 +12,7 @@ import (
 
 // EndBlocker called at the end of every block, and returns validator updates
 func (k *Keeper) EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error) {
+	k.PanicIfSetupIsIncomplete()
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 	return k.ApplyAndReturnValidatorSetUpdates(ctx)
 }

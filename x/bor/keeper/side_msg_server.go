@@ -2,14 +2,15 @@ package keeper
 
 import (
 	"bytes"
-	"context"
 	"strconv"
+
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	hModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
@@ -21,34 +22,33 @@ type sideMsgServer struct {
 	k *Keeper
 }
 
-var _ types.SideMsgServer = sideMsgServer{}
+var _ sidetxs.SideMsgServer = sideMsgServer{}
 
 // NewSideMsgServerImpl returns an implementation of the x/bor SideMsgServer interface for the provided Keeper.
-func NewSideMsgServerImpl(keeper *Keeper) types.SideMsgServer {
+func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 	return &sideMsgServer{
 		k: keeper,
 	}
 }
 
 // SideTxHandler returns a side handler for span type messages.
-func (s sideMsgServer) SideTxHandler(methodName string) hModule.SideTxHandler {
+func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return s.SideHandleMsgSpan
 	default:
-		s.k.Logger(context.Background()).Error("unrecognized side message type", "method", methodName)
 		return nil
 	}
 }
 
 // SideHandleMsgSpan validates external calls required for processing proposed span
-func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.Vote {
+func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpanRequest)
 	if !ok {
 		logger.Error("MsgProposeSpan type mismatch", "msg type received", msgI)
-		return hModule.Vote_VOTE_SKIP
+		return sidetxs.Vote_UNSPECIFIED
 
 	}
 
@@ -64,7 +64,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 	nextSpanSeed, err := s.k.FetchNextSpanSeed(ctx)
 	if err != nil {
 		logger.Error("error fetching next span seed from mainchain", "error", err)
-		return hModule.Vote_VOTE_SKIP
+		return sidetxs.Vote_UNSPECIFIED
 	}
 
 	// check if span seed matches or not
@@ -75,20 +75,20 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 			"mainchainSeed", nextSpanSeed.String(),
 		)
 
-		return hModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	// fetch current child block
-	childBlock, err := s.k.contractCaller.GetBorChainBlock(nil)
+	childBlock, err := s.k.contractCaller.GetPolygonPosChainBlock(nil)
 	if err != nil {
 		logger.Error("error fetching current child block", "error", err)
-		return hModule.Vote_VOTE_SKIP
+		return sidetxs.Vote_UNSPECIFIED
 	}
 
 	lastSpan, err := s.k.GetLastSpan(ctx)
 	if err != nil {
 		logger.Error("error fetching last span", "error", err)
-		return hModule.Vote_VOTE_SKIP
+		return sidetxs.Vote_UNSPECIFIED
 	}
 
 	currentBlock := childBlock.Number.Uint64()
@@ -101,27 +101,26 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) hModule.
 			"msgEndBlock", msg.EndBlock,
 		)
 
-		return hModule.Vote_VOTE_NO
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	logger.Debug("✅ successfully validated external call for span msg")
 
-	return hModule.Vote_VOTE_YES
+	return sidetxs.Vote_VOTE_YES
 }
 
 // PostTxHandler returns a side handler for span type messages.
-func (s sideMsgServer) PostTxHandler(methodName string) hModule.PostTxHandler {
+func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return s.PostHandleMsgSpan
 	default:
-		s.k.Logger(context.Background()).Error("unrecognized side message type", "method", methodName)
 		return nil
 	}
 }
 
 // PostHandleMsgSpan handles state persisting span msg
-func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult hModule.Vote) {
+func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpanRequest)
@@ -131,7 +130,7 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	}
 
 	// Skip handler if span is not approved
-	if sideTxResult != hModule.Vote_VOTE_YES {
+	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new span since side-tx didn't get yes votes")
 		return
 	}
@@ -164,10 +163,10 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	ctx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeProposeSpan,
-			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                       // action
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),     // module name
-			sdk.NewAttribute(types.AttributeKeyTxHash, common.BytesToHash(hash).Hex()), // tx hash
-			sdk.NewAttribute(types.AttributeKeySideTxResult, sideTxResult.String()),    // result
+			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),                               // action
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),             // module name
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.BytesToHash(hash).Hex()), // tx hash
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),    // result
 			sdk.NewAttribute(types.AttributeKeySpanID, strconv.FormatUint(msg.SpanId, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanEndBlock, strconv.FormatUint(msg.EndBlock, 10)),

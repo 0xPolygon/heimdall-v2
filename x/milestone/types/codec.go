@@ -11,8 +11,8 @@ import (
 // RegisterLegacyAminoCodec registers the necessary x/milestone interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	legacy.RegisterAminoMsg(cdc, &MsgMilestone{}, "heimdall-v2/MsgMilestone")
-	legacy.RegisterAminoMsg(cdc, &MsgMilestoneTimeout{}, "heimdall-v2/MsgMilestoneTimeout")
+	legacy.RegisterAminoMsg(cdc, &MsgMilestone{}, "heimdall-v2/x/milestone/MsgMilestone")
+	legacy.RegisterAminoMsg(cdc, &MsgMilestoneTimeout{}, "heimdall-v2/x/milestone/MsgTimeout")
 }
 
 // RegisterInterfaces registers the x/milestone interfaces types with the interface registry

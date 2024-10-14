@@ -2,18 +2,15 @@ package types
 
 import (
 	"bytes"
-	"fmt"
 	"math/big"
 	"sort"
-	"strconv"
 	"strings"
 
 	"cosmossdk.io/math"
 	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cosmosCryto "github.com/cometbft/cometbft/proto/tendermint/crypto"
-	"github.com/cosmos/cosmos-sdk/codec"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
@@ -28,17 +25,13 @@ func NewValidator(
 	pubKey cryptotypes.PubKey,
 	signer string,
 ) (*Validator, error) {
-	pkAny, err := codectypes.NewAnyWithValue(pubKey)
-	if err != nil {
-		return nil, err
-	}
 	return &Validator{
 		ValId:       id,
 		StartEpoch:  startEpoch,
 		EndEpoch:    endEpoch,
 		Nonce:       nonce,
 		VotingPower: power,
-		PubKey:      pkAny,
+		PubKey:      pubKey.Bytes(),
 		Signer:      signer,
 	}, nil
 }
@@ -64,17 +57,12 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 
 // ValidateBasic validates a validator struct
 func (v *Validator) ValidateBasic() bool {
-	pk, ok := v.PubKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
+	if bytes.Equal(v.PubKey, EmptyPubKey[:]) {
 		return false
 	}
 
-	if pk.Type() != Secp256k1Type {
-		return false
-	}
-
-	if bytes.Equal(pk.Bytes(), ZeroPubKey[:]) {
-		return false
+	pk := secp256k1.PubKey{
+		Key: v.PubKey,
 	}
 
 	if v.Signer != pk.Address().String() {
@@ -82,19 +70,6 @@ func (v *Validator) ValidateBasic() bool {
 	}
 
 	return true
-}
-
-// MarshallValidator is responsible for marshalling validator
-func MarshallValidator(cdc codec.BinaryCodec, validator Validator) (bz []byte, err error) {
-	return cdc.Marshal(&validator)
-}
-
-// UnmarshallValidator is responsible for unmarshalling validator
-func UnmarshallValidator(cdc codec.BinaryCodec, value []byte) (Validator, error) {
-	var validator Validator
-	err := cdc.Unmarshal(value, &validator)
-
-	return validator, err
 }
 
 // Copy creates a new copy of the validator, so we can mutate accum
@@ -129,13 +104,8 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 }
 
 // ConsPubKey returns the validator PubKey as a cryptotypes.PubKey.
-func (v Validator) ConsPubKey() (cryptotypes.PubKey, error) {
-	pk, ok := v.PubKey.GetCachedValue().(cryptotypes.PubKey)
-	if !ok {
-		return nil, fmt.Errorf("expecting cryptotypes.PubKey, got %T", pk)
-	}
-
-	return pk, nil
+func (v Validator) ConsPubKey() ([]byte, error) {
+	return v.PubKey, nil
 }
 
 // Bytes computes the unique encoding of a validator with a given voting power.
@@ -175,19 +145,14 @@ func (v *Validator) GetOperator() string {
 	return v.Signer
 }
 
-// ValIDToBytes get the bytes from a validatorID
-func ValIDToBytes(valID uint64) []byte {
-	return []byte(strconv.FormatUint(valID, 10))
-}
-
 // CmtConsPublicKey casts Validator.ConsensusPubkey to cmtprotocrypto.PubKey.
 func (v Validator) CmtConsPublicKey() (cmtprotocrypto.PublicKey, error) {
 	pk, err := v.ConsPubKey()
 	if err != nil {
 		return cmtprotocrypto.PublicKey{}, err
 	}
-
-	tmPk, err := cryptocodec.ToCmtProtoPublicKey(pk)
+	pubKey := secp256k1.PubKey{Key: pk}
+	tmPk, err := cryptocodec.ToCmtProtoPublicKey(&pubKey)
 	if err != nil {
 		return cmtprotocrypto.PublicKey{}, err
 	}
@@ -201,11 +166,6 @@ type MinimalVal struct {
 	ID          uint64 `json:"ID"`
 	VotingPower uint64 `json:"power"` // TODO add 10^-18 here so that we dont overflow easily
 	Signer      string `json:"signer"`
-}
-
-func (v Validator) UnpackInterfaces(unpacker codectypes.AnyUnpacker) error {
-	var pk cryptotypes.PubKey
-	return unpacker.UnpackAny(v.PubKey, &pk)
 }
 
 // Following functions are implemented to support cosmos validator interface

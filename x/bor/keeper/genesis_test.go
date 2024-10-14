@@ -3,20 +3,19 @@ package keeper_test
 import "github.com/0xPolygon/heimdall-v2/x/bor/types"
 
 // TestInitExportGenesis test import and export genesis state
-func (suite *KeeperTestSuite) TestInitExportGenesis() {
-	borKeeper, ctx := suite.borKeeper, suite.ctx
-	require := suite.Require()
-	params := types.DefaultParams()
+func (s *KeeperTestSuite) TestInitExportGenesis() {
+	keeper, ctx, require := s.borKeeper, s.ctx, s.Require()
 
-	genSpans := suite.genTestSpans(5)
+	params := types.DefaultParams()
+	genSpans := s.genTestSpans(5)
 
 	genesisState := &types.GenesisState{
 		Params: params,
 		Spans:  genSpans,
 	}
 
-	borKeeper.InitGenesis(ctx, genesisState)
+	keeper.InitGenesis(ctx, genesisState)
 
-	actualParams := borKeeper.ExportGenesis(ctx)
+	actualParams := keeper.ExportGenesis(ctx)
 	require.Equal(genesisState, actualParams)
 }

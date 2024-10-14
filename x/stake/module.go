@@ -19,11 +19,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
-	hmModule "github.com/0xPolygon/heimdall-v2/module"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	stakeSimulation "github.com/0xPolygon/heimdall-v2/x/stake/simulation"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
+
+// ConsensusVersion defines the current x/stake module consensus version.
+const ConsensusVersion = 1
 
 var (
 	_ module.AppModuleBasic      = AppModule{}
@@ -32,6 +36,7 @@ var (
 	_ module.HasABCIGenesis      = AppModule{}
 	_ module.HasABCIEndBlock     = AppModule{}
 	_ appmodule.AppModule        = AppModule{}
+	_ sidetxs.HasSideMsgServices = AppModule{}
 )
 
 // AppModuleBasic defines the basic application module used by the stake module.
@@ -51,6 +56,11 @@ func NewAppModule(keeper keeper.Keeper, contractCaller helper.ContractCaller) Ap
 		keeper:         keeper,
 		contractCaller: contractCaller,
 	}
+}
+
+// GetTxCmd returns the root tx command for the bor module.
+func (am AppModule) GetTxCmd() *cobra.Command {
+	return cli.NewTxCmd()
 }
 
 // Name returns the stake module's name.
@@ -91,13 +101,6 @@ func (AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwrunt
 	}
 }
 
-// GetTxCmd returns the root tx command for the stake module.
-func (am AppModule) GetTxCmd() *cobra.Command {
-	return nil
-	// TODO HV2: implement the cli
-	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
-}
-
 // IsAppModule implements the appmodule.AppModule interface.
 func (am AppModule) IsAppModule() {}
 
@@ -108,9 +111,12 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 }
 
 // RegisterSideMsgServices registers side handler module services.
-func (am AppModule) RegisterSideMsgServices(sideCfg hmModule.SideTxConfigurator) {
+func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) {
 	types.RegisterSideMsgServer(sideCfg, keeper.NewSideMsgServerImpl(&am.keeper))
 }
+
+// QuerierRoute returns the stake module's querier route name.
+func (AppModule) QuerierRoute() string { return types.RouterKey }
 
 // InitGenesis performs genesis initialization for the stake module.
 func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
@@ -118,11 +124,9 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
-	telemetry.MeasureSince(start, "InitGenesis", "topup", "unmarshal")
+	telemetry.MeasureSince(start, "InitGenesis", "stake", "unmarshal")
 
-	am.keeper.InitGenesis(ctx, &genesisState)
-
-	return []abci.ValidatorUpdate{}
+	return am.keeper.InitGenesis(ctx, &genesisState)
 }
 
 // ExportGenesis returns the exported genesis state as raw bytes for the stake
@@ -145,4 +149,9 @@ func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {}
 
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
 	return nil
+}
+
+// ConsensusVersion implements AppModule/ConsensusVersion.
+func (AppModule) ConsensusVersion() uint64 {
+	return ConsensusVersion
 }

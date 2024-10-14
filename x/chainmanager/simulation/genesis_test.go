@@ -32,7 +32,7 @@ func TestRandomizedGenState(t *testing.T) {
 		Cdc:          cdc,
 		Rand:         r,
 		NumBonded:    3,
-		BondDenom:    "matic",
+		BondDenom:    "pol",
 		Accounts:     simtypes.RandomAccounts(r, 3),
 		InitialStake: sdkmath.NewInt(1000),
 		GenState:     make(map[string]json.RawMessage),
@@ -40,21 +40,21 @@ func TestRandomizedGenState(t *testing.T) {
 
 	simulation.RandomizedGenState(&simState)
 
-	var chainmanagerGenesis types.GenesisState
-	simState.Cdc.MustUnmarshalJSON(simState.GenState[types.ModuleName], &chainmanagerGenesis)
+	var cmGenesis types.GenesisState
+	simState.Cdc.MustUnmarshalJSON(simState.GenState[types.ModuleName], &cmGenesis)
 
-	require.Equal(t, "646203300", chainmanagerGenesis.Params.ChainParams.BorChainId)
-	require.Equal(t, "0x00000000000000000000000041f27Cc6F3875D04", chainmanagerGenesis.Params.ChainParams.MaticTokenAddress)
-	require.Equal(t, "0x00000000000000000000000068255aaf95e94627", chainmanagerGenesis.Params.ChainParams.StakingManagerAddress)
-	require.Equal(t, "0x0000000000000000000000001B6cffa2BA517936", chainmanagerGenesis.Params.ChainParams.SlashManagerAddress)
-	require.Equal(t, "0x00000000000000000000000030b95fF183c471d4", chainmanagerGenesis.Params.ChainParams.RootChainAddress)
-	require.Equal(t, "0x00000000000000000000000028B621587CB3AD0B", chainmanagerGenesis.Params.ChainParams.StakingInfoAddress)
-	require.Equal(t, "0x0000000000000000000000003c04951aa42655d9", chainmanagerGenesis.Params.ChainParams.StateSenderAddress)
-	require.Equal(t, "0x000000000000000000000000243A768b7C4E0B68", chainmanagerGenesis.Params.ChainParams.StateReceiverAddress)
-	require.Equal(t, "0x00000000000000000000000025845c95d4491d1b", chainmanagerGenesis.Params.ChainParams.ValidatorSetAddress)
+	require.Equal(t, "646203300", cmGenesis.Params.ChainParams.BorChainId)
+	require.Equal(t, "0x00000000000000000000000041f27Cc6F3875D04", cmGenesis.Params.ChainParams.PolygonPosTokenAddress)
+	require.Equal(t, "0x00000000000000000000000068255aaf95e94627", cmGenesis.Params.ChainParams.StakingManagerAddress)
+	require.Equal(t, "0x0000000000000000000000001B6cffa2BA517936", cmGenesis.Params.ChainParams.SlashManagerAddress)
+	require.Equal(t, "0x00000000000000000000000030b95fF183c471d4", cmGenesis.Params.ChainParams.RootChainAddress)
+	require.Equal(t, "0x00000000000000000000000028B621587CB3AD0B", cmGenesis.Params.ChainParams.StakingInfoAddress)
+	require.Equal(t, "0x0000000000000000000000003c04951aa42655d9", cmGenesis.Params.ChainParams.StateSenderAddress)
+	require.Equal(t, "0x000000000000000000000000243A768b7C4E0B68", cmGenesis.Params.ChainParams.StateReceiverAddress)
+	require.Equal(t, "0x00000000000000000000000025845c95d4491d1b", cmGenesis.Params.ChainParams.ValidatorSetAddress)
 
-	require.Equal(t, uint64(41), chainmanagerGenesis.Params.MainChainTxConfirmations)
-	require.Equal(t, uint64(57), chainmanagerGenesis.Params.BorChainTxConfirmations)
+	require.Equal(t, uint64(41), cmGenesis.Params.MainChainTxConfirmations)
+	require.Equal(t, uint64(57), cmGenesis.Params.BorChainTxConfirmations)
 }
 
 // TestRandomizedGenState1 tests abnormal scenarios of applying RandomizedGenState.

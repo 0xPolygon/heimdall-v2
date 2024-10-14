@@ -1,0 +1,23 @@
+syntax = "proto3";
+package heimdallv2.sidetxs;
+
+option go_package = "github.com/0xPolygon/heimdall-v2/sidetxs";
+
+message ConsolidatedSideTxResponse {
+  repeated SideTxResponse side_tx_responses = 1;
+  bytes block_hash =
+      2; // denotes the block hash of the block that this vote is referring to.
+  int64 height = 3; // denotes the block height of the extended vote
+}
+
+message SideTxResponse {
+  bytes tx_hash = 1; // denotes the tx hash for which this V.E correspond to.
+  Vote result = 2; // will have YES/NO/UNSPECIFIED depending on the side-tx data
+                   // correctness.
+}
+
+enum Vote {
+  UNSPECIFIED = 0;
+  VOTE_YES = 1;
+  VOTE_NO = 2;
+}

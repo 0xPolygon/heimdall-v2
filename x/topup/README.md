@@ -21,17 +21,17 @@ and `msg.LogIndex`. It throws an error if trying to process the top-up more than
 
 Here is the structure for the top-up transaction message:
 
-```go
+```protobuf
 message MsgTopupTx {
-string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-string user = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-string fee = 3 [
-(gogoproto.customtype) = "cosmossdk.io/math.Int",
-(gogoproto.nullable) = false
-];
-heimdallv2.types.TxHash tx_hash = 4 [ (gogoproto.nullable) = false ];
-uint64 log_index = 5;
-uint64 block_number = 6;
+   string proposer = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+   string user = 2 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+   string fee = 3 [
+      (gogoproto.customtype) = "cosmossdk.io/math.Int",
+      (gogoproto.nullable) = false
+   ];
+   bytes tx_hash = 4;
+   uint64 log_index = 5;
+   uint64 block_number = 6;
 }
 ```
 
@@ -45,19 +45,19 @@ checkpoint. The next possible checkpoint will contain the withdraw related state
 
 Handler gets validator information based on `ValidatorAddress` and processes the withdraw.
 
-```go
+```protobuf
 message MsgWithdrawFeeTx {
-string proposer = 1;
-string amount = 3 [
-(gogoproto.customtype) = "cosmossdk.io/math.Int",
-(gogoproto.nullable) = false
-];
+   string proposer = 1;
+   string amount = 3 [
+      (gogoproto.customtype) = "cosmossdk.io/math.Int",
+      (gogoproto.nullable) = false
+   ];
 }
 ```
 
-## CLI Commands
+<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
-[//]: # (TODO HV2: fill this section once the cli commands are tested)
+## CLI Commands
 
 ### Topup fee
 
@@ -76,8 +76,6 @@ heimdalld query auth account <validator-address> --trust-node
 ```
 
 ## REST APIs
-
-[//]: # (TODO HV2: fill this section once the REST APIs are tested)
 
 ### Topup fee
 

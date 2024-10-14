@@ -26,7 +26,7 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*types.MsgTopupTxResponse, error) {
 	logger := m.k.Logger(ctx)
 
-	txHash := common.BytesToHash(msg.TxHash.Hash)
+	txHash := common.BytesToHash(msg.TxHash)
 
 	logger.Debug("HandleTopupTx msg received",
 		"proposer", msg.Proposer,

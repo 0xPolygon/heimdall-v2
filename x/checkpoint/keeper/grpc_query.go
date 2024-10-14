@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -95,7 +96,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	}
 
 	// get validator set
-	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
+	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -150,8 +151,8 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		Proposer:        proposer.Signer,
 		StartBlock:      start,
 		EndBlock:        endBlockNumber,
-		RootHash:        hmTypes.HeimdallHash{Hash: rootHash},
-		AccountRootHash: hmTypes.HeimdallHash{Hash: accRootHash},
+		RootHash:        rootHash,
+		AccountRootHash: accRootHash,
 		BorChainId:      req.BorChainId,
 	}
 
@@ -160,18 +161,19 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 
 // GetCurrentProposer queries validator info for the current proposer
 func (q queryServer) GetCurrentProposer(ctx context.Context, _ *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
-	proposer := q.k.sk.GetCurrentProposer(ctx)
+	proposer := q.k.stakeKeeper.GetCurrentProposer(ctx)
 
 	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
 }
 
-func (q queryServer) GetProposer(ctx context.Context, req *types.QueryProposerRequest) (*types.QueryProposerResponse, error) {
+// GetProposers queries validator info for the current proposers
+func (q queryServer) GetProposers(ctx context.Context, req *types.QueryProposerRequest) (*types.QueryProposerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
 	// get validator set
-	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
+	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		q.k.Logger(ctx).Error("could not get get validators set", "error", err)
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -189,4 +191,29 @@ func (q queryServer) GetProposer(ctx context.Context, req *types.QueryProposerRe
 	}
 
 	return &types.QueryProposerResponse{Proposers: proposers}, nil
+}
+
+// GetCheckpointList returns the list of checkpoints
+func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryCheckpointListRequest) (*types.QueryCheckpointListResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if req.Pagination != nil && req.Pagination.Limit > 1000 {
+		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
+	}
+
+	checkpoints, pageRes, err := query.CollectionPaginate(
+		ctx,
+		q.k.checkpoints,
+		req.Pagination, func(number uint64, checkpoint types.Checkpoint) (types.Checkpoint, error) {
+			return q.k.GetCheckpointByNumber(ctx, number)
+		},
+	)
+
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+	}
+
+	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: pageRes}, nil
 }

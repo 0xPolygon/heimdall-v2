@@ -46,6 +46,6 @@ func DefaultParams() Params {
 		MinMilestoneLength:       helper.MilestoneLength,
 		MilestoneBufferTime:      helper.MilestoneBufferTime,
 		MilestoneBufferLength:    helper.MilestoneBufferLength,
-		MilestoneTxConfirmations: helper.MaticChainMilestoneConfirmation,
+		MilestoneTxConfirmations: helper.PolygonPosChainMilestoneConfirmation,
 	}
 }

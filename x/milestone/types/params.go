@@ -16,7 +16,7 @@ func (p Params) Validate() error {
 	}
 
 	if p.MilestoneTxConfirmations == 0 {
-		return fmt.Errorf("milestone tx confirmation should not be zero")
+		return fmt.Errorf("milestone tx confirmations should not be zero")
 	}
 
 	if p.MilestoneBufferTime.Microseconds() == 0 {
@@ -31,6 +31,6 @@ func GetDefaultParams() Params {
 		MinMilestoneLength:       helper.MilestoneLength,
 		MilestoneBufferTime:      helper.MilestoneBufferTime,
 		MilestoneBufferLength:    helper.MilestoneBufferLength,
-		MilestoneTxConfirmations: helper.MaticChainMilestoneConfirmation,
+		MilestoneTxConfirmations: helper.PolygonPosChainMilestoneConfirmation,
 	}
 }

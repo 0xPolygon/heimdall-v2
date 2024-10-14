@@ -1,7 +1,12 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
@@ -17,14 +22,15 @@ import (
 type Keeper struct {
 	storeService storetypes.KVStoreService
 	cdc          codec.BinaryCodec
+	authority    string
 	schema       collections.Schema
 
-	sk              types.StakeKeeper
+	stakeKeeper     types.StakeKeeper
 	ck              types.ChainManagerKeeper
 	topupKeeper     types.TopupKeeper
 	IContractCaller helper.IContractCaller
 
-	checkpoint         collections.Map[uint64, types.Checkpoint]
+	checkpoints        collections.Map[uint64, types.Checkpoint]
 	bufferedCheckpoint collections.Item[types.Checkpoint]
 	params             collections.Item[types.Params]
 	lastNoAck          collections.Item[uint64]
@@ -35,24 +41,37 @@ type Keeper struct {
 func NewKeeper(
 	cdc codec.BinaryCodec,
 	storeService storetypes.KVStoreService,
+	authority string,
 	stakingKeeper types.StakeKeeper,
 	cmKeeper types.ChainManagerKeeper,
 	topupKeeper types.TopupKeeper,
 	contractCaller helper.IContractCaller,
 
 ) Keeper {
+
+	bz, err := address.NewHexCodec().StringToBytes(authority)
+	if err != nil {
+		panic(fmt.Errorf("invalid checkpoint authority address: %w", err))
+	}
+
+	// ensure only gov has the authority to update the params
+	if !bytes.Equal(bz, authtypes.NewModuleAddress(govtypes.ModuleName)) {
+		panic(fmt.Errorf("invalid checkpoint authority address: %s", authority))
+	}
+
 	sb := collections.NewSchemaBuilder(storeService)
 
 	k := Keeper{
 		storeService:    storeService,
 		cdc:             cdc,
-		sk:              stakingKeeper,
+		authority:       authority,
+		stakeKeeper:     stakingKeeper,
 		ck:              cmKeeper,
 		topupKeeper:     topupKeeper,
 		IContractCaller: contractCaller,
 
 		bufferedCheckpoint: collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
-		checkpoint:         collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoint", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
+		checkpoints:        collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
 		params:             collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
 		lastNoAck:          collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
 		ackCount:           collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
@@ -72,6 +91,11 @@ func NewKeeper(
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
+}
+
+// GetAuthority returns x/bor module's authority
+func (k Keeper) GetAuthority() string {
+	return k.authority
 }
 
 // SetParams sets the x/checkpoint module parameters.
@@ -98,7 +122,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 
 // AddCheckpoint adds checkpoint into the db store
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
-	err := k.checkpoint.Set(ctx, checkpointNumber, checkpoint)
+	err := k.checkpoints.Set(ctx, checkpointNumber, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in adding the checkpoint to the store", "error", err)
 		return err
@@ -120,7 +144,7 @@ func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Check
 
 // GetCheckpointByNumber gets the checkpoint by its number
 func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (types.Checkpoint, error) {
-	checkpoint, err := k.checkpoint.Get(ctx, number)
+	checkpoint, err := k.checkpoints.Get(ctx, number)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching checkpoint from store", "err", err)
 		return types.Checkpoint{}, err
@@ -137,7 +161,7 @@ func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkp
 		return types.Checkpoint{}, err
 	}
 
-	checkpoint, err = k.checkpoint.Get(ctx, acksCount)
+	checkpoint, err = k.checkpoints.Get(ctx, acksCount)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching last checkpoint from store", "err", err)
 		return types.Checkpoint{}, err
@@ -206,7 +230,7 @@ func (k *Keeper) GetLastNoAck(ctx context.Context) (uint64, error) {
 
 // GetCheckpoints gets all the checkpoints from the store
 func (k *Keeper) GetCheckpoints(ctx context.Context) (checkpoints []types.Checkpoint, e error) {
-	iterator, err := k.checkpoint.Iterate(ctx, nil)
+	iterator, err := k.checkpoints.Iterate(ctx, nil)
 	if err != nil {
 		k.Logger(ctx).Error("error in getting the iterator", "err", err)
 		return nil, err

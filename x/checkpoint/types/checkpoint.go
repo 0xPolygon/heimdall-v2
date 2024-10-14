@@ -2,15 +2,13 @@ package types
 
 import (
 	"sort"
-
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 )
 
 // CreateCheckpoint generate new checkpoint
 func CreateCheckpoint(
 	start uint64,
 	end uint64,
-	rootHash hmTypes.HeimdallHash,
+	rootHash []byte,
 	proposer string,
 	borChainID string,
 	timestamp uint64,

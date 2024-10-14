@@ -42,7 +42,7 @@ func NewParams(mainChainTxConfirmations uint64, borChainTxConfirmations uint64, 
 
 // Validate checks that the parameters have valid values.
 func (p Params) Validate() error {
-	if err := validateHeimdallAddress("matic_token_address", p.ChainParams.MaticTokenAddress); err != nil {
+	if err := validateHeimdallAddress("polygon_pos_token_address", p.ChainParams.PolygonPosTokenAddress); err != nil {
 		return err
 	}
 

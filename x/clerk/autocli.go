@@ -15,15 +15,15 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: clerk.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod: "Record",
+					RpcMethod: "GetRecordById",
 					Use:       "record [record-id]",
 					Short:     "Query a record by its ID.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "record_i_d"},
+						{ProtoField: "record_id"},
 					},
 				},
 				{
-					RpcMethod: "RecordList",
+					RpcMethod: "GetRecordList",
 					Use:       "record-list [page] [limit]",
 					Short:     "Query record list by page and limit.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
@@ -32,7 +32,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					},
 				},
 				{
-					RpcMethod: "RecordListWithTime",
+					RpcMethod: "GetRecordListWithTime",
 					Use:       "record-list-with-time [from-time] [to-time] [page] [limit]",
 					Short:     "Query record list by time range, page and limit.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
@@ -43,7 +43,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					},
 				},
 				{
-					RpcMethod: "RecordSequence",
+					RpcMethod: "GetRecordSequence",
 					Use:       "record-sequence [tx-hash] [log-index]",
 					Short:     "Query record sequence by tx-hash and log-index.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
@@ -67,8 +67,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 						{ProtoField: "block_number"},
 						{ProtoField: "contract_address"},
 						{ProtoField: "data"},
-						{ProtoField: "i_d"},
-						{ProtoField: "chain_i_d"},
+						{ProtoField: "id"},
+						{ProtoField: "chain_id"},
 					},
 				},
 			},

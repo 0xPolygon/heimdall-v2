@@ -3,15 +3,13 @@ package types
 import (
 	"cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/0xPolygon/heimdall-v2/types"
 )
 
 var _ sdk.Msg = &MsgTopupTx{}
 var _ sdk.Msg = &MsgWithdrawFeeTx{}
 
 // NewMsgTopupTx creates and returns a new MsgTopupTx.
-func NewMsgTopupTx(proposer, user string, fee math.Int, txHash types.TxHash, index, blockNumber uint64) *MsgTopupTx {
+func NewMsgTopupTx(proposer, user string, fee math.Int, txHash []byte, index, blockNumber uint64) *MsgTopupTx {
 	return &MsgTopupTx{
 		Proposer:    proposer,
 		User:        user,

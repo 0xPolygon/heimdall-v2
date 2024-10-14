@@ -1,8 +1,11 @@
 syntax = "proto3";
 package heimdallv2.bor;
 
+import "amino/amino.proto";
 import "cosmos_proto/cosmos.proto";
 import "cosmos/msg/v1/msg.proto";
+import "gogoproto/gogo.proto";
+import "heimdallv2/bor/bor.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 
@@ -12,6 +15,9 @@ service Msg {
 
   // ProposeSpan defines a method for proposing a bor span.
   rpc ProposeSpan(MsgProposeSpanRequest) returns (MsgProposeSpanResponse);
+
+  // UpdateParams defines a method to update the bor params.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
 // MsgProposeSpanRequest represents a message to propose a span.
@@ -28,3 +34,21 @@ message MsgProposeSpanRequest {
 
 // MsgProposeSpanResponse represents a response to a Msg/ProposeSpan message.
 message MsgProposeSpanResponse {}
+
+// MsgUpdateParams is the Msg/UpdateParams request type.
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "heimdallv2/x/bor/MsgUpdateParams";
+
+  // authority is the address that controls the module (defaults to x/gov unless
+  // overwritten).
+  string authority = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  // params defines the x/bor parameters to update.
+  // NOTE: All parameters must be supplied.
+  Params params = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+// MsgUpdateParamsResponse defines the response structure for executing a
+// MsgUpdateParams message.
+message MsgUpdateParamsResponse {}

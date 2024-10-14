@@ -1,6 +1,7 @@
 package types_test
 
 import (
+	"bytes"
 	"testing"
 
 	"cosmossdk.io/math"
@@ -12,7 +13,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -37,7 +37,7 @@ func TestMsgDecode(t *testing.T) {
 		uint64(1),
 		math.NewInt(int64(1000000000000000000)),
 		pk1,
-		hmTypes.TxHash{},
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),
@@ -53,15 +53,15 @@ func TestMsgDecode(t *testing.T) {
 	msgValJoin2, ok := msgUnmarshalled.(*types.MsgValidatorJoin)
 	require.True(t, ok)
 	require.Equal(t, msgValJoin.From, msgValJoin2.From)
-	require.True(t, msgValJoin.SignerPubKey.Equal(msgValJoin2.SignerPubKey))
+	require.True(t, bytes.Equal(msgValJoin.SignerPubKey, msgValJoin2.SignerPubKey))
 	require.Equal(t, msgValJoin.ActivationEpoch, msgValJoin2.ActivationEpoch)
 	require.Equal(t, msgValJoin.ValId, msgValJoin2.ValId)
 
 	msgSignerUpdate, err := types.NewMsgSignerUpdate(
 		pk1.Address().String(),
 		uint64(1),
-		pk1,
-		hmTypes.TxHash{},
+		pk1.Bytes(),
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),
@@ -76,14 +76,14 @@ func TestMsgDecode(t *testing.T) {
 	msgSignerUpdate2, ok := msgUnmarshalled.(*types.MsgSignerUpdate)
 	require.True(t, ok)
 	require.Equal(t, msgSignerUpdate.From, msgSignerUpdate2.From)
-	require.True(t, msgSignerUpdate.NewSignerPubKey.Equal(msgSignerUpdate2.NewSignerPubKey))
+	require.True(t, bytes.Equal(msgSignerUpdate.NewSignerPubKey, msgSignerUpdate2.NewSignerPubKey))
 	require.Equal(t, msgSignerUpdate.ValId, msgSignerUpdate2.ValId)
 
 	msgStakeUpdate, err := types.NewMsgStakeUpdate(
 		pk1.Address().String(),
 		uint64(1),
 		math.NewInt(int64(100000)),
-		hmTypes.TxHash{},
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),
@@ -105,7 +105,7 @@ func TestMsgDecode(t *testing.T) {
 		pk1.Address().String(),
 		uint64(1),
 		uint64(1),
-		hmTypes.TxHash{},
+		[]byte{},
 		uint64(1),
 		uint64(0),
 		uint64(1),

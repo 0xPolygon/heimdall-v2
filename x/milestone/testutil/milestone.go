@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
@@ -18,11 +17,11 @@ import (
 func GenRandMilestone(start uint64, milestoneLength uint64) (milestone types.Milestone) {
 	end := start + milestoneLength - 1
 	borChainID := "1234"
-	hash := hmTypes.HeimdallHash{Hash: RandomBytes()}
+	hash := RandomBytes()
 	proposer := secp256k1.GenPrivKey().PubKey().Address().String()
 	randN, _ := uuid.NewRandom()
 
-	milestoneID := fmt.Sprintf("%s - %s", randN.String(), common.BytesToAddress(hash.GetHash()).String())
+	milestoneID := fmt.Sprintf("%s - %s", randN.String(), common.BytesToAddress(hash).String())
 	milestone = CreateMilestone(
 		start,
 		end,
@@ -39,7 +38,7 @@ func GenRandMilestone(start uint64, milestoneLength uint64) (milestone types.Mil
 func CreateMilestone(
 	start uint64,
 	end uint64,
-	hash hmTypes.HeimdallHash,
+	hash []byte,
 	proposer string,
 	borChainID string,
 	milestoneID string,
@@ -75,8 +74,7 @@ func IsEqual(a, b *types.Milestone) bool {
 		return false
 	}
 
-	if !bytes.Equal(a.Hash.Hash, b.Hash.Hash) {
-		fmt.Print("here")
+	if !bytes.Equal(a.Hash, b.Hash) {
 		return false
 	}
 
