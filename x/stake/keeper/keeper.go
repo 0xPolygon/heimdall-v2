@@ -31,7 +31,7 @@ type Keeper struct {
 	validatorSet collections.Map[[]byte, types.ValidatorSet]
 	signer       collections.Map[uint64, string]
 	sequences    collections.Map[string, bool]
-	lastBlockTxs collections.Map[uint64, types.LastBlockTxs]
+	lastBlockTxs collections.Item[types.LastBlockTxs]
 
 	setupComplete bool
 }
@@ -59,7 +59,7 @@ func NewKeeper(
 		validatorSet: collections.NewMap(sb, types.ValidatorSetKey, "validator_set", collections.BytesKey, codec.CollValue[types.ValidatorSet](cdc)),
 		sequences:    collections.NewMap(sb, types.StakeSequenceKey, "stake_sequence", collections.StringKey, collections.BoolValue),
 		signer:       collections.NewMap(sb, types.SignerKey, "signer", collections.Uint64Key, collections.StringValue),
-		lastBlockTxs: collections.NewMap(sb, types.LastBlockTxsKey, "last_block_txs", collections.Uint64Key, codec.CollValue[types.LastBlockTxs](cdc)),
+		lastBlockTxs: collections.NewItem(sb, types.LastBlockTxsKey, "last_block_txs", codec.CollValue[types.LastBlockTxs](cdc)),
 
 		setupComplete: false,
 	}
@@ -82,16 +82,16 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 }
 
 // SetLastBlockTxs sets the last block's txs in the store
-func (k Keeper) SetLastBlockTxs(ctx sdk.Context, height int64, txs [][]byte) error {
+func (k Keeper) SetLastBlockTxs(ctx sdk.Context, txs [][]byte) error {
 	k.PanicIfSetupIsIncomplete()
 	blockTxs := types.LastBlockTxs{Txs: txs}
-	return k.lastBlockTxs.Set(ctx, uint64(height), blockTxs)
+	return k.lastBlockTxs.Set(ctx, blockTxs)
 }
 
 // GetLastBlockTxs gets the last block's txs from the store
-func (k Keeper) GetLastBlockTxs(ctx sdk.Context, height int64) (types.LastBlockTxs, error) {
+func (k Keeper) GetLastBlockTxs(ctx sdk.Context) (types.LastBlockTxs, error) {
 	k.PanicIfSetupIsIncomplete()
-	return k.lastBlockTxs.Get(ctx, uint64(height))
+	return k.lastBlockTxs.Get(ctx)
 }
 
 // SetCheckpointKeeper sets the checkpoint keeper in the stake keeper
