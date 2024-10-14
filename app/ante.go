@@ -41,6 +41,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
+		// TODO HV2: Do we need a sideTxDecorator? See https://polygon.atlassian.net/browse/POS-2705
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil
