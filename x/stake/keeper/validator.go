@@ -565,14 +565,14 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while calling the GetValidatorSet fn", "err", err)
-		return cmtValUpdates, err
+		return nil, err
 	}
 
 	// save previous block's validator set
 	err = k.UpdatePreviousBlockValidatorSetInStore(ctx, currentValidatorSet)
 	if err != nil {
 		k.Logger(ctx).Error("unable to set previous block's validator set in state", "error", err)
-		return cmtValUpdates, err
+		return nil, err
 	}
 
 	allValidators := k.GetAllValidators(ctx)
@@ -589,17 +589,17 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 
 	if len(setUpdates) > 0 {
 		// create new validator set
-		if err := currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
+		if err = currentValidatorSet.UpdateWithChangeSet(setUpdates); err != nil {
 			// return error
 			k.Logger(ctx).Error("unable to update current validator set", "error", err)
-			return cmtValUpdates, err
+			return nil, err
 		}
 
 		// save set in store
-		if err := k.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
+		if err = k.UpdateValidatorSetInStore(ctx, currentValidatorSet); err != nil {
 			// return with nothing
 			k.Logger(ctx).Error("unable to update current validator set in state", "error", err)
-			return cmtValUpdates, err
+			return nil, err
 		}
 
 		// convert updates from map to array
