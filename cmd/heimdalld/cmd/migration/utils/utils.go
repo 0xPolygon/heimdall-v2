@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,7 +13,6 @@ import (
 	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -152,37 +150,7 @@ func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) er
 		return fmt.Errorf("failed to rename ID field: %w", err)
 	}
 
-	pubKeyStr, ok := validator["pubKey"].(string)
-	if !ok {
-		return fmt.Errorf("public key not found")
-	}
-
-	migratedKey, err := migratePubKey(appCodec, pubKeyStr)
-	if err != nil {
-		return fmt.Errorf("failed to migrate pubKey: %w", err)
-	}
-
-	validator["pubKey"] = json.RawMessage(migratedKey)
-
 	return nil
-}
-
-// migratePubKey migrates the public key to proto encoding.
-func migratePubKey(appCodec codec.Codec, pubKeyStr string) (json.RawMessage, error) {
-
-	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(pubKeyStr, "0x"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode hex public key: %w", err)
-	}
-
-	secpKey := secp256k1.PubKey{Key: pubKeyBytes}
-
-	anyPubKey, err := codecTypes.NewAnyWithValue(&secpKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Any type for pubKey: %w", err)
-	}
-
-	return appCodec.MustMarshalJSON(anyPubKey), nil
 }
 
 // migrateGovProposalContent returns the proposal into new format with proto encoding.

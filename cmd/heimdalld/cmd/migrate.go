@@ -272,6 +272,10 @@ func migrateChainmanagerModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to rename mainchain_tx_timeout field: %w", err)
 	}
 
+	if err := utils.RenameProperty(chainmanagerData, "params.chain_params", "matic_token_address", "polygon_pos_token_address"); err != nil {
+		return fmt.Errorf("failed to rename matic_token_address field: %w", err)
+	}
+
 	logger.Info("Chainmanager module migration completed successfully")
 
 	return nil
@@ -561,33 +565,28 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 	// Update the checkpoint_buffer_time with the human-readable value
 	params["checkpoint_buffer_time"] = checkpointBufferTimeReadable
 
-	if err := utils.RenameProperty(params, ".", "child_chain_block_interval", "child_block_interval"); err != nil {
-		return fmt.Errorf("failed to rename child_chain_block_interval field: %w", err)
-	}
-
 	bufferedCheckpoint, ok := checkpointData["buffered_checkpoint"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("buffered_checkpoint not found or invalid format")
+	if ok {
+
+		bufferedRootHashHex, ok := bufferedCheckpoint["root_hash"].(string)
+		if !ok {
+			return fmt.Errorf("root_hash not found in buffered_checkpoint")
+		}
+
+		if !strings.HasPrefix(bufferedRootHashHex, "0x") {
+			return fmt.Errorf("invalid root_hash format in buffered_checkpoint")
+		}
+
+		bufferedRootHashHex = bufferedRootHashHex[2:]
+
+		bufferedRootHashBytes, err := hex.DecodeString(bufferedRootHashHex)
+		if err != nil {
+			return fmt.Errorf("failed to decode buffered root_hash: %w", err)
+		}
+
+		bufferedRootHashBase64 := base64.StdEncoding.EncodeToString(bufferedRootHashBytes)
+		bufferedCheckpoint["root_hash"] = bufferedRootHashBase64
 	}
-
-	bufferedRootHashHex, ok := bufferedCheckpoint["root_hash"].(string)
-	if !ok {
-		return fmt.Errorf("root_hash not found in buffered_checkpoint")
-	}
-
-	if !strings.HasPrefix(bufferedRootHashHex, "0x") {
-		return fmt.Errorf("invalid root_hash format in buffered_checkpoint")
-	}
-
-	bufferedRootHashHex = bufferedRootHashHex[2:]
-
-	bufferedRootHashBytes, err := hex.DecodeString(bufferedRootHashHex)
-	if err != nil {
-		return fmt.Errorf("failed to decode buffered root_hash: %w", err)
-	}
-
-	bufferedRootHashBase64 := base64.StdEncoding.EncodeToString(bufferedRootHashBytes)
-	bufferedCheckpoint["root_hash"] = bufferedRootHashBase64
 
 	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
 	if !ok {

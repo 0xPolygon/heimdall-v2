@@ -53,12 +53,7 @@
           ]
         }
       ],
-      "supply": [
-        {
-          "denom": "matic",
-          "amount": "2000000000000000000000"
-        }
-      ],
+      "supply": [],
       "denom_metadata": [],
       "send_enabled": []
     },
@@ -80,10 +75,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -98,10 +90,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -114,10 +103,7 @@
                 "last_updated": "",
                 "nonce": "1",
                 "proposer_priority": "0",
-                "pubKey": {
-                  "@type": "/cosmos.crypto.secp256k1.PubKey",
-                  "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-                },
+                "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
                 "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
                 "startEpoch": "0",
                 "val_id": "1",
@@ -137,10 +123,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -155,10 +138,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -171,10 +151,7 @@
                 "last_updated": "",
                 "nonce": "1",
                 "proposer_priority": "0",
-                "pubKey": {
-                  "@type": "/cosmos.crypto.secp256k1.PubKey",
-                  "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-                },
+                "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
                 "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
                 "startEpoch": "0",
                 "val_id": "1",
@@ -194,10 +171,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -212,10 +186,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -228,10 +199,7 @@
                 "last_updated": "",
                 "nonce": "1",
                 "proposer_priority": "0",
-                "pubKey": {
-                  "@type": "/cosmos.crypto.secp256k1.PubKey",
-                  "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-                },
+                "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
                 "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
                 "startEpoch": "0",
                 "val_id": "1",
@@ -251,10 +219,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -269,10 +234,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -285,10 +247,7 @@
                 "last_updated": "",
                 "nonce": "1",
                 "proposer_priority": "0",
-                "pubKey": {
-                  "@type": "/cosmos.crypto.secp256k1.PubKey",
-                  "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-                },
+                "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
                 "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
                 "startEpoch": "0",
                 "val_id": "1",
@@ -308,10 +267,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -326,10 +282,7 @@
               "last_updated": "",
               "nonce": "1",
               "proposer_priority": "0",
-              "pubKey": {
-                "@type": "/cosmos.crypto.secp256k1.PubKey",
-                "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-              },
+              "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
               "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
               "startEpoch": "0",
               "val_id": "1",
@@ -342,10 +295,7 @@
                 "last_updated": "",
                 "nonce": "1",
                 "proposer_priority": "0",
-                "pubKey": {
-                  "@type": "/cosmos.crypto.secp256k1.PubKey",
-                  "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-                },
+                "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
                 "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
                 "startEpoch": "0",
                 "val_id": "1",
@@ -361,7 +311,7 @@
         "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "15005",
-          "matic_token_address": "0x675c1bd77f573aaf2df04ee7180a21a110d3d4fa",
+          "polygon_pos_token_address": "0x675c1bd77f573aaf2df04ee7180a21a110d3d4fa",
           "root_chain_address": "0xa1a6f9ff932eba930db4a638e06ae0ae3c8fa2d1",
           "slash_manager_address": "0x0000000000000000000000000000000000000000",
           "staking_info_address": "0xeebd8a7b10c1877aaa02c4d5a50629b8cc22e73f",
@@ -926,7 +876,7 @@
       "params": {
         "avg_checkpoint_length": "256",
         "checkpoint_buffer_time": "1000s",
-        "child_block_interval": "10000",
+        "child_chain_block_interval": "10000",
         "max_checkpoint_length": "1024"
       }
     },
@@ -1527,7 +1477,7 @@
         "expedited_threshold": "0.667000000000000000",
         "expedited_min_deposit": [
           {
-            "denom": "matic",
+            "denom": "pol",
             "amount": "50000000000000000000"
           }
         ],
@@ -1583,10 +1533,7 @@
           "last_updated": "",
           "nonce": "1",
           "proposer_priority": "0",
-          "pubKey": {
-            "@type": "/cosmos.crypto.secp256k1.PubKey",
-            "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-          },
+          "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
           "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
           "startEpoch": "0",
           "val_id": "1",
@@ -1599,10 +1546,7 @@
             "last_updated": "",
             "nonce": "1",
             "proposer_priority": "0",
-            "pubKey": {
-              "@type": "/cosmos.crypto.secp256k1.PubKey",
-              "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-            },
+            "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
             "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
             "startEpoch": "0",
             "val_id": "1",
@@ -1618,10 +1562,7 @@
           "last_updated": "",
           "nonce": "1",
           "proposer_priority": "0",
-          "pubKey": {
-            "@type": "/cosmos.crypto.secp256k1.PubKey",
-            "key": "BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo="
-          },
+          "pubKey": "0x04ce399432e38fb729fa1b512d5917454adb7c404e8252b339c5b124f20e55a9bee56dde0b0e8130daff5193b8cab0df55392783062751a6942c561bca9b44486a",
           "signer": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
           "startEpoch": "0",
           "val_id": "1",
