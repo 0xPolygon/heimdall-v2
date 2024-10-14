@@ -11,8 +11,6 @@ import (
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-const keyTypeURL = "/cosmos.crypto.secp256k1.PubKey"
-
 var TestValidators = []staketypes.Validator{
 	{
 		ValId:       3,

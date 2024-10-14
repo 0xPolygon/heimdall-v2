@@ -46,6 +46,7 @@ const (
 	LocalChain  = "local"
 
 	// heimdall-config flags
+
 	MainRPCUrlFlag               = "eth_rpc_url"
 	BorRPCUrlFlag                = "bor_rpc_url"
 	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
@@ -64,8 +65,8 @@ const (
 	NoACKWaitTimeFlag = "no_ack_wait_time"
 	ChainFlag         = "chain"
 
-	// ---
 	// TODO HV2 Move these to common client flags
+
 	// BroadcastBlock defines a tx broadcasting mode where the client waits for
 	// the tx to be committed in a block.
 	BroadcastBlock = "block"
@@ -123,10 +124,10 @@ const (
 
 	DefaultCometBFTNode = "tcp://localhost:26657"
 
-	// TODO HV2 Please update their value with correct one
+	// TODO HV2: Update these values with the correct ones
 	DefaultMainnetSeeds = "1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656"
 
-	// TODO HV2 Please update their value with correct one and also add the support for amoy
+	// TODO HV2: Update these values with the correct ones and add support for amoy
 	DefaultTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
 
 	secretFilePerm = 0600

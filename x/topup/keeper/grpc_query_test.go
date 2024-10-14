@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
@@ -108,7 +109,7 @@ func (s *KeeperTestSuite) TestGRPCGetDividendAccountByAddress_Success() {
 	ctx, tk, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
 
 	dividendAccount := hTypes.DividendAccount{
-		User:      AccountHash,
+		User:      util.FormatAddress(AccountHash),
 		FeeAmount: big.NewInt(0).String(),
 	}
 	err := tk.SetDividendAccount(ctx, dividendAccount)

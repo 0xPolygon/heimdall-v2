@@ -14,6 +14,7 @@ import (
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -61,9 +62,10 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator corresponding to the val id already exists in store")
 	}
 
+	signer = util.FormatAddress(signer)
 	// get validator by signer
 	checkVal, err := m.k.GetValidatorInfo(ctx, signer)
-	if err == nil && checkVal.Signer == signer {
+	if err == nil && strings.Compare(util.FormatAddress(checkVal.Signer), signer) == 0 {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, fmt.Sprintf("validator %s already exists", signer))
 	}
 
@@ -188,17 +190,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	}
 
 	// make oldSigner address compatible with newSigner address
-	oldSignerBytes, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
-	if err != nil {
-		m.k.Logger(ctx).Error("oldSigner bytes are invalid", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "old signer bytes are invalid")
-	}
-
-	oldSignerStr, err := addrCodec.NewHexCodec().BytesToString(oldSignerBytes)
-	if err != nil {
-		m.k.Logger(ctx).Error("oldSigner address is invalid", "error", err)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "old signer address is invalid")
-	}
+	oldSigner := util.FormatAddress(validator.Signer)
 
 	// add sequence
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
@@ -212,7 +204,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	}
 
 	// check if new signer address is same as existing signer
-	if strings.EqualFold(newSigner, oldSignerStr) {
+	if newSigner == oldSigner {
 		// No signer change
 		m.k.Logger(ctx).Error("new signer is the same as old signer")
 		return nil, errorsmod.Wrap(types.ErrNoSignerChange, "newSigner same as oldSigner")

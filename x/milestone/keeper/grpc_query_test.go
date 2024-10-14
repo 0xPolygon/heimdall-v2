@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/golang/mock/gomock"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
@@ -34,7 +35,7 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	startBlock := uint64(0)
 	endBlock := uint64(255)
 	hash := testutil.RandomBytes()
-	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
+	proposerAddress := util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String())
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "00000"
 

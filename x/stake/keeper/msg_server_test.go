@@ -2,7 +2,6 @@ package keeper_test
 
 import (
 	"math/rand"
-	"strings"
 	"time"
 
 	"cosmossdk.io/math"
@@ -11,6 +10,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -19,9 +19,6 @@ import (
 
 const (
 	TxHash1 = "0x000000000000000000000000000000000000000000000000000000000000dead"
-	TxHash2 = "0x000000000000000000000000000000000000000000000000000000000001dead"
-	TxHash3 = "0x000000000000000000000000000000000000000000000000000000000002dead"
-	TxHash4 = "0x000000000000000000000000000000000000000000000000000000000003dead"
 )
 
 func (s *KeeperTestSuite) TestMsgValidatorJoin() {
@@ -277,5 +274,6 @@ func (s *KeeperTestSuite) TestValidatorPubKey() {
 	valAddr := keeper.GetAllValidators(ctx)[0].Signer
 	modPubKey := secp256k1.PubKey{Key: valPubKey}
 	require.Equal(valPubKey, modPubKey.Bytes())
-	require.True(strings.EqualFold(valAddr, modPubKey.Address().String()))
+	genAddress := util.FormatAddress(modPubKey.Address().String())
+	require.Equal(valAddr, genAddress)
 }

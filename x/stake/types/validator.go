@@ -13,6 +13,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 // NewValidator func creates a new validator
@@ -40,7 +42,7 @@ func NewValidator(
 // to sort it we compare the values of signer field
 func SortValidatorByAddress(a []Validator) []Validator {
 	sort.Slice(a, func(i, j int) bool {
-		return strings.Compare(strings.ToLower(a[i].Signer), strings.ToLower(a[j].Signer)) < 0
+		return strings.Compare(util.FormatAddress(a[i].Signer), util.FormatAddress(a[j].Signer)) < 0
 	})
 
 	return a
@@ -90,7 +92,7 @@ func (v *Validator) CompareProposerPriority(other *Validator) *Validator {
 	case v.ProposerPriority < other.ProposerPriority:
 		return other
 	default:
-		result := strings.Compare(strings.ToLower(v.Signer), strings.ToLower(other.Signer))
+		result := strings.Compare(util.FormatAddress(v.Signer), util.FormatAddress(other.Signer))
 
 		switch {
 		case result < 0:
@@ -181,7 +183,7 @@ func (*Validator) GetConsAddr() ([]byte, error) {
 }
 
 // GetConsensusPower implements types.ValidatorI.
-func (*Validator) GetConsensusPower(math.Int) int64 {
+func (*Validator) GetConsensusPower(_ math.Int) int64 {
 	panic("unimplemented")
 }
 
@@ -246,15 +248,15 @@ func (*Validator) TmConsPublicKey() (cosmosCryto.PublicKey, error) {
 }
 
 // TokensFromShares implements types.ValidatorI.
-func (*Validator) TokensFromShares(math.LegacyDec) math.LegacyDec {
+func (*Validator) TokensFromShares(_ math.LegacyDec) math.LegacyDec {
 	panic("unimplemented")
 }
 
 // TokensFromSharesRoundUp implements types.ValidatorI.
-func (*Validator) TokensFromSharesRoundUp(math.LegacyDec) math.LegacyDec {
+func (*Validator) TokensFromSharesRoundUp(_ math.LegacyDec) math.LegacyDec {
 	panic("unimplemented")
 }
 
-func (*Validator) TokensFromSharesTruncated(math.LegacyDec) math.LegacyDec {
+func (*Validator) TokensFromSharesTruncated(_ math.LegacyDec) math.LegacyDec {
 	panic("unimplemented")
 }

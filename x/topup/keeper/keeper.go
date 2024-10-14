@@ -11,6 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -167,6 +168,7 @@ func (k *Keeper) GetAllDividendAccounts(ctx context.Context) (da []hTypes.Divide
 func (k *Keeper) SetDividendAccount(ctx context.Context, dividendAccount hTypes.DividendAccount) error {
 	logger := k.Logger(ctx)
 
+	dividendAccount.User = util.FormatAddress(dividendAccount.User)
 	err := k.dividendAccounts.Set(ctx, dividendAccount.User, dividendAccount)
 	if err != nil {
 		logger.Error("error adding dividend account", "dividendAccount", dividendAccount, "err", err)
@@ -182,7 +184,7 @@ func (k *Keeper) SetDividendAccount(ctx context.Context, dividendAccount hTypes.
 func (k *Keeper) HasDividendAccount(ctx context.Context, user string) (bool, error) {
 	logger := k.Logger(ctx)
 
-	isDividendAccountPresent, err := k.dividendAccounts.Has(ctx, user)
+	isDividendAccountPresent, err := k.dividendAccounts.Has(ctx, util.FormatAddress(user))
 	if err != nil {
 		logger.Error("error checking if dividend account exists", "user", user, "err", err)
 		return false, err
@@ -197,7 +199,7 @@ func (k *Keeper) HasDividendAccount(ctx context.Context, user string) (bool, err
 func (k *Keeper) GetDividendAccount(ctx context.Context, user string) (hTypes.DividendAccount, error) {
 	logger := k.Logger(ctx)
 
-	dividendAccount, err := k.dividendAccounts.Get(ctx, user)
+	dividendAccount, err := k.dividendAccounts.Get(ctx, util.FormatAddress(user))
 	if err != nil {
 		logger.Error("error getting dividend account", "user", user, "err", err)
 		return hTypes.DividendAccount{}, err
@@ -213,7 +215,7 @@ func (k *Keeper) AddFeeToDividendAccount(ctx context.Context, user string, fee *
 	logger := k.Logger(ctx)
 
 	// check if dividendAccount exists
-	exist, err := k.HasDividendAccount(ctx, user)
+	exist, err := k.HasDividendAccount(ctx, util.FormatAddress(user))
 	if err != nil {
 		return err
 	}
@@ -223,7 +225,7 @@ func (k *Keeper) AddFeeToDividendAccount(ctx context.Context, user string, fee *
 		// create a new dividend account
 		logger.Debug("dividend account not found, creating one", "user", user)
 		dividendAccount = hTypes.DividendAccount{
-			User:      user,
+			User:      util.FormatAddress(user),
 			FeeAmount: big.NewInt(0).String(),
 		}
 	} else {
