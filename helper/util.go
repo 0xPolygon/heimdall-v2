@@ -236,6 +236,7 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return u.String()
 }
 
+// TODO HV2 - this needs further testing once we have a devnet running
 // FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result []byte, err error) {
 	resp, err := Client.Get(URL)

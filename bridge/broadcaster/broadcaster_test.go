@@ -23,6 +23,7 @@ import (
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
@@ -93,7 +94,11 @@ var (
 
 // Parallel test - to check BroadcastToHeimdall synchronisation
 func TestBroadcastToHeimdall(t *testing.T) {
-	t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
+	/*
+		TODO HV2 - find a way to simulate txBroadcaster.CliCtx.AccountRetriever as without
+		it, we cannot test BroadcastTx function.
+	*/
+	t.Skip()
 	t.Parallel()
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNodeUrl)
@@ -111,11 +116,12 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	testOpts := helper.NewTestOpts(nil, testChainId)
 	heimdallApp, sdkCtx, _ := createTestApp(t)
 
-	// TODO HV2 - this says HeimdallApp doesnot implement abci.Application
-	// testOpts.SetApplication(heimdallApp)
+	encodingConfig := moduletestutil.MakeTestEncodingConfig()
+	txConfig := encodingConfig.TxConfig
 
 	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec())
 	txBroadcaster.CliCtx.Simulate = true
+	txBroadcaster.CliCtx.TxConfig = txConfig
 
 	testCases := []struct {
 		name       string

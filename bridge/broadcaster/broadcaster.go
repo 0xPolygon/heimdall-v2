@@ -90,7 +90,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 
 	// create a factory
 	txf := clienttx.Factory{}.
-		WithTxConfig(tb.CliCtx.TxConfig).
+		WithTxConfig(txCfg).
 		WithAccountRetriever(tb.CliCtx.AccountRetriever).
 		WithChainID(tb.CliCtx.ChainID).
 		WithSignMode(signMode).
