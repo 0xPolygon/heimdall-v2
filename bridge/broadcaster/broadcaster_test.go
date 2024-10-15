@@ -44,25 +44,19 @@ var (
 	getAccountUrl           = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/accounts/" + common.BytesToAddress(address).String()
 	getAccountResponse      = fmt.Sprintf(`
 	{
-		"result": {
-			"@type": "auth/Account",
-			"address": "0x%s",
-			"pub_key": null,
-			"account_number": "0",
-			"sequence": "0"
-		}
+		"address": "0x%s",
+		"pub_key": null,
+		"account_number": "0",
+		"sequence": "0"
 	  }
 	  `, address.String())
 
 	getAccountUpdatedResponse = fmt.Sprintf(`
 	{
-		"result": {
-			"@type": "auth/Account",
-			"address": "0x%s",
-			"pub_key": null,
-			"account_number": "0",
-			"sequence": "1"
-		}
+		"address": "0x%s",
+		"pub_key": null,
+		"account_number": "0",
+		"sequence": "1"
 	  }
 	  `, address.String())
 

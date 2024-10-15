@@ -585,7 +585,7 @@ func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash []byt
 
 	cp.Logger.Info("Divident account root fetched")
 
-	if err = jsoniter.ConfigFastest.Unmarshal(response.Result, &accountroothash); err != nil {
+	if err = jsoniter.ConfigFastest.Unmarshal(response, &accountroothash); err != nil {
 		cp.Logger.Error("Error unmarshalling accountroothash received from Heimdall Server", "error", err)
 		return accountroothash, err
 	}
@@ -629,7 +629,7 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 	}
 
 	var noAckObject Result
-	if err := jsoniter.ConfigFastest.Unmarshal(response.Result, &noAckObject); err != nil {
+	if err := jsoniter.ConfigFastest.Unmarshal(response, &noAckObject); err != nil {
 		cp.Logger.Error("Error unmarshalling no-ack data ", "error", err)
 		return 0
 	}

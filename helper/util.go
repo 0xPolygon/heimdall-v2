@@ -15,7 +15,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/0xPolygon/heimdall-v2/types/rest"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -23,10 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/input"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
-	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -241,6 +237,36 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 }
 
 // FetchFromAPI fetches data from any URL
+func FetchFromAPI(URL string) (result []byte, err error) {
+	resp, err := Client.Get(URL)
+	if err != nil {
+		return result, err
+	}
+
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			Logger.Error("Error closing response body:", err)
+		}
+	}()
+
+	// response
+	if resp.StatusCode == 200 {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return result, err
+		}
+
+		return body, nil
+	}
+
+	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
+
+	return result, fmt.Errorf("error while fetching data from url: %v, status: %v", URL, resp.StatusCode)
+}
+
+// Older version of FetchFromAPI kept for reference, will remove later
+/*
+// FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result rest.Response, err error) {
 	// create codec
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
@@ -278,6 +304,7 @@ func FetchFromAPI(URL string) (result rest.Response, err error) {
 
 	return result, fmt.Errorf("error while fetching data from url: %v, status: %v", URL, resp.StatusCode)
 }
+*/
 
 // IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
 // It must be 0x04 for uncompressed public keys

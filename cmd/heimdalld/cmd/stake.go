@@ -142,7 +142,7 @@ func GetChainManagerParams() (*chainmanagertypes.Params, error) {
 	}
 
 	var params chainmanagertypes.Params
-	if err := json.Unmarshal(response.Result, &params); err != nil {
+	if err := json.Unmarshal(response, &params); err != nil {
 		return nil, err
 	}
 

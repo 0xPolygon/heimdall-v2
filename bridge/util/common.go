@@ -25,6 +25,7 @@ import (
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
 )
 
@@ -102,7 +103,7 @@ func IsProposer() (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result.Result, &proposers)
+	err = json.Unmarshal(result, &proposers)
 	if err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false, err
@@ -130,7 +131,7 @@ func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result.Result, &proposers)
+	err = json.Unmarshal(result, &proposers)
 	if err != nil {
 		logger.Error("error unmarshalling milestone proposer slice", "error", err)
 		return false, err
@@ -162,7 +163,7 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	// unmarshall data from buffer
 	var proposers []staketypes.Validator
-	if err := json.Unmarshal(response.Result, &proposers); err != nil {
+	if err := json.Unmarshal(response, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -192,7 +193,7 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 	// unmarshall data from buffer
 	var proposers []staketypes.Validator
-	if err := json.Unmarshal(response.Result, &proposers); err != nil {
+	if err := json.Unmarshal(response, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -264,7 +265,7 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 		return false, err
 	}
 
-	if err = json.Unmarshal(result.Result, &proposer); err != nil {
+	if err = json.Unmarshal(result, &proposer); err != nil {
 		logger.Error("error unmarshalling validator", "error", err)
 		return false, err
 	}
@@ -292,7 +293,7 @@ func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
 		return false
 	}
 
-	if err = json.Unmarshal(result.Result, &validator); err != nil {
+	if err = json.Unmarshal(result, &validator); err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false
 	}
@@ -381,13 +382,13 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 		return nil, err
 	}
 
-	var account sdk.AccountI
-	if err = cliCtx.Codec.UnmarshalJSON(response.Result, account); err != nil {
+	var account authtypes.BaseAccount
+	if err = cliCtx.Codec.UnmarshalJSON(response, &account); err != nil {
 		logger.Error("Error unmarshalling account details", "url", url)
 		return nil, err
 	}
 
-	return account, nil
+	return &account, nil
 }
 
 // GetChainmanagerParams return chain manager params
@@ -401,7 +402,7 @@ func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, er
 	}
 
 	var params chainmanagertypes.Params
-	if err = json.Unmarshal(response.Result, &params); err != nil {
+	if err = json.Unmarshal(response, &params); err != nil {
 		logger.Error("Error unmarshalling chainmanager params", "url", ChainManagerParamsURL, "err", err)
 		return nil, err
 	}
@@ -420,7 +421,7 @@ func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error)
 	}
 
 	var params checkpointTypes.Params
-	if err := json.Unmarshal(response.Result, &params); err != nil {
+	if err := json.Unmarshal(response, &params); err != nil {
 		logger.Error("Error unmarshalling Checkpoint params", "url", CheckpointParamsURL)
 		return nil, err
 	}
@@ -440,7 +441,7 @@ func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
 	}
 
 	var params milestoneTypes.Params
-	if err := json.Unmarshal(response.Result, &params); err != nil {
+	if err := json.Unmarshal(response, &params); err != nil {
 		logger.Error("Error unmarshalling Checkpoint params", "url", MilestoneParamsURL)
 		return nil, err
 	}
@@ -459,7 +460,7 @@ func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, 
 	}
 
 	var checkpoint checkpointTypes.Checkpoint
-	if err := json.Unmarshal(response.Result, &checkpoint); err != nil {
+	if err := json.Unmarshal(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling buffered checkpoint", "url", BufferedCheckpointURL, "err", err)
 		return nil, err
 	}
@@ -478,7 +479,7 @@ func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, er
 	}
 
 	var checkpoint checkpointTypes.Checkpoint
-	if err = json.Unmarshal(response.Result, &checkpoint); err != nil {
+	if err = json.Unmarshal(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling latest checkpoint", "url", LatestCheckpointURL, "err", err)
 		return nil, err
 	}
@@ -497,7 +498,7 @@ func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error
 	}
 
 	var milestone milestoneTypes.Milestone
-	if err = json.Unmarshal(response.Result, &milestone); err != nil {
+	if err = json.Unmarshal(response, &milestone); err != nil {
 		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
 		return nil, err
 	}
@@ -516,7 +517,7 @@ func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, e
 	}
 
 	var count milestoneTypes.MilestoneCount
-	if err := json.Unmarshal(response.Result, &count); err != nil {
+	if err := json.Unmarshal(response, &count); err != nil {
 		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
 		return nil, err
 	}
@@ -547,7 +548,7 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error
 		return 0, err
 	}
 
-	if err = json.Unmarshal(result.Result, &validator); err != nil {
+	if err = json.Unmarshal(result, &validator); err != nil {
 		logger.Error("error unmarshalling validator data", "error", err)
 		return 0, err
 	}
@@ -568,7 +569,7 @@ func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 	}
 
 	var validatorSet staketypes.ValidatorSet
-	if err = json.Unmarshal(response.Result, &validatorSet); err != nil {
+	if err = json.Unmarshal(response, &validatorSet); err != nil {
 		logger.Error("Error unmarshalling current validatorset data ", "error", err)
 		return nil, err
 	}
@@ -587,7 +588,7 @@ func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.Even
 	}
 
 	var eventRecord clerktypes.EventRecord
-	if err = json.Unmarshal(response.Result, &eventRecord); err != nil {
+	if err = json.Unmarshal(response, &eventRecord); err != nil {
 		logger.Error("Error unmarshalling event record", "error", err)
 		return nil, err
 	}

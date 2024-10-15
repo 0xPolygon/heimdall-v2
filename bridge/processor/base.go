@@ -149,7 +149,7 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	}
 
 	var status bool
-	if err := jsoniter.ConfigFastest.Unmarshal(res.Result, &status); err != nil {
+	if err := jsoniter.ConfigFastest.Unmarshal(res, &status); err != nil {
 		bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
 		return false, err
 	}
