@@ -47,9 +47,17 @@ func MigrateCommand() *cobra.Command {
 	cmd.Flags().String(flagGenesisTime, "", "The new network genesis time")
 	cmd.Flags().Uint64(flagInitialHeight, 0, "The new network initial height")
 
-	cmd.MarkFlagRequired(flagChainId)
-	cmd.MarkFlagRequired(flagGenesisTime)
-	cmd.MarkFlagRequired(flagInitialHeight)
+	if err := cmd.MarkFlagRequired(flagChainId); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.MarkFlagRequired(flagGenesisTime); err != nil {
+		panic(err)
+	}
+
+	if err := cmd.MarkFlagRequired(flagInitialHeight); err != nil {
+		panic(err)
+	}
 
 	return &cmd
 }
