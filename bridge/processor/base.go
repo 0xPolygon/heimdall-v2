@@ -2,6 +2,7 @@ package processor
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"io"
 	"net/http"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/viper"
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -149,7 +149,7 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	}
 
 	var status bool
-	if err := jsoniter.ConfigFastest.Unmarshal(res, &status); err != nil {
+	if err := json.Unmarshal(res, &status); err != nil {
 		bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
 		return false, err
 	}
@@ -184,7 +184,7 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 	// a minimal response of the unconfirmed txs
 	var response util.CometBFTUnconfirmedTxs
 
-	err = jsoniter.ConfigFastest.Unmarshal(body, &response)
+	err = json.Unmarshal(body, &response)
 	if err != nil {
 		bp.Logger.Error("Error unmarshalling response received from Heimdall Server", "error", err)
 		return false, err

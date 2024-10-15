@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+	"encoding/json"
 	"math/big"
 	"strconv"
 	"time"
@@ -10,7 +11,6 @@ import (
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	jsoniter "github.com/json-iterator/go"
 )
 
 const (
@@ -133,7 +133,7 @@ func (hl *HeimdallListener) fetchFromAndToBlock() (uint64, uint64, error) {
 func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
 	hl.Logger.Info("Received block event from Heimdall", "eventType", event.Type)
 
-	eventBytes, err := jsoniter.ConfigFastest.Marshal(event)
+	eventBytes, err := json.Marshal(event)
 	if err != nil {
 		hl.Logger.Error("Error while parsing block event", "eventType", event.Type, "error", err)
 		return

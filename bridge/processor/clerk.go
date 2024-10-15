@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -15,7 +16,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -65,7 +65,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 	start := time.Now()
 
 	var vLog = types.Log{}
-	if err := jsoniter.ConfigFastest.Unmarshal([]byte(logBytes), &vLog); err != nil {
+	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		cp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
 	}

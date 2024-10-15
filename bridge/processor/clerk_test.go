@@ -3,6 +3,7 @@ package processor
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/json"
 	"io"
 	"math/big"
 	"net/http"
@@ -23,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/spf13/viper"
 )
 
@@ -340,7 +340,7 @@ func prepareDummyLogBytes() (*bytes.Buffer, error) {
 	}
 
 	reqBodyBytes := new(bytes.Buffer)
-	if err := jsoniter.ConfigFastest.NewEncoder(reqBodyBytes).Encode(log); err != nil {
+	if err := json.NewEncoder(reqBodyBytes).Encode(log); err != nil {
 		return nil, err
 	}
 

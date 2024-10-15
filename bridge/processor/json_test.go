@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	jsoniter "github.com/json-iterator/go"
 	"github.com/stretchr/testify/require"
 )
 
@@ -236,10 +235,10 @@ func BenchmarkJsoniterLibraryWithDefaultConfig(b *testing.B) {
 
 		b.StartTimer()
 
-		err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal([]byte(validatorSetData), &validatorSet)
+		err := json.Unmarshal([]byte(validatorSetData), &validatorSet)
 		require.NoError(b, err)
 
-		_, err = jsoniter.ConfigFastest.Marshal(validatorSet)
+		_, err = json.Marshal(validatorSet)
 		require.NoError(b, err)
 
 		b.StopTimer()
@@ -256,10 +255,10 @@ func BenchmarkJsoniterLibraryWithFastestConfig(b *testing.B) {
 
 		b.StartTimer()
 
-		err := jsoniter.ConfigFastest.Unmarshal([]byte(validatorSetData), &validatorSet)
+		err := json.Unmarshal([]byte(validatorSetData), &validatorSet)
 		require.NoError(b, err)
 
-		_, err = jsoniter.ConfigFastest.Marshal(validatorSet)
+		_, err = json.Marshal(validatorSet)
 		require.NoError(b, err)
 
 		b.StopTimer()

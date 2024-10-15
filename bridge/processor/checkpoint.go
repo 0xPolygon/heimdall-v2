@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -22,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // CheckpointProcessor - processor for checkpoint queue.
@@ -185,13 +185,13 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 	cp.Logger.Info("Received sendCheckpointToRootchain request", "eventBytes", eventBytes, "blockHeight", blockHeight)
 
 	var event sdk.StringEvent
-	if err := jsoniter.ConfigFastest.Unmarshal([]byte(eventBytes), &event); err != nil {
+	if err := json.Unmarshal([]byte(eventBytes), &event); err != nil {
 		cp.Logger.Error("Error unmarshalling event from heimdall", "error", err)
 		return err
 	}
 
 	// var tx = sdk.TxResponse{}
-	// if err := jsoniter.Unmarshal([]byte(txBytes), &tx); err != nil {
+	// if err := json.Unmarshal([]byte(txBytes), &tx); err != nil {
 	// 	cp.Logger.Error("Error unmarshalling txResponse", "error", err)
 	// 	return err
 	// }
@@ -257,7 +257,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 	}
 
 	var log = types.Log{}
-	if err = jsoniter.ConfigFastest.Unmarshal([]byte(checkpointAckStr), &log); err != nil {
+	if err = json.Unmarshal([]byte(checkpointAckStr), &log); err != nil {
 		cp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
 	}
@@ -585,7 +585,7 @@ func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash []byt
 
 	cp.Logger.Info("Divident account root fetched")
 
-	if err = jsoniter.ConfigFastest.Unmarshal(response, &accountroothash); err != nil {
+	if err = json.Unmarshal(response, &accountroothash); err != nil {
 		cp.Logger.Error("Error unmarshalling accountroothash received from Heimdall Server", "error", err)
 		return accountroothash, err
 	}
@@ -629,7 +629,7 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 	}
 
 	var noAckObject Result
-	if err := jsoniter.ConfigFastest.Unmarshal(response, &noAckObject); err != nil {
+	if err := json.Unmarshal(response, &noAckObject); err != nil {
 		cp.Logger.Error("Error unmarshalling no-ack data ", "error", err)
 		return 0
 	}

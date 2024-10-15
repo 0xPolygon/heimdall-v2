@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // StakeUpdate represents the StakeUpdate event
@@ -75,7 +74,7 @@ func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, er
 		`,
 	}
 
-	byteQuery, err := jsoniter.ConfigFastest.Marshal(query)
+	byteQuery, err := json.Marshal(query)
 	if err != nil {
 		return nil, err
 	}

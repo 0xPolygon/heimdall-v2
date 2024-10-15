@@ -3,6 +3,7 @@ package processor
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -13,7 +14,6 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/common"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // SpanProcessor - process span related events
@@ -146,7 +146,7 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 	}
 
 	var lastSpan types.Span
-	if err = jsoniter.ConfigFastest.Unmarshal(result, &lastSpan); err != nil {
+	if err = json.Unmarshal(result, &lastSpan); err != nil {
 		sp.Logger.Error("Error unmarshalling span", "error", err)
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 	}
 
 	var msg types.Span
-	if err = jsoniter.ConfigFastest.Unmarshal(result, &msg); err != nil {
+	if err = json.Unmarshal(result, &msg); err != nil {
 		sp.Logger.Error("Error unmarshalling propose tx msg ", "error", err)
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (sp *SpanProcessor) fetchNextSpanSeed() (nextSpanSeed common.Hash, err erro
 
 	sp.Logger.Info("Next span seed fetched")
 
-	if err = jsoniter.ConfigFastest.Unmarshal(response, &nextSpanSeed); err != nil {
+	if err = json.Unmarshal(response, &nextSpanSeed); err != nil {
 		sp.Logger.Error("Error unmarshalling nextSpanSeed received from Heimdall Server", "error", err)
 		return nextSpanSeed, err
 	}

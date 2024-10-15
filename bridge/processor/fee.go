@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"cosmossdk.io/math"
@@ -11,7 +12,6 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
-	jsoniter "github.com/json-iterator/go"
 )
 
 // FeeProcessor - process fee related events
@@ -45,7 +45,7 @@ func (fp *FeeProcessor) RegisterTasks() {
 // processTopupFeeEvent - processes topup fee event
 func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string) error {
 	var vLog = types.Log{}
-	if err := jsoniter.ConfigFastest.Unmarshal([]byte(logBytes), &vLog); err != nil {
+	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		fp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
 	}
