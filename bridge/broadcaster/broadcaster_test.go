@@ -44,48 +44,24 @@ var (
 	getAccountUrl           = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/accounts/" + common.BytesToAddress(address).String()
 	getAccountResponse      = fmt.Sprintf(`
 	{
-		"height": "11384869",
 		"result": {
-		  "type": "auth/Account",
-		  "value": {
+			"@type": "auth/Account",
 			"address": "0x%s",
-			"coins": [
-			  {
-				"denom": "matic",
-				"amount": "10000000000000000000"
-			  }
-			],
-			"public_key": {
-				"type": "cometbft/PubKeySecp256k1",
-				"value": "BE/WIL+R3P+8YlGBfxqPdb+jWlWdAiocPOBYNXoXqYOlQ0+QiJudDIMLhDqovssOvS9REFaUYn6pXE0YGD3nb5k="
-			  },
+			"pub_key": null,
 			"account_number": "0",
 			"sequence": "0"
-		  }
 		}
 	  }
 	  `, address.String())
 
 	getAccountUpdatedResponse = fmt.Sprintf(`
 	{
-		"height": "11384869",
 		"result": {
-		  "type": "auth/Account",
-		  "value": {
+			"@type": "auth/Account",
 			"address": "0x%s",
-			"coins": [
-			  {
-				"denom": "matic",
-				"amount": "10000000000000000000"
-			  }
-			],
-			"public_key": {
-				"type": "cometbft/PubKeySecp256k1",
-				"value": "BE/WIL+R3P+8YlGBfxqPdb+jWlWdAiocPOBYNXoXqYOlQ0+QiJudDIMLhDqovssOvS9REFaUYn6pXE0YGD3nb5k="
-			  },
+			"pub_key": null,
 			"account_number": "0",
 			"sequence": "1"
-		  }
 		}
 	  }
 	  `, address.String())
@@ -123,7 +99,7 @@ var (
 
 // Parallel test - to check BroadcastToHeimdall synchronisation
 func TestBroadcastToHeimdall(t *testing.T) {
-	// t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
+	t.Skip("TODO HV2: found a way to re-implement/fix these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)")
 	t.Parallel()
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNodeUrl)
