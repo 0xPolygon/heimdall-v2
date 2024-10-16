@@ -10,53 +10,55 @@ import (
 // Note: any changes to the comments/variables/mapstructure
 // must be reflected in the appropriate struct in helper/config.go
 
-const DefaultConfigTemplate = `# This is a TOML config file.
+const DefaultConfigTemplate = `
+[custom]
+# This is a TOML config file.
 # For more information, see https://github.com/toml-lang/toml
 
 ##### RPC and REST configs #####
 
 # RPC endpoint for ethereum chain
-eth_rpc_url = "{{ .EthRPCUrl }}"
+eth_rpc_url = "{{ .Custom.EthRPCUrl }}"
 
 # RPC endpoint for bor chain
-bor_rpc_url = "{{ .BorRPCUrl }}"
+bor_rpc_url = "{{ .Custom.BorRPCUrl }}"
 
 # RPC endpoint for cometBFT
-comet_bft_rpc_url = "{{ .CometBFTRPCUrl }}"
+comet_bft_rpc_url = "{{ .Custom.CometBFTRPCUrl }}"
 
 # Polygon Sub Graph URL for self-heal mechanism (optional)
-sub_graph_url = "{{ .SubGraphUrl }}"
+sub_graph_url = "{{ .Custom.SubGraphUrl }}"
 
 #### Bridge configs ####
 
 # Heimdall REST server endpoint, which is used by bridge
-heimdall_rest_server = "{{ .HeimdallServerURL }}"
+heimdall_rest_server = "{{ .Custom.HeimdallServerURL }}"
 
 # AMQP endpoint
-amqp_url = "{{ .AmqpURL }}"
+amqp_url = "{{ .Custom.AmqpURL }}"
 
 ## Poll intervals
-checkpoint_poll_interval = "{{ .CheckpointerPollInterval }}"
-syncer_poll_interval = "{{ .SyncerPollInterval }}"
-noack_poll_interval = "{{ .NoACKPollInterval }}"
-clerk_poll_interval = "{{ .ClerkPollInterval }}"
-span_poll_interval = "{{ .SpanPollInterval }}"
-milestone_poll_interval = "{{ .MilestonePollInterval }}"
-enable_self_heal = "{{ .EnableSH }}"
-sh_state_synced_interval = "{{ .SHStateSyncedInterval }}"
-sh_stake_update_interval = "{{ .SHStakeUpdateInterval }}"
-sh_max_depth_duration = "{{ .SHMaxDepthDuration }}"
+checkpoint_poll_interval = "{{ .Custom.CheckpointerPollInterval }}"
+syncer_poll_interval = "{{ .Custom.SyncerPollInterval }}"
+noack_poll_interval = "{{ .Custom.NoACKPollInterval }}"
+clerk_poll_interval = "{{ .Custom.ClerkPollInterval }}"
+span_poll_interval = "{{ .Custom.SpanPollInterval }}"
+milestone_poll_interval = "{{ .Custom.MilestonePollInterval }}"
+enable_self_heal = "{{ .Custom.EnableSH }}"
+sh_state_synced_interval = "{{ .Custom.SHStateSyncedInterval }}"
+sh_stake_update_interval = "{{ .Custom.SHStakeUpdateInterval }}"
+sh_max_depth_duration = "{{ .Custom.SHMaxDepthDuration }}"
 
 #### gas limits ####
-main_chain_gas_limit = "{{ .MainchainGasLimit }}"
+main_chain_gas_limit = "{{ .Custom.MainchainGasLimit }}"
 
 #### gas price ####
-main_chain_max_gas_price = "{{ .MainchainMaxGasPrice }}"
+main_chain_max_gas_price = "{{ .Custom.MainchainMaxGasPrice }}"
 
 ##### Timeout Config #####
-no_ack_wait_time = "{{ .NoACKWaitTime }}"
+no_ack_wait_time = "{{ .Custom.NoACKWaitTime }}"
 
-chain = "{{ .Chain }}"
+chain = "{{ .Custom.Chain }}"
 `
 
 var configTemplate *template.Template
@@ -72,7 +74,7 @@ func init() {
 
 // WriteConfigFile renders config using the template and writes it to
 // configFilePath.
-func WriteConfigFile(configFilePath string, config *Configuration) {
+func WriteConfigFile(configFilePath string, config *CustomConfig) {
 	var buffer bytes.Buffer
 
 	if err := configTemplate.Execute(&buffer, config); err != nil {
