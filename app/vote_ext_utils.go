@@ -207,6 +207,7 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 
 	logger.Debug(fmt.Sprintf("Height %d: approved %d txs, rejected %d txs, skipped %d txs. ", currentHeight, len(approvedTxs), len(rejectedTxs), len(skippedTxs)))
 
+	// TODO HV2: currently, there is no functional difference between a tc being rejected or skipped
 	return approvedTxs, rejectedTxs, skippedTxs, nil
 }
 
@@ -350,4 +351,16 @@ func isBlockIdFlagValid(flag cmtTypes.BlockIDFlag) bool {
 func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	consensusParams := ctx.ConsensusParams()
 	return consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
+}
+
+// countSideHandlers returns the number of side handlers for the transaction, to make sure we only propose and process one side tx per block.
+// This enforces only one messageType per sideTx. Otherwise, a single comet tx would contain more than one sideTx, allowing for more than one vote for the same tx hash.
+func countSideHandlers(app *HeimdallApp, tx sdk.Tx) int {
+	sideHandlerCount := 0
+	for _, msg := range tx.GetMsgs() {
+		if sideHandler := app.sideTxCfg.GetSideHandler(msg); sideHandler != nil {
+			sideHandlerCount++
+		}
+	}
+	return sideHandlerCount
 }

@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"math/rand"
 	"strings"
 	"testing"
@@ -20,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
@@ -479,47 +477,40 @@ func (s *KeeperTestSuite) TestSetAndGetLastBlockTxs() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// first height
-	height := int64(100)
-	txs := [][]byte{
-		common.Hex2Bytes(TxHash1),
-		common.Hex2Bytes(TxHash2),
+	firstHeightTxs := [][]byte{
+		[]byte("tx1"),
+		[]byte("tx2"),
 	}
 
 	// check that GetLastBlockTxs returns an error before setting them
-	retrievedTxs, err := keeper.GetLastBlockTxs(ctx, height)
+	_, err := keeper.GetLastBlockTxs(ctx)
 	require.Error(err, "Getting last block txs should produce an error")
-	require.Contains(err.Error(), fmt.Sprintf("not found: key '%d'", height), "Error message should indicate that the key was not found")
 
-	// set and get txs for height 100
-	err = keeper.SetLastBlockTxs(ctx, height, txs)
+	// set and get firstHeightTxs for first height
+	err = keeper.SetLastBlockTxs(ctx, firstHeightTxs)
 	require.NoError(err, "Setting last block txs should not produce an error")
-	retrievedTxs, err = keeper.GetLastBlockTxs(ctx, height)
+	retrievedFirstBlockTxs, err := keeper.GetLastBlockTxs(ctx)
 	require.NoError(err, "Getting last block txs should not produce an error")
-	require.Equal(txs, retrievedTxs.Txs, "Retrieved txs should match the set txs")
+	require.Equal(firstHeightTxs, retrievedFirstBlockTxs.Txs, "Retrieved txs should match the set txs")
 
 	// second height
-	subsequentHeight := int64(101)
-	subsequentTxs := [][]byte{
-		common.Hex2Bytes(TxHash3),
-		common.Hex2Bytes(TxHash4),
+	secondHeightTxs := [][]byte{
+		[]byte("tx3"),
+		[]byte("tx4"),
 	}
 
-	// check that GetLastBlockTxs returns an error before setting them for the subsequent height
-	retrievedSubsequentTxs, err := keeper.GetLastBlockTxs(ctx, subsequentHeight)
-	require.Error(err, "Getting last block txs should produce an error")
-	require.Contains(err.Error(), fmt.Sprintf("not found: key '%d'", subsequentHeight), "Error message should indicate that the key was not found")
-
-	// set and get txs for height 101
-	err = keeper.SetLastBlockTxs(ctx, subsequentHeight, subsequentTxs)
+	// set and get txs for second height
+	err = keeper.SetLastBlockTxs(ctx, secondHeightTxs)
 	require.NoError(err, "Setting last block txs should not produce an error")
-	retrievedSubsequentTxs, err = keeper.GetLastBlockTxs(ctx, subsequentHeight)
+	retrievedSecondBlockTxs, err := keeper.GetLastBlockTxs(ctx)
 	require.NoError(err, "Getting last block txs should not produce an error")
-	require.Equal(subsequentTxs, retrievedSubsequentTxs.Txs, "Retrieved txs should match the set txs for the subsequent height")
+	require.Equal(secondHeightTxs, retrievedSecondBlockTxs.Txs, "Retrieved txs should match the set tx for the second height")
 
-	// ensure fetching the initial height (100) again returns the correct txs
-	retrievedTxs, err = keeper.GetLastBlockTxs(ctx, height)
+	// ensure fetching the txs again returns the correct txs
+	retrievedSecondBlockTxs, err = keeper.GetLastBlockTxs(ctx)
 	require.NoError(err, "Getting last block txs should not produce an error")
-	require.Equal(txs, retrievedTxs.Txs, "Retrieved txs for the initial height should match the set txs")
+	require.NotEqual(firstHeightTxs, retrievedSecondBlockTxs.Txs, "Retrieved txs for the first height should not match the latest set txs")
+	require.Equal(secondHeightTxs, retrievedSecondBlockTxs.Txs, "Retrieved txs for the second height should match the latest set txs")
 }
 
 func (s *KeeperTestSuite) TestGetCurrentProposer() {

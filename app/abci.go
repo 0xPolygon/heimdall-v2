@@ -16,12 +16,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
-// execModePrepareProposal and execModeProcessProposal match the ones defined on cosmos' baseapp
-const (
-	execModePrepareProposal = 3 // Prepare a block proposal
-	execModeProcessProposal = 4 // Process a block proposal
-)
-
 // Note: returning any error in ABCI functions will cause cometBFT to panic
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
@@ -53,24 +47,18 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				continue
 			}
 
-			// Enforce only one messageType per sideTx. Otherwise, a single comet tx would contain more than one sideTx,
-			// allowing for more than one vote for the same tx hash
 			tx, err := app.TxDecode(proposedTx)
 			if err != nil {
 				return nil, fmt.Errorf("error occurred while decoding tx bytes in PrepareProposalHandler. Error: %w", err)
 			}
-			sideHandlerCount := 0
-			for _, msg := range tx.GetMsgs() {
-				if sideHandler := app.sideTxCfg.GetSideHandler(msg); sideHandler != nil {
-					sideHandlerCount++
-				}
-			}
-			if sideHandlerCount > 1 {
+
+			// ensure we only propose one side tx
+			if countSideHandlers(app, tx) > 1 {
 				continue
 			}
 
 			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
-			_, _, _, err = app.RunTx(execModePrepareProposal, proposedTx)
+			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
 				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
 				return nil, err
@@ -79,11 +67,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			totalTxBytes += len(proposedTx)
 			txs = append(txs, proposedTx)
 
-			// check if there are more than 2 txs in the request
-			if len(txs) > 2 {
-				logger.Error(fmt.Sprintf("unexpected behaviour, more than 2 txs proposed by %s", req.ProposerAddress))
-				return nil, fmt.Errorf("unexpected behaviour, more than 2 txs proposed by %s", req.ProposerAddress)
-			}
 			// check if there are less than 1 txs in the request
 			if len(txs) < 1 {
 				logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
@@ -99,6 +82,12 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
+
+		// check if there are any txs in the request
+		if len(req.Txs) < 1 {
+			logger.Error("unexpected behaviour, no txs found in the proposal")
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
 
 		// extract the ExtendedVoteInfo from the txs (it is encoded at the beginning, index 0)
 		var extVoteInfo []abci.ExtendedVoteInfo
@@ -117,42 +106,21 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		// check if there are more than 2 txs in the request
-		if len(req.Txs) > 2 {
-			logger.Error(fmt.Sprintf("unexpected behaviour, more than 2 txs found in the proposal submitted by %s", req.ProposerAddress))
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-		}
-		// check if there are any txs in the request
-		if len(req.Txs) < 1 {
-			logger.Error("unexpected behaviour, no txs found in the proposal")
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-		}
-
-		// check if there is only one tx in the request
-		if len(req.Txs) == 1 {
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
-		}
-
 		for _, tx := range req.Txs[1:] {
 
-			// Enforce only one messageType per sideTx. Otherwise, a single comet tx would contain more than one sideTx,
-			// allowing for more than one vote for the same tx hash
 			txn, err := app.TxDecode(tx)
 			if err != nil {
-				return nil, fmt.Errorf("error occurred while decoding tx bytes in PrepareProposalHandler. Error: %w", err)
+				logger.Error("error occurred while decoding tx bytes in PrepareProposalHandler", err)
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
-			sideHandlerCount := 0
-			for _, msg := range txn.GetMsgs() {
-				if sideHandler := app.sideTxCfg.GetSideHandler(msg); sideHandler != nil {
-					sideHandlerCount++
-				}
-			}
-			if sideHandlerCount > 1 {
-				continue
+
+			// ensure we only process one side tx
+			if countSideHandlers(app, txn) > 1 {
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
 			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
-			_, _, _, err = app.RunTx(execModeProcessProposal, tx)
+			_, err = app.ProcessProposalVerifyTx(tx)
 			if err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
@@ -317,13 +285,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	// Fetch txs from block n-1 so that we can match them with the approved txs in block n to execute sideTxs
-	lastBlockTxs, err := app.StakeKeeper.GetLastBlockTxs(ctx, req.Height)
+	lastBlockTxs, err := app.StakeKeeper.GetLastBlockTxs(ctx)
 	if err != nil {
 		logger.Error("Error occurred while fetching last block txs", "error", err)
 		return nil, err
 	}
 	// update last block txs
-	err = app.StakeKeeper.SetLastBlockTxs(ctx, req.Height, req.Txs[1:])
+	err = app.StakeKeeper.SetLastBlockTxs(ctx, req.Txs[1:])
 	if err != nil {
 		logger.Error("Error occurred while setting last block txs", "error", err)
 		return nil, err
@@ -347,31 +315,34 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	// execute side txs
 	txs := lastBlockTxs.Txs
 
-	if len(req.Txs) > 1 {
+	for _, rawTx := range txs {
+		decodedTx, err := app.TxDecode(rawTx)
+		if err != nil {
+			logger.Error("Error occurred while decoding tx bytes", "error", err)
+			return nil, err
+		}
 
-		for _, rawTx := range txs {
-			decodedTx, err := app.TxDecode(rawTx)
-			if err != nil {
-				logger.Error("Error occurred while decoding tx bytes", "error", err)
-				return nil, err
-			}
+		var txBytes cmtTypes.Tx = rawTx
 
-			var txBytes cmtTypes.Tx = rawTx
+		for _, approvedTx := range approvedTxs {
 
-			for _, approvedTx := range approvedTxs {
+			if bytes.Equal(approvedTx, txBytes.Hash()) {
 
-				if bytes.Equal(approvedTx, txBytes.Hash()) {
-
-					// execute post handlers for the approved side txs' msgs
-					msgs := decodedTx.GetMsgs()
-					for _, msg := range msgs {
-						postHandler := app.sideTxCfg.GetPostHandler(msg)
-						if postHandler != nil {
-							postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
-						}
+				// execute post handler for the approved side tx
+				msgs := decodedTx.GetMsgs()
+				executedPostHandlers := 0
+				for _, msg := range msgs {
+					postHandler := app.sideTxCfg.GetPostHandler(msg)
+					if postHandler != nil {
+						postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
+						executedPostHandlers++
 					}
-
+					// make sure only one post handler is executed
+					if executedPostHandlers > 0 {
+						break
+					}
 				}
+
 			}
 		}
 	}
