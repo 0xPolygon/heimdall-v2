@@ -36,6 +36,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
@@ -131,8 +132,19 @@ func initCometBFTConfig() *cmtcfg.Config {
 // initAppConfig helps to override default appConfig template and configs.
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
-	conf := helper.GetDefaultHeimdallConfig
-	return helper.DefaultConfigTemplate, conf
+	type CustomAppConfig struct {
+		serverconfig.Config `mapstructure:",squash"`
+		Custom              helper.CustomConfig `mapstructure:"custom"`
+	}
+
+	customAppConfig := CustomAppConfig{
+		Config: *serverconfig.DefaultConfig(),
+		Custom: helper.GetDefaultHeimdallConfig(),
+	}
+
+	customAppTemplate := serverconfig.DefaultConfigTemplate + helper.DefaultConfigTemplate
+
+	return customAppTemplate, customAppConfig
 }
 
 func initRootCmd(
@@ -624,7 +636,7 @@ func InitializeNodeValidatorFiles(
 }
 
 // WriteDefaultHeimdallConfig writes default heimdall config to the given path
-func WriteDefaultHeimdallConfig(path string, conf helper.Configuration) {
+func WriteDefaultHeimdallConfig(path string, conf helper.CustomConfig) {
 	// Don't write if config file in path already exists
 	if _, err := os.Stat(path); err == nil {
 		logger.Info(fmt.Sprintf("Config file %s already exists. Skip writing default heimdall config.", path))

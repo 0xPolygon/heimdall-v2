@@ -163,8 +163,8 @@ func init() {
 	Logger = logger.NewTMLogger(logger.NewSyncWriter(os.Stdout))
 }
 
-// Configuration represents heimdall config
-type Configuration struct {
+// CustomConfig represents heimdall config
+type CustomConfig struct {
 	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
 	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // tendemint node url
@@ -203,7 +203,7 @@ type Configuration struct {
 	Chain string `mapstructure:"chain"`
 }
 
-var conf Configuration
+var conf CustomConfig
 
 // MainChainClient stores eth clie nt for Main chain Network
 var mainChainClient *ethclient.Client
@@ -296,7 +296,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 			log.Fatalln("unable to read config file submitted via flag", "Error", err)
 		}
 
-		var confFromFlag Configuration
+		var confFromFlag CustomConfig
 		// unmarshal configuration from the configuration file submitted as a flag
 		if err = heimdallViperFromFlag.UnmarshalExact(&confFromFlag); err != nil {
 			log.Fatalln("unable to unmarshall config file submitted via flag", "Error", err)
@@ -388,8 +388,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 }
 
 // GetDefaultHeimdallConfig returns configuration with default params
-func GetDefaultHeimdallConfig() Configuration {
-	return Configuration{
+func GetDefaultHeimdallConfig() CustomConfig {
+	return CustomConfig{
 		EthRPCUrl:      DefaultMainRPCUrl,
 		BorRPCUrl:      DefaultBorRPCUrl,
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
@@ -425,7 +425,7 @@ func GetDefaultHeimdallConfig() Configuration {
 }
 
 // GetConfig returns cached configuration object
-func GetConfig() Configuration {
+func GetConfig() CustomConfig {
 	return conf
 }
 
@@ -705,7 +705,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	}
 }
 
-func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
+func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
 	const logErrMsg = "Unable to read flag."
 
 	// get endpoint for ethereum chain from viper/cobra
@@ -836,7 +836,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	return nil
 }
 
-func (c *Configuration) Merge(cc *Configuration) {
+func (c *CustomConfig) Merge(cc *CustomConfig) {
 	if cc.EthRPCUrl != "" {
 		c.EthRPCUrl = cc.EthRPCUrl
 	}
@@ -954,7 +954,7 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 }
 
 // SetTestConfig sets test configuration
-func SetTestConfig(_conf Configuration) {
+func SetTestConfig(_conf CustomConfig) {
 	conf = _conf
 }
 

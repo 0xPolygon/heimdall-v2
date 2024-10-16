@@ -32,7 +32,7 @@ BUILD_FLAGS := -ldflags '$(ldflags)'
 clean:
 	rm -rf build
 
-build: clean
+heimdalld: clean
 	mkdir -p build
 	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
