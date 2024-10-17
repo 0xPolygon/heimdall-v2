@@ -6,6 +6,8 @@ import (
 	"cosmossdk.io/core/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 var _ sdk.Msg = &MsgMilestone{}
@@ -21,7 +23,7 @@ func NewMsgMilestoneBlock(
 	milestoneID string,
 ) MsgMilestone {
 	return MsgMilestone{
-		Proposer:    proposer,
+		Proposer:    util.FormatAddress(proposer),
 		StartBlock:  startBlock,
 		EndBlock:    endBlock,
 		Hash:        hash,
@@ -57,7 +59,7 @@ var _ sdk.Msg = &MsgMilestoneTimeout{}
 
 func NewMsgMilestoneTimeout(from string) MsgMilestoneTimeout {
 	return MsgMilestoneTimeout{
-		From: from,
+		From: util.FormatAddress(from),
 	}
 }
 

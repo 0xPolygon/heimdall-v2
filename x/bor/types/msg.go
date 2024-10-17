@@ -2,6 +2,8 @@ package types
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 var _ sdk.Msg = &MsgProposeSpanRequest{}
@@ -17,7 +19,7 @@ func NewMsgProposeSpanRequest(
 ) *MsgProposeSpanRequest {
 	return &MsgProposeSpanRequest{
 		SpanId:     spanID,
-		Proposer:   proposer,
+		Proposer:   util.FormatAddress(proposer),
 		StartBlock: startBlock,
 		EndBlock:   endBlock,
 		ChainId:    chainId,
