@@ -1,6 +1,7 @@
 package heimdalld
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -18,6 +19,7 @@ import (
 	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
+	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -37,9 +39,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	"github.com/cosmos/cosmos-sdk/server/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	cosmosversion "github.com/cosmos/cosmos-sdk/version"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -49,6 +53,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -169,27 +174,23 @@ func initRootCmd(
 		snapshot.Cmd(newApp),
 	)
 
-	// TODO HV2 - uncomment when we have server.AddCommandsWithStartCmdOptions
-	// in our fork of cosmos-sdk
-	/*
-		server.AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
-			AddFlags: func(startCmd *cobra.Command) {
-				startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
-				startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
-			},
-			PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
-				// start bridge
-				if viper.GetBool(helper.BridgeFlag) {
-					bridgeCmd.AdjustBridgeDBValue(rootCmd)
-					g.Go(func() error {
-						return bridgeCmd.StartBridgeWithCtx(ctx)
-					})
-				}
+	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
+		AddFlags: func(startCmd *cobra.Command) {
+			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
+			startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
+		},
+		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+			// start bridge
+			if viper.GetBool(helper.BridgeFlag) {
+				bridgeCmd.AdjustBridgeDBValue(rootCmd)
+				g.Go(func() error {
+					return bridgeCmd.StartBridgeWithCtx(ctx)
+				})
+			}
 
-				return nil
-			},
-		})
-	*/
+			return nil
+		},
+	})
 
 	cometbftCmd := &cobra.Command{
 		Use:   "cometbft",
@@ -239,6 +240,36 @@ func initRootCmd(
 
 	// snapshot cmd
 	snapshot.Cmd(newApp)
+}
+
+// AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
+// HV2 - This function is taken from cosmos-sdk
+func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, opts server.StartCmdOptions) {
+	cometCmd := &cobra.Command{
+		Use:     "comet",
+		Aliases: []string{"cometbft", "tendermint"},
+		Short:   "CometBFT subcommands",
+	}
+
+	cometCmd.AddCommand(
+		server.ShowNodeIDCmd(),
+		server.ShowValidatorCmd(),
+		server.ShowAddressCmd(),
+		server.VersionCmd(),
+		cmtcmd.ResetAllCmd,
+		cmtcmd.ResetStateCmd,
+		server.BootstrapStateCmd(appCreator),
+	)
+
+	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, opts)
+
+	rootCmd.AddCommand(
+		startCmd,
+		cometCmd,
+		server.ExportCmd(appExport, defaultNodeHome),
+		cosmosversion.NewVersionCommand(),
+		server.NewRollbackCmd(appCreator, defaultNodeHome),
+	)
 }
 
 // genesisCommand builds genesis-related `heimdalld genesis` command. Users may provide application specific commands as a parameter
