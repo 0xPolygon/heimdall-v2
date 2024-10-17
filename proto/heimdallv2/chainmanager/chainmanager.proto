@@ -2,29 +2,31 @@ syntax = "proto3";
 package heimdallv2.chainmanager;
 
 import "gogoproto/gogo.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
 
 // ChainParams contains contract addresses and other chain specific parameters
 message ChainParams {
   option (gogoproto.equal) = true;
-  string bor_chain_id = 1;
+  string bor_chain_id = 1 [ (amino.dont_omitempty) = true ];
   // L1 Chain Contracts
-  string polygon_pos_token_address = 2;
-  string staking_manager_address = 3;
-  string slash_manager_address = 4;
-  string root_chain_address = 5;
-  string staking_info_address = 6;
-  string state_sender_address = 7;
+  string polygon_pos_token_address = 2 [ (amino.dont_omitempty) = true ];
+  string staking_manager_address = 3 [ (amino.dont_omitempty) = true ];
+  string slash_manager_address = 4 [ (amino.dont_omitempty) = true ];
+  string root_chain_address = 5 [ (amino.dont_omitempty) = true ];
+  string staking_info_address = 6 [ (amino.dont_omitempty) = true ];
+  string state_sender_address = 7 [ (amino.dont_omitempty) = true ];
   // Bor Chain Contracts
-  string state_receiver_address = 8;
-  string validator_set_address = 9;
+  string state_receiver_address = 8 [ (amino.dont_omitempty) = true ];
+  string validator_set_address = 9 [ (amino.dont_omitempty) = true ];
 }
 
 // Params contains the chain params for chainmanager module
 message Params {
   option (gogoproto.equal) = true;
-  ChainParams chain_params = 1 [ (gogoproto.nullable) = false ];
-  uint64 main_chain_tx_confirmations = 2;
-  uint64 bor_chain_tx_confirmations = 3;
+  ChainParams chain_params = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  uint64 main_chain_tx_confirmations = 2 [ (amino.dont_omitempty) = true ];
+  uint64 bor_chain_tx_confirmations = 3 [ (amino.dont_omitempty) = true ];
 }

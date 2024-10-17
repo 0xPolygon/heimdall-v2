@@ -6,6 +6,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "heimdallv2/clerk/clerk.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
@@ -34,35 +35,54 @@ service Query {
   }
 }
 
-message RecordRequest { uint64 record_id = 1; }
+message RecordRequest {
+  uint64 record_id = 1 [ (amino.dont_omitempty) = true ];
+}
 
 // RecordResponse defines the params for RecordListRequest.
-message RecordResponse { EventRecord record = 1; }
+message RecordResponse {
+  EventRecord record = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
 
 message RecordListRequest {
-  uint64 page = 1;
-  uint64 limit = 2;
+  uint64 page = 1 [ (amino.dont_omitempty) = true ];
+  uint64 limit = 2 [ (amino.dont_omitempty) = true ];
 }
 
 // RecordListResponse defines the params for RecordListRequest
-message RecordListResponse { repeated EventRecord event_records = 1; }
+message RecordListResponse {
+  repeated EventRecord event_records = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
 
 message RecordListWithTimeRequest {
-  google.protobuf.Timestamp from_time = 1
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
-  google.protobuf.Timestamp to_time = 2
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
-  uint64 page = 3;
-  uint64 limit = 4;
+  google.protobuf.Timestamp from_time = 1 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  google.protobuf.Timestamp to_time = 2 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
+  uint64 page = 3 [ (amino.dont_omitempty) = true ];
+  uint64 limit = 4 [ (amino.dont_omitempty) = true ];
 }
 
 // RecordListWithTimeResponse defines the params for querying
 // RecordListWithTimeRequest
-message RecordListWithTimeResponse { repeated EventRecord event_records = 1; }
-
-message RecordSequenceRequest {
-  string tx_hash = 1;
-  uint64 log_index = 2;
+message RecordListWithTimeResponse {
+  repeated EventRecord event_records = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-message RecordSequenceResponse { uint64 sequence = 1; }
+message RecordSequenceRequest {
+  string tx_hash = 1 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
+}
+
+message RecordSequenceResponse {
+  uint64 sequence = 1 [ (amino.dont_omitempty) = true ];
+}
