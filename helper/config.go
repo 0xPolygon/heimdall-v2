@@ -134,7 +134,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hardfork
 	MaxStateSyncSize = 30000
 
-	// MilestoneLength is minimun supported length of milestone
+	// MilestoneLength is minimum supported length of milestone
 	MilestoneLength = uint64(12)
 
 	MilestonePruneNumber = uint64(100)
@@ -167,7 +167,7 @@ func init() {
 type CustomConfig struct {
 	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
-	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // tendemint node url
+	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometbft node url
 	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
 
 	EthRPCTimeout time.Duration `mapstructure:"eth_rpc_timeout"` // timeout for eth rpc
@@ -182,16 +182,16 @@ type CustomConfig struct {
 	MainchainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max gas price to mainchain transaction. eg....submit checkpoint.
 
 	// config related to bridge
-	CheckpointerPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
-	SyncerPollInterval       time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncher service to sync for changes on main chain
-	NoACKPollInterval        time.Duration `mapstructure:"noack_poll_interval"`      // Poll interval for ack service to send no-ack in case of no checkpoints
-	ClerkPollInterval        time.Duration `mapstructure:"clerk_poll_interval"`
-	SpanPollInterval         time.Duration `mapstructure:"span_poll_interval"`
-	MilestonePollInterval    time.Duration `mapstructure:"milestone_poll_interval"`
-	EnableSH                 bool          `mapstructure:"enable_self_heal"`         // Enable self-healing
-	SHStateSyncedInterval    time.Duration `mapstructure:"sh_state_synced_interval"` // Interval to self-heal StateSynced events if missing
-	SHStakeUpdateInterval    time.Duration `mapstructure:"sh_stake_update_interval"` // Interval to self-heal StakeUpdate events if missing
-	SHMaxDepthDuration       time.Duration `mapstructure:"sh_max_depth_duration"`    // Max duration that allows to suggest self-healing is not needed
+	CheckpointPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
+	SyncerPollInterval     time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncer service to sync for changes on main chain
+	NoACKPollInterval      time.Duration `mapstructure:"noack_poll_interval"`      // Poll interval for ack service to send no-ack in case of no checkpoints
+	ClerkPollInterval      time.Duration `mapstructure:"clerk_poll_interval"`
+	SpanPollInterval       time.Duration `mapstructure:"span_poll_interval"`
+	MilestonePollInterval  time.Duration `mapstructure:"milestone_poll_interval"`
+	EnableSH               bool          `mapstructure:"enable_self_heal"`         // Enable self-healing
+	SHStateSyncedInterval  time.Duration `mapstructure:"sh_state_synced_interval"` // Interval to self-heal StateSynced events if missing
+	SHStakeUpdateInterval  time.Duration `mapstructure:"sh_stake_update_interval"` // Interval to self-heal StakeUpdate events if missing
+	SHMaxDepthDuration     time.Duration `mapstructure:"sh_max_depth_duration"`    // Max duration that allows to suggest self-healing is not needed
 
 	// wait time related options
 	NoACKWaitTime time.Duration `mapstructure:"no_ack_wait_time"` // Time ack service waits to clear buffer and elect new proposer
@@ -405,16 +405,16 @@ func GetDefaultHeimdallConfig() CustomConfig {
 
 		MainchainMaxGasPrice: DefaultMainchainMaxGasPrice,
 
-		CheckpointerPollInterval: DefaultCheckpointerPollInterval,
-		SyncerPollInterval:       DefaultSyncerPollInterval,
-		NoACKPollInterval:        DefaultNoACKPollInterval,
-		ClerkPollInterval:        DefaultClerkPollInterval,
-		SpanPollInterval:         DefaultSpanPollInterval,
-		MilestonePollInterval:    DefaultMilestonePollInterval,
-		EnableSH:                 DefaultEnableSH,
-		SHStateSyncedInterval:    DefaultSHStateSyncedInterval,
-		SHStakeUpdateInterval:    DefaultSHStakeUpdateInterval,
-		SHMaxDepthDuration:       DefaultSHMaxDepthDuration,
+		CheckpointPollInterval: DefaultCheckpointerPollInterval,
+		SyncerPollInterval:     DefaultSyncerPollInterval,
+		NoACKPollInterval:      DefaultNoACKPollInterval,
+		ClerkPollInterval:      DefaultClerkPollInterval,
+		SpanPollInterval:       DefaultSpanPollInterval,
+		MilestonePollInterval:  DefaultMilestonePollInterval,
+		EnableSH:               DefaultEnableSH,
+		SHStateSyncedInterval:  DefaultSHStateSyncedInterval,
+		SHStakeUpdateInterval:  DefaultSHStakeUpdateInterval,
+		SHMaxDepthDuration:     DefaultSHMaxDepthDuration,
 
 		NoACKWaitTime: NoACKWaitTime,
 
@@ -750,7 +750,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get check point pull interval from viper/cobra
 	stringConfgValue = v.GetString(CheckpointerPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.CheckpointerPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.CheckpointPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", CheckpointerPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -869,8 +869,8 @@ func (c *CustomConfig) Merge(cc *CustomConfig) {
 		c.MainchainMaxGasPrice = cc.MainchainMaxGasPrice
 	}
 
-	if cc.CheckpointerPollInterval != 0 {
-		c.CheckpointerPollInterval = cc.CheckpointerPollInterval
+	if cc.CheckpointPollInterval != 0 {
+		c.CheckpointPollInterval = cc.CheckpointPollInterval
 	}
 
 	if cc.SyncerPollInterval != 0 {

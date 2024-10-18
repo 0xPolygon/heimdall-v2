@@ -3,8 +3,6 @@ package helper
 import (
 	"bufio"
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -38,11 +36,14 @@ var (
 	Client HTTPClient
 )
 
-// GetFromAddress get from address
+// GetFromAddress get returns the from address from the context's name
 func GetFromAddress(cliCtx client.Context) string {
 	ac := address.NewHexCodec()
 	fromAddress := cliCtx.GetFromAddress()
-	addressString, _ := ac.BytesToString(fromAddress.Bytes())
+	addressString, err := ac.BytesToString(fromAddress.Bytes())
+	if err != nil {
+		panic(err)
+	}
 	return addressString
 }
 
@@ -57,16 +58,6 @@ func GetPubObjects(pubkey crypto.PubKey) secp256k1.PubKey {
 	cdc.MustUnmarshalBinaryBare(pubkey.Bytes(), &pubObject)
 
 	return pubObject
-}
-
-// TendermintTxDecode decodes transaction string and return base tx object
-func TendermintTxDecode(txString string) ([]byte, error) {
-	decodedTx, err := base64.StdEncoding.DecodeString(txString)
-	if err != nil {
-		return nil, err
-	}
-
-	return decodedTx, nil
 }
 
 // GetMerkleProofList return proof array
@@ -236,7 +227,7 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return u.String()
 }
 
-// TODO HV2 - this needs further testing once we have a devnet running
+// TODO HV2 - this needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
 // FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result []byte, err error) {
 	resp, err := Client.Get(URL)
@@ -245,12 +236,11 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 	}
 
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
+		if err = resp.Body.Close(); err != nil {
 			Logger.Error("Error closing response body:", err)
 		}
 	}()
 
-	// response
 	if resp.StatusCode == 200 {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -262,10 +252,10 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 
 	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
 
-	return result, fmt.Errorf("error while fetching data from url: %v, status: %v", URL, resp.StatusCode)
+	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
 
-// Older version of FetchFromAPI kept for reference, will remove later
+// TODO HV2 - Older version of FetchFromAPI kept for reference, will remove later
 /*
 // FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result rest.Response, err error) {
@@ -280,12 +270,11 @@ func FetchFromAPI(URL string) (result rest.Response, err error) {
 	}
 
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
+		if err = resp.Body.Close(); err != nil {
 			Logger.Error("Error closing response body:", err)
 		}
 	}()
 
-	// response
 	if resp.StatusCode == 200 {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -303,7 +292,7 @@ func FetchFromAPI(URL string) (result rest.Response, err error) {
 
 	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
 
-	return result, fmt.Errorf("error while fetching data from url: %v, status: %v", URL, resp.StatusCode)
+	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
 */
 
@@ -341,11 +330,13 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 	}
 
 	if clientCtx.Simulate {
+		Logger.Debug("in simulate mode")
 		return nil, nil
 	}
 
 	tx, err := txf.BuildUnsignedTx(msgs...)
 	if err != nil {
+		Logger.Error("error while building unsigned tx", "error", err)
 		return nil, err
 	}
 
@@ -368,8 +359,8 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 			return nil, fmt.Errorf("failed to encode transaction: %w", err)
 		}
 
-		if err := clientCtx.PrintRaw(json.RawMessage(txBytes)); err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error: %v\n%s\n", err, txBytes)
+		if err := clientCtx.PrintRaw(txBytes); err != nil {
+			Logger.Error("error while printing raw tx", "error", err, "txBytes", txBytes)
 		}
 
 		buf := bufio.NewReader(os.Stdin)
@@ -390,12 +381,14 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	txBytes, err := clientCtx.TxConfig.TxEncoder()(tx.GetTx())
 	if err != nil {
+		Logger.Error("error while encoding tx", "error", err)
 		return nil, err
 	}
 
 	// broadcast to a CometBFT node
 	res, err := clientCtx.BroadcastTx(txBytes)
 	if err != nil {
+		Logger.Error("error while broadcasting tx", "error", err)
 		return nil, err
 	}
 
@@ -512,9 +505,7 @@ func GetSignedTxBytes(cliCtx client.Context,
 */
 
 func GetSignature(signMode signing.SignMode, accSeq uint64) signing.SignatureV2 {
-	priv := GetPrivKey()
-	var cosmosPrivKey cosmossecp256k1.PrivKey
-	cosmosPrivKey.Key = priv
+	cosmosPrivKey := cosmossecp256k1.PrivKey{Key: GetPrivKey()}
 
 	sig := signing.SignatureV2{
 		PubKey: cosmosPrivKey.PubKey(),

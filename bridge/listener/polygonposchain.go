@@ -29,10 +29,10 @@ func (ml *MaticChainListener) Start() error {
 	go ml.StartHeaderProcess(headerCtx)
 
 	// start go routine to poll for new header using client object
-	ml.Logger.Info("Start polling for header blocks", "pollInterval", helper.GetConfig().CheckpointerPollInterval)
+	ml.Logger.Info("Start polling for header blocks", "pollInterval", helper.GetConfig().CheckpointPollInterval)
 
 	// start polling for the latest block in child chain (replace with finalized block once we have it implemented)
-	go ml.StartPolling(ctx, helper.GetConfig().CheckpointerPollInterval, nil)
+	go ml.StartPolling(ctx, helper.GetConfig().CheckpointPollInterval, nil)
 
 	return nil
 }

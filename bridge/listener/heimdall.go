@@ -32,8 +32,8 @@ func (hl *HeimdallListener) Start() error {
 
 	// Heimdall pollInterval = (minimal pollInterval of rootchain and matichain)
 	pollInterval := helper.GetConfig().SyncerPollInterval
-	if helper.GetConfig().CheckpointerPollInterval < helper.GetConfig().SyncerPollInterval {
-		pollInterval = helper.GetConfig().CheckpointerPollInterval
+	if helper.GetConfig().CheckpointPollInterval < helper.GetConfig().SyncerPollInterval {
+		pollInterval = helper.GetConfig().CheckpointPollInterval
 	}
 
 	hl.Logger.Info("Start polling for events", "pollInterval", pollInterval)

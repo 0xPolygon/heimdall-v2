@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,8 +85,6 @@ var (
 const (
 	nodeDirPerm = 0755
 )
-
-var ZeroIntString = big.NewInt(0).String()
 
 var tempDir = func() string {
 	dir, err := os.MkdirTemp("", "heimdall")
@@ -588,7 +585,7 @@ func promptPassphrase(confirmation bool) (string, error) {
 }
 
 // Total Validators to be included in the testnet
-func totalValidators() int {
+func getTotalNumberOfNodes() int {
 	numValidators := viper.GetInt(flagNumValidators)
 	numNonValidators := viper.GetInt(flagNumNonValidators)
 
@@ -611,9 +608,9 @@ func hostnameOrIP(i int) string {
 
 // populatePersistentPeersInConfigAndWriteIt populates persistent peers in config
 func populatePersistentPeersInConfigAndWriteIt(config *cmtcfg.Config) {
-	persistentPeers := make([]string, totalValidators())
+	persistentPeers := make([]string, getTotalNumberOfNodes())
 
-	for i := 0; i < totalValidators(); i++ {
+	for i := 0; i < getTotalNumberOfNodes(); i++ {
 		config.SetRoot(nodeDir(i))
 
 		nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
@@ -626,7 +623,7 @@ func populatePersistentPeersInConfigAndWriteIt(config *cmtcfg.Config) {
 
 	persistentPeersList := strings.Join(persistentPeers, ",")
 
-	for i := 0; i < totalValidators(); i++ {
+	for i := 0; i < getTotalNumberOfNodes(); i++ {
 		config.SetRoot(nodeDir(i))
 		config.P2P.PersistentPeers = persistentPeersList
 		config.P2P.AddrBookStrict = false

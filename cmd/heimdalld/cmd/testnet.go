@@ -3,6 +3,7 @@ package heimdalld
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 
@@ -11,6 +12,7 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+
 	"github.com/cometbft/cometbft/crypto"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -60,7 +62,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			numValidators := viper.GetInt(flagNumValidators)
 
 			// get total number of validators to be generated
-			totalValidators := totalValidators()
+			totalValidators := getTotalNumberOfNodes()
 
 			// first validators start ID
 			startID := viper.GetInt64(stakingcli.FlagValidatorID)
@@ -134,7 +136,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 					// create dividend account for validator
 					dividendAccounts[i] = hmTypes.DividendAccount{
 						User:      validators[i].Signer,
-						FeeAmount: ZeroIntString,
+						FeeAmount: big.NewInt(0).String(),
 					}
 				}
 

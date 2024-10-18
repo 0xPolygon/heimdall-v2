@@ -38,7 +38,7 @@ heimdall_rest_server = "{{ .Custom.HeimdallServerURL }}"
 amqp_url = "{{ .Custom.AmqpURL }}"
 
 ## Poll intervals
-checkpoint_poll_interval = "{{ .Custom.CheckpointerPollInterval }}"
+checkpoint_poll_interval = "{{ .Custom.CheckpointPollInterval }}"
 syncer_poll_interval = "{{ .Custom.SyncerPollInterval }}"
 noack_poll_interval = "{{ .Custom.NoACKPollInterval }}"
 clerk_poll_interval = "{{ .Custom.ClerkPollInterval }}"

@@ -406,7 +406,7 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 
 	balance, err := c.MainChainClient.BalanceAt(ctx, address, nil)
 	if err != nil {
-		Logger.Error("unable tofetch balance of account from root chain", "Address", address.String(), "error", err)
+		Logger.Error("unable to fetch balance of account from root chain", "Address", address.String(), "error", err)
 		return big.NewInt(0), err
 	}
 
@@ -795,7 +795,7 @@ func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginf
 	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(nil)
 
 	if err != nil {
-		Logger.Error("unable toget current account state root", "error", err)
+		Logger.Error("unable to get current account state root", "error", err)
 
 		var emptyArr [32]byte
 
@@ -813,7 +813,7 @@ func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginf
 func (c *ContractCaller) CurrentSpanNumber(validatorSetInstance *validatorset.Validatorset) (Number *big.Int) {
 	result, err := validatorSetInstance.CurrentSpanNumber(nil)
 	if err != nil {
-		Logger.Error("unable toget current span number", "error", err)
+		Logger.Error("unable to get current span number", "error", err)
 		return nil
 	}
 
@@ -838,7 +838,7 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int) {
 	result, err := stateSenderInstance.Counter(nil)
 	if err != nil {
-		Logger.Error("unable toget current counter number", "error", err)
+		Logger.Error("unable to get current counter number", "error", err)
 		return nil
 	}
 
@@ -862,7 +862,7 @@ func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) *ethTypes.Block {
 	block, err := c.PolygonPosChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
 	if err != nil {
-		Logger.Error("unable tofetch block by number from child chain", "block", block, "err", err)
+		Logger.Error("unable to fetch block by number from child chain", "block", block, "err", err)
 		return nil
 	}
 

@@ -238,7 +238,7 @@ func GetBlockWithClient(client *httpClient.HTTP, height int64) (*cmtTypes.Block,
 	}
 
 	// subscriber
-	subscriber := fmt.Sprintf("new-block-%v", height)
+	subscriber := fmt.Sprintf("new-block-%d", height)
 
 	// query for event
 	query := cmtTypes.QueryForEvent(cmtTypes.EventNewBlock).String()
@@ -325,13 +325,17 @@ func GetFinalizeBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event
 
 // GetBeginBlockEvents get block through per height
 func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
+	var events []abci.Event
+	var err error
+
 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
 
 	// get block using client
 	blockResults, err := client.BlockResults(c, &height)
 	if err == nil && blockResults != nil {
-		return blockResults.FinalizeBlockEvents, nil
+		events = blockResults.FinalizeBlockEvents
+		return events, nil
 	}
 
 	// subscriber
@@ -343,12 +347,15 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 	// register for the next event of this type
 	eventCh, err := client.Subscribe(c, subscriber, query)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to subscribe")
+		return events, errors.Wrap(err, "failed to subscribe")
 	}
 
 	// unsubscribe query
 	defer func() {
-		_ = client.Unsubscribe(c, subscriber, query)
+		if unsubscribeErr := client.Unsubscribe(c, subscriber, query); unsubscribeErr != nil && err == nil {
+			err = unsubscribeErr
+			events = nil // Set events to nil when returning an error
+		}
 	}()
 
 	for {
@@ -358,13 +365,16 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 			switch t := eventData.(type) {
 			case cmtTypes.EventDataNewBlock:
 				if t.Block.Height == height {
-					return t.ResultFinalizeBlock.GetEvents(), nil
+					events = t.ResultFinalizeBlock.GetEvents()
+					return events, err
 				}
 			default:
-				return nil, errors.New("timed out waiting for event")
+				return events, errors.New("timed out waiting for event")
 			}
 		case <-c.Done():
-			return nil, errors.New("timed out waiting for event")
+			return events, errors.New("timed out waiting for event")
 		}
 	}
+
+	return events, err
 }
