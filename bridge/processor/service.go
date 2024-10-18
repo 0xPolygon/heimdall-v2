@@ -72,7 +72,7 @@ func NewProcessorService(
 	spanProcessor := &SpanProcessor{}
 	spanProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "span", spanProcessor)
 
-	// TODO HV2 - not adding slashing
+	// HV2 - not adding slashing
 	/*
 		// initialize slashing processor
 		slashingProcessor := NewSlashingProcessor(&contractCaller.StakingInfoABI)
@@ -95,7 +95,7 @@ func NewProcessorService(
 			clerkProcessor,
 			feeProcessor,
 			spanProcessor,
-			// TODO HV2 - not adding slashing
+			// HV2 - not adding slashing
 			// slashingProcessor,
 		)
 	} else {
@@ -113,7 +113,7 @@ func NewProcessorService(
 				processorService.processors = append(processorService.processors, feeProcessor)
 			case "span":
 				processorService.processors = append(processorService.processors, spanProcessor)
-				// TODO HV2 - not adding slashing
+				// HV2 - not adding slashing
 				/*
 					case "slashing":
 						processorService.processors = append(processorService.processors, slashingProcessor)

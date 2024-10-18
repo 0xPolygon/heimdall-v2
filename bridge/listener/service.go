@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	ListenerServiceStr = "listener"
+	listenerServiceStr = "listener"
 
-	RootChainListenerStr  = "rootchain"
-	HeimdallListenerStr   = "heimdall"
-	MaticChainListenerStr = "polygonposchain"
+	rootChainListenerStr  = "rootchain"
+	heimdallListenerStr   = "heimdall"
+	maticChainListenerStr = "polygonposchain"
 )
 
 // ListenerService starts and stops all chain event listeners
@@ -28,18 +28,18 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, h
 	// creating listener object
 	listenerService := &ListenerService{}
 
-	listenerService.BaseService = *common.NewBaseService(nil, ListenerServiceStr, listenerService)
+	listenerService.BaseService = *common.NewBaseService(nil, listenerServiceStr, listenerService)
 
 	rootchainListener := NewRootChainListener()
-	rootchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), RootChainListenerStr, rootchainListener)
+	rootchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootchainListener)
 	listenerService.listeners = append(listenerService.listeners, rootchainListener)
 
 	maticchainListener := &MaticChainListener{}
-	maticchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetPolygonPosClient(), MaticChainListenerStr, maticchainListener)
+	maticchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetPolygonPosClient(), maticChainListenerStr, maticchainListener)
 	listenerService.listeners = append(listenerService.listeners, maticchainListener)
 
 	heimdallListener := &HeimdallListener{}
-	heimdallListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, nil, HeimdallListenerStr, heimdallListener)
+	heimdallListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, nil, heimdallListenerStr, heimdallListener)
 	listenerService.listeners = append(listenerService.listeners, heimdallListener)
 
 	return listenerService

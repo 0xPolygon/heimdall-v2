@@ -85,7 +85,7 @@ func (fp *FeeProcessor) sendTopUpFeeToHeimdall(eventName string, logBytes string
 			return err
 		}
 
-		if txRes.Code != uint32(abci.CodeTypeOK) {
+		if txRes.Code != abci.CodeTypeOK {
 			fp.Logger.Error("topup tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 			return fmt.Errorf("topup tx failed, tx response code: %v", txRes.Code)
 		}

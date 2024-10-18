@@ -308,7 +308,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 			return err
 		}
 
-		if txRes.Code != uint32(abci.CodeTypeOK) {
+		if txRes.Code != abci.CodeTypeOK {
 			cp.Logger.Error("checkpoint-ack tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 			return fmt.Errorf("checkpoint-ack tx failed, tx response code: %d", txRes.Code)
 		}
@@ -494,7 +494,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		return err
 	}
 
-	if txRes.Code != uint32(abci.CodeTypeOK) {
+	if txRes.Code != abci.CodeTypeOK {
 		cp.Logger.Error("Checkpoint tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 		return fmt.Errorf("checkpoint tx failed, tx response code: %d", txRes.Code)
 	}
@@ -687,7 +687,7 @@ func (cp *CheckpointProcessor) proposeCheckpointNoAck() (err error) {
 		return err
 	}
 
-	if txRes.Code != uint32(abci.CodeTypeOK) {
+	if txRes.Code != abci.CodeTypeOK {
 		cp.Logger.Error("Checkpoint No-Ack tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 		return fmt.Errorf("checkpoint-no-ack tx failed, tx response code: %d", txRes.Code)
 	}

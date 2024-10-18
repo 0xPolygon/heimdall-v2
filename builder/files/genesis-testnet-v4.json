@@ -243,8 +243,8 @@
     },
     "chainmanager": {
       "params": {
-        "mainchain_tx_confirmations": "6",
-        "maticchain_tx_confirmations": "10",
+        "main_chain_tx_confirmations": "6",
+        "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "80001",
           "matic_token_address": "0x499d11E0b6eAC7c0593d8Fb292DCBbF815Fb29Ae",

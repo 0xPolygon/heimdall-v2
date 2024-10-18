@@ -20,7 +20,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-// Listener defines a block header listener for Rootchain, Maticchain, Heimdall
+// Listener defines a block header listener for Rootchain, Borchain, Heimdall
 type Listener interface {
 	Start() error
 
@@ -83,7 +83,7 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, http
 
 	contractCaller, err := helper.NewContractCaller()
 	if err != nil {
-		logger.Error("Error while getting root chain instance", "error", err)
+		logger.Error("Error while getting the contract caller", "error", err)
 		panic(err)
 	}
 

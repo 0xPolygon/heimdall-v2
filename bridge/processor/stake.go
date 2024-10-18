@@ -144,7 +144,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			return err
 		}
 
-		if txRes.Code != uint32(abci.CodeTypeOK) {
+		if txRes.Code != abci.CodeTypeOK {
 			sp.Logger.Error("validator-join tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 			return fmt.Errorf("validator-join tx failed, tx response code: %v", txRes.Code)
 		}
@@ -227,7 +227,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 			return err
 		}
 
-		if txRes.Code != uint32(abci.CodeTypeOK) {
+		if txRes.Code != abci.CodeTypeOK {
 			sp.Logger.Error("unstakeInit tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 			return fmt.Errorf("unstakeInit tx failed, tx response code: %v", txRes.Code)
 		}
@@ -305,9 +305,9 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 			return err
 		}
 
-		if txRes.Code != uint32(abci.CodeTypeOK) {
+		if txRes.Code != abci.CodeTypeOK {
 			sp.Logger.Error("stakeupdate tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
-			return fmt.Errorf("stakeupdate tx failed, tx response code: %v", txRes.Code)
+			return fmt.Errorf("stakeupdate tx failed, tx response code: %d", txRes.Code)
 		}
 
 	}
@@ -331,7 +331,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			newSignerPubKey = util.AppendPrefix(newSignerPubKey)
 		}
 
-		if isOld, _ := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
+		if isOld, err := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
 			sp.Logger.Info("Ignoring task to send unstakeinit to heimdall as already processed",
 				"event", eventName,
 				"validatorID", event.ValidatorId,
@@ -344,6 +344,9 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 				"blockNumber", vLog.BlockNumber,
 			)
 			return nil
+		} else if err != nil {
+			sp.Logger.Error("Error while checking if tx is old", "error", err)
+			return err
 		}
 
 		validNonce, nonceDelay, err := sp.checkValidNonce(event.ValidatorId.Uint64(), event.Nonce.Uint64())
@@ -392,7 +395,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			return err
 		}
 
-		if txRes.Code != uint32(abci.CodeTypeOK) {
+		if txRes.Code != abci.CodeTypeOK {
 			sp.Logger.Error("signerChange tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 			return fmt.Errorf("signerChange tx failed, tx response code: %v", txRes.Code)
 		}
@@ -438,7 +441,7 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	const (
 		defaultPage  = 1
-		defaultLimit = 30 // should be consistent with tendermint/tendermint/rpc/core/pipe.go:19
+		defaultLimit = 30
 	)
 
 	stakingTxnMsgMap := map[string]string{
@@ -459,9 +462,23 @@ func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 			return 0, fmt.Errorf(err1.Error() + err2.Error())
 		}
 
-		if searchResult1.TotalCount != 0 || searchResult2.TotalCount != 0 {
-			return int(searchResult1.TotalCount + searchResult2.TotalCount), nil
+		var totalCount uint64
+
+		// Check if searchResult1 is not nil before accessing TotalCount
+		if searchResult1 != nil {
+			totalCount += searchResult1.TotalCount
 		}
+
+		// Check if searchResult2 is not nil before accessing TotalCount
+		if searchResult2 != nil {
+			totalCount += searchResult2.TotalCount
+		}
+
+		// Only return if totalCount is non-zero
+		if totalCount != 0 {
+			return int(totalCount), nil
+		}
+
 	}
 
 	return 0, nil

@@ -191,7 +191,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 		return err
 	}
 
-	if txRes.Code != uint32(abci.CodeTypeOK) {
+	if txRes.Code != abci.CodeTypeOK {
 		mp.Logger.Error("milestone tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 		return fmt.Errorf("milestone tx failed, tx response code: %v", txRes.Code)
 	}
@@ -272,7 +272,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 		return err
 	}
 
-	if txRes.Code != uint32(abci.CodeTypeOK) {
+	if txRes.Code != abci.CodeTypeOK {
 		mp.Logger.Error("milestone timeout tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 		return fmt.Errorf("milestone timeout tx failed, tx response code: %v", txRes.Code)
 	}

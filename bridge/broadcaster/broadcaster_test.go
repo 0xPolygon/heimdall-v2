@@ -211,13 +211,15 @@ func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context)
 	hApp, _, _ := app.SetupApp(t, 1)
 	ctx := hApp.BaseApp.NewContext(true)
 	hApp.BankKeeper.SetSendEnabled(ctx, "", true)
-	hApp.CheckpointKeeper.SetParams(ctx, checkpointTypes.DefaultParams())
-	hApp.BorKeeper.SetParams(ctx, borTypes.DefaultParams())
+	err := hApp.CheckpointKeeper.SetParams(ctx, checkpointTypes.DefaultParams())
+	require.NoError(t, err)
+	err = hApp.BorKeeper.SetParams(ctx, borTypes.DefaultParams())
+	require.NoError(t, err)
 
 	// TODO HV2 - this is unused, remove it?
 	// coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}
 
-	acc := authTypes.NewBaseAccount(sdk.AccAddress(heimdallAddressBytes), cosmosPrivKey.PubKey(), 0, 0)
+	acc := authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 0, 0)
 
 	hApp.AccountKeeper.SetAccount(ctx, acc)
 

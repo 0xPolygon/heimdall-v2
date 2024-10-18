@@ -15,6 +15,7 @@ import (
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -42,8 +43,6 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 
 	// current address
 	address := helper.GetAddress()
-
-	var account sdk.AccountI
 
 	account, err := util.GetAccount(cliCtx, common.BytesToAddress(address).String())
 	if err != nil {
@@ -82,9 +81,9 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 		return &sdk.TxResponse{}, err
 	}
 	txBldr.SetMemo(viper.GetString("memo"))
+	txBldr.SetFeeAmount(ante.DefaultFeeWantedPerTx)
 	// TODO HV2 - what should be the gas limit and fee amount? How?
 	/*
-		txBldr.SetFeeAmount(feeAmt)
 		txBldr.SetGasLimit(gas)
 	*/
 
@@ -103,37 +102,60 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	tb.CliCtx.SkipConfirm = true
 
 	txResponse, err := helper.BroadcastTx(tb.CliCtx, txf, msg)
-	if err != nil || txResponse.Code != uint32(abci.CodeTypeOK) {
-		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err, "txResponse", txResponse.Code)
 
-		// current address
-		address := helper.GetAddress()
+	// Check for an error from broadcasting the transaction
+	if err != nil {
+		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err)
 
-		// fetch from APIs
-		account, errAcc := util.GetAccount(tb.CliCtx, string(address[:]))
-		if errAcc != nil {
-			tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
-			return txResponse, errAcc
+		// Handle fetching account and updating seqNo
+		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
+			return txResponse, handleAccountUpdateErr
 		}
-
-		// update seqNo for safety
-		tb.lastSeqNo = account.GetSequence()
 
 		return txResponse, err
 	}
 
+	// Now check if the transaction response is not okay
+	if txResponse.Code != abci.CodeTypeOK {
+		tb.logger.Error("Transaction response returned a non-ok code", "txResponse", txResponse.Code)
+
+		// Handle fetching account and updating seqNo
+		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
+			return txResponse, handleAccountUpdateErr
+		}
+
+		return txResponse, fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
+	}
+
 	txHash := txResponse.TxHash
 
-	tb.logger.Info("Tx sent on heimdall", "txHash", txHash, "accSeq", tb.lastSeqNo, "accNum", tb.accNum)
-	tb.logger.Debug("Tx successful on heimdall", "txResponse", txResponse)
+	tb.logger.Info("Tx sent on heimdall", "txHash", txHash, "accSeq", tb.lastSeqNo, "accNum", tb.accNum, "txResponse", txResponse)
 	// increment account sequence
 	tb.lastSeqNo += 1
 
 	return txResponse, nil
 }
 
-// BroadcastToMatic broadcast to matic
-func (tb *TxBroadcaster) BroadcastToMatic(msg ethereum.CallMsg) error {
+// Helper function to update account sequence
+func updateAccountSequence(tb *TxBroadcaster) error {
+	// current address
+	address := helper.GetAddress()
+
+	// fetch from APIs
+	account, errAcc := util.GetAccount(tb.CliCtx, string(address[:]))
+	if errAcc != nil {
+		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
+		return errAcc
+	}
+
+	// update seqNo for safety
+	tb.lastSeqNo = account.GetSequence()
+
+	return nil
+}
+
+// BroadcastToBorChain broadcast to matic
+func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
 	tb.maticMutex.Lock()
 	defer tb.maticMutex.Unlock()
 
@@ -172,8 +194,8 @@ func (tb *TxBroadcaster) BroadcastToMatic(msg ethereum.CallMsg) error {
 	defer cancel()
 
 	// broadcast transaction
-	if err := maticClient.SendTransaction(ctx, signedTx); err != nil {
-		tb.logger.Error("Error while broadcasting the transaction to polygonposchain", "error", err)
+	if err = maticClient.SendTransaction(ctx, signedTx); err != nil {
+		tb.logger.Error("Error while broadcasting the transaction to polygon pos chain", "error", err)
 		return err
 	}
 

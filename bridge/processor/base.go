@@ -129,7 +129,7 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 		endpoint = helper.GetHeimdallServerEndpoint(util.TopupTxStatusURL)
 	case util.ClerkEvent:
 		endpoint = helper.GetHeimdallServerEndpoint(util.ClerkTxStatusURL)
-		// TODO HV2 - not adding slashing
+		// HV2 - not adding slashing
 		/*
 			case util.SlashingEvent:
 				endpoint = helper.GetHeimdallServerEndpoint(util.SlashingTxStatusURL)

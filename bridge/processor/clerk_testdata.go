@@ -11,8 +11,8 @@ const (
 	{
 	"height": "0",
 	"result": {
-		"mainchain_tx_confirmations": 6,
-		"maticchain_tx_confirmations": 10,
+		"main_chain_tx_confirmations": 6,
+		"bor_chain_tx_confirmations": 10,
 		"chain_params": {
 			"bor_chain_id": "80001",
 			"matic_token_address": "0x499d11E0b6eAC7c0593d8Fb292DCBbF815Fb29Ae",
@@ -31,35 +31,30 @@ const (
 	getAccountUrl2     = dummyHeimdallServerUrl + "/auth/accounts/3F17F1962B36E491B30A40B2405849E597BA5FB5"
 	getAccountResponse = `
 	{
-	"height": "11384869",
-	"result": {
-		"type": "auth/Account",
-		"value": {
-			"address": "0x5973918275c01f50555d44e92c9d9b353cadad54",
-			"coins": [{
-				"denom": "matic",
-				"amount": "10000000000000000000"
-			}],
-			"public_key": null,
-			"account_number": "0",
-			"sequence_number": "0",
-			"name": "",
-			"permissions": []
-			}
-		}
+	"type": "auth/Account",
+	"value": {
+		"address": "0x5973918275c01f50555d44e92c9d9b353cadad54",
+		"coins": [{
+			"denom": "pol",
+			"amount": "10000000000000000000"
+		}],
+		"public_key": null,
+		"account_number": "0",
+		"sequence_number": "0",
+		"name": "",
+		"permissions": []
+	}
 	}`
 
 	isOldTxUrl      = dummyHeimdallServerUrl + "/clerk/isoldtx?logindex=0&txhash=0x6d428739815d7c84cf89db055158861b089e0fd649676a0243a2a2d204c1d854"
 	isOldTxResponse = `
 	{
-		"height": "11384858",
 		"result": false
 	}`
 
 	checkpointCountUrl      = dummyHeimdallServerUrl + util.CountCheckpointURL
 	checkpointCountResponse = `
 	{
-  		"height": "11384858",
   		"result": {
     		"result": 74834
   		}
@@ -68,7 +63,6 @@ const (
 	unconfirmedTxsUrl      = dummyCometBFTNode + "/unconfirmed_txs"
 	unconfirmedTxsResponse = `
 	{
-		"height": "1",
 		"result": {
 			"total": "",
 			"txs": []
@@ -104,7 +98,6 @@ const (
 	getValidatorSetUrl      = dummyHeimdallServerUrl + "/staking/validator-set"
 	getValidatorSetResponse = `
 	{
-	"height": "11384841",
 	"result": {
 		"validators": [{
 				"ID": 23,

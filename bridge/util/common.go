@@ -55,7 +55,7 @@ const (
 	TopupTxStatusURL       = "/topup/isoldtx"
 	ClerkTxStatusURL       = "/clerk/isoldtx"
 	ClerkEventRecordURL    = "/clerk/event-record/%d"
-	// TODO HV2 - not adding slashing
+	// HV2 - not adding slashing
 	/*
 		LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
 		TickSlashInfoListURL    = "/slashing/tick_slash_infos"
@@ -78,7 +78,7 @@ const (
 	StakingEvent BridgeEvent = "staking"
 	TopupEvent   BridgeEvent = "topup"
 	ClerkEvent   BridgeEvent = "clerk"
-	// TODO HV2 - not adding slashing
+	// HV2 - not adding slashing
 	// SlashingEvent BridgeEvent = "slashing"
 
 	BridgeDBFlag = "bridge-db"

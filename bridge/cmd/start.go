@@ -50,7 +50,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context) error {
 	}
 
 	// selected services to start
-	services := []common.Service{}
+	var services []common.Service
 	services = append(services,
 		listener.NewListenerService(cdc, _queueConnector, _httpClient),
 		processor.NewProcessorService(cdc, _queueConnector, _httpClient, _txBroadcaster),
@@ -154,7 +154,7 @@ func StartBridge(isStandAlone bool) {
 	}
 
 	// selected services to start
-	services := []common.Service{}
+	var services []common.Service
 	services = append(services,
 		listener.NewListenerService(cdc, _queueConnector, _httpClient),
 		processor.NewProcessorService(cdc, _queueConnector, _httpClient, _txBroadcaster),

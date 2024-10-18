@@ -55,18 +55,18 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 		rl.Logger.Error("Failed to marshal log", "Error", err)
 	}
 
-	pubkey := helper.GetPubKey()
+	pubKey := helper.GetPubKey()
 
 	event := new(stakinginfo.StakinginfoStaked)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
 		rl.Logger.Error("Error while parsing event", "name", selectedEvent.Name, "error", err)
 	}
 
-	if !util.IsPubKeyFirstByteValid(pubkey[0:1]) {
-		rl.Logger.Error("public key first byte mismatch", "expected", "0x04", "received", pubkey[0:1])
+	if !util.IsPubKeyFirstByteValid(pubKey[0:1]) {
+		rl.Logger.Error("public key first byte mismatch", "expected", "0x04", "received", pubKey[0:1])
 	}
 
-	if bytes.Equal(event.SignerPubkey, pubkey[1:]) {
+	if bytes.Equal(event.SignerPubkey, pubKey[1:]) {
 		// topup has to be processed first before validator join. so adding delay.
 		delay := util.TaskDelayBetweenEachVal
 		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
@@ -101,14 +101,14 @@ func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent
 		rl.Logger.Error("Failed to marshal log", "Error", err)
 	}
 
-	pubkey := helper.GetPubKey()
+	pubKey := helper.GetPubKey()
 
 	event := new(stakinginfo.StakinginfoSignerChange)
 	if err = helper.UnpackLog(rl.stakingInfoAbi, event, selectedEvent.Name, &vLog); err != nil {
 		rl.Logger.Error("Error while parsing event", "name", selectedEvent.Name, "error", err)
 	}
 
-	if bytes.Equal(event.SignerPubkey, pubkey[1:]) && util.IsPubKeyFirstByteValid(pubkey[0:1]) {
+	if bytes.Equal(event.SignerPubkey, pubKey[1:]) && util.IsPubKeyFirstByteValid(pubKey[0:1]) {
 		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(rl.cliCtx, event); isCurrentValidator {
 		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, delay, event)

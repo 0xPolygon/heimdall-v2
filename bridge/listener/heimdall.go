@@ -24,7 +24,7 @@ type HeimdallListener struct {
 
 // Start starts new block subscription
 func (hl *HeimdallListener) Start() error {
-	hl.Logger.Info("Starting")
+	hl.Logger.Info("Starting heimdall listener")
 
 	// create cancellable context
 	headerCtx, cancelHeaderProcess := context.WithCancel(context.Background())
@@ -142,7 +142,7 @@ func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight
 	switch event.Type {
 	case checkpointTypes.EventTypeCheckpoint:
 		hl.sendBlockTask("sendCheckpointToRootchain", eventBytes, blockHeight)
-	// TODO HV2 - not adding slashing
+	// HV2 - not adding slashing
 	/*
 		case slashingTypes.EventTypeSlashLimit:
 			hl.sendBlockTask("sendTickToHeimdall", eventBytes, blockHeight)

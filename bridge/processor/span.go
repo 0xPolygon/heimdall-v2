@@ -55,7 +55,6 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 	for {
 		select {
 		case <-ticker.C:
-			// nolint: contextcheck
 			sp.checkAndPropose()
 		case <-ctx.Done():
 			sp.Logger.Info("Polling stopped")
@@ -128,7 +127,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 			return
 		}
 
-		if txRes.Code != uint32(abci.CodeTypeOK) {
+		if txRes.Code != abci.CodeTypeOK {
 			sp.Logger.Error("span tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
 			return
 		}
