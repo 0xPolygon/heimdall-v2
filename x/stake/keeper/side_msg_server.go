@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 
 	addrCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -13,6 +12,7 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
@@ -462,7 +462,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return
 	}
 
-	signer := strings.ToLower(pubKey.Address().String())
+	signer := util.FormatAddress(pubKey.Address().String())
 
 	// get voting power from amount
 	votingPower, err := helper.GetPowerFromAmount(msg.Amount.BigInt())
@@ -626,7 +626,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		return
 	}
 
-	newSigner := strings.ToLower(newPubKey.Address().String())
+	newSigner := util.FormatAddress(newPubKey.Address().String())
 
 	// pull validator from store
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
@@ -690,13 +690,13 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	// Move heimdall fee to new signer
 	oldAccAddress, err := addrCodec.NewHexCodec().StringToBytes(oldValidator.Signer)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in coverting hex address to bytes", "error", err)
+		s.k.Logger(ctx).Error("error in converting hex address to bytes", "error", err)
 		return
 	}
 
 	newAccAddress, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in coverting hex address to bytes", "error", err)
+		s.k.Logger(ctx).Error("error in converting hex address to bytes", "error", err)
 		return
 	}
 

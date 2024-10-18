@@ -22,6 +22,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
@@ -179,7 +180,7 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	valInfo, err := keeper.GetValidatorInfo(ctx, validators[0].Signer)
 	require.NoErrorf(err, "Error while fetching Validator Info from store")
 
-	addr2 := strings.ToLower(valAddr2.String())
+	addr2 := util.FormatAddress(valAddr2.String())
 
 	err = keeper.UpdateSigner(ctx, addr2, pk2.Bytes(), valInfo.Signer)
 	require.NoErrorf(err, "Error while updating Signer Address ")
@@ -318,7 +319,7 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	err = keeper.AddValidator(ctx, valToBeAdded)
 	require.NoError(err)
 
-	_, err = keeper.GetValidatorInfo(ctx, strings.ToLower(valToBeAdded.GetSigner()))
+	_, err = keeper.GetValidatorInfo(ctx, util.FormatAddress(valToBeAdded.GetSigner()))
 	require.NoError(err)
 
 	setUpdates := types.GetUpdatedValidators(currentValSet, keeper.GetAllValidators(ctx), 5)
@@ -374,7 +375,7 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, strings.ToLower(validators[0].Signer))
+	activeValidatorInfo, err := keeper.GetActiveValidatorInfo(ctx, util.FormatAddress(validators[0].Signer))
 	require.NoError(err)
 	require.Equal(validators[0], activeValidatorInfo)
 }

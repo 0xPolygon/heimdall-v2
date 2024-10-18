@@ -63,7 +63,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	// calculate next span seed locally
 	nextSpanSeed, err := s.k.FetchNextSpanSeed(ctx)
 	if err != nil {
-		logger.Error("error fetching next span seed from mainchain", "error", err)
+		logger.Error("error fetching next span seed from mainChain", "error", err)
 		return sidetxs.Vote_UNSPECIFIED
 	}
 
@@ -72,7 +72,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		logger.Error(
 			"span seed does not match",
 			"msgSeed", msg.Seed,
-			"mainchainSeed", nextSpanSeed.String(),
+			"mainChainSeed", nextSpanSeed.String(),
 		)
 
 		return sidetxs.Vote_VOTE_NO

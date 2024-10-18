@@ -7,6 +7,8 @@ import (
 	"cosmossdk.io/math"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 var (
@@ -23,7 +25,7 @@ func NewMsgValidatorJoin(
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorJoin, error) {
 	return &MsgValidatorJoin{
-		From:            from,
+		From:            util.FormatAddress(from),
 		ValId:           id,
 		ActivationEpoch: activationEpoch,
 		Amount:          amount,
@@ -69,7 +71,7 @@ func NewMsgStakeUpdate(from string, id uint64,
 	newAmount math.Int, txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgStakeUpdate, error) {
 	return &MsgStakeUpdate{
-		From:        from,
+		From:        util.FormatAddress(from),
 		ValId:       id,
 		NewAmount:   newAmount,
 		TxHash:      txHash,
@@ -104,7 +106,7 @@ func NewMsgSignerUpdate(from string, id uint64,
 	pubKey []byte, txHash []byte, logIndex uint64,
 	blockNumber uint64, nonce uint64) (*MsgSignerUpdate, error) {
 	return &MsgSignerUpdate{
-		From:            from,
+		From:            util.FormatAddress(from),
 		ValId:           id,
 		NewSignerPubKey: pubKey,
 		TxHash:          txHash,
@@ -150,7 +152,7 @@ func NewMsgValidatorExit(
 	blockNumber uint64, nonce uint64,
 ) (*MsgValidatorExit, error) {
 	return &MsgValidatorExit{
-		From:              from,
+		From:              util.FormatAddress(from),
 		ValId:             id,
 		DeactivationEpoch: deactivationEpoch,
 		TxHash:            txHash,

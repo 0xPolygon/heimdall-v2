@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
@@ -56,7 +57,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	startBlock := uint64(0)
 	endBlock := uint64(255)
 	rootHash := testutil.RandomBytes()
-	proposerAddress := common.HexToAddress(AccountHash).String()
+	proposerAddress := util.FormatAddress(common.HexToAddress(AccountHash).String())
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
@@ -90,7 +91,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	startBlock := uint64(0)
 	endBlock := uint64(255)
 	rootHash := testutil.RandomBytes()
-	proposerAddress := common.HexToAddress(AccountHash).String()
+	proposerAddress := util.FormatAddress(common.HexToAddress(AccountHash).String())
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(

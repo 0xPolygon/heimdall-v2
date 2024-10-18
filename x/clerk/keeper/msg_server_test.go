@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
@@ -23,9 +24,6 @@ func (s *KeeperTestSuite) TestHandleMsgEventRecord() {
 	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
-	addrBz1, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
@@ -35,7 +33,7 @@ func (s *KeeperTestSuite) TestHandleMsgEventRecord() {
 
 	// successful message
 	msg := types.NewMsgEventRecord(
-		addrBz1,
+		util.FormatAddress(Address1),
 		TxHash1,
 		logIndex,
 		blockNumber,
@@ -98,14 +96,11 @@ func (s *KeeperTestSuite) TestHandleMsgEventRecordSequence() {
 	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
-	addrBz1, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
 	msg := types.NewMsgEventRecord(
-		addrBz1,
+		util.FormatAddress(Address1),
 		TxHash1,
 		r.Uint64(),
 		r.Uint64(),
@@ -132,9 +127,6 @@ func (s *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
-	addrBz1, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
@@ -142,7 +134,7 @@ func (s *KeeperTestSuite) TestHandleMsgEventRecordChainID() {
 
 	// wrong chain id
 	msg := types.NewMsgEventRecord(
-		addrBz1,
+		util.FormatAddress(Address1),
 		TxHash1,
 		r.Uint64(),
 		r.Uint64(),
