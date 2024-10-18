@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -39,9 +40,6 @@ func (s *KeeperTestSuite) TestSideHandler() {
 	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
-	addrBz1, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
@@ -52,7 +50,7 @@ func (s *KeeperTestSuite) TestSideHandler() {
 	ck.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	msg := types.NewMsgEventRecord(
-		addrBz1,
+		util.FormatAddress(Address1),
 		TxHash1,
 		logIndex,
 		blockNumber,
@@ -84,9 +82,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
-	addrBz1, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
@@ -100,7 +95,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		}
 
 		msg := types.NewMsgEventRecord(
-			addrBz1,
+			util.FormatAddress(Address1),
 			TxHash1,
 			logIndex,
 			blockNumber,
@@ -135,7 +130,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		blockNumber := uint64(51)
 
 		msg := types.NewMsgEventRecord(
-			addrBz1,
+			util.FormatAddress(Address1),
 			TxHash1,
 			logIndex,
 			blockNumber,
@@ -163,7 +158,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 		}
 
 		msg := types.NewMsgEventRecord(
-			addrBz1,
+			util.FormatAddress(Address1),
 			TxHash1,
 			logIndex,
 			blockNumber,
@@ -199,7 +194,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgEventRecord() {
 
 		// data created after trimming
 		msg := types.NewMsgEventRecord(
-			addrBz1,
+			util.FormatAddress(Address1),
 			TxHash1,
 			logIndex,
 			blockNumber,
@@ -236,9 +231,6 @@ func (s *KeeperTestSuite) TestPostHandler() {
 	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
-	addrBz1, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
@@ -247,7 +239,7 @@ func (s *KeeperTestSuite) TestPostHandler() {
 	blockNumber := r.Uint64()
 
 	msg := types.NewMsgEventRecord(
-		addrBz1,
+		util.FormatAddress(Address1),
 		TxHash1,
 		logIndex,
 		blockNumber,
@@ -267,9 +259,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 	r := rand.New(rand.NewSource(1))
 	ac := address.NewHexCodec()
 
-	addrBz1, err := ac.StringToBytes(Address1)
-	require.NoError(t, err)
-
 	addrBz2, err := ac.StringToBytes(Address2)
 	require.NoError(t, err)
 
@@ -278,7 +267,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 	blockNumber := r.Uint64()
 
 	msg := types.NewMsgEventRecord(
-		addrBz1,
+		util.FormatAddress(Address1),
 		TxHash1,
 		logIndex,
 		blockNumber,
@@ -325,7 +314,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventRecord() {
 		blockNumber := r.Uint64()
 
 		_ = types.NewMsgEventRecord(
-			addrBz1,
+			util.FormatAddress(Address1),
 			TxHash1,
 			logIndex,
 			blockNumber,

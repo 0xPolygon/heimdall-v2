@@ -5,12 +5,13 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // NewMsgEventRecord - construct state msg
 func NewMsgEventRecord(
-	from sdk.AccAddress,
+	from string,
 	txHash string,
 	logIndex uint64,
 	blockNumber uint64,
@@ -25,13 +26,8 @@ func NewMsgEventRecord(
 		contractAddressBytes = ""
 	}
 
-	fromBytes, err := hexCodec.NewHexCodec().BytesToString(from)
-	if err != nil {
-		fromBytes = ""
-	}
-
 	return MsgEventRecordRequest{
-		From:            fromBytes,
+		From:            util.FormatAddress(from),
 		TxHash:          txHash,
 		LogIndex:        logIndex,
 		BlockNumber:     blockNumber,
