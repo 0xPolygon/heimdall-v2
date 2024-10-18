@@ -441,7 +441,7 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	const (
 		defaultPage  = 1
-		defaultLimit = 30
+		defaultLimit = 100
 	)
 
 	stakingTxnMsgMap := map[string]string{

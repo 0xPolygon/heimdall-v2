@@ -65,6 +65,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			totalValidators := getTotalNumberOfNodes()
 
 			// first validators start ID
+			// there is no validator with id = 0
 			startID := viper.GetInt64(stakingcli.FlagValidatorID)
 			if startID == 0 {
 				startID = 1

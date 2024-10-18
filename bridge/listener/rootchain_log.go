@@ -67,11 +67,9 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 	}
 
 	if bytes.Equal(event.SignerPubkey, pubKey[1:]) {
-		// topup has to be processed first before validator join. so adding delay.
 		delay := util.TaskDelayBetweenEachVal
 		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(rl.cliCtx, event); isCurrentValidator {
-		// topup has to be processed first before validator join. so adding delay.
 		delay = delay + util.TaskDelayBetweenEachVal
 		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -18,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/spf13/viper"
 )
@@ -44,7 +44,9 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 	// current address
 	address := helper.GetAddress()
 
-	account, err := util.GetAccount(cliCtx, common.BytesToAddress(address).String())
+	addressString := addressUtil.FormatAddress(string(address))
+
+	account, err := util.GetAccount(cliCtx, addressString)
 	if err != nil {
 		panic("Error connecting to rest-server, please start server before bridge.")
 	}
@@ -117,7 +119,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 
 	// Now check if the transaction response is not okay
 	if txResponse.Code != abci.CodeTypeOK {
-		tb.logger.Error("Transaction response returned a non-ok code", "txResponse", txResponse.Code)
+		tb.logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
 
 		// Handle fetching account and updating seqNo
 		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
@@ -140,9 +142,10 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 func updateAccountSequence(tb *TxBroadcaster) error {
 	// current address
 	address := helper.GetAddress()
+	addressString := addressUtil.FormatAddress(string(address))
 
 	// fetch from APIs
-	account, errAcc := util.GetAccount(tb.CliCtx, string(address[:]))
+	account, errAcc := util.GetAccount(tb.CliCtx, addressString)
 	if errAcc != nil {
 		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
 		return errAcc

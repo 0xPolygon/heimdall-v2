@@ -19,7 +19,7 @@ import (
 
 const (
 	DefaultPage  = 1
-	DefaultLimit = 30 // should be consistent with tendermint/tendermint/rpc/core/pipe.go:19
+	DefaultLimit = 100
 )
 
 // NewResponse creates a new Response instance

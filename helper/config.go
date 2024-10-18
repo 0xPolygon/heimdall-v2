@@ -99,11 +99,11 @@ const (
 
 	NoACKWaitTime = 1800 * time.Second // Time ack service waits to clear buffer and elect new proposer (1800 seconds ~ 30 mins)
 
-	DefaultCheckpointerPollInterval = 5 * time.Minute
-	DefaultSyncerPollInterval       = 1 * time.Minute
-	DefaultNoACKPollInterval        = 1010 * time.Second
-	DefaultClerkPollInterval        = 10 * time.Second
-	DefaultSpanPollInterval         = 1 * time.Minute
+	DefaultCheckpointPollInterval = 5 * time.Minute
+	DefaultSyncerPollInterval     = 1 * time.Minute
+	DefaultNoACKPollInterval      = 1010 * time.Second
+	DefaultClerkPollInterval      = 10 * time.Second
+	DefaultSpanPollInterval       = 1 * time.Minute
 
 	DefaultMilestonePollInterval = 30 * time.Second
 
@@ -406,7 +406,7 @@ func GetDefaultHeimdallConfig() CustomConfig {
 
 		MainchainMaxGasPrice: DefaultMainchainMaxGasPrice,
 
-		CheckpointPollInterval: DefaultCheckpointerPollInterval,
+		CheckpointPollInterval: DefaultCheckpointPollInterval,
 		SyncerPollInterval:     DefaultSyncerPollInterval,
 		NoACKPollInterval:      DefaultNoACKPollInterval,
 		ClerkPollInterval:      DefaultClerkPollInterval,

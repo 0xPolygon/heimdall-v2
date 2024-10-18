@@ -36,7 +36,7 @@ var (
 	Client HTTPClient
 )
 
-// GetFromAddress get returns the from address from the context's name
+// GetFromAddress returns the from address from the context's name
 func GetFromAddress(cliCtx client.Context) string {
 	ac := address.NewHexCodec()
 	fromAddress := cliCtx.GetFromAddress()
@@ -341,6 +341,8 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 	}
 
 	if !clientCtx.SkipConfirm {
+		panic("this should not happen as SkipConfirm is set to true")
+
 		// TODO HV2 - create a function
 		// func (f Factory) GetTxConfig() client.TxConfig { return f.txConfig }
 		// I guess this is no longer needed as this if block is never used
