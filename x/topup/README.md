@@ -2,7 +2,7 @@
 
 Heimdall Topup is an amount which will be used to pay fees on Heimdall chain.
 
-There are two ways to topup your account:
+There are two ways to top up your account:
 
 1. When new validator joins, they can mention a `topup` amount as top-up in addition to the staked amount, which will be
    moved as balance on Heimdall chain to pay fees on Heimdall.
@@ -40,10 +40,10 @@ message MsgTopupTx {
 `MsgWithdrawFeeTx` is responsible for withdrawing balance from Heimdall to Ethereum chain. A Validator can
 withdraw any amount from Heimdall.
 
-Handler processes the withdraw by deducting the balance from the given validator and prepares the state to send the next
-checkpoint. The next possible checkpoint will contain the withdraw related state for the specific validator.
+Handler processes the withdrawal by deducting the balance from the given validator and prepares the state to send the next
+checkpoint. The next possible checkpoint will contain the withdrawal related state for the specific validator.
 
-Handler gets validator information based on `ValidatorAddress` and processes the withdraw.
+Handler gets validator information based on `ValidatorAddress` and processes the withdrawal.
 
 ```protobuf
 message MsgWithdrawFeeTx {

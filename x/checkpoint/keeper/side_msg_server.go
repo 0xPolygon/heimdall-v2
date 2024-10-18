@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -154,7 +155,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	// check if message data matches with contract data
 	if msg.StartBlock != start ||
 		msg.EndBlock != end ||
-		strings.ToLower(msg.Proposer) != strings.ToLower(proposer) ||
+		strings.Compare(util.FormatAddress(msg.Proposer), util.FormatAddress(proposer)) != 0 ||
 		!bytes.Equal(msg.RootHash, root.Bytes()) {
 		logger.Error("invalid message as it doesn't match with contract state",
 			"checkpointNumber", msg.Number,

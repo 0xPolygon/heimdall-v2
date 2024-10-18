@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/common/tracing"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -128,7 +129,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		tracing.EndSpan(maxStateSyncSizeCheckSpan)
 
 		msg := clerkTypes.NewMsgEventRecord(
-			helper.GetAddress(),
+			addressUtil.FormatAddress(string(helper.GetAddress())),
 			vLog.TxHash.String(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,

@@ -14,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -122,6 +123,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 
 // AddCheckpoint adds checkpoint into the db store
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
+	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
 	err := k.checkpoints.Set(ctx, checkpointNumber, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in adding the checkpoint to the store", "error", err)
@@ -133,6 +135,7 @@ func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, che
 
 // SetCheckpointBuffer sets the checkpoint in buffer
 func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
+	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
 	err := k.bufferedCheckpoint.Set(ctx, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in setting the buffered checkpoint in the store", "error", err)

@@ -4,24 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"cosmossdk.io/collections"
 	addresscodec "cosmossdk.io/core/address"
 	abci "github.com/cometbft/cometbft/abci/types"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
-
-// TODO HV2: Make sure we always same the same format in the stores (for all modules)
-//  when it comes to addresses' string/bytes so that we can use the addressCodec without problems
-//  See https://polygon.atlassian.net/browse/POS-2703
 
 // AddValidator adds validator indexed with address
 func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) error {
 	k.PanicIfSetupIsIncomplete()
 	// store validator with address prefixed with validator key as index
-	err := k.validators.Set(ctx, strings.ToLower(validator.Signer), validator)
+	err := k.validators.Set(ctx, util.FormatAddress(validator.Signer), validator)
 	if err != nil {
 		k.Logger(ctx).Error("error while setting the validator in store", "err", err)
 		return err
@@ -45,7 +41,7 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 	}
 
 	// get validator info
-	validator, err := k.GetValidatorInfo(ctx, address)
+	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(address))
 	if err != nil {
 		return false
 	}
@@ -57,7 +53,7 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 // GetValidatorInfo returns the validator info given its address
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
 	k.PanicIfSetupIsIncomplete()
-	validator, err = k.validators.Get(ctx, strings.ToLower(address))
+	validator, err = k.validators.Get(ctx, util.FormatAddress(address))
 
 	if err != nil {
 		return validator, errors.New(fmt.Sprintf("error while fetching the validator from the store %v", err))
@@ -69,7 +65,7 @@ func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validato
 // GetActiveValidatorInfo returns active validator
 func (k *Keeper) GetActiveValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
 	k.PanicIfSetupIsIncomplete()
-	validator, err = k.GetValidatorInfo(ctx, address)
+	validator, err = k.GetValidatorInfo(ctx, util.FormatAddress(address))
 	if err != nil {
 		return validator, err
 	}
@@ -197,7 +193,7 @@ func (k *Keeper) IterateValidatorsAndApplyFn(ctx context.Context, f func(validat
 func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey []byte, prevSigner string) error {
 	k.PanicIfSetupIsIncomplete()
 	// get old validator from state and make power 0
-	validator, err := k.GetValidatorInfo(ctx, prevSigner)
+	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(prevSigner))
 	if err != nil {
 		k.Logger(ctx).Error("unable to fetch validator from store")
 		return err
@@ -341,7 +337,7 @@ func (k *Keeper) GetCurrentProposer(ctx context.Context) *types.Validator {
 
 // SetValidatorIDToSignerAddr sets mapping for validator ID to signer address
 func (k *Keeper) SetValidatorIDToSignerAddr(ctx context.Context, valID uint64, signerAddr string) {
-	err := k.signer.Set(ctx, valID, strings.ToLower(signerAddr))
+	err := k.signer.Set(ctx, valID, util.FormatAddress(signerAddr))
 	if err != nil {
 		k.Logger(ctx).Error("key or value is nil", "error", err)
 	}
@@ -471,7 +467,7 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 		return 0, err
 	}
 
-	validator, err := k.GetValidatorInfo(ctx, strings.ToLower(address))
+	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(address))
 	if err != nil {
 		return 0, err
 	}
