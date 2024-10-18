@@ -223,10 +223,10 @@ func CalculateTaskDelay(cliCtx client.Context, event interface{}) (bool, time.Du
 	validatorSet, err := GetValidatorSet(cliCtx)
 	if err != nil {
 		logger.Error("Error getting current validatorset data ", "error", err)
-		return isCurrentValidator, 0
+		return false, 0
 	}
 
-	logger.Info("Fetched current validatorset list", "currentValidatorcount", len(validatorSet.Validators))
+	logger.Info("Fetched current validator set list", "currentValidatorCount", len(validatorSet.Validators))
 
 	for i, validator := range validatorSet.Validators {
 		if bytes.Equal([]byte(validator.Signer), helper.GetAddress()) {
@@ -374,17 +374,17 @@ func IsCatchingUp(cliCtx client.Context) bool {
 func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 	logger := Logger()
 
-	url := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
+	serverEndpoint := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
 
 	// call account rest api
-	response, err := helper.FetchFromAPI(url)
+	response, err := helper.FetchFromAPI(serverEndpoint)
 	if err != nil {
 		return nil, err
 	}
 
 	var account authtypes.BaseAccount
 	if err = cliCtx.Codec.UnmarshalJSON(response, &account); err != nil {
-		logger.Error("Error unmarshalling account details", "url", url)
+		logger.Error("Error unmarshalling account details", "url", serverEndpoint)
 		return nil, err
 	}
 

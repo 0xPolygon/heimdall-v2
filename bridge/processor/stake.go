@@ -96,7 +96,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			return nil
 		}
 
-		// if account doesn't exists Retry with delay for topup to process first.
+		// if account doesn't exist Retry with delay for topup to process first.
 		if _, err := util.GetAccount(sp.cliCtx, event.Signer.String()); err != nil {
 			sp.Logger.Info(
 				"Heimdall Account doesn't exist. Retrying validator-join after 10 seconds",

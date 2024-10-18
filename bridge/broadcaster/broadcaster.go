@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -15,6 +14,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -43,8 +43,11 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 
 	// current address
 	address := helper.GetAddress()
-
-	addressString := addressUtil.FormatAddress(string(address))
+	ac := addressCodec.NewHexCodec()
+	addressString, err := ac.BytesToString(address)
+	if err != nil {
+		panic("Error converting address to string")
+	}
 
 	account, err := util.GetAccount(cliCtx, addressString)
 	if err != nil {
@@ -142,7 +145,11 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 func updateAccountSequence(tb *TxBroadcaster) error {
 	// current address
 	address := helper.GetAddress()
-	addressString := addressUtil.FormatAddress(string(address))
+	ac := addressCodec.NewHexCodec()
+	addressString, err := ac.BytesToString(address)
+	if err != nil {
+		return fmt.Errorf("Error converting address to string", "error", err)
+	}
 
 	// fetch from APIs
 	account, errAcc := util.GetAccount(tb.CliCtx, addressString)
