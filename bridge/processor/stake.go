@@ -327,7 +327,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		sp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
 	} else {
 		newSignerPubKey := event.SignerPubkey
-		if len(newSignerPubKey) == 64 {
+		if len(newSignerPubKey) == 64 && util.IsPubKeyFirstByteValid(newSignerPubKey) {
 			newSignerPubKey = util.AppendPrefix(newSignerPubKey)
 		}
 
