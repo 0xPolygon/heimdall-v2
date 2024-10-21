@@ -38,7 +38,7 @@ message MsgTopupTx {
 
 message MsgWithdrawFeeTx {
   string proposer = 1 [ (amino.dont_omitempty) = true ];
-  string amount = 3 [
+  string amount = 2 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
