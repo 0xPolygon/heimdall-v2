@@ -394,7 +394,7 @@ func migrateGovModule(genesisData map[string]interface{}) error {
 		defaultParams.ExpeditedMinDeposit,
 		oldGovState.DepositParams.MaxDepositPeriod,
 		oldGovState.VotingParams.VotingPeriod,
-		*defaultParams.ExpeditedVotingPeriod,
+		12*time.Hour, // Because the default voting period is 1 day
 		oldGovState.TallyParams.Quorum,
 		oldGovState.TallyParams.Threshold,
 		defaultParams.ExpeditedThreshold,

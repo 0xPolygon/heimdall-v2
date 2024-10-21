@@ -33,6 +33,10 @@ func TestValidateGenesisAfterMigration(t *testing.T) {
 	err = json.Unmarshal(genDoc.AppState, &genesisState)
 	require.NoError(t, err)
 
-	_, err = app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState)
+	appCodec := app.AppCodec()
+	err = app.BasicManager.ValidateGenesis(appCodec, nil, genesisState)
+	require.NoError(t, err)
+
+	_, err = app.ModuleManager.InitGenesis(ctx, appCodec, genesisState)
 	require.NoError(t, err)
 }

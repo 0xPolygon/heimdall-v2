@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -149,6 +151,18 @@ func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) er
 	if err := RenameProperty(validator, ".", "ID", "val_id"); err != nil {
 		return fmt.Errorf("failed to rename ID field: %w", err)
 	}
+
+	pubKeyStr, ok := validator["pubKey"].(string)
+	if !ok {
+		return fmt.Errorf("public key not found")
+	}
+
+	pubKeyStr, err := migratePubKey(appCodec, pubKeyStr)
+	if err != nil {
+		return fmt.Errorf("failed to migrate public key: %w", err)
+	}
+
+	validator["pubKey"] = pubKeyStr
 
 	return nil
 }
@@ -344,4 +358,13 @@ func MigrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, er
 	}
 
 	return packedAccounts, nil
+}
+
+// migratePubKey migrates the public key from string to base64 encoding.
+func migratePubKey(appCodec codec.Codec, pubKeyStr string) (string, error) {
+	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(pubKeyStr, "0x"))
+	if err != nil {
+		return "", fmt.Errorf("failed to decode hex public key: %w", err)
+	}
+	return base64.StdEncoding.EncodeToString(pubKeyBytes), nil
 }
