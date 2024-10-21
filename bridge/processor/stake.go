@@ -327,8 +327,13 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		sp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
 	} else {
 		newSignerPubKey := event.SignerPubkey
-		if len(newSignerPubKey) == 64 && util.IsPubKeyFirstByteValid(newSignerPubKey) {
+		if len(newSignerPubKey) == 64 {
 			newSignerPubKey = util.AppendPrefix(newSignerPubKey)
+		}
+
+		if !util.IsPubKeyFirstByteValid(newSignerPubKey) {
+			sp.Logger.Error("Invalid signer pubkey", "event", eventName, "newSignerPubKey", newSignerPubKey)
+			return fmt.Errorf("invalid signer pubkey")
 		}
 
 		if isOld, err := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
