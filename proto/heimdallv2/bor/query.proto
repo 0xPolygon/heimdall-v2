@@ -61,7 +61,7 @@ message QuerySpanByIdResponse {
 // a list of bor spans.
 message QuerySpanListRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 1
-      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+      [ (amino.dont_omitempty) = true ];
 }
 
 // QuerySpanListResponse defines the gRPC response structure for querying
@@ -70,7 +70,7 @@ message QuerySpanListResponse {
   repeated Span span_list = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2
-      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+      [ (amino.dont_omitempty) = true ];
 }
 
 // QueryLatestSpanResponse defines the gRPC response structure for querying
@@ -80,7 +80,7 @@ message QueryLatestSpanRequest {}
 // QueryLatestSpanResponse defines the gRPC response structure for querying
 // the latest bor span.
 message QueryLatestSpanResponse {
-  Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  Span span = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryNextSpanSeedRequest defines the gRPC request structure for querying
@@ -104,7 +104,7 @@ message QueryNextSpanRequest {
 // QueryNextSpanResponse defines the gRPC response structure for querying
 // the next bor span.
 message QueryNextSpanResponse {
-  Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  Span span = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryParamsRequest defines the gRPC request structure for querying
@@ -114,6 +114,5 @@ message QueryParamsRequest {}
 // QueryParamsResponse defines the gRPC response structure for querying
 // the bor module parameters.
 message QueryParamsResponse {
-  Params params = 1
-      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  Params params = 1 [ (amino.dont_omitempty) = true ];
 }

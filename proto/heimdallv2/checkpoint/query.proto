@@ -183,14 +183,14 @@ message QueryProposerResponse {
 // a list of checkpoints.
 message QueryCheckpointListRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+      [ (amino.dont_omitempty) = true ];
 }
 
 // QueryCheckpointListResponse defines the gRPC response structure for querying
 // a list of checkpoints.
 message QueryCheckpointListResponse {
   repeated Checkpoint checkpoint_list = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+      [ (amino.dont_omitempty) = true ];
 }

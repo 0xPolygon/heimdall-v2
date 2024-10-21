@@ -127,6 +127,5 @@ message QueryAccountProofRequest {
 // QueryAccountProofResponse the is response type for the GetAccountProof RPC
 // method
 message QueryAccountProofResponse {
-  AccountProof proof = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  AccountProof proof = 1 [ (amino.dont_omitempty) = true ];
 }

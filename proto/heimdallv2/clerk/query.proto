@@ -41,8 +41,7 @@ message RecordRequest {
 
 // RecordResponse defines the params for RecordListRequest.
 message RecordResponse {
-  EventRecord record = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  EventRecord record = 1 [ (amino.dont_omitempty) = true ];
 }
 
 message RecordListRequest {
@@ -52,8 +51,7 @@ message RecordListRequest {
 
 // RecordListResponse defines the params for RecordListRequest
 message RecordListResponse {
-  repeated EventRecord event_records = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  repeated EventRecord event_records = 1 [ (amino.dont_omitempty) = true ];
 }
 
 message RecordListWithTimeRequest {
@@ -74,8 +72,7 @@ message RecordListWithTimeRequest {
 // RecordListWithTimeResponse defines the params for querying
 // RecordListWithTimeRequest
 message RecordListWithTimeResponse {
-  repeated EventRecord event_records = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  repeated EventRecord event_records = 1 [ (amino.dont_omitempty) = true ];
 }
 
 message RecordSequenceRequest {
