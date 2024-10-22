@@ -177,6 +177,8 @@ func initRootCmd(
 			startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+			helper.InitHeimdallConfig("")
+
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
 				bridgeCmd.AdjustBridgeDBValue(rootCmd)
