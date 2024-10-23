@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"testing"
 
 	"cosmossdk.io/log"
@@ -18,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
@@ -392,7 +392,7 @@ func TestTallyVotesErrorDuplicateVote(t *testing.T) {
 
 	_, _, _, err = tallyVotes(extVoteInfo, log.NewTestLogger(t), 30, CurrentHeight)
 	require.Error(t, err)
-	require.Equal(t, err.Error(), fmt.Sprintf("duplicate vote received from %s", strings.ToLower(ValAddr1)))
+	require.Equal(t, err.Error(), fmt.Sprintf("duplicate vote received from %s", util.FormatAddress(ValAddr1)))
 }
 
 func TestAggregateVotes(t *testing.T) {

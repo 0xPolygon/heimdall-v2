@@ -18,6 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
@@ -90,7 +91,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 	startBlock := uint64(0)
 	endBlock := uint64(63)
 	hash := testutil.RandomBytes()
-	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
+	proposerAddress := util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String())
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := "0000"
 

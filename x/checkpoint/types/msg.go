@@ -9,6 +9,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/types"
 )
 
@@ -28,7 +29,7 @@ func NewMsgCheckpointBlock(
 	borChainID string,
 ) MsgCheckpoint {
 	return MsgCheckpoint{
-		Proposer:        proposer,
+		Proposer:        util.FormatAddress(proposer),
 		StartBlock:      startBlock,
 		EndBlock:        endBlock,
 		RootHash:        rootHash,
@@ -92,7 +93,7 @@ func NewMsgCheckpointAck(
 	logIndex uint64,
 ) MsgCheckpointAck {
 	return MsgCheckpointAck{
-		From:       from,
+		From:       util.FormatAddress(from),
 		Number:     number,
 		Proposer:   proposer,
 		StartBlock: startBlock,
@@ -141,7 +142,7 @@ var _ sdk.Msg = &MsgCheckpointNoAck{}
 
 func NewMsgCheckpointNoAck(from string) MsgCheckpointNoAck {
 	return MsgCheckpointNoAck{
-		From: from,
+		From: util.FormatAddress(from),
 	}
 }
 

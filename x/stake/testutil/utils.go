@@ -3,12 +3,12 @@ package testutil
 import (
 	"crypto/rand"
 	"math/big"
-	"strings"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	stakingKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -17,7 +17,7 @@ import (
 func GenRandomVals(count int, startBlock uint64, power int64, timeAlive uint64, randomise bool, startID uint64) (validators []types.Validator) {
 	for i := 0; i < count; i++ {
 		pubKey := secp256k1.GenPrivKey().PubKey()
-		addr := strings.ToLower(pubKey.Address().String())
+		addr := util.FormatAddress(pubKey.Address().String())
 
 		if randomise {
 			startBlock = generateRandNumber(10)

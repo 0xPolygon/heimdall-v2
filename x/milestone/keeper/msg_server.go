@@ -2,15 +2,17 @@ package keeper
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/common"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	"github.com/ethereum/go-ethereum/common"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
@@ -51,10 +53,11 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 		return nil, errorsmod.Wrap(types.ErrProposerNotFound, "")
 	}
 
-	// Validate proposer
+	msgProposer := util.FormatAddress(msg.Proposer)
+	valProposer := util.FormatAddress(validatorSet.Proposer.Signer)
 
-	//check for the milestone proposer
-	if msg.Proposer != validatorSet.Proposer.Signer {
+	// check for the milestone proposer
+	if strings.Compare(msgProposer, valProposer) != 0 {
 		logger.Error(
 			"invalid proposer in msg",
 			"proposer", validatorSet.Proposer.Signer,

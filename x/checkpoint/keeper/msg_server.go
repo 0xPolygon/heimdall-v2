@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"math"
 	"strconv"
 	"strings"
@@ -12,8 +11,10 @@ import (
 
 	errorsmod "cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -31,25 +32,25 @@ func NewMsgServerImpl(keeper *Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 // Checkpoint function handles the checkpoint msg
-func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
-	logger := srv.Logger(ctx)
+func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*types.MsgCheckpointResponse, error) {
+	logger := m.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	timeStamp := uint64(sdkCtx.BlockTime().Unix())
 
-	params, err := srv.GetParams(ctx)
+	params, err := m.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in fetching checkpoint parameter")
 		return nil, types.ErrCheckpointParams
 	}
 
-	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
+	checkpointBuffer, err := m.GetCheckpointFromBuffer(ctx)
 	if err == nil {
 		checkpointBufferTime := uint64(params.CheckpointBufferTime.Seconds())
 
 		if checkpointBuffer.Timestamp == 0 || ((timeStamp > checkpointBuffer.Timestamp) && (timeStamp-checkpointBuffer.Timestamp) >= checkpointBufferTime) {
 			logger.Debug("checkpoint has been timed out. flushing buffer.", "checkpointTimestamp", timeStamp, "prevCheckpointTimestamp", checkpointBuffer.Timestamp)
-			err := srv.FlushCheckpointBuffer(ctx)
+			err := m.FlushCheckpointBuffer(ctx)
 			if err != nil {
 				logger.Error("error in flushing the checkpoint buffer")
 				return nil, types.ErrBufferFlush
@@ -62,7 +63,7 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	}
 
 	// fetch last checkpoint from store
-	if lastCheckpoint, err := srv.GetLastCheckpoint(ctx); err == nil {
+	if lastCheckpoint, err := m.GetLastCheckpoint(ctx); err == nil {
 		// make sure new checkpoint is after tip
 		if lastCheckpoint.EndBlock > msg.StartBlock {
 			logger.Error("checkpoint already exists",
@@ -88,7 +89,7 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 
 	// Make sure latest AccountRootHash matches
 	// Calculate new account root hash
-	dividendAccounts, err := srv.topupKeeper.GetAllDividendAccounts(ctx)
+	dividendAccounts, err := m.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
 		logger.Error("error while fetching dividends accounts", "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("error while fetching dividends accounts"))
@@ -116,7 +117,7 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 	}
 
 	// Check proposer in message
-	validatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
+	validatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
@@ -127,7 +128,10 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
 	}
 
-	if msg.Proposer != validatorSet.Proposer.Signer {
+	msgProposer := util.FormatAddress(msg.Proposer)
+	valProposer := util.FormatAddress(validatorSet.Proposer.Signer)
+
+	if msgProposer != valProposer {
 		logger.Error(
 			"invalid proposer in msg",
 			"proposer", validatorSet.Proposer.Signer,
@@ -154,11 +158,11 @@ func (srv msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (
 }
 
 // CheckpointAck handles the checkpoint ack msg
-func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAck) (*types.MsgCheckpointAckResponse, error) {
-	logger := srv.Logger(ctx)
+func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAck) (*types.MsgCheckpointAckResponse, error) {
+	logger := m.Logger(ctx)
 
 	// get last checkpoint from buffer
-	headerBlock, err := srv.GetCheckpointFromBuffer(ctx)
+	headerBlock, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("unable to get checkpoint"))
@@ -197,8 +201,8 @@ func (srv msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpoint
 }
 
 // CheckpointNoAck handles checkpoint no-ack msg
-func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpointNoAck) (*types.MsgCheckpointNoAckResponse, error) {
-	logger := srv.Logger(ctx)
+func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpointNoAck) (*types.MsgCheckpointNoAckResponse, error) {
+	logger := m.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
@@ -206,7 +210,7 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 	currentTime := sdkCtx.BlockTime()
 
 	// Get buffer time from params
-	params, err := srv.GetParams(ctx)
+	params, err := m.GetParams(ctx)
 	if err != nil {
 		logger.Error("error in fetching checkpoint parameter", "error", err)
 		return nil, errorsmod.Wrap(types.ErrCheckpointParams, "error in fetching checkpoint parameter")
@@ -216,7 +220,7 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 
 	var lastCheckpointTime time.Time
 
-	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
+	lastCheckpoint, err := m.GetLastCheckpoint(ctx)
 	if err != nil {
 		lastCheckpointTime = time.Unix(0, 0)
 	} else {
@@ -241,14 +245,14 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 
 	isProposer := false
 
-	currentValidatorSet, err := srv.stakeKeeper.GetValidatorSet(ctx)
+	currentValidatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error while fetching validator set")
 	}
 
 	currentValidatorSet.IncrementProposerPriority(1)
 	for i := 0; i < int(count); i++ {
-		if strings.ToLower(currentValidatorSet.Proposer.Signer) == strings.ToLower(msg.From) {
+		if strings.Compare(util.FormatAddress(currentValidatorSet.Proposer.Signer), util.FormatAddress(msg.From)) == 0 {
 			isProposer = true
 			break
 		}
@@ -262,7 +266,7 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 	}
 
 	// Check last no ack - prevents repetitive no-ack
-	lastNoAck, err := srv.GetLastNoAck(ctx)
+	lastNoAck, err := m.GetLastNoAck(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error while fetching last no ack")
 	}
@@ -282,21 +286,21 @@ func (srv msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoi
 
 	// Set new last no-ack
 	newLastNoAck := uint64(currentTime.Unix())
-	err = srv.SetLastNoAck(ctx, newLastNoAck)
+	err = m.SetLastNoAck(ctx, newLastNoAck)
 	if err != nil {
 		return nil, types.ErrNoAck
 	}
 	logger.Debug("last no-ack time set", "lastNoAck", newLastNoAck)
 
 	// increment accum (selects new proposer)
-	err = srv.stakeKeeper.IncrementAccum(ctx, 1)
+	err = m.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
 
 	}
 
 	// get new proposer
-	vs, err := srv.stakeKeeper.GetValidatorSet(ctx)
+	vs, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
 

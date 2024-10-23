@@ -9,6 +9,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 // MaxTotalVotingPower - the maximum allowed total voting power.
@@ -237,7 +239,7 @@ func (vals *ValidatorSet) Copy() *ValidatorSet {
 // HasAddress returns true if address given is in the validator set, false otherwise.
 func (vals *ValidatorSet) HasAddress(address string) bool {
 	idx := sort.Search(len(vals.Validators), func(i int) bool {
-		return strings.Compare(strings.ToLower(address), strings.ToLower(vals.Validators[i].Signer)) <= 0
+		return strings.Compare(util.FormatAddress(address), util.FormatAddress(vals.Validators[i].Signer)) <= 0
 	})
 
 	return idx < len(vals.Validators) && strings.EqualFold(vals.Validators[idx].Signer, address)
@@ -247,10 +249,10 @@ func (vals *ValidatorSet) HasAddress(address string) bool {
 // itself if found. Otherwise, -1 and nil are returned.
 func (vals *ValidatorSet) GetByAddress(address string) (index int, val *Validator) {
 	idx := sort.Search(len(vals.Validators), func(i int) bool {
-		return strings.Compare(strings.ToLower(address), strings.ToLower(vals.Validators[i].Signer)) <= 0
+		return strings.Compare(util.FormatAddress(address), util.FormatAddress(vals.Validators[i].Signer)) <= 0
 	})
 
-	if idx < len(vals.Validators) && strings.EqualFold(vals.Validators[idx].Signer, address) {
+	if idx < len(vals.Validators) && strings.Compare(util.FormatAddress(vals.Validators[idx].Signer), util.FormatAddress(address)) == 0 {
 		return idx, vals.Validators[idx].Copy()
 	}
 
@@ -324,7 +326,7 @@ func (vals *ValidatorSet) findProposer() *Validator {
 			continue
 		}
 
-		if !strings.EqualFold(val.Signer, proposer.Signer) {
+		if strings.Compare(util.FormatAddress(val.Signer), util.FormatAddress(proposer.Signer)) != 0 {
 			proposer = proposer.CompareProposerPriority(val)
 		}
 	}
@@ -359,7 +361,7 @@ func processChanges(origChanges []*Validator) (updates, removals []*Validator, e
 
 	// Scan changes by address and append valid validators to updates or removals lists.
 	for _, valUpdate := range changes {
-		if strings.EqualFold(valUpdate.Signer, prevAddr) {
+		if strings.Compare(util.FormatAddress(valUpdate.Signer), util.FormatAddress(prevAddr)) == 0 {
 			err = fmt.Errorf("duplicate entry %v in %v", valUpdate, changes)
 			return nil, nil, err
 		}
@@ -400,7 +402,7 @@ func verifyUpdates(updates []*Validator, vals *ValidatorSet) (updatedTotalVoting
 	updatedTotalVotingPower = vals.GetTotalVotingPower()
 
 	for _, valUpdate := range updates {
-		address := valUpdate.Signer
+		address := util.FormatAddress(valUpdate.Signer)
 
 		_, val := vals.GetByAddress(address)
 		if val == nil {
@@ -460,13 +462,13 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 	i := 0
 
 	for len(existing) > 0 && len(updates) > 0 {
-		if strings.Compare(strings.ToLower(existing[0].Signer), strings.ToLower(updates[0].Signer)) < 0 { // unchanged validator
+		if strings.Compare(util.FormatAddress(existing[0].Signer), util.FormatAddress(updates[0].Signer)) < 0 { // unchanged validator
 			merged[i] = existing[0]
 			existing = existing[1:]
 		} else {
 			// Apply add or update.
 			merged[i] = updates[0]
-			if strings.EqualFold(existing[0].Signer, updates[0].Signer) {
+			if strings.Compare(util.FormatAddress(existing[0].Signer), util.FormatAddress(updates[0].Signer)) == 0 {
 				// Validator is present in both, advance existing.
 				existing = existing[1:]
 			}
@@ -494,7 +496,7 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 // No changes are made to the validator set 'vals'.
 func verifyRemovals(deletes []*Validator, vals *ValidatorSet) error {
 	for _, valUpdate := range deletes {
-		address := valUpdate.Signer
+		address := util.FormatAddress(valUpdate.Signer)
 
 		_, val := vals.GetByAddress(address)
 		if val == nil {
@@ -519,7 +521,7 @@ func (vals *ValidatorSet) applyRemovals(deletes []*Validator) {
 
 	// Loop over deletes until we removed all of them.
 	for len(deletes) > 0 {
-		if strings.EqualFold(existing[0].Signer, deletes[0].Signer) {
+		if strings.Compare(util.FormatAddress(existing[0].Signer), util.FormatAddress(deletes[0].Signer)) == 0 {
 			deletes = deletes[1:]
 		} else { // Leave it in the resulting slice.
 			merged[i] = existing[0]
@@ -618,7 +620,7 @@ func GetUpdatedValidators(
 		// create copy of validator
 		validator := v.Copy()
 
-		address := validator.Signer
+		address := util.FormatAddress(validator.Signer)
 
 		_, val := currentSet.GetByAddress(address)
 		if val != nil && !validator.IsCurrentValidator(ackCount) {
@@ -644,7 +646,7 @@ func (vals ValidatorsByAddress) Len() int {
 }
 
 func (vals ValidatorsByAddress) Less(i, j int) bool {
-	return strings.Compare(strings.ToLower(vals[i].Signer), strings.ToLower(vals[j].Signer)) == -1
+	return strings.Compare(util.FormatAddress(vals[i].Signer), util.FormatAddress(vals[j].Signer)) == -1
 }
 
 func (vals ValidatorsByAddress) Swap(i, j int) {
