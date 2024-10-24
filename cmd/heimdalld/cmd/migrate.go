@@ -764,6 +764,10 @@ func addMissingCometBFTConsensusParams(genesisData map[string]interface{}) error
 		return err
 	}
 
+	if err := utils.AddProperty(genesisData, "consensus_params.block", "max_gas", "25000000"); err != nil {
+		return err
+	}
+
 	return nil
 }
 
