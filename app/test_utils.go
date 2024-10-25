@@ -22,7 +22,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
@@ -132,7 +131,7 @@ func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]*sidetxs.SideTxResp
 		Height:          VoteExtBlockHeight,
 	}
 
-	voteExtension, err := proto.Marshal(&sideTxResponses)
+	voteExtension, err := sideTxResponses.Marshal()
 	require.NoError(t, err)
 	return voteExtension
 }
