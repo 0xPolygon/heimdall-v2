@@ -768,6 +768,32 @@ func addMissingCometBFTConsensusParams(genesisData map[string]interface{}) error
 		return err
 	}
 
+	if err := utils.AddProperty(genesisData, "consensus_params.block", "max_gas", "25000000"); err != nil {
+		return err
+	}
+
+	if err := utils.AddProperty(genesisData, "consensus_params", "params", make(map[string]interface{})); err != nil {
+		return err
+	}
+
+	validatorParams := make(map[string]interface{})
+	validatorParams["pub_key_types"] = []interface{}{"secp256k1"}
+	if err := utils.AddProperty(genesisData, "consensus_params.params", "validator", validatorParams); err != nil {
+		return err
+	}
+
+	versionParams := make(map[string]interface{})
+	versionParams["app"] = "0"
+	if err := utils.AddProperty(genesisData, "consensus_params.params", "version", versionParams); err != nil {
+		return err
+	}
+
+	abciParams := make(map[string]interface{})
+	abciParams["vote_extensions_enable_height"] = "1"
+	if err := utils.AddProperty(genesisData, "consensus_params.params", "abci", abciParams); err != nil {
+		return err
+	}
+
 	return nil
 }
 
