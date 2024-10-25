@@ -17,6 +17,14 @@ type queryServer struct {
 	k *Keeper
 }
 
+func isPaginationEmpty(p query.PageRequest) bool {
+	return p.Key == nil &&
+		p.Offset == 0 &&
+		p.Limit == 0 &&
+		!p.CountTotal &&
+		!p.Reverse
+}
+
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
@@ -35,7 +43,7 @@ func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpan
 	}
 
 	latestSpan := spans[len(spans)-1]
-	return &types.QueryLatestSpanResponse{Span: latestSpan}, nil
+	return &types.QueryLatestSpanResponse{Span: *latestSpan}, nil
 }
 
 func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
@@ -95,7 +103,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		ChainId:           req.BorChainId,
 	}
 
-	return &types.QueryNextSpanResponse{Span: nextSpan}, nil
+	return &types.QueryNextSpanResponse{Span: *nextSpan}, nil
 }
 
 // GetNextSpanSeed returns the next span seed
@@ -118,7 +126,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &types.QueryParamsResponse{Params: &params}, nil
+	return &types.QueryParamsResponse{Params: params}, nil
 }
 
 // GetSpanById returns the span by id
@@ -146,14 +154,14 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if req.Pagination != nil && req.Pagination.Limit > 1000 {
+	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > 1000 {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
 
 	spans, pageRes, err := query.CollectionPaginate(
 		ctx,
 		q.k.spans,
-		req.Pagination, func(id uint64, span types.Span) (types.Span, error) {
+		&req.Pagination, func(id uint64, span types.Span) (types.Span, error) {
 			return q.k.GetSpan(ctx, id)
 		},
 	)
@@ -162,5 +170,5 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
 
-	return &types.QuerySpanListResponse{SpanList: spans, Pagination: pageRes}, nil
+	return &types.QuerySpanListResponse{SpanList: spans, Pagination: *pageRes}, nil
 }

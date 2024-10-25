@@ -303,7 +303,7 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 }
 
 // validateSideTxResponses validates the SideTxResponses and returns the txHash of the first invalid tx detected, plus the error
-func validateSideTxResponses(sideTxResponses []*sidetxs.SideTxResponse) ([]byte, error) {
+func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, error) {
 	// track votes of the validator
 	txVoteMap := make(map[string]struct{})
 

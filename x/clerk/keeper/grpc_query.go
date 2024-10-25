@@ -37,13 +37,12 @@ func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordReq
 
 	}
 
-	return &types.RecordResponse{Record: record}, nil
+	return &types.RecordResponse{Record: *record}, nil
 }
 
 func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
-
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
@@ -51,9 +50,9 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	newRecords := make([]*types.EventRecord, len(records))
+	newRecords := make([]types.EventRecord, len(records))
 	for i, record := range records {
-		newRecords[i] = &record
+		newRecords[i] = record
 	}
 
 	return &types.RecordListResponse{EventRecords: newRecords}, nil
@@ -70,9 +69,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	newRecords := make([]*types.EventRecord, len(records))
+	newRecords := make([]types.EventRecord, len(records))
 	for i, record := range records {
-		newRecords[i] = &record
+		newRecords[i] = record
 	}
 
 	return &types.RecordListWithTimeResponse{EventRecords: newRecords}, nil

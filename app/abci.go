@@ -142,7 +142,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		panicOnVoteExtensionsDisabled(ctx, req.Height)
 
 		// prepare the side tx responses
-		sideTxRes := make([]*sidetxs.SideTxResponse, 0)
+		sideTxRes := make([]sidetxs.SideTxResponse, 0)
 
 		// extract the ExtendedVoteInfo from the txs (it is encoded at the beginning, index 0)
 		var extVoteInfos []abci.ExtendedVoteInfo
@@ -189,7 +189,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 					TxHash: txHash,
 					Result: res,
 				}
-				sideTxRes = append(sideTxRes, &ve)
+				sideTxRes = append(sideTxRes, ve)
 			}
 
 		}

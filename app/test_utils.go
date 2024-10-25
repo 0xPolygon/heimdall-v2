@@ -120,9 +120,9 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	return app, db, logger
 }
 
-func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]*sidetxs.SideTxResponse) []byte {
+func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxResponse) []byte {
 	t.Helper()
-	responses := make([]*sidetxs.SideTxResponse, 0)
+	responses := make([]sidetxs.SideTxResponse, 0)
 	for _, r := range respVotes {
 		responses = append(responses, r...)
 	}

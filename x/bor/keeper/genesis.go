@@ -18,7 +18,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 	// add new span
 	for _, span := range data.Spans {
-		if err := k.AddNewRawSpan(ctx, span); err != nil {
+		if err := k.AddNewRawSpan(ctx, &span); err != nil {
 			panic(fmt.Sprintf("error while adding span during InitGenesis: %v", err))
 		}
 	}
@@ -44,10 +44,15 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 		panic(err)
 	}
 
-	types.SortSpansById(allSpans)
+	spans := make([]types.Span, len(allSpans))
+	for i, spanPtr := range allSpans {
+		spans[i] = *spanPtr
+	}
+
+	types.SortSpansById(spans)
 
 	return types.NewGenesisState(
 		params,
-		allSpans,
+		spans,
 	)
 }
