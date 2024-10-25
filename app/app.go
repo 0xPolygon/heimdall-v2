@@ -334,8 +334,7 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
-	// TODO HV2: stake and checkpoint keepers are circularly dependent
-	//  This is a workaround to solve it
+	// HV2: stake and checkpoint keepers are circularly dependent. This workaround solves it
 	app.StakeKeeper.SetCheckpointKeeper(app.CheckpointKeeper)
 
 	app.ModuleManager = module.NewManager(
