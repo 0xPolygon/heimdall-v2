@@ -25,11 +25,12 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	cmTypes "github.com/cometbft/cometbft/types"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 )
 
 const (
 	CometBFTNodeFlag       = "node"
-	WithHeimdallConfigFlag = "heimdall-config"
+	WithHeimdallConfigFlag = "app"
 	HomeFlag               = "home"
 	FlagClientHome         = "home-client"
 	OverwriteGenesisFlag   = "overwrite-genesis"
@@ -204,7 +205,12 @@ type CustomConfig struct {
 	Chain string `mapstructure:"chain"`
 }
 
-var conf CustomConfig
+type CustomAppConfig struct {
+	serverconfig.Config `mapstructure:",squash"`
+	Custom              CustomConfig `mapstructure:"custom"`
+}
+
+var conf CustomAppConfig
 
 // MainChainClient stores eth clie nt for Main chain Network
 var mainChainClient *ethclient.Client
@@ -271,8 +277,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	heimdallViper.AutomaticEnv()
 
 	if heimdallConfigFileFromFlag == "" {
-		heimdallViper.SetConfigName("heimdall-config") // name of config file (without extension)
-		heimdallViper.AddConfigPath(configDir)         // call multiple times to add many search paths
+		heimdallViper.SetConfigName("app")     // name of config file (without extension)
+		heimdallViper.AddConfigPath(configDir) // call multiple times to add many search paths
 	} else {
 		heimdallViper.SetConfigFile(heimdallConfigFileFromFlag) // set config file explicitly
 	}
@@ -312,63 +318,67 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// perform check for json logging
-	if conf.LogsType == "json" {
-		Logger = logger.NewTMJSONLogger(logger.NewSyncWriter(GetLogsWriter(conf.LogsWriterFile)))
+	if conf.Custom.LogsType == "json" {
+		Logger = logger.NewTMJSONLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
 	} else {
 		// default fallback
-		Logger = logger.NewTMLogger(logger.NewSyncWriter(GetLogsWriter(conf.LogsWriterFile)))
+		Logger = logger.NewTMLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
 	}
 
 	// perform checks for timeout
-	if conf.EthRPCTimeout == 0 {
+	if conf.Custom.EthRPCTimeout == 0 {
 		// fallback to default
 		Logger.Debug("Missing ETH RPC timeout or invalid value provided, falling back to default", "timeout", DefaultEthRPCTimeout)
-		conf.EthRPCTimeout = DefaultEthRPCTimeout
+		conf.Custom.EthRPCTimeout = DefaultEthRPCTimeout
 	}
 
-	if conf.BorRPCTimeout == 0 {
+	if conf.Custom.BorRPCTimeout == 0 {
 		// fallback to default
 		Logger.Debug("Missing BOR RPC timeout or invalid value provided, falling back to default", "timeout", DefaultBorRPCTimeout)
-		conf.BorRPCTimeout = DefaultBorRPCTimeout
+		conf.Custom.BorRPCTimeout = DefaultBorRPCTimeout
 	}
 
-	if conf.SHStateSyncedInterval == 0 {
+	if conf.Custom.SHStateSyncedInterval == 0 {
 		// fallback to default
 		Logger.Debug("Missing self-healing StateSynced interval or invalid value provided, falling back to default", "interval", DefaultSHStateSyncedInterval)
-		conf.SHStateSyncedInterval = DefaultSHStateSyncedInterval
+		conf.Custom.SHStateSyncedInterval = DefaultSHStateSyncedInterval
 	}
 
-	if conf.SHStakeUpdateInterval == 0 {
+	if conf.Custom.SHStakeUpdateInterval == 0 {
 		// fallback to default
 		Logger.Debug("Missing self-healing StakeUpdate interval or invalid value provided, falling back to default", "interval", DefaultSHStakeUpdateInterval)
-		conf.SHStakeUpdateInterval = DefaultSHStakeUpdateInterval
+		conf.Custom.SHStakeUpdateInterval = DefaultSHStakeUpdateInterval
 	}
 
-	if conf.SHMaxDepthDuration == 0 {
+	if conf.Custom.SHMaxDepthDuration == 0 {
 		// fallback to default
 		Logger.Debug("Missing self-healing max depth duration or invalid value provided, falling back to default", "duration", DefaultSHMaxDepthDuration)
-		conf.SHMaxDepthDuration = DefaultSHMaxDepthDuration
+		conf.Custom.SHMaxDepthDuration = DefaultSHMaxDepthDuration
 	}
 
 	var err error
-	if mainRPCClient, err = rpc.Dial(conf.EthRPCUrl); err != nil {
-		log.Fatalln("Unable to dial via ethClient", "URL", conf.EthRPCUrl, "chain", "eth", "error", err)
+	if mainRPCClient, err = rpc.Dial(conf.Custom.EthRPCUrl); err != nil {
+		log.Fatalln("Unable to dial via ethClient", "URL", conf.Custom.EthRPCUrl, "chain", "eth", "error", err)
 	}
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if polygonPosRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
+	if polygonPosRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
 	polygonPosClient = ethclient.NewClient(polygonPosRPCClient)
-	// Loading genesis doc
-	genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	GenesisDoc = *genDoc
+	// TODO HV2 - Why was this added? We are never using this
+	/*
+		// Loading genesis doc
+		genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		GenesisDoc = *genDoc
+	*/
 
 	// load pv file, unmarshall and set to privKeyObject
 	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
@@ -381,7 +391,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	privKeyObject = privVal.Key.PrivKey.Bytes()
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
-	switch conf.Chain {
+	// TODO HV2 - seems incomplete! Why?
+	switch conf.Custom.Chain {
 	case MainChain, MumbaiChain, AmoyChain:
 	default:
 
@@ -427,7 +438,7 @@ func GetDefaultHeimdallConfig() CustomConfig {
 
 // GetConfig returns cached configuration object
 func GetConfig() CustomConfig {
-	return conf
+	return conf.Custom
 }
 
 func GetGenesisDoc() cmTypes.GenesisDoc {
@@ -495,7 +506,7 @@ func GetMilestoneBorBlockHeight() uint64 {
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
-	chainMigration := chainManagerAddressMigrations[conf.Chain]
+	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
 		chainMigration = chainManagerAddressMigrations["default"]
 	}
@@ -511,7 +522,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	cmd.PersistentFlags().String(
 		WithHeimdallConfigFlag,
 		"",
-		"Override of Heimdall config file (default <home>/config/heimdall-config.json)",
+		"Override of Heimdall config file (default <home>/config/config.json)",
 	)
 
 	if err := v.BindPFlag(WithHeimdallConfigFlag, cmd.PersistentFlags().Lookup(WithHeimdallConfigFlag)); err != nil {
@@ -706,43 +717,43 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	}
 }
 
-func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
+func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
 	const logErrMsg = "Unable to read flag."
 
 	// get endpoint for ethereum chain from viper/cobra
 	stringConfgValue := v.GetString(MainRPCUrlFlag)
 	if stringConfgValue != "" {
-		c.EthRPCUrl = stringConfgValue
+		c.Custom.EthRPCUrl = stringConfgValue
 	}
 
 	// get endpoint for bor chain from viper/cobra
 	stringConfgValue = v.GetString(BorRPCUrlFlag)
 	if stringConfgValue != "" {
-		c.BorRPCUrl = stringConfgValue
+		c.Custom.BorRPCUrl = stringConfgValue
 	}
 
 	// get endpoint for cometBFT from viper/cobra
 	stringConfgValue = v.GetString(CometBFTNodeURLFlag)
 	if stringConfgValue != "" {
-		c.CometBFTRPCUrl = stringConfgValue
+		c.Custom.CometBFTRPCUrl = stringConfgValue
 	}
 
 	// get endpoint for CometBFT from viper/cobra
 	stringConfgValue = v.GetString(AmqpURLFlag)
 	if stringConfgValue != "" {
-		c.AmqpURL = stringConfgValue
+		c.Custom.AmqpURL = stringConfgValue
 	}
 
 	// get Heimdall REST server endpoint from viper/cobra
 	stringConfgValue = v.GetString(HeimdallServerURLFlag)
 	if stringConfgValue != "" {
-		c.HeimdallServerURL = stringConfgValue
+		c.Custom.HeimdallServerURL = stringConfgValue
 	}
 
 	// get Heimdall GRPC server endpoint from viper/cobra
 	stringConfgValue = v.GetString(GRPCServerURLFlag)
 	if stringConfgValue != "" {
-		c.GRPCServerURL = stringConfgValue
+		c.Custom.GRPCServerURL = stringConfgValue
 	}
 
 	// need this error for parsing Duration values
@@ -751,7 +762,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get check point pull interval from viper/cobra
 	stringConfgValue = v.GetString(CheckpointerPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.CheckpointPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.CheckpointPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", CheckpointerPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -760,7 +771,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get syncer pull interval from viper/cobra
 	stringConfgValue = v.GetString(SyncerPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.SyncerPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.SyncerPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", SyncerPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -769,7 +780,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get poll interval for ack service to send no-ack in case of no checkpoints from viper/cobra
 	stringConfgValue = v.GetString(NoACKPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.NoACKPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.NoACKPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", NoACKPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -778,7 +789,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get clerk poll interval from viper/cobra
 	stringConfgValue = v.GetString(ClerkPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.ClerkPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.ClerkPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", ClerkPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -787,7 +798,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get span poll interval from viper/cobra
 	stringConfgValue = v.GetString(SpanPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.SpanPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.SpanPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", SpanPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -796,7 +807,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get milestone poll interval from viper/cobra
 	stringConfgValue = v.GetString(MilestonePollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.MilestonePollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.MilestonePollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", MilestonePollIntervalFlag, "Error", err)
 			return err
 		}
@@ -805,7 +816,7 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get time that ack service waits to clear buffer and elect new proposer from viper/cobra
 	stringConfgValue = v.GetString(NoACKWaitTimeFlag)
 	if stringConfgValue != "" {
-		if c.NoACKWaitTime, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.NoACKWaitTime, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", NoACKWaitTimeFlag, "Error", err)
 			return err
 		}
@@ -814,96 +825,96 @@ func (c *CustomConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Log
 	// get mainchain gas limit from viper/cobra
 	uint64ConfgValue := v.GetUint64(MainchainGasLimitFlag)
 	if uint64ConfgValue != 0 {
-		c.MainchainGasLimit = uint64ConfgValue
+		c.Custom.MainchainGasLimit = uint64ConfgValue
 	}
 
 	// get mainchain max gas price from viper/cobra. if it is greater than  zero => set it as configuration parameter
 	int64ConfgValue := v.GetInt64(MainchainMaxGasPriceFlag)
 	if int64ConfgValue > 0 {
-		c.MainchainMaxGasPrice = int64ConfgValue
+		c.Custom.MainchainMaxGasPrice = int64ConfgValue
 	}
 
 	// get chain from viper/cobra flag
 	stringConfgValue = v.GetString(ChainFlag)
 	if stringConfgValue != "" {
-		c.Chain = stringConfgValue
+		c.Custom.Chain = stringConfgValue
 	}
 
 	stringConfgValue = v.GetString(LogsWriterFileFlag)
 	if stringConfgValue != "" {
-		c.LogsWriterFile = stringConfgValue
+		c.Custom.LogsWriterFile = stringConfgValue
 	}
 
 	return nil
 }
 
-func (c *CustomConfig) Merge(cc *CustomConfig) {
+func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 	if cc.EthRPCUrl != "" {
-		c.EthRPCUrl = cc.EthRPCUrl
+		c.Custom.EthRPCUrl = cc.EthRPCUrl
 	}
 
 	if cc.BorRPCUrl != "" {
-		c.BorRPCUrl = cc.BorRPCUrl
+		c.Custom.BorRPCUrl = cc.BorRPCUrl
 	}
 
 	if cc.CometBFTRPCUrl != "" {
-		c.CometBFTRPCUrl = cc.CometBFTRPCUrl
+		c.Custom.CometBFTRPCUrl = cc.CometBFTRPCUrl
 	}
 
 	if cc.AmqpURL != "" {
-		c.AmqpURL = cc.AmqpURL
+		c.Custom.AmqpURL = cc.AmqpURL
 	}
 
 	if cc.HeimdallServerURL != "" {
-		c.HeimdallServerURL = cc.HeimdallServerURL
+		c.Custom.HeimdallServerURL = cc.HeimdallServerURL
 	}
 
 	if cc.GRPCServerURL != "" {
-		c.GRPCServerURL = cc.GRPCServerURL
+		c.Custom.GRPCServerURL = cc.GRPCServerURL
 	}
 
 	if cc.MainchainGasLimit != 0 {
-		c.MainchainGasLimit = cc.MainchainGasLimit
+		c.Custom.MainchainGasLimit = cc.MainchainGasLimit
 	}
 
 	if cc.MainchainMaxGasPrice != 0 {
-		c.MainchainMaxGasPrice = cc.MainchainMaxGasPrice
+		c.Custom.MainchainMaxGasPrice = cc.MainchainMaxGasPrice
 	}
 
 	if cc.CheckpointPollInterval != 0 {
-		c.CheckpointPollInterval = cc.CheckpointPollInterval
+		c.Custom.CheckpointPollInterval = cc.CheckpointPollInterval
 	}
 
 	if cc.SyncerPollInterval != 0 {
-		c.SyncerPollInterval = cc.SyncerPollInterval
+		c.Custom.SyncerPollInterval = cc.SyncerPollInterval
 	}
 
 	if cc.NoACKPollInterval != 0 {
-		c.NoACKPollInterval = cc.NoACKPollInterval
+		c.Custom.NoACKPollInterval = cc.NoACKPollInterval
 	}
 
 	if cc.ClerkPollInterval != 0 {
-		c.ClerkPollInterval = cc.ClerkPollInterval
+		c.Custom.ClerkPollInterval = cc.ClerkPollInterval
 	}
 
 	if cc.SpanPollInterval != 0 {
-		c.SpanPollInterval = cc.SpanPollInterval
+		c.Custom.SpanPollInterval = cc.SpanPollInterval
 	}
 
 	if cc.MilestonePollInterval != 0 {
-		c.MilestonePollInterval = cc.MilestonePollInterval
+		c.Custom.MilestonePollInterval = cc.MilestonePollInterval
 	}
 
 	if cc.NoACKWaitTime != 0 {
-		c.NoACKWaitTime = cc.NoACKWaitTime
+		c.Custom.NoACKWaitTime = cc.NoACKWaitTime
 	}
 
 	if cc.Chain != "" {
-		c.Chain = cc.Chain
+		c.Custom.Chain = cc.Chain
 	}
 
 	if cc.LogsWriterFile != "" {
-		c.LogsWriterFile = cc.LogsWriterFile
+		c.Custom.LogsWriterFile = cc.LogsWriterFile
 	}
 }
 
@@ -930,7 +941,7 @@ func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 	}
 
 	if cometBFTConfig.P2P.Seeds == "" {
-		switch conf.Chain {
+		switch conf.Custom.Chain {
 		case MainChain:
 			cometBFTConfig.P2P.Seeds = DefaultMainnetSeeds
 		case MumbaiChain:
@@ -956,7 +967,7 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 
 // SetTestConfig sets test configuration
 func SetTestConfig(_conf CustomConfig) {
-	conf = _conf
+	conf.Custom = _conf
 }
 
 // TEST PURPOSE ONLY

@@ -56,12 +56,12 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 		{chain: "local", viper: "", def: "", value: ""},
 	}
 
-	oldConf := conf.Chain
+	oldConf := conf.Custom.Chain
 	viperObj := viper.New()
 	cometBFTConfig := cfg.DefaultConfig()
 
 	for _, ts := range data {
-		conf.Chain = ts.chain
+		conf.Custom.Chain = ts.chain
 		cometBFTConfig.P2P.Seeds = ts.def
 		viperObj.Set(SeedsFlag, ts.viper)
 		UpdateCometBFTConfig(cometBFTConfig, viperObj)
@@ -71,5 +71,5 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 		}
 	}
 
-	conf.Chain = oldConf
+	conf.Custom.Chain = oldConf
 }
