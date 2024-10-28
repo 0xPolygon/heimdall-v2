@@ -14,7 +14,7 @@ GOLANG_CROSS_VERSION  ?= v1.21.0
 
 # Fetch git latest tag
 LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))
-VERSION := $(shell shell git describe --tags | sed 's/^v//')
+VERSION := $(shell git describe --tags | sed 's/^v//')
 COMMIT := $(shell git log -1 --format='%H')
 
 ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \

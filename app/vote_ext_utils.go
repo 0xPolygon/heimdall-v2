@@ -74,8 +74,8 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 			return fmt.Errorf("received empty vote extension signature at height %d from validator %s", reqHeight, proposerAdd)
 		}
 
-		var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-		if err = proto.Unmarshal(vote.VoteExtension, &consolidatedSideTxResponse); err != nil {
+		consolidatedSideTxResponse := new(sidetxs.ConsolidatedSideTxResponse)
+		if err = consolidatedSideTxResponse.Unmarshal(vote.VoteExtension); err != nil {
 			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
 
@@ -209,7 +209,7 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 
 	logger.Debug(fmt.Sprintf("Height %d: approved %d txs, rejected %d txs, skipped %d txs. ", currentHeight, len(approvedTxs), len(rejectedTxs), len(skippedTxs)))
 
-	// TODO HV2: currently, there is no functional difference between a tc being rejected or skipped
+	// HV2: currently, there is no functional difference between a tc being rejected or skipped (only used for debugging)
 	return approvedTxs, rejectedTxs, skippedTxs, nil
 }
 
@@ -220,9 +220,6 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 	var blockHash []byte                                     // store the block hash to make sure all votes are for the same block
 
 	for _, vote := range extVoteInfo {
-
-		var ve sidetxs.ConsolidatedSideTxResponse
-
 		// make sure the BlockIdFlag is valid
 		if !isBlockIdFlagValid(vote.BlockIdFlag) {
 			return nil, fmt.Errorf("received vote with invalid block ID %s flag at height %d", vote.BlockIdFlag.String(), currentHeight-1)
@@ -232,7 +229,8 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 			continue
 		}
 
-		err := proto.Unmarshal(vote.VoteExtension, &ve)
+		ve := new(sidetxs.ConsolidatedSideTxResponse)
+		err := ve.Unmarshal(vote.VoteExtension)
 		if err != nil {
 			return nil, err
 		}
