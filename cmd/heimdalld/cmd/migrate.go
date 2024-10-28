@@ -15,6 +15,7 @@ import (
 	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
 	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
 	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
+	verify "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/verify"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -94,7 +95,6 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("genesis file does not exist: %s", genesisFileV1)
 	}
 
-	// TODO HV2: This should be done in root command PreRunE?
 	interfaceRegistry, err := codecTypes.NewInterfaceRegistryWithOptions(codecTypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
@@ -116,16 +116,75 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	v036gov.RegisterLegacyAminoCodec(legacyAmino)
 	v036params.RegisterLegacyAminoCodec(legacyAmino)
 
+	genesisFileV2, err := performMigrations(genesisFileV1, chainId, genesisTime, initialHeight)
+	if err != nil {
+		logger.Error("Migration failed", "error", err)
+		return err
+	}
+
+	return verify.VerifyMigration(genesisFileV1, genesisFileV2, logger)
+}
+
+// performMigrations loads v1 genesis file, executes all the migration functions on the genesis data.
+// Stores the new v2 genesis file on disk.
+func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight uint64) (string, error) {
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
 	genesisData, err := utils.LoadJSONFromFile(genesisFileV1)
 	if err != nil {
-		return fmt.Errorf("failed to load genesis file: %w", err)
+		return "", fmt.Errorf("failed to load genesis file: %w", err)
 	}
 
-	if err := performMigrations(genesisData, initialHeight); err != nil {
-		logger.Error("Migration failed", "error", err)
-		return err
+	logger.Info("Performing custom migrations...")
+
+	if err := addMissingCometBFTConsensusParams(genesisData, initialHeight); err != nil {
+		return "", err
+	}
+
+	if err := removeUnusedTendermintConsensusParams(genesisData); err != nil {
+		return "", err
+	}
+
+	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
+	// they are deleted from the genesis during auth module migration
+	if err := migrateBankModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateAuthModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateGovModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateClerkModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateBorModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateCheckpointModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateTopupModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateMilestoneModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateChainmanagerModule(genesisData); err != nil {
+		return "", err
+	}
+
+	if err := migrateStakeModule(genesisData); err != nil {
+		return "", err
 	}
 
 	genesisData["chain_id"] = chainId
@@ -140,70 +199,12 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	logger.Info("Saving migrated genesis file...", "file", genesisFileV2)
 
 	if err := utils.SaveJSONToFile(genesisData, genesisFileV2); err != nil {
-		return fmt.Errorf("failed to save migrated genesis file: %w", err)
+		return "", fmt.Errorf("failed to save migrated genesis file: %w", err)
 	}
 
 	logger.Info("Migration completed successfully")
 
-	return nil
-}
-
-// performMigrations executes all the migration functions on the provided genesis data.
-// The modifications are done in-place.
-func performMigrations(genesisData map[string]interface{}, initialHeight uint64) error {
-	logger.Info("Performing custom migrations...")
-
-	if err := addMissingCometBFTConsensusParams(genesisData, initialHeight); err != nil {
-		return err
-	}
-
-	if err := removeUnusedTendermintConsensusParams(genesisData); err != nil {
-		return err
-	}
-
-	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
-	// they are deleted from the genesis during auth module migration
-	if err := migrateBankModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateAuthModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateGovModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateClerkModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateBorModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateCheckpointModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateTopupModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateMilestoneModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateChainmanagerModule(genesisData); err != nil {
-		return err
-	}
-
-	if err := migrateStakeModule(genesisData); err != nil {
-		return err
-	}
-
-	return nil
+	return genesisFileV2, nil
 }
 
 // migrateStakeModule renames the staking module to stake, renames current_val_set to current_validator_set
@@ -792,6 +793,8 @@ func addMissingCometBFTConsensusParams(genesisData map[string]interface{}, initi
 		return err
 	}
 
+	logger.Info("CometBFT consensus parameters added successfully")
+
 	return nil
 }
 
@@ -806,6 +809,8 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	if err := utils.DeleteProperty(genesisData, "consensus_params.block", "time_iota_ms"); err != nil {
 		return err
 	}
+
+	logger.Info("Unused Tendermint consensus parameters removed successfully")
 
 	return nil
 }
