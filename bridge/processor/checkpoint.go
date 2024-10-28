@@ -535,6 +535,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 	sideTxData := sideMsg.GetSideSignBytes()
 
 	// TODO HV2 - `FetchSideTxSigs()` is not implemented in the helper package.
+	// https://polygon.atlassian.net/browse/POS-2713 for more information.
 	/*
 		// get sigs
 		sigs, err := helper.FetchSideTxSigs(cp.httpClient, height, tx.Tx.Hash(), sideTxData)

@@ -86,8 +86,11 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 		return &sdk.TxResponse{}, err
 	}
 	txBldr.SetMemo(viper.GetString("memo"))
+
+	// TODO HV2 - should we keep this limit?
 	txBldr.SetFeeAmount(ante.DefaultFeeWantedPerTx)
-	// TODO HV2 - what should be the gas limit and fee amount? How?
+
+	// TODO HV2 - what should be the gas limit?
 	/*
 		txBldr.SetGasLimit(gas)
 	*/
