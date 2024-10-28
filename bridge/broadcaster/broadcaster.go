@@ -10,6 +10,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
+	cometTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
@@ -87,13 +88,9 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	}
 	txBldr.SetMemo(viper.GetString("memo"))
 
+	txBldr.SetGasLimit(uint64(cometTypes.DefaultBlockParams().MaxGas))
 	// TODO HV2 - should we keep this limit?
 	txBldr.SetFeeAmount(ante.DefaultFeeWantedPerTx)
-
-	// TODO HV2 - what should be the gas limit?
-	/*
-		txBldr.SetGasLimit(gas)
-	*/
 
 	// create a factory
 	txf := clienttx.Factory{}.
