@@ -134,12 +134,7 @@ func initCometBFTConfig() *cmtcfg.Config {
 // initAppConfig helps to override default appConfig template and configs.
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
-	type CustomAppConfig struct {
-		serverconfig.Config `mapstructure:",squash"`
-		Custom              helper.CustomConfig `mapstructure:"custom"`
-	}
-
-	customAppConfig := CustomAppConfig{
+	customAppConfig := helper.CustomAppConfig{
 		Config: *serverconfig.DefaultConfig(),
 		Custom: helper.GetDefaultHeimdallConfig(),
 	}

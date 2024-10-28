@@ -24,7 +24,7 @@ commenting it out for now, will remove it later (after testing)
 func heimdallInit(_ *server.Context, cdc *codec.LegacyAmino, initConfig *initHeimdallConfig, config *cmtcfg.Config, mbm module.BasicManager, cliCdc codec.Codec) error {
 	conf := helper.GetDefaultHeimdallConfig()
 	conf.Chain = initConfig.chain
-	WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "config/heimdall-config.toml"), conf)
+	WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "config/app.toml"), conf)
 
 	nodeID, _, _, err := InitializeNodeValidatorFiles(config)
 	if err != nil {
