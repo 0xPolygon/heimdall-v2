@@ -10,7 +10,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 
 	params := types.DefaultParams()
 	genesisState := types.NewGenesisState(
-		&params,
+		params,
 	)
 
 	keeper.InitGenesis(ctx, &genesisState)

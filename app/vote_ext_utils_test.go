@@ -401,7 +401,7 @@ func TestAggregateVotes(t *testing.T) {
 
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
-		SideTxResponses: []*sidetxs.SideTxResponse{
+		SideTxResponses: []sidetxs.SideTxResponse{
 			{
 				TxHash: txHashBytes,
 				Result: sidetxs.Vote_VOTE_YES,
@@ -445,13 +445,13 @@ func TestAggregateVotes(t *testing.T) {
 func TestValidateSideTxResponses(t *testing.T) {
 	tests := []struct {
 		name            string
-		sideTxResponses []*sidetxs.SideTxResponse
+		sideTxResponses []sidetxs.SideTxResponse
 		expectedError   bool
 		expectedTxHash  []byte
 	}{
 		{
 			name: "no duplicates",
-			sideTxResponses: []*sidetxs.SideTxResponse{
+			sideTxResponses: []sidetxs.SideTxResponse{
 				{TxHash: common.Hex2Bytes(TxHash1)},
 				{TxHash: common.Hex2Bytes(TxHash2)},
 				{TxHash: common.Hex2Bytes(TxHash3)},
@@ -461,7 +461,7 @@ func TestValidateSideTxResponses(t *testing.T) {
 		},
 		{
 			name: "one duplicate",
-			sideTxResponses: []*sidetxs.SideTxResponse{
+			sideTxResponses: []sidetxs.SideTxResponse{
 				{TxHash: common.Hex2Bytes(TxHash1)},
 				{TxHash: common.Hex2Bytes(TxHash2)},
 				{TxHash: common.Hex2Bytes(TxHash3)},
@@ -552,7 +552,7 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator) abci.ExtendedVoteInfo {
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
-		SideTxResponses: []*sidetxs.SideTxResponse{
+		SideTxResponses: []sidetxs.SideTxResponse{
 			{
 				TxHash: txHashBytes,
 				Result: sidetxs.Vote_VOTE_YES,

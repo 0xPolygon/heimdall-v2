@@ -219,11 +219,11 @@ func (s *KeeperTestSuite) TestGetCheckpointList() {
 		require.NoError(err)
 	}
 
-	res, err := queryClient.GetCheckpointList(ctx, &types.QueryCheckpointListRequest{Pagination: &query.PageRequest{Limit: 5}})
+	res, err := queryClient.GetCheckpointList(ctx, &types.QueryCheckpointListRequest{Pagination: query.PageRequest{Limit: 5}})
 	require.NoError(err)
 	require.Equal(expCheckpoints, res.CheckpointList)
 
-	res, err = queryClient.GetCheckpointList(ctx, &types.QueryCheckpointListRequest{Pagination: &query.PageRequest{Limit: 2}})
+	res, err = queryClient.GetCheckpointList(ctx, &types.QueryCheckpointListRequest{Pagination: query.PageRequest{Limit: 2}})
 	require.NoError(err)
 	require.Equal(expCheckpoints[:2], res.CheckpointList)
 }

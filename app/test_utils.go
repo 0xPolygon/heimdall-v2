@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -22,7 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -136,10 +136,10 @@ func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxRespo
 	return voteExtension
 }
 
-func createSideTxResponses(vote sidetxs.Vote, txHashes ...string) []*sidetxs.SideTxResponse {
-	responses := make([]*sidetxs.SideTxResponse, len(txHashes))
+func createSideTxResponses(vote sidetxs.Vote, txHashes ...string) []sidetxs.SideTxResponse {
+	responses := make([]sidetxs.SideTxResponse, len(txHashes))
 	for i, txHash := range txHashes {
-		responses[i] = &sidetxs.SideTxResponse{
+		responses[i] = sidetxs.SideTxResponse{
 			TxHash: common.Hex2Bytes(txHash),
 			Result: vote,
 		}

@@ -7,7 +7,11 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	keeper, ctx, require := s.borKeeper, s.ctx, s.Require()
 
 	params := types.DefaultParams()
-	genSpans := s.genTestSpans(5)
+	genSpansPtr := s.genTestSpans(5)
+	genSpans := make([]types.Span, len(genSpansPtr))
+	for i, spanPtr := range genSpansPtr {
+		genSpans[i] = *spanPtr
+	}
 
 	genesisState := &types.GenesisState{
 		Params: params,
