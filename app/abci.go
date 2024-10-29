@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -30,10 +29,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// prepare the proposal with the vote extensions and the validators set's votes
 		var txs [][]byte
-		// TODO HV2: shouldn't we be using proto.Marshal instead of json.Marshal?
-		bz, err := json.Marshal(req.LocalLastCommit.Votes)
+		bz, err := req.LocalLastCommit.Marshal()
 		if err != nil {
-			logger.Error("Error occurred while marshaling the ExtendedVoteInfo in prepare proposal", "error", err)
+			logger.Error("Error occurred while marshaling the LocalLastCommit in prepare proposal", "error", err)
 			return nil, err
 		}
 		txs = append(txs, bz)
@@ -89,19 +87,23 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		// extract the ExtendedVoteInfo from the txs (it is encoded at the beginning, index 0)
-		var extVoteInfo []abci.ExtendedVoteInfo
-		extendedVoteTx := req.Txs[0]
-		// TODO HV2: shouldn't we be using proto.Unmarshal instead of json.Unmarshal?
-		if err := json.Unmarshal(extendedVoteTx, &extVoteInfo); err != nil {
+		// extract the ExtendedCommitInfo from the txs (it is encoded at the beginning, index 0)
+		extCommitInfo := new(abci.ExtendedCommitInfo)
+		extendedCommitTx := req.Txs[0]
+		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
 			// returning an error here would cause consensus to panic. Reject the proposal instead if a proposer
 			// deliberately does not include ExtendedVoteInfo at the beginning of the txs slice
-			logger.Error("Error occurred while decoding ExtendedVoteInfo", "error", err)
+			logger.Error("Error occurred while decoding ExtendedCommitInfo", "error", err)
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
+		if extCommitInfo.Round != req.ProposedLastCommit.Round {
+			logger.Error("Received commit round does not match expected round", "expected", req.ProposedLastCommit.Round, "got", extCommitInfo.Round)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		// validate the vote extensions
-		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extVoteInfo, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -145,15 +147,14 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		sideTxRes := make([]sidetxs.SideTxResponse, 0)
 
 		// extract the ExtendedVoteInfo from the txs (it is encoded at the beginning, index 0)
-		var extVoteInfos []abci.ExtendedVoteInfo
+		extCommitInfo := new(abci.ExtendedCommitInfo)
 
 		// check whether ExtendedVoteInfo is encoded at the beginning
 		bz := req.Txs[0]
-		// TODO HV2: shouldn't we be using proto.Unmarshal instead of json.Unmarshal?
-		if err := json.Unmarshal(bz, &extVoteInfos); err != nil {
-			logger.Error("Error occurred while decoding ExtendedVoteInfo", "error", err)
+		if err := extCommitInfo.Unmarshal(bz); err != nil {
+			logger.Error("Error occurred while decoding ExtendedCommitInfo", "error", err)
 			// abnormal behavior since the block got >2/3 pre-votes, so the special tx should have been added
-			panic("error occurred while decoding ExtendedVoteInfos, they should have be encoded in the beginning of txs slice")
+			panic("error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
 		}
 
 		txs := req.Txs[1:]
@@ -201,9 +202,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			BlockHash:       req.Hash,
 		}
 
-		bz, err := proto.Marshal(&consolidatedSideTxRes)
+		bz, err := consolidatedSideTxRes.Marshal()
 		if err != nil {
-			logger.Error("Error occurred while marshalling the VoteExtension in ExtendVoteHandler", "error", err)
+			logger.Error("Error occurred while marshalling the ConsolidatedSideTxResponse in ExtendVoteHandler", "error", err)
 			return nil, err
 		}
 
@@ -261,7 +262,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	panicOnVoteExtensionsDisabled(ctx, req.Height+1)
 
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
-	var extVoteInfo []abci.ExtendedVoteInfo
+	extCommitInfo := new(abci.ExtendedCommitInfo)
 
 	// req.Txs must have non-zero length
 	if len(req.Txs) == 0 {
@@ -270,11 +271,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	bz := req.Txs[0]
-	// TODO HV2: shouldn't we be using proto.Unmarshal instead of json.Unmarshal?
-	if err := json.Unmarshal(bz, &extVoteInfo); err != nil {
-		logger.Error("Error occurred while unmarshalling ExtendedVoteInfo", "error", err)
+	if err := extCommitInfo.Unmarshal(bz); err != nil {
+		logger.Error("Error occurred while unmarshalling ExtendedCommitInfo", "error", err)
 		return nil, err
 	}
+
+	extVoteInfo := extCommitInfo.Votes
 
 	if req.Height == retrieveVoteExtensionsEnableHeight(ctx) {
 		if len(extVoteInfo) != 0 {

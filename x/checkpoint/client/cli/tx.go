@@ -83,7 +83,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 
 				msg := checkpointTypes.NewMsgCheckpointBlock(proposer.Validator.Signer, nextCheckpoint.Checkpoint.StartBlock, nextCheckpoint.Checkpoint.EndBlock, nextCheckpoint.Checkpoint.RootHash, nextCheckpoint.Checkpoint.AccountRootHash, borChainID)
 
-				return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
+				return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 			}
 
 			// get and check proposer
@@ -129,7 +129,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 
 			msg := checkpointTypes.NewMsgCheckpointBlock(proposer, startBlock, endBlock, common.Hex2Bytes(rootHashStr), common.Hex2Bytes(accountRootHashStr), borChainID)
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
+			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},
 	}
 

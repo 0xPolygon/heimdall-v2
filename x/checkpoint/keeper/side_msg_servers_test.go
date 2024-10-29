@@ -10,7 +10,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
-	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
@@ -34,7 +33,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 
 	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := testutil.GenRandCheckpoint(start, maxSize)
 
 	borChainId := "1234"
 
@@ -59,7 +58,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash, nil)
 
-		result := sideHandler(ctx, &msgCheckpoint)
+		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_YES)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
@@ -86,7 +85,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(nil, nil)
 
-		result := sideHandler(ctx, &msgCheckpoint)
+		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
@@ -113,7 +112,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return([]byte{1}, nil)
 
-		result := sideHandler(ctx, &msgCheckpoint)
+		result := sideHandler(ctx, msgCheckpoint)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
@@ -136,7 +135,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpointAck() {
 
 	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := testutil.GenRandCheckpoint(start, maxSize)
 	headerId := uint64(1)
 
 	s.Run("Success", func() {
@@ -205,7 +204,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := testutil.GenRandCheckpoint(start, maxSize)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
@@ -223,7 +222,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_NO)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_NO)
 
 		doExist, err := keeper.HasCheckpointInBuffer(ctx)
 		require.NoError(err)
@@ -244,7 +243,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		bufferedHeader, err := keeper.GetCheckpointFromBuffer(ctx)
 		require.Equal(bufferedHeader.StartBlock, header.StartBlock)
@@ -263,7 +262,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 	start := uint64(0)
 	maxSize := uint64(256)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := testutil.GenRandCheckpoint(start, maxSize)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
 	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
@@ -306,7 +305,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			"1234",
 		)
 
-		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),
@@ -353,7 +352,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 	})
 
 	s.Run("InvalidEndBlock", func() {
-		header2 := chSim.GenRandCheckpoint(header.EndBlock+1, maxSize)
+		header2 := testutil.GenRandCheckpoint(header.EndBlock+1, maxSize)
 		checkpointNumber = checkpointNumber + 1
 		msgCheckpoint := types.NewMsgCheckpointBlock(
 			header2.Proposer,
@@ -364,7 +363,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 			"1234",
 		)
 
-		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),
@@ -391,7 +390,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 		latestCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
 
-		header5 := chSim.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
+		header5 := testutil.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
 		checkpointNumber = checkpointNumber + 1
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(
@@ -405,7 +404,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		ctx = ctx.WithBlockHeight(int64(1))
 
-		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),
@@ -437,7 +436,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 		latestCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
 
-		header6 := chSim.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
+		header6 := testutil.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
 		checkpointNumber = checkpointNumber + 1
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(
@@ -451,7 +450,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpointAck() {
 
 		ctx = ctx.WithBlockHeight(int64(1))
 
-		postHandler(ctx, &msgCheckpoint, sidetxs.Vote_VOTE_YES)
+		postHandler(ctx, msgCheckpoint, sidetxs.Vote_VOTE_YES)
 
 		msgCheckpointAck := types.NewMsgCheckpointAck(
 			common.HexToAddress("0xdummyAddress123").String(),

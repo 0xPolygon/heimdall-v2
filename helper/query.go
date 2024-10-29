@@ -8,7 +8,7 @@ import (
 	abci "github.com/cometbft/cometbft/abci/types"
 	httpClient "github.com/cometbft/cometbft/rpc/client/http"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
-	tmTypes "github.com/cometbft/cometbft/types"
+	cmtTypes "github.com/cometbft/cometbft/types"
 	cosmosContext "github.com/cosmos/cosmos-sdk/client"
 	"github.com/pkg/errors"
 )
@@ -227,7 +227,7 @@ func GetBlock(cliCtx cosmosContext.Context, height int64) (*ctypes.ResultBlock, 
 }
 
 // GetBlockWithClient gets a block given its height
-func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, error) {
+func GetBlockWithClient(client *httpClient.HTTP, height int64) (*cmtTypes.Block, error) {
 	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
 	defer cancel()
 
@@ -238,10 +238,10 @@ func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, 
 	}
 
 	// subscriber
-	subscriber := fmt.Sprintf("new-block-%v", height)
+	subscriber := fmt.Sprintf("new-block-%d", height)
 
 	// query for event
-	query := tmTypes.QueryForEvent(tmTypes.EventNewBlock).String()
+	query := cmtTypes.QueryForEvent(cmtTypes.EventNewBlock).String()
 
 	// register for the next event of this type
 	eventCh, err := client.Subscribe(c, subscriber, query)
@@ -261,7 +261,7 @@ func GetBlockWithClient(client *httpClient.HTTP, height int64) (*tmTypes.Block, 
 		case event := <-eventCh:
 			eventData := event.Data
 			switch t := eventData.(type) {
-			case tmTypes.EventDataNewBlock:
+			case cmtTypes.EventDataNewBlock:
 				if t.Block.Height == height {
 					return t.Block, nil
 				}
@@ -288,7 +288,7 @@ func GetFinalizeBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event
 	subscriber := fmt.Sprintf("finalize-block-%v", height)
 
 	// query for event
-	query := tmTypes.QueryForEvent(tmTypes.EventNewBlock).String()
+	query := cmtTypes.QueryForEvent(cmtTypes.EventNewBlock).String()
 
 	// register for the next event of this type
 	eventCh, err := client.Subscribe(c, subscriber, query)
@@ -309,7 +309,7 @@ func GetFinalizeBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event
 		case event := <-eventCh:
 			eventData := event.Data
 			switch t := eventData.(type) {
-			case tmTypes.EventDataNewBlock:
+			case cmtTypes.EventDataNewBlock:
 				if t.Block.Height == height {
 					// TODO HV2 Fetching all the events ,not the begin block one
 					return t.ResultFinalizeBlock.GetEvents(), nil
@@ -321,4 +321,60 @@ func GetFinalizeBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event
 			return nil, errors.New("timed out waiting for event")
 		}
 	}
+}
+
+// GetBeginBlockEvents get block through per height
+func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
+	var events []abci.Event
+	var err error
+
+	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
+	defer cancel()
+
+	// get block using client
+	blockResults, err := client.BlockResults(c, &height)
+	if err == nil && blockResults != nil {
+		events = blockResults.FinalizeBlockEvents
+		return events, nil
+	}
+
+	// subscriber
+	subscriber := fmt.Sprintf("new-block-%v", height)
+
+	// query for event
+	query := cmtTypes.QueryForEvent(cmtTypes.EventNewBlock).String()
+
+	// register for the next event of this type
+	eventCh, err := client.Subscribe(c, subscriber, query)
+	if err != nil {
+		return events, errors.Wrap(err, "failed to subscribe")
+	}
+
+	// unsubscribe query
+	defer func() {
+		if unsubscribeErr := client.Unsubscribe(c, subscriber, query); unsubscribeErr != nil && err == nil {
+			err = unsubscribeErr
+			events = nil // Set events to nil when returning an error
+		}
+	}()
+
+	for {
+		select {
+		case event := <-eventCh:
+			eventData := event.Data
+			switch t := eventData.(type) {
+			case cmtTypes.EventDataNewBlock:
+				if t.Block.Height == height {
+					events = t.ResultFinalizeBlock.GetEvents()
+					return events, err
+				}
+			default:
+				return events, errors.New("timed out waiting for event")
+			}
+		case <-c.Done():
+			return events, errors.New("timed out waiting for event")
+		}
+	}
+
+	return events, err
 }

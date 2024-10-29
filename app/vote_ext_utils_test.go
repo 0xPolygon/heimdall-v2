@@ -412,7 +412,7 @@ func TestAggregateVotes(t *testing.T) {
 	}
 
 	// marshal it into Protobuf bytes
-	voteExtensionBytes, err := proto.Marshal(&voteExtensionProto)
+	voteExtensionBytes, err := voteExtensionProto.Marshal()
 	require.NoError(t, err)
 
 	val1, err := address.NewHexCodec().StringToBytes(ValAddr1)
@@ -563,7 +563,7 @@ func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashByte
 	}
 
 	// marshal it into Protobuf bytes
-	voteExtensionBytes, _ := proto.Marshal(&voteExtensionProto)
+	voteExtensionBytes, _ := voteExtensionProto.Marshal()
 
 	cve := cmtTypes.CanonicalVoteExtension{
 		Extension: voteExtensionBytes,

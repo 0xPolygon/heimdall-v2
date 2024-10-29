@@ -21,8 +21,8 @@ func NewMsgMilestoneBlock(
 	hash []byte,
 	borChainID string,
 	milestoneID string,
-) MsgMilestone {
-	return MsgMilestone{
+) *MsgMilestone {
+	return &MsgMilestone{
 		Proposer:    util.FormatAddress(proposer),
 		StartBlock:  startBlock,
 		EndBlock:    endBlock,
@@ -57,8 +57,8 @@ func (msg MsgMilestone) ValidateBasic(ac address.Codec) error {
 
 var _ sdk.Msg = &MsgMilestoneTimeout{}
 
-func NewMsgMilestoneTimeout(from string) MsgMilestoneTimeout {
-	return MsgMilestoneTimeout{
+func NewMsgMilestoneTimeout(from string) *MsgMilestoneTimeout {
+	return &MsgMilestoneTimeout{
 		From: util.FormatAddress(from),
 	}
 }
