@@ -15,6 +15,7 @@ import (
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	topuptypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -144,13 +145,14 @@ func TestBroadcastToHeimdall(t *testing.T) {
 			msg:  msgs[1],
 			op: func(hApp *app.HeimdallApp) error {
 				acc := hApp.AccountKeeper.GetAccount(sdkCtx, sdk.AccAddress(heimdallAddressBytes))
-				// TODO HV2 - not sure how to set balance to 0
-				/*
-					// reduce account balance to 0
-					if err := acc.SetCoins(sdk.Coins{}); err != nil {
-						return err
-					}
-				*/
+
+				accountBalance := hApp.BankKeeper.GetBalance(sdkCtx, sdk.AccAddress(heimdallAddressBytes), authTypes.FeeToken)
+				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, sdk.AccAddress(heimdallAddressBytes), topuptypes.ModuleName, sdk.Coins{accountBalance})
+				require.NoError(t, err)
+
+				err = hApp.BankKeeper.BurnCoins(sdkCtx, authTypes.FeeToken, sdk.Coins{accountBalance})
+				require.NoError(t, err)
+
 				hApp.AccountKeeper.SetAccount(sdkCtx, acc)
 				return nil
 			},
@@ -158,13 +160,15 @@ func TestBroadcastToHeimdall(t *testing.T) {
 			expErr:     true,
 			tearDown: func(hApp *app.HeimdallApp) error {
 				acc := hApp.AccountKeeper.GetAccount(sdkCtx, sdk.AccAddress(heimdallAddressBytes))
-				// TODO HV2 - not sure how to reset account balance
-				/*
-					// reset account balance
-					if err := acc.SetCoins(sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}); err != nil {
-						return err
-					}
-				*/
+
+				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}
+
+				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, sdk.AccAddress(heimdallAddressBytes), topuptypes.ModuleName, coins)
+				require.NoError(t, err)
+
+				err = hApp.BankKeeper.BurnCoins(sdkCtx, authTypes.FeeToken, coins)
+				require.NoError(t, err)
+
 				hApp.AccountKeeper.SetAccount(sdkCtx, acc)
 				return nil
 			},
