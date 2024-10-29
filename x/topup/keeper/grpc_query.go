@@ -212,7 +212,7 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 
 	// build response and return
 	dividendAccountProof := &types.QueryAccountProofResponse{
-		Proof: &types.AccountProof{
+		Proof: types.AccountProof{
 			Address:      req.Address,
 			AccountProof: merkleProof,
 			Index:        index,

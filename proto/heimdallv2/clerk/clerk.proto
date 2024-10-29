@@ -12,15 +12,18 @@ message EventRecord {
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.equal) = false;
 
-  uint64 id = 1;
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
   string contract = 2 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  bytes data = 3;
-  string tx_hash = 4;
-  uint64 log_index = 5;
-  string bor_chain_id = 6;
-  google.protobuf.Timestamp record_time = 7
-      [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  bytes data = 3 [ (amino.dont_omitempty) = true ];
+  string tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
+  google.protobuf.Timestamp record_time = 7 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 }

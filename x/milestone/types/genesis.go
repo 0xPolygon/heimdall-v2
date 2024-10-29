@@ -9,14 +9,14 @@ import (
 )
 
 // NewGenesisState creates a new genesis state.
-func NewGenesisState(params *Params) GenesisState {
+func NewGenesisState(params Params) GenesisState {
 	return GenesisState{Params: params}
 }
 
 // DefaultGenesisState gets the raw genesis raw message for testing
 func DefaultGenesisState() *GenesisState {
 	params := DefaultParams()
-	return &GenesisState{Params: &params}
+	return &GenesisState{Params: params}
 }
 
 // GetGenesisStateFromAppState returns x/Milestone GenesisState given raw application

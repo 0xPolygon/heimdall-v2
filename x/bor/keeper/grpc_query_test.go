@@ -24,7 +24,7 @@ func (s *KeeperTestSuite) TestGetLatestSpan() {
 	}
 
 	res, err = queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
-	expRes := &types.QueryLatestSpanResponse{Span: spans[len(spans)-1]}
+	expRes := &types.QueryLatestSpanResponse{Span: *spans[len(spans)-1]}
 	require.NoError(err)
 	require.Equal(expRes, res)
 }
@@ -63,7 +63,7 @@ func (s *KeeperTestSuite) TestGetNextSpan() {
 	require.NoError(err)
 
 	expRes := &types.QueryNextSpanResponse{
-		Span: &types.Span{
+		Span: types.Span{
 			Id:                req.SpanId,
 			StartBlock:        req.StartBlock,
 			EndBlock:          req.StartBlock + params.SpanDuration - 1,
@@ -101,7 +101,7 @@ func (s *KeeperTestSuite) TestGetParams() {
 
 	res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
 	require.NoError(err)
-	require.Equal(&types.QueryParamsResponse{Params: &params}, res)
+	require.Equal(&types.QueryParamsResponse{Params: params}, res)
 }
 
 func (s *KeeperTestSuite) TestGetSpanById() {
@@ -128,11 +128,11 @@ func (s *KeeperTestSuite) TestGetSpanList() {
 		require.NoError(err)
 	}
 
-	res, err := queryClient.GetSpanList(ctx, &types.QuerySpanListRequest{Pagination: &query.PageRequest{Limit: 5}})
+	res, err := queryClient.GetSpanList(ctx, &types.QuerySpanListRequest{Pagination: query.PageRequest{Limit: 5}})
 	require.NoError(err)
 	require.Equal(expSpans, res.SpanList)
 
-	res, err = queryClient.GetSpanList(ctx, &types.QuerySpanListRequest{Pagination: &query.PageRequest{Limit: 2}})
+	res, err = queryClient.GetSpanList(ctx, &types.QuerySpanListRequest{Pagination: query.PageRequest{Limit: 2}})
 	require.NoError(err)
 	require.Equal(expSpans[:2], res.SpanList)
 }

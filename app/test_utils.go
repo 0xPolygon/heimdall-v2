@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -22,7 +23,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -119,9 +119,9 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	return app, db, logger
 }
 
-func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]*sidetxs.SideTxResponse) []byte {
+func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxResponse) []byte {
 	t.Helper()
-	responses := make([]*sidetxs.SideTxResponse, 0)
+	responses := make([]sidetxs.SideTxResponse, 0)
 	for _, r := range respVotes {
 		responses = append(responses, r...)
 	}
@@ -136,10 +136,10 @@ func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]*sidetxs.SideTxResp
 	return voteExtension
 }
 
-func createSideTxResponses(vote sidetxs.Vote, txHashes ...string) []*sidetxs.SideTxResponse {
-	responses := make([]*sidetxs.SideTxResponse, len(txHashes))
+func createSideTxResponses(vote sidetxs.Vote, txHashes ...string) []sidetxs.SideTxResponse {
+	responses := make([]sidetxs.SideTxResponse, len(txHashes))
 	for i, txHash := range txHashes {
-		responses[i] = &sidetxs.SideTxResponse{
+		responses[i] = sidetxs.SideTxResponse{
 			TxHash: common.Hex2Bytes(txHash),
 			Result: vote,
 		}

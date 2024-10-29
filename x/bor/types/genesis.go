@@ -10,7 +10,7 @@ import (
 )
 
 // NewGenesisState creates a new genesis state for bor.
-func NewGenesisState(params Params, spans []*Span) *GenesisState {
+func NewGenesisState(params Params, spans []Span) *GenesisState {
 	return &GenesisState{
 		Params: params,
 		Spans:  spans,
@@ -65,9 +65,9 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 }
 
 // genFirstSpan generates default first span using the validators producer set
-func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []*Span {
+func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 	var (
-		firstSpan         []*Span
+		firstSpan         []Span
 		selectedProducers []staketypes.Validator
 	)
 
@@ -91,7 +91,7 @@ func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []*Span {
 		ChainId:           chainId,
 	}
 
-	firstSpan = append(firstSpan, &newSpan)
+	firstSpan = append(firstSpan, newSpan)
 
 	return firstSpan
 }

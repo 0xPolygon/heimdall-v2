@@ -319,7 +319,7 @@ func migrateMilestoneModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating milestone module...")
 
 	params := milestoneTypes.DefaultParams()
-	milestoneState := milestoneTypes.NewGenesisState(&params)
+	milestoneState := milestoneTypes.NewGenesisState(params)
 
 	milestoneStateMarshled := appCodec.MustMarshalJSON(&milestoneState)
 

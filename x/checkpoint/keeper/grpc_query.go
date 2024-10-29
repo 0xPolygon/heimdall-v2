@@ -18,6 +18,14 @@ type queryServer struct {
 	k *Keeper
 }
 
+func isPaginationEmpty(p query.PageRequest) bool {
+	return p.Key == nil &&
+		p.Offset == 0 &&
+		p.Limit == 0 &&
+		!p.CountTotal &&
+		!p.Reverse
+}
+
 // NewQueryServer creates a new querier for the checkpoint client.
 // It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
 func NewQueryServer(k *Keeper) types.QueryServer {
@@ -199,14 +207,14 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if req.Pagination != nil && req.Pagination.Limit > 1000 {
+	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > 1000 {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
 
 	checkpoints, pageRes, err := query.CollectionPaginate(
 		ctx,
 		q.k.checkpoints,
-		req.Pagination, func(number uint64, checkpoint types.Checkpoint) (types.Checkpoint, error) {
+		&req.Pagination, func(number uint64, checkpoint types.Checkpoint) (types.Checkpoint, error) {
 			return q.k.GetCheckpointByNumber(ctx, number)
 		},
 	)
@@ -215,5 +223,5 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
 
-	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: pageRes}, nil
+	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: *pageRes}, nil
 }

@@ -7,6 +7,7 @@ import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/types/dividend_account.proto";
 import "heimdallv2/topup/topup.proto";
+import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
@@ -56,29 +57,36 @@ service Query {
 // QueryTopupSequenceRequest is the request type for the GetTopupTxSequence and
 // IsTopupTxOld RPC methods
 message QueryTopupSequenceRequest {
-  string tx_hash = 1;
-  uint64 log_index = 2;
+  string tx_hash = 1 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryTopupSequenceResponse is response type for the GetTopupTxSequence RPC
 // method
-message QueryTopupSequenceResponse { string sequence = 1; }
+message QueryTopupSequenceResponse {
+  string sequence = 1 [ (amino.dont_omitempty) = true ];
+}
 
 // QueryIsTopupTxOldResponse is response type for the IsTopupTxOld RPC
 // method
-message QueryIsTopupTxOldResponse { bool is_old = 1; }
+message QueryIsTopupTxOldResponse {
+  bool is_old = 1 [ (amino.dont_omitempty) = true ];
+}
 
 // QueryDividendAccountRequest is the request type for the
 // GetDividendAccountByAddress RPC method
 message QueryDividendAccountRequest {
-  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string address = 1 [
+    (cosmos_proto.scalar) = "cosmos.AddressString",
+    (amino.dont_omitempty) = true
+  ];
 }
 
 // QueryDividendAccountResponse the is response type for the
 // GetDividendAccountByAddress RPC method
 message QueryDividendAccountResponse {
   heimdallv2.types.DividendAccount dividend_account = 1
-      [ (gogoproto.nullable) = false ];
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 // QueryDividendAccountRootHashRequest is the request type for the
@@ -87,25 +95,38 @@ message QueryDividendAccountRootHashRequest {}
 
 // QueryDividendAccountRootResponse is the response type for the
 // GetDividendAccountRootHash RPC method
-message QueryDividendAccountRootHashResponse { bytes account_root_hash = 1; }
+message QueryDividendAccountRootHashResponse {
+  bytes account_root_hash = 1 [ (amino.dont_omitempty) = true ];
+}
 
 // QueryVerifyAccountProofParams is the request type for the VerifyAccountProof
 // RPC method
 message QueryVerifyAccountProofRequest {
-  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
-  string proof = 2;
+  string address = 1 [
+    (cosmos_proto.scalar) = "cosmos.AddressString",
+    (amino.dont_omitempty) = true
+  ];
+  string proof = 2 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryVerifyAccountProofResponse the is response type for the
 // VerifyAccountProof RPC method
-message QueryVerifyAccountProofResponse { bool is_verified = 1; }
+message QueryVerifyAccountProofResponse {
+  bool is_verified = 1 [ (amino.dont_omitempty) = true ];
+}
 
 // QueryAccountProofRequest is the request type for the
 // GetAccountProof RPC method
 message QueryAccountProofRequest {
-  string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
+  string address = 1 [
+    (cosmos_proto.scalar) = "cosmos.AddressString",
+    (amino.dont_omitempty) = true
+  ];
 }
 
 // QueryAccountProofResponse the is response type for the GetAccountProof RPC
 // method
-message QueryAccountProofResponse { AccountProof proof = 1; }
+message QueryAccountProofResponse {
+  AccountProof proof = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

@@ -213,7 +213,7 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 
 				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
 				require.NoError(err)
-				require.Equal(params, *res.Params)
+				require.Equal(params, res.Params)
 			}
 		})
 	}

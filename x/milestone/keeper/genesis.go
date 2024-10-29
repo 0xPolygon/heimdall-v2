@@ -14,7 +14,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		panic(fmt.Sprint("error in validating the milestone params", "err", err))
 	}
 
-	err = k.params.Set(ctx, *data.Params)
+	err = k.params.Set(ctx, data.Params)
 	if err != nil {
 		panic(fmt.Sprint("error in setting the milestone params", "err", err))
 	}
@@ -28,5 +28,5 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 		k.Logger(ctx).Error("error while getting milestone params")
 	}
 
-	return &types.GenesisState{Params: &params}
+	return &types.GenesisState{Params: params}
 }
