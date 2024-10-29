@@ -21,6 +21,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 )
 
+// VerifyMigration verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
+// and verifying balances, validators, bor spans, clerk events, and checkpoints
 func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger) error {
 	logger.Info("Verifying migration")
 
@@ -67,6 +69,7 @@ func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger
 	return nil
 }
 
+// verifyBalances verifies the balances of all the accounts in the genesis file to the balances in the database
 func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map[string]interface{}) error {
 	authModule, ok := hv1Genesis["app_state"].(map[string]interface{})["auth"]
 	if !ok {
@@ -132,6 +135,7 @@ func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis 
 	return nil
 }
 
+// verifyValidators verifies the validators in the genesis file to the validators in the database using basic validator info
 func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map[string]interface{}) error {
 	stakingModule, ok := hv1Genesis["app_state"].(map[string]interface{})["staking"]
 	if !ok {
@@ -216,6 +220,7 @@ func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 	return nil
 }
 
+// compareValidators compares the validator in the database to the validator in the genesis file based on basic info
 func compareValidators(validatorDB hmTypes.Validator, validatorGenesis *validatorBasicInfo) error {
 	if validatorDB.Signer != validatorGenesis.signer {
 		return fmt.Errorf("mismatch in signer for validator %s: expected %s, got %s", validatorDB.Signer, validatorGenesis.signer, validatorDB.Signer)
@@ -236,6 +241,7 @@ func compareValidators(validatorDB hmTypes.Validator, validatorGenesis *validato
 	return nil
 }
 
+// getValidatorBasicInfo extracts the basic info of a validator from the genesis file
 func getValidatorBasicInfo(validator interface{}) (*validatorBasicInfo, error) {
 	validatorMap, ok := validator.(map[string]interface{})
 	if !ok {
@@ -280,6 +286,7 @@ func getValidatorBasicInfo(validator interface{}) (*validatorBasicInfo, error) {
 	}, nil
 }
 
+// verifyDataLists verifies the count the bor spans, clerk events, and checkpoints in the genesis file
 func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) error {
 	hv2Genesis, err := utils.LoadJSONFromFile(hv2GenesisPath)
 	if err != nil {
@@ -331,6 +338,7 @@ func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) e
 	return nil
 }
 
+// getGenesisAppState reads the genesis file and returns the app state
 func getGenesisAppState(hv2GenesisPath string) (heimdallApp.GenesisState, error) {
 	genDoc, err := cmttypes.GenesisDocFromFile(hv2GenesisPath)
 	if err != nil {
@@ -345,6 +353,7 @@ func getGenesisAppState(hv2GenesisPath string) (heimdallApp.GenesisState, error)
 	return genesisState, nil
 }
 
+// validatorBasicInfo contains the basic info of a validator
 type validatorBasicInfo struct {
 	power  int64
 	signer string

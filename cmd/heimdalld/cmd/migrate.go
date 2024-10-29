@@ -89,10 +89,29 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 
 	genesisFileV1 := args[0]
 
-	logger.Info("Starting migration...")
-
 	if _, err := os.Stat(genesisFileV1); os.IsNotExist(err) {
 		return fmt.Errorf("genesis file does not exist: %s", genesisFileV1)
+	}
+
+	dir := filepath.Dir(genesisFileV1)
+	base := filepath.Base(genesisFileV1)
+	genesisFileV2 := filepath.Join(dir, fmt.Sprintf("migrated_%s", base))
+
+	// If genesisFileV2 already exists, continue with verification
+	if _, err := os.Stat(genesisFileV2); err == nil {
+		logger.Info("Migrated genesis file already exists", "file", genesisFileV2)
+
+		if err := verify.VerifyMigration(genesisFileV1, genesisFileV2, logger); err != nil {
+			logger.Error("Verification failed", "error", err)
+			return err
+		}
+
+		if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
+			logger.Error("Genesis hash verification failed", "error", err)
+			return err
+		}
+
+		return nil
 	}
 
 	interfaceRegistry, err := codecTypes.NewInterfaceRegistryWithOptions(codecTypes.InterfaceRegistryOptions{
@@ -116,75 +135,84 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	v036gov.RegisterLegacyAminoCodec(legacyAmino)
 	v036params.RegisterLegacyAminoCodec(legacyAmino)
 
-	genesisFileV2, err := performMigrations(genesisFileV1, chainId, genesisTime, initialHeight)
-	if err != nil {
+	if err := performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime, initialHeight); err != nil {
 		logger.Error("Migration failed", "error", err)
 		return err
 	}
 
-	return verify.VerifyMigration(genesisFileV1, genesisFileV2, logger)
+	if err := verify.VerifyMigration(genesisFileV1, genesisFileV2, logger); err != nil {
+		logger.Error("Verification failed", "error", err)
+		return err
+	}
+
+	if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
+		logger.Error("Genesis hash verification failed", "error", err)
+		return err
+	}
+
+	return nil
 }
 
 // performMigrations loads v1 genesis file, executes all the migration functions on the genesis data.
 // Stores the new v2 genesis file on disk.
-func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight uint64) (string, error) {
+func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string, initialHeight uint64) error {
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
 	genesisData, err := utils.LoadJSONFromFile(genesisFileV1)
 	if err != nil {
-		return "", fmt.Errorf("failed to load genesis file: %w", err)
+		return fmt.Errorf("failed to load genesis file: %w", err)
 	}
 
 	logger.Info("Performing custom migrations...")
 
 	if err := addMissingCometBFTConsensusParams(genesisData, initialHeight); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := removeUnusedTendermintConsensusParams(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
 	// they are deleted from the genesis during auth module migration
 	if err := migrateBankModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateAuthModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateGovModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateClerkModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateBorModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateCheckpointModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateTopupModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateMilestoneModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateChainmanagerModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := migrateStakeModule(genesisData); err != nil {
-		return "", err
+		return err
 	}
 
 	genesisData["chain_id"] = chainId
@@ -192,19 +220,15 @@ func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight
 	strInitialHeight := strconv.FormatUint(initialHeight, 10)
 	genesisData["initial_height"] = strInitialHeight
 
-	dir := filepath.Dir(genesisFileV1)
-	base := filepath.Base(genesisFileV1)
-	genesisFileV2 := filepath.Join(dir, fmt.Sprintf("migrated_%s", base))
-
 	logger.Info("Saving migrated genesis file...", "file", genesisFileV2)
 
 	if err := utils.SaveJSONToFile(genesisData, genesisFileV2); err != nil {
-		return "", fmt.Errorf("failed to save migrated genesis file: %w", err)
+		return fmt.Errorf("failed to save migrated genesis file: %w", err)
 	}
 
 	logger.Info("Migration completed successfully")
 
-	return genesisFileV2, nil
+	return nil
 }
 
 // migrateStakeModule renames the staking module to stake, renames current_val_set to current_validator_set
