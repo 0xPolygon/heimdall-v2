@@ -1,6 +1,6 @@
 module github.com/0xPolygon/heimdall-v2
 
-go 1.22.1
+go 1.23.2
 
 require (
 	cosmossdk.io/api v0.7.2
@@ -11,7 +11,7 @@ require (
 	cosmossdk.io/log v1.3.1
 	cosmossdk.io/math v1.3.0
 	cosmossdk.io/store v1.1.0
-	cosmossdk.io/tools/confix v0.0.0-00010101000000-000000000000
+	cosmossdk.io/tools/confix v0.1.1
 	cosmossdk.io/x/tx v0.12.0
 	github.com/RichardKnop/machinery v1.10.6
 	github.com/bufbuild/buf v1.29.0
@@ -277,10 +277,11 @@ require (
 replace (
 	cosmossdk.io/api => github.com/0xPolygon/cosmos-sdk/api v0.7.2
 	cosmossdk.io/client/v2 => github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.1
+	cosmossdk.io/collections => github.com/0xPolygon/cosmos-sdk/collections v0.4.0
 	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.0
 	cosmossdk.io/errors => github.com/0xPolygon/cosmos-sdk/errors v1.0.0
-	cosmossdk.io/log => github.com/0xPolygon/cosmos-sdk/log v1.2.1
-	cosmossdk.io/math => github.com/0xPolygon/cosmos-sdk/math v1.2.0
+	cosmossdk.io/log => github.com/0xPolygon/cosmos-sdk/log v1.3.1
+	cosmossdk.io/math => github.com/0xPolygon/cosmos-sdk/math v1.3.0
 	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.0
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
 	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.12.0
