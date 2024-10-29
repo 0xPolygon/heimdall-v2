@@ -10,11 +10,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 )
 
-// SetTestConfig sets test configuration
-func SetTestConfig(_conf Configuration) {
-	conf = _conf
-}
-
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
 	// TODO HV2: fix this test as it currently depends on the config file
@@ -61,12 +56,12 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 		{chain: "local", viper: "", def: "", value: ""},
 	}
 
-	oldConf := conf.Chain
+	oldConf := conf.Custom.Chain
 	viperObj := viper.New()
 	cometBFTConfig := cfg.DefaultConfig()
 
 	for _, ts := range data {
-		conf.Chain = ts.chain
+		conf.Custom.Chain = ts.chain
 		cometBFTConfig.P2P.Seeds = ts.def
 		viperObj.Set(SeedsFlag, ts.viper)
 		UpdateCometBFTConfig(cometBFTConfig, viperObj)
@@ -76,5 +71,5 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 		}
 	}
 
-	conf.Chain = oldConf
+	conf.Custom.Chain = oldConf
 }

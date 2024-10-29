@@ -51,7 +51,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		)
 
 		// send milestone to handler
-		res, err := msgServer.Milestone(ctx, &msgMilestone)
+		res, err := msgServer.Milestone(ctx, msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrProposerMismatch.Error())
 	})
@@ -73,7 +73,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		)
 
 		// send milestone to handler
-		res, err := msgServer.Milestone(ctx, &msgMilestone)
+		res, err := msgServer.Milestone(ctx, msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneInvalid.Error())
 	})
@@ -89,7 +89,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		)
 
 		// send milestone to handler
-		res, err := msgServer.Milestone(ctx, &msgMilestone)
+		res, err := msgServer.Milestone(ctx, msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneInvalid.Error())
 	})
@@ -105,7 +105,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		)
 
 		// send milestone to handler
-		res, err := msgServer.Milestone(ctx, &msgMilestone)
+		res, err := msgServer.Milestone(ctx, msgMilestone)
 		require.NotNil(res)
 		require.NoError(err)
 		bufferedHeader, err := keeper.GetLastMilestone(ctx)
@@ -130,7 +130,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		)
 
 		// send milestone to handler
-		res, err := msgServer.Milestone(ctx, &msgMilestone)
+		res, err := msgServer.Milestone(ctx, msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrPrevMilestoneInVoting.Error())
 	})
@@ -159,7 +159,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		)
 
 		// send milestone to handler
-		res, err := msgServer.Milestone(ctx, &msgMilestone)
+		res, err := msgServer.Milestone(ctx, msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneNotInContinuity.Error())
 
@@ -175,7 +175,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 		)
 
 		// send milestone to handler
-		res, err = msgServer.Milestone(ctx, &msgMilestone)
+		res, err = msgServer.Milestone(ctx, msgMilestone)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrMilestoneNotInContinuity.Error())
 	})
@@ -215,7 +215,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	// send old milestone
 	ctx = ctx.WithBlockHeight(int64(3))
 
-	res, err := msgServer.Milestone(ctx, &msgMilestone)
+	res, err := msgServer.Milestone(ctx, msgMilestone)
 	require.NoError(err)
 	require.NotNil(res)
 
@@ -226,7 +226,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneExistInStore() {
 	require.NoError(err)
 
 	// send milestone to handler
-	res, err = msgServer.Milestone(ctx, &msgMilestone)
+	res, err = msgServer.Milestone(ctx, msgMilestone)
 	require.Nil(res)
 	require.ErrorContains(err, types.ErrMilestoneNotInContinuity.Error())
 }
@@ -255,7 +255,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 		)
 
 		// send milestone to handler
-		res, err := msgServer.MilestoneTimeout(ctx, &msgMilestoneTimeout)
+		res, err := msgServer.MilestoneTimeout(ctx, msgMilestoneTimeout)
 		require.Nil(res)
 		require.ErrorContains(err, types.ErrNoMilestoneFound.Error())
 	})
@@ -279,7 +279,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 		proposer,
 	)
 	// send milestone to handler
-	res, err := msgServer.MilestoneTimeout(ctx, &msgMilestoneTimeout)
+	res, err := msgServer.MilestoneTimeout(ctx, msgMilestoneTimeout)
 	require.Nil(res)
 	require.ErrorContains(err, types.ErrInvalidMilestoneTimeout.Error())
 
@@ -291,7 +291,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	)
 
 	// send milestone to handler
-	res, err = msgServer.MilestoneTimeout(ctx, &msgMilestoneTimeout)
+	res, err = msgServer.MilestoneTimeout(ctx, msgMilestoneTimeout)
 	require.NotNil(res)
 	require.Nil(err)
 }

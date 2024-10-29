@@ -27,8 +27,8 @@ func NewMsgCheckpointBlock(
 	rootHash []byte,
 	accountRootHash []byte,
 	borChainID string,
-) MsgCheckpoint {
-	return MsgCheckpoint{
+) *MsgCheckpoint {
+	return &MsgCheckpoint{
 		Proposer:        util.FormatAddress(proposer),
 		StartBlock:      startBlock,
 		EndBlock:        endBlock,

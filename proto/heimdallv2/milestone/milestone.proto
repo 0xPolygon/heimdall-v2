@@ -31,6 +31,13 @@ message Milestone {
   uint64 timestamp = 7 [ (amino.dont_omitempty) = true ];
 }
 
+message MilestoneCount {
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+
+  uint64 count = 1 [ (amino.dont_omitempty) = true ];
+}
+
 // Params represents the milestone parameters
 message Params {
   option (gogoproto.equal) = true;

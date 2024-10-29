@@ -1,22 +1,30 @@
 package helper
 
 import (
+	"bufio"
 	"bytes"
-	"encoding/base64"
 	"errors"
+	"fmt"
+	"io"
 	"math/big"
 	"math/bits"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/crypto/tmhash"
+	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/input"
+	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	// TODO HV2 Uncomment the following import once the rest is implemented in rest
-	//"github.com/maticnetwork/heimdall/types/rest"
 )
 
 //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
@@ -28,19 +36,16 @@ var (
 	Client HTTPClient
 )
 
-// TODO HV2 This fn is required in bridge, but might require different implementation
-// as HeimdallAddress is not available in types
-/*
-// GetFromAddress get from address
-func GetFromAddress(cliCtx client.Context) types.HeimdallAddress {
+// GetFromAddress returns the from address from the context's name
+func GetFromAddress(cliCtx client.Context) string {
+	ac := address.NewHexCodec()
 	fromAddress := cliCtx.GetFromAddress()
-	if !fromAddress.Empty() {
-		return types.AccAddressToHeimdallAddress(fromAddress)
+	addressString, err := ac.BytesToString(fromAddress.Bytes())
+	if err != nil {
+		panic(err)
 	}
-
-	return types.BytesToHeimdallAddress(GetAddress())
+	return addressString
 }
-*/
 
 func init() {
 	Client = &http.Client{}
@@ -53,16 +58,6 @@ func GetPubObjects(pubkey crypto.PubKey) secp256k1.PubKey {
 	cdc.MustUnmarshalBinaryBare(pubkey.Bytes(), &pubObject)
 
 	return pubObject
-}
-
-// TendermintTxDecode decodes transaction string and return base tx object
-func TendermintTxDecode(txString string) ([]byte, error) {
-	decodedTx, err := base64.StdEncoding.DecodeString(txString)
-	if err != nil {
-		return nil, err
-	}
-
-	return decodedTx, nil
 }
 
 // GetMerkleProofList return proof array
@@ -232,18 +227,54 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return u.String()
 }
 
-// TODO HV2 Please uncomment the following fn once the rest is implemented in types.
-/*
+// TODO HV2 - this needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
 // FetchFromAPI fetches data from any URL
-func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHeight, err error) {
+func FetchFromAPI(URL string) (result []byte, err error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
 		return result, err
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			Logger.Error("Error closing response body:", err)
+		}
+	}()
 
-	// response
+	if resp.StatusCode == 200 {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return result, err
+		}
+
+		return body, nil
+	}
+
+	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
+
+	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
+}
+
+// TODO HV2 - Older version of FetchFromAPI kept for reference, will remove later
+/*
+// FetchFromAPI fetches data from any URL
+func FetchFromAPI(URL string) (result rest.Response, err error) {
+	// create codec
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	resp, err := Client.Get(URL)
+	if err != nil {
+		return result, err
+	}
+
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			Logger.Error("Error closing response body:", err)
+		}
+	}()
+
 	if resp.StatusCode == 200 {
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
@@ -251,8 +282,8 @@ func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHe
 		}
 
 		// unmarshall data from buffer
-		var response rest.ResponseWithHeight
-		if err = cliCtx.Codec.UnmarshalJSON(body, &response); err != nil {
+		var response rest.Response
+		if err = cdc.UnmarshalJSON(body, &response); err != nil {
 			return result, err
 		}
 
@@ -261,7 +292,7 @@ func FetchFromAPI(cliCtx client.Context, URL string) (result rest.ResponseWithHe
 
 	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
 
-	return result, fmt.Errorf("error while fetching data from url: %v, status: %v", URL, resp.StatusCode)
+	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
 */
 
@@ -272,4 +303,219 @@ func IsPubKeyFirstByteValid(pubKey []byte) bool {
 	prefix[0] = byte(0x04)
 
 	return bytes.Equal(prefix, pubKey[0:1])
+}
+
+// BroadcastTx attempts to generate, sign and broadcast a transaction with the
+// given set of messages. It will also simulate gas requirements if necessary.
+// It will return an error upon failure.
+// HV2 - This function is taken from cosmos-sdk, and it now returns TxResponse as well
+func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg) (*sdk.TxResponse, error) {
+	txf, err := txf.Prepare(clientCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if txf.SimulateAndExecute() || clientCtx.Simulate {
+		if clientCtx.Offline {
+			return nil, errors.New("cannot estimate gas in offline mode")
+		}
+
+		_, adjusted, err := clienttx.CalculateGas(clientCtx, txf, msgs...)
+		if err != nil {
+			return nil, err
+		}
+
+		txf = txf.WithGas(adjusted)
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n", clienttx.GasEstimateResponse{GasEstimate: txf.Gas()})
+	}
+
+	if clientCtx.Simulate {
+		Logger.Debug("in simulate mode")
+		return nil, nil
+	}
+
+	tx, err := txf.BuildUnsignedTx(msgs...)
+	if err != nil {
+		Logger.Error("error while building unsigned tx", "error", err)
+		return nil, err
+	}
+
+	if !clientCtx.SkipConfirm {
+		panic("this should not happen as SkipConfirm is set to true")
+
+		// TODO HV2 - create a function
+		// func (f Factory) GetTxConfig() client.TxConfig { return f.txConfig }
+		// I guess this is no longer needed as this if block is never used
+		/*
+			encoder := txf.GetTxConfig().TxJSONEncoder()
+			if encoder == nil {
+				return errors.New("failed to encode transaction: tx json encoder is nil")
+			}
+		*/
+
+		// Maybe the above code can be replaced with this
+		encoder := clientCtx.TxConfig.TxEncoder()
+
+		txBytes, err := encoder(tx.GetTx())
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode transaction: %w", err)
+		}
+
+		if err := clientCtx.PrintRaw(txBytes); err != nil {
+			Logger.Error("error while printing raw tx", "error", err, "txBytes", txBytes)
+		}
+
+		buf := bufio.NewReader(os.Stdin)
+		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "error: %v\ncanceled transaction\n", err)
+			return nil, err
+		}
+		if !ok {
+			_, _ = fmt.Fprintln(os.Stderr, "canceled transaction")
+			return nil, nil
+		}
+	}
+
+	if err = clienttx.Sign(clientCtx.CmdContext, txf, clientCtx.FromName, tx, true); err != nil {
+		return nil, err
+	}
+
+	txBytes, err := clientCtx.TxConfig.TxEncoder()(tx.GetTx())
+	if err != nil {
+		Logger.Error("error while encoding tx", "error", err)
+		return nil, err
+	}
+
+	// broadcast to a CometBFT node
+	res, err := clientCtx.BroadcastTx(txBytes)
+	if err != nil {
+		Logger.Error("error while broadcasting tx", "error", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// TODO HV2 - I don't think we need this anymore
+// Keep it for now, will remove later once everything is working
+/*
+// BuildAndBroadcastMsgs creates transaction and broadcasts it
+func BuildAndBroadcastMsgs(cliCtx client.Context,
+	txBldr client.TxBuilder,
+	msgs []sdk.Msg,
+	testOpts ...*TestOpts,
+) (*sdk.TxResponse, error) {
+	txBytes, err := GetSignedTxBytes(cliCtx, txBldr, msgs, testOpts...)
+	if err != nil {
+		return &sdk.TxResponse{}, err
+	}
+	// just simulate
+	if cliCtx.Simulate {
+		if len(testOpts) == 0 || testOpts[0].app == nil {
+			return &sdk.TxResponse{TxHash: "0x" + hex.EncodeToString(txBytes)}, nil
+		}
+
+		// Using cliCtx.GetNode() instead of this
+		// m := mock.ABCIApp{
+		// 	App: testOpts[0].app,
+		// }
+
+		node, err := cliCtx.GetNode()
+		if err != nil {
+			return &sdk.TxResponse{}, err
+		}
+
+		res, err := node.BroadcastTxSync(cliCtx.CmdContext, txBytes)
+		return sdk.NewResponseFormatBroadcastTx(res), err
+	}
+	// broadcast to a CometBFT node
+	return BroadcastTxBytes(cliCtx, txBytes, "")
+}
+
+// BroadcastTxBytes sends request to cometbft using CLI
+func BroadcastTxBytes(cliCtx client.Context, txBytes []byte, mode string) (*sdk.TxResponse, error) {
+	Logger.Debug("Broadcasting tx bytes to CometBFT", "txBytes", hex.EncodeToString(txBytes), "txHash", hex.EncodeToString(cmtTypes.Tx(txBytes).Hash()))
+
+	if mode != "" {
+		cliCtx.BroadcastMode = mode
+	}
+
+	return cliCtx.BroadcastTx(txBytes)
+}
+
+// GetSignedTxBytes returns signed tx bytes
+func GetSignedTxBytes(cliCtx client.Context,
+	txBldr client.TxBuilder,
+	msgs []sdk.Msg,
+	testOpts ...*TestOpts,
+) ([]byte, error) {
+
+	txFactory := tx.Factory{}
+	txFactory = txFactory.
+		WithChainID(testOpts[0].chainId)
+
+	// just simulate (useful for testing)
+	if cliCtx.Simulate {
+		if len(testOpts) == 0 || testOpts[0].chainId == "" {
+			return nil, nil
+		}
+
+		// We are no longer able to set ChainID
+		// txBldr = txBldr.WithChainID(testOpts[0].chainId)
+
+		return txBldr.BuildAndSign(GetPrivKey(), msgs)
+	}
+
+	// TODO HV2 - I don't think we need this anymore
+	// txBldr, err := PrepareTxBuilder(cliCtx, txBldr)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	fromName := cliCtx.GetFromName()
+	if fromName == "" {
+		return txBldr.BuildAndSign(GetPrivKey(), msgs)
+	}
+
+	if !cliCtx.SkipConfirm {
+		stdSignMsg, err := txBldr.BuildSignMsg(msgs)
+		if err != nil {
+			return nil, err
+		}
+
+		json := cliCtx.Codec.MustMarshalJSON(stdSignMsg)
+
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", json)
+
+		buf := bufio.NewReader(os.Stdin)
+
+		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf)
+		if err != nil || !ok {
+			_, _ = fmt.Fprintf(os.Stderr, "%s\n", "cancelled transaction")
+			return nil, err
+		}
+	}
+
+	passphrase, err := keys.GetPassphrase(fromName)
+	if err != nil {
+		return nil, err
+	}
+	// build and sign the transaction
+	return txBldr.BuildAndSignWithPassphrase(fromName, passphrase, msgs)
+}
+*/
+
+func GetSignature(signMode signing.SignMode, accSeq uint64) signing.SignatureV2 {
+	cosmosPrivKey := cosmossecp256k1.PrivKey{Key: GetPrivKey()}
+
+	sig := signing.SignatureV2{
+		PubKey: cosmosPrivKey.PubKey(),
+		Data: &signing.SingleSignatureData{
+			SignMode: signMode,
+		},
+		Sequence: accSeq,
+	}
+
+	return sig
 }

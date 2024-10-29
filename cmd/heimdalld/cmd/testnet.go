@@ -3,16 +3,22 @@ package heimdalld
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
 
 	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+
 	"github.com/cometbft/cometbft/crypto"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
+	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
@@ -53,19 +59,17 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			}
 
 			// num of validators = validators in genesis files
-			// numValidators := viper.GetInt(flagNumValidators)
+			numValidators := viper.GetInt(flagNumValidators)
 
 			// get total number of validators to be generated
-			totalValidators := totalValidators()
+			totalValidators := getTotalNumberOfNodes()
 
-			// TODO HV2 - uncomment once staking module is available
-			/*
-				// first validators start ID
-				startID := viper.GetInt64(stakingcli.FlagValidatorID)
-				if startID == 0 {
-					startID = 1
-				}
-			*/
+			// first validators start ID
+			// there is no validator with id = 0
+			startID := viper.GetInt64(stakingcli.FlagValidatorID)
+			if startID == 0 {
+				startID = 1
+			}
 
 			// signers data to dump in the signer-dump file
 			signers := make([]ValidatorAccountFormatter, totalValidators)
@@ -74,16 +78,9 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			nodeIDs := make([]string, totalValidators)
 			valPubKeys := make([]crypto.PubKey, totalValidators)
 			privKeys := make([]crypto.PrivKey, totalValidators)
-			// TODO HV2 - uncomment once we have types/*
-			/*
-				validators := make([]*hmTypes.Validator, numValidators)
-				dividendAccounts := make([]hmTypes.DividendAccount, numValidators)
-
-				// slashing
-				valSigningInfoMap := make(map[string]hmTypes.ValidatorSigningInfo)
-			*/
-
-			// genFiles := make([]string, totalValidators)
+			validators := make([]*stakeTypes.Validator, numValidators)
+			dividendAccounts := make([]hmTypes.DividendAccount, numValidators)
+			genFiles := make([]string, totalValidators)
 			var err error
 
 			nodeDaemonHomeName := viper.GetString(flagNodeDaemonHome)
@@ -118,28 +115,31 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 					return err
 				}
 
-				// TODO HV2 - uncomment once we have types/*
-				/*
-					genFiles[i] = config.GenesisFile()
-					newPubkey := valPubKeys[i]
+				genFiles[i] = config.GenesisFile()
 
-					if i < numValidators {
-						// create validator account
-						validators[i] = hmTypes.NewValidator(
-							hmTypes.NewValidatorID(uint64(startID+int64(i))),
-							0,
-							0,
-							1,
-							10000,
-							newPubkey,
-							hmTypes.BytesToHeimdallAddress(valPubKeys[i].Address().Bytes()),
-						)
+				cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: privKeys[i].Bytes()}
 
-						// create dividend account for validator
-						dividendAccounts[i] = hmTypes.NewDividendAccount(validators[i].Signer, ZeroIntString)
-						valSigningInfoMap[validators[i].ID.String()] = hmTypes.NewValidatorSigningInfo(validators[i].ID, 0, 0, 0)
+				if i < numValidators {
+					// create validator account
+					validators[i], err = stakeTypes.NewValidator(
+						uint64(startID+int64(i)),
+						0,
+						0,
+						1,
+						10000,
+						cosmosPrivKey.PubKey(),
+						valPubKeys[i].Address().String(),
+					)
+					if err != nil {
+						return err
 					}
-				*/
+
+					// create dividend account for validator
+					dividendAccounts[i] = hmTypes.DividendAccount{
+						User:      validators[i].Signer,
+						FeeAmount: big.NewInt(0).String(),
+					}
+				}
 
 				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
 

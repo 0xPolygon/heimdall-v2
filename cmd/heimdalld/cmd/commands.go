@@ -1,12 +1,12 @@
 package heimdalld
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,8 +15,10 @@ import (
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
 	"github.com/0xPolygon/heimdall-v2/app"
+	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
+	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -35,9 +37,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/server"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	"github.com/cosmos/cosmos-sdk/server/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	cosmosversion "github.com/cosmos/cosmos-sdk/version"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -47,8 +52,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	// TODO HV2 - uncomment when we have the client package
-	// hmTxCli "github.com/0xPolygon/heimdall-v2/client/tx"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -81,8 +85,6 @@ var (
 const (
 	nodeDirPerm = 0755
 )
-
-var ZeroIntString = big.NewInt(0).String()
 
 var tempDir = func() string {
 	dir, err := os.MkdirTemp("", "heimdall")
@@ -132,8 +134,14 @@ func initCometBFTConfig() *cmtcfg.Config {
 // initAppConfig helps to override default appConfig template and configs.
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
-	conf := helper.GetDefaultHeimdallConfig
-	return helper.DefaultConfigTemplate, conf
+	customAppConfig := helper.CustomAppConfig{
+		Config: *serverconfig.DefaultConfig(),
+		Custom: helper.GetDefaultHeimdallConfig(),
+	}
+
+	customAppTemplate := serverconfig.DefaultConfigTemplate + helper.DefaultConfigTemplate
+
+	return customAppTemplate, customAppConfig
 }
 
 func initRootCmd(
@@ -159,42 +167,25 @@ func initRootCmd(
 		MigrateCommand(),
 	)
 
-	// TODO HV2 - uncomment when we have server.AddCommandsWithStartCmdOptions
-	// in our fork of cosmos-sdk
-	/*
-		server.AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
-			AddFlags: func(startCmd *cobra.Command) {
-				startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
-				startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
-			},
-			PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
-				// start rest
-				if viper.GetBool(helper.RestServerFlag) {
-					waitForREST := make(chan struct{})
+	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
+		AddFlags: func(startCmd *cobra.Command) {
+			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
+			startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
+		},
+		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+			helper.InitHeimdallConfig("")
 
-					g.Go(func() error {
-						return nil
-						// TODO HV2 - uncomment when we have server implemented
-						// return restServer.StartRestServer(ctx, cdc, restServer.RegisterRoutes, waitForREST)
-					})
+			// start bridge
+			if viper.GetBool(helper.BridgeFlag) {
+				bridgeCmd.AdjustBridgeDBValue(rootCmd)
+				g.Go(func() error {
+					return bridgeCmd.StartBridgeWithCtx(ctx)
+				})
+			}
 
-					// hang here for a while, and wait for REST server to start
-					<-waitForREST
-				}
-
-				// start bridge
-				if viper.GetBool(helper.BridgeFlag) {
-					// TODO HV2 - uncomment when we have bridge implemented
-					// // bridgeCmd.AdjustBridgeDBValue(cmd, viper.GetViper())
-					// g.Go(func() error {
-					// 	return bridgeCmd.StartBridgeWithCtx(ctx)
-					// })
-				}
-
-				return nil
-			},
-		})
-	*/
+			return nil
+		},
+	})
 
 	cometbftCmd := &cobra.Command{
 		Use:   "cometbft",
@@ -229,10 +220,7 @@ func initRootCmd(
 	)
 
 	rootCmd.AddCommand(showPrivateKeyCmd())
-	// TODO HV2 - uncomment when we have server implemented
-	// rootCmd.AddCommand(restServer.ServeCommands(shutdownCtx, cdc, restServer.RegisterRoutes))
-	// TODO HV2 - uncomment when we have bridge implemented
-	// rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
+	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 
 	// TODO HV2 - I guess we are safe to remove this, as `genutilcli.InitCmd(basicManager, app.DefaultNodeHome)`
@@ -247,6 +235,36 @@ func initRootCmd(
 
 	// snapshot cmd
 	snapshot.Cmd(newApp)
+}
+
+// AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
+// HV2 - This function is taken from cosmos-sdk
+func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, opts server.StartCmdOptions) {
+	cometCmd := &cobra.Command{
+		Use:     "comet",
+		Aliases: []string{"cometbft", "tendermint"},
+		Short:   "CometBFT subcommands",
+	}
+
+	cometCmd.AddCommand(
+		server.ShowNodeIDCmd(),
+		server.ShowValidatorCmd(),
+		server.ShowAddressCmd(),
+		server.VersionCmd(),
+		cmtcmd.ResetAllCmd,
+		cmtcmd.ResetStateCmd,
+		server.BootstrapStateCmd(appCreator),
+	)
+
+	startCmd := server.StartCmdWithOptions(appCreator, defaultNodeHome, opts)
+
+	rootCmd.AddCommand(
+		startCmd,
+		cometCmd,
+		server.ExportCmd(appExport, defaultNodeHome),
+		cosmosversion.NewVersionCommand(),
+		server.NewRollbackCmd(appCreator, defaultNodeHome),
+	)
 }
 
 // genesisCommand builds genesis-related `heimdalld genesis` command. Users may provide application specific commands as a parameter
@@ -277,11 +295,6 @@ func queryCommand() *cobra.Command {
 		authcmd.QueryTxCmd(),
 		server.QueryBlockResultsCmd(),
 		rpc.ValidatorCommand(),
-		// TODO HV2 - uncomment when we have the client package
-		/*
-			hmTxCli.QueryTxsByEventsCmd(),
-			hmTxCli.QueryTxCmd(),
-		*/
 	)
 
 	return cmd
@@ -307,11 +320,6 @@ func txCommand() *cobra.Command {
 		authcmd.GetDecodeCommand(),
 		authcmd.GetSimulateCmd(),
 		authcmd.GetSignCommand(),
-		// TODO HV2 - uncomment when we have the client package
-		/*
-			hmTxCli.GetBroadcastCommand(),
-			hmTxCli.GetEncodeCommand(),
-		*/
 	)
 
 	return cmd
@@ -575,7 +583,7 @@ func promptPassphrase(confirmation bool) (string, error) {
 }
 
 // Total Validators to be included in the testnet
-func totalValidators() int {
+func getTotalNumberOfNodes() int {
 	numValidators := viper.GetInt(flagNumValidators)
 	numNonValidators := viper.GetInt(flagNumNonValidators)
 
@@ -598,9 +606,9 @@ func hostnameOrIP(i int) string {
 
 // populatePersistentPeersInConfigAndWriteIt populates persistent peers in config
 func populatePersistentPeersInConfigAndWriteIt(config *cmtcfg.Config) {
-	persistentPeers := make([]string, totalValidators())
+	persistentPeers := make([]string, getTotalNumberOfNodes())
 
-	for i := 0; i < totalValidators(); i++ {
+	for i := 0; i < getTotalNumberOfNodes(); i++ {
 		config.SetRoot(nodeDir(i))
 
 		nodeKey, err := p2p.LoadNodeKey(config.NodeKeyFile())
@@ -613,7 +621,7 @@ func populatePersistentPeersInConfigAndWriteIt(config *cmtcfg.Config) {
 
 	persistentPeersList := strings.Join(persistentPeers, ",")
 
-	for i := 0; i < totalValidators(); i++ {
+	for i := 0; i < getTotalNumberOfNodes(); i++ {
 		config.SetRoot(nodeDir(i))
 		config.P2P.PersistentPeers = persistentPeersList
 		config.P2P.AddrBookStrict = false
@@ -654,7 +662,7 @@ func InitializeNodeValidatorFiles(
 }
 
 // WriteDefaultHeimdallConfig writes default heimdall config to the given path
-func WriteDefaultHeimdallConfig(path string, conf helper.Configuration) {
+func WriteDefaultHeimdallConfig(path string, conf helper.CustomConfig) {
 	// Don't write if config file in path already exists
 	if _, err := os.Stat(path); err == nil {
 		logger.Info(fmt.Sprintf("Config file %s already exists. Skip writing default heimdall config.", path))

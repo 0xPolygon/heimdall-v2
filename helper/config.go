@@ -25,11 +25,12 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	cmTypes "github.com/cometbft/cometbft/types"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 )
 
 const (
 	CometBFTNodeFlag       = "node"
-	WithHeimdallConfigFlag = "heimdall-config"
+	WithHeimdallConfigFlag = "app"
 	HomeFlag               = "home"
 	FlagClientHome         = "home-client"
 	OverwriteGenesisFlag   = "overwrite-genesis"
@@ -99,11 +100,11 @@ const (
 
 	NoACKWaitTime = 1800 * time.Second // Time ack service waits to clear buffer and elect new proposer (1800 seconds ~ 30 mins)
 
-	DefaultCheckpointerPollInterval = 5 * time.Minute
-	DefaultSyncerPollInterval       = 1 * time.Minute
-	DefaultNoACKPollInterval        = 1010 * time.Second
-	DefaultClerkPollInterval        = 10 * time.Second
-	DefaultSpanPollInterval         = 1 * time.Minute
+	DefaultCheckpointPollInterval = 5 * time.Minute
+	DefaultSyncerPollInterval     = 1 * time.Minute
+	DefaultNoACKPollInterval      = 1010 * time.Second
+	DefaultClerkPollInterval      = 10 * time.Second
+	DefaultSpanPollInterval       = 1 * time.Minute
 
 	DefaultMilestonePollInterval = 30 * time.Second
 
@@ -135,7 +136,7 @@ const (
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hardfork
 	MaxStateSyncSize = 30000
 
-	// MilestoneLength is minimun supported length of milestone
+	// MilestoneLength is minimum supported length of milestone
 	MilestoneLength = uint64(12)
 
 	MilestonePruneNumber = uint64(100)
@@ -164,11 +165,11 @@ func init() {
 	Logger = logger.NewTMLogger(logger.NewSyncWriter(os.Stdout))
 }
 
-// Configuration represents heimdall config
-type Configuration struct {
+// CustomConfig represents heimdall config
+type CustomConfig struct {
 	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
-	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // tendemint node url
+	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometbft node url
 	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
 
 	EthRPCTimeout time.Duration `mapstructure:"eth_rpc_timeout"` // timeout for eth rpc
@@ -183,16 +184,16 @@ type Configuration struct {
 	MainchainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max gas price to mainchain transaction. eg....submit checkpoint.
 
 	// config related to bridge
-	CheckpointerPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
-	SyncerPollInterval       time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncher service to sync for changes on main chain
-	NoACKPollInterval        time.Duration `mapstructure:"noack_poll_interval"`      // Poll interval for ack service to send no-ack in case of no checkpoints
-	ClerkPollInterval        time.Duration `mapstructure:"clerk_poll_interval"`
-	SpanPollInterval         time.Duration `mapstructure:"span_poll_interval"`
-	MilestonePollInterval    time.Duration `mapstructure:"milestone_poll_interval"`
-	EnableSH                 bool          `mapstructure:"enable_self_heal"`         // Enable self-healing
-	SHStateSyncedInterval    time.Duration `mapstructure:"sh_state_synced_interval"` // Interval to self-heal StateSynced events if missing
-	SHStakeUpdateInterval    time.Duration `mapstructure:"sh_stake_update_interval"` // Interval to self-heal StakeUpdate events if missing
-	SHMaxDepthDuration       time.Duration `mapstructure:"sh_max_depth_duration"`    // Max duration that allows to suggest self-healing is not needed
+	CheckpointPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
+	SyncerPollInterval     time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncer service to sync for changes on main chain
+	NoACKPollInterval      time.Duration `mapstructure:"noack_poll_interval"`      // Poll interval for ack service to send no-ack in case of no checkpoints
+	ClerkPollInterval      time.Duration `mapstructure:"clerk_poll_interval"`
+	SpanPollInterval       time.Duration `mapstructure:"span_poll_interval"`
+	MilestonePollInterval  time.Duration `mapstructure:"milestone_poll_interval"`
+	EnableSH               bool          `mapstructure:"enable_self_heal"`         // Enable self-healing
+	SHStateSyncedInterval  time.Duration `mapstructure:"sh_state_synced_interval"` // Interval to self-heal StateSynced events if missing
+	SHStakeUpdateInterval  time.Duration `mapstructure:"sh_stake_update_interval"` // Interval to self-heal StakeUpdate events if missing
+	SHMaxDepthDuration     time.Duration `mapstructure:"sh_max_depth_duration"`    // Max duration that allows to suggest self-healing is not needed
 
 	// wait time related options
 	NoACKWaitTime time.Duration `mapstructure:"no_ack_wait_time"` // Time ack service waits to clear buffer and elect new proposer
@@ -204,7 +205,12 @@ type Configuration struct {
 	Chain string `mapstructure:"chain"`
 }
 
-var conf Configuration
+type CustomAppConfig struct {
+	serverconfig.Config `mapstructure:",squash"`
+	Custom              CustomConfig `mapstructure:"custom"`
+}
+
+var conf CustomAppConfig
 
 // MainChainClient stores eth clie nt for Main chain Network
 var mainChainClient *ethclient.Client
@@ -271,8 +277,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	heimdallViper.AutomaticEnv()
 
 	if heimdallConfigFileFromFlag == "" {
-		heimdallViper.SetConfigName("heimdall-config") // name of config file (without extension)
-		heimdallViper.AddConfigPath(configDir)         // call multiple times to add many search paths
+		heimdallViper.SetConfigName("app")     // name of config file (without extension)
+		heimdallViper.AddConfigPath(configDir) // call multiple times to add many search paths
 	} else {
 		heimdallViper.SetConfigFile(heimdallConfigFileFromFlag) // set config file explicitly
 	}
@@ -297,7 +303,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 			log.Fatalln("unable to read config file submitted via flag", "Error", err)
 		}
 
-		var confFromFlag Configuration
+		var confFromFlag CustomConfig
 		// unmarshal configuration from the configuration file submitted as a flag
 		if err = heimdallViperFromFlag.UnmarshalExact(&confFromFlag); err != nil {
 			log.Fatalln("unable to unmarshall config file submitted via flag", "Error", err)
@@ -312,63 +318,67 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// perform check for json logging
-	if conf.LogsType == "json" {
-		Logger = logger.NewTMJSONLogger(logger.NewSyncWriter(GetLogsWriter(conf.LogsWriterFile)))
+	if conf.Custom.LogsType == "json" {
+		Logger = logger.NewTMJSONLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
 	} else {
 		// default fallback
-		Logger = logger.NewTMLogger(logger.NewSyncWriter(GetLogsWriter(conf.LogsWriterFile)))
+		Logger = logger.NewTMLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
 	}
 
 	// perform checks for timeout
-	if conf.EthRPCTimeout == 0 {
+	if conf.Custom.EthRPCTimeout == 0 {
 		// fallback to default
 		Logger.Debug("Missing ETH RPC timeout or invalid value provided, falling back to default", "timeout", DefaultEthRPCTimeout)
-		conf.EthRPCTimeout = DefaultEthRPCTimeout
+		conf.Custom.EthRPCTimeout = DefaultEthRPCTimeout
 	}
 
-	if conf.BorRPCTimeout == 0 {
+	if conf.Custom.BorRPCTimeout == 0 {
 		// fallback to default
 		Logger.Debug("Missing BOR RPC timeout or invalid value provided, falling back to default", "timeout", DefaultBorRPCTimeout)
-		conf.BorRPCTimeout = DefaultBorRPCTimeout
+		conf.Custom.BorRPCTimeout = DefaultBorRPCTimeout
 	}
 
-	if conf.SHStateSyncedInterval == 0 {
+	if conf.Custom.SHStateSyncedInterval == 0 {
 		// fallback to default
 		Logger.Debug("Missing self-healing StateSynced interval or invalid value provided, falling back to default", "interval", DefaultSHStateSyncedInterval)
-		conf.SHStateSyncedInterval = DefaultSHStateSyncedInterval
+		conf.Custom.SHStateSyncedInterval = DefaultSHStateSyncedInterval
 	}
 
-	if conf.SHStakeUpdateInterval == 0 {
+	if conf.Custom.SHStakeUpdateInterval == 0 {
 		// fallback to default
 		Logger.Debug("Missing self-healing StakeUpdate interval or invalid value provided, falling back to default", "interval", DefaultSHStakeUpdateInterval)
-		conf.SHStakeUpdateInterval = DefaultSHStakeUpdateInterval
+		conf.Custom.SHStakeUpdateInterval = DefaultSHStakeUpdateInterval
 	}
 
-	if conf.SHMaxDepthDuration == 0 {
+	if conf.Custom.SHMaxDepthDuration == 0 {
 		// fallback to default
 		Logger.Debug("Missing self-healing max depth duration or invalid value provided, falling back to default", "duration", DefaultSHMaxDepthDuration)
-		conf.SHMaxDepthDuration = DefaultSHMaxDepthDuration
+		conf.Custom.SHMaxDepthDuration = DefaultSHMaxDepthDuration
 	}
 
 	var err error
-	if mainRPCClient, err = rpc.Dial(conf.EthRPCUrl); err != nil {
-		log.Fatalln("Unable to dial via ethClient", "URL", conf.EthRPCUrl, "chain", "eth", "error", err)
+	if mainRPCClient, err = rpc.Dial(conf.Custom.EthRPCUrl); err != nil {
+		log.Fatalln("Unable to dial via ethClient", "URL", conf.Custom.EthRPCUrl, "chain", "eth", "error", err)
 	}
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if polygonPosRPCClient, err = rpc.Dial(conf.BorRPCUrl); err != nil {
+	if polygonPosRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
 	polygonPosClient = ethclient.NewClient(polygonPosRPCClient)
-	// Loading genesis doc
-	genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	GenesisDoc = *genDoc
+	// TODO HV2 - Why was this added? We are never using this
+	/*
+		// Loading genesis doc
+		genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		GenesisDoc = *genDoc
+	*/
 
 	// load pv file, unmarshall and set to privKeyObject
 	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
@@ -381,7 +391,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	privKeyObject = privVal.Key.PrivKey.Bytes()
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
-	switch conf.Chain {
+	// TODO HV2 - seems incomplete! Why?
+	switch conf.Custom.Chain {
 	case MainChain, MumbaiChain, AmoyChain:
 	default:
 
@@ -389,8 +400,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 }
 
 // GetDefaultHeimdallConfig returns configuration with default params
-func GetDefaultHeimdallConfig() Configuration {
-	return Configuration{
+func GetDefaultHeimdallConfig() CustomConfig {
+	return CustomConfig{
 		EthRPCUrl:      DefaultMainRPCUrl,
 		BorRPCUrl:      DefaultBorRPCUrl,
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
@@ -406,16 +417,16 @@ func GetDefaultHeimdallConfig() Configuration {
 
 		MainchainMaxGasPrice: DefaultMainchainMaxGasPrice,
 
-		CheckpointerPollInterval: DefaultCheckpointerPollInterval,
-		SyncerPollInterval:       DefaultSyncerPollInterval,
-		NoACKPollInterval:        DefaultNoACKPollInterval,
-		ClerkPollInterval:        DefaultClerkPollInterval,
-		SpanPollInterval:         DefaultSpanPollInterval,
-		MilestonePollInterval:    DefaultMilestonePollInterval,
-		EnableSH:                 DefaultEnableSH,
-		SHStateSyncedInterval:    DefaultSHStateSyncedInterval,
-		SHStakeUpdateInterval:    DefaultSHStakeUpdateInterval,
-		SHMaxDepthDuration:       DefaultSHMaxDepthDuration,
+		CheckpointPollInterval: DefaultCheckpointPollInterval,
+		SyncerPollInterval:     DefaultSyncerPollInterval,
+		NoACKPollInterval:      DefaultNoACKPollInterval,
+		ClerkPollInterval:      DefaultClerkPollInterval,
+		SpanPollInterval:       DefaultSpanPollInterval,
+		MilestonePollInterval:  DefaultMilestonePollInterval,
+		EnableSH:               DefaultEnableSH,
+		SHStateSyncedInterval:  DefaultSHStateSyncedInterval,
+		SHStakeUpdateInterval:  DefaultSHStakeUpdateInterval,
+		SHMaxDepthDuration:     DefaultSHMaxDepthDuration,
 
 		NoACKWaitTime: NoACKWaitTime,
 
@@ -426,8 +437,8 @@ func GetDefaultHeimdallConfig() Configuration {
 }
 
 // GetConfig returns cached configuration object
-func GetConfig() Configuration {
-	return conf
+func GetConfig() CustomConfig {
+	return conf.Custom
 }
 
 func GetGenesisDoc() cmTypes.GenesisDoc {
@@ -481,7 +492,7 @@ func GetPubKey() secp256k1.PubKey {
 
 // GetAddress returns address object
 func GetAddress() []byte {
-	return GetPubKey().Address().Bytes()
+	return GetPubKey().Address()
 }
 
 // GetValidChains returns all the valid chains
@@ -495,7 +506,7 @@ func GetMilestoneBorBlockHeight() uint64 {
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
-	chainMigration := chainManagerAddressMigrations[conf.Chain]
+	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
 		chainMigration = chainManagerAddressMigrations["default"]
 	}
@@ -511,7 +522,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	cmd.PersistentFlags().String(
 		WithHeimdallConfigFlag,
 		"",
-		"Override of Heimdall config file (default <home>/config/heimdall-config.json)",
+		"Override of Heimdall config file (default <home>/config/config.json)",
 	)
 
 	if err := v.BindPFlag(WithHeimdallConfigFlag, cmd.PersistentFlags().Lookup(WithHeimdallConfigFlag)); err != nil {
@@ -706,43 +717,43 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	}
 }
 
-func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
+func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
 	const logErrMsg = "Unable to read flag."
 
 	// get endpoint for ethereum chain from viper/cobra
 	stringConfgValue := v.GetString(MainRPCUrlFlag)
 	if stringConfgValue != "" {
-		c.EthRPCUrl = stringConfgValue
+		c.Custom.EthRPCUrl = stringConfgValue
 	}
 
 	// get endpoint for bor chain from viper/cobra
 	stringConfgValue = v.GetString(BorRPCUrlFlag)
 	if stringConfgValue != "" {
-		c.BorRPCUrl = stringConfgValue
+		c.Custom.BorRPCUrl = stringConfgValue
 	}
 
 	// get endpoint for cometBFT from viper/cobra
 	stringConfgValue = v.GetString(CometBFTNodeURLFlag)
 	if stringConfgValue != "" {
-		c.CometBFTRPCUrl = stringConfgValue
+		c.Custom.CometBFTRPCUrl = stringConfgValue
 	}
 
 	// get endpoint for CometBFT from viper/cobra
 	stringConfgValue = v.GetString(AmqpURLFlag)
 	if stringConfgValue != "" {
-		c.AmqpURL = stringConfgValue
+		c.Custom.AmqpURL = stringConfgValue
 	}
 
 	// get Heimdall REST server endpoint from viper/cobra
 	stringConfgValue = v.GetString(HeimdallServerURLFlag)
 	if stringConfgValue != "" {
-		c.HeimdallServerURL = stringConfgValue
+		c.Custom.HeimdallServerURL = stringConfgValue
 	}
 
 	// get Heimdall GRPC server endpoint from viper/cobra
 	stringConfgValue = v.GetString(GRPCServerURLFlag)
 	if stringConfgValue != "" {
-		c.GRPCServerURL = stringConfgValue
+		c.Custom.GRPCServerURL = stringConfgValue
 	}
 
 	// need this error for parsing Duration values
@@ -751,7 +762,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get check point pull interval from viper/cobra
 	stringConfgValue = v.GetString(CheckpointerPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.CheckpointerPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.CheckpointPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", CheckpointerPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -760,7 +771,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get syncer pull interval from viper/cobra
 	stringConfgValue = v.GetString(SyncerPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.SyncerPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.SyncerPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", SyncerPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -769,7 +780,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get poll interval for ack service to send no-ack in case of no checkpoints from viper/cobra
 	stringConfgValue = v.GetString(NoACKPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.NoACKPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.NoACKPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", NoACKPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -778,7 +789,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get clerk poll interval from viper/cobra
 	stringConfgValue = v.GetString(ClerkPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.ClerkPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.ClerkPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", ClerkPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -787,7 +798,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get span poll interval from viper/cobra
 	stringConfgValue = v.GetString(SpanPollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.SpanPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.SpanPollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", SpanPollIntervalFlag, "Error", err)
 			return err
 		}
@@ -796,7 +807,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get milestone poll interval from viper/cobra
 	stringConfgValue = v.GetString(MilestonePollIntervalFlag)
 	if stringConfgValue != "" {
-		if c.MilestonePollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.MilestonePollInterval, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", MilestonePollIntervalFlag, "Error", err)
 			return err
 		}
@@ -805,7 +816,7 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get time that ack service waits to clear buffer and elect new proposer from viper/cobra
 	stringConfgValue = v.GetString(NoACKWaitTimeFlag)
 	if stringConfgValue != "" {
-		if c.NoACKWaitTime, err = time.ParseDuration(stringConfgValue); err != nil {
+		if c.Custom.NoACKWaitTime, err = time.ParseDuration(stringConfgValue); err != nil {
 			loggerInstance.Error(logErrMsg, "Flag", NoACKWaitTimeFlag, "Error", err)
 			return err
 		}
@@ -814,96 +825,96 @@ func (c *Configuration) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Lo
 	// get mainchain gas limit from viper/cobra
 	uint64ConfgValue := v.GetUint64(MainchainGasLimitFlag)
 	if uint64ConfgValue != 0 {
-		c.MainchainGasLimit = uint64ConfgValue
+		c.Custom.MainchainGasLimit = uint64ConfgValue
 	}
 
 	// get mainchain max gas price from viper/cobra. if it is greater than  zero => set it as configuration parameter
 	int64ConfgValue := v.GetInt64(MainchainMaxGasPriceFlag)
 	if int64ConfgValue > 0 {
-		c.MainchainMaxGasPrice = int64ConfgValue
+		c.Custom.MainchainMaxGasPrice = int64ConfgValue
 	}
 
 	// get chain from viper/cobra flag
 	stringConfgValue = v.GetString(ChainFlag)
 	if stringConfgValue != "" {
-		c.Chain = stringConfgValue
+		c.Custom.Chain = stringConfgValue
 	}
 
 	stringConfgValue = v.GetString(LogsWriterFileFlag)
 	if stringConfgValue != "" {
-		c.LogsWriterFile = stringConfgValue
+		c.Custom.LogsWriterFile = stringConfgValue
 	}
 
 	return nil
 }
 
-func (c *Configuration) Merge(cc *Configuration) {
+func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 	if cc.EthRPCUrl != "" {
-		c.EthRPCUrl = cc.EthRPCUrl
+		c.Custom.EthRPCUrl = cc.EthRPCUrl
 	}
 
 	if cc.BorRPCUrl != "" {
-		c.BorRPCUrl = cc.BorRPCUrl
+		c.Custom.BorRPCUrl = cc.BorRPCUrl
 	}
 
 	if cc.CometBFTRPCUrl != "" {
-		c.CometBFTRPCUrl = cc.CometBFTRPCUrl
+		c.Custom.CometBFTRPCUrl = cc.CometBFTRPCUrl
 	}
 
 	if cc.AmqpURL != "" {
-		c.AmqpURL = cc.AmqpURL
+		c.Custom.AmqpURL = cc.AmqpURL
 	}
 
 	if cc.HeimdallServerURL != "" {
-		c.HeimdallServerURL = cc.HeimdallServerURL
+		c.Custom.HeimdallServerURL = cc.HeimdallServerURL
 	}
 
 	if cc.GRPCServerURL != "" {
-		c.GRPCServerURL = cc.GRPCServerURL
+		c.Custom.GRPCServerURL = cc.GRPCServerURL
 	}
 
 	if cc.MainchainGasLimit != 0 {
-		c.MainchainGasLimit = cc.MainchainGasLimit
+		c.Custom.MainchainGasLimit = cc.MainchainGasLimit
 	}
 
 	if cc.MainchainMaxGasPrice != 0 {
-		c.MainchainMaxGasPrice = cc.MainchainMaxGasPrice
+		c.Custom.MainchainMaxGasPrice = cc.MainchainMaxGasPrice
 	}
 
-	if cc.CheckpointerPollInterval != 0 {
-		c.CheckpointerPollInterval = cc.CheckpointerPollInterval
+	if cc.CheckpointPollInterval != 0 {
+		c.Custom.CheckpointPollInterval = cc.CheckpointPollInterval
 	}
 
 	if cc.SyncerPollInterval != 0 {
-		c.SyncerPollInterval = cc.SyncerPollInterval
+		c.Custom.SyncerPollInterval = cc.SyncerPollInterval
 	}
 
 	if cc.NoACKPollInterval != 0 {
-		c.NoACKPollInterval = cc.NoACKPollInterval
+		c.Custom.NoACKPollInterval = cc.NoACKPollInterval
 	}
 
 	if cc.ClerkPollInterval != 0 {
-		c.ClerkPollInterval = cc.ClerkPollInterval
+		c.Custom.ClerkPollInterval = cc.ClerkPollInterval
 	}
 
 	if cc.SpanPollInterval != 0 {
-		c.SpanPollInterval = cc.SpanPollInterval
+		c.Custom.SpanPollInterval = cc.SpanPollInterval
 	}
 
 	if cc.MilestonePollInterval != 0 {
-		c.MilestonePollInterval = cc.MilestonePollInterval
+		c.Custom.MilestonePollInterval = cc.MilestonePollInterval
 	}
 
 	if cc.NoACKWaitTime != 0 {
-		c.NoACKWaitTime = cc.NoACKWaitTime
+		c.Custom.NoACKWaitTime = cc.NoACKWaitTime
 	}
 
 	if cc.Chain != "" {
-		c.Chain = cc.Chain
+		c.Custom.Chain = cc.Chain
 	}
 
 	if cc.LogsWriterFile != "" {
-		c.LogsWriterFile = cc.LogsWriterFile
+		c.Custom.LogsWriterFile = cc.LogsWriterFile
 	}
 }
 
@@ -930,7 +941,7 @@ func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 	}
 
 	if cometBFTConfig.P2P.Seeds == "" {
-		switch conf.Chain {
+		switch conf.Custom.Chain {
 		case MainChain:
 			cometBFTConfig.P2P.Seeds = DefaultMainnetSeeds
 		case MumbaiChain:
@@ -952,4 +963,21 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 	} else {
 		return os.Stdout
 	}
+}
+
+// SetTestConfig sets test configuration
+func SetTestConfig(_conf CustomConfig) {
+	conf.Custom = _conf
+}
+
+// TEST PURPOSE ONLY
+// SetTestPrivPubKey sets test priv and pub key for testing
+func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
+	privKeyObject = privKey
+	privKeyObject.PubKey()
+	pubKey, ok := privKeyObject.PubKey().(secp256k1.PubKey)
+	if !ok {
+		panic("pub key is not of type secp256k1.PrivKey")
+	}
+	pubKeyObject = pubKey
 }
