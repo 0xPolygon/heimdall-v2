@@ -67,11 +67,7 @@ func (v *Validator) ValidateBasic() bool {
 		Key: v.PubKey,
 	}
 
-	if v.Signer != pk.Address().String() {
-		return false
-	}
-
-	return true
+	return util.FormatAddress(v.Signer) == util.FormatAddress(pk.Address().String())
 }
 
 // Copy creates a new copy of the validator, so we can mutate accum
