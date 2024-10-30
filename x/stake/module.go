@@ -126,6 +126,11 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	telemetry.MeasureSince(start, "InitGenesis", "stake", "unmarshal")
 
+	err := am.keeper.SetLastBlockTxs(ctx, make([][]byte, 0))
+	if err != nil {
+		panic(err)
+	}
+
 	return am.keeper.InitGenesis(ctx, &genesisState)
 }
 
