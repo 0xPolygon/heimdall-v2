@@ -2,6 +2,7 @@ package heimdalld
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -213,7 +214,9 @@ func initRootCmd(
 	// add custom commands
 	rootCmd.AddCommand(
 		generateKeystore(),
+		importKeyStore(),
 		generateValidatorKey(),
+		importValidatorKey(),
 		StakeCmd(),
 		ApproveCmd(),
 		version.Cmd,
@@ -385,40 +388,18 @@ func appExport(
 // generateKeystore generate keystore file from private key
 func generateKeystore() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "generate-keystore <private-key>",
-		Short: "Generates keystore file using private key",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			s := strings.ReplaceAll(args[0], "0x", "")
-			pk, err := ethcrypto.HexToECDSA(s)
+		Use:   "generate-keystore",
+		Short: "Generates keystore file",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			pk, err := ethcrypto.GenerateKey()
 			if err != nil {
 				return err
 			}
 
-			id, err := uuid.NewRandom()
-			if err != nil {
-				return err
-			}
-			key := &keystore.Key{
-				Id:         id,
-				Address:    ethcrypto.PubkeyToAddress(pk.PublicKey),
-				PrivateKey: pk,
-			}
-
-			passphrase, err := promptPassphrase(true)
-			if err != nil {
+			if err = createKeyStore(pk); err != nil {
 				return err
 			}
 
-			keyjson, err := keystore.EncryptKey(key, passphrase, keystore.StandardScryptN, keystore.StandardScryptP)
-			if err != nil {
-				return err
-			}
-
-			// Then write the new keyfile in place of the old one.
-			if err := os.WriteFile(keyFileName(key.Address), keyjson, 0600); err != nil {
-				return err
-			}
 			return nil
 		},
 	}
@@ -426,24 +407,37 @@ func generateKeystore() *cobra.Command {
 	return cmd
 }
 
-// TODO HV2 - consider changing the way we provide private key (make it more secure, POS-2627)
-// generateValidatorKey generate validator key
-func generateValidatorKey() *cobra.Command {
-	cdc := codec.NewLegacyAmino()
-	cmd := &cobra.Command{
-		Use:   "generate-validator-key <private-key>",
-		Short: "Generate validator key file using private key",
+// importKeyStore imports keystore from private key in the given file path
+func importKeyStore() *cobra.Command {
+	return &cobra.Command{
+		Use:   "import-keystore <keystore-file>",
+		Short: "Import keystore from a private key stored in file (without 0x prefix)",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s := strings.ReplaceAll(args[0], "0x", "")
-			ds, err := hex.DecodeString(s)
+			pk, err := ethcrypto.LoadECDSA(args[0])
 			if err != nil {
 				return err
 			}
 
-			// set private object
-			var privKeyObject secp256k1.PrivKey
-			copy(privKeyObject[:], ds)
+			if err = createKeyStore(pk); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
+}
+
+// generateValidatorKey generate validator key
+func generateValidatorKey() *cobra.Command {
+	cdc := codec.NewLegacyAmino()
+	cmd := &cobra.Command{
+		Use:   "generate-validator-key",
+		Short: "Generate validator key",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			// generate private key
+			privKeyObject := secp256k1.GenPrivKey()
 
 			// node key
 			nodeKey := privval.FilePVKey{
@@ -467,6 +461,47 @@ func generateValidatorKey() *cobra.Command {
 	}
 
 	return cmd
+}
+
+// importValidatorKey imports validator private key from the given file path
+func importValidatorKey() *cobra.Command {
+	cdc := codec.NewLegacyAmino()
+	return &cobra.Command{
+		Use:   "import-validator-key <private-key-file>",
+		Short: "Import private key from a private key stored in file (without 0x prefix)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+
+			pk, err := ethcrypto.LoadECDSA(args[0])
+			if err != nil {
+				return err
+			}
+
+			bz := ethcrypto.FromECDSA(pk)
+
+			// set private object
+			var privKeyObject secp256k1.PrivKey
+			copy(privKeyObject[:], bz)
+
+			// node key
+			nodeKey := privval.FilePVKey{
+				Address: privKeyObject.PubKey().Address(),
+				PubKey:  privKeyObject.PubKey(),
+				PrivKey: privKeyObject,
+			}
+
+			jsonBytes, err := cdc.MarshalJSONIndent(nodeKey, "", "  ")
+			if err != nil {
+				return err
+			}
+
+			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0600)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		},
+	}
 }
 
 func showPrivateKeyCmd() *cobra.Command {
@@ -671,6 +706,35 @@ func WriteDefaultHeimdallConfig(path string, conf helper.CustomConfig) {
 	} else {
 		logger.Error("error while checking for config file", "error", err)
 	}
+}
+
+func createKeyStore(pk *ecdsa.PrivateKey) error {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+	key := &keystore.Key{
+		Id:         id,
+		Address:    ethcrypto.PubkeyToAddress(pk.PublicKey),
+		PrivateKey: pk,
+	}
+
+	passphrase, err := promptPassphrase(true)
+	if err != nil {
+		return err
+	}
+
+	keyjson, err := keystore.EncryptKey(key, passphrase, keystore.StandardScryptN, keystore.StandardScryptP)
+	if err != nil {
+		return err
+	}
+
+	// Then write the new keyfile in place of the old one.
+	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0600); err != nil {
+		return err
+	}
+	return nil
+
 }
 
 // TODO HV2 - check if we need this
