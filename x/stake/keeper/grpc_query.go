@@ -114,3 +114,21 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 
 	return &types.QueryStakeIsOldTxResponse{IsOld: true}, nil
 }
+
+// GetVoteExtensions queries for the vote extensions for a given height
+func (q queryServer) GetVoteExtensions(ctx context.Context, req *types.QueryVoteExtensionsRequest) (*types.QueryVoteExtensionsResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.Height == 0 {
+		return nil, status.Error(codes.InvalidArgument, "invalid height")
+	}
+
+	voteExtensions, err := q.k.GetVoteExtensions(ctx, req.Height)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "error in getting vote extensions")
+	}
+
+	return &types.QueryVoteExtensionsResponse{Extensions: voteExtensions.Extensions}, nil
+}

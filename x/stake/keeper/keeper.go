@@ -27,11 +27,12 @@ type Keeper struct {
 	validatorAddressCodec addresscodec.Codec
 	contractCaller        helper.IContractCaller
 
-	validators   collections.Map[string, types.Validator]
-	validatorSet collections.Map[[]byte, types.ValidatorSet]
-	signer       collections.Map[uint64, string]
-	sequences    collections.Map[string, bool]
-	lastBlockTxs collections.Item[types.LastBlockTxs]
+	validators           collections.Map[string, types.Validator]
+	validatorSet         collections.Map[[]byte, types.ValidatorSet]
+	signer               collections.Map[uint64, string]
+	sequences            collections.Map[string, bool]
+	lastBlockTxs         collections.Item[types.LastBlockTxs]
+	heightVoteExtensions collections.Map[uint64, types.VoteExtensions]
 
 	setupComplete bool
 }
@@ -55,13 +56,13 @@ func NewKeeper(
 		validatorAddressCodec: validatorAddressCodec,
 		contractCaller:        contractCaller,
 
-		validators:   collections.NewMap(sb, types.ValidatorsKey, "validator", collections.StringKey, codec.CollValue[types.Validator](cdc)),
-		validatorSet: collections.NewMap(sb, types.ValidatorSetKey, "validator_set", collections.BytesKey, codec.CollValue[types.ValidatorSet](cdc)),
-		sequences:    collections.NewMap(sb, types.StakeSequenceKey, "stake_sequence", collections.StringKey, collections.BoolValue),
-		signer:       collections.NewMap(sb, types.SignerKey, "signer", collections.Uint64Key, collections.StringValue),
-		lastBlockTxs: collections.NewItem(sb, types.LastBlockTxsKey, "last_block_txs", codec.CollValue[types.LastBlockTxs](cdc)),
-
-		setupComplete: false,
+		validators:           collections.NewMap(sb, types.ValidatorsKey, "validator", collections.StringKey, codec.CollValue[types.Validator](cdc)),
+		validatorSet:         collections.NewMap(sb, types.ValidatorSetKey, "validator_set", collections.BytesKey, codec.CollValue[types.ValidatorSet](cdc)),
+		sequences:            collections.NewMap(sb, types.StakeSequenceKey, "stake_sequence", collections.StringKey, collections.BoolValue),
+		signer:               collections.NewMap(sb, types.SignerKey, "signer", collections.Uint64Key, collections.StringValue),
+		lastBlockTxs:         collections.NewItem(sb, types.LastBlockTxsKey, "last_block_txs", codec.CollValue[types.LastBlockTxs](cdc)),
+		heightVoteExtensions: collections.NewMap(sb, types.VoteExtensionsKey, "block_vote_extensions", collections.Uint64Key, codec.CollValue[types.VoteExtensions](cdc)),
+		setupComplete:        false,
 	}
 
 	// build the schema and set it in the keeper
@@ -92,6 +93,18 @@ func (k Keeper) SetLastBlockTxs(ctx sdk.Context, txs [][]byte) error {
 func (k Keeper) GetLastBlockTxs(ctx sdk.Context) (types.LastBlockTxs, error) {
 	k.PanicIfSetupIsIncomplete()
 	return k.lastBlockTxs.Get(ctx)
+}
+
+// SetVoteExtensions sets the block vote extensions in the store
+func (k Keeper) SetVoteExtensions(ctx sdk.Context, height uint64, voteExtensions types.VoteExtensions) error {
+	k.PanicIfSetupIsIncomplete()
+	return k.heightVoteExtensions.Set(ctx, height, voteExtensions)
+}
+
+// GetVoteExtensions gets the block vote extensions from the store
+func (k Keeper) GetVoteExtensions(ctx context.Context, height uint64) (types.VoteExtensions, error) {
+	k.PanicIfSetupIsIncomplete()
+	return k.heightVoteExtensions.Get(ctx, height)
 }
 
 // SetCheckpointKeeper sets the checkpoint keeper in the stake keeper

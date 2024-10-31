@@ -8,6 +8,7 @@ import (
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -31,6 +32,7 @@ func NewProcessorService(
 	queueConnector *queue.QueueConnector,
 	httpClient *rpchttp.HTTP,
 	txBroadcaster *broadcaster.TxBroadcaster,
+	grpcConn *grpc.ClientConn,
 ) *ProcessorService {
 	// creating processor object
 	processorService := &ProcessorService{
@@ -49,7 +51,7 @@ func NewProcessorService(
 	//
 
 	// initialize checkpoint processor
-	checkpointProcessor := NewCheckpointProcessor(&contractCaller.RootChainABI)
+	checkpointProcessor := NewCheckpointProcessor(&contractCaller.RootChainABI, grpcConn)
 	checkpointProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "checkpoint", checkpointProcessor)
 
 	// initialize checkpoint processor

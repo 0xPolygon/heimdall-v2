@@ -17,12 +17,14 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	stakepb "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"google.golang.org/grpc"
 )
 
 // CheckpointProcessor - processor for checkpoint queue.
@@ -36,6 +38,8 @@ type CheckpointProcessor struct {
 
 	// Rootchain abi
 	rootchainAbi *abi.ABI
+
+	stakeQueryClient stakepb.QueryClient
 }
 
 // Result represents single req result
@@ -50,9 +54,10 @@ type CheckpointContext struct {
 }
 
 // NewCheckpointProcessor - add rootchain abi to checkpoint processor
-func NewCheckpointProcessor(rootchainAbi *abi.ABI) *CheckpointProcessor {
+func NewCheckpointProcessor(rootchainAbi *abi.ABI, grpcConn *grpc.ClientConn) *CheckpointProcessor {
 	return &CheckpointProcessor{
-		rootchainAbi: rootchainAbi,
+		rootchainAbi:     rootchainAbi,
+		stakeQueryClient: stakepb.NewQueryClient(grpcConn),
 	}
 }
 
@@ -534,19 +539,11 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 	// side-tx data
 	sideTxData := sideMsg.GetSideSignBytes()
 
-	// TODO HV2 - `FetchSideTxSigs()` is not implemented in the helper package.
-	// https://polygon.atlassian.net/browse/POS-2713 for more information.
-	/*
-		// get sigs
-		sigs, err := helper.FetchSideTxSigs(cp.httpClient, height, tx.Tx.Hash(), sideTxData)
-		if err != nil {
-			cp.Logger.Error("Error fetching votes for checkpoint tx", "height", height)
-			return err
-		}
-	*/
-
-	// TODO HV2 - This is a place holder, remove when the above function is uncommented.
-	var sigs [][3]*big.Int
+	sigs, err := helper.FetchSideTxSigs(cp.stakeQueryClient, height, tx.Tx.Hash(), sideTxData)
+	if err != nil {
+		cp.Logger.Error("Error fetching votes for checkpoint tx", "height", height)
+		return err
+	}
 
 	shouldSend, err := cp.shouldSendCheckpoint(checkpointContext, start, end)
 	if err != nil {

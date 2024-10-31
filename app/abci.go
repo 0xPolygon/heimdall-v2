@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // Note: returning any error in ABCI functions will cause cometBFT to panic
@@ -284,6 +285,22 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, errors.New("non-empty VEs found in the initial height's pre-blocker")
 		}
 		return app.ModuleManager.PreBlock(ctx)
+	}
+
+	extensions := []stakeTypes.VoteExtension{}
+	for _, ve := range extVoteInfo {
+		extensions = append(extensions, stakeTypes.VoteExtension{
+			ValidatorAddress:   ve.Validator.Address,
+			Extension:          ve.VoteExtension,
+			ExtensionSignature: ve.ExtensionSignature,
+		})
+	}
+
+	if err := app.StakeKeeper.SetVoteExtensions(ctx, uint64(req.Height), stakeTypes.VoteExtensions{
+		Extensions: extensions,
+	}); err != nil {
+		logger.Error("Error occurred while setting height vote extensions", "error", err)
+		return nil, err
 	}
 
 	// Fetch txs from block n-1 so that we can match them with the approved txs in block n to execute sideTxs

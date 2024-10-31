@@ -27,6 +27,7 @@ var (
 	CurrentMilestoneValidatorSetKey = []byte{0x25} // Key to store current validator set for milestone
 	LastBlockTxsKey                 = []byte{0x26} // key to store last block's txs
 	PreviousBlockValidatorSetKey    = []byte{0x27} // key to store the previous block's validator set
+	VoteExtensionsKey               = []byte{0x28} // key to store block vote extensions
 )
 
 type PubKey [65]byte

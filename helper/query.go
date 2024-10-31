@@ -1,15 +1,22 @@
 package helper
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"math/big"
+	"sort"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	stakepb "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	httpClient "github.com/cometbft/cometbft/rpc/client/http"
 	ctypes "github.com/cometbft/cometbft/rpc/core/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	cosmosContext "github.com/cosmos/cosmos-sdk/client"
+	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 )
 
@@ -377,4 +384,63 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 	}
 
 	return events, err
+}
+
+// FetchSideTxSigs fetches side tx sigs from it
+func FetchSideTxSigs(
+	client stakepb.QueryClient,
+	height int64,
+	txHash []byte,
+	sideTxData []byte,
+) ([][3]*big.Int, error) {
+
+	voteExtensionsResponse, err := client.GetVoteExtensions(context.Background(), &stakepb.QueryVoteExtensionsRequest{
+		Height: uint64(height),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sideTxSigs := make([]*sideTxSig, 0)
+
+	for _, entry := range voteExtensionsResponse.Extensions {
+		ve := new(sidetxs.ConsolidatedSideTxResponse)
+		if err := ve.Unmarshal(entry.Extension); err != nil {
+			return nil, err
+		}
+
+		for _, sideTxResponse := range ve.SideTxResponses {
+			if bytes.Equal(sideTxResponse.TxHash, txHash) {
+				sideTxSigs = append(sideTxSigs, &sideTxSig{
+					Address: entry.ValidatorAddress,
+					Sig:     entry.ExtensionSignature,
+				})
+			}
+		}
+	}
+
+	sigs := [][3]*big.Int{}
+	dummyLegacyTxn := ethTypes.NewTransaction(0, common.Address{}, nil, 0, nil, nil)
+
+	if len(sideTxSigs) > 0 {
+		sort.Slice(sideTxSigs, func(i, j int) bool {
+			return bytes.Compare(sideTxSigs[i].Address, sideTxSigs[j].Address) < 0
+		})
+
+		for _, sideTxSig := range sideTxSigs {
+			R, S, V, err := ethTypes.HomesteadSigner{}.SignatureValues(dummyLegacyTxn, sideTxSig.Sig)
+			if err != nil {
+				return nil, err
+			}
+
+			sigs = append(sigs, [3]*big.Int{R, S, V})
+		}
+	}
+
+	return sigs, nil
+}
+
+type sideTxSig struct {
+	Address []byte
+	Sig     []byte
 }

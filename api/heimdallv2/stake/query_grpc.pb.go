@@ -25,6 +25,7 @@ const (
 	Query_GetValidatorStatusByAddress_FullMethodName = "/heimdallv2.stake.Query/GetValidatorStatusByAddress"
 	Query_GetTotalPower_FullMethodName               = "/heimdallv2.stake.Query/GetTotalPower"
 	Query_IsStakeTxOld_FullMethodName                = "/heimdallv2.stake.Query/IsStakeTxOld"
+	Query_GetVoteExtensions_FullMethodName           = "/heimdallv2.stake.Query/GetVoteExtensions"
 )
 
 // QueryClient is the client API for Query service.
@@ -43,6 +44,8 @@ type QueryClient interface {
 	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
+	// QueryVoteExtensions queries for the vote extensions
+	GetVoteExtensions(ctx context.Context, in *QueryVoteExtensionsRequest, opts ...grpc.CallOption) (*QueryVoteExtensionsResponse, error)
 }
 
 type queryClient struct {
@@ -107,6 +110,15 @@ func (c *queryClient) IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxReq
 	return out, nil
 }
 
+func (c *queryClient) GetVoteExtensions(ctx context.Context, in *QueryVoteExtensionsRequest, opts ...grpc.CallOption) (*QueryVoteExtensionsResponse, error) {
+	out := new(QueryVoteExtensionsResponse)
+	err := c.cc.Invoke(ctx, Query_GetVoteExtensions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -123,6 +135,8 @@ type QueryServer interface {
 	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)
+	// QueryVoteExtensions queries for the vote extensions
+	GetVoteExtensions(context.Context, *QueryVoteExtensionsRequest) (*QueryVoteExtensionsResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -147,6 +161,9 @@ func (UnimplementedQueryServer) GetTotalPower(context.Context, *QueryTotalPowerR
 }
 func (UnimplementedQueryServer) IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsStakeTxOld not implemented")
+}
+func (UnimplementedQueryServer) GetVoteExtensions(context.Context, *QueryVoteExtensionsRequest) (*QueryVoteExtensionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVoteExtensions not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -269,6 +286,24 @@ func _Query_IsStakeTxOld_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetVoteExtensions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryVoteExtensionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetVoteExtensions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetVoteExtensions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetVoteExtensions(ctx, req.(*QueryVoteExtensionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -299,6 +334,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsStakeTxOld",
 			Handler:    _Query_IsStakeTxOld_Handler,
+		},
+		{
+			MethodName: "GetVoteExtensions",
+			Handler:    _Query_GetVoteExtensions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -1,17 +1,17 @@
 syntax = "proto3";
 package heimdallv2.stake;
 
+import "amino/amino.proto";
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/query/v1/query.proto";
-import "amino/amino.proto";
 import "heimdallv2/stake/validator.proto";
+import "heimdallv2/stake/vote_extensions.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
 // Query defines the gRPC querier service.
 service Query {
-
   // CurrentValidatorSet queries for the current validator set
   rpc GetCurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
@@ -50,6 +50,27 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/is-old-tx";
   }
+
+  // QueryVoteExtensions queries for the vote extensions
+  rpc GetVoteExtensions(QueryVoteExtensionsRequest)
+      returns (QueryVoteExtensionsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/vote-extensions";
+  }
+}
+
+// QueryVoteExtensionsRequest is request type for Query/VoteExtensions RPC
+// method
+message QueryVoteExtensionsRequest {
+  uint64 height = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryVoteExtensionsResponse is response type for Query/VoteExtensions RPC
+// method
+message QueryVoteExtensionsResponse {
+  uint64 height = 1 [ (amino.dont_omitempty) = true ];
+  repeated VoteExtension extensions = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 // QueryCurrentValidatorSetRequest is request type for Query/CurrentValidatorSet

@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 const (
@@ -49,11 +51,16 @@ func StartBridgeWithCtx(shutdownCtx context.Context) error {
 		panic(fmt.Sprintf("Error connecting to server %v", err))
 	}
 
+	grpcConn, err := grpc.NewClient(helper.GetConfig().GRPCServerURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(fmt.Sprintf("Error connecting to GRPC server %v", err))
+	}
+
 	// selected services to start
 	var services []common.Service
 	services = append(services,
 		listener.NewListenerService(cdc, _queueConnector, _httpClient),
-		processor.NewProcessorService(cdc, _queueConnector, _httpClient, _txBroadcaster),
+		processor.NewProcessorService(cdc, _queueConnector, _httpClient, _txBroadcaster, grpcConn),
 	)
 
 	// Start http client
@@ -153,11 +160,16 @@ func StartBridge(isStandAlone bool) {
 		panic(fmt.Sprintf("Error connecting to server %v", err))
 	}
 
+	grpcConn, err := grpc.NewClient(helper.GetConfig().GRPCServerURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		panic(fmt.Sprintf("Error connecting to GRPC server %v", err))
+	}
+
 	// selected services to start
 	var services []common.Service
 	services = append(services,
 		listener.NewListenerService(cdc, _queueConnector, _httpClient),
-		processor.NewProcessorService(cdc, _queueConnector, _httpClient, _txBroadcaster),
+		processor.NewProcessorService(cdc, _queueConnector, _httpClient, _txBroadcaster, grpcConn),
 	)
 
 	// sync group

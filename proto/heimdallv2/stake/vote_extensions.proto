@@ -1,0 +1,18 @@
+syntax = "proto3";
+package heimdallv2.stake;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
+
+message VoteExtension {
+  bytes validator_address = 1 [ (amino.dont_omitempty) = true ];
+  bytes extension = 2 [ (amino.dont_omitempty) = true ];
+  bytes extension_signature = 3 [ (amino.dont_omitempty) = true ];
+}
+
+message VoteExtensions {
+  repeated VoteExtension extensions = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
