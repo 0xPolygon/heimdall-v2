@@ -62,14 +62,13 @@ service Query {
 // QueryVoteExtensionsRequest is request type for Query/VoteExtensions RPC
 // method
 message QueryVoteExtensionsRequest {
-  uint64 height = 1 [ (amino.dont_omitempty) = true ];
+  uint64 extensions_height = 1 [ (amino.dont_omitempty) = true ];
 }
 
 // QueryVoteExtensionsResponse is response type for Query/VoteExtensions RPC
 // method
 message QueryVoteExtensionsResponse {
-  uint64 height = 1 [ (amino.dont_omitempty) = true ];
-  repeated VoteExtension extensions = 2
+  repeated VoteExtension extensions = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 

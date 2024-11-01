@@ -121,11 +121,11 @@ func (q queryServer) GetVoteExtensions(ctx context.Context, req *types.QueryVote
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if req.Height == 0 {
+	if req.ExtensionsHeight == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid height")
 	}
 
-	voteExtensions, err := q.k.GetVoteExtensions(ctx, req.Height)
+	voteExtensions, err := q.k.GetVoteExtensions(ctx, req.ExtensionsHeight)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "error in getting vote extensions")
 	}

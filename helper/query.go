@@ -391,17 +391,16 @@ func FetchSideTxSigs(
 	client stakepb.QueryClient,
 	height int64,
 	txHash []byte,
-	sideTxData []byte,
 ) ([][3]*big.Int, error) {
 
 	voteExtensionsResponse, err := client.GetVoteExtensions(context.Background(), &stakepb.QueryVoteExtensionsRequest{
-		Height: uint64(height),
+		ExtensionsHeight: uint64(height),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	sideTxSigs := make([]*sideTxSig, 0)
+	sideTxSigs := make([]sideTxSig, 0)
 
 	for _, entry := range voteExtensionsResponse.Extensions {
 		ve := new(sidetxs.ConsolidatedSideTxResponse)
@@ -410,37 +409,39 @@ func FetchSideTxSigs(
 		}
 
 		for _, sideTxResponse := range ve.SideTxResponses {
-			if bytes.Equal(sideTxResponse.TxHash, txHash) {
-				sideTxSigs = append(sideTxSigs, &sideTxSig{
-					Address: entry.ValidatorAddress,
-					Sig:     entry.ExtensionSignature,
+			if bytes.Equal(sideTxResponse.TxHash, txHash) && sideTxResponse.Result == sidetxs.Vote_VOTE_YES {
+				sideTxSigs = append(sideTxSigs, sideTxSig{
+					address: entry.ValidatorAddress,
+					sig:     entry.ExtensionSignature,
 				})
 			}
 		}
 	}
 
-	sigs := [][3]*big.Int{}
+	if len(sideTxSigs) == 0 {
+		return nil, errors.New("no side tx sigs found")
+	}
+
+	sort.Slice(sideTxSigs, func(i, j int) bool {
+		return bytes.Compare(sideTxSigs[i].address, sideTxSigs[j].address) < 0
+	})
+
 	dummyLegacyTxn := ethTypes.NewTransaction(0, common.Address{}, nil, 0, nil, nil)
+	sigs := [][3]*big.Int{}
 
-	if len(sideTxSigs) > 0 {
-		sort.Slice(sideTxSigs, func(i, j int) bool {
-			return bytes.Compare(sideTxSigs[i].Address, sideTxSigs[j].Address) < 0
-		})
-
-		for _, sideTxSig := range sideTxSigs {
-			R, S, V, err := ethTypes.HomesteadSigner{}.SignatureValues(dummyLegacyTxn, sideTxSig.Sig)
-			if err != nil {
-				return nil, err
-			}
-
-			sigs = append(sigs, [3]*big.Int{R, S, V})
+	for _, sideTxSig := range sideTxSigs {
+		R, S, V, err := ethTypes.HomesteadSigner{}.SignatureValues(dummyLegacyTxn, sideTxSig.sig)
+		if err != nil {
+			return nil, err
 		}
+
+		sigs = append(sigs, [3]*big.Int{R, S, V})
 	}
 
 	return sigs, nil
 }
 
 type sideTxSig struct {
-	Address []byte
-	Sig     []byte
+	address []byte
+	sig     []byte
 }

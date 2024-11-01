@@ -539,7 +539,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 	// side-tx data
 	sideTxData := sideMsg.GetSideSignBytes()
 
-	sigs, err := helper.FetchSideTxSigs(cp.stakeQueryClient, height, tx.Tx.Hash(), sideTxData)
+	sigs, err := helper.FetchSideTxSigs(cp.stakeQueryClient, height, tx.Tx.Hash())
 	if err != nil {
 		cp.Logger.Error("Error fetching votes for checkpoint tx", "height", height)
 		return err
