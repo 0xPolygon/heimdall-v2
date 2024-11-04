@@ -4,6 +4,17 @@ run:
   go: '1.23.2'
   timeout: 20m
   tests: true
+#  skip-dirs:
+#    - "/api/"
+
+#exclude:
+#    - "api/.*\\.pb\\.go"
+#    - "api/.*\\.pulsar\\.go"
+#    - "x/.*\\.pb\\.go"
+#    - "x/.*\\.pulsar\\.go"
+#    - ".*_test\\.go"
+#    - ".*test_utils\\.go"
+#    - ".*testdata\\.go"
 
 linters:
   enable:
@@ -19,7 +30,8 @@ linters:
     - errchkjson
     - errname
     # - exhaustive
-    - exportloopref
+    # - exportloopref #deprecated and replaced by copyloopvar
+    - copyloopvar
     # - gocognit
     - gofmt
     # - gomnd
@@ -132,6 +144,14 @@ linters-settings:
           - (github.com/ethereum/go-ethereum/log.Logger).Crit
 
 issues:
+  exclude:
+    - "api/.*\\.pb\\.go"
+    - "api/.*\\.pulsar\\.go"
+    - "x/.*\\.pb\\.go"
+    - "x/.*\\.pulsar\\.go"
+    - ".*_test\\.go"
+    - ".*test_utils\\.go"
+    - ".*testdata\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
   new-from-rev: origin/develop
