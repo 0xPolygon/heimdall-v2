@@ -112,7 +112,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 			txn, err := app.TxDecode(tx)
 			if err != nil {
-				logger.Error("error occurred while decoding tx bytes in PrepareProposalHandler", err)
+				logger.Error("error occurred while decoding tx bytes in ProcessProposalHandler", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
