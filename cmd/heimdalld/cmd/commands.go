@@ -171,7 +171,7 @@ func initRootCmd(
 	AddCommandsWithStartCmdOptions(rootCmd, app.DefaultNodeHome, newApp, appExport, server.StartCmdOptions{
 		AddFlags: func(startCmd *cobra.Command) {
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
-			startCmd.Flags().Bool(helper.BridgeFlag, true, "Enable the bridge server")
+			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
