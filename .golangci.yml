@@ -156,4 +156,4 @@ issues:
     - ".*testdata\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
-  new-from-rev: origin/develop
+  new-from-rev: ${GOLANGCI_LINT_NEW_FROM_REV}
