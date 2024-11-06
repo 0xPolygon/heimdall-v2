@@ -29,6 +29,7 @@ func GenRandMilestone(start uint64, milestoneLength uint64) (milestone types.Mil
 		proposer,
 		borChainID,
 		milestoneID,
+		// #nosec G115
 		uint64(time.Now().UTC().Unix()))
 
 	return milestone

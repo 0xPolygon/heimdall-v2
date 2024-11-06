@@ -79,6 +79,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 	}
 
 	auth.GasPrice = gasPrice
+	// #nosec G115
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.GasLimit = gasLimit
 

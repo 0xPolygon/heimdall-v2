@@ -58,6 +58,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	endBlock := uint64(255)
 	rootHash := testutil.RandomBytes()
 	proposerAddress := util.FormatAddress(common.HexToAddress(AccountHash).String())
+	// #nosec G115
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
@@ -114,6 +115,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 func (s *KeeperTestSuite) TestQueryLastNoAck() {
 	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.checkpointKeeper, s.queryClient
 
+	// #nosec G115
 	noAck := uint64(time.Now().Unix())
 	err := keeper.SetLastNoAck(ctx, noAck)
 	require.NoError(err)
@@ -139,6 +141,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	endBlock := uint64(256)
 	rootHash := testutil.RandomBytes()
 	proposerAddress := common.HexToAddress(AccountHash).String()
+	// #nosec G115
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
@@ -215,6 +218,7 @@ func (s *KeeperTestSuite) TestGetCheckpointList() {
 	expCheckpoints := make([]types.Checkpoint, 0, len(checkpoints))
 	for i, cp := range checkpoints {
 		expCheckpoints = append(expCheckpoints, *cp)
+		// #nosec G115
 		err := keeper.AddCheckpoint(ctx, uint64(i), *cp)
 		require.NoError(err)
 	}

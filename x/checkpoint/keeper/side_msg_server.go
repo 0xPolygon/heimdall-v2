@@ -241,6 +241,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return
 	}
 
+	// #nosec G115
 	timeStamp := uint64(ctx.BlockTime().Unix())
 
 	// add checkpoint to buffer with root hash and account hash

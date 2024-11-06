@@ -106,6 +106,7 @@ func TestRunMigrations(t *testing.T) {
 		{
 			"can register 2->3 migration handler for x/bank, can run migration",
 			"bank", 2, bank.AppModule{}.ConsensusVersion(),
+			// #nosec G115
 			false, "", false, "", int(bank.AppModule{}.ConsensusVersion() - 2), // minus 2 because 1-2 is run in the previous test case.
 		},
 		{

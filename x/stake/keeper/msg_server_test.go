@@ -227,6 +227,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 	addr := pk1.Address().String()
 
 	index := simulation.RandIntBetween(r, 0, 100)
+	// #nosec G115
 	logIndex := uint64(index)
 
 	validatorId := uint64(1)

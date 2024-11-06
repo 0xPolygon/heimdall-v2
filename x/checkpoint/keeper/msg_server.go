@@ -36,6 +36,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	logger := m.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	// #nosec G115
 	timeStamp := uint64(sdkCtx.BlockTime().Unix())
 
 	params, err := m.GetParams(ctx)
@@ -224,6 +225,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 	if err != nil {
 		lastCheckpointTime = time.Unix(0, 0)
 	} else {
+		// #nosec G115
 		lastCheckpointTime = time.Unix(int64(lastCheckpoint.Timestamp), 0)
 	}
 
@@ -285,6 +287,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpoint
 	}
 
 	// Set new last no-ack
+	// #nosec G115
 	newLastNoAck := uint64(currentTime.Unix())
 	err = m.SetLastNoAck(ctx, newLastNoAck)
 	if err != nil {

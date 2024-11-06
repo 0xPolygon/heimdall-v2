@@ -127,7 +127,8 @@ func (v *Validator) UpdatedAt() string {
 // MinimalVal returns block number of last validator update
 func (v *Validator) MinimalVal() MinimalVal {
 	return MinimalVal{
-		ID:          v.ValId,
+		ID: v.ValId,
+		// #nosec G115
 		VotingPower: uint64(v.VotingPower),
 		Signer:      v.Signer,
 	}

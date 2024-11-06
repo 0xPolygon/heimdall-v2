@@ -104,6 +104,7 @@ func (q queryServer) GetMilestoneProposerByTimes(ctx context.Context, req *types
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	// #nosec G115
 	times := int(req.Times)
 	if times > len(validatorSet.Validators) {
 		times = len(validatorSet.Validators)

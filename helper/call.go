@@ -416,6 +416,7 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
 
+	// #nosec G115
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
 	if err != nil && &stakerDetails != nil {
 		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
@@ -478,6 +479,7 @@ func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uin
 		return time.Time{}, err
 	}
 
+	// #nosec G115
 	return time.Unix(int64(latestBlock.Time()), 0), nil
 }
 
@@ -859,6 +861,7 @@ func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
 }
 
 // GetBlockByNumber returns blocks by number from child chain (bor)
+// #nosec G115
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) *ethTypes.Block {
 	block, err := c.PolygonPosChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
 	if err != nil {

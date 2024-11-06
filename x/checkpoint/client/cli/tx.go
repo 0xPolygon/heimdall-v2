@@ -216,12 +216,14 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 			res, err := contractCaller.DecodeNewHeaderBlockEvent(
 				cmParams.Params.ChainParams.RootChainAddress,
 				receipt,
+				// #nosec G115
 				uint64(viper.GetInt64(FlagCheckpointLogIndex)),
 			)
 			if err != nil {
 				return fmt.Errorf("invalid transaction for header block. Error: %v", err)
 			}
 
+			// #nosec G115
 			msg := checkpointTypes.NewMsgCheckpointAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)

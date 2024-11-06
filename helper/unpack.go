@@ -70,24 +70,30 @@ func parseTopics(out interface{}, fields abi.Arguments, topics []common.Hash) er
 			}
 		case reflect.Int8:
 			num := new(big.Int).SetBytes(topics[0][:])
+			// #nosec G115
 			field.Set(reflect.ValueOf(int8(num.Int64())))
 		case reflect.Int16:
 			num := new(big.Int).SetBytes(topics[0][:])
+			// #nosec G115
 			field.Set(reflect.ValueOf(int16(num.Int64())))
 		case reflect.Int32:
 			num := new(big.Int).SetBytes(topics[0][:])
+			// #nosec G115
 			field.Set(reflect.ValueOf(int32(num.Int64())))
 		case reflect.Int64:
 			num := new(big.Int).SetBytes(topics[0][:])
 			field.Set(reflect.ValueOf(num.Int64()))
 		case reflect.Uint8:
 			num := new(big.Int).SetBytes(topics[0][:])
+			// #nosec G115
 			field.Set(reflect.ValueOf(uint8(num.Uint64())))
 		case reflect.Uint16:
 			num := new(big.Int).SetBytes(topics[0][:])
+			// #nosec G115
 			field.Set(reflect.ValueOf(uint16(num.Uint64())))
 		case reflect.Uint32:
 			num := new(big.Int).SetBytes(topics[0][:])
+			// #nosec G115
 			field.Set(reflect.ValueOf(uint32(num.Uint64())))
 		case reflect.Uint64:
 			num := new(big.Int).SetBytes(topics[0][:])

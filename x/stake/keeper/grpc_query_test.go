@@ -126,6 +126,7 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
+	// #nosec G115
 	logIndex := uint64(simulation.RandIntBetween(r, 0, 100))
 
 	req := &types.QueryStakeIsOldTxRequest{

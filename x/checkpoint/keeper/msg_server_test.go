@@ -173,6 +173,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	require.NoError(err)
 
 	// set time buffered checkpoint timestamp + checkpointBufferTime
+	// #nosec G115
 	newTime := checkpointBuffer.Timestamp + uint64(checkpointBufferTime)
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
@@ -361,6 +362,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	require.NoError(err)
 
 	// set time lastCheckpoint timestamp + checkpointBufferTime-10
+	// #nosec G115
 	newTime := lastCheckpoint.Timestamp + uint64(checkpointBufferTime.Seconds()) - uint64(5)
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
@@ -382,6 +384,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	require.Equal(ackCount, updatedAckCount, "Should not update state")
 
 	// set time lastCheckpoint timestamp + noAckWaitTime
+	// #nosec G115
 	newTime = lastCheckpoint.Timestamp + uint64(checkpointBufferTime.Seconds())
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 

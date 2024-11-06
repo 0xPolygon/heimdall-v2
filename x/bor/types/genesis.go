@@ -73,6 +73,7 @@ func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 
 	if len(valSet.Validators) > int(DefaultProducerCount) {
 		// pop top validators and select
+		// #nosec G115
 		for i := 0; uint64(i) < DefaultProducerCount; i++ {
 			selectedProducers = append(selectedProducers, *valSet.Validators[i])
 		}

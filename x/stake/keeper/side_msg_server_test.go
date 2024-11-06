@@ -44,6 +44,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	txHash := common.Hash{}.Bytes()
 	index := simulation.RandIntBetween(r, 0, 100)
+	// #nosec G115
 	logIndex := uint64(index)
 	validatorId := uint64(1)
 	amount, _ := big.NewInt(0).SetString("1000000000000000000", 10)
@@ -1082,6 +1083,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorJoin() {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	txHash := common.Hash{}.Bytes()
 	index := simulation.RandIntBetween(r, 0, 100)
+	// #nosec G115
 	logIndex := uint64(index)
 	validatorId := uint64(1)
 

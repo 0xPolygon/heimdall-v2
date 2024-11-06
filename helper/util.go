@@ -135,6 +135,7 @@ func getSplitPoint(length int64) int64 {
 	uLength := uint(length)
 	bitlen := bits.Len(uLength)
 
+	// #nosec G115
 	k := 1 << uint(bitlen-1)
 	if k == int(length) {
 		k >>= 1

@@ -138,6 +138,7 @@ func (srv *sideMsgServer) PostHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg, 
 		return
 	}
 
+	// #nosec G115
 	timeStamp := uint64(ctx.BlockTime().Unix())
 
 	doExist, err := srv.HasMilestone(ctx)

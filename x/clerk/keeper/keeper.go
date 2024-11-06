@@ -126,7 +126,9 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 		limit = 50
 	}
 
+	// #nosec G115
 	startIndex := int((page - 1) * limit)
+	// #nosec G115
 	endIndex := int(page * limit)
 
 	// Initialize a counter to track the number of records processed

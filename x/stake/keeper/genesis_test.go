@@ -29,9 +29,11 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	for i := 0; i < len(validators); i++ {
 		pk1 := secp256k1.GenPrivKey().PubKey()
 		validators[i], err = types.NewValidator(
+			// #nosec G115
 			uint64(i),
 			0,
 			0,
+			// #nosec G115
 			uint64(i),
 			int64(simulation.RandIntBetween(r, 10, 100)), // power
 			pk1,
