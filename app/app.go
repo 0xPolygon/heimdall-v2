@@ -431,7 +431,7 @@ func NewHeimdallApp(
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
-	app.setAnteHandler(txConfig)
+	app.setAnteHandler(txConfig, sideTxCfg)
 	app.setPostHandler()
 
 	// At startup, after all modules have been registered, check that all proto
@@ -459,15 +459,16 @@ func NewHeimdallApp(
 	return app
 }
 
-func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
+func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig, sideTxConfig sidetxs.SideTxConfigurator) {
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
-			ante.HandlerOptions{
+			HandlerOptions: ante.HandlerOptions{
 				AccountKeeper:   app.AccountKeeper,
 				BankKeeper:      app.BankKeeper,
 				SignModeHandler: txConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
+			SideTxConfig: sideTxConfig,
 		},
 	)
 	if err != nil {

@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 
+	sidetxs "github.com/0xPolygon/heimdall-v2/sidetxs"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 )
@@ -10,6 +11,7 @@ import (
 // HandlerOptions are the options required for constructing a default SDK AnteHandler.
 type HandlerOptions struct {
 	ante.HandlerOptions
+	SideTxConfig sidetxs.SideTxConfigurator
 }
 
 // NewAnteHandler returns an AnteHandler that checks and increments sequence
@@ -41,7 +43,7 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigGasConsumeDecorator(options.AccountKeeper, options.SigGasConsumer),
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
-		// TODO HV2: Do we need a sideTxDecorator? See https://polygon.atlassian.net/browse/POS-2705
+		sidetxs.NewSideTxDecorator(options.SideTxConfig),
 	}
 
 	return sdk.ChainAnteDecorators(anteDecorators...), nil

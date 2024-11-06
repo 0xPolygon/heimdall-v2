@@ -51,7 +51,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 
 			// ensure we allow transactions with only one side msg inside
-			if countSideHandlers(app, tx) > 1 {
+			if sidetxs.CountSideHandlers(app.sideTxCfg, tx) > 1 {
 				continue
 			}
 
@@ -117,7 +117,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			}
 
 			// ensure we allow transactions with only one side msg inside
-			if countSideHandlers(app, txn) > 1 {
+			if sidetxs.CountSideHandlers(app.sideTxCfg, txn) > 1 {
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
