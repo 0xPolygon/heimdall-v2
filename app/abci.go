@@ -50,7 +50,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				return nil, fmt.Errorf("error occurred while decoding tx bytes in PrepareProposalHandler. Error: %w", err)
 			}
 
-			// ensure we only propose one side tx
+			// ensure we allow transactions with only one side msg inside
 			if countSideHandlers(app, tx) > 1 {
 				continue
 			}
@@ -112,11 +112,11 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 			txn, err := app.TxDecode(tx)
 			if err != nil {
-				logger.Error("error occurred while decoding tx bytes in PrepareProposalHandler", err)
+				logger.Error("error occurred while decoding tx bytes in ProcessProposalHandler", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
-			// ensure we only process one side tx
+			// ensure we allow transactions with only one side msg inside
 			if countSideHandlers(app, txn) > 1 {
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}

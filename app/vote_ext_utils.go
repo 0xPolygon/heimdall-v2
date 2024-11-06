@@ -353,8 +353,8 @@ func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	return consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
 }
 
-// countSideHandlers returns the number of side handlers for the transaction, to make sure we only propose and process one side tx per block.
-// This enforces only one messageType per sideTx. Otherwise, a single comet tx would contain more than one sideTx, allowing for more than one vote for the same tx hash.
+// countSideHandlers returns the number of side handlers for the transaction, to make sure we only propose and process one side msg per tx.
+// This enforces only one messageType per sideTx. Otherwise, a single comet tx would contain more than one side msg, allowing for more than one vote for the same tx hash.
 func countSideHandlers(app *HeimdallApp, tx sdk.Tx) int {
 	sideHandlerCount := 0
 	for _, msg := range tx.GetMsgs() {
