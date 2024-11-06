@@ -30,7 +30,6 @@ linters:
     - errchkjson
     - errname
     # - exhaustive
-    # - exportloopref #deprecated and replaced by copyloopvar
     - copyloopvar
     # - gocognit
     - gofmt
@@ -144,6 +143,9 @@ linters-settings:
           - (github.com/ethereum/go-ethereum/log.Logger).Crit
 
 issues:
+  exclude-generated: strict
+  exclude-dirs:
+    - "api/"
   exclude:
     - "api/.*\\.pb\\.go"
     - "api/.*\\.pulsar\\.go"
