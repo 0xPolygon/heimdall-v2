@@ -18,7 +18,7 @@ func NewSideTxDecorator(sideTxCfg SideTxConfigurator) SideTxDecorator {
 }
 
 func (std SideTxDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
-	_, ok := tx.(authsigning.SigVerifiableTx)
+	_, ok := tx.(authsigning.Tx)
 	if !ok {
 		return ctx, errorsmod.Wrap(sdkerrors.ErrTxDecode, "invalid transaction type")
 	}
