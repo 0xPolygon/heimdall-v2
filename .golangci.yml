@@ -132,6 +132,9 @@ linters-settings:
           - (github.com/ethereum/go-ethereum/log.Logger).Crit
 
 issues:
+  exclude-files:
+    - ".*_test\\.go"
+    - "test.*\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
   new-from-rev: ${GOLANGCI_LINT_NEW_FROM_REV}
