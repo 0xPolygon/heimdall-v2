@@ -4,17 +4,6 @@ run:
   go: '1.23.2'
   timeout: 20m
   tests: true
-#  skip-dirs:
-#    - "/api/"
-
-#exclude:
-#    - "api/.*\\.pb\\.go"
-#    - "api/.*\\.pulsar\\.go"
-#    - "x/.*\\.pb\\.go"
-#    - "x/.*\\.pulsar\\.go"
-#    - ".*_test\\.go"
-#    - ".*test_utils\\.go"
-#    - ".*testdata\\.go"
 
 linters:
   enable:
@@ -146,14 +135,10 @@ issues:
   exclude-generated: strict
   exclude-dirs:
     - "api/"
-  exclude:
-    - "api/.*\\.pb\\.go"
-    - "api/.*\\.pulsar\\.go"
-    - "x/.*\\.pb\\.go"
-    - "x/.*\\.pulsar\\.go"
+  exclude-files:
     - ".*_test\\.go"
-    - ".*test_utils\\.go"
-    - ".*testdata\\.go"
+    - ".*\\.pb\\.go"
+    - ".*\\.pulsar\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
   new-from-rev: ${GOLANGCI_LINT_NEW_FROM_REV}
