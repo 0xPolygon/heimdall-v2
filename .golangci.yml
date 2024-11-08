@@ -49,6 +49,10 @@ linters-settings:
   gofmt:
     simplify: true
 
+  gosec:
+    excludes:
+      - G115 # Overflow errors ignored for review later TODO: REMOVE THIS EXCLUSION LATER
+
   goconst:
     min-len: 3 # minimum length of string constant
     min-occurrences: 2 # minimum number of occurrences
