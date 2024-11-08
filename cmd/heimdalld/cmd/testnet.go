@@ -122,7 +122,6 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				if i < numValidators {
 					// create validator account
 					validators[i], err = stakeTypes.NewValidator(
-						// #nosec G115
 						uint64(startID+int64(i)),
 						0,
 						0,

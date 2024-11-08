@@ -34,13 +34,11 @@ const (
 
 // genMainChainTxConfirmations returns a randomized mainchain tx confirmations
 func genMainChainTxConfirmations(r *rand.Rand) uint64 {
-	// #nosec G115
 	return uint64(r.Intn(100) + 1)
 }
 
 // genBorChainTxConfirmations returns a randomized mainchain tx confirmations
 func genBorChainTxConfirmations(r *rand.Rand) uint64 {
-	// #nosec G115
 	return uint64(r.Intn(100) + 1)
 }
 

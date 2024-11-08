@@ -11,11 +11,9 @@ import (
 
 // ValidateMilestone - Validates if milestone rootHash matches or not
 func ValidateMilestone(start uint64, end uint64, hash []byte, milestoneID string, contractCaller helper.IContractCaller, minMilestoneLength uint64, confirmations uint64) (bool, error) {
-	// #nosec G115
 	msgMilestoneLength := int64(end) - int64(start) + 1
 
 	// Check for the minimum length of the milestone
-	// #nosec G115
 	if msgMilestoneLength < int64(minMilestoneLength) {
 		return false, errors.New(fmt.Sprint("invalid milestone, difference in start and end block is less than milestone length", "milestone Length:", minMilestoneLength))
 	}

@@ -21,12 +21,10 @@ func GenRandomVals(count int, startBlock uint64, power int64, timeAlive uint64, 
 
 		if randomise {
 			startBlock = generateRandNumber(10)
-			// #nosec G115
 			power = int64(generateRandNumber(100))
 		}
 
 		newVal := types.Validator{
-			// #nosec G115
 			ValId:            startID + uint64(i),
 			StartEpoch:       startBlock,
 			EndEpoch:         startBlock + timeAlive,
@@ -45,7 +43,6 @@ func GenRandomVals(count int, startBlock uint64, power int64, timeAlive uint64, 
 func LoadRandomValidatorSet(require *require.Assertions, count int, keeper *stakingKeeper.Keeper, ctx sdk.Context, randomise bool, timeAlive int) types.ValidatorSet {
 	var valSet types.ValidatorSet
 
-	// #nosec G115
 	validators := GenRandomVals(count, 0, 10, uint64(timeAlive), randomise, 1)
 	for _, validator := range validators {
 		err := keeper.AddValidator(ctx, validator)

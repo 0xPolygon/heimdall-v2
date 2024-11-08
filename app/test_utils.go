@@ -161,11 +161,9 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 	for i, val := range valSet.Validators {
 
 		validator := stakeTypes.Validator{
-			// #nosec G115
-			ValId:      uint64(i),
-			StartEpoch: 0,
-			EndEpoch:   0,
-			// #nosec G115
+			ValId:       uint64(i),
+			StartEpoch:  0,
+			EndEpoch:    0,
 			Nonce:       uint64(i),
 			VotingPower: 100,
 			PubKey:      val.PubKey,

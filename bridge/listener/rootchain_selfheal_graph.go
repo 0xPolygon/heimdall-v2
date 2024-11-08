@@ -159,7 +159,6 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*
 	}
 
 	for _, log := range receipt.Logs {
-		// #nosec G115
 		if strconv.Itoa(int(log.Index)) == response.Data.StateSyncs[0].LogIndex {
 			return log, nil
 		}
@@ -171,7 +170,6 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*
 // getLatestNonce returns the nonce from the latest StakeUpdate event
 func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uint64) (uint64, error) {
 	query := map[string]string{
-		// #nosec G115
 		"query": `
 		{
 			stakeUpdates(first:1, orderBy: nonce, orderDirection : desc, where: {validatorId: ` + strconv.Itoa(int(validatorId)) + `}){
@@ -205,14 +203,12 @@ func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uin
 		return 0, err
 	}
 
-	// #nosec G115
 	return uint64(latestValidatorNonce), nil
 }
 
 // getStakeUpdate returns StakeUpdate event based on the given validator ID and nonce
 func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, nonce uint64) (*types.Log, error) {
 	query := map[string]string{
-		// #nosec G115
 		"query": `
 		{
 			stakeUpdates(where: {validatorId: ` + strconv.Itoa(int(validatorId)) + `, nonce: ` + strconv.Itoa(int(nonce)) + `}){
@@ -248,7 +244,6 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 	}
 
 	for _, log := range receipt.Logs {
-		// #nosec G115
 		if strconv.Itoa(int(log.Index)) == response.Data.StakeUpdates[0].LogIndex {
 			return log, nil
 		}

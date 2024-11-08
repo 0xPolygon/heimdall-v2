@@ -25,7 +25,6 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	rootHash := testutil.RandomBytes()
 
 	proposerAddress := common.Address{}.String()
-	// #nosec G115
 	timestamp := uint64(time.Now().Unix())
 	borChainId := "1234"
 
@@ -43,9 +42,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	genesisState := types.NewGenesisState(
 		params,
 		&bufferedCheckpoint,
-		// #nosec G115
 		uint64(lastNoACK),
-		// #nosec G115
 		uint64(ackCount),
 		checkpoints,
 	)

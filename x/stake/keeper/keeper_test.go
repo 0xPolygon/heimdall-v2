@@ -117,7 +117,6 @@ func (s *KeeperTestSuite) TestValidator() {
 
 	for i := range validators {
 		validators[i], err = types.NewValidator(
-			// #nosec G115
 			uint64(i),
 			0,
 			0,
@@ -162,7 +161,6 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 	var err error
 	for i := range validators {
 		validators[i], err = types.NewValidator(
-			// #nosec G115
 			uint64(int64(i)),
 			0,
 			0,
@@ -253,7 +251,6 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 
 	for i, item := range dataItems {
 		s.Run(item.name, func() {
-			// #nosec G115
 			newVal, err := types.NewValidator(1+uint64(i), item.startBlock, item.startBlock, uint64(0), item.VotingPower, accounts[i].PubKey, accounts[i].Address.String())
 
 			require.NoError(err)

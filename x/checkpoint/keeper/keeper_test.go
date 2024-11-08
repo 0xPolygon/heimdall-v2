@@ -104,7 +104,6 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	endBlock := uint64(256)
 	rootHash := testutil.RandomBytes()
 	proposerAddress := common.Address{}.String()
-	// #nosec G115
 	timestamp := uint64(time.Now().Unix())
 
 	checkpoint := types.CreateCheckpoint(

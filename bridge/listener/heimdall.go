@@ -69,13 +69,11 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 
 				// Querying and processing Begin events
 				for i := fromBlock; i <= toBlock; i++ {
-					// #nosec G115
 					events, err := helper.GetBeginBlockEvents(hl.httpClient, int64(i))
 					if err != nil {
 						hl.Logger.Error("Error fetching begin block events", "error", err)
 					}
 					for _, event := range events {
-						// #nosec G115
 						hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(i))
 					}
 				}
@@ -106,7 +104,6 @@ func (hl *HeimdallListener) fetchFromAndToBlock() (uint64, uint64, error) {
 		return fromBlock, toBlock, err
 	}
 
-	// #nosec G115
 	toBlock = uint64(nodeStatus.SyncInfo.LatestBlockHeight)
 
 	// fromBlock - get last block from storage

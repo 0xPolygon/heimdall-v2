@@ -81,7 +81,6 @@ func GetAccountProof(dividendAccounts []DividendAccount, userAddr string) ([]byt
 
 		if strings.EqualFold(dividendAccounts[i].User, userAddr) {
 			account = dividendAccounts[i]
-			// #nosec G115
 			index = uint64(i)
 		}
 	}

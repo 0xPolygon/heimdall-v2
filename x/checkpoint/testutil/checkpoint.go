@@ -21,7 +21,6 @@ func GenRandCheckpoint(start uint64, headerSize uint64) (headerBlock types.Check
 		rootHash,
 		proposer,
 		borChainID,
-		// #nosec G115
 		uint64(time.Now().UTC().Unix()))
 
 	return headerBlock

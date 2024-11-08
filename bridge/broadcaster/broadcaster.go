@@ -88,7 +88,6 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	}
 	txBldr.SetMemo(viper.GetString("memo"))
 
-	// #nosec G115
 	txBldr.SetGasLimit(uint64(cometTypes.DefaultBlockParams().MaxGas))
 	// TODO HV2 - should we keep this limit?
 	txBldr.SetFeeAmount(ante.DefaultFeeWantedPerTx)

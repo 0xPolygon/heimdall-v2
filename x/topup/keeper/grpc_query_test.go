@@ -22,7 +22,6 @@ func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	// #nosec G115
 	logIndex := uint64(simulation.RandIntBetween(r, 0, 100))
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 	sequence := new(big.Int).Mul(txReceipt.BlockNumber, big.NewInt(types.DefaultLogIndexUnit))

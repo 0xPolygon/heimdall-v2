@@ -89,11 +89,9 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 	m.stakeKeeper.MilestoneIncrementAccum(ctx, 1)
 
 	// Calculate the milestone length
-	// #nosec G115
 	msgMilestoneLength := int64(msg.EndBlock) - int64(msg.StartBlock) + 1
 
 	//check for the minimum length of milestone
-	// #nosec G115
 	if msgMilestoneLength < int64(minMilestoneLength) {
 		logger.Error("length of the milestone should be greater than configured minimum milestone length",
 			"StartBlock", msg.StartBlock,
@@ -166,7 +164,6 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, _ *types.MsgMilestoneTi
 		return nil, errorsmod.Wrap(types.ErrNoMilestoneFound, "")
 	}
 
-	// #nosec G115
 	lastMilestoneTime := time.Unix(int64(lastMilestone.Timestamp), 0)
 
 	// If last milestone happens before milestone buffer time, then throw an error
@@ -197,7 +194,6 @@ func (m msgServer) MilestoneTimeout(ctx context.Context, _ *types.MsgMilestoneTi
 	}
 
 	// set new last milestone-timeout
-	// #nosec G115
 	newLastMilestoneTimeout := uint64(currentTime.Unix())
 	if err = m.SetLastMilestoneTimeout(ctx, newLastMilestoneTimeout); err != nil {
 		logger.Error("error in setting last milestone timeout", "error", err)

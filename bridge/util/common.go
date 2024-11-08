@@ -170,7 +170,6 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	logger.Debug("Fetched proposers list", "numberOfProposers", count+1)
 
-	// #nosec G115
 	for i := 1; i <= int(count) && i < len(proposers); i++ {
 		if bytes.Equal([]byte(proposers[i].Signer), helper.GetAddress()) {
 			return true, nil
