@@ -2,8 +2,9 @@ package keeper
 
 import (
 	"bytes"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"math/big"
+
+	"github.com/cosmos/cosmos-sdk/codec/address"
 
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 

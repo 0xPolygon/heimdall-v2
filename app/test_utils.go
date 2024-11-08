@@ -3,11 +3,12 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
 
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"

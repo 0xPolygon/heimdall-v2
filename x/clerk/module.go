@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 
 	"cosmossdk.io/core/appmodule"
