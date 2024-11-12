@@ -8,9 +8,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-const (
-	DefaultCodespace = 1
+// TODO HV2: refactor and complete error codes to use them in the codebase
 
+const (
 	CodeInvalidMsg = 1400
 	CodeOldTx      = 1401
 
@@ -210,7 +210,7 @@ func ErrValSignerPubKeyMismatch(ModuleName string) error {
 }
 
 func ErrValSignerMismatch(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSignerMismatch, "signer address doesnt match pubkey address")
+	return errors.Register(ModuleName, CodeValSignerMismatch, "signer address doesn't match pubKey address")
 }
 
 func ErrValIsNotCurrentVal(ModuleName string) error {
@@ -253,119 +253,4 @@ func ErrValidatorAlreadyJoined(ModuleName string) error {
 
 func ErrInvalidBorChainID(ModuleName string) error {
 	return errors.Register(ModuleName, CodeInvalidBorChainID, "invalid bor chain id")
-}
-
-func ErrSpanNotInContinuity(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSpanNotContinuous, "span not continuous")
-}
-
-func ErrInvalidSpanDuration(ModuleName string) error {
-	return errors.Register(ModuleName, CodeInvalidSpanDuration, "wrong span duration")
-}
-
-func ErrSpanNotFound(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSpanNotFound, "span not found")
-}
-
-func ErrUnableToFreezeValSet(ModuleName string) error {
-	return errors.Register(ModuleName, CodeUnableToFreezeSet, "unable to freeze validator set for next span")
-}
-
-func ErrValSetMisMatch(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSetMisMatch, "validator set mismatch")
-}
-
-func ErrProducerMisMatch(ModuleName string) error {
-	return errors.Register(ModuleName, CodeProducerMisMatch, "producer set mismatch")
-}
-
-func CodeToDefaultMsg(code uint32) string {
-	switch code {
-	case CodeInvalidMsg:
-		return "invalid message"
-	case CodeInvalidProposerInput:
-		return "proposer is not valid"
-	case CodeInvalidBlockInput:
-		return "wrong root hash for given start and end block numbers"
-	case CodeInvalidACK:
-		return "ack not valid"
-	case CodeNoACK:
-		return "checkpoint already exists in buffer, ack expected"
-	case CodeBadTimeStamp:
-		return "invalid time stamp. It must be in near past."
-	case CodeInvalidNoACK:
-		return "invalid no ack -- waiting for last checkpoint ack"
-	case CodeTooManyNoAck:
-		return "too many no-acks"
-	case CodeLowBal:
-		return "insufficient balance"
-	case CodeNoCheckpoint:
-		return "checkpoint not found"
-	case CodeOldCheckpoint:
-		return "checkpoint already received for given start and end block"
-	case CodeDisContinuousCheckpoint:
-		return "checkpoint not in continuity"
-	case CodeNoCheckpointBuffer:
-		return "checkpoint buffer not found"
-	case CodeOldValidator:
-		return "start epoch behind current epoch"
-	case CodeNoValidator:
-		return "validator information not found"
-	case CodeValSignerMismatch:
-		return "signer address doesnt match pubkey address"
-	case CodeValidatorExitDeny:
-		return "validator is not in validator set, exit not possible"
-	case CodeValAlreadyUnbonded:
-		return "validator already unbonded , cannot exit"
-	case CodeSignerSynced:
-		return "no signer update found, invalid message"
-	case CodeValSave:
-		return "cannot save validator"
-	case CodeValAlreadyJoined:
-		return "validator already joined"
-	case CodeSignerUpdateError:
-		return "signer update error"
-	case CodeNoConn:
-		return "unable to connect to chain"
-	case CodeWaitFrConfirmation:
-		return "wait for confirmation time before sending transaction"
-	case CodeValPubkeyMismatch:
-		return "signer pubkey mismatch between event and msg"
-	case CodeSpanNotContinuous:
-		return "span not continuous"
-	case CodeUnableToFreezeSet:
-		return "unable to freeze validator set for next span"
-	case CodeSpanNotFound:
-		return "span not found"
-	case CodeValSetMisMatch:
-		return "validator set mismatch"
-	case CodeProducerMisMatch:
-		return "producer set mismatch"
-	case CodeInvalidBorChainID:
-		return "invalid bor chain id"
-	default:
-		return "default error"
-	}
-}
-
-// Slashing errors
-
-func ErrValidatorSigningInfoSave(ModuleName string) error {
-	return errors.Register(ModuleName, CodeValSigningInfoSave, "cannot save validator signing info")
-}
-
-func ErrUnjailValidator(ModuleName string) error {
-	return errors.Register(ModuleName, CodeErrValUnjail, "error while unjail validator")
-}
-
-func ErrSlashInfoDetails(ModuleName string) error {
-	return errors.Register(ModuleName, CodeSlashInfoDetails, "wrong slash info details")
-}
-
-func ErrTickNotInContinuity(ModuleName string) error {
-	return errors.Register(ModuleName, CodeTickNotInContinuity, "tick not in continuity")
-}
-
-func ErrTickAckNotInContinuity(ModuleName string) error {
-	return errors.Register(ModuleName, CodeTickAckNotInContinuity, "tick-ack not in continuity")
 }

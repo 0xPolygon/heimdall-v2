@@ -3,12 +3,15 @@ package keeper
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// ValidateMilestone - Validates if milestone rootHash matches or not
+// ValidateMilestone validates the structure of the milestone
 func ValidateMilestone(start uint64, end uint64, hash []byte, milestoneID string, contractCaller helper.IContractCaller, minMilestoneLength uint64, confirmations uint64) (bool, error) {
 	msgMilestoneLength := int64(end) - int64(start) + 1
 
@@ -26,6 +29,21 @@ func ValidateMilestone(start uint64, end uint64, hash []byte, milestoneID string
 	vote, err := contractCaller.GetVoteOnHash(start, end, common.Bytes2Hex(hash), milestoneID)
 	if err != nil {
 		return false, err
+	}
+
+	// validate that milestoneID is composed by `UUID - HexAddressOfTheProposer`
+	splitMilestoneID := strings.Split(strings.TrimSpace(milestoneID), " - ")
+	if len(splitMilestoneID) != 2 {
+		return false, errors.New(fmt.Sprint("invalid milestoneID, it should be composed by `UUID - HexAddressOfTheProposer`", "milestoneID", milestoneID))
+	}
+
+	_, err = uuid.Parse(splitMilestoneID[0])
+	if err != nil {
+		return false, errors.New(fmt.Sprint("invalid milestoneID, the UUID is not correct", "milestoneID", milestoneID))
+	}
+
+	if !common.IsHexAddress(splitMilestoneID[1]) {
+		return false, errors.New(fmt.Sprint("invalid milestoneID, the proposer address is not correct", "milestoneID", milestoneID))
 	}
 
 	return vote, nil

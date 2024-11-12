@@ -37,7 +37,7 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	hash := testutil.RandomBytes()
 	proposerAddress := util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String())
 	timestamp := uint64(time.Now().Unix())
-	milestoneID := "00000"
+	milestoneID := TestMilestoneID
 
 	milestoneBlock := testutil.CreateMilestone(
 		startBlock,
@@ -94,7 +94,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 	res, err := queryClient.GetLatestNoAckMilestone(ctx, req)
 	require.Nil(res)
 
-	milestoneID := "00000"
+	milestoneID := TestMilestoneID
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
 
@@ -104,7 +104,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 
 	require.Equal(res.Result, milestoneID)
 
-	milestoneID = "00001"
+	milestoneID = TestMilestoneID2
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
 
@@ -117,7 +117,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient
 
-	milestoneID := "00000"
+	milestoneID := TestMilestoneID
 	req := &types.QueryNoAckMilestoneByIDRequest{Id: milestoneID}
 
 	res, err := queryClient.GetNoAckMilestoneById(ctx, req)

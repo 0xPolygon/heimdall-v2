@@ -2,6 +2,8 @@ package types
 
 import (
 	"bytes"
+	"errors"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"math/big"
 	"strconv"
 
@@ -70,8 +72,14 @@ func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 	// keccak256(abi.encoded(proposer, startBlock, endBlock, rootHash, accountRootHash, bor chain id))
 	borChainID, _ := strconv.ParseUint(msg.BorChainId, 10, 64)
 
+	ac := addressCodec.NewHexCodec()
+	proposerBytes, err := ac.StringToBytes(msg.Proposer)
+	if err != nil {
+		panic(errors.New("invalid proposer while getting side sign bytes for checkpoint msg"))
+	}
+
 	return types.AppendBytes32(
-		[]byte(msg.Proposer),
+		proposerBytes,
 		new(big.Int).SetUint64(msg.StartBlock).Bytes(),
 		new(big.Int).SetUint64(msg.EndBlock).Bytes(),
 		msg.RootHash,

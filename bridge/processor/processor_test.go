@@ -4,14 +4,15 @@ import (
 	"os"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 func TestBroadcastWhenTxInMempool(t *testing.T) {

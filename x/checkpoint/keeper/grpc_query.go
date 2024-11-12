@@ -12,6 +12,8 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+const maxCheckpointListLimitPerPage = 1000
+
 var _ types.QueryServer = queryServer{}
 
 type queryServer struct {
@@ -201,13 +203,16 @@ func (q queryServer) GetProposers(ctx context.Context, req *types.QueryProposerR
 	return &types.QueryProposerResponse{Proposers: proposers}, nil
 }
 
+// TODO HV2: once we can test checkpoints APIs,
+//  check if we need to implement https://github.com/maticnetwork/heimdall/pull/1183 here (requested by erigon)
+
 // GetCheckpointList returns the list of checkpoints
 func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryCheckpointListRequest) (*types.QueryCheckpointListResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > 1000 {
+	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > maxCheckpointListLimitPerPage {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
 

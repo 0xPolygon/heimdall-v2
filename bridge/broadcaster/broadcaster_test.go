@@ -9,13 +9,6 @@ import (
 	"testing"
 
 	"cosmossdk.io/math"
-	"github.com/0xPolygon/heimdall-v2/app"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
-	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	topuptypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -30,6 +23,14 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	topuptypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 var (

@@ -7,12 +7,13 @@ import (
 	"math/big"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/google/uuid"
+
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/google/uuid"
 )
 
 // MilestoneProcessor - process milestone related events
@@ -83,14 +84,14 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 	}
 
 	//check whether the node is current milestone proposer or not
-	isProposer, err := util.IsMilestoneProposer(mp.cliCtx)
+	isProposer, err := util.IsMilestoneProposer()
 	if err != nil {
 		mp.Logger.Error("Error checking isProposer in HeaderBlock handler", "error", err)
 		return err
 	}
 
 	if isProposer {
-		result, err := util.GetMilestoneCount(mp.cliCtx)
+		result, err := util.GetMilestoneCount()
 		if err != nil {
 			return err
 		}
@@ -103,7 +104,7 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 
 		if result.Count != 0 {
 			// fetch latest milestone
-			latestMilestone, err := util.GetLatestMilestone(mp.cliCtx)
+			latestMilestone, err := util.GetLatestMilestone()
 			if err != nil {
 				return err
 			}
@@ -236,7 +237,7 @@ func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout() (err error) {
 		var isProposer bool
 
 		//check if the node is the proposer list or not.
-		if isProposer, err = util.IsInMilestoneProposerList(mp.cliCtx, 10); err != nil {
+		if isProposer, err = util.IsInMilestoneProposerList(10); err != nil {
 			mp.Logger.Error("Error checking IsInMilestoneProposerList while proposing Milestone Timeout ", "error", err)
 			return
 		}
@@ -281,7 +282,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 }
 
 func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) {
-	latestMilestone, err := util.GetLatestMilestone(mp.cliCtx)
+	latestMilestone, err := util.GetLatestMilestone()
 	if err != nil || latestMilestone == nil {
 		return false, err
 	}
@@ -311,7 +312,7 @@ func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
 }
 
 func (mp *MilestoneProcessor) getMilestoneContext() (*MilestoneContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams(mp.cliCtx)
+	chainmanagerParams, err := util.GetChainmanagerParams()
 	if err != nil {
 		mp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

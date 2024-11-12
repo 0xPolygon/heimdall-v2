@@ -598,6 +598,9 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 			return nil, err
 		}
 
+		// TODO HV2: this was missed during migration, and added within POS-2600. Double check.
+		currentValidatorSet.IncrementProposerPriority(1)
+
 		// convert updates from map to array
 		for _, v := range setUpdates {
 			cmtProtoPk, err := v.CmtConsPublicKey()

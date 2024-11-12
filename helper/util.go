@@ -27,6 +27,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
+const APIBodyLimit = 128 * 1024 * 1024 // 128 MB
+
 //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
@@ -227,7 +229,8 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return u.String()
 }
 
-// TODO HV2 - this needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
+// TODO HV2 - FetchFromAPI method needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
+
 // FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result []byte, err error) {
 	resp, err := Client.Get(URL)
@@ -255,7 +258,7 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
 
-// TODO HV2 - Older version of FetchFromAPI kept for reference, will remove later
+// TODO HV2 - Older version of FetchFromAPI kept for reference, to be removed remove later
 /*
 // FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result rest.Response, err error) {

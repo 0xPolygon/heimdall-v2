@@ -10,9 +10,8 @@ import (
 
 // Default parameter values
 const (
-	DefaultMainChainTxConfirmations         uint64 = 6
-	DefaultBorChainTxConfirmations          uint64 = 10
-	DefaultBorChainMilestoneTxConfirmations uint64 = 16
+	DefaultMainChainTxConfirmations uint64 = 6
+	DefaultBorChainTxConfirmations  uint64 = 10
 
 	DefaultStateReceiverAddress = "0x0000000000000000000000000000000000001001"
 	DefaultValidatorSetAddress  = "0x0000000000000000000000000000000000001000"
