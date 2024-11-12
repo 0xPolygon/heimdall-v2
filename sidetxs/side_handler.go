@@ -69,5 +69,5 @@ func CommonRegisterSideMsgServer(
 }
 
 func noopInterceptor(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
-	return nil, nil
+	return new(interface{}), nil
 }
