@@ -765,10 +765,16 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.BorRPCUrl = stringConfgValue
 	}
 
-	// get grpc endpoint for bor chain from viper/cobra
+	// get endpoint for bor chain from viper/cobra
 	stringConfgValue = v.GetString(BorGRPCUrlFlag)
 	if stringConfgValue != "" {
 		c.Custom.BorGRPCUrl = stringConfgValue
+	}
+
+	// get gRPC flag for bor chain from viper/cobra
+	boolConfgValue := v.GetBool(BorGRPCFlag)
+	if boolConfgValue {
+		c.Custom.BorGRPCFlag = boolConfgValue
 	}
 
 	// get endpoint for cometBFT from viper/cobra
