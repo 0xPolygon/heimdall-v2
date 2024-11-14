@@ -250,6 +250,10 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) (checkpoints []types.Checkp
 
 	var checkpoint types.Checkpoint
 
+	// TODO HV2: double check once APIs are up and running, but https://github.com/maticnetwork/heimdall/pull/1183
+	//  should not be needed because the iterator.Key() used to iterate over the checkpoints collection is a uint64,
+	//  the checkpoint number itself, and not a []byte as it used to be in v1
+
 	for ; iterator.Valid(); iterator.Next() {
 		checkpoint, err = iterator.Value()
 		if err != nil {

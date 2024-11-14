@@ -2,15 +2,12 @@ package keeper
 
 import (
 	"context"
-	"sort"
-
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const maxCheckpointListLimitPerPage = 1000
@@ -225,12 +222,6 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
-
-	// Sort checkpoints by start_block
-	// TODO HV2: double check, but this should avoid the implementation of https://github.com/maticnetwork/heimdall/pull/1183
-	sort.Slice(checkpoints, func(i, j int) bool {
-		return checkpoints[i].StartBlock < checkpoints[j].StartBlock
-	})
 
 	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: *pageRes}, nil
 }
