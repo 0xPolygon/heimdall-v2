@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	grpc_retry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
-
-	proto "github.com/maticnetwork/polyproto/bor"
-
+	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+
+	proto "github.com/maticnetwork/polyproto/bor"
 )
 
 type BorGRPCClient struct {
@@ -22,15 +21,15 @@ type BorGRPCClient struct {
 func NewBorGRPCClient(address string) *BorGRPCClient {
 	address = removePrefix(address)
 
-	opts := []grpc_retry.CallOption{
-		grpc_retry.WithMax(5),
-		grpc_retry.WithBackoff(grpc_retry.BackoffLinear(1 * time.Second)),
-		grpc_retry.WithCodes(codes.Internal, codes.Unavailable, codes.Aborted, codes.NotFound),
+	opts := []grpcretry.CallOption{
+		grpcretry.WithMax(5),
+		grpcretry.WithBackoff(grpcretry.BackoffLinear(1 * time.Second)),
+		grpcretry.WithCodes(codes.Internal, codes.Unavailable, codes.Aborted, codes.NotFound),
 	}
 
 	conn, err := grpc.NewClient(address,
-		grpc.WithStreamInterceptor(grpc_retry.StreamClientInterceptor(opts...)),
-		grpc.WithUnaryInterceptor(grpc_retry.UnaryClientInterceptor(opts...)),
+		grpc.WithStreamInterceptor(grpcretry.StreamClientInterceptor(opts...)),
+		grpc.WithUnaryInterceptor(grpcretry.UnaryClientInterceptor(opts...)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -47,7 +46,10 @@ func NewBorGRPCClient(address string) *BorGRPCClient {
 
 func (h *BorGRPCClient) Close() {
 	log.Debug("Shutdown detected, Closing Bor gRPC client")
-	h.conn.Close()
+	err := h.conn.Close()
+	if err != nil {
+		return
+	}
 }
 
 // removePrefix removes the http:// or https:// prefix from the address, if present.

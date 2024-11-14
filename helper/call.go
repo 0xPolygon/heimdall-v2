@@ -24,6 +24,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
+	"github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -94,12 +95,14 @@ type IContractCaller interface {
 
 // ContractCaller contract caller
 type ContractCaller struct {
-	MainChainClient        *ethclient.Client
-	MainChainRPC           *rpc.Client
-	MainChainTimeout       time.Duration
-	PolygonPosChainClient  *ethclient.Client
-	PolygonPosChainRPC     *rpc.Client
-	PolygonPosChainTimeout time.Duration
+	MainChainClient           *ethclient.Client
+	MainChainRPC              *rpc.Client
+	MainChainTimeout          time.Duration
+	PolygonPosChainClient     *ethclient.Client
+	PolygonPosChainRPC        *rpc.Client
+	PolygonPosChainTimeout    time.Duration
+	PolygonPosChainGrpcFlag   bool
+	PolygonPosChainGrpcClient *grpc.BorGRPCClient
 
 	RootChainABI       abi.ABI
 	StakingInfoABI     abi.ABI
@@ -135,6 +138,8 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	contractCallerObj.MainChainRPC = GetMainChainRPCClient()
 	contractCallerObj.PolygonPosChainRPC = GetPolygonPosRPCClient()
 	contractCallerObj.ReceiptCache, err = lru.New(1000)
+	contractCallerObj.PolygonPosChainGrpcFlag = config.BorGRPCFlag
+	contractCallerObj.PolygonPosChainGrpcClient = GetPolygonPosGRPCClient()
 
 	if err != nil {
 		return contractCallerObj, err
