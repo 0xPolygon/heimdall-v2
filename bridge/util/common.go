@@ -591,7 +591,10 @@ func GetUnconfirmedTxnCount(event interface{}) int {
 		return 0
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Limit the number of bytes read from the response body
+	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
+
+	body, err := io.ReadAll(limitedBody)
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
 			logger.Error("Error closing response body:", err)

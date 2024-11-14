@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"sort"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
@@ -203,9 +204,6 @@ func (q queryServer) GetProposers(ctx context.Context, req *types.QueryProposerR
 	return &types.QueryProposerResponse{Proposers: proposers}, nil
 }
 
-// TODO HV2: once we can test checkpoints APIs,
-//  check if we need to implement https://github.com/maticnetwork/heimdall/pull/1183 here (requested by erigon)
-
 // GetCheckpointList returns the list of checkpoints
 func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryCheckpointListRequest) (*types.QueryCheckpointListResponse, error) {
 	if req == nil {
@@ -227,6 +225,12 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
+
+	// Sort checkpoints by start_block
+	// TODO HV2: double check, but this should avoid the implementation of https://github.com/maticnetwork/heimdall/pull/1183
+	sort.Slice(checkpoints, func(i, j int) bool {
+		return checkpoints[i].StartBlock < checkpoints[j].StartBlock
+	})
 
 	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: *pageRes}, nil
 }
