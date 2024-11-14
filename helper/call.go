@@ -95,12 +95,14 @@ type IContractCaller interface {
 
 // ContractCaller contract caller
 type ContractCaller struct {
-	MainChainClient           *ethclient.Client
-	MainChainRPC              *rpc.Client
-	MainChainTimeout          time.Duration
-	PolygonPosChainClient     *ethclient.Client
-	PolygonPosChainRPC        *rpc.Client
-	PolygonPosChainTimeout    time.Duration
+	MainChainClient  *ethclient.Client
+	MainChainRPC     *rpc.Client
+	MainChainTimeout time.Duration
+
+	PolygonPosChainClient  *ethclient.Client
+	PolygonPosChainRPC     *rpc.Client
+	PolygonPosChainTimeout time.Duration
+
 	PolygonPosChainGrpcFlag   bool
 	PolygonPosChainGrpcClient *grpc.BorGRPCClient
 
@@ -355,7 +357,14 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	rootHash, err := c.PolygonPosChainClient.GetRootHash(ctx, start, end)
+	var rootHash string
+	var err error
+
+	if c.PolygonPosChainGrpcFlag {
+		rootHash, err = c.PolygonPosChainGrpcClient.GetRootHash(ctx, start, end)
+	} else {
+		rootHash, err = c.PolygonPosChainClient.GetRootHash(ctx, start, end)
+	}
 
 	if err != nil {
 		Logger.Error("could not fetch rootHash from polygon pos chain", "error", err)
@@ -374,7 +383,15 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	vote, err := c.PolygonPosChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	var vote bool
+	var err error
+
+	if c.PolygonPosChainGrpcFlag {
+		vote, err = c.PolygonPosChainGrpcClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	} else {
+		vote, err = c.PolygonPosChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	}
+
 	if err != nil {
 		return false, errors.New(fmt.Sprint("Error in fetching vote from polygon pos chain", "err", err))
 	}
@@ -491,7 +508,19 @@ func (c *ContractCaller) GetPolygonPosChainBlock(blockNum *big.Int) (header *eth
 	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	latestBlock, err := c.PolygonPosChainClient.HeaderByNumber(ctx, blockNum)
+	var latestBlock *ethTypes.Header
+
+	if c.PolygonPosChainGrpcFlag {
+		if blockNum == nil {
+			// LatestBlockNumber is BlockNumber(-2) in go-ethereum rpc
+			latestBlock, err = c.PolygonPosChainGrpcClient.HeaderByNumber(ctx, -2)
+		} else {
+			latestBlock, err = c.PolygonPosChainGrpcClient.HeaderByNumber(ctx, blockNum.Int64())
+		}
+	} else {
+		latestBlock, err = c.PolygonPosChainClient.HeaderByNumber(ctx, blockNum)
+	}
+
 	if err != nil {
 		Logger.Error("unable to connect to polygon pos chain", "error", err)
 		return
@@ -865,9 +894,17 @@ func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
 
 // GetBlockByNumber returns blocks by number from child chain (bor)
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) *ethTypes.Block {
-	block, err := c.PolygonPosChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	var block *ethTypes.Block
+	var err error
+
+	if c.PolygonPosChainGrpcFlag {
+		block, err = c.PolygonPosChainGrpcClient.BlockByNumber(ctx, int64(blockNumber))
+	} else {
+		block, err = c.PolygonPosChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	}
+
 	if err != nil {
-		Logger.Error("unable to fetch block by number from child chain", "block", block, "err", err)
+		Logger.Error("Unable to fetch block by number from child chain", "block", block, "err", err)
 		return nil
 	}
 
@@ -883,7 +920,7 @@ func (c *ContractCaller) GetMainTxReceipt(txHash common.Hash) (*ethTypes.Receipt
 	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(ctx, c.MainChainClient, txHash)
+	return c.getTxReceipt(ctx, c.MainChainClient, nil, txHash)
 }
 
 // GetPolygonPosTxReceipt returns polygon pos tx receipt
@@ -891,10 +928,16 @@ func (c *ContractCaller) GetPolygonPosTxReceipt(txHash common.Hash) (*ethTypes.R
 	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(ctx, c.PolygonPosChainClient, txHash)
+	if c.PolygonPosChainGrpcFlag {
+		return c.getTxReceipt(ctx, nil, c.PolygonPosChainGrpcClient, txHash)
+	}
+	return c.getTxReceipt(ctx, c.PolygonPosChainClient, nil, txHash)
 }
 
-func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, txHash common.Hash) (*ethTypes.Receipt, error) {
+func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, grpcClient *grpc.BorGRPCClient, txHash common.Hash) (*ethTypes.Receipt, error) {
+	if grpcClient != nil {
+		return grpcClient.TransactionReceipt(ctx, txHash)
+	}
 	return client.TransactionReceipt(ctx, txHash)
 }
 
