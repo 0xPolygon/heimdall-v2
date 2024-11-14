@@ -11,9 +11,12 @@ import (
 	"strings"
 	"time"
 
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
+	cmTypes "github.com/cometbft/cometbft/types"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -23,10 +26,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/file"
 	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
-
-	cfg "github.com/cometbft/cometbft/config"
-	cmTypes "github.com/cometbft/cometbft/types"
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 )
 
 const (

@@ -1,8 +1,10 @@
 package helper
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -123,10 +125,16 @@ func (c *ContractCaller) SendCheckpoint(signedData []byte, sigs [][3]*big.Int, r
 // StakeFor stakes for a validator
 func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeAmount *big.Int, acceptDelegation bool, stakeManagerAddress common.Address, stakeManagerInstance *stakemanager.Stakemanager) error {
 	signerPubKey := GetPubKey()
-	signerPubKeyBytes := signerPubKey[1:] // remove 04 prefix
 
+	prefix := make([]byte, 1)
+	prefix[0] = byte(0x04)
+
+	if !bytes.Equal(prefix, signerPubKey[0:1]) {
+		Logger.Error("public key first byte mismatch", "expected", "0x04", "received", signerPubKey[0:1])
+		return errors.New("public key first byte mismatch")
+	}
 	// pack data based on method definition
-	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKeyBytes)
+	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKey)
 	if err != nil {
 		Logger.Error("unable to pack tx for stakeFor", "error", err)
 		return err
@@ -145,7 +153,7 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 		stakeAmount,
 		feeAmount,
 		acceptDelegation,
-		signerPubKeyBytes,
+		signerPubKey,
 	)
 
 	if err != nil {

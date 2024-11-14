@@ -77,3 +77,46 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 
 	conf.Custom.Chain = oldConf
 }
+
+func TestGetChainManagerAddressMigration(t *testing.T) {
+	// TODO HV2: fix this test as it currently depends on the config file
+	//  See https://polygon.atlassian.net/browse/POS-2626
+	t.Skip("to be enabled")
+	t.Parallel()
+
+	newMaticContractAddress := "0x0000000000000000000000000000000000001234"
+
+	chainManagerAddressMigrations["mumbai"] = map[int64]ChainManagerAddressMigration{
+		350: {PolygonPosTokenAddress: newMaticContractAddress},
+	}
+
+	viper.Set("chain", "mumbai")
+	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+
+	migration, found := GetChainManagerAddressMigration(350)
+
+	if !found {
+		t.Errorf("Expected migration to be found")
+	}
+
+	if migration.PolygonPosTokenAddress != newMaticContractAddress {
+		t.Errorf("Expected matic token address to be %s, got %s", newMaticContractAddress, migration.PolygonPosTokenAddress)
+	}
+
+	// test for non-existing migration
+	_, found = GetChainManagerAddressMigration(351)
+	if found {
+		t.Errorf("Expected migration to not be found")
+	}
+
+	// test for non-existing chain
+	conf.Custom.BorRPCUrl = ""
+
+	viper.Set("chain", "newChain")
+	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+
+	_, found = GetChainManagerAddressMigration(350)
+	if found {
+		t.Errorf("Expected migration to not be found")
+	}
+}

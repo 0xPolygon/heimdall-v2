@@ -231,7 +231,7 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 
 // TODO HV2 - FetchFromAPI method needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
 
-// FetchFromAPI fetches data from any URL
+// FetchFromAPI fetches data from any URL with limited read size
 func FetchFromAPI(URL string) (result []byte, err error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
@@ -244,8 +244,13 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 		}
 	}()
 
+	// Limit the number of bytes read from the response body
+	limitedBody := http.MaxBytesReader(nil, resp.Body, APIBodyLimit)
+
+	// Handle the response
+
 	if resp.StatusCode == 200 {
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(limitedBody)
 		if err != nil {
 			return result, err
 		}
