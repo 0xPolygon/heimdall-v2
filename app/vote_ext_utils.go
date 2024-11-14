@@ -308,16 +308,16 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	for _, res := range sideTxResponses {
 		// check txHash is well-formed
 		if len(res.TxHash) != common.HashLength {
-			return res.TxHash, errors.New(fmt.Sprintf("invalid tx hash received: %s", common.Bytes2Hex(res.TxHash)))
+			return res.TxHash, fmt.Errorf(fmt.Sprintf("invalid tx hash received: %s", common.Bytes2Hex(res.TxHash)))
 		}
 
 		if !isVoteValid(res.Result) {
-			return res.TxHash, errors.New(fmt.Sprintf("invalid vote result type %v received for side tx %s", res.Result, common.Bytes2Hex(res.TxHash)))
+			return res.TxHash, fmt.Errorf(fmt.Sprintf("invalid vote result type %v received for side tx %s", res.Result, common.Bytes2Hex(res.TxHash)))
 		}
 
 		// check if the validator has already voted for the side tx
 		if _, found := txVoteMap[string(res.TxHash)]; found {
-			return res.TxHash, errors.New(fmt.Sprintf("duplicated votes detected for side tx %s", common.Bytes2Hex(res.TxHash)))
+			return res.TxHash, fmt.Errorf(fmt.Sprintf("duplicated votes detected for side tx %s", common.Bytes2Hex(res.TxHash)))
 		}
 
 		txVoteMap[string(res.TxHash)] = struct{}{}
