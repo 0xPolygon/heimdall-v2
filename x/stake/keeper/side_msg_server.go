@@ -326,6 +326,11 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	if !helper.IsPubKeyFirstByteValid(msg.NewSignerPubKey[0:1]) {
+		s.k.Logger(ctx).Error("public key first byte mismatch", "expected", "0x04", "received", msg.NewSignerPubKey[0:1])
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	if !bytes.Equal(eventLog.SignerPubkey, msg.NewSignerPubKey[1:]) {
 		s.k.Logger(ctx).Error("newSigner pubKey in txHash and msg don't match", "msgPubKey", common.Bytes2Hex(msg.NewSignerPubKey), "pubKeyTx", eventLog.SignerPubkey[:])
 		return sidetxs.Vote_VOTE_NO
