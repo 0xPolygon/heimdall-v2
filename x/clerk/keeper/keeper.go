@@ -286,5 +286,3 @@ func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 
 	return isPresent
 }
-
-// TODO HV2: evaluate if we need to port the changes from https://github.com/maticnetwork/heimdall/pull/1195
