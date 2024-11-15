@@ -572,17 +572,6 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCUrlFlag), "Error", err)
 	}
 
-	// add BorGRPCUrlFlag flag
-	cmd.PersistentFlags().String(
-		BorGRPCUrlFlag,
-		"",
-		"Set gRPC endpoint for bor chain",
-	)
-
-	if err := v.BindPFlag(BorGRPCUrlFlag, cmd.PersistentFlags().Lookup(BorGRPCUrlFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCUrlFlag), "Error", err)
-	}
-
 	// add CometBFTNodeURLFlag flag
 	cmd.PersistentFlags().String(
 		CometBFTNodeURLFlag,
