@@ -1,6 +1,6 @@
-# Bor Module
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
 
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
+# Bor module
 
 ## Table of Contents
 
@@ -100,7 +100,6 @@ return k.AddNewSpan(ctx, newSpan)
 ```
 
 ### How to propose a span
-# TODO HV2: Revisit the commands when we have the CLI running 
 
 A validator can leverage the CLI to propose a span like so :
 

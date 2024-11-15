@@ -1,4 +1,6 @@
-# Chainmanager Module
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
+# Chainmanager module
 
 ## Table of Contents
 
@@ -34,8 +36,6 @@ message Params {
   uint64 bor_chain_tx_confirmations = 3;
 }
 ```
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## Query commands
 
