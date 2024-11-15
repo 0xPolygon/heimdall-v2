@@ -144,7 +144,7 @@ const (
 
 	MilestonePruneNumber = uint64(100)
 
-	PolygonPosChainMilestoneConfirmation = uint64(16)
+	BorChainMilestoneConfirmation = uint64(16)
 
 	// MilestoneBufferLength defines the condition to propose the
 	// milestoneTimeout if this many bor blocks have passed since
@@ -221,10 +221,10 @@ var conf CustomAppConfig
 var mainChainClient *ethclient.Client
 var mainRPCClient *rpc.Client
 
-// polygonPosClient stores eth/rpc client for Polygon Pos Network
-var polygonPosClient *ethclient.Client
-var polygonPosRPCClient *rpc.Client
-var polygonPosGRPCClient *borgrpc.BorGRPCClient
+// borClient stores eth/rpc client for Polygon Pos Network
+var borClient *ethclient.Client
+var borRPCClient *rpc.Client
+var borGRPCClient *borgrpc.BorGRPCClient
 
 // private key object
 var privKeyObject secp256k1.PrivKey
@@ -240,12 +240,12 @@ var GenesisDoc cmTypes.GenesisDoc
 var milestoneBorBlockHeight uint64 = 0
 
 type ChainManagerAddressMigration struct {
-	PolygonPosTokenAddress string
-	RootChainAddress       string
-	StakingManagerAddress  string
-	SlashManagerAddress    string
-	StakingInfoAddress     string
-	StateSenderAddress     string
+	PolTokenAddress       string
+	RootChainAddress      string
+	StakingManagerAddress string
+	SlashManagerAddress   string
+	StakingInfoAddress    string
+	StateSenderAddress    string
 }
 
 var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigration{
@@ -369,13 +369,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if polygonPosRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
+	if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
-	polygonPosClient = ethclient.NewClient(polygonPosRPCClient)
+	borClient = ethclient.NewClient(borRPCClient)
 
-	polygonPosGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
+	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
 	// TODO HV2 - Why was this added? We are never using this
 	/*
@@ -469,14 +469,14 @@ func GetMainClient() *ethclient.Client {
 	return mainChainClient
 }
 
-// GetPolygonPosClient returns polygon pos' eth client
-func GetPolygonPosClient() *ethclient.Client {
-	return polygonPosClient
+// GetBorClient returns bor eth client
+func GetBorClient() *ethclient.Client {
+	return borClient
 }
 
-// GetPolygonPosRPCClient returns polygon pos RPC client
-func GetPolygonPosRPCClient() *rpc.Client {
-	return polygonPosRPCClient
+// GetBorRPCClient returns bor RPC client
+func GetBorRPCClient() *rpc.Client {
+	return borRPCClient
 }
 
 // GetPrivKey returns priv key object
@@ -1002,6 +1002,11 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 	}
 }
 
+// GetBorGRPCClient returns bor gRPC client
+func GetBorGRPCClient() *borgrpc.BorGRPCClient {
+	return borGRPCClient
+}
+
 // SetTestConfig sets test configuration
 func SetTestConfig(_conf CustomConfig) {
 	conf.Custom = _conf
@@ -1018,9 +1023,4 @@ func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
 		panic("pub key is not of type secp256k1.PrivKey")
 	}
 	pubKeyObject = pubKey
-}
-
-// GetPolygonPosGRPCClient returns bor's gRPC client
-func GetPolygonPosGRPCClient() *borgrpc.BorGRPCClient {
-	return polygonPosGRPCClient
 }

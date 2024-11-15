@@ -31,7 +31,7 @@ func (hl *HeimdallListener) Start() error {
 	headerCtx, cancelHeaderProcess := context.WithCancel(context.Background())
 	hl.cancelHeaderProcess = cancelHeaderProcess
 
-	// Heimdall pollInterval = (minimal pollInterval of rootchain and matichain)
+	// Heimdall pollInterval = (minimal pollInterval of root chain and bor chain)
 	pollInterval := helper.GetConfig().SyncerPollInterval
 	if helper.GetConfig().CheckpointPollInterval < helper.GetConfig().SyncerPollInterval {
 		pollInterval = helper.GetConfig().CheckpointPollInterval

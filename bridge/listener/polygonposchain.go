@@ -9,13 +9,13 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// PolygonPosChainListener - Listens to and process headerBlocks from polygonPosChain
-type PolygonPosChainListener struct {
+// BorChainListener - Listens to and process headerBlocks from bor chain
+type BorChainListener struct {
 	BaseListener
 }
 
 // Start starts new block subscription
-func (ml *PolygonPosChainListener) Start() error {
+func (ml *BorChainListener) Start() error {
 	ml.Logger.Info("Starting")
 
 	// create cancellable context
@@ -38,8 +38,8 @@ func (ml *PolygonPosChainListener) Start() error {
 	return nil
 }
 
-// ProcessHeader - process headerblock from polygonposchain
-func (ml *PolygonPosChainListener) ProcessHeader(newHeader *blockHeader) {
+// ProcessHeader - process headerblock from bor chain
+func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
 	ml.Logger.Debug("New block detected", "blockNumber", newHeader.header.Number)
 	// Marshall header block and publish to queue
 	headerBytes, err := newHeader.header.MarshalJSON()
@@ -51,7 +51,7 @@ func (ml *PolygonPosChainListener) ProcessHeader(newHeader *blockHeader) {
 	ml.sendTaskWithDelay("sendCheckpointToHeimdall", headerBytes, 0)
 }
 
-func (ml *PolygonPosChainListener) sendTaskWithDelay(taskName string, headerBytes []byte, delay time.Duration) {
+func (ml *BorChainListener) sendTaskWithDelay(taskName string, headerBytes []byte, delay time.Duration) {
 	// create machinery task
 	signature := &tasks.Signature{
 		Name: taskName,

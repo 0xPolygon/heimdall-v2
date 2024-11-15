@@ -707,13 +707,13 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	coins := s.k.bankKeeper.GetBalance(ctx, oldAccAddress, authTypes.FeeToken)
 
-	polygonPosTokensBalance := coins.Amount.Abs()
-	if !polygonPosTokensBalance.IsZero() {
-		s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polygonPosTokensBalance.String())
+	polTokensBalance := coins.Amount.Abs()
+	if !polTokensBalance.IsZero() {
+		s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
 
-		polygonPosCoins := sdk.Coins{coins}
-		if err := s.k.bankKeeper.SendCoins(ctx, oldAccAddress, newAccAddress, polygonPosCoins); err != nil {
-			s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polygonPosTokensBalance.String())
+		polCoins := sdk.Coins{coins}
+		if err := s.k.bankKeeper.SendCoins(ctx, oldAccAddress, newAccAddress, polCoins); err != nil {
+			s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
 			return
 		}
 	}

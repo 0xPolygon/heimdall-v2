@@ -166,9 +166,9 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 	return nil
 }
 
-// ApproveTokens approves polygon pos token for stake
+// ApproveTokens approves pol token for stake
 func (c *ContractCaller) ApproveTokens(amount *big.Int, stakeManager common.Address, tokenAddress common.Address, tokenInstance *erc20.Erc20) error {
-	data, err := c.PolygonPosTokenABI.Pack("approve", stakeManager, amount)
+	data, err := c.PolTokenABI.Pack("approve", stakeManager, amount)
 	if err != nil {
 		Logger.Error("unable topack tx for approve", "error", err)
 		return err

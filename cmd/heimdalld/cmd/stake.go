@@ -5,20 +5,21 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
 	bridge "github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 // StakeCmd stakes for a validator
 func StakeCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stake",
-		Short: "Stake polygon pos tokens for your account",
+		Short: "Stake pol tokens for your account",
 		Args:  cobra.NoArgs,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			helper.InitHeimdallConfig("")
@@ -116,14 +117,14 @@ func ApproveCmd() *cobra.Command {
 			}
 
 			stakingManagerAddress := params.ChainParams.StakingManagerAddress
-			polygonPosTokenAddress := params.ChainParams.PolygonPosTokenAddress
+			polTokenAddress := params.ChainParams.PolTokenAddress
 
-			polygonPosTokenInstance, err := contractCaller.GetPolygonPosTokenInstance(polygonPosTokenAddress)
+			polTokenInstance, err := contractCaller.GetTokenInstance(polTokenAddress)
 			if err != nil {
 				return err
 			}
 
-			return contractCaller.ApproveTokens(stakeAmount.Add(stakeAmount, feeAmount), common.HexToAddress(stakingManagerAddress), common.HexToAddress(polygonPosTokenAddress), polygonPosTokenInstance)
+			return contractCaller.ApproveTokens(stakeAmount.Add(stakeAmount, feeAmount), common.HexToAddress(stakingManagerAddress), common.HexToAddress(polTokenAddress), polTokenInstance)
 		},
 	}
 

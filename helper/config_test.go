@@ -5,9 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/spf13/viper"
-
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/spf13/viper"
 )
 
 // TestHeimdallConfig checks heimdall configs
@@ -84,10 +83,10 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	t.Skip("to be enabled")
 	t.Parallel()
 
-	newMaticContractAddress := "0x0000000000000000000000000000000000001234"
+	newPolContractAddress := "0x0000000000000000000000000000000000001234"
 
 	chainManagerAddressMigrations["mumbai"] = map[int64]ChainManagerAddressMigration{
-		350: {PolygonPosTokenAddress: newMaticContractAddress},
+		350: {PolTokenAddress: newPolContractAddress},
 	}
 
 	viper.Set("chain", "mumbai")
@@ -99,8 +98,8 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 		t.Errorf("Expected migration to be found")
 	}
 
-	if migration.PolygonPosTokenAddress != newMaticContractAddress {
-		t.Errorf("Expected matic token address to be %s, got %s", newMaticContractAddress, migration.PolygonPosTokenAddress)
+	if migration.PolTokenAddress != newPolContractAddress {
+		t.Errorf("Expected pol token address to be %s, got %s", newPolContractAddress, migration.PolTokenAddress)
 	}
 
 	// test for non-existing migration

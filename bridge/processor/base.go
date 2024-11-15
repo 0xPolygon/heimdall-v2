@@ -24,7 +24,7 @@ import (
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-// Processor defines a block header listener for Rootchain, Maticchain, Heimdall
+// Processor defines a block header listener for Rootchain, Borchain, Heimdall
 type Processor interface {
 	Start() error
 

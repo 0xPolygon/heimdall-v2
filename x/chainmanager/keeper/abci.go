@@ -25,7 +25,7 @@ func (k *Keeper) EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error)
 			return nil, err
 		}
 
-		params.ChainParams.PolygonPosTokenAddress = chainManagerAddressMigration.PolygonPosTokenAddress
+		params.ChainParams.PolTokenAddress = chainManagerAddressMigration.PolTokenAddress
 		params.ChainParams.StakingManagerAddress = chainManagerAddressMigration.StakingManagerAddress
 		params.ChainParams.RootChainAddress = chainManagerAddressMigration.RootChainAddress
 		params.ChainParams.SlashManagerAddress = chainManagerAddressMigration.SlashManagerAddress

@@ -7,12 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-
 	"github.com/cometbft/cometbft/crypto"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -24,6 +18,12 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // TODO HV2 - this function was heavily modified, review carefully

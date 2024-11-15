@@ -8,6 +8,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// TODO HV2: implement tracing or remove unused code
+
 type tracerKey struct{}
 
 type Option func(context.Context, trace.Span)

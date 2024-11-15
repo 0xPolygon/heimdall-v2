@@ -145,10 +145,10 @@ func TestBroadcastToHeimdall(t *testing.T) {
 			name: "failed broadcast (insufficient funds for fees)",
 			msg:  msgs[1],
 			op: func(hApp *app.HeimdallApp) error {
-				acc := hApp.AccountKeeper.GetAccount(sdkCtx, sdk.AccAddress(heimdallAddressBytes))
+				acc := hApp.AccountKeeper.GetAccount(sdkCtx, heimdallAddressBytes)
 
-				accountBalance := hApp.BankKeeper.GetBalance(sdkCtx, sdk.AccAddress(heimdallAddressBytes), authTypes.FeeToken)
-				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, sdk.AccAddress(heimdallAddressBytes), topuptypes.ModuleName, sdk.Coins{accountBalance})
+				accountBalance := hApp.BankKeeper.GetBalance(sdkCtx, heimdallAddressBytes, authTypes.FeeToken)
+				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, heimdallAddressBytes, topuptypes.ModuleName, sdk.Coins{accountBalance})
 				require.NoError(t, err)
 
 				err = hApp.BankKeeper.BurnCoins(sdkCtx, authTypes.FeeToken, sdk.Coins{accountBalance})
@@ -160,11 +160,11 @@ func TestBroadcastToHeimdall(t *testing.T) {
 			expResCode: 5,
 			expErr:     true,
 			tearDown: func(hApp *app.HeimdallApp) error {
-				acc := hApp.AccountKeeper.GetAccount(sdkCtx, sdk.AccAddress(heimdallAddressBytes))
+				acc := hApp.AccountKeeper.GetAccount(sdkCtx, heimdallAddressBytes)
 
 				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}
 
-				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, sdk.AccAddress(heimdallAddressBytes), topuptypes.ModuleName, coins)
+				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, heimdallAddressBytes, topuptypes.ModuleName, coins)
 				require.NoError(t, err)
 
 				err = hApp.BankKeeper.BurnCoins(sdkCtx, authTypes.FeeToken, coins)
@@ -178,7 +178,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 			name: "failed broadcast (invalid sequence number)",
 			msg:  msgs[2],
 			op: func(hApp *app.HeimdallApp) error {
-				acc := hApp.AccountKeeper.GetAccount(sdkCtx, sdk.AccAddress(heimdallAddressBytes))
+				acc := hApp.AccountKeeper.GetAccount(sdkCtx, heimdallAddressBytes)
 				txBroadcaster.lastSeqNo = acc.GetSequence() + 1
 				return nil
 			},
@@ -200,7 +200,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil, testOpts)
 			require.NoError(t, err)
 			require.Equal(t, tc.expResCode, txRes.Code)
-			accSeq, err := heimdallApp.AccountKeeper.GetSequence(sdkCtx, sdk.AccAddress(heimdallAddressBytes))
+			accSeq, err := heimdallApp.AccountKeeper.GetSequence(sdkCtx, heimdallAddressBytes)
 			require.NoError(t, err)
 			require.Equal(t, txBroadcaster.lastSeqNo, accSeq)
 
@@ -243,7 +243,12 @@ func prepareMockData(t *testing.T) *gomock.Controller {
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
 	res := prepareResponse(getAccountResponse)
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			t.Error(err)
+		}
+	}(res.Body)
 	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
 	helper.Client = mockHttpClient
 	return mockCtrl
@@ -256,7 +261,12 @@ func updateMockData(t *testing.T) *gomock.Controller {
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
 	res := prepareResponse(getAccountUpdatedResponse)
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			t.Error(err)
+		}
+	}(res.Body)
 	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
 	helper.Client = mockHttpClient
 	return mockCtrl

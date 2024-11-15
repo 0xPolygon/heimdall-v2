@@ -17,7 +17,7 @@ message ChainParams {
   option (gogoproto.equal) = true;
   string bor_chain_id = 1;
   // L1 Chain Contracts
-  string polygon_pos_token_address = 2;
+  string pol_token_address = 2;
   string staking_manager_address = 3;
   string slash_manager_address = 4;
   string root_chain_address = 5;

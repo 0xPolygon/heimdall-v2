@@ -72,7 +72,7 @@ func (mp *MilestoneProcessor) startPolling(ctx context.Context, milestoneLength 
 	}
 }
 
-// sendMilestoneToHeimdall - handles headerblock from polygonposchain
+// sendMilestoneToHeimdall - handles header block from bor
 // 1. check if i am the proposer for next milestone
 // 2. check if milestone has to be proposed
 // 3. if so, propose milestone to heimdall.
@@ -133,10 +133,10 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext *MilestoneContext, startNum uint64, milestoneLength uint64) error {
 	mp.Logger.Debug("Initiating milestone to Heimdall", "start", startNum, "milestoneLength", milestoneLength)
 
-	blocksConfirmation := helper.PolygonPosChainMilestoneConfirmation
+	blocksConfirmation := helper.BorChainMilestoneConfirmation
 
-	// Get latest matic block
-	block, err := mp.contractCaller.GetPolygonPosChainBlock(nil)
+	// Get latest bor block
+	block, err := mp.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		return err
 	}
@@ -144,13 +144,13 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	latestNum := block.Number.Uint64()
 
 	if latestNum < startNum+milestoneLength+blocksConfirmation-1 {
-		return fmt.Errorf("less than milestoneLength  start=%v latest block=%v milestonelength=%v maticchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation)
+		return fmt.Errorf("less than milestoneLength  start=%v latest block=%v milestonelength=%v borchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation)
 	}
 
 	endNum := latestNum - blocksConfirmation
 
 	//fetch the endBlock+1 number instead of endBlock so that we can directly get the hash of endBlock using parent hash
-	block, err = mp.contractCaller.GetPolygonPosChainBlock(big.NewInt(int64(endNum + 1)))
+	block, err = mp.contractCaller.GetBorChainBlock(big.NewInt(int64(endNum + 1)))
 	if err != nil {
 		return fmt.Errorf("error while fetching %d block %w", endNum+1, err)
 	}
@@ -222,7 +222,7 @@ func (mp *MilestoneProcessor) startPollingMilestoneTimeout(ctx context.Context, 
 	}
 }
 
-// sendMilestoneToHeimdall - handles headerblock from polygonposchain
+// sendMilestoneToHeimdall - handles header block from bor
 // 1. check if i am the proposer for next milestone
 // 2. check if milestone has to be proposed
 // 3. if so, propose milestone to heimdall.
@@ -303,7 +303,7 @@ func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) 
 
 // getCurrentChildBlock gets the current child block
 func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := mp.contractCaller.GetPolygonPosChainBlock(nil)
+	childBlock, err := mp.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		return 0, err
 	}

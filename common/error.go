@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// TODO HV2: refactor and complete error codes to use them in the codebase
+// TODO HV2: refactor and complete error codes to use them in the codebase (otherwise remove the unused ones)
 
 const (
 	CodeInvalidMsg = 1400

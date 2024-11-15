@@ -104,7 +104,7 @@ func (br BaseReq) ValidateBasic(w http.ResponseWriter) bool {
 
 // TODO HV2: This should not be needed due to autocli. If that's the case, delete this, the other unused functions, and the APIBodyLimit constant
 /*
-// ReadRESTReq reads and unmarshals a Request's body to the BaseReq struct.
+// ReadRESTReq reads and unmarshalls a Request's body to the BaseReq struct.
 // Writes an error response to ResponseWriter and returns true if errors occurred.
 func ReadRESTReq(w http.ResponseWriter, r *http.Request, cdc codec.Codec, req interface{}) bool {
 	// Limit the number of bytes read from the request body
@@ -137,7 +137,7 @@ func NewErrorResponse(code int, err string) ErrorResponse {
 	return ErrorResponse{Code: code, Error: err}
 }
 
-// WriteErrorResponse prepares and writes a HTTP error
+// WriteErrorResponse prepares and writes an HTTP error
 // given a status code and an error message.
 func WriteErrorResponse(w http.ResponseWriter, status int, err string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -175,7 +175,7 @@ func newErrorResponse(code int, err string) errorResponse {
 	return errorResponse{Code: code, Error: err}
 }
 
-// writeErrorResponse prepares and writes a HTTP error
+// writeErrorResponse prepares and writes an HTTP error
 // given a status code and an error message.
 func writeErrorResponse(w http.ResponseWriter, status int, err string) {
 	w.Header().Set("Content-Type", "application/json")

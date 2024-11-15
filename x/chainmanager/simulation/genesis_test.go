@@ -44,7 +44,7 @@ func TestRandomizedGenState(t *testing.T) {
 	simState.Cdc.MustUnmarshalJSON(simState.GenState[types.ModuleName], &cmGenesis)
 
 	require.Equal(t, "646203300", cmGenesis.Params.ChainParams.BorChainId)
-	require.Equal(t, "0x00000000000000000000000041f27Cc6F3875D04", cmGenesis.Params.ChainParams.PolygonPosTokenAddress)
+	require.Equal(t, "0x00000000000000000000000041f27Cc6F3875D04", cmGenesis.Params.ChainParams.PolTokenAddress)
 	require.Equal(t, "0x00000000000000000000000068255aaf95e94627", cmGenesis.Params.ChainParams.StakingManagerAddress)
 	require.Equal(t, "0x0000000000000000000000001B6cffa2BA517936", cmGenesis.Params.ChainParams.SlashManagerAddress)
 	require.Equal(t, "0x00000000000000000000000030b95fF183c471d4", cmGenesis.Params.ChainParams.RootChainAddress)

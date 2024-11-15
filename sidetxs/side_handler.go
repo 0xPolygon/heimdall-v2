@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/grpc"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc"
 )
 
 // SideTxHandler defines the core of side-tx execution of an application

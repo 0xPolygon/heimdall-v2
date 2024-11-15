@@ -40,7 +40,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 	chainParams, err := cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	polygonPosTxConfirmations := chainParams.BorChainTxConfirmations
+	borChainTxConfirmations := chainParams.BorChainTxConfirmations
 
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
@@ -55,7 +55,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", header.EndBlock+borChainTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(header.RootHash, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
@@ -82,7 +82,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", header.EndBlock+borChainTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return(nil, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
@@ -109,7 +109,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", header.EndBlock+polygonPosTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", header.EndBlock+borChainTxConfirmations).Return(true)
 		contractCaller.On("GetRootHash", header.StartBlock, header.EndBlock, uint64(1024)).Return([]byte{1}, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)

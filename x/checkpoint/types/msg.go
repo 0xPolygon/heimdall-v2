@@ -3,11 +3,11 @@ package types
 import (
 	"bytes"
 	"errors"
-	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"math/big"
 	"strconv"
 
 	"cosmossdk.io/core/address"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
