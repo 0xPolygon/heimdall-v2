@@ -4,20 +4,16 @@ import (
 	"encoding/json"
 	"testing"
 
-	"cosmossdk.io/core/appmodule"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	"github.com/cosmos/cosmos-sdk/testutil/mock"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
-	"github.com/cosmos/cosmos-sdk/testutil/mock"
-	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/module"
-	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
@@ -29,53 +25,15 @@ import (
 )
 
 func TestHeimdallAppExport(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test if required")
-	t.Parallel()
-	app, db, logger := SetupApp(t, 1)
+	app, _, _ := SetupApp(t, 1)
 
-	_, err := app.Commit()
-	require.NoError(t, err)
-
-	// Making a new app object with the db, so that InitChain hasn't been called
-	hApp := NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(t.TempDir()))
-	_, err = hApp.ExportAppStateAndValidators(false, []string{}, []string{})
+	_, err := app.ExportAppStateAndValidators(false, []string{}, []string{})
 	require.NoError(t, err)
 }
 
 func TestRunMigrations(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test if required")
-	t.Parallel()
-
 	hApp, _, _ := SetupApp(t, 1)
 	configurator := module.NewConfigurator(hApp.appCodec, hApp.MsgServiceRouter(), hApp.GRPCQueryRouter())
-
-	// We register all modules on the Configurator, except x/bank. x/bank will
-	// serve as the test subject on which we run the migration tests.
-	//
-	// The loop below is the same as calling `RegisterServices` on
-	// ModuleManager, except that we skip x/bank.
-	for name, mod := range hApp.ModuleManager.Modules {
-		if name == banktypes.ModuleName {
-			continue
-		}
-
-		if mod, ok := mod.(module.HasServices); ok {
-			mod.RegisterServices(configurator)
-		}
-
-		if mod, ok := mod.(appmodule.HasServices); ok {
-			err := mod.RegisterServices(configurator)
-			require.NoError(t, err)
-		}
-
-		require.NoError(t, configurator.Error())
-	}
-
-	// Initialize the chain
-	_, err := hApp.InitChain(&abci.RequestInitChain{})
-	require.NoError(t, err)
-	_, err = hApp.Commit()
-	require.NoError(t, err)
 
 	testCases := []struct {
 		name         string
@@ -176,8 +134,6 @@ func TestRunMigrations(t *testing.T) {
 }
 
 func TestInitGenesisOnMigration(t *testing.T) {
-	t.Skip("TODO HV2: fix and enable this test if required")
-	t.Parallel()
 	app, _, _ := SetupApp(t, 1)
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 
@@ -197,7 +153,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 	// the VersionMap to simulate upgrading with a new module.
 	_, err := app.ModuleManager.RunMigrations(ctx, app.configurator,
 		module.VersionMap{
-			"bank":         1,
+			"bank":         bank.AppModule{}.ConsensusVersion(),
 			"auth":         auth.AppModule{}.ConsensusVersion(),
 			"gov":          gov.AppModule{}.ConsensusVersion(),
 			"stake":        stake.AppModule{}.ConsensusVersion(),

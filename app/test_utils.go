@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -23,6 +22,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -111,9 +111,21 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: simtestutil.DefaultConsensusParams,
 		AppStateBytes:   stateBytes,
-		InitialHeight:   100,
+		InitialHeight:   VoteExtBlockHeight,
 	},
 	)
+	require.NoError(t, err)
+
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:    [][]byte{commitInfo},
+		Height: VoteExtBlockHeight,
+	})
+	require.NoError(t, err)
+
+	_, err = app.Commit()
 	require.NoError(t, err)
 
 	return app, db, logger
