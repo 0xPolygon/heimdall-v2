@@ -6,19 +6,10 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/big"
 	"net"
 	"net/http"
 	"testing"
 
-	"cosmossdk.io/math"
-	"github.com/0xPolygon/heimdall-v2/app"
-	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
-	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -30,7 +21,7 @@ import (
 	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
-	tx "github.com/cosmos/cosmos-sdk/types/tx"
+	"github.com/cosmos/cosmos-sdk/types/tx"
 	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,6 +30,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
+
+	"github.com/0xPolygon/heimdall-v2/app"
+	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 var (
@@ -48,7 +47,6 @@ var (
 	address                 = pubKey.Address()
 	heimdallAddress         = addressUtil.FormatAddress(common.BytesToAddress(address).String())
 	heimdallAddressBytes, _ = addressCodec.NewHexCodec().StringToBytes(heimdallAddress)
-	defaultBalance          = math.NewIntFromBigInt(big.NewInt(10).Exp(big.NewInt(10), big.NewInt(18), nil))
 	testChainId             = "testChainId"
 	dummyCometBFTNodeUrl    = "http://localhost:26657"
 	dummyHeimdallServerUrl  = "https://dummy-heimdall-api-testnet.polygon.technology"
@@ -126,13 +124,18 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec())
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.TxConfig = txConfig
-	txBroadcaster.CliCtx.FromAddress = sdk.AccAddress(heimdallAddressBytes)
+	txBroadcaster.CliCtx.FromAddress = heimdallAddressBytes
 	txBroadcaster.CliCtx.ChainID = testChainId
 	txBroadcaster.CliCtx.Client = cosmosTestutil.NewMockCometRPC(abci.ResponseQuery{})
 	// nolint:staticcheck
 	conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(dialer()), grpc.WithInsecure())
 	require.NoError(t, err)
-	defer conn.Close()
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+			log.Fatalf("failed to close connection: %v", err)
+		}
+	}(conn)
 
 	txBroadcaster.CliCtx.GRPCClient = conn
 
@@ -200,7 +203,7 @@ func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context)
 	err = hApp.BorKeeper.SetParams(ctx, borTypes.DefaultParams())
 	require.NoError(t, err)
 
-	acc := authTypes.NewBaseAccount(sdk.AccAddress(heimdallAddressBytes), cosmosPrivKey.PubKey(), 1337, 0)
+	acc := authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 1337, 0)
 	hApp.AccountKeeper.SetAccount(ctx, acc)
 
 	// create codec
@@ -218,7 +221,12 @@ func prepareMockData(t *testing.T) *gomock.Controller {
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
 	res := prepareResponse(getAccountResponse)
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatalf("failed to close response body: %v", err)
+		}
+	}(res.Body)
 	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
 	helper.Client = mockHttpClient
 	return mockCtrl
@@ -231,7 +239,12 @@ func updateMockData(t *testing.T) *gomock.Controller {
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
 	res := prepareResponse(getAccountUpdatedResponse)
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatalf("failed to close response body: %v", err)
+		}
+	}(res.Body)
 	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
 	helper.Client = mockHttpClient
 	return mockCtrl
@@ -284,7 +297,7 @@ type mockAccountRetriever struct {
 	Ctx           sdk.Context
 }
 
-func (mar *mockAccountRetriever) GetAccount(clientCtx client.Context, addr sdk.AccAddress) (client.Account, error) {
+func (mar *mockAccountRetriever) GetAccount(_ client.Context, addr sdk.AccAddress) (client.Account, error) {
 	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
 	if acc == nil {
 		return nil, fmt.Errorf("account not found")
@@ -292,7 +305,7 @@ func (mar *mockAccountRetriever) GetAccount(clientCtx client.Context, addr sdk.A
 	return acc, nil
 }
 
-func (mar *mockAccountRetriever) GetAccountWithHeight(clientCtx client.Context, addr sdk.AccAddress) (client.Account, int64, error) {
+func (mar *mockAccountRetriever) GetAccountWithHeight(_ client.Context, addr sdk.AccAddress) (client.Account, int64, error) {
 	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
 	if acc == nil {
 		return nil, 0, fmt.Errorf("account not found")
@@ -300,7 +313,7 @@ func (mar *mockAccountRetriever) GetAccountWithHeight(clientCtx client.Context, 
 	return acc, mar.Ctx.BlockHeight(), nil
 }
 
-func (mar *mockAccountRetriever) EnsureExists(clientCtx client.Context, addr sdk.AccAddress) error {
+func (mar *mockAccountRetriever) EnsureExists(_ client.Context, addr sdk.AccAddress) error {
 	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
 	if acc == nil {
 		return fmt.Errorf("account not found")
@@ -308,7 +321,7 @@ func (mar *mockAccountRetriever) EnsureExists(clientCtx client.Context, addr sdk
 	return nil
 }
 
-func (mar *mockAccountRetriever) GetAccountNumberSequence(clientCtx client.Context, addr sdk.AccAddress) (uint64, uint64, error) {
+func (mar *mockAccountRetriever) GetAccountNumberSequence(_ client.Context, addr sdk.AccAddress) (uint64, uint64, error) {
 	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
 	if acc == nil {
 		return 0, 0, fmt.Errorf("account not found")
@@ -341,7 +354,7 @@ type mockTxServiceServer struct {
 	BroadcastTxFunc func(ctx context.Context, req *tx.BroadcastTxRequest) (*tx.BroadcastTxResponse, error)
 }
 
-func (m *mockTxServiceServer) Simulate(ctx context.Context, req *tx.SimulateRequest) (*tx.SimulateResponse, error) {
+func (m *mockTxServiceServer) Simulate(_ context.Context, _ *tx.SimulateRequest) (*tx.SimulateResponse, error) {
 	if shouldFailSimulate {
 		return nil, fmt.Errorf("simulate failed")
 	}
@@ -351,8 +364,13 @@ func (m *mockTxServiceServer) Simulate(ctx context.Context, req *tx.SimulateRequ
 			GasUsed:   150000,
 		},
 		Result: &sdk.Result{
-			Data: []byte("simulation data"),
-			Log:  "simulation log",
+			MsgResponses: []*codectypes.Any{
+				{
+					TypeUrl: "/cosmos.tx.v1beta1.MsgResponse",
+					Value:   []byte("simulation data"),
+				},
+			},
+			Log: "simulation log",
 		},
 	}, nil
 }
