@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/0xPolygon/heimdall-v2/app"
@@ -127,8 +128,9 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	txBroadcaster.CliCtx.FromAddress = heimdallAddressBytes
 	txBroadcaster.CliCtx.ChainID = testChainId
 	txBroadcaster.CliCtx.Client = cosmosTestutil.NewMockCometRPC(abci.ResponseQuery{})
-	// nolint:staticcheck
-	conn, err := grpc.DialContext(context.Background(), "bufnet", grpc.WithContextDialer(dialer()), grpc.WithInsecure())
+	conn, err := grpc.NewClient("passthrough://bufnet",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(dialer()))
 	require.NoError(t, err)
 	defer func(conn *grpc.ClientConn) {
 		err := conn.Close()
