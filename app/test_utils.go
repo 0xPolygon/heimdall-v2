@@ -112,13 +112,25 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: simtestutil.DefaultConsensusParams,
 		AppStateBytes:   stateBytes,
-		InitialHeight:   100,
+		InitialHeight:   VoteExtBlockHeight,
 	}
 	if len(testOpts) > 0 && testOpts[0] != nil {
 		req.ChainId = testOpts[0].GetChainId()
 	}
 
 	_, err = app.InitChain(req)
+	require.NoError(t, err)
+
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:    [][]byte{commitInfo},
+		Height: VoteExtBlockHeight,
+	})
+	require.NoError(t, err)
+
+	_, err = app.Commit()
 	require.NoError(t, err)
 
 	return app, db, logger

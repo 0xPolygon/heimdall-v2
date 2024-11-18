@@ -2,13 +2,15 @@ package broadcaster
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
-	"math/big"
+	"log"
+	"net"
 	"net/http"
 	"testing"
 
-	"cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -16,21 +18,27 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	"github.com/cosmos/cosmos-sdk/types/tx"
+	authkeeper "github.com/cosmos/cosmos-sdk/x/auth/keeper"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/0xPolygon/heimdall-v2/app"
+	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	topuptypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 var (
@@ -38,13 +46,12 @@ var (
 	cosmosPrivKey           = &cosmossecp256k1.PrivKey{Key: privKey}
 	pubKey                  = privKey.PubKey()
 	address                 = pubKey.Address()
-	heimdallAddress         = address.String()
+	heimdallAddress         = addressUtil.FormatAddress(common.BytesToAddress(address).String())
 	heimdallAddressBytes, _ = addressCodec.NewHexCodec().StringToBytes(heimdallAddress)
-	defaultBalance          = math.NewIntFromBigInt(big.NewInt(10).Exp(big.NewInt(10), big.NewInt(18), nil))
 	testChainId             = "testChainId"
 	dummyCometBFTNodeUrl    = "http://localhost:26657"
 	dummyHeimdallServerUrl  = "https://dummy-heimdall-api-testnet.polygon.technology"
-	getAccountUrl           = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/accounts/" + common.BytesToAddress(address).String()
+	getAccountUrl           = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/accounts/" + heimdallAddress
 	getAccountResponse      = fmt.Sprintf(`
 	{
 		"address": "%s",
@@ -94,13 +101,7 @@ var (
 	}
 )
 
-// Parallel test - to check BroadcastToHeimdall synchronisation
 func TestBroadcastToHeimdall(t *testing.T) {
-	/*
-		TODO HV2 - find a way to simulate txBroadcaster.CliCtx.AccountRetriever as without
-		it, we cannot test BroadcastTx function.
-	*/
-	t.Skip()
 	t.Parallel()
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNodeUrl)
@@ -124,90 +125,73 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec())
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.TxConfig = txConfig
+	txBroadcaster.CliCtx.FromAddress = heimdallAddressBytes
+	txBroadcaster.CliCtx.ChainID = testChainId
+	txBroadcaster.CliCtx.Client = cosmosTestutil.NewMockCometRPC(abci.ResponseQuery{})
+	conn, err := grpc.NewClient("passthrough://bufnet",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(dialer()))
+	require.NoError(t, err)
+	defer func(conn *grpc.ClientConn) {
+		err := conn.Close()
+		if err != nil {
+			log.Fatalf("failed to close connection: %v", err)
+		}
+	}(conn)
+
+	txBroadcaster.CliCtx.GRPCClient = conn
+
+	mockAccountRetriever := &mockAccountRetriever{
+		AccountKeeper: heimdallApp.AccountKeeper,
+		Ctx:           sdkCtx,
+	}
+	txBroadcaster.CliCtx.AccountRetriever = mockAccountRetriever
+
+	updateMockData(t)
 
 	testCases := []struct {
 		name       string
 		msg        sdk.Msg
-		op         func(*app.HeimdallApp) error
 		expResCode uint32
 		expErr     bool
-		tearDown   func(*app.HeimdallApp) error
+		expLastSeq uint64
 	}{
 		{
 			name: "successful broadcast",
 			msg:  msgs[0],
 
-			op:         nil,
 			expResCode: 0,
 			expErr:     false,
+			expLastSeq: 1,
 		},
 		{
-			name: "failed broadcast (insufficient funds for fees)",
-			msg:  msgs[1],
-			op: func(hApp *app.HeimdallApp) error {
-				acc := hApp.AccountKeeper.GetAccount(sdkCtx, heimdallAddressBytes)
+			name: "failed broadcast",
+			msg:  msgs[0],
 
-				accountBalance := hApp.BankKeeper.GetBalance(sdkCtx, heimdallAddressBytes, authTypes.FeeToken)
-				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, heimdallAddressBytes, topuptypes.ModuleName, sdk.Coins{accountBalance})
-				require.NoError(t, err)
-
-				err = hApp.BankKeeper.BurnCoins(sdkCtx, authTypes.FeeToken, sdk.Coins{accountBalance})
-				require.NoError(t, err)
-
-				hApp.AccountKeeper.SetAccount(sdkCtx, acc)
-				return nil
-			},
-			expResCode: 5,
+			expResCode: 1,
 			expErr:     true,
-			tearDown: func(hApp *app.HeimdallApp) error {
-				acc := hApp.AccountKeeper.GetAccount(sdkCtx, heimdallAddressBytes)
-
-				coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}
-
-				err := hApp.BankKeeper.SendCoinsFromAccountToModule(sdkCtx, heimdallAddressBytes, topuptypes.ModuleName, coins)
-				require.NoError(t, err)
-
-				err = hApp.BankKeeper.BurnCoins(sdkCtx, authTypes.FeeToken, coins)
-				require.NoError(t, err)
-
-				hApp.AccountKeeper.SetAccount(sdkCtx, acc)
-				return nil
-			},
-		},
-		{
-			name: "failed broadcast (invalid sequence number)",
-			msg:  msgs[2],
-			op: func(hApp *app.HeimdallApp) error {
-				acc := hApp.AccountKeeper.GetAccount(sdkCtx, heimdallAddressBytes)
-				txBroadcaster.lastSeqNo = acc.GetSequence() + 1
-				return nil
-			},
-			expResCode: 4,
-			expErr:     true,
+			expLastSeq: 1,
 		},
 	}
 
 	//nolint:paralleltest
 	for _, tc := range testCases {
-		if tc.expErr {
-			updateMockData(t)
-		}
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.op != nil {
-				err := tc.op(heimdallApp)
-				require.NoError(t, err)
+			if tc.expErr {
+				shouldFailSimulate = true
+			} else {
+				shouldFailSimulate = false
 			}
-			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil, testOpts)
-			require.NoError(t, err)
-			require.Equal(t, tc.expResCode, txRes.Code)
-			accSeq, err := heimdallApp.AccountKeeper.GetSequence(sdkCtx, heimdallAddressBytes)
-			require.NoError(t, err)
-			require.Equal(t, txBroadcaster.lastSeqNo, accSeq)
 
-			if tc.tearDown != nil {
-				err := tc.tearDown(heimdallApp)
+			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil, testOpts)
+			if tc.expErr {
+				require.Error(t, err)
+			} else {
 				require.NoError(t, err)
 			}
+
+			require.Equal(t, tc.expResCode, txRes.Code)
+			require.Equal(t, tc.expLastSeq, txBroadcaster.lastSeqNo)
 		})
 	}
 }
@@ -221,11 +205,7 @@ func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context)
 	err = hApp.BorKeeper.SetParams(ctx, borTypes.DefaultParams())
 	require.NoError(t, err)
 
-	// TODO HV2 - this is unused, remove it?
-	// coins := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: defaultBalance}}
-
-	acc := authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 0, 0)
-
+	acc := authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 1337, 0)
 	hApp.AccountKeeper.SetAccount(ctx, acc)
 
 	// create codec
@@ -246,7 +226,7 @@ func prepareMockData(t *testing.T) *gomock.Controller {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			t.Error(err)
+			log.Fatalf("failed to close response body: %v", err)
 		}
 	}(res.Body)
 	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
@@ -264,7 +244,7 @@ func updateMockData(t *testing.T) *gomock.Controller {
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
-			t.Error(err)
+			log.Fatalf("failed to close response body: %v", err)
 		}
 	}(res.Body)
 	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
@@ -313,3 +293,88 @@ func (r *resettableReadCloser) Close() error {
 	r.r = bytes.NewReader(r.data)
 	return nil
 }
+
+type mockAccountRetriever struct {
+	AccountKeeper authkeeper.AccountKeeper
+	Ctx           sdk.Context
+}
+
+func (mar *mockAccountRetriever) GetAccount(_ client.Context, addr sdk.AccAddress) (client.Account, error) {
+	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
+	if acc == nil {
+		return nil, fmt.Errorf("account not found")
+	}
+	return acc, nil
+}
+
+func (mar *mockAccountRetriever) GetAccountWithHeight(_ client.Context, addr sdk.AccAddress) (client.Account, int64, error) {
+	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
+	if acc == nil {
+		return nil, 0, fmt.Errorf("account not found")
+	}
+	return acc, mar.Ctx.BlockHeight(), nil
+}
+
+func (mar *mockAccountRetriever) EnsureExists(_ client.Context, addr sdk.AccAddress) error {
+	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
+	if acc == nil {
+		return fmt.Errorf("account not found")
+	}
+	return nil
+}
+
+func (mar *mockAccountRetriever) GetAccountNumberSequence(_ client.Context, addr sdk.AccAddress) (uint64, uint64, error) {
+	acc := mar.AccountKeeper.GetAccount(mar.Ctx, addr)
+	if acc == nil {
+		return 0, 0, fmt.Errorf("account not found")
+	}
+	return acc.GetAccountNumber(), acc.GetSequence(), nil
+}
+
+const bufSize = 1024 * 1024
+
+func dialer() func(context.Context, string) (net.Conn, error) {
+	lis := bufconn.Listen(bufSize)
+	srv := grpc.NewServer()
+
+	mockTxService := &mockTxServiceServer{}
+	tx.RegisterServiceServer(srv, mockTxService)
+
+	go func() {
+		if err := srv.Serve(lis); err != nil {
+			log.Fatalf("Server exited with error: %v", err)
+		}
+	}()
+	return func(ctx context.Context, s string) (net.Conn, error) {
+		return lis.Dial()
+	}
+}
+
+type mockTxServiceServer struct {
+	tx.UnimplementedServiceServer
+
+	BroadcastTxFunc func(ctx context.Context, req *tx.BroadcastTxRequest) (*tx.BroadcastTxResponse, error)
+}
+
+func (m *mockTxServiceServer) Simulate(_ context.Context, _ *tx.SimulateRequest) (*tx.SimulateResponse, error) {
+	if shouldFailSimulate {
+		return nil, fmt.Errorf("simulate failed")
+	}
+	return &tx.SimulateResponse{
+		GasInfo: &sdk.GasInfo{
+			GasWanted: 200000,
+			GasUsed:   150000,
+		},
+		Result: &sdk.Result{
+			MsgResponses: []*codectypes.Any{
+				{
+					TypeUrl: "/cosmos.tx.v1beta1.MsgResponse",
+					Value:   []byte("simulation data"),
+				},
+			},
+			Log: "simulation log",
+		},
+	}, nil
+}
+
+var shouldFailSimulate bool

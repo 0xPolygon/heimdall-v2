@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -330,7 +331,9 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 		_, adjusted, err := clienttx.CalculateGas(clientCtx, txf, msgs...)
 		if err != nil {
-			return nil, err
+			return &sdk.TxResponse{
+				Code: 1,
+			}, err
 		}
 
 		txf = txf.WithGas(adjusted)
@@ -339,7 +342,10 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	if clientCtx.Simulate {
 		Logger.Debug("in simulate mode")
-		return nil, nil
+
+		return &sdk.TxResponse{
+			Code: abci.CodeTypeOK,
+		}, nil
 	}
 
 	tx, err := txf.BuildUnsignedTx(msgs...)
