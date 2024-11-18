@@ -11,9 +11,12 @@ import (
 	"strings"
 	"time"
 
+	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
+	cmTypes "github.com/cometbft/cometbft/types"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -22,10 +25,7 @@ import (
 	"github.com/tendermint/go-amino"
 
 	"github.com/0xPolygon/heimdall-v2/file"
-
-	cfg "github.com/cometbft/cometbft/config"
-	cmTypes "github.com/cometbft/cometbft/types"
-	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 )
 
 const (
@@ -48,8 +48,11 @@ const (
 
 	// heimdall-config flags
 
-	MainRPCUrlFlag               = "eth_rpc_url"
-	BorRPCUrlFlag                = "bor_rpc_url"
+	MainRPCUrlFlag = "eth_rpc_url"
+	BorRPCUrlFlag  = "bor_rpc_url"
+	BorGRPCUrlFlag = "bor_grpc_url"
+	BorGRPCFlag    = "bor_grpc_flag"
+
 	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
 	HeimdallServerURLFlag        = "heimdall_rest_server"
 	GRPCServerURLFlag            = "grpc_server"
@@ -84,6 +87,7 @@ const (
 	// RPC Endpoints
 	DefaultMainRPCUrl = "http://localhost:9545"
 	DefaultBorRPCUrl  = "http://localhost:8545"
+	DefaultBorGRPCUrl = "localhost:3131"
 
 	// RPC Timeouts
 	DefaultEthRPCTimeout = 5 * time.Second
@@ -125,11 +129,10 @@ const (
 
 	DefaultCometBFTNode = "tcp://localhost:26657"
 
-	// TODO HV2: Update these values with the correct ones
-	DefaultMainnetSeeds = "1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656"
-
-	// TODO HV2: Update these values with the correct ones and add support for amoy
-	DefaultTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
+	// TODO HV2: Check these values and eventually update with the correct ones. Also, add support for amoy.
+	DefaultMainnetSeeds       = "1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656"
+	DefaultMumbaiTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
+	DefaultAmoyTestnetSeeds   = "eb57fffe96d74312963ced94a94cbaf8e0d8ec2e@54.217.171.196:26656,080dcdffcc453367684b61d8f3ce032f357b0f73@13.251.184.185:26656"
 
 	secretFilePerm = 0600
 
@@ -141,7 +144,7 @@ const (
 
 	MilestonePruneNumber = uint64(100)
 
-	PolygonPosChainMilestoneConfirmation = uint64(16)
+	BorChainMilestoneConfirmation = uint64(16)
 
 	// MilestoneBufferLength defines the condition to propose the
 	// milestoneTimeout if this many bor blocks have passed since
@@ -169,6 +172,8 @@ func init() {
 type CustomConfig struct {
 	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
+	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
+	BorGRPCFlag    bool   `mapstructure:"bor_grpc_flag"`     // gRPC flag for bor chain
 	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometbft node url
 	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
 
@@ -216,9 +221,10 @@ var conf CustomAppConfig
 var mainChainClient *ethclient.Client
 var mainRPCClient *rpc.Client
 
-// polygonPosClient stores eth/rpc client for Polygon Pos Network
-var polygonPosClient *ethclient.Client
-var polygonPosRPCClient *rpc.Client
+// borClient stores eth/rpc client for Polygon Pos Network
+var borClient *ethclient.Client
+var borRPCClient *rpc.Client
+var borGRPCClient *borgrpc.BorGRPCClient
 
 // private key object
 var privKeyObject secp256k1.PrivKey
@@ -234,12 +240,12 @@ var GenesisDoc cmTypes.GenesisDoc
 var milestoneBorBlockHeight uint64 = 0
 
 type ChainManagerAddressMigration struct {
-	PolygonPosTokenAddress string
-	RootChainAddress       string
-	StakingManagerAddress  string
-	SlashManagerAddress    string
-	StakingInfoAddress     string
-	StateSenderAddress     string
+	PolTokenAddress       string
+	RootChainAddress      string
+	StakingManagerAddress string
+	SlashManagerAddress   string
+	StakingInfoAddress    string
+	StateSenderAddress    string
 }
 
 var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigration{
@@ -363,11 +369,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if polygonPosRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
+	if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
-	polygonPosClient = ethclient.NewClient(polygonPosRPCClient)
+	borClient = ethclient.NewClient(borRPCClient)
+
+	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
 	// TODO HV2 - Why was this added? We are never using this
 	/*
@@ -402,8 +410,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 // GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
-		EthRPCUrl:      DefaultMainRPCUrl,
-		BorRPCUrl:      DefaultBorRPCUrl,
+		EthRPCUrl:  DefaultMainRPCUrl,
+		BorRPCUrl:  DefaultBorRPCUrl,
+		BorGRPCUrl: DefaultBorGRPCUrl,
+
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
 
 		EthRPCTimeout: DefaultEthRPCTimeout,
@@ -459,14 +469,14 @@ func GetMainClient() *ethclient.Client {
 	return mainChainClient
 }
 
-// GetPolygonPosClient returns polygon pos' eth client
-func GetPolygonPosClient() *ethclient.Client {
-	return polygonPosClient
+// GetBorClient returns bor eth client
+func GetBorClient() *ethclient.Client {
+	return borClient
 }
 
-// GetPolygonPosRPCClient returns polygon pos RPC client
-func GetPolygonPosRPCClient() *rpc.Client {
-	return polygonPosRPCClient
+// GetBorRPCClient returns bor RPC client
+func GetBorRPCClient() *rpc.Client {
+	return borRPCClient
 }
 
 // GetPrivKey returns priv key object
@@ -549,6 +559,17 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 
 	if err := v.BindPFlag(BorRPCUrlFlag, cmd.PersistentFlags().Lookup(BorRPCUrlFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorRPCUrlFlag), "Error", err)
+	}
+
+	// add BorGRPCUrlFlag flag
+	cmd.PersistentFlags().String(
+		BorGRPCUrlFlag,
+		"",
+		"Set gRPC endpoint for bor chain",
+	)
+
+	if err := v.BindPFlag(BorGRPCUrlFlag, cmd.PersistentFlags().Lookup(BorGRPCUrlFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCUrlFlag), "Error", err)
 	}
 
 	// add CometBFTNodeURLFlag flag
@@ -732,6 +753,18 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.BorRPCUrl = stringConfgValue
 	}
 
+	// get endpoint for bor chain from viper/cobra
+	stringConfgValue = v.GetString(BorGRPCUrlFlag)
+	if stringConfgValue != "" {
+		c.Custom.BorGRPCUrl = stringConfgValue
+	}
+
+	// get gRPC flag for bor chain from viper/cobra
+	boolConfgValue := v.GetBool(BorGRPCFlag)
+	if boolConfgValue {
+		c.Custom.BorGRPCFlag = boolConfgValue
+	}
+
 	// get endpoint for cometBFT from viper/cobra
 	stringConfgValue = v.GetString(CometBFTNodeURLFlag)
 	if stringConfgValue != "" {
@@ -857,6 +890,10 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 		c.Custom.BorRPCUrl = cc.BorRPCUrl
 	}
 
+	if cc.BorGRPCUrl != "" {
+		c.Custom.BorGRPCUrl = cc.BorGRPCUrl
+	}
+
 	if cc.CometBFTRPCUrl != "" {
 		c.Custom.CometBFTRPCUrl = cc.CometBFTRPCUrl
 	}
@@ -945,9 +982,9 @@ func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 		case MainChain:
 			cometBFTConfig.P2P.Seeds = DefaultMainnetSeeds
 		case MumbaiChain:
-			cometBFTConfig.P2P.Seeds = DefaultTestnetSeeds
+			cometBFTConfig.P2P.Seeds = DefaultMumbaiTestnetSeeds
 		case AmoyChain:
-			cometBFTConfig.P2P.Seeds = DefaultTestnetSeeds
+			cometBFTConfig.P2P.Seeds = DefaultAmoyTestnetSeeds
 		}
 	}
 }
@@ -965,12 +1002,18 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 	}
 }
 
+// GetBorGRPCClient returns bor gRPC client
+func GetBorGRPCClient() *borgrpc.BorGRPCClient {
+	return borGRPCClient
+}
+
 // SetTestConfig sets test configuration
 func SetTestConfig(_conf CustomConfig) {
 	conf.Custom = _conf
 }
 
 // TEST PURPOSE ONLY
+
 // SetTestPrivPubKey sets test priv and pub key for testing
 func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
 	privKeyObject = privKey

@@ -7,11 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/bridge/queue"
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -21,9 +16,15 @@ import (
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/spf13/viper"
 	"github.com/syndtr/goleveldb/leveldb"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-// Processor defines a block header listener for Rootchain, Maticchain, Heimdall
+// Processor defines a block header listener for Rootchain, Borchain, Heimdall
 type Processor interface {
 	Start() error
 
@@ -129,10 +130,8 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 		endpoint = helper.GetHeimdallServerEndpoint(util.TopupTxStatusURL)
 	case util.ClerkEvent:
 		endpoint = helper.GetHeimdallServerEndpoint(util.ClerkTxStatusURL)
-		// HV2 - not adding slashing
-		/*
-			case util.SlashingEvent:
-				endpoint = helper.GetHeimdallServerEndpoint(util.SlashingTxStatusURL)
+		/* HV2 - not adding slashing
+		case util.SlashingEvent: endpoint = helper.GetHeimdallServerEndpoint(util.SlashingTxStatusURL)
 		*/
 	}
 
@@ -170,14 +169,17 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 		return false, err
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Limit the number of bytes read from the response body
+	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
+
+	body, err := io.ReadAll(limitedBody)
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
 			bp.Logger.Error("Error closing response body:", err)
 		}
 	}()
 	if err != nil {
-		bp.Logger.Error("Error fetching mempool tx", "error", err)
+		bp.Logger.Error("Error reading response body for mempool tx", "error", err)
 		return false, err
 	}
 

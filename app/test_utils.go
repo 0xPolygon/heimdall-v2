@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -85,7 +86,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator
 	return validators, accounts, balances
 }
 
-func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance) (*HeimdallApp, *dbm.MemDB, log.Logger) {
+func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger) {
 	t.Helper()
 
 	db := dbm.NewMemDB()
@@ -107,13 +108,17 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	require.NoError(t, err)
 
 	// initialize chain with the validator set and genesis accounts
-	_, err = app.InitChain(&abci.RequestInitChain{
+	req := &abci.RequestInitChain{
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: simtestutil.DefaultConsensusParams,
 		AppStateBytes:   stateBytes,
 		InitialHeight:   VoteExtBlockHeight,
-	},
-	)
+	}
+	if len(testOpts) > 0 && testOpts[0] != nil {
+		req.ChainId = testOpts[0].GetChainId()
+	}
+
+	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
 	extCommitInfo := new(abci.ExtendedCommitInfo)

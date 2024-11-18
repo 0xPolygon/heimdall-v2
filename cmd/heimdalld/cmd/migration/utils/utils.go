@@ -10,9 +10,6 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
-	v034gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v034"
-	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
-	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types"
@@ -22,6 +19,10 @@ import (
 	govTypesV1Beta1 "github.com/cosmos/cosmos-sdk/x/gov/types/v1beta1"
 	paramTypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
+
+	v034gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v034"
+	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
+	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
 )
 
 // LoadJSONFromFile reads a JSON file and returns the data as a map.
@@ -119,7 +120,7 @@ func traversePath(data map[string]interface{}, path string) (map[string]interfac
 	return current, nil
 }
 
-// MigrateGenesisState migrates multiple validators to the new format.
+// MigrateValidators migrates multiple validators to the new format.
 func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) error {
 	validators, ok := validatorsInterface.([]interface{})
 	if !ok {
@@ -167,7 +168,7 @@ func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) er
 	return nil
 }
 
-// migrateGovProposalContent returns the proposal into new format with proto encoding.
+// MigrateGovProposalContent returns the proposal into new format with proto encoding.
 func MigrateGovProposalContent(oldContent v036gov.Content) *codecTypes.Any {
 	authority := authTypes.NewModuleAddress(v036gov.ModuleName).String()
 
@@ -207,12 +208,12 @@ func MigrateGovProposalContent(oldContent v036gov.Content) *codecTypes.Any {
 		panic(fmt.Errorf("%T is not a valid proposal content type", oldContent))
 	}
 
-	any, err := codecTypes.NewAnyWithValue(protoProposal)
+	anyV, err := codecTypes.NewAnyWithValue(protoProposal)
 	if err != nil {
 		panic(fmt.Errorf("failed to create Any type for proposal content: %w", err))
 	}
 
-	msg := govTypes.NewMsgExecLegacyContent(any, authority)
+	msg := govTypes.NewMsgExecLegacyContent(anyV, authority)
 
 	msgAny, err := codecTypes.NewAnyWithValue(msg)
 	if err != nil {
@@ -325,9 +326,9 @@ func MigrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, er
 			return nil, fmt.Errorf("invalid account format at index %d", i)
 		}
 
-		module_name, _ := accountMap["module_name"].(string)
-		if module_name != "" {
-			// We skip module accounts, because heimdall v2 will initialize them from zero anyways
+		moduleName, _ := accountMap["module_name"].(string)
+		if moduleName != "" {
+			// We skip module accounts, because heimdall v2 will initialize them from zero anyway
 			continue
 		}
 
@@ -361,7 +362,7 @@ func MigrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, er
 }
 
 // migratePubKey migrates the public key from string to base64 encoding.
-func migratePubKey(appCodec codec.Codec, pubKeyStr string) (string, error) {
+func migratePubKey(_ codec.Codec, pubKeyStr string) (string, error) {
 	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(pubKeyStr, "0x"))
 	if err != nil {
 		return "", fmt.Errorf("failed to decode hex public key: %w", err)

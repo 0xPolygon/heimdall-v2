@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const validatorSetData = `

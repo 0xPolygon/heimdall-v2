@@ -12,6 +12,8 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
+const maxCheckpointListLimitPerPage = 1000
+
 var _ types.QueryServer = queryServer{}
 
 type queryServer struct {
@@ -207,7 +209,7 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > 1000 {
+	if isPaginationEmpty(req.Pagination) && req.Pagination.Limit > maxCheckpointListLimitPerPage {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
 

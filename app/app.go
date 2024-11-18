@@ -128,7 +128,7 @@ type HeimdallApp struct {
 	MilestoneKeeper    milestoneKeeper.Keeper
 	BorKeeper          borKeeper.Keeper
 
-	// utility for invoking contracts in Ethereum and Polygon PoS chain
+	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
 
 	ModuleManager *module.Manager

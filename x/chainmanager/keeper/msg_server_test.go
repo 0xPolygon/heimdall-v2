@@ -8,12 +8,12 @@ import (
 )
 
 const (
-	PolygonPosTokenAddress = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
-	StakingManagerAddress  = "0x5e3ef299fddf15eaa0432e6e66473ace8c13d908"
-	SlashManagerAddress    = "0x01f645dcd6c796f6bc6c982159b32faaaebdc96a"
-	RootChainAddress       = "0x86e4dc95c7fbdbf52e33d563bbdb00823894c287"
-	StakingInfoAddress     = "0xa59c847bd5ac0172ff4fe912c5d29e5a71a7512b"
-	StateSenderAddress     = "0x28e4f3a7f651294b9564800b2d01f35189a5bfbe"
+	PolTokenAddress       = "0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0"
+	StakingManagerAddress = "0x5e3ef299fddf15eaa0432e6e66473ace8c13d908"
+	SlashManagerAddress   = "0x01f645dcd6c796f6bc6c982159b32faaaebdc96a"
+	RootChainAddress      = "0x86e4dc95c7fbdbf52e33d563bbdb00823894c287"
+	StakingInfoAddress    = "0xa59c847bd5ac0172ff4fe912c5d29e5a71a7512b"
+	StateSenderAddress    = "0x28e4f3a7f651294b9564800b2d01f35189a5bfbe"
 )
 
 func (s *KeeperTestSuite) TestMsgUpdateParams() {
@@ -40,12 +40,12 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				Authority: cmKeeper.GetAuthority(),
 				Params: types.Params{
 					ChainParams: types.ChainParams{
-						PolygonPosTokenAddress: "def",
+						PolTokenAddress: "def",
 					},
 				},
 			},
 			expErr:    true,
-			expErrMsg: "invalid address for value def for polygon_pos_token_address in chain_params",
+			expErrMsg: "invalid address for value def for pol_token_address in chain_params",
 		},
 		{
 			name: "all good",
@@ -81,7 +81,7 @@ func (s *KeeperTestSuite) getParams() types.Params {
 	s.T().Helper()
 
 	params := types.DefaultParams()
-	params.ChainParams.PolygonPosTokenAddress = PolygonPosTokenAddress
+	params.ChainParams.PolTokenAddress = PolTokenAddress
 	params.ChainParams.StakingManagerAddress = StakingManagerAddress
 	params.ChainParams.SlashManagerAddress = SlashManagerAddress
 	params.ChainParams.RootChainAddress = RootChainAddress

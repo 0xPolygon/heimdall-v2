@@ -126,7 +126,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 	ctx, require, keeper, stakeKeeper, postHandler := s.ctx, s.Require(), s.milestoneKeeper, s.stakeKeeper, s.postHandler
 
-	milestoneId := "00000"
+	milestoneId := TestMilestoneID
 
 	params := types.DefaultParams()
 	err := keeper.SetParams(ctx, params)

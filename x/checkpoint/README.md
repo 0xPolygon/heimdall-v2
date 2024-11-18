@@ -1,3 +1,5 @@
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
 # Checkpoint
 
 Heimdall selects the next proposer using Peppermint’s leader selection algorithm.  
@@ -94,8 +96,6 @@ string from = 1 [
 ];
 }
 ```
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## CLI Commands
 

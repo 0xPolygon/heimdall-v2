@@ -12,11 +12,6 @@ import (
 	"time"
 
 	"cosmossdk.io/x/tx/signing"
-	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
-	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
-	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
-	verify "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/verify"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -27,6 +22,12 @@ import (
 	paramTypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
+
+	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
+	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
+	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
+	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/verify"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 // TODO HV2: Initially in heimdall v2 we used HexBytes, HeimdallHash and TxHash
@@ -305,7 +306,7 @@ func migrateChainmanagerModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to rename mainchain_tx_timeout field: %w", err)
 	}
 
-	if err := utils.RenameProperty(chainmanagerData, "params.chain_params", "matic_token_address", "polygon_pos_token_address"); err != nil {
+	if err := utils.RenameProperty(chainmanagerData, "params.chain_params", "matic_token_address", "pol_token_address"); err != nil {
 		return fmt.Errorf("failed to rename matic_token_address field: %w", err)
 	}
 

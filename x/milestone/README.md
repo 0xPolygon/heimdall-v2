@@ -1,4 +1,6 @@
-# Milestone
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
+# Milestone module
 
 This module enables deterministic finality by leveraging Polygon PoS’s dual client architecture.  
 This is done using a hybrid system that utilizes Peppermint layer consensus,  
@@ -85,8 +87,6 @@ string from = 1 [
 ];
 }
 ```
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## CLI Commands
 

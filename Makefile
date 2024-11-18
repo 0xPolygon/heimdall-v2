@@ -6,10 +6,9 @@ GOPATH = $(shell go env GOPATH)
 GIT_COMMIT ?= $(shell git rev-list -1 HEAD)
 
 DOCKER := $(shell which docker)
-HTTPS_GIT := https://github.com/0xPolygon/heimdall-v2.git
 
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
-HTTPS_GIT := https://$(PACKAGE_NAME)
+HTTPS_GIT := https://$(PACKAGE_NAME).git
 GOLANG_CROSS_VERSION  ?= v1.21.0
 
 # Fetch git latest tag
@@ -71,9 +70,9 @@ proto-lint:
 	@$(protoImage) buf lint --error-format=json
 
 proto-check-breaking:
-	@$(protoImage) buf breaking --against $(HTTPS_GIT)#branch=main
+	@$(protoImage) buf breaking --against "$(HTTPS_GIT)#branch=develop"
 
-.PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps
+.PHONY: proto-all proto-gen proto-format proto-lint proto-check-breaking
 
 mock:
 	# TODO HV2: enrich the mockgen command with all other modules' mocks
@@ -118,6 +117,7 @@ release-dry-run:
 		-e DOCKER_USERNAME \
 		-e DOCKER_PASSWORD \
 		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.docker/config.json:/root/.docker/config.json \
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
@@ -147,14 +147,15 @@ help:
 	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
 	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
 	@echo "  clean               	- Delete build folder."
+	@echo "  heimdalld              - Compiles the Heimdall binaries."
 	@echo "  test               	- Run the tests."
 	@echo "  mock                	- Generate mocks."
 	@echo "  proto-all           	- Format, lint and generate proto files."
+	@echo "  proto-lint        		- Lint proto files."
 	@echo "  proto-format        	- Format proto files."
 	@echo "  proto-gen           	- Generate proto files."
 	@echo "  proto-check-breaking   - Check if proto breaks against git head."
 	@echo "  build-docker        	- Build a Docker image for the latest Git tag."
 	@echo "  push-docker         	- Push the Docker image for the latest Git tag."
-	@echo "  build-docker-develop	- Build a Docker image for the development branch."
 	@echo "  release-dry-run     	- Perform a dry run of the release process."
 	@echo "  release             	- Execute the actual release process."

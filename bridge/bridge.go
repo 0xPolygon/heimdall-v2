@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/viper"
+
 	"github.com/0xPolygon/heimdall-v2/bridge/cmd"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/spf13/viper"
 )
 
 func main() {

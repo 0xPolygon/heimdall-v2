@@ -4,6 +4,8 @@ import (
 	errorsmod "cosmossdk.io/errors"
 )
 
+// TODO HV2: remove unused constants and consolidate errors
+
 var (
 	ErrInvalidMsg              = errorsmod.Register(ModuleName, 2, "invalid message")
 	ErrCheckpointBufferFound   = errorsmod.Register(ModuleName, 3, "checkpoint not found in buffer")
