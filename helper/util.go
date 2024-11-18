@@ -263,7 +263,7 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
 
-// TODO HV2 - Older version of FetchFromAPI kept for reference, to be removed remove later
+// TODO HV2 - Older version of FetchFromAPI kept for reference, to be removed later
 /*
 // FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result rest.Response, err error) {

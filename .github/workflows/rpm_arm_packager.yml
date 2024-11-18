@@ -65,12 +65,10 @@
 #          echo "%install" >> packaging/rpm/SPECS/heimdall.spec
 #          echo "mkdir -p %{buildroot}/usr/bin" >> packaging/rpm/SPECS/heimdall.spec
 #          echo "cp /home/runner/work/heimdall/heimdall/build/heimdalld %{buildroot}/usr/bin/" >> packaging/rpm/SPECS/heimdall.spec
-#          echo "cp /home/runner/work/heimdall/heimdall/build/heimdallcli %{buildroot}/usr/bin/" >> packaging/rpm/SPECS/heimdall.spec
 #
 #          echo "%files" >> packaging/rpm/SPECS/heimdall.spec
 #
 #          echo "/usr/bin/heimdalld" >> packaging/rpm/SPECS/heimdall.spec
-#          echo "/usr/bin/heimdallcli" >> packaging/rpm/SPECS/heimdall.spec
 #      - name: construct rpm package
 #        run: |
 #          rpmbuild --define "_topdir /home/runner/work/heimdall/heimdall/packaging/rpm_build" \

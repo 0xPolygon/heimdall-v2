@@ -42,8 +42,6 @@
 #        run: mkdir -p packaging/deb/heimdalld/usr/bin
 #      - name: Copying necessary heimdalld files
 #        run: cp -rp build/heimdalld packaging/deb/heimdalld/usr/bin/
-#      - name: copying necessary heimdallcli
-#        run: cp -rp build/heimdallcli packaging/deb/heimdalld/usr/bin/
 #
 #      # Control file creation
 #      - name: create control file
@@ -94,8 +92,6 @@
 #          echo "Description: heimdall binary package" >> packaging/deb/heimdalld/DEBIAN/control
 #      - name: Copying necessary heimdalldfiles
 #        run: cp -rp build/heimdalld packaging/deb/heimdalld/usr/bin/
-#      - name: copying necessary heimdallcli
-#        run: cp -rp build/heimdallcli packaging/deb/heimdalld/usr/bin/
 #
 #
 #      - name: Creating package for binary for heimdall ${{ env.ARCH }}
