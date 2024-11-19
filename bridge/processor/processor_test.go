@@ -16,9 +16,7 @@ import (
 )
 
 func TestBroadcastWhenTxInMempool(t *testing.T) {
-	// TODO HV2: fix this test as it currently depends on the config file
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
+	t.Skip("this fails in v1 as well (because the rest server is not running)")
 
 	t.Parallel()
 
@@ -29,7 +27,7 @@ func TestBroadcastWhenTxInMempool(t *testing.T) {
 	viper.Set(helper.CometBFTNodeFlag, "http://localhost:26657")
 	viper.Set("log_level", "info")
 
-	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
 
