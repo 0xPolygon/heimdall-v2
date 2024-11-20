@@ -417,6 +417,7 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		EthRPCUrl:      DefaultMainRPCUrl,
 		BorRPCUrl:      DefaultBorRPCUrl,
 		BorGRPCUrl:     DefaultBorGRPCUrl,
+		BorGRPCFlag:    false,
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
 
 		EthRPCTimeout: DefaultEthRPCTimeout,
