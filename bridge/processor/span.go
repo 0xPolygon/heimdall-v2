@@ -155,7 +155,7 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 
 // getCurrentChildBlock gets the current child block
 func (sp *SpanProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := sp.contractCaller.GetPolygonPosChainBlock(nil)
+	childBlock, err := sp.contractCaller.GetBorBlock(nil)
 	if err != nil {
 		return 0, err
 	}

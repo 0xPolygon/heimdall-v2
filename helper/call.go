@@ -24,6 +24,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
+	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/client/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -55,7 +56,7 @@ type IContractCaller interface {
 	SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error)
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
-	GetPolygonPosChainBlock(*big.Int) (*ethTypes.Header, error)
+	GetBorBlock(*big.Int) (*ethTypes.Header, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
@@ -74,7 +75,7 @@ type IContractCaller interface {
 	DecodeUnJailedEvent(string, *ethTypes.Receipt, uint64) (*stakinginfo.StakinginfoUnJailed, error)
 
 	GetMainTxReceipt(common.Hash) (*ethTypes.Receipt, error)
-	GetPolygonPosTxReceipt(common.Hash) (*ethTypes.Receipt, error)
+	GetBorTxReceipt(common.Hash) (*ethTypes.Receipt, error)
 	ApproveTokens(*big.Int, common.Address, common.Address, *erc20.Erc20) error
 	StakeFor(common.Address, *big.Int, *big.Int, bool, common.Address, *stakemanager.Stakemanager) error
 	CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error)
@@ -94,12 +95,14 @@ type IContractCaller interface {
 
 // ContractCaller contract caller
 type ContractCaller struct {
-	MainChainClient        *ethclient.Client
-	MainChainRPC           *rpc.Client
-	MainChainTimeout       time.Duration
-	PolygonPosChainClient  *ethclient.Client
-	PolygonPosChainRPC     *rpc.Client
-	PolygonPosChainTimeout time.Duration
+	MainChainClient  *ethclient.Client
+	MainChainRPC     *rpc.Client
+	MainChainTimeout time.Duration
+	BorClient        *ethclient.Client
+	BorRPC           *rpc.Client
+	BorGrpcClient    *borgrpc.BorGRPCClient
+	BorGrpcFlag      bool
+	BorTimeout       time.Duration
 
 	RootChainABI       abi.ABI
 	StakingInfoABI     abi.ABI
@@ -130,11 +133,13 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	config := GetConfig()
 	contractCallerObj.MainChainClient = GetMainClient()
 	contractCallerObj.MainChainTimeout = config.EthRPCTimeout
-	contractCallerObj.PolygonPosChainClient = GetPolygonPosClient()
-	contractCallerObj.PolygonPosChainTimeout = config.BorRPCTimeout
+	contractCallerObj.BorClient = GetBorClient()
+	contractCallerObj.BorTimeout = config.BorRPCTimeout
 	contractCallerObj.MainChainRPC = GetMainChainRPCClient()
-	contractCallerObj.PolygonPosChainRPC = GetPolygonPosRPCClient()
+	contractCallerObj.BorRPC = GetBorRPCClient()
 	contractCallerObj.ReceiptCache, err = lru.New(1000)
+	contractCallerObj.BorGrpcFlag = config.BorGRPCFlag
+	contractCallerObj.BorGrpcClient = GetBorGRPCClient()
 
 	if err != nil {
 		return contractCallerObj, err
@@ -276,7 +281,7 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (
 
 	contractInstance, ok := c.ContractInstanceCache[address]
 	if !ok {
-		ci, err := statereceiver.NewStatereceiver(address, polygonPosClient)
+		ci, err := statereceiver.NewStatereceiver(address, borClient)
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
@@ -347,13 +352,22 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 		return nil, errors.New("number of headers requested exceeds checkpoint length")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.BorTimeout)
 	defer cancel()
 
-	rootHash, err := c.PolygonPosChainClient.GetRootHash(ctx, start, end)
+	var (
+		rootHash string
+		err      error
+	)
+
+	if c.BorGrpcFlag {
+		rootHash, err = c.BorGrpcClient.GetRootHash(ctx, start, end)
+	} else {
+		rootHash, err = c.BorClient.GetRootHash(ctx, start, end)
+	}
 
 	if err != nil {
-		Logger.Error("could not fetch rootHash from polygon pos chain", "error", err)
+		Logger.Error("could not fetch rootHash from bor chain", "error", err)
 		return nil, err
 	}
 
@@ -366,10 +380,20 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 		return false, errors.New("Start block number is greater than the end block number")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.BorTimeout)
 	defer cancel()
 
-	vote, err := c.PolygonPosChainClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	var (
+		vote bool
+		err  error
+	)
+
+	if c.BorGrpcFlag {
+		vote, err = c.BorGrpcClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	} else {
+		vote, err = c.BorClient.GetVoteOnHash(ctx, start, end, hash, milestoneID)
+	}
+
 	if err != nil {
 		return false, errors.New(fmt.Sprint("Error in fetching vote from polygon pos chain", "err", err))
 	}
@@ -481,12 +505,23 @@ func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uin
 	return time.Unix(int64(latestBlock.Time()), 0), nil
 }
 
-// GetPolygonPosChainBlock returns child chain block header
-func (c *ContractCaller) GetPolygonPosChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
+// GetBorBlock returns child chain block header
+func (c *ContractCaller) GetBorBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.BorTimeout)
 	defer cancel()
 
-	latestBlock, err := c.PolygonPosChainClient.HeaderByNumber(ctx, blockNum)
+	var latestBlock *ethTypes.Header
+	if c.BorGrpcFlag {
+		if blockNum == nil {
+			// LatestBlockNumber is BlockNumber(-2) in go-ethereum rpc
+			latestBlock, err = c.BorGrpcClient.HeaderByNumber(ctx, -2)
+		} else {
+			latestBlock, err = c.BorGrpcClient.HeaderByNumber(ctx, blockNum.Int64())
+		}
+	} else {
+		latestBlock, err = c.BorClient.HeaderByNumber(ctx, blockNum)
+	}
+
 	if err != nil {
 		Logger.Error("unable to connect to polygon pos chain", "error", err)
 		return
@@ -847,7 +882,7 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 
 // CheckIfBlocksExist - check if the given block exists on local chain
 func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.BorTimeout)
 	defer cancel()
 
 	block := c.GetBlockByNumber(ctx, end)
@@ -860,9 +895,19 @@ func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
 
 // GetBlockByNumber returns blocks by number from child chain (bor)
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) *ethTypes.Block {
-	block, err := c.PolygonPosChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	var (
+		block *ethTypes.Block
+		err   error
+	)
+
+	if c.BorGrpcFlag {
+		block, err = c.BorGrpcClient.BlockByNumber(ctx, int64(blockNumber))
+	} else {
+		block, err = c.BorClient.BlockByNumber(ctx, big.NewInt(int64(blockNumber)))
+	}
+
 	if err != nil {
-		Logger.Error("unable to fetch block by number from child chain", "block", block, "err", err)
+		Logger.Error("unable to fetch block by number from bor chain", "block", block, "err", err)
 		return nil
 	}
 
@@ -878,18 +923,21 @@ func (c *ContractCaller) GetMainTxReceipt(txHash common.Hash) (*ethTypes.Receipt
 	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(ctx, c.MainChainClient, txHash)
+	return c.getTxReceipt(ctx, c.MainChainClient, nil, txHash)
 }
 
-// GetPolygonPosTxReceipt returns polygon pos tx receipt
-func (c *ContractCaller) GetPolygonPosTxReceipt(txHash common.Hash) (*ethTypes.Receipt, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.PolygonPosChainTimeout)
+// GetBorTxReceipt returns polygon pos tx receipt
+func (c *ContractCaller) GetBorTxReceipt(txHash common.Hash) (*ethTypes.Receipt, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.BorTimeout)
 	defer cancel()
 
-	return c.getTxReceipt(ctx, c.PolygonPosChainClient, txHash)
+	if c.BorGrpcFlag {
+		return c.getTxReceipt(ctx, nil, c.BorGrpcClient, txHash)
+	}
+	return c.getTxReceipt(ctx, c.BorClient, nil, txHash)
 }
 
-func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, txHash common.Hash) (*ethTypes.Receipt, error) {
+func (c *ContractCaller) getTxReceipt(ctx context.Context, client *ethclient.Client, grpcClient *borgrpc.BorGRPCClient, txHash common.Hash) (*ethTypes.Receipt, error) {
 	return client.TransactionReceipt(ctx, txHash)
 }
 

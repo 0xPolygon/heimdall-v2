@@ -23,6 +23,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/file"
 
+	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/client/grpc"
 	cfg "github.com/cometbft/cometbft/config"
 	cmTypes "github.com/cometbft/cometbft/types"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -50,6 +51,8 @@ const (
 
 	MainRPCUrlFlag               = "eth_rpc_url"
 	BorRPCUrlFlag                = "bor_rpc_url"
+	BorGRPCUrlFlag               = "bor_grpc_url"
+	BorGRPCFlag                  = "bor_grpc_flag"
 	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
 	HeimdallServerURLFlag        = "heimdall_rest_server"
 	GRPCServerURLFlag            = "grpc_server"
@@ -84,6 +87,7 @@ const (
 	// RPC Endpoints
 	DefaultMainRPCUrl = "http://localhost:9545"
 	DefaultBorRPCUrl  = "http://localhost:8545"
+	DefaultBorGRPCUrl = "localhost:3131"
 
 	// RPC Timeouts
 	DefaultEthRPCTimeout = 5 * time.Second
@@ -169,6 +173,8 @@ func init() {
 type CustomConfig struct {
 	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
+	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
+	BorGRPCFlag    bool   `mapstructure:"bor_grpc_flag"`     // gRPC flag for bor chain
 	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometbft node url
 	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
 
@@ -217,8 +223,9 @@ var mainChainClient *ethclient.Client
 var mainRPCClient *rpc.Client
 
 // polygonPosClient stores eth/rpc client for Polygon Pos Network
-var polygonPosClient *ethclient.Client
-var polygonPosRPCClient *rpc.Client
+var borClient *ethclient.Client
+var borRPCClient *rpc.Client
+var borGRPCClient *borgrpc.BorGRPCClient
 
 // private key object
 var privKeyObject secp256k1.PrivKey
@@ -267,6 +274,10 @@ func InitHeimdallConfig(homeDir string) {
 func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	if strings.Compare(homeDir, "") == 0 {
 		Logger.Error("home directory is mentioned")
+		return
+	}
+
+	if strings.Compare(conf.Custom.BorRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorGRPCUrl, "") != 0 {
 		return
 	}
 
@@ -363,12 +374,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	mainChainClient = ethclient.NewClient(mainRPCClient)
 
-	if polygonPosRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
+	if borRPCClient, err = rpc.Dial(conf.Custom.BorRPCUrl); err != nil {
 		log.Fatal(err)
 	}
 
-	polygonPosClient = ethclient.NewClient(polygonPosRPCClient)
+	borClient = ethclient.NewClient(borRPCClient)
 
+	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 	// TODO HV2 - Why was this added? We are never using this
 	/*
 		// Loading genesis doc
@@ -404,6 +416,7 @@ func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
 		EthRPCUrl:      DefaultMainRPCUrl,
 		BorRPCUrl:      DefaultBorRPCUrl,
+		BorGRPCUrl:     DefaultBorGRPCUrl,
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
 
 		EthRPCTimeout: DefaultEthRPCTimeout,
@@ -459,14 +472,19 @@ func GetMainClient() *ethclient.Client {
 	return mainChainClient
 }
 
-// GetPolygonPosClient returns polygon pos' eth client
-func GetPolygonPosClient() *ethclient.Client {
-	return polygonPosClient
+// GetBorClient returns polygon pos' eth client
+func GetBorClient() *ethclient.Client {
+	return borClient
 }
 
-// GetPolygonPosRPCClient returns polygon pos RPC client
-func GetPolygonPosRPCClient() *rpc.Client {
-	return polygonPosRPCClient
+// GetBorRPCClient returns polygon pos RPC client
+func GetBorRPCClient() *rpc.Client {
+	return borRPCClient
+}
+
+// GetBorGRPCClient returns bor's gRPC client
+func GetBorGRPCClient() *borgrpc.BorGRPCClient {
+	return borGRPCClient
 }
 
 // GetPrivKey returns priv key object
@@ -549,6 +567,27 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 
 	if err := v.BindPFlag(BorRPCUrlFlag, cmd.PersistentFlags().Lookup(BorRPCUrlFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorRPCUrlFlag), "Error", err)
+	}
+
+	// add BorGRPCUrlFlag flag
+	cmd.PersistentFlags().String(
+		BorGRPCUrlFlag,
+		"",
+		"Set gRPC endpoint for bor chain",
+	)
+
+	if err := v.BindPFlag(BorGRPCUrlFlag, cmd.PersistentFlags().Lookup(BorGRPCUrlFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCUrlFlag), "Error", err)
+	}
+
+	cmd.PersistentFlags().Bool(
+		BorGRPCFlag,
+		false,
+		"Set if heimdall will use gRPC or Rest to interact with bor chain",
+	)
+
+	if err := v.BindPFlag(BorGRPCFlag, cmd.PersistentFlags().Lookup(BorGRPCFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCFlag), "Error", err)
 	}
 
 	// add CometBFTNodeURLFlag flag
@@ -732,6 +771,18 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.BorRPCUrl = stringConfgValue
 	}
 
+	// get gRPC url endpoint for bor chain from viper/cobra
+	stringConfgValue = v.GetString(BorGRPCUrlFlag)
+	if stringConfgValue != "" {
+		c.Custom.BorGRPCUrl = stringConfgValue
+	}
+
+	// get gRPC flag for bor chain from viper/cobra
+	boolConfgValue := v.GetBool(BorGRPCFlag)
+	if boolConfgValue {
+		c.Custom.BorGRPCFlag = boolConfgValue
+	}
+
 	// get endpoint for cometBFT from viper/cobra
 	stringConfgValue = v.GetString(CometBFTNodeURLFlag)
 	if stringConfgValue != "" {
@@ -855,6 +906,10 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 
 	if cc.BorRPCUrl != "" {
 		c.Custom.BorRPCUrl = cc.BorRPCUrl
+	}
+
+	if cc.BorGRPCUrl != "" {
+		c.Custom.BorGRPCUrl = cc.BorGRPCUrl
 	}
 
 	if cc.CometBFTRPCUrl != "" {
