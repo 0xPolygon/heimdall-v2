@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -143,7 +142,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 
 				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
 
-				WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "config/heimdall-config.toml"), helper.GetDefaultHeimdallConfig())
+				// WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "config/heimdall-config.toml"), helper.GetDefaultHeimdallConfig())
 			}
 
 			// other data

@@ -116,12 +116,14 @@ func CryptoKeyToPubKey(key crypto.PubKey) secp256k1.PubKey {
 // GetSignerInfo returns signer information
 func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
 	var privKeyObject secp256k1.PrivKey
+	var pubKeyObject secp256k1.PubKey
 
-	cdc.MustUnmarshal(privKey, &privKeyObject)
+	copy(privKeyObject[:], privKey)
+	copy(pubKeyObject[:], pub.Bytes())
 
 	return ValidatorAccountFormatter{
 		Address: ethCommon.BytesToAddress(pub.Address().Bytes()).String(),
-		PubKey:  CryptoKeyToPubKey(pub).String(),
+		PubKey:  pubKeyObject.String(),
 		PrivKey: "0x" + hex.EncodeToString(privKeyObject[:]),
 	}
 }
@@ -136,7 +138,7 @@ func initCometBFTConfig() *cmtcfg.Config {
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
 	customAppConfig := helper.CustomAppConfig{
-		Config: *serverconfig.DefaultConfig(),
+		// Config: *serverconfig.DefaultConfig(),
 		Custom: helper.GetDefaultHeimdallConfig(),
 	}
 
@@ -147,7 +149,7 @@ func initAppConfig() (string, interface{}) {
 
 func initRootCmd(
 	rootCmd *cobra.Command,
-	txConfig client.TxConfig,
+	_ client.TxConfig,
 	basicManager module.BasicManager,
 	hApp *app.HeimdallApp,
 ) {
