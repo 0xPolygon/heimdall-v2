@@ -27,13 +27,11 @@ const (
 // TestCheckpointSigs decodes signers from checkpoint sigs data
 func TestCheckpointSigs(t *testing.T) {
 	t.Skip("Skipped because RecoverPubKey is not actively used in cosmos-sdk and GetCheckpointSign (invoking UnpackSigAndVotes) is not used in Heimdall")
-	// TODO HV2: Besides the reason explained above, this test currently depends on the config file
-	//  To fix it, see https://polygon.atlassian.net/browse/POS-2626
 	t.Parallel()
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 	viper.Set("log_level", "info")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	contractCallerObj, err := NewContractCaller()
 	if err != nil {

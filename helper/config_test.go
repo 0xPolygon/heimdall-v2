@@ -11,9 +11,6 @@ import (
 
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
-	// TODO HV2: fix this test as it currently depends on the config file
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
 	t.Parallel()
 
 	// cli context
@@ -21,7 +18,7 @@ func TestHeimdallConfig(t *testing.T) {
 	viper.Set(CometBFTNodeFlag, cometBFTNode)
 	viper.Set("log_level", "info")
 
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	fmt.Println("Address", GetAddress())
 
@@ -78,9 +75,6 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 }
 
 func TestGetChainManagerAddressMigration(t *testing.T) {
-	// TODO HV2: fix this test as it currently depends on the config file
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
 	t.Parallel()
 
 	newPolContractAddress := "0x0000000000000000000000000000000000001234"
@@ -90,7 +84,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	}
 
 	viper.Set("chain", "mumbai")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	migration, found := GetChainManagerAddressMigration(350)
 
@@ -112,7 +106,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	conf.Custom.BorRPCUrl = ""
 
 	viper.Set("chain", "newChain")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	_, found = GetChainManagerAddressMigration(350)
 	if found {

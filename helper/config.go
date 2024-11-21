@@ -48,10 +48,10 @@ const (
 
 	// heimdall-config flags
 
-	MainRPCUrlFlag = "eth_rpc_url"
-	BorRPCUrlFlag  = "bor_rpc_url"
-	BorGRPCUrlFlag = "bor_grpc_url"
-	BorGRPCFlag    = "bor_grpc_flag"
+	MainRPCUrlFlag  = "eth_rpc_url"
+	BorRPCUrlFlag   = "bor_rpc_url"
+	BorGRPCUrlFlag  = "bor_grpc_url"
+	BorGRPCFlagFlag = "bor_grpc_flag"
 
 	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
 	HeimdallServerURLFlag        = "heimdall_rest_server"
@@ -85,9 +85,10 @@ const (
 	// --
 
 	// RPC Endpoints
-	DefaultMainRPCUrl = "http://localhost:9545"
-	DefaultBorRPCUrl  = "http://localhost:8545"
-	DefaultBorGRPCUrl = "localhost:3131"
+	DefaultMainRPCUrl  = "http://localhost:9545"
+	DefaultBorRPCUrl   = "http://localhost:8545"
+	DefaultBorGRPCUrl  = "localhost:3131"
+	DefaultBorGRPCFlag = true
 
 	// RPC Timeouts
 	DefaultEthRPCTimeout = 5 * time.Second
@@ -157,8 +158,8 @@ const (
 )
 
 var (
-	DefaultCLIHome  = os.ExpandEnv("$HOME/.heimdalld")
-	DefaultNodeHome = os.ExpandEnv("$HOME/.heimdalld")
+	DefaultCLIHome  = os.ExpandEnv("$HOME/var/lib/heimdall")
+	DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
 	MinBalance      = big.NewInt(100000000000000000) // aka 0.1 Ether
 )
 
@@ -172,8 +173,8 @@ func init() {
 type CustomConfig struct {
 	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
-	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
 	BorGRPCFlag    bool   `mapstructure:"bor_grpc_flag"`     // gRPC flag for bor chain
+	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
 	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometbft node url
 	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
 
@@ -410,9 +411,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 // GetDefaultHeimdallConfig returns configuration with default params
 func GetDefaultHeimdallConfig() CustomConfig {
 	return CustomConfig{
-		EthRPCUrl:  DefaultMainRPCUrl,
-		BorRPCUrl:  DefaultBorRPCUrl,
-		BorGRPCUrl: DefaultBorGRPCUrl,
+		EthRPCUrl:   DefaultMainRPCUrl,
+		BorRPCUrl:   DefaultBorRPCUrl,
+		BorGRPCFlag: DefaultBorGRPCFlag,
+		BorGRPCUrl:  DefaultBorGRPCUrl,
 
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
 
@@ -570,6 +572,17 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 
 	if err := v.BindPFlag(BorGRPCUrlFlag, cmd.PersistentFlags().Lookup(BorGRPCUrlFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCUrlFlag), "Error", err)
+	}
+
+	// add BorGRPCFlagFlag flag
+	cmd.PersistentFlags().String(
+		BorGRPCFlagFlag,
+		"",
+		"gRPC flag for bor chain",
+	)
+
+	if err := v.BindPFlag(BorGRPCFlagFlag, cmd.PersistentFlags().Lookup(BorGRPCFlagFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCFlagFlag), "Error", err)
 	}
 
 	// add CometBFTNodeURLFlag flag
@@ -753,16 +766,16 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.BorRPCUrl = stringConfgValue
 	}
 
+	// get gRPC flag for bor chain from viper/cobra
+	boolConfgValue := v.GetBool(BorGRPCFlagFlag)
+	if boolConfgValue {
+		c.Custom.BorGRPCFlag = boolConfgValue
+	}
+
 	// get endpoint for bor chain from viper/cobra
 	stringConfgValue = v.GetString(BorGRPCUrlFlag)
 	if stringConfgValue != "" {
 		c.Custom.BorGRPCUrl = stringConfgValue
-	}
-
-	// get gRPC flag for bor chain from viper/cobra
-	boolConfgValue := v.GetBool(BorGRPCFlag)
-	if boolConfgValue {
-		c.Custom.BorGRPCFlag = boolConfgValue
 	}
 
 	// get endpoint for cometBFT from viper/cobra
@@ -888,6 +901,10 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 
 	if cc.BorRPCUrl != "" {
 		c.Custom.BorRPCUrl = cc.BorRPCUrl
+	}
+
+	if !cc.BorGRPCFlag {
+		c.Custom.BorGRPCFlag = cc.BorGRPCFlag
 	}
 
 	if cc.BorGRPCUrl != "" {

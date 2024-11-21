@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -29,8 +30,6 @@ import (
 )
 
 func BenchmarkSendStateSyncedToHeimdall(b *testing.B) {
-	// TODO HV2: fix this test as it currently depends on the config file
-	//  See https://polygon.atlassian.net/browse/POS-2626
 	b.Skip("to be enabled")
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -69,8 +68,6 @@ func BenchmarkSendStateSyncedToHeimdall(b *testing.B) {
 }
 
 func BenchmarkIsOldTx(b *testing.B) {
-	// TODO HV2: fix this test as it currently depends on the config file
-	//  See https://polygon.atlassian.net/browse/POS-2626
 	b.Skip("to be enabled")
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -152,8 +149,6 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 }
 
 func BenchmarkCalculateTaskDelay(b *testing.B) {
-	// TODO HV2: fix this test as it currently depends on the config file
-	//  See https://polygon.atlassian.net/browse/POS-2626
 	b.Skip("to be enabled")
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -259,6 +254,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
 	viper.Set("log_level", "debug")
+	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	configuration := helper.GetDefaultHeimdallConfig()
 	configuration.HeimdallServerURL = dummyHeimdallServerUrl
