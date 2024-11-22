@@ -140,6 +140,20 @@ func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 	require.NoError(t, err)
 }
 
+func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	allTxs := [][]byte{commitInfo}
+	allTxs = append(allTxs, txs...)
+	res, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:    allTxs,
+		Height: height,
+	})
+	require.NoError(t, err)
+	return res
+}
+
 func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxResponse) []byte {
 	t.Helper()
 	responses := make([]sidetxs.SideTxResponse, 0)
