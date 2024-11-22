@@ -33,7 +33,7 @@ func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordReq
 
 	record, err := q.k.GetEventRecord(ctx, request.RecordId)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 
 	}
 
@@ -47,7 +47,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	newRecords := make([]types.EventRecord, len(records))
@@ -66,7 +66,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 
 	records, err := q.k.GetEventRecordListWithTime(ctx, request.FromTime, request.ToTime, request.Page, request.Limit)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	newRecords := make([]types.EventRecord, len(records))
@@ -85,7 +85,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// get main tx receipt
