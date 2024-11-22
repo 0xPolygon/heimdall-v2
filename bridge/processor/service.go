@@ -1,13 +1,14 @@
 package processor
 
 import (
-	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/bridge/queue"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/spf13/viper"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 const (
@@ -123,7 +124,7 @@ func NewProcessorService(
 	}
 
 	if len(processorService.processors) == 0 {
-		panic("No processors selected. Use --all or --only <coma-separated processors>")
+		panic("No processors selected. Use --all or --only <comma-separated processors>")
 	}
 
 	return processorService

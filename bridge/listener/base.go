@@ -5,9 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/queue"
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,6 +15,10 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/viper"
 	"github.com/syndtr/goleveldb/leveldb"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // Listener defines a block header listener for Rootchain, Borchain, Heimdall

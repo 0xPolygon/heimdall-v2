@@ -20,6 +20,7 @@ import (
 const (
 	DefaultPage  = 1
 	DefaultLimit = 100
+	// APIBodyLimit = 128 * 1024 * 1024 // 128 MB
 )
 
 // NewResponse creates a new Response instance
@@ -101,12 +102,15 @@ func (br BaseReq) ValidateBasic(w http.ResponseWriter) bool {
 	return true
 }
 
-// Not needed (autocli)
+// TODO HV2: This should not be needed due to autocli. If that's the case, delete this, the other unused functions, and the APIBodyLimit constant
 /*
-// ReadRESTReq reads and unmarshals a Request's body to the BaseReq struct.
+// ReadRESTReq reads and unmarshalls a Request's body to the BaseReq struct.
 // Writes an error response to ResponseWriter and returns true if errors occurred.
 func ReadRESTReq(w http.ResponseWriter, r *http.Request, cdc codec.Codec, req interface{}) bool {
-	body, err := io.ReadAll(r.Body)
+	// Limit the number of bytes read from the request body
+	limitedBody := http.MaxBytesReader(w, r.Body, APIBodyLimit)
+
+	body, err := io.ReadAll(limitedBody)
 	if err != nil {
 		WriteErrorResponse(w, http.StatusBadRequest, err.Error())
 		return false
@@ -133,7 +137,7 @@ func NewErrorResponse(code int, err string) ErrorResponse {
 	return ErrorResponse{Code: code, Error: err}
 }
 
-// WriteErrorResponse prepares and writes a HTTP error
+// WriteErrorResponse prepares and writes an HTTP error
 // given a status code and an error message.
 func WriteErrorResponse(w http.ResponseWriter, status int, err string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -171,7 +175,7 @@ func newErrorResponse(code int, err string) errorResponse {
 	return errorResponse{Code: code, Error: err}
 }
 
-// writeErrorResponse prepares and writes a HTTP error
+// writeErrorResponse prepares and writes an HTTP error
 // given a status code and an error message.
 func writeErrorResponse(w http.ResponseWriter, status int, err string) {
 	w.Header().Set("Content-Type", "application/json")
@@ -192,7 +196,7 @@ func ReturnNotFoundIfNoContent(w http.ResponseWriter, data []byte, message strin
 	return true
 }
 
-// Not needed (autocli)
+// TODO HV2: This should not be needed due to autocli. If that's the case, delete this, the other unused functions, and the APIBodyLimit constant
 /*
 // PostProcessResponse performs post-processing for a REST response. The result
 // returned to clients will contain two fields, the height at which the resource

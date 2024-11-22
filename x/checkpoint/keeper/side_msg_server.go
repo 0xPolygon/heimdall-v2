@@ -75,7 +75,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	polygonPosTxConfirmations := chainParams.BorChainTxConfirmations
+	borChainTxConfirmations := chainParams.BorChainTxConfirmations
 
 	// get params
 	params, err := srv.GetParams(ctx)
@@ -85,7 +85,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	}
 
 	// validate checkpoint
-	validCheckpoint, err := types.IsValidCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, polygonPosTxConfirmations)
+	validCheckpoint, err := types.IsValidCheckpoint(msg.StartBlock, msg.EndBlock, msg.RootHash, params.MaxCheckpointLength, contractCaller, borChainTxConfirmations)
 	if err != nil {
 		logger.Error("error validating checkpoint",
 			"startBlock", msg.StartBlock,

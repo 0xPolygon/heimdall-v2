@@ -1,5 +1,7 @@
 package types
 
+// TODO HV2: remove unused constants
+
 // stake module event types
 var (
 	EventTypeValidatorJoin = "validator-join"

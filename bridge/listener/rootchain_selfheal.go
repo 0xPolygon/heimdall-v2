@@ -7,11 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 var (
@@ -71,7 +72,7 @@ func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
 // processStakeUpdate checks if validators are in sync, otherwise syncs them by broadcasting missing events
 func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 	// Fetch all heimdall validators
-	validatorSet, err := util.GetValidatorSet(rl.cliCtx)
+	validatorSet, err := util.GetValidatorSet()
 	if err != nil {
 		rl.Logger.Error("Error getting heimdall validators", "error", err)
 		return
@@ -87,7 +88,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 		go func(id uint64) {
 			defer wg.Done()
 
-			nonce, err := util.GetValidatorNonce(rl.cliCtx, id)
+			nonce, err := util.GetValidatorNonce(id)
 			if err != nil {
 				rl.Logger.Error("Error getting nonce for validator from heimdall", "error", err, "id", id)
 				return
@@ -159,7 +160,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 	}
 
 	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
-		if _, err = util.GetClerkEventRecord(rl.cliCtx, i); err == nil {
+		if _, err = util.GetClerkEventRecord(i); err == nil {
 			rl.Logger.Info("State found on heimdall", "id", i)
 			continue
 		}
@@ -196,7 +197,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 			var statusCheck int
 			for statusCheck = 0; statusCheck < 15; statusCheck++ {
-				if _, err = util.GetClerkEventRecord(rl.cliCtx, i); err == nil {
+				if _, err = util.GetClerkEventRecord(i); err == nil {
 					rl.Logger.Info("State found on heimdall", "id", i)
 					break
 				}

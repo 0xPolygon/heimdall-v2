@@ -164,16 +164,22 @@ func (s *KeeperTestSuite) TestDividendAccountTree() {
 	require.NotNil(index)
 	require.NoError(err)
 
-	leafHash := CalculateDividendAccountHash(divAccounts[0])
+	leafHash, err := CalculateDividendAccountHash(divAccounts[0])
+	require.NoError(err)
 	require.NotNil(leafHash)
 }
 
 // CalculateDividendAccountHash is a helper function to hash the values of a DividendAccount
-func CalculateDividendAccountHash(da types.DividendAccount) []byte {
+func CalculateDividendAccountHash(da types.DividendAccount) ([]byte, error) {
 	fee, _ := big.NewInt(0).SetString(da.FeeAmount, 10)
-	divAccountHash := crypto.Keccak256(AppendBytes32([]byte(da.User), fee.Bytes()))
+	ac := address.NewHexCodec()
+	userBytes, err := ac.StringToBytes(da.User)
+	if err != nil {
+		return nil, err
+	}
+	divAccountHash := crypto.Keccak256(AppendBytes32(userBytes, fee.Bytes()))
 
-	return divAccountHash
+	return divAccountHash, nil
 }
 
 func AppendBytes32(data ...[]byte) []byte {

@@ -27,6 +27,9 @@ import (
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
+const TestMilestoneID = "17ce48fe-0a18-41a8-ab7e-59d8002f027b - 0x901a64406d97a3fa9b87b320cbeb86b3c62328f5"
+const TestMilestoneID2 = "18ce48fe-0a18-41a8-ab7e-59d8002f027b - 0x801a64406d97a3fa9b87b320cbeb86b3c62328f6"
+
 type KeeperTestSuite struct {
 	suite.Suite
 
@@ -93,7 +96,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 	hash := testutil.RandomBytes()
 	proposerAddress := util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String())
 	timestamp := uint64(time.Now().Unix())
-	milestoneID := "0000"
+	milestoneID := TestMilestoneID
 
 	milestone := testutil.CreateMilestone(
 		startBlock,
@@ -133,7 +136,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
-	milestoneID := "0000"
+	milestoneID := TestMilestoneID
 
 	milestone := testutil.CreateMilestone(
 		startBlock,
@@ -159,7 +162,7 @@ func (s *KeeperTestSuite) TestGetNoAckMilestone() {
 	require.NoError(err)
 	require.Equal(uint64(0), result)
 
-	milestoneID := "0000"
+	milestoneID := TestMilestoneID
 
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
@@ -196,7 +199,7 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 	require.NoError(err)
 	require.Equal(uint64(0), result)
 
-	milestoneID := "0000"
+	milestoneID := TestMilestoneID
 
 	val, err := keeper.GetLastNoAckMilestone(ctx)
 	require.Error(err)
@@ -218,7 +221,7 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 	require.Equal(val, milestoneID)
 }
 
-func (s *KeeperTestSuite) TestGetMilestoneTimout() {
+func (s *KeeperTestSuite) TestGetMilestoneTimeout() {
 	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
 
 	val, err := keeper.GetLastMilestoneTimeout(ctx)

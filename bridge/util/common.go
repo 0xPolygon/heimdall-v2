@@ -2,8 +2,6 @@ package util
 
 import (
 	"bytes"
-	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,21 +10,20 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
+	"github.com/cosmos/cosmos-sdk/client"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/pkg/errors"
+
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	"github.com/cometbft/cometbft/libs/log"
-
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
-	cmtTypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/client"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/pkg/errors"
 )
 
 type BridgeEvent string
@@ -35,7 +32,6 @@ const (
 	AccountDetailsURL      = "/cosmos/auth/v1beta1/accounts/%v"
 	LastNoAckURL           = "/checkpoints/last-no-ack"
 	CheckpointParamsURL    = "/checkpoints/params"
-	MilestoneParamsURL     = "/milestone/params"
 	MilestoneCountURL      = "/milestone/count"
 	ChainManagerParamsURL  = "/chainmanager/params"
 	ProposersURL           = "/stake/proposer/%v"
@@ -55,12 +51,11 @@ const (
 	TopupTxStatusURL       = "/topup/isoldtx"
 	ClerkTxStatusURL       = "/clerk/isoldtx"
 	ClerkEventRecordURL    = "/clerk/event-record/%d"
-	// HV2 - not adding slashing
-	/*
-		LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
-		TickSlashInfoListURL    = "/slashing/tick_slash_infos"
-		SlashingTxStatusURL     = "/slashing/isoldtx"
-		SlashingTickCountURL    = "/slashing/tick-count"
+	/* HV2 - not adding slashing
+	LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
+	TickSlashInfoListURL    = "/slashing/tick_slash_infos"
+	SlashingTxStatusURL     = "/slashing/isoldtx"
+	SlashingTickCountURL    = "/slashing/tick-count"
 	*/
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
@@ -78,8 +73,9 @@ const (
 	StakingEvent BridgeEvent = "staking"
 	TopupEvent   BridgeEvent = "topup"
 	ClerkEvent   BridgeEvent = "clerk"
-	// HV2 - not adding slashing
-	// SlashingEvent BridgeEvent = "slashing"
+	/* HV2 - not adding slashing
+	SlashingEvent BridgeEvent = "slashing"
+	*/
 
 	BridgeDBFlag = "bridge-db"
 )
@@ -109,15 +105,21 @@ func IsProposer() (bool, error) {
 		return false, err
 	}
 
-	if bytes.Equal([]byte(proposers[0].Signer), helper.GetAddress()) {
+	ac := addressCodec.NewHexCodec()
+	signerBytes, err := ac.StringToBytes(proposers[0].Signer)
+	if err != nil {
+		logger.Error("Error converting signer string to bytes", "error", err)
+		return false, err
+	}
+	if bytes.Equal(signerBytes, helper.GetAddress()) {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-// IsMilestoneProposer checks if we are milestone proposer
-func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
+// IsMilestoneProposer checks if we are the milestone proposer
+func IsMilestoneProposer() (bool, error) {
 	logger := Logger()
 
 	var (
@@ -142,15 +144,21 @@ func IsMilestoneProposer(cliCtx client.Context) (bool, error) {
 		return false, errors.Errorf("Length of proposer list is 0")
 	}
 
-	if bytes.Equal([]byte(proposers[0].Signer), helper.GetAddress()) {
+	ac := addressCodec.NewHexCodec()
+	signerBytes, err := ac.StringToBytes(proposers[0].Signer)
+	if err != nil {
+		logger.Error("Error converting signer string to bytes", "error", err)
+		return false, err
+	}
+	if bytes.Equal(signerBytes, helper.GetAddress()) {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-// IsInProposerList checks if we are in current proposer
-func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
+// IsInProposerList checks if we are in the current proposers list
+func IsInProposerList(count uint64) (bool, error) {
 	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
@@ -170,8 +178,15 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 
 	logger.Debug("Fetched proposers list", "numberOfProposers", count+1)
 
+	ac := addressCodec.NewHexCodec()
+
 	for i := 1; i <= int(count) && i < len(proposers); i++ {
-		if bytes.Equal([]byte(proposers[i].Signer), helper.GetAddress()) {
+		signerBytes, err := ac.StringToBytes(proposers[i].Signer)
+		if err != nil {
+			logger.Error("Error converting signer string to bytes", "error", err)
+			return false, err
+		}
+		if bytes.Equal(signerBytes, helper.GetAddress()) {
 			return true, nil
 		}
 	}
@@ -179,8 +194,8 @@ func IsInProposerList(cliCtx client.Context, count uint64) (bool, error) {
 	return false, nil
 }
 
-// IsInMilestoneProposerList checks if we are in current proposer
-func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error) {
+// IsInMilestoneProposerList checks if we are in the current milestone proposers list
+func IsInMilestoneProposerList(count uint64) (bool, error) {
 	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
@@ -200,8 +215,15 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 	logger.Debug("Fetched proposers list", "numberOfProposers", count)
 
-	for _, proposer := range proposers {
-		if bytes.Equal([]byte(proposer.Signer), helper.GetAddress()) {
+	ac := addressCodec.NewHexCodec()
+
+	for i := 1; i <= int(count) && i < len(proposers); i++ {
+		signerBytes, err := ac.StringToBytes(proposers[i].Signer)
+		if err != nil {
+			logger.Error("Error converting signer string to bytes", "error", err)
+			return false, err
+		}
+		if bytes.Equal(signerBytes, helper.GetAddress()) {
 			return true, nil
 		}
 	}
@@ -211,7 +233,7 @@ func IsInMilestoneProposerList(cliCtx client.Context, count uint64) (bool, error
 
 // CalculateTaskDelay calculates delay required for current validator to propose the tx
 // It solves for multiple validators sending same transaction.
-func CalculateTaskDelay(cliCtx client.Context, event interface{}) (bool, time.Duration) {
+func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
 	logger := Logger()
 
 	defer LogElapsedTimeForStateSyncedEvent(event, "CalculateTaskDelay", time.Now())
@@ -220,7 +242,7 @@ func CalculateTaskDelay(cliCtx client.Context, event interface{}) (bool, time.Du
 	valPosition := 0
 	isCurrentValidator := false
 
-	validatorSet, err := GetValidatorSet(cliCtx)
+	validatorSet, err := GetValidatorSet()
 	if err != nil {
 		logger.Error("Error getting current validatorset data ", "error", err)
 		return false, 0
@@ -228,8 +250,14 @@ func CalculateTaskDelay(cliCtx client.Context, event interface{}) (bool, time.Du
 
 	logger.Info("Fetched current validator set list", "currentValidatorCount", len(validatorSet.Validators))
 
+	ac := addressCodec.NewHexCodec()
 	for i, validator := range validatorSet.Validators {
-		if bytes.Equal([]byte(validator.Signer), helper.GetAddress()) {
+		signerBytes, err := ac.StringToBytes(validator.Signer)
+		if err != nil {
+			logger.Error("Error converting signer string to bytes", "error", err)
+			return false, 0
+		}
+		if bytes.Equal(signerBytes, helper.GetAddress()) {
 			valPosition = i + 1
 			isCurrentValidator = true
 
@@ -254,7 +282,7 @@ func CalculateTaskDelay(cliCtx client.Context, event interface{}) (bool, time.Du
 }
 
 // IsCurrentProposer checks if we are current proposer
-func IsCurrentProposer(cliCtx client.Context) (bool, error) {
+func IsCurrentProposer() (bool, error) {
 	logger := Logger()
 
 	var proposer staketypes.Validator
@@ -272,7 +300,13 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 
 	logger.Debug("Current proposer fetched", "validator", proposer.String())
 
-	if bytes.Equal([]byte(proposer.Signer), helper.GetAddress()) {
+	ac := addressCodec.NewHexCodec()
+	signerBytes, err := ac.StringToBytes(proposer.Signer)
+	if err != nil {
+		logger.Error("Error converting signer string to bytes", "error", err)
+		return false, err
+	}
+	if bytes.Equal(signerBytes, helper.GetAddress()) {
 		return true, nil
 	}
 
@@ -281,8 +315,8 @@ func IsCurrentProposer(cliCtx client.Context) (bool, error) {
 	return false, nil
 }
 
-// IsEventSender check if we are the EventSender
-func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
+// IsEventSender checks if the validatorID belongs to the event sender
+func IsEventSender(validatorID uint64) bool {
 	logger := Logger()
 
 	var validator staketypes.Validator
@@ -300,7 +334,13 @@ func IsEventSender(cliCtx client.Context, validatorID uint64) bool {
 
 	logger.Debug("Current event sender received", "validator", validator.String())
 
-	return bytes.Equal([]byte(validator.Signer), helper.GetAddress())
+	ac := addressCodec.NewHexCodec()
+	signerBytes, err := ac.StringToBytes(validator.Signer)
+	if err != nil {
+		logger.Error("Error converting signer string to bytes", "error", err)
+		return false
+	}
+	return bytes.Equal(signerBytes, helper.GetAddress())
 }
 
 // CreateURLWithQuery receives the uri and parameters in key value form
@@ -319,44 +359,6 @@ func CreateURLWithQuery(uri string, param map[string]interface{}) (string, error
 	urlObj.RawQuery = query.Encode()
 
 	return urlObj.String(), nil
-}
-
-// WaitForOneEvent subscribes to a websocket event for the given
-// event time and returns upon receiving it one time, or
-// when the timeout duration has expired.
-//
-// This handles subscribing and unsubscribing under the hood
-func WaitForOneEvent(tx cmtTypes.Tx, client *rpchttp.HTTP) (cmtTypes.TMEventData, error) {
-	logger := Logger()
-
-	ctx, cancel := context.WithTimeout(context.Background(), CommitTimeout)
-	defer cancel()
-
-	// subscriber
-	subscriber := hex.EncodeToString(tx.Hash())
-
-	// query
-	query := cmtTypes.EventQueryTxFor(tx).String()
-
-	// register for the next event of this type
-	eventCh, err := client.Subscribe(ctx, subscriber, query)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to subscribe")
-	}
-
-	// make sure to unregister after the test is over
-	defer func() {
-		if err := client.UnsubscribeAll(ctx, subscriber); err != nil {
-			logger.Error("WaitForOneEvent | UnsubscribeAll", "Error", err)
-		}
-	}()
-
-	select {
-	case event := <-eventCh:
-		return event.Data, nil
-	case <-ctx.Done():
-		return nil, errors.New("timed out waiting for event")
-	}
 }
 
 // IsCatchingUp checks if the heimdall node you are connected to is fully synced or not
@@ -392,7 +394,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 }
 
 // GetChainmanagerParams return chain manager params
-func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, error) {
+func GetChainmanagerParams() (*chainmanagertypes.Params, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(ChainManagerParamsURL))
@@ -410,8 +412,8 @@ func GetChainmanagerParams(cliCtx client.Context) (*chainmanagertypes.Params, er
 	return &params, nil
 }
 
-// GetCheckpointParams return params
-func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error) {
+// GetCheckpointParams return checkpoint params
+func GetCheckpointParams() (*checkpointTypes.Params, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CheckpointParamsURL))
@@ -429,28 +431,8 @@ func GetCheckpointParams(cliCtx client.Context) (*checkpointTypes.Params, error)
 	return &params, nil
 }
 
-// GetCheckpointParams return params
-func GetMilestoneParams(cliCtx client.Context) (*milestoneTypes.Params, error) {
-	logger := Logger()
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneParamsURL))
-
-	if err != nil {
-		logger.Error("Error fetching Milestone params", "err", err)
-		return nil, err
-	}
-
-	var params milestoneTypes.Params
-	if err := json.Unmarshal(response, &params); err != nil {
-		logger.Error("Error unmarshalling Checkpoint params", "url", MilestoneParamsURL)
-		return nil, err
-	}
-
-	return &params, nil
-}
-
-// GetBufferedCheckpoint return checkpoint from bueffer
-func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
+// GetBufferedCheckpoint return checkpoint from buffer
+func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(BufferedCheckpointURL))
@@ -469,7 +451,7 @@ func GetBufferedCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, 
 }
 
 // GetLatestCheckpoint return last successful checkpoint
-func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, error) {
+func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestCheckpointURL))
@@ -488,7 +470,7 @@ func GetLatestCheckpoint(cliCtx client.Context) (*checkpointTypes.Checkpoint, er
 }
 
 // GetLatestMilestone return last successful milestone
-func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error) {
+func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
@@ -506,8 +488,8 @@ func GetLatestMilestone(cliCtx client.Context) (*milestoneTypes.Milestone, error
 	return &milestone, nil
 }
 
-// GetCheckpointParams return params
-func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, error) {
+// GetMilestoneCount return milestones count
+func GetMilestoneCount() (*milestoneTypes.MilestoneCount, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
@@ -525,7 +507,7 @@ func GetMilestoneCount(cliCtx client.Context) (*milestoneTypes.MilestoneCount, e
 	return &count, nil
 }
 
-// AppendPrefix returns publickey in uncompressed format
+// AppendPrefix returns PublicKey in uncompressed format
 func AppendPrefix(signerPubKey []byte) []byte {
 	// append prefix - "0x04" as heimdall uses publickey in uncompressed format. Refer below link
 	// https://superuser.com/questions/1465455/what-is-the-size-of-public-key-for-ecdsa-spec256r1
@@ -537,7 +519,7 @@ func AppendPrefix(signerPubKey []byte) []byte {
 }
 
 // GetValidatorNonce fetches validator nonce and height
-func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error) {
+func GetValidatorNonce(validatorID uint64) (uint64, error) {
 	logger := Logger()
 
 	var validator staketypes.Validator
@@ -559,7 +541,7 @@ func GetValidatorNonce(cliCtx client.Context, validatorID uint64) (uint64, error
 }
 
 // GetValidatorSet fetches the current validator set
-func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
+func GetValidatorSet() (*staketypes.ValidatorSet, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
@@ -578,7 +560,7 @@ func GetValidatorSet(cliCtx client.Context) (*staketypes.ValidatorSet, error) {
 }
 
 // GetClerkEventRecord return last successful checkpoint
-func GetClerkEventRecord(cliCtx client.Context, stateId int64) (*clerktypes.EventRecord, error) {
+func GetClerkEventRecord(stateId int64) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
@@ -609,7 +591,10 @@ func GetUnconfirmedTxnCount(event interface{}) int {
 		return 0
 	}
 
-	body, err := io.ReadAll(resp.Body)
+	// Limit the number of bytes read from the response body
+	limitedBody := http.MaxBytesReader(nil, resp.Body, helper.APIBodyLimit)
+
+	body, err := io.ReadAll(limitedBody)
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
 			logger.Error("Error closing response body:", err)

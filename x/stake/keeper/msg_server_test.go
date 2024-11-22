@@ -41,7 +41,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	}
 
 	require.Panics(func() {
-		msgServer.ValidatorJoin(ctx, &msgValJoin)
+		_, _ = msgServer.ValidatorJoin(ctx, &msgValJoin)
 	})
 
 	pk1 = secp256k1.GenPrivKey().PubKey()

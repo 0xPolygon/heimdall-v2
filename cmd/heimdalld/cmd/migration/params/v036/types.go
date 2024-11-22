@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
 	"github.com/cosmos/cosmos-sdk/codec"
+
+	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
 )
 
 const (
@@ -51,7 +52,7 @@ func (pcp ParameterChangeProposal) GetTitle() string { return pcp.Title }
 // GetDescription returns the description of a parameter change proposal.
 func (pcp ParameterChangeProposal) GetDescription() string { return pcp.Description }
 
-// GetDescription returns the routing key of a parameter change proposal.
+// ProposalRoute returns the routing key of a parameter change proposal.
 func (pcp ParameterChangeProposal) ProposalRoute() string { return RouterKey }
 
 // ProposalType returns the type of a parameter change proposal.
@@ -115,7 +116,7 @@ func (pc ParamChange) String() string {
 `, pc.Subspace, pc.Key, pc.Subkey, pc.Value)
 }
 
-// ValidateChange performs basic validation checks over a set of ParamChange. It
+// ValidateChanges performs basic validation checks over a set of ParamChange. It
 // returns an error if any ParamChange is invalid.
 func ValidateChanges(changes []ParamChange) error {
 	if len(changes) == 0 {
@@ -138,22 +139,22 @@ func ValidateChanges(changes []ParamChange) error {
 }
 
 // ErrUnknownSubspace returns an unknown subspace error.
-func ErrUnknownSubspace(codespace string, space string) error {
+func ErrUnknownSubspace(_ string, space string) error {
 	return fmt.Errorf("unknown subspace %s", space)
 }
 
 // ErrSettingParameter returns an error for failing to set a parameter.
-func ErrSettingParameter(codespace string, key, subkey, value, msg string) error {
+func ErrSettingParameter(_ string, key, subkey, value, msg string) error {
 	return fmt.Errorf("error setting parameter %s on %s (%s): %s", value, key, subkey, msg)
 }
 
 // ErrEmptyChanges returns an error for empty parameter changes.
-func ErrEmptyChanges(codespace string) error {
+func ErrEmptyChanges(_ string) error {
 	return fmt.Errorf("submitted parameter changes are empty")
 }
 
 // ErrEmptySubspace returns an error for an empty subspace.
-func ErrEmptySubspace(codespace string) error {
+func ErrEmptySubspace(_ string) error {
 	return fmt.Errorf("parameter subspace is empty")
 }
 
@@ -163,7 +164,7 @@ func ErrEmptyKey(codespace string) error {
 }
 
 // ErrEmptyValue returns an error for when an empty key is given.
-func ErrEmptyValue(codespace string) error {
+func ErrEmptyValue(_ string) error {
 	return fmt.Errorf("parameter value is empty")
 }
 

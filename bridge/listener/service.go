@@ -1,19 +1,20 @@
 package listener
 
 import (
-	"github.com/0xPolygon/heimdall-v2/bridge/queue"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/codec"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 const (
 	listenerServiceStr = "listener"
 
-	rootChainListenerStr  = "rootchain"
-	heimdallListenerStr   = "heimdall"
-	maticChainListenerStr = "polygonposchain"
+	rootChainListenerStr = "rootchain"
+	heimdallListenerStr  = "heimdall"
+	borChainListenerStr  = "borchain"
 )
 
 // ListenerService starts and stops all chain event listeners
@@ -34,9 +35,9 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, h
 	rootchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootchainListener)
 	listenerService.listeners = append(listenerService.listeners, rootchainListener)
 
-	maticchainListener := &MaticChainListener{}
-	maticchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetBorClient(), maticChainListenerStr, maticchainListener)
-	listenerService.listeners = append(listenerService.listeners, maticchainListener)
+	borchainListener := &BorChainListener{}
+	borchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetBorClient(), borChainListenerStr, borchainListener)
+	listenerService.listeners = append(listenerService.listeners, borchainListener)
 
 	heimdallListener := &HeimdallListener{}
 	heimdallListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, nil, heimdallListenerStr, heimdallListener)

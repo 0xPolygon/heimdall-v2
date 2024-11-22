@@ -91,6 +91,8 @@ func (k Keeper) GetAuthority() string {
 	return k.authority
 }
 
+// TODO HV2: delete this function if not needed
+
 // GetSpanKey appends prefix to start block
 func GetSpanKey(id uint64) []byte {
 	return append(types.SpanPrefixKey, sdk.Uint64ToBigEndian(id)...)

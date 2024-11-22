@@ -1,4 +1,6 @@
-# Clerk Module
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
+# Clerk module
 
 ## Table of Contents
 
@@ -85,8 +87,6 @@ message MsgEventRecordRequest {
 Once the event is validated by the Handler, It will go to `SideHandleMsgEventRecord` in each validator node and after verifying the event, The validators will vote with either a `YES` return an error for a failed verification.
 
 Only when there is a majority of `YES` votes, The event will be processed by `PostHandleMsgEventRecord` which will persist the event in the state via keeper.
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## How to add an event
 

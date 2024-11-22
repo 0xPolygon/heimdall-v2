@@ -162,7 +162,7 @@ func (v Validator) CmtConsPublicKey() (cmtprotocrypto.PublicKey, error) {
 // Used to send validator information to bor validator contract
 type MinimalVal struct {
 	ID          uint64 `json:"ID"`
-	VotingPower uint64 `json:"power"` // TODO add 10^-18 here so that we dont overflow easily
+	VotingPower uint64 `json:"power"` // TODO add 10^-18 here so that we don't overflow easily
 	Signer      string `json:"signer"`
 }
 

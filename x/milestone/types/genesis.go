@@ -19,6 +19,8 @@ func DefaultGenesisState() *GenesisState {
 	return &GenesisState{Params: params}
 }
 
+// TODO HV2: remove this function if not needed
+
 // GetGenesisStateFromAppState returns x/Milestone GenesisState given raw application
 // genesis state.
 func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) *GenesisState {
@@ -46,6 +48,6 @@ func DefaultParams() Params {
 		MinMilestoneLength:       helper.MilestoneLength,
 		MilestoneBufferTime:      helper.MilestoneBufferTime,
 		MilestoneBufferLength:    helper.MilestoneBufferLength,
-		MilestoneTxConfirmations: helper.PolygonPosChainMilestoneConfirmation,
+		MilestoneTxConfirmations: helper.BorChainMilestoneConfirmation,
 	}
 }

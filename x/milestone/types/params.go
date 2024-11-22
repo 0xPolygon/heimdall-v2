@@ -26,11 +26,13 @@ func (p Params) Validate() error {
 	return nil
 }
 
+// TODO HV2: remove this function if not needed
+
 func GetDefaultParams() Params {
 	return Params{
 		MinMilestoneLength:       helper.MilestoneLength,
 		MilestoneBufferTime:      helper.MilestoneBufferTime,
 		MilestoneBufferLength:    helper.MilestoneBufferLength,
-		MilestoneTxConfirmations: helper.PolygonPosChainMilestoneConfirmation,
+		MilestoneTxConfirmations: helper.BorChainMilestoneConfirmation,
 	}
 }

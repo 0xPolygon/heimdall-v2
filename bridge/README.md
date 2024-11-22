@@ -1,4 +1,5 @@
 <!-- TODO HV2 - revisit the commands and wording once we have a running app -->
+
 # Bridge
 
 ## Table of Contents
@@ -12,7 +13,7 @@
 
 ## Overview
 
-Bridge module is responsible for listening to multiple chains and processing the events emitted by them.It converts the emitted data into heimdall messages and send them to the heimdall chain. There are `listener` and `processor` components in the bridge module which are responsible for listening and processing the events respectively as per their module. For example `listener/rootchain.go` is responsible for listening to events coming from rootchain OR L1 i.e Ethereum chain in our case and `listener/polygonposchain.go` is responsible for listening to events coming from polygonposchain or L2 i.e Bor chain in our case.
+Bridge module is responsible for listening to multiple chains and processing the events emitted by them.It converts the emitted data into heimdall messages and send them to the heimdall chain. There are `listener` and `processor` components in the bridge module which are responsible for listening and processing the events respectively as per their module. For example `listener/rootchain.go` is responsible for listening to events coming from rootchain OR L1 i.e Ethereum chain in our case and `listener/borchain.go` is responsible for listening to events coming from borchain
 
 In order to process the events emitted by the chains, bridge module uses `processor` component, which is responsible for processing the events emitted by the chains. For example `processor/clerk.go` is responsible for processing the events related to clerk module, `processor/staking.go` is responsible for processing the events related to staking module and so on.
 
@@ -26,7 +27,7 @@ There is no change to the circulating supply of your token when it crosses the b
 
 ## Listener
 
-The bridge module has a `BaseListener` which is extended by `RootChainListener`, `MaticChainListener` and `HeimdallListener`. It has all the methods required to start polling, listening to incoming headers(blocks) and stopping the process if required. All the 3 listneres uses these properties with their individual implementations on how to handle the incoming header once received.
+The bridge module has a `BaseListener` which is extended by `RootChainListener`, `BorChainListener` and `HeimdallListener`. It has all the methods required to start polling, listening to incoming headers(blocks) and stopping the process if required. All the 3 listeners uses these properties with their individual implementations on how to handle the incoming header once received.
 
 For example in `RootChainListener` the incoming header is used to determine the current height of root chain and calculate the `from` and `to` block numbers using which the events are fetched from the root chain. These events are then sent to `handleLog` where based on their event signature they are added to queue as tasks for further processing by their respective processors.
 

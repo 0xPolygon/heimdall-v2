@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"strconv"
 
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
-
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
@@ -79,7 +78,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	// fetch current child block
-	childBlock, err := s.k.contractCaller.GetBorBlock(nil)
+	childBlock, err := s.k.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		logger.Error("error fetching current child block", "error", err)
 		return sidetxs.Vote_UNSPECIFIED

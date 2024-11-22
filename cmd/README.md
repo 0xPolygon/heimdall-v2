@@ -7,7 +7,7 @@ The `cmd` package is responsible for starting the heimdall application and provi
 `heimdalld` is the service that is responsible for starting the heimdall application and also to interact with the heimdall application.
 
 Apart from some commands taken for the upstream, it has the following customised commands:
-- `stake`: Stake polygon pos tokens for your account.
+- `stake`: Stake pol tokens for your account.
 - `approve`: Approve the tokens to stake.
 - `init`: Initialize genesis config, priv-validator file, and p2p-node file.
 - `start`: Run the full node.

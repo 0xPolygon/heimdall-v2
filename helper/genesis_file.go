@@ -20,6 +20,8 @@ import (
 
 var allocs embed.FS
 
+// TODO HV2: is this function needed?
+
 func WriteGenesisFile(chain string, filePath string) error {
 	switch chain {
 	case "amoy", "mumbai", "mainnet":
