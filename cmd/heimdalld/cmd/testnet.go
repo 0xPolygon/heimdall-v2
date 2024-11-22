@@ -83,6 +83,8 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			genFiles := make([]string, totalValidators)
 			var err error
 
+			homeDir := viper.GetString(flags.FlagHome)
+			appCfgFile := filepath.Join(homeDir, "config/app.toml")
 			nodeDaemonHomeName := viper.GetString(flagNodeDaemonHome)
 			nodeCliHomeName := viper.GetString(flagNodeCliHome)
 
@@ -143,7 +145,16 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 
 				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
 
-				// WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "config/heimdall-config.toml"), helper.GetDefaultHeimdallConfig())
+				cfgz, err := os.ReadFile(appCfgFile)
+				if err != nil {
+					return err
+				}
+
+				// write config file
+				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cfgz, 0600)
+				if err != nil {
+					return err
+				}
 			}
 
 			// other data
