@@ -110,7 +110,7 @@ func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error
 	k.PanicIfSetupIsIncomplete()
 	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator types.Validator) bool {
 		totalPower += validator.GetBondedTokens().Int64()
-		return true
+		return false
 	})
 	if err != nil {
 		return 0, err
@@ -491,7 +491,7 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 	}
 
 	for _, v := range currentValidatorSet.Validators {
-		if stop := f(*v); !stop {
+		if stop := f(*v); stop {
 			return nil
 		}
 	}
