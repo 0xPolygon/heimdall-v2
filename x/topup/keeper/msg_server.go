@@ -65,7 +65,7 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	// check if incoming tx already exists
 	exists, err := m.k.HasTopupSequence(sdkCtx, sequence.String())
 	if err != nil {
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 	if exists {
 		logger.Error("older tx found",
@@ -139,7 +139,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 			"fromAddress", msg.Proposer,
 			"module", types.ModuleName,
 			"err", err)
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 	// burn coins from module
 	err = m.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
@@ -148,7 +148,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 			"module", types.ModuleName,
 			"coinsAmount", coins.String(),
 			"err", err)
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -160,7 +160,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 			"fromAddress", msg.Proposer,
 			"feeAmount", feeAmount,
 			"err", err)
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 
 	sdkCtx.EventManager().EmitEvents(sdk.Events{

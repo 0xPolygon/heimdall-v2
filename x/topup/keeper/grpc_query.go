@@ -38,13 +38,13 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 
 	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	// get main tx receipt
 	txHash := common.FromHex(req.TxHash)
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.MainChainTxConfirmations)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if receipt == nil {
 		return nil, status.Errorf(codes.NotFound, "receipt not found")
@@ -57,7 +57,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	// check if incoming tx already exists
 	exists, err := q.k.HasTopupSequence(sdkCtx, sequence.String())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if !exists {
@@ -78,13 +78,13 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 
 	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	// get main tx receipt
 	txHash := common.FromHex(req.TxHash)
 	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.MainChainTxConfirmations)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if receipt == nil {
 		return nil, status.Errorf(codes.NotFound, "receipt not found")
@@ -97,7 +97,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	// check if incoming tx already exists
 	exists, err := q.k.HasTopupSequence(sdkCtx, sequence.String())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryIsTopupTxOldResponse{IsOld: exists}, nil
@@ -113,7 +113,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 
 	exists, err := q.k.HasDividendAccount(sdkCtx, req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if !exists {
 		return nil, status.Errorf(codes.NotFound, "dividend account with address %s not found", req.Address)
@@ -121,7 +121,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 
 	dividendAccount, err := q.k.GetDividendAccount(sdkCtx, req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryDividendAccountResponse{DividendAccount: dividendAccount}, nil
@@ -133,12 +133,12 @@ func (q queryServer) GetDividendAccountRootHash(ctx context.Context, _ *types.Qu
 
 	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	accountRoot, err := heimdallTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if len(accountRoot) == 0 {
 		return nil, status.Errorf(codes.NotFound, "account root not found")
@@ -157,13 +157,13 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 
 	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// Verify account proof
 	accountProofStatus, err := heimdallTypes.VerifyAccountProof(dividendAccounts, req.Address, req.Proof)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryVerifyAccountProofResponse{IsVerified: accountProofStatus}, nil
@@ -183,20 +183,20 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 
 	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	stakingInfoAddress := chainParams.ChainParams.StakingInfoAddress
 	stakingInfoInstance, err := q.k.contractCaller.GetStakingInfoInstance(stakingInfoAddress)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	accountRootOnChain, err := q.k.contractCaller.CurrentAccountStateRoot(stakingInfoInstance)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	currentStateAccountRoot, err := heimdallTypes.GetAccountRootHash(dividendAccounts)
@@ -207,7 +207,7 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 	// Calculate new account root hash
 	merkleProof, index, err := heimdallTypes.GetAccountProof(dividendAccounts, req.Address)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// build response and return

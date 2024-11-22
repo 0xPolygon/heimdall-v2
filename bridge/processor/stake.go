@@ -464,7 +464,7 @@ func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 		searchResult1, err1 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event1, "")
 		searchResult2, err2 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event2, "")
 		if err1 != nil && err2 != nil {
-			return 0, fmt.Errorf(err1.Error() + err2.Error())
+			return 0, fmt.Errorf("%v %v", err1, err2)
 		}
 
 		var totalCount uint64

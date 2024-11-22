@@ -28,7 +28,7 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryParamsResponse{
@@ -40,7 +40,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 func (q queryServer) GetMilestoneCount(ctx context.Context, _ *types.QueryCountRequest) (*types.QueryCountResponse, error) {
 	count, err := q.k.GetMilestoneCount(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCountResponse{Count: count}, nil
@@ -50,7 +50,7 @@ func (q queryServer) GetMilestoneCount(ctx context.Context, _ *types.QueryCountR
 func (q queryServer) GetLatestMilestone(ctx context.Context, _ *types.QueryLatestMilestoneRequest) (*types.QueryLatestMilestoneResponse, error) {
 	milestone, err := q.k.GetLastMilestone(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryLatestMilestoneResponse{Milestone: *milestone}, nil
@@ -101,7 +101,7 @@ func (q queryServer) GetMilestoneProposerByTimes(ctx context.Context, req *types
 	// get milestone validator set
 	validatorSet, err := q.k.stakeKeeper.GetMilestoneValidatorSet(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	times := int(req.Times)

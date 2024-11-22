@@ -39,7 +39,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 	// get validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryParamsResponse{
@@ -51,7 +51,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
 	count, err := q.k.GetAckCount(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryAckCountResponse{AckCount: count}, err
@@ -61,7 +61,7 @@ func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequ
 func (q queryServer) GetCheckpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
 	checkpoint, err := q.k.GetCheckpointByNumber(ctx, req.Number)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCheckpointResponse{Checkpoint: checkpoint}, nil
