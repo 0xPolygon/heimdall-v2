@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/cometbft/cometbft/crypto"
+	"github.com/cometbft/cometbft/libs/tempfile"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -169,23 +170,21 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 			}
 
-			// TODO HV2 - do we need this?
-			/*
-				// dump signer information in a json file
-				// TODO move to const string flag
-				dump := viper.GetBool("signer-dump")
-				if dump {
-					signerJSON, err := json.MarshalIndent(signers, "", "  ")
-					if err != nil {
-						return err
-					}
-
-					if err := common.WriteFileAtomic(filepath.Join(outDir, "signer-dump.json"), signerJSON, 0600); err != nil {
-						fmt.Println("Error writing signer-dump", err)
-						return err
-					}
+			// dump signer information in a json file
+			// this is required when setting up node dirs for devnet
+			// TODO move to const string flag
+			dump := viper.GetBool("signer-dump")
+			if dump {
+				signerJSON, err := json.MarshalIndent(signers, "", "  ")
+				if err != nil {
+					return err
 				}
-			*/
+
+				if err := tempfile.WriteFileAtomic(filepath.Join(outDir, "signer-dump.json"), signerJSON, 0600); err != nil {
+					fmt.Println("Error writing signer-dump", err)
+					return err
+				}
+			}
 
 			fmt.Printf("Successfully initialized %d node directories\n", totalValidators)
 			return nil
