@@ -50,7 +50,7 @@ func SaveJSONToFile(data map[string]interface{}, filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-
+	// #nosec G306 IGNORING GOSEC G306: write file with 0644 permission
 	if err := os.WriteFile(filename, fileContent, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
@@ -157,7 +157,7 @@ func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) er
 		return fmt.Errorf("public key not found")
 	}
 
-	pubKeyStr, err := migratePubKey(appCodec, pubKeyStr)
+	pubKeyStr, err := migratePubKey(pubKeyStr)
 	if err != nil {
 		return fmt.Errorf("failed to migrate public key: %w", err)
 	}
@@ -207,12 +207,12 @@ func MigrateGovProposalContent(oldContent v036gov.Content) *codecTypes.Any {
 		panic(fmt.Errorf("%T is not a valid proposal content type", oldContent))
 	}
 
-	any, err := codecTypes.NewAnyWithValue(protoProposal)
+	contentAny, err := codecTypes.NewAnyWithValue(protoProposal)
 	if err != nil {
 		panic(fmt.Errorf("failed to create Any type for proposal content: %w", err))
 	}
 
-	msg := govTypes.NewMsgExecLegacyContent(any, authority)
+	msg := govTypes.NewMsgExecLegacyContent(contentAny, authority)
 
 	msgAny, err := codecTypes.NewAnyWithValue(msg)
 	if err != nil {
@@ -297,7 +297,7 @@ func MigrateAuthAccountsToBankBalances(authAccounts []interface{}) ([]bankTypes.
 		}
 	}
 
-	var balances []bankTypes.Balance
+	balances := make([]bankTypes.Balance, 0, len(addressCoins))
 
 	for accAddress, coins := range addressCoins {
 		balances = append(balances,
@@ -361,7 +361,7 @@ func MigrateAuthAccounts(authData map[string]interface{}) ([]*codecTypes.Any, er
 }
 
 // migratePubKey migrates the public key from string to base64 encoding.
-func migratePubKey(appCodec codec.Codec, pubKeyStr string) (string, error) {
+func migratePubKey(pubKeyStr string) (string, error) {
 	pubKeyBytes, err := hex.DecodeString(strings.TrimPrefix(pubKeyStr, "0x"))
 	if err != nil {
 		return "", fmt.Errorf("failed to decode hex public key: %w", err)
