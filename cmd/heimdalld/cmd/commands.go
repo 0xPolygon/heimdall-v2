@@ -116,11 +116,8 @@ func CryptoKeyToPubKey(key crypto.PubKey) secp256k1.PubKey {
 
 // GetSignerInfo returns signer information
 func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
-	var privKeyObject secp256k1.PrivKey
-	var pubKeyObject secp256k1.PubKey
-
-	copy(privKeyObject[:], privKey)
-	copy(pubKeyObject[:], pub.Bytes())
+	privKeyObject := secp256k1.PrivKey(privKey)
+	pubKeyObject := secp256k1.PubKey(pub.Bytes())
 
 	return ValidatorAccountFormatter{
 		Address: ethCommon.BytesToAddress(pub.Address().Bytes()).String(),
