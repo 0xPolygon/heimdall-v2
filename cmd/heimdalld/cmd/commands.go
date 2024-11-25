@@ -172,6 +172,8 @@ func initRootCmd(
 		AddFlags: func(startCmd *cobra.Command) {
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
 			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
+			startCmd.Flags().Bool(helper.AllProcessesFlag, false, "Enable all bridge processes")
+			startCmd.Flags().Bool(helper.OnlyProcessesFlag, false, "Enable only the specified bridge process(es)")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")

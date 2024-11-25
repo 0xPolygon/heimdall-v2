@@ -37,6 +37,8 @@ const (
 	RestServerFlag         = "rest-server"
 	GRPCServerFlag         = "grpc-server"
 	BridgeFlag             = "bridge"
+	AllProcessesFlag       = "all"
+	OnlyProcessesFlag      = "only"
 	LogLevel               = "log_level"
 	LogsWriterFileFlag     = "logs_writer_file"
 	SeedsFlag              = "seeds"
