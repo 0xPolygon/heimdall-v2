@@ -136,7 +136,7 @@ func initCometBFTConfig() *cmtcfg.Config {
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
 	customAppConfig := helper.CustomAppConfig{
-		// Config: *serverconfig.DefaultConfig(),
+		Config: *serverconfig.DefaultConfig(),
 		Custom: helper.GetDefaultHeimdallConfig(),
 	}
 
