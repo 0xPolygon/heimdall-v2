@@ -166,7 +166,7 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTime time.Time, page, limit uint64) ([]types.EventRecord, error) {
 	// create records
 	var records []types.EventRecord
-	var allRecords []types.EventRecord
+	var allRecords = make([]types.EventRecord, 0)
 
 	// have max limit
 	if limit > 50 {
