@@ -15,15 +15,20 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/server"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
+	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	bankTypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // TODO HV2 - this function was heavily modified, review carefully
@@ -158,19 +163,77 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			}
 
 			// other data
+			genAccounts := make([]authTypes.GenesisAccount, 0, totalValidators)
+			genBalances := make([]bankTypes.Balance, 0, totalValidators)
+			for i := 0; i < totalValidators; i++ {
+				accTokens := sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction)
+				coins := sdk.Coins{
+					sdk.NewCoin("matic", accTokens),
+				}
+				addr, err := sdk.AccAddressFromHex(valPubKeys[i].Address().String())
+				if err != nil {
+					return err
+				}
+
+				cosmosPrivKey := cosmossecp256k1.PrivKey{Key: privKeys[i].Bytes()}
+
+				addrStr := valPubKeys[i].Address().String()
+				genBalances = append(genBalances, bankTypes.Balance{Address: addrStr, Coins: coins.Sort()})
+				genAccounts = append(genAccounts, authTypes.NewBaseAccount(addr, cosmosPrivKey.PubKey(), uint64(i), 0))
+			}
+
+			validatorSet := stakeTypes.NewValidatorSet(validators)
+
 			for i := 0; i < totalValidators; i++ {
 				populatePersistentPeersInConfigAndWriteIt(config)
 			}
 
 			appGenState := mbm.DefaultGenesis(cliCdc)
 
-			appState, err := json.MarshalIndent(appGenState, "", " ")
+			// set auth genesis state
+			var authGenState authTypes.GenesisState
+			clientCtx.Codec.MustUnmarshalJSON(appGenState[authTypes.ModuleName], &authGenState)
+
+			accounts, err := authTypes.PackAccounts(genAccounts)
 			if err != nil {
 				return err
 			}
 
-			// app state json
-			appStateJSON, err := json.Marshal(appState)
+			authGenState.Accounts = accounts
+
+			appGenState[authTypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&authGenState)
+
+			// set bank genesis state
+			var bankGenState bankTypes.GenesisState
+			clientCtx.Codec.MustUnmarshalJSON(appGenState[bankTypes.ModuleName], &bankGenState)
+
+			bankGenState.Balances = bankTypes.SanitizeGenesisBalances(genBalances)
+
+			for _, bal := range bankGenState.Balances {
+				bankGenState.Supply = bankGenState.Supply.Add(bal.Coins...)
+			}
+
+			appGenState[bankTypes.ModuleName] = clientCtx.Codec.MustMarshalJSON(&bankGenState)
+
+			// set stake genesis state
+			appGenState, err = stakeTypes.SetGenesisStateToAppState(cliCdc, appGenState, validators, *validatorSet)
+			if err != nil {
+				return err
+			}
+
+			// set bor genesis state
+			appGenState, err = borTypes.SetGenesisStateToAppState(cliCdc, appGenState, *validatorSet)
+			if err != nil {
+				return err
+			}
+
+			// topup state change
+			appGenState, err = topupTypes.SetGenesisStateToAppState(cliCdc, appGenState, dividendAccounts)
+			if err != nil {
+				return err
+			}
+
+			appStateJSON, err := json.MarshalIndent(appGenState, "", " ")
 			if err != nil {
 				return err
 			}
@@ -230,3 +293,17 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 
 	return cmd
 }
+
+// func getGenesisAccount(address []byte) authTypes.GenesisAccount {
+// 	acc := authTypes.NewBaseAccountWithAddress(hmTypes.BytesToHeimdallAddress(address))
+
+// 	genesisBalance, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
+
+// 	if err := acc.SetCoins(sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: sdk.NewIntFromBigInt(genesisBalance)}}); err != nil {
+// 		logger.Error("getGenesisAccount | SetCoins", "Error", err)
+// 	}
+
+// 	result, _ := authTypes.NewGenesisAccountI(&acc)
+
+// 	return result
+// }

@@ -33,3 +33,14 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 
 	return &genesisState
 }
+
+// SetGenesisStateToAppState sets x/stake GenesisState into raw application
+// genesis state.
+func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, validators []*Validator, currentValSet ValidatorSet) (map[string]json.RawMessage, error) {
+	stakeState := GetGenesisStateFromAppState(cdc, appState)
+	stakeState.Validators = validators
+	stakeState.CurrentValidatorSet = currentValSet
+	appState[ModuleName] = cdc.MustMarshalJSON(stakeState)
+
+	return appState, nil
+}
