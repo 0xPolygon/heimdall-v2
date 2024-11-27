@@ -121,19 +121,37 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
-	extCommitInfo := new(abci.ExtendedCommitInfo)
-	commitInfo, err := extCommitInfo.Marshal()
-	require.NoError(t, err)
-	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Txs:    [][]byte{commitInfo},
-		Height: VoteExtBlockHeight,
-	})
-	require.NoError(t, err)
+	RequestFinalizeBlock(t, app, VoteExtBlockHeight)
 
 	_, err = app.Commit()
 	require.NoError(t, err)
 
 	return app, db, logger
+}
+
+func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:    [][]byte{commitInfo},
+		Height: height,
+	})
+	require.NoError(t, err)
+}
+
+func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	allTxs := [][]byte{commitInfo}
+	allTxs = append(allTxs, txs...)
+	res, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:    allTxs,
+		Height: height,
+	})
+	require.NoError(t, err)
+	return res
 }
 
 func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxResponse) []byte {
