@@ -5,7 +5,6 @@ import (
 	"context"
 	"math/big"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,8 +32,6 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
@@ -74,8 +71,6 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -95,7 +90,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
 
 	// check if incoming tx already exists
-	exists, err := q.k.HasTopupSequence(sdkCtx, sequence.String())
+	exists, err := q.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -109,9 +104,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	exists, err := q.k.HasDividendAccount(sdkCtx, req.Address)
+	exists, err := q.k.HasDividendAccount(ctx, req.Address)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -119,7 +112,7 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 		return nil, status.Errorf(codes.NotFound, "dividend account with address %s not found", req.Address)
 	}
 
-	dividendAccount, err := q.k.GetDividendAccount(sdkCtx, req.Address)
+	dividendAccount, err := q.k.GetDividendAccount(ctx, req.Address)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -129,9 +122,8 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 
 // GetDividendAccountRootHash implements the gRPC service handler to query the root hash of all dividend accounts
 func (q queryServer) GetDividendAccountRootHash(ctx context.Context, _ *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
+	dividendAccounts, err := q.k.GetAllDividendAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -153,9 +145,7 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
+	dividendAccounts, err := q.k.GetAllDividendAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -179,9 +169,7 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from current account
 	// Finally, if they are equal, calculate the merkle path using GetAllDividendAccounts
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-
-	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
+	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -194,7 +182,7 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	dividendAccounts, err := q.k.GetAllDividendAccounts(sdkCtx)
+	dividendAccounts, err := q.k.GetAllDividendAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

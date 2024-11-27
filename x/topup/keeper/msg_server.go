@@ -63,7 +63,7 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// check if incoming tx already exists
-	exists, err := m.k.HasTopupSequence(sdkCtx, sequence.String())
+	exists, err := m.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
@@ -155,7 +155,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 
 	// add Fee to dividendAccount
 	feeAmount := amount.BigInt()
-	if err := m.k.AddFeeToDividendAccount(sdkCtx, msg.Proposer, feeAmount); err != nil {
+	if err := m.k.AddFeeToDividendAccount(ctx, msg.Proposer, feeAmount); err != nil {
 		logger.Error("error while adding fee to dividend account",
 			"fromAddress", msg.Proposer,
 			"feeAmount", feeAmount,
