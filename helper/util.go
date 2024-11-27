@@ -224,7 +224,7 @@ func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
 
 // GetHeimdallServerEndpoint returns heimdall server endpoint
 func GetHeimdallServerEndpoint(endpoint string) string {
-	u, _ := url.Parse(GetConfig().HeimdallServerURL)
+	u, _ := url.Parse(GetConfig().GRPCServerURL)
 	u.Path = path.Join(u.Path, endpoint)
 
 	return u.String()
