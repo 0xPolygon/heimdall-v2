@@ -179,7 +179,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 
 				addrStr := valPubKeys[i].Address().String()
 				genBalances = append(genBalances, bankTypes.Balance{Address: addrStr, Coins: coins.Sort()})
-				genAccounts = append(genAccounts, authTypes.NewBaseAccount(addr, cosmosPrivKey.PubKey(), uint64(i), 0))
+				genAccounts = append(genAccounts, authTypes.NewBaseAccount(addr, cosmosPrivKey.PubKey(), uint64(i+1), 0))
 			}
 
 			validatorSet := stakeTypes.NewValidatorSet(validators)
