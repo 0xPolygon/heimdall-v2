@@ -49,7 +49,7 @@ where ,
 A validator on heimdall can construct a span proposal message:
 
 ```protobuf
-message MsgProposeSpanRequest {
+message MsgProposeSpan {
 	option (cosmos.msg.v1.signer) = "proposer";
 
 	uint64 span_id = 1;
@@ -61,7 +61,7 @@ message MsgProposeSpanRequest {
 }
 ```
 
-The msg is generally constructed and broadcast by the validator's bridge process periodically, but the CLI can also be leveraged to do the same manually (see [below](#how-does-it-work)). Upon broadcasting the message, it is initially checked by `ProposeSpan` handler for basic sanity (verify whether the proposed span is in continuity, appropriate span duration, correct chain ID, etc.). Since this is a side-transaction, the validators then vote on the data present in `MsgProposeSpanRequest` on the basis of its correctness. All these checks are done in `SideHandleMsgSpan` (verifying `seed`, span continuity, etc.) and if correct, the validator would vote `YES`.
+The msg is generally constructed and broadcast by the validator's bridge process periodically, but the CLI can also be leveraged to do the same manually (see [below](#how-does-it-work)). Upon broadcasting the message, it is initially checked by `ProposeSpan` handler for basic sanity (verify whether the proposed span is in continuity, appropriate span duration, correct chain ID, etc.). Since this is a side-transaction, the validators then vote on the data present in `MsgProposeSpan` on the basis of its correctness. All these checks are done in `SideHandleMsgSpan` (verifying `seed`, span continuity, etc.) and if correct, the validator would vote `YES`.
 Finally, if there are 2/3+ `YES` votes, the `PostHandleMsgSpan` persists the proposed span in the state via the keeper :  
 
 ```go

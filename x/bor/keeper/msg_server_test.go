@@ -21,13 +21,13 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 
 	testcases := []struct {
 		name   string
-		span   types.MsgProposeSpanRequest
+		span   types.MsgProposeSpan
 		expRes *types.MsgProposeSpanResponse
 		expErr string
 	}{
 		{
 			name: "correct span gets proposed",
-			span: types.MsgProposeSpanRequest{
+			span: types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -39,7 +39,7 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 		},
 		{
 			name: "incorrect validator address",
-			span: types.MsgProposeSpanRequest{
+			span: types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   "0x91b54cD48FD796A5d0A120A4C5298a7fAEA59B",
 				StartBlock: 102,
@@ -52,7 +52,7 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 		},
 		{
 			name: "incorrect chain id",
-			span: types.MsgProposeSpanRequest{
+			span: types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -65,7 +65,7 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 		},
 		{
 			name: "span id not in continuity",
-			span: types.MsgProposeSpanRequest{
+			span: types.MsgProposeSpan{
 				SpanId:     3,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -78,7 +78,7 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 		},
 		{
 			name: "start block not in continuity",
-			span: types.MsgProposeSpanRequest{
+			span: types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 105,
@@ -91,7 +91,7 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 		},
 		{
 			name: "end block less than start block",
-			span: types.MsgProposeSpanRequest{
+			span: types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -104,7 +104,7 @@ func (s *KeeperTestSuite) TestProposeSpan() {
 		},
 		{
 			name: "end block equal to start block",
-			span: types.MsgProposeSpanRequest{
+			span: types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,

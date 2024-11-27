@@ -14,14 +14,15 @@ service Msg {
   option (cosmos.msg.v1.service) = true;
 
   // ProposeSpan defines a method for proposing a bor span.
-  rpc ProposeSpan(MsgProposeSpanRequest) returns (MsgProposeSpanResponse);
+  rpc ProposeSpan(MsgProposeSpan) returns (MsgProposeSpanResponse);
 
   // UpdateParams defines a method to update the bor params.
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 }
 
-// MsgProposeSpanRequest represents a message to propose a span.
-message MsgProposeSpanRequest {
+// MsgProposeSpan represents a message to propose a span.
+message MsgProposeSpan {
+  option (amino.name) = "heimdallv2/bor/MsgProposeSpan";
   option (cosmos.msg.v1.signer) = "proposer";
 
   uint64 span_id = 1;
@@ -38,7 +39,7 @@ message MsgProposeSpanResponse {}
 // MsgUpdateParams is the Msg/UpdateParams request type.
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name) = "heimdallv2/x/bor/MsgUpdateParams";
+  option (amino.name) = "heimdallv2/bor/MsgUpdateParams";
 
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).

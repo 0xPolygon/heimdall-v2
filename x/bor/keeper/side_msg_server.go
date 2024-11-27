@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpanRequest{})
+	SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
 )
 
 type sideMsgServer struct {
@@ -44,7 +44,7 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	logger := s.k.Logger(ctx)
 
-	msg, ok := msgI.(*types.MsgProposeSpanRequest)
+	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
 		logger.Error("MsgProposeSpan type mismatch", "msg type received", msgI)
 		return sidetxs.Vote_UNSPECIFIED
@@ -122,7 +122,7 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := s.k.Logger(ctx)
 
-	msg, ok := msgI.(*types.MsgProposeSpanRequest)
+	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
 		logger.Error("MsgProposeSpan type mismatch", "msg type received", msg)
 		return

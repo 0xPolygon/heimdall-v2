@@ -58,10 +58,10 @@ message EventRecord {
 * `borChainID` is the chain id of the bor chain.
 * `recordTime` is the time at which the event was recorded in heimdall state.
 
-The bridge will listen to the state-sync events from L1 and generate a txn with `MsgEventRecordRequest` which is responsible for validating events from `StateSender` contract and storing the `EventRecord` on the heimdall state for bor to use.
+The bridge will listen to the state-sync events from L1 and generate a txn with `MsgEventRecord` which is responsible for validating events from `StateSender` contract and storing the `EventRecord` on the heimdall state for bor to use.
 
 ```protobuf
-message MsgEventRecordRequest {
+message MsgEventRecord {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 

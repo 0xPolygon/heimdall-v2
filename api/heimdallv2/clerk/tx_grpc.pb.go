@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
-	HandleMsgEventRecord(ctx context.Context, in *MsgEventRecordRequest, opts ...grpc.CallOption) (*MsgEventRecordResponse, error)
+	HandleMsgEventRecord(ctx context.Context, in *MsgEventRecord, opts ...grpc.CallOption) (*MsgEventRecordResponse, error)
 }
 
 type msgClient struct {
@@ -37,7 +37,7 @@ func NewMsgClient(cc grpc.ClientConnInterface) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) HandleMsgEventRecord(ctx context.Context, in *MsgEventRecordRequest, opts ...grpc.CallOption) (*MsgEventRecordResponse, error) {
+func (c *msgClient) HandleMsgEventRecord(ctx context.Context, in *MsgEventRecord, opts ...grpc.CallOption) (*MsgEventRecordResponse, error) {
 	out := new(MsgEventRecordResponse)
 	err := c.cc.Invoke(ctx, Msg_HandleMsgEventRecord_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -50,7 +50,7 @@ func (c *msgClient) HandleMsgEventRecord(ctx context.Context, in *MsgEventRecord
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
-	HandleMsgEventRecord(context.Context, *MsgEventRecordRequest) (*MsgEventRecordResponse, error)
+	HandleMsgEventRecord(context.Context, *MsgEventRecord) (*MsgEventRecordResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }
 
@@ -58,7 +58,7 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (UnimplementedMsgServer) HandleMsgEventRecord(context.Context, *MsgEventRecordRequest) (*MsgEventRecordResponse, error) {
+func (UnimplementedMsgServer) HandleMsgEventRecord(context.Context, *MsgEventRecord) (*MsgEventRecordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleMsgEventRecord not implemented")
 }
 func (UnimplementedMsgServer) mustEmbedUnimplementedMsgServer() {}
@@ -75,7 +75,7 @@ func RegisterMsgServer(s grpc.ServiceRegistrar, srv MsgServer) {
 }
 
 func _Msg_HandleMsgEventRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgEventRecordRequest)
+	in := new(MsgEventRecord)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func _Msg_HandleMsgEventRecord_Handler(srv interface{}, ctx context.Context, dec
 		FullMethod: Msg_HandleMsgEventRecord_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).HandleMsgEventRecord(ctx, req.(*MsgEventRecordRequest))
+		return srv.(MsgServer).HandleMsgEventRecord(ctx, req.(*MsgEventRecord))
 	}
 	return interceptor(ctx, in, info, handler)
 }

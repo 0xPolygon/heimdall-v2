@@ -291,7 +291,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		}
 
 		// create msg checkpoint ack message
-		msg := checkpointtypes.NewMsgCheckpointAck(
+		msg := checkpointtypes.NewMsgCpAck(
 			helper.GetFromAddress(cp.cliCtx),
 			checkpointNumber.Uint64(),
 			event.Proposer.String(),

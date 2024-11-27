@@ -11,8 +11,8 @@ import (
 // RegisterLegacyAminoCodec registers the necessary x/topup interfaces and concrete types
 // on the provided LegacyAmino codec. These types are used for Amino JSON serialization.
 func RegisterLegacyAminoCodec(cdc *codec.LegacyAmino) {
-	legacy.RegisterAminoMsg(cdc, &MsgTopupTx{}, "heimdall-v2/x/topup/MsgTopupTx")
-	legacy.RegisterAminoMsg(cdc, &MsgWithdrawFeeTx{}, "heimdall-v2/x/topup/MsgWithdrawFeeTx")
+	legacy.RegisterAminoMsg(cdc, &MsgTopupTx{}, "heimdallv2/topup/MsgTopupTx")
+	legacy.RegisterAminoMsg(cdc, &MsgWithdrawFeeTx{}, "heimdallv2/topup/MsgWithdrawFeeTx")
 }
 
 // RegisterInterfaces registers the topup msg implementations in the registry

@@ -221,14 +221,14 @@ Loop:
 		case "event-record":
 
 			// typecast the txs for clerk type message
-			mempoolTxMsg, ok := txMsg.(*clerkTypes.MsgEventRecordRequest)
+			mempoolTxMsg, ok := txMsg.(*clerkTypes.MsgEventRecord)
 			if !ok {
 				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
 				continue Loop
 			}
 
 			// typecast the msg for clerk type message
-			clerkMsg, ok := msg.(*clerkTypes.MsgEventRecordRequest)
+			clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
 			if !ok {
 				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
 				continue Loop

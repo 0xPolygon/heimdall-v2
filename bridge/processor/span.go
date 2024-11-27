@@ -113,7 +113,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 		}
 
 		// broadcast to heimdall
-		msg := types.MsgProposeSpanRequest{
+		msg := types.MsgProposeSpan{
 			SpanId:     nextSpanMsg.Id,
 			Proposer:   string(helper.GetAddress()[:]),
 			StartBlock: nextSpanMsg.StartBlock,

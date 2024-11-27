@@ -6,18 +6,18 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
-var _ sdk.Msg = &MsgProposeSpanRequest{}
+var _ sdk.Msg = &MsgProposeSpan{}
 
-// NewMsgProposeSpanRequest creates a new MsgProposeSpanRequest instance
-func NewMsgProposeSpanRequest(
+// NewMsgProposeSpan creates a new MsgProposeSpan instance
+func NewMsgProposeSpan(
 	spanID uint64,
 	proposer string,
 	startBlock uint64,
 	endBlock uint64,
 	chainId string,
 	seed []byte,
-) *MsgProposeSpanRequest {
-	return &MsgProposeSpanRequest{
+) *MsgProposeSpan {
+	return &MsgProposeSpan{
 		SpanId:     spanID,
 		Proposer:   util.FormatAddress(proposer),
 		StartBlock: startBlock,
@@ -27,7 +27,7 @@ func NewMsgProposeSpanRequest(
 	}
 }
 
-// Type returns the type of the x/bor MsgProposeSpanRequest.
-func (msg MsgProposeSpanRequest) Type() string {
+// Type returns the type of the x/bor MsgProposeSpan.
+func (msg MsgProposeSpan) Type() string {
 	return EventTypeProposeSpan
 }
