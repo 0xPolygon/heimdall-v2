@@ -36,7 +36,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
+	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -55,7 +55,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 	sequence.Add(sequence, new(big.Int).SetUint64(req.LogIndex))
 
 	// check if incoming tx already exists
-	exists, err := q.k.HasTopupSequence(sdkCtx, sequence.String())
+	exists, err := q.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -76,7 +76,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	chainParams, err := q.k.ChainKeeper.GetParams(sdkCtx)
+	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

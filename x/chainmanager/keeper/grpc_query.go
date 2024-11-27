@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -25,8 +24,7 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 
 // GetParams implements the gRPC service handler for querying x/chainmanager parameters.
 func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	params, err := q.k.GetParams(sdkCtx)
+	params, err := q.k.GetParams(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get params: %s", err)
 	}
