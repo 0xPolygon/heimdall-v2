@@ -181,6 +181,9 @@ func initRootCmd(
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
+			// wait for rest server to start
+			g.Wait()
+
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
 				bridgeCmd.AdjustBridgeDBValue(rootCmd)
