@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -26,6 +27,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
+
+const APIBodyLimit = 128 * 1024 * 1024 // 128 MB
 
 //go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
@@ -227,8 +230,9 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return u.String()
 }
 
-// TODO HV2 - this needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
-// FetchFromAPI fetches data from any URL
+// TODO HV2 - FetchFromAPI method needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
+
+// FetchFromAPI fetches data from any URL with limited read size
 func FetchFromAPI(URL string) (result []byte, err error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
@@ -241,8 +245,13 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 		}
 	}()
 
+	// Limit the number of bytes read from the response body
+	limitedBody := http.MaxBytesReader(nil, resp.Body, APIBodyLimit)
+
+	// Handle the response
+
 	if resp.StatusCode == 200 {
-		body, err := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(limitedBody)
 		if err != nil {
 			return result, err
 		}
@@ -255,7 +264,7 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
 
-// TODO HV2 - Older version of FetchFromAPI kept for reference, will remove later
+// TODO HV2 - Older version of FetchFromAPI kept for reference, to be removed later
 /*
 // FetchFromAPI fetches data from any URL
 func FetchFromAPI(URL string) (result rest.Response, err error) {
@@ -322,7 +331,9 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 		_, adjusted, err := clienttx.CalculateGas(clientCtx, txf, msgs...)
 		if err != nil {
-			return nil, err
+			return &sdk.TxResponse{
+				Code: 1,
+			}, err
 		}
 
 		txf = txf.WithGas(adjusted)
@@ -331,7 +342,10 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	if clientCtx.Simulate {
 		Logger.Debug("in simulate mode")
-		return nil, nil
+
+		return &sdk.TxResponse{
+			Code: abci.CodeTypeOK,
+		}, nil
 	}
 
 	tx, err := txf.BuildUnsignedTx(msgs...)

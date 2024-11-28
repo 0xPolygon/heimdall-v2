@@ -8,12 +8,14 @@ import (
 	"strconv"
 	"time"
 
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // SpanProcessor - process span related events
@@ -111,7 +113,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 		}
 
 		// broadcast to heimdall
-		msg := types.MsgProposeSpanRequest{
+		msg := types.MsgProposeSpan{
 			SpanId:     nextSpanMsg.Id,
 			Proposer:   string(helper.GetAddress()[:]),
 			StartBlock: nextSpanMsg.StartBlock,
@@ -155,7 +157,7 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 
 // getCurrentChildBlock gets the current child block
 func (sp *SpanProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := sp.contractCaller.GetPolygonPosChainBlock(nil)
+	childBlock, err := sp.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		return 0, err
 	}
@@ -165,9 +167,14 @@ func (sp *SpanProcessor) getCurrentChildBlock() (uint64, error) {
 
 // isSpanProposer checks if current user is span proposer
 func (sp *SpanProcessor) isSpanProposer(nextSpanProducers []stakeTypes.Validator) bool {
+	ac := address.NewHexCodec()
 	// anyone among next span producers can become next span proposer
 	for _, val := range nextSpanProducers {
-		if bytes.Equal([]byte(val.Signer), helper.GetAddress()) {
+		signerBytes, err := ac.StringToBytes(val.Signer)
+		if err != nil {
+			return false
+		}
+		if bytes.Equal(signerBytes, helper.GetAddress()) {
 			return true
 		}
 	}
@@ -183,7 +190,7 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 		return nil, err
 	}
 
-	configParams, err := util.GetChainmanagerParams(sp.cliCtx)
+	configParams, err := util.GetChainmanagerParams()
 	if err != nil {
 		sp.Logger.Error("Error while fetching chainmanager params", "error", err)
 		return nil, err

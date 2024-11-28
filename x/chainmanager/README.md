@@ -1,4 +1,6 @@
-# Chainmanager Module
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
+# Chainmanager module
 
 ## Table of Contents
 
@@ -15,7 +17,7 @@ message ChainParams {
   option (gogoproto.equal) = true;
   string bor_chain_id = 1;
   // L1 Chain Contracts
-  string polygon_pos_token_address = 2;
+  string pol_token_address = 2;
   string staking_manager_address = 3;
   string slash_manager_address = 4;
   string root_chain_address = 5;
@@ -34,8 +36,6 @@ message Params {
   uint64 bor_chain_tx_confirmations = 3;
 }
 ```
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## Query commands
 

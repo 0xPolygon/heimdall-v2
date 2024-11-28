@@ -6,6 +6,13 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/RichardKnop/machinery/v1/tasks"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/common/tracing"
@@ -13,12 +20,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	"github.com/RichardKnop/machinery/v1/tasks"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 // ClerkContext for bridge
@@ -170,7 +171,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 //
 
 func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx)
+	chainmanagerParams, err := util.GetChainmanagerParams()
 	if err != nil {
 		cp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

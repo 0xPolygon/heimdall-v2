@@ -22,7 +22,7 @@ type sideMsgServer struct {
 }
 
 var (
-	msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecordRequest{})
+	msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
 )
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
@@ -52,9 +52,9 @@ func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler
 }
 
 func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg) (result sidetxs.Vote) {
-	msg, ok := _msg.(*types.MsgEventRecordRequest)
+	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
-		srv.Logger(ctx).Error("type mismatch for MsgEventRecordRequest")
+		srv.Logger(ctx).Error("type mismatch for MsgEventRecord")
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -143,9 +143,9 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := srv.Logger(ctx)
 
-	msg, ok := _msg.(*types.MsgEventRecordRequest)
+	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
-		logger.Error("type mismatch for MsgEventRecordRequest")
+		logger.Error("type mismatch for MsgEventRecord")
 	}
 
 	// Skip handler if clerk is not approved

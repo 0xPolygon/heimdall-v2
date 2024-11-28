@@ -1,4 +1,6 @@
-# Stake
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
+# Stake module
 
 This module manages validators related transactions and state for Heimdall.  
 validators stake their tokens on the Ethereum chain and send the transactions on Heimdall using necessary parameters to acknowledge the Ethereum stake change.  
@@ -117,8 +119,6 @@ uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
 uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 ```
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## CLI Commands
 

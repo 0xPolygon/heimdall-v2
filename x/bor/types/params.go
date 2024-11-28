@@ -10,6 +10,8 @@ const (
 	DefaultProducerCount     uint64 = 4
 )
 
+// TODO HV2: delete this function if not needed
+
 // NewParams creates a new bor Params object
 func NewParams(sprintDuration uint64, spanDuration uint64, producerCount uint64) Params {
 	return Params{

@@ -4,18 +4,17 @@ import (
 	"bytes"
 	"strconv"
 
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
-
 	cmttypes "github.com/cometbft/cometbft/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
 var (
-	SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpanRequest{})
+	SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
 )
 
 type sideMsgServer struct {
@@ -45,7 +44,7 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	logger := s.k.Logger(ctx)
 
-	msg, ok := msgI.(*types.MsgProposeSpanRequest)
+	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
 		logger.Error("MsgProposeSpan type mismatch", "msg type received", msgI)
 		return sidetxs.Vote_UNSPECIFIED
@@ -79,7 +78,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	// fetch current child block
-	childBlock, err := s.k.contractCaller.GetPolygonPosChainBlock(nil)
+	childBlock, err := s.k.contractCaller.GetBorChainBlock(nil)
 	if err != nil {
 		logger.Error("error fetching current child block", "error", err)
 		return sidetxs.Vote_UNSPECIFIED
@@ -123,7 +122,7 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := s.k.Logger(ctx)
 
-	msg, ok := msgI.(*types.MsgProposeSpanRequest)
+	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
 		logger.Error("MsgProposeSpan type mismatch", "msg type received", msg)
 		return

@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
 	// ProposeSpan defines a method for proposing a bor span.
-	ProposeSpan(ctx context.Context, in *MsgProposeSpanRequest, opts ...grpc.CallOption) (*MsgProposeSpanResponse, error)
+	ProposeSpan(ctx context.Context, in *MsgProposeSpan, opts ...grpc.CallOption) (*MsgProposeSpanResponse, error)
 	// UpdateParams defines a method to update the bor params.
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
@@ -41,7 +41,7 @@ func NewMsgClient(cc grpc.ClientConnInterface) MsgClient {
 	return &msgClient{cc}
 }
 
-func (c *msgClient) ProposeSpan(ctx context.Context, in *MsgProposeSpanRequest, opts ...grpc.CallOption) (*MsgProposeSpanResponse, error) {
+func (c *msgClient) ProposeSpan(ctx context.Context, in *MsgProposeSpan, opts ...grpc.CallOption) (*MsgProposeSpanResponse, error) {
 	out := new(MsgProposeSpanResponse)
 	err := c.cc.Invoke(ctx, Msg_ProposeSpan_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *msgClient) UpdateParams(ctx context.Context, in *MsgUpdateParams, opts 
 // for forward compatibility
 type MsgServer interface {
 	// ProposeSpan defines a method for proposing a bor span.
-	ProposeSpan(context.Context, *MsgProposeSpanRequest) (*MsgProposeSpanResponse, error)
+	ProposeSpan(context.Context, *MsgProposeSpan) (*MsgProposeSpanResponse, error)
 	// UpdateParams defines a method to update the bor params.
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 	mustEmbedUnimplementedMsgServer()
@@ -74,7 +74,7 @@ type MsgServer interface {
 type UnimplementedMsgServer struct {
 }
 
-func (UnimplementedMsgServer) ProposeSpan(context.Context, *MsgProposeSpanRequest) (*MsgProposeSpanResponse, error) {
+func (UnimplementedMsgServer) ProposeSpan(context.Context, *MsgProposeSpan) (*MsgProposeSpanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProposeSpan not implemented")
 }
 func (UnimplementedMsgServer) UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
@@ -94,7 +94,7 @@ func RegisterMsgServer(s grpc.ServiceRegistrar, srv MsgServer) {
 }
 
 func _Msg_ProposeSpan_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgProposeSpanRequest)
+	in := new(MsgProposeSpan)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func _Msg_ProposeSpan_Handler(srv interface{}, ctx context.Context, dec func(int
 		FullMethod: Msg_ProposeSpan_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).ProposeSpan(ctx, req.(*MsgProposeSpanRequest))
+		return srv.(MsgServer).ProposeSpan(ctx, req.(*MsgProposeSpan))
 	}
 	return interceptor(ctx, in, info, handler)
 }

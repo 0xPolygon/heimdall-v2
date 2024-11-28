@@ -1,5 +1,7 @@
 package types
 
+// TODO HV2: remove unused constants
+
 // Checkpoint tags
 var (
 	EventTypeCheckpoint       = "checkpoint"

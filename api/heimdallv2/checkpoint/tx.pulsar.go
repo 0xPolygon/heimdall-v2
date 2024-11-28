@@ -1085,39 +1085,39 @@ func (x *fastReflection_MsgCheckpointResponse) ProtoMethods() *protoiface.Method
 }
 
 var (
-	md_MsgCheckpointAck             protoreflect.MessageDescriptor
-	fd_MsgCheckpointAck_from        protoreflect.FieldDescriptor
-	fd_MsgCheckpointAck_number      protoreflect.FieldDescriptor
-	fd_MsgCheckpointAck_proposer    protoreflect.FieldDescriptor
-	fd_MsgCheckpointAck_start_block protoreflect.FieldDescriptor
-	fd_MsgCheckpointAck_end_block   protoreflect.FieldDescriptor
-	fd_MsgCheckpointAck_root_hash   protoreflect.FieldDescriptor
-	fd_MsgCheckpointAck_tx_hash     protoreflect.FieldDescriptor
-	fd_MsgCheckpointAck_log_index   protoreflect.FieldDescriptor
+	md_MsgCpAck             protoreflect.MessageDescriptor
+	fd_MsgCpAck_from        protoreflect.FieldDescriptor
+	fd_MsgCpAck_number      protoreflect.FieldDescriptor
+	fd_MsgCpAck_proposer    protoreflect.FieldDescriptor
+	fd_MsgCpAck_start_block protoreflect.FieldDescriptor
+	fd_MsgCpAck_end_block   protoreflect.FieldDescriptor
+	fd_MsgCpAck_root_hash   protoreflect.FieldDescriptor
+	fd_MsgCpAck_tx_hash     protoreflect.FieldDescriptor
+	fd_MsgCpAck_log_index   protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_checkpoint_tx_proto_init()
-	md_MsgCheckpointAck = File_heimdallv2_checkpoint_tx_proto.Messages().ByName("MsgCheckpointAck")
-	fd_MsgCheckpointAck_from = md_MsgCheckpointAck.Fields().ByName("from")
-	fd_MsgCheckpointAck_number = md_MsgCheckpointAck.Fields().ByName("number")
-	fd_MsgCheckpointAck_proposer = md_MsgCheckpointAck.Fields().ByName("proposer")
-	fd_MsgCheckpointAck_start_block = md_MsgCheckpointAck.Fields().ByName("start_block")
-	fd_MsgCheckpointAck_end_block = md_MsgCheckpointAck.Fields().ByName("end_block")
-	fd_MsgCheckpointAck_root_hash = md_MsgCheckpointAck.Fields().ByName("root_hash")
-	fd_MsgCheckpointAck_tx_hash = md_MsgCheckpointAck.Fields().ByName("tx_hash")
-	fd_MsgCheckpointAck_log_index = md_MsgCheckpointAck.Fields().ByName("log_index")
+	md_MsgCpAck = File_heimdallv2_checkpoint_tx_proto.Messages().ByName("MsgCpAck")
+	fd_MsgCpAck_from = md_MsgCpAck.Fields().ByName("from")
+	fd_MsgCpAck_number = md_MsgCpAck.Fields().ByName("number")
+	fd_MsgCpAck_proposer = md_MsgCpAck.Fields().ByName("proposer")
+	fd_MsgCpAck_start_block = md_MsgCpAck.Fields().ByName("start_block")
+	fd_MsgCpAck_end_block = md_MsgCpAck.Fields().ByName("end_block")
+	fd_MsgCpAck_root_hash = md_MsgCpAck.Fields().ByName("root_hash")
+	fd_MsgCpAck_tx_hash = md_MsgCpAck.Fields().ByName("tx_hash")
+	fd_MsgCpAck_log_index = md_MsgCpAck.Fields().ByName("log_index")
 }
 
-var _ protoreflect.Message = (*fastReflection_MsgCheckpointAck)(nil)
+var _ protoreflect.Message = (*fastReflection_MsgCpAck)(nil)
 
-type fastReflection_MsgCheckpointAck MsgCheckpointAck
+type fastReflection_MsgCpAck MsgCpAck
 
-func (x *MsgCheckpointAck) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_MsgCheckpointAck)(x)
+func (x *MsgCpAck) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgCpAck)(x)
 }
 
-func (x *MsgCheckpointAck) slowProtoReflect() protoreflect.Message {
+func (x *MsgCpAck) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_checkpoint_tx_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1129,43 +1129,43 @@ func (x *MsgCheckpointAck) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_MsgCheckpointAck_messageType fastReflection_MsgCheckpointAck_messageType
-var _ protoreflect.MessageType = fastReflection_MsgCheckpointAck_messageType{}
+var _fastReflection_MsgCpAck_messageType fastReflection_MsgCpAck_messageType
+var _ protoreflect.MessageType = fastReflection_MsgCpAck_messageType{}
 
-type fastReflection_MsgCheckpointAck_messageType struct{}
+type fastReflection_MsgCpAck_messageType struct{}
 
-func (x fastReflection_MsgCheckpointAck_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_MsgCheckpointAck)(nil)
+func (x fastReflection_MsgCpAck_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgCpAck)(nil)
 }
-func (x fastReflection_MsgCheckpointAck_messageType) New() protoreflect.Message {
-	return new(fastReflection_MsgCheckpointAck)
+func (x fastReflection_MsgCpAck_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgCpAck)
 }
-func (x fastReflection_MsgCheckpointAck_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgCheckpointAck
+func (x fastReflection_MsgCpAck_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgCpAck
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_MsgCheckpointAck) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgCheckpointAck
+func (x *fastReflection_MsgCpAck) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgCpAck
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_MsgCheckpointAck) Type() protoreflect.MessageType {
-	return _fastReflection_MsgCheckpointAck_messageType
+func (x *fastReflection_MsgCpAck) Type() protoreflect.MessageType {
+	return _fastReflection_MsgCpAck_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_MsgCheckpointAck) New() protoreflect.Message {
-	return new(fastReflection_MsgCheckpointAck)
+func (x *fastReflection_MsgCpAck) New() protoreflect.Message {
+	return new(fastReflection_MsgCpAck)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_MsgCheckpointAck) Interface() protoreflect.ProtoMessage {
-	return (*MsgCheckpointAck)(x)
+func (x *fastReflection_MsgCpAck) Interface() protoreflect.ProtoMessage {
+	return (*MsgCpAck)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -1173,52 +1173,52 @@ func (x *fastReflection_MsgCheckpointAck) Interface() protoreflect.ProtoMessage 
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_MsgCheckpointAck) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_MsgCpAck) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.From != "" {
 		value := protoreflect.ValueOfString(x.From)
-		if !f(fd_MsgCheckpointAck_from, value) {
+		if !f(fd_MsgCpAck_from, value) {
 			return
 		}
 	}
 	if x.Number != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.Number)
-		if !f(fd_MsgCheckpointAck_number, value) {
+		if !f(fd_MsgCpAck_number, value) {
 			return
 		}
 	}
 	if x.Proposer != "" {
 		value := protoreflect.ValueOfString(x.Proposer)
-		if !f(fd_MsgCheckpointAck_proposer, value) {
+		if !f(fd_MsgCpAck_proposer, value) {
 			return
 		}
 	}
 	if x.StartBlock != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.StartBlock)
-		if !f(fd_MsgCheckpointAck_start_block, value) {
+		if !f(fd_MsgCpAck_start_block, value) {
 			return
 		}
 	}
 	if x.EndBlock != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.EndBlock)
-		if !f(fd_MsgCheckpointAck_end_block, value) {
+		if !f(fd_MsgCpAck_end_block, value) {
 			return
 		}
 	}
 	if len(x.RootHash) != 0 {
 		value := protoreflect.ValueOfBytes(x.RootHash)
-		if !f(fd_MsgCheckpointAck_root_hash, value) {
+		if !f(fd_MsgCpAck_root_hash, value) {
 			return
 		}
 	}
 	if len(x.TxHash) != 0 {
 		value := protoreflect.ValueOfBytes(x.TxHash)
-		if !f(fd_MsgCheckpointAck_tx_hash, value) {
+		if !f(fd_MsgCpAck_tx_hash, value) {
 			return
 		}
 	}
 	if x.LogIndex != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.LogIndex)
-		if !f(fd_MsgCheckpointAck_log_index, value) {
+		if !f(fd_MsgCpAck_log_index, value) {
 			return
 		}
 	}
@@ -1235,29 +1235,29 @@ func (x *fastReflection_MsgCheckpointAck) Range(f func(protoreflect.FieldDescrip
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_MsgCheckpointAck) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_MsgCpAck) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointAck.from":
+	case "heimdallv2.checkpoint.MsgCpAck.from":
 		return x.From != ""
-	case "heimdallv2.checkpoint.MsgCheckpointAck.number":
+	case "heimdallv2.checkpoint.MsgCpAck.number":
 		return x.Number != uint64(0)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.proposer":
+	case "heimdallv2.checkpoint.MsgCpAck.proposer":
 		return x.Proposer != ""
-	case "heimdallv2.checkpoint.MsgCheckpointAck.start_block":
+	case "heimdallv2.checkpoint.MsgCpAck.start_block":
 		return x.StartBlock != uint64(0)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.end_block":
+	case "heimdallv2.checkpoint.MsgCpAck.end_block":
 		return x.EndBlock != uint64(0)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.root_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.root_hash":
 		return len(x.RootHash) != 0
-	case "heimdallv2.checkpoint.MsgCheckpointAck.tx_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.tx_hash":
 		return len(x.TxHash) != 0
-	case "heimdallv2.checkpoint.MsgCheckpointAck.log_index":
+	case "heimdallv2.checkpoint.MsgCpAck.log_index":
 		return x.LogIndex != uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAck does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1267,29 +1267,29 @@ func (x *fastReflection_MsgCheckpointAck) Has(fd protoreflect.FieldDescriptor) b
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAck) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_MsgCpAck) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointAck.from":
+	case "heimdallv2.checkpoint.MsgCpAck.from":
 		x.From = ""
-	case "heimdallv2.checkpoint.MsgCheckpointAck.number":
+	case "heimdallv2.checkpoint.MsgCpAck.number":
 		x.Number = uint64(0)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.proposer":
+	case "heimdallv2.checkpoint.MsgCpAck.proposer":
 		x.Proposer = ""
-	case "heimdallv2.checkpoint.MsgCheckpointAck.start_block":
+	case "heimdallv2.checkpoint.MsgCpAck.start_block":
 		x.StartBlock = uint64(0)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.end_block":
+	case "heimdallv2.checkpoint.MsgCpAck.end_block":
 		x.EndBlock = uint64(0)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.root_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.root_hash":
 		x.RootHash = nil
-	case "heimdallv2.checkpoint.MsgCheckpointAck.tx_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.tx_hash":
 		x.TxHash = nil
-	case "heimdallv2.checkpoint.MsgCheckpointAck.log_index":
+	case "heimdallv2.checkpoint.MsgCpAck.log_index":
 		x.LogIndex = uint64(0)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAck does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1299,37 +1299,37 @@ func (x *fastReflection_MsgCheckpointAck) Clear(fd protoreflect.FieldDescriptor)
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_MsgCheckpointAck) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpAck) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointAck.from":
+	case "heimdallv2.checkpoint.MsgCpAck.from":
 		value := x.From
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.number":
+	case "heimdallv2.checkpoint.MsgCpAck.number":
 		value := x.Number
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.proposer":
+	case "heimdallv2.checkpoint.MsgCpAck.proposer":
 		value := x.Proposer
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.start_block":
+	case "heimdallv2.checkpoint.MsgCpAck.start_block":
 		value := x.StartBlock
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.end_block":
+	case "heimdallv2.checkpoint.MsgCpAck.end_block":
 		value := x.EndBlock
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.root_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.root_hash":
 		value := x.RootHash
 		return protoreflect.ValueOfBytes(value)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.tx_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.tx_hash":
 		value := x.TxHash
 		return protoreflect.ValueOfBytes(value)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.log_index":
+	case "heimdallv2.checkpoint.MsgCpAck.log_index":
 		value := x.LogIndex
 		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAck does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAck does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -1343,29 +1343,29 @@ func (x *fastReflection_MsgCheckpointAck) Get(descriptor protoreflect.FieldDescr
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAck) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_MsgCpAck) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointAck.from":
+	case "heimdallv2.checkpoint.MsgCpAck.from":
 		x.From = value.Interface().(string)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.number":
+	case "heimdallv2.checkpoint.MsgCpAck.number":
 		x.Number = value.Uint()
-	case "heimdallv2.checkpoint.MsgCheckpointAck.proposer":
+	case "heimdallv2.checkpoint.MsgCpAck.proposer":
 		x.Proposer = value.Interface().(string)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.start_block":
+	case "heimdallv2.checkpoint.MsgCpAck.start_block":
 		x.StartBlock = value.Uint()
-	case "heimdallv2.checkpoint.MsgCheckpointAck.end_block":
+	case "heimdallv2.checkpoint.MsgCpAck.end_block":
 		x.EndBlock = value.Uint()
-	case "heimdallv2.checkpoint.MsgCheckpointAck.root_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.root_hash":
 		x.RootHash = value.Bytes()
-	case "heimdallv2.checkpoint.MsgCheckpointAck.tx_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.tx_hash":
 		x.TxHash = value.Bytes()
-	case "heimdallv2.checkpoint.MsgCheckpointAck.log_index":
+	case "heimdallv2.checkpoint.MsgCpAck.log_index":
 		x.LogIndex = value.Uint()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAck does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1379,68 +1379,68 @@ func (x *fastReflection_MsgCheckpointAck) Set(fd protoreflect.FieldDescriptor, v
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAck) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpAck) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointAck.from":
-		panic(fmt.Errorf("field from of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.number":
-		panic(fmt.Errorf("field number of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.proposer":
-		panic(fmt.Errorf("field proposer of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.start_block":
-		panic(fmt.Errorf("field start_block of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.end_block":
-		panic(fmt.Errorf("field end_block of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.root_hash":
-		panic(fmt.Errorf("field root_hash of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.tx_hash":
-		panic(fmt.Errorf("field tx_hash of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.log_index":
-		panic(fmt.Errorf("field log_index of message heimdallv2.checkpoint.MsgCheckpointAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.from":
+		panic(fmt.Errorf("field from of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.number":
+		panic(fmt.Errorf("field number of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.proposer":
+		panic(fmt.Errorf("field proposer of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.start_block":
+		panic(fmt.Errorf("field start_block of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.end_block":
+		panic(fmt.Errorf("field end_block of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.root_hash":
+		panic(fmt.Errorf("field root_hash of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.tx_hash":
+		panic(fmt.Errorf("field tx_hash of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpAck.log_index":
+		panic(fmt.Errorf("field log_index of message heimdallv2.checkpoint.MsgCpAck is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAck does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_MsgCheckpointAck) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpAck) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointAck.from":
+	case "heimdallv2.checkpoint.MsgCpAck.from":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.checkpoint.MsgCheckpointAck.number":
+	case "heimdallv2.checkpoint.MsgCpAck.number":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.proposer":
+	case "heimdallv2.checkpoint.MsgCpAck.proposer":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.checkpoint.MsgCheckpointAck.start_block":
+	case "heimdallv2.checkpoint.MsgCpAck.start_block":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.end_block":
+	case "heimdallv2.checkpoint.MsgCpAck.end_block":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.checkpoint.MsgCheckpointAck.root_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.root_hash":
 		return protoreflect.ValueOfBytes(nil)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.tx_hash":
+	case "heimdallv2.checkpoint.MsgCpAck.tx_hash":
 		return protoreflect.ValueOfBytes(nil)
-	case "heimdallv2.checkpoint.MsgCheckpointAck.log_index":
+	case "heimdallv2.checkpoint.MsgCpAck.log_index":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAck does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_MsgCheckpointAck) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_MsgCpAck) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.MsgCheckpointAck", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.MsgCpAck", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -1448,7 +1448,7 @@ func (x *fastReflection_MsgCheckpointAck) WhichOneof(d protoreflect.OneofDescrip
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_MsgCheckpointAck) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_MsgCpAck) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -1459,7 +1459,7 @@ func (x *fastReflection_MsgCheckpointAck) GetUnknown() protoreflect.RawFields {
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAck) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_MsgCpAck) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -1471,7 +1471,7 @@ func (x *fastReflection_MsgCheckpointAck) SetUnknown(fields protoreflect.RawFiel
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_MsgCheckpointAck) IsValid() bool {
+func (x *fastReflection_MsgCpAck) IsValid() bool {
 	return x != nil
 }
 
@@ -1481,9 +1481,9 @@ func (x *fastReflection_MsgCheckpointAck) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_MsgCheckpointAck) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_MsgCpAck) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*MsgCheckpointAck)
+		x := input.Message.Interface().(*MsgCpAck)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1533,7 +1533,7 @@ func (x *fastReflection_MsgCheckpointAck) ProtoMethods() *protoiface.Methods {
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*MsgCheckpointAck)
+		x := input.Message.Interface().(*MsgCpAck)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1611,7 +1611,7 @@ func (x *fastReflection_MsgCheckpointAck) ProtoMethods() *protoiface.Methods {
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*MsgCheckpointAck)
+		x := input.Message.Interface().(*MsgCpAck)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -1643,10 +1643,10 @@ func (x *fastReflection_MsgCheckpointAck) ProtoMethods() *protoiface.Methods {
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCheckpointAck: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCpAck: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCheckpointAck: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCpAck: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -1893,23 +1893,23 @@ func (x *fastReflection_MsgCheckpointAck) ProtoMethods() *protoiface.Methods {
 }
 
 var (
-	md_MsgCheckpointAckResponse protoreflect.MessageDescriptor
+	md_MsgCpAckResponse protoreflect.MessageDescriptor
 )
 
 func init() {
 	file_heimdallv2_checkpoint_tx_proto_init()
-	md_MsgCheckpointAckResponse = File_heimdallv2_checkpoint_tx_proto.Messages().ByName("MsgCheckpointAckResponse")
+	md_MsgCpAckResponse = File_heimdallv2_checkpoint_tx_proto.Messages().ByName("MsgCpAckResponse")
 }
 
-var _ protoreflect.Message = (*fastReflection_MsgCheckpointAckResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_MsgCpAckResponse)(nil)
 
-type fastReflection_MsgCheckpointAckResponse MsgCheckpointAckResponse
+type fastReflection_MsgCpAckResponse MsgCpAckResponse
 
-func (x *MsgCheckpointAckResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_MsgCheckpointAckResponse)(x)
+func (x *MsgCpAckResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgCpAckResponse)(x)
 }
 
-func (x *MsgCheckpointAckResponse) slowProtoReflect() protoreflect.Message {
+func (x *MsgCpAckResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_checkpoint_tx_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1921,43 +1921,43 @@ func (x *MsgCheckpointAckResponse) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_MsgCheckpointAckResponse_messageType fastReflection_MsgCheckpointAckResponse_messageType
-var _ protoreflect.MessageType = fastReflection_MsgCheckpointAckResponse_messageType{}
+var _fastReflection_MsgCpAckResponse_messageType fastReflection_MsgCpAckResponse_messageType
+var _ protoreflect.MessageType = fastReflection_MsgCpAckResponse_messageType{}
 
-type fastReflection_MsgCheckpointAckResponse_messageType struct{}
+type fastReflection_MsgCpAckResponse_messageType struct{}
 
-func (x fastReflection_MsgCheckpointAckResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_MsgCheckpointAckResponse)(nil)
+func (x fastReflection_MsgCpAckResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgCpAckResponse)(nil)
 }
-func (x fastReflection_MsgCheckpointAckResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_MsgCheckpointAckResponse)
+func (x fastReflection_MsgCpAckResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgCpAckResponse)
 }
-func (x fastReflection_MsgCheckpointAckResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgCheckpointAckResponse
+func (x fastReflection_MsgCpAckResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgCpAckResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_MsgCheckpointAckResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgCheckpointAckResponse
+func (x *fastReflection_MsgCpAckResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgCpAckResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_MsgCheckpointAckResponse) Type() protoreflect.MessageType {
-	return _fastReflection_MsgCheckpointAckResponse_messageType
+func (x *fastReflection_MsgCpAckResponse) Type() protoreflect.MessageType {
+	return _fastReflection_MsgCpAckResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_MsgCheckpointAckResponse) New() protoreflect.Message {
-	return new(fastReflection_MsgCheckpointAckResponse)
+func (x *fastReflection_MsgCpAckResponse) New() protoreflect.Message {
+	return new(fastReflection_MsgCpAckResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_MsgCheckpointAckResponse) Interface() protoreflect.ProtoMessage {
-	return (*MsgCheckpointAckResponse)(x)
+func (x *fastReflection_MsgCpAckResponse) Interface() protoreflect.ProtoMessage {
+	return (*MsgCpAckResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -1965,7 +1965,7 @@ func (x *fastReflection_MsgCheckpointAckResponse) Interface() protoreflect.Proto
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_MsgCheckpointAckResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_MsgCpAckResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 }
 
 // Has reports whether a field is populated.
@@ -1979,13 +1979,13 @@ func (x *fastReflection_MsgCheckpointAckResponse) Range(f func(protoreflect.Fiel
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_MsgCheckpointAckResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_MsgCpAckResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAckResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAckResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAckResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAckResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -1995,13 +1995,13 @@ func (x *fastReflection_MsgCheckpointAckResponse) Has(fd protoreflect.FieldDescr
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAckResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_MsgCpAckResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAckResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAckResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAckResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAckResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2011,13 +2011,13 @@ func (x *fastReflection_MsgCheckpointAckResponse) Clear(fd protoreflect.FieldDes
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_MsgCheckpointAckResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpAckResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAckResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAckResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAckResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAckResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -2031,13 +2031,13 @@ func (x *fastReflection_MsgCheckpointAckResponse) Get(descriptor protoreflect.Fi
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAckResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_MsgCpAckResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAckResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAckResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAckResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAckResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2051,36 +2051,36 @@ func (x *fastReflection_MsgCheckpointAckResponse) Set(fd protoreflect.FieldDescr
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAckResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpAckResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAckResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAckResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAckResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAckResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_MsgCheckpointAckResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpAckResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointAckResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpAckResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointAckResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpAckResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_MsgCheckpointAckResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_MsgCpAckResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.MsgCheckpointAckResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.MsgCpAckResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -2088,7 +2088,7 @@ func (x *fastReflection_MsgCheckpointAckResponse) WhichOneof(d protoreflect.Oneo
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_MsgCheckpointAckResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_MsgCpAckResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -2099,7 +2099,7 @@ func (x *fastReflection_MsgCheckpointAckResponse) GetUnknown() protoreflect.RawF
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointAckResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_MsgCpAckResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -2111,7 +2111,7 @@ func (x *fastReflection_MsgCheckpointAckResponse) SetUnknown(fields protoreflect
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_MsgCheckpointAckResponse) IsValid() bool {
+func (x *fastReflection_MsgCpAckResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -2121,9 +2121,9 @@ func (x *fastReflection_MsgCheckpointAckResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_MsgCheckpointAckResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_MsgCpAckResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*MsgCheckpointAckResponse)
+		x := input.Message.Interface().(*MsgCpAckResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2145,7 +2145,7 @@ func (x *fastReflection_MsgCheckpointAckResponse) ProtoMethods() *protoiface.Met
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*MsgCheckpointAckResponse)
+		x := input.Message.Interface().(*MsgCpAckResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2175,7 +2175,7 @@ func (x *fastReflection_MsgCheckpointAckResponse) ProtoMethods() *protoiface.Met
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*MsgCheckpointAckResponse)
+		x := input.Message.Interface().(*MsgCpAckResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2207,10 +2207,10 @@ func (x *fastReflection_MsgCheckpointAckResponse) ProtoMethods() *protoiface.Met
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCheckpointAckResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCpAckResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCheckpointAckResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCpAckResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			default:
@@ -2249,25 +2249,25 @@ func (x *fastReflection_MsgCheckpointAckResponse) ProtoMethods() *protoiface.Met
 }
 
 var (
-	md_MsgCheckpointNoAck      protoreflect.MessageDescriptor
-	fd_MsgCheckpointNoAck_from protoreflect.FieldDescriptor
+	md_MsgCpNoAck      protoreflect.MessageDescriptor
+	fd_MsgCpNoAck_from protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_checkpoint_tx_proto_init()
-	md_MsgCheckpointNoAck = File_heimdallv2_checkpoint_tx_proto.Messages().ByName("MsgCheckpointNoAck")
-	fd_MsgCheckpointNoAck_from = md_MsgCheckpointNoAck.Fields().ByName("from")
+	md_MsgCpNoAck = File_heimdallv2_checkpoint_tx_proto.Messages().ByName("MsgCpNoAck")
+	fd_MsgCpNoAck_from = md_MsgCpNoAck.Fields().ByName("from")
 }
 
-var _ protoreflect.Message = (*fastReflection_MsgCheckpointNoAck)(nil)
+var _ protoreflect.Message = (*fastReflection_MsgCpNoAck)(nil)
 
-type fastReflection_MsgCheckpointNoAck MsgCheckpointNoAck
+type fastReflection_MsgCpNoAck MsgCpNoAck
 
-func (x *MsgCheckpointNoAck) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_MsgCheckpointNoAck)(x)
+func (x *MsgCpNoAck) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgCpNoAck)(x)
 }
 
-func (x *MsgCheckpointNoAck) slowProtoReflect() protoreflect.Message {
+func (x *MsgCpNoAck) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_checkpoint_tx_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2279,43 +2279,43 @@ func (x *MsgCheckpointNoAck) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_MsgCheckpointNoAck_messageType fastReflection_MsgCheckpointNoAck_messageType
-var _ protoreflect.MessageType = fastReflection_MsgCheckpointNoAck_messageType{}
+var _fastReflection_MsgCpNoAck_messageType fastReflection_MsgCpNoAck_messageType
+var _ protoreflect.MessageType = fastReflection_MsgCpNoAck_messageType{}
 
-type fastReflection_MsgCheckpointNoAck_messageType struct{}
+type fastReflection_MsgCpNoAck_messageType struct{}
 
-func (x fastReflection_MsgCheckpointNoAck_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_MsgCheckpointNoAck)(nil)
+func (x fastReflection_MsgCpNoAck_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgCpNoAck)(nil)
 }
-func (x fastReflection_MsgCheckpointNoAck_messageType) New() protoreflect.Message {
-	return new(fastReflection_MsgCheckpointNoAck)
+func (x fastReflection_MsgCpNoAck_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgCpNoAck)
 }
-func (x fastReflection_MsgCheckpointNoAck_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgCheckpointNoAck
+func (x fastReflection_MsgCpNoAck_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgCpNoAck
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_MsgCheckpointNoAck) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgCheckpointNoAck
+func (x *fastReflection_MsgCpNoAck) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgCpNoAck
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_MsgCheckpointNoAck) Type() protoreflect.MessageType {
-	return _fastReflection_MsgCheckpointNoAck_messageType
+func (x *fastReflection_MsgCpNoAck) Type() protoreflect.MessageType {
+	return _fastReflection_MsgCpNoAck_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_MsgCheckpointNoAck) New() protoreflect.Message {
-	return new(fastReflection_MsgCheckpointNoAck)
+func (x *fastReflection_MsgCpNoAck) New() protoreflect.Message {
+	return new(fastReflection_MsgCpNoAck)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_MsgCheckpointNoAck) Interface() protoreflect.ProtoMessage {
-	return (*MsgCheckpointNoAck)(x)
+func (x *fastReflection_MsgCpNoAck) Interface() protoreflect.ProtoMessage {
+	return (*MsgCpNoAck)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -2323,10 +2323,10 @@ func (x *fastReflection_MsgCheckpointNoAck) Interface() protoreflect.ProtoMessag
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_MsgCheckpointNoAck) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_MsgCpNoAck) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.From != "" {
 		value := protoreflect.ValueOfString(x.From)
-		if !f(fd_MsgCheckpointNoAck_from, value) {
+		if !f(fd_MsgCpNoAck_from, value) {
 			return
 		}
 	}
@@ -2343,15 +2343,15 @@ func (x *fastReflection_MsgCheckpointNoAck) Range(f func(protoreflect.FieldDescr
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_MsgCheckpointNoAck) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_MsgCpNoAck) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointNoAck.from":
+	case "heimdallv2.checkpoint.MsgCpNoAck.from":
 		return x.From != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointNoAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpNoAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointNoAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpNoAck does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2361,15 +2361,15 @@ func (x *fastReflection_MsgCheckpointNoAck) Has(fd protoreflect.FieldDescriptor)
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointNoAck) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_MsgCpNoAck) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointNoAck.from":
+	case "heimdallv2.checkpoint.MsgCpNoAck.from":
 		x.From = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointNoAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpNoAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointNoAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpNoAck does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2379,16 +2379,16 @@ func (x *fastReflection_MsgCheckpointNoAck) Clear(fd protoreflect.FieldDescripto
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_MsgCheckpointNoAck) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpNoAck) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointNoAck.from":
+	case "heimdallv2.checkpoint.MsgCpNoAck.from":
 		value := x.From
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointNoAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpNoAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointNoAck does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpNoAck does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -2402,15 +2402,15 @@ func (x *fastReflection_MsgCheckpointNoAck) Get(descriptor protoreflect.FieldDes
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointNoAck) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_MsgCpNoAck) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointNoAck.from":
+	case "heimdallv2.checkpoint.MsgCpNoAck.from":
 		x.From = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointNoAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpNoAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointNoAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpNoAck does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -2424,40 +2424,40 @@ func (x *fastReflection_MsgCheckpointNoAck) Set(fd protoreflect.FieldDescriptor,
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointNoAck) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpNoAck) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointNoAck.from":
-		panic(fmt.Errorf("field from of message heimdallv2.checkpoint.MsgCheckpointNoAck is not mutable"))
+	case "heimdallv2.checkpoint.MsgCpNoAck.from":
+		panic(fmt.Errorf("field from of message heimdallv2.checkpoint.MsgCpNoAck is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointNoAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpNoAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointNoAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpNoAck does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_MsgCheckpointNoAck) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgCpNoAck) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.checkpoint.MsgCheckpointNoAck.from":
+	case "heimdallv2.checkpoint.MsgCpNoAck.from":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCheckpointNoAck"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.MsgCpNoAck"))
 		}
-		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCheckpointNoAck does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.checkpoint.MsgCpNoAck does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_MsgCheckpointNoAck) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_MsgCpNoAck) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.MsgCheckpointNoAck", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.MsgCpNoAck", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -2465,7 +2465,7 @@ func (x *fastReflection_MsgCheckpointNoAck) WhichOneof(d protoreflect.OneofDescr
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_MsgCheckpointNoAck) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_MsgCpNoAck) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -2476,7 +2476,7 @@ func (x *fastReflection_MsgCheckpointNoAck) GetUnknown() protoreflect.RawFields 
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgCheckpointNoAck) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_MsgCpNoAck) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -2488,7 +2488,7 @@ func (x *fastReflection_MsgCheckpointNoAck) SetUnknown(fields protoreflect.RawFi
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_MsgCheckpointNoAck) IsValid() bool {
+func (x *fastReflection_MsgCpNoAck) IsValid() bool {
 	return x != nil
 }
 
@@ -2498,9 +2498,9 @@ func (x *fastReflection_MsgCheckpointNoAck) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_MsgCheckpointNoAck) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_MsgCpNoAck) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*MsgCheckpointNoAck)
+		x := input.Message.Interface().(*MsgCpNoAck)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2526,7 +2526,7 @@ func (x *fastReflection_MsgCheckpointNoAck) ProtoMethods() *protoiface.Methods {
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*MsgCheckpointNoAck)
+		x := input.Message.Interface().(*MsgCpNoAck)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2563,7 +2563,7 @@ func (x *fastReflection_MsgCheckpointNoAck) ProtoMethods() *protoiface.Methods {
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*MsgCheckpointNoAck)
+		x := input.Message.Interface().(*MsgCpNoAck)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -2595,10 +2595,10 @@ func (x *fastReflection_MsgCheckpointNoAck) ProtoMethods() *protoiface.Methods {
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCheckpointNoAck: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCpNoAck: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCheckpointNoAck: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgCpNoAck: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -3995,8 +3995,8 @@ func (*MsgCheckpointResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{1}
 }
 
-// MsgCheckpointAck defines a SDK message for creating the ack of checkpoint
-type MsgCheckpointAck struct {
+// MsgCpAck defines a SDK message for creating the ack of checkpoint
+type MsgCpAck struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -4011,8 +4011,8 @@ type MsgCheckpointAck struct {
 	LogIndex   uint64 `protobuf:"varint,8,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
-func (x *MsgCheckpointAck) Reset() {
-	*x = MsgCheckpointAck{}
+func (x *MsgCpAck) Reset() {
+	*x = MsgCpAck{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_checkpoint_tx_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4020,82 +4020,82 @@ func (x *MsgCheckpointAck) Reset() {
 	}
 }
 
-func (x *MsgCheckpointAck) String() string {
+func (x *MsgCpAck) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MsgCheckpointAck) ProtoMessage() {}
+func (*MsgCpAck) ProtoMessage() {}
 
-// Deprecated: Use MsgCheckpointAck.ProtoReflect.Descriptor instead.
-func (*MsgCheckpointAck) Descriptor() ([]byte, []int) {
+// Deprecated: Use MsgCpAck.ProtoReflect.Descriptor instead.
+func (*MsgCpAck) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *MsgCheckpointAck) GetFrom() string {
+func (x *MsgCpAck) GetFrom() string {
 	if x != nil {
 		return x.From
 	}
 	return ""
 }
 
-func (x *MsgCheckpointAck) GetNumber() uint64 {
+func (x *MsgCpAck) GetNumber() uint64 {
 	if x != nil {
 		return x.Number
 	}
 	return 0
 }
 
-func (x *MsgCheckpointAck) GetProposer() string {
+func (x *MsgCpAck) GetProposer() string {
 	if x != nil {
 		return x.Proposer
 	}
 	return ""
 }
 
-func (x *MsgCheckpointAck) GetStartBlock() uint64 {
+func (x *MsgCpAck) GetStartBlock() uint64 {
 	if x != nil {
 		return x.StartBlock
 	}
 	return 0
 }
 
-func (x *MsgCheckpointAck) GetEndBlock() uint64 {
+func (x *MsgCpAck) GetEndBlock() uint64 {
 	if x != nil {
 		return x.EndBlock
 	}
 	return 0
 }
 
-func (x *MsgCheckpointAck) GetRootHash() []byte {
+func (x *MsgCpAck) GetRootHash() []byte {
 	if x != nil {
 		return x.RootHash
 	}
 	return nil
 }
 
-func (x *MsgCheckpointAck) GetTxHash() []byte {
+func (x *MsgCpAck) GetTxHash() []byte {
 	if x != nil {
 		return x.TxHash
 	}
 	return nil
 }
 
-func (x *MsgCheckpointAck) GetLogIndex() uint64 {
+func (x *MsgCpAck) GetLogIndex() uint64 {
 	if x != nil {
 		return x.LogIndex
 	}
 	return 0
 }
 
-// MsgCheckpointAckResponse defines the Msg/CheckpointAck response type.
-type MsgCheckpointAckResponse struct {
+// MsgCpAckResponse defines the MsgCpAck response type.
+type MsgCpAckResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *MsgCheckpointAckResponse) Reset() {
-	*x = MsgCheckpointAckResponse{}
+func (x *MsgCpAckResponse) Reset() {
+	*x = MsgCpAckResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_checkpoint_tx_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4103,19 +4103,19 @@ func (x *MsgCheckpointAckResponse) Reset() {
 	}
 }
 
-func (x *MsgCheckpointAckResponse) String() string {
+func (x *MsgCpAckResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MsgCheckpointAckResponse) ProtoMessage() {}
+func (*MsgCpAckResponse) ProtoMessage() {}
 
-// Deprecated: Use MsgCheckpointAckResponse.ProtoReflect.Descriptor instead.
-func (*MsgCheckpointAckResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use MsgCpAckResponse.ProtoReflect.Descriptor instead.
+func (*MsgCpAckResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{3}
 }
 
 // MsgCheckpointNoAck defines a SDK message for creating the no-ack
-type MsgCheckpointNoAck struct {
+type MsgCpNoAck struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -4123,8 +4123,8 @@ type MsgCheckpointNoAck struct {
 	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 }
 
-func (x *MsgCheckpointNoAck) Reset() {
-	*x = MsgCheckpointNoAck{}
+func (x *MsgCpNoAck) Reset() {
+	*x = MsgCpNoAck{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_checkpoint_tx_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4132,25 +4132,25 @@ func (x *MsgCheckpointNoAck) Reset() {
 	}
 }
 
-func (x *MsgCheckpointNoAck) String() string {
+func (x *MsgCpNoAck) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MsgCheckpointNoAck) ProtoMessage() {}
+func (*MsgCpNoAck) ProtoMessage() {}
 
-// Deprecated: Use MsgCheckpointNoAck.ProtoReflect.Descriptor instead.
-func (*MsgCheckpointNoAck) Descriptor() ([]byte, []int) {
+// Deprecated: Use MsgCpNoAck.ProtoReflect.Descriptor instead.
+func (*MsgCpNoAck) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *MsgCheckpointNoAck) GetFrom() string {
+func (x *MsgCpNoAck) GetFrom() string {
 	if x != nil {
 		return x.From
 	}
 	return ""
 }
 
-// MsgCheckpointNoAckResponse defines the Msg/CheckpointNoAck response type.
+// MsgCheckpointNoAckResponse defines the MsgCpNoAck response type.
 type MsgCheckpointNoAckResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4267,7 +4267,7 @@ var file_heimdallv2_checkpoint_tx_proto_rawDesc = []byte{
 	0x67, 0x6f, 0x67, 0x6f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70,
 	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x26, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
 	0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x63, 0x68, 0x65, 0x63,
-	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xca, 0x02, 0x0a,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xd5, 0x02, 0x0a,
 	0x0d, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x12, 0x39,
 	0x0a, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64,
@@ -4285,104 +4285,102 @@ var file_heimdallv2_checkpoint_tx_proto_rawDesc = []byte{
 	0x6f, 0x75, 0x6e, 0x74, 0x52, 0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68, 0x12, 0x27, 0x0a, 0x0c,
 	0x62, 0x6f, 0x72, 0x5f, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x06, 0x20, 0x01,
 	0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0a, 0x62, 0x6f, 0x72, 0x43, 0x68,
-	0x61, 0x69, 0x6e, 0x49, 0x64, 0x3a, 0x32, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x82,
+	0x61, 0x69, 0x6e, 0x49, 0x64, 0x3a, 0x3d, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x82,
 	0xe7, 0xb0, 0x2a, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x8a, 0xe7, 0xb0, 0x2a,
-	0x18, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x43,
-	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x22, 0x17, 0x0a, 0x15, 0x4d, 0x73, 0x67,
-	0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x86, 0x03, 0x0a, 0x10, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70,
-	0x6f, 0x69, 0x6e, 0x74, 0x41, 0x63, 0x6b, 0x12, 0x31, 0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
-	0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8,
-	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x12, 0x1d, 0x0a, 0x06, 0x6e, 0x75,
-	0x6d, 0x62, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a,
-	0x01, 0x52, 0x06, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x39, 0x0a, 0x08, 0x70, 0x72, 0x6f,
-	0x70, 0x6f, 0x73, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d,
-	0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53,
-	0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x70,
-	0x6f, 0x73, 0x65, 0x72, 0x12, 0x26, 0x0a, 0x0b, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x62, 0x6c,
-	0x6f, 0x63, 0x6b, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
-	0x52, 0x0a, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x22, 0x0a, 0x09,
-	0x65, 0x6e, 0x64, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x05, 0x20, 0x01, 0x28, 0x04, 0x42,
-	0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x65, 0x6e, 0x64, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
-	0x12, 0x22, 0x0a, 0x09, 0x72, 0x6f, 0x6f, 0x74, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x06, 0x20,
-	0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x72, 0x6f, 0x6f, 0x74,
-	0x48, 0x61, 0x73, 0x68, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18,
-	0x07, 0x20, 0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x78,
-	0x48, 0x61, 0x73, 0x68, 0x12, 0x22, 0x0a, 0x09, 0x6c, 0x6f, 0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65,
-	0x78, 0x18, 0x08, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08,
-	0x6c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x3a, 0x31, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0,
-	0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x8a, 0xe7, 0xb0, 0x2a, 0x1b,
-	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x43, 0x68,
-	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x41, 0x63, 0x6b, 0x22, 0x1a, 0x0a, 0x18, 0x4d,
-	0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x41, 0x63, 0x6b, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x7c, 0x0a, 0x12, 0x4d, 0x73, 0x67, 0x43, 0x68,
-	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x12, 0x31, 0x0a,
-	0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d,
-	0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53,
-	0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d,
-	0x3a, 0x33, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x04, 0x66,
-	0x72, 0x6f, 0x6d, 0x8a, 0xe7, 0xb0, 0x2a, 0x1d, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
-	0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x22, 0x1c, 0x0a, 0x1a, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63,
-	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x22, 0xcc, 0x01, 0x0a, 0x0f, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74,
-	0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x3b, 0x0a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f,
-	0x72, 0x69, 0x74, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14,
-	0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74,
-	0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f,
-	0x72, 0x69, 0x74, 0x79, 0x12, 0x40, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06,
-	0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x3a, 0x3a, 0x82, 0xe7, 0xb0, 0x2a, 0x09, 0x61, 0x75, 0x74,
-	0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x8a, 0xe7, 0xb0, 0x2a, 0x27, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x78, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
-	0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61,
-	0x6d, 0x73, 0x22, 0x19, 0x0a, 0x17, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50,
-	0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0xb2, 0x03,
-	0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x60, 0x0a, 0x0a, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43,
-	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
-	0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x69, 0x0a, 0x0d, 0x43, 0x68, 0x65, 0x63, 0x6b,
-	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x41, 0x63, 0x6b, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x2e, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x41, 0x63,
-	0x6b, 0x1a, 0x2f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
-	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65,
-	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x12, 0x6f, 0x0a, 0x0f, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x12, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73,
-	0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b,
-	0x1a, 0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
+	0x23, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x68, 0x65, 0x63,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0x22, 0x17, 0x0a, 0x15, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b,
+	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x81, 0x03,
+	0x0a, 0x08, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x41, 0x63, 0x6b, 0x12, 0x31, 0x0a, 0x04, 0x66, 0x72,
+	0x6f, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f,
+	0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69,
+	0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x12, 0x1d, 0x0a,
+	0x06, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8,
+	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x39, 0x0a, 0x08,
+	0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d,
+	0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65,
+	0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x70,
+	0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x12, 0x26, 0x0a, 0x0b, 0x73, 0x74, 0x61, 0x72, 0x74,
+	0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7,
+	0xb0, 0x2a, 0x01, 0x52, 0x0a, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12,
+	0x22, 0x0a, 0x09, 0x65, 0x6e, 0x64, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x65, 0x6e, 0x64, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x12, 0x22, 0x0a, 0x09, 0x72, 0x6f, 0x6f, 0x74, 0x5f, 0x68, 0x61, 0x73, 0x68,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x72,
+	0x6f, 0x6f, 0x74, 0x48, 0x61, 0x73, 0x68, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61,
+	0x73, 0x68, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52,
+	0x06, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x12, 0x22, 0x0a, 0x09, 0x6c, 0x6f, 0x67, 0x5f, 0x69,
+	0x6e, 0x64, 0x65, 0x78, 0x18, 0x08, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x08, 0x6c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x3a, 0x34, 0x88, 0xa0, 0x1f,
+	0x01, 0xe8, 0xa0, 0x1f, 0x00, 0x82, 0xe7, 0xb0, 0x2a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x8a, 0xe7,
+	0xb0, 0x2a, 0x1e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x41, 0x63,
+	0x6b, 0x22, 0x12, 0x0a, 0x10, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x77, 0x0a, 0x0a, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x4e, 0x6f,
+	0x41, 0x63, 0x6b, 0x12, 0x31, 0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
+	0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x3a, 0x36, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x00,
+	0x82, 0xe7, 0xb0, 0x2a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x8a, 0xe7, 0xb0, 0x2a, 0x20, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
+	0x69, 0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x22, 0x1c,
+	0x0a, 0x1a, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4e,
+	0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xca, 0x01, 0x0a,
+	0x0f, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x12, 0x3b, 0x0a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e,
+	0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0,
+	0x2a, 0x01, 0x52, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x12, 0x40, 0x0a,
+	0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b,
+	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x09, 0xc8, 0xde,
+	0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x3a,
+	0x38, 0x82, 0xe7, 0xb0, 0x2a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x8a,
+	0xe7, 0xb0, 0x2a, 0x25, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64,
+	0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x19, 0x0a, 0x17, 0x4d, 0x73, 0x67,
+	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x32, 0x9a, 0x03, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x60, 0x0a, 0x0a,
+	0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x12, 0x24, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
+	0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
 	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63,
-	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x12, 0x66, 0x0a, 0x0c, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x12, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x55,
-	0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x2e, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0,
-	0x2a, 0x01, 0x42, 0xd5, 0x01, 0x0a, 0x19, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3a, 0x67, 0x69, 0x74,
-	0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f,
-	0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70,
-	0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x68, 0x65,
-	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58, 0xaa, 0x02, 0x15,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b,
-	0x70, 0x6f, 0x69, 0x6e, 0x74, 0xca, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x5c, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xe2, 0x02, 0x21,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x68, 0x65, 0x63, 0x6b,
-	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
-	0x61, 0xea, 0x02, 0x16, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a,
-	0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x59,
+	0x0a, 0x0d, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x41, 0x63, 0x6b, 0x12,
+	0x1f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x41, 0x63, 0x6b,
+	0x1a, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x41, 0x63,
+	0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x67, 0x0a, 0x0f, 0x43, 0x68, 0x65,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x12, 0x21, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x70, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x1a,
+	0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x43, 0x68, 0x65, 0x63, 0x6b,
+	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x66, 0x0a, 0x0c, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61,
+	0x6d, 0x73, 0x12, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x55, 0x70,
+	0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x2e, 0x2e, 0x68, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x2e, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61,
+	0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0, 0x2a,
+	0x01, 0x42, 0xd5, 0x01, 0x0a, 0x19, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x42,
+	0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3a, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x68, 0x65, 0x63,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58, 0xaa, 0x02, 0x15, 0x48,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0xca, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x5c, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xe2, 0x02, 0x21, 0x48,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
+	0xea, 0x02, 0x16, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -4401,9 +4399,9 @@ var file_heimdallv2_checkpoint_tx_proto_msgTypes = make([]protoimpl.MessageInfo,
 var file_heimdallv2_checkpoint_tx_proto_goTypes = []interface{}{
 	(*MsgCheckpoint)(nil),              // 0: heimdallv2.checkpoint.MsgCheckpoint
 	(*MsgCheckpointResponse)(nil),      // 1: heimdallv2.checkpoint.MsgCheckpointResponse
-	(*MsgCheckpointAck)(nil),           // 2: heimdallv2.checkpoint.MsgCheckpointAck
-	(*MsgCheckpointAckResponse)(nil),   // 3: heimdallv2.checkpoint.MsgCheckpointAckResponse
-	(*MsgCheckpointNoAck)(nil),         // 4: heimdallv2.checkpoint.MsgCheckpointNoAck
+	(*MsgCpAck)(nil),                   // 2: heimdallv2.checkpoint.MsgCpAck
+	(*MsgCpAckResponse)(nil),           // 3: heimdallv2.checkpoint.MsgCpAckResponse
+	(*MsgCpNoAck)(nil),                 // 4: heimdallv2.checkpoint.MsgCpNoAck
 	(*MsgCheckpointNoAckResponse)(nil), // 5: heimdallv2.checkpoint.MsgCheckpointNoAckResponse
 	(*MsgUpdateParams)(nil),            // 6: heimdallv2.checkpoint.MsgUpdateParams
 	(*MsgUpdateParamsResponse)(nil),    // 7: heimdallv2.checkpoint.MsgUpdateParamsResponse
@@ -4412,11 +4410,11 @@ var file_heimdallv2_checkpoint_tx_proto_goTypes = []interface{}{
 var file_heimdallv2_checkpoint_tx_proto_depIdxs = []int32{
 	8, // 0: heimdallv2.checkpoint.MsgUpdateParams.params:type_name -> heimdallv2.checkpoint.Params
 	0, // 1: heimdallv2.checkpoint.Msg.Checkpoint:input_type -> heimdallv2.checkpoint.MsgCheckpoint
-	2, // 2: heimdallv2.checkpoint.Msg.CheckpointAck:input_type -> heimdallv2.checkpoint.MsgCheckpointAck
-	4, // 3: heimdallv2.checkpoint.Msg.CheckpointNoAck:input_type -> heimdallv2.checkpoint.MsgCheckpointNoAck
+	2, // 2: heimdallv2.checkpoint.Msg.CheckpointAck:input_type -> heimdallv2.checkpoint.MsgCpAck
+	4, // 3: heimdallv2.checkpoint.Msg.CheckpointNoAck:input_type -> heimdallv2.checkpoint.MsgCpNoAck
 	6, // 4: heimdallv2.checkpoint.Msg.UpdateParams:input_type -> heimdallv2.checkpoint.MsgUpdateParams
 	1, // 5: heimdallv2.checkpoint.Msg.Checkpoint:output_type -> heimdallv2.checkpoint.MsgCheckpointResponse
-	3, // 6: heimdallv2.checkpoint.Msg.CheckpointAck:output_type -> heimdallv2.checkpoint.MsgCheckpointAckResponse
+	3, // 6: heimdallv2.checkpoint.Msg.CheckpointAck:output_type -> heimdallv2.checkpoint.MsgCpAckResponse
 	5, // 7: heimdallv2.checkpoint.Msg.CheckpointNoAck:output_type -> heimdallv2.checkpoint.MsgCheckpointNoAckResponse
 	7, // 8: heimdallv2.checkpoint.Msg.UpdateParams:output_type -> heimdallv2.checkpoint.MsgUpdateParamsResponse
 	5, // [5:9] is the sub-list for method output_type
@@ -4458,7 +4456,7 @@ func file_heimdallv2_checkpoint_tx_proto_init() {
 			}
 		}
 		file_heimdallv2_checkpoint_tx_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgCheckpointAck); i {
+			switch v := v.(*MsgCpAck); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4470,7 +4468,7 @@ func file_heimdallv2_checkpoint_tx_proto_init() {
 			}
 		}
 		file_heimdallv2_checkpoint_tx_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgCheckpointAckResponse); i {
+			switch v := v.(*MsgCpAckResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -4482,7 +4480,7 @@ func file_heimdallv2_checkpoint_tx_proto_init() {
 			}
 		}
 		file_heimdallv2_checkpoint_tx_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgCheckpointNoAck); i {
+			switch v := v.(*MsgCpNoAck); i {
 			case 0:
 				return &v.state
 			case 1:

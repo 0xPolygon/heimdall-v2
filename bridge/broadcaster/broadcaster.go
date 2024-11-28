@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
 	cometTypes "github.com/cometbft/cometbft/types"
@@ -22,6 +20,9 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/spf13/viper"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // TxBroadcaster is used to broadcast transaction to each chain
@@ -31,7 +32,7 @@ type TxBroadcaster struct {
 	CliCtx client.Context
 
 	heimdallMutex sync.Mutex
-	maticMutex    sync.Mutex
+	borMutex      sync.Mutex
 
 	lastSeqNo uint64
 	accNum    uint64
@@ -62,6 +63,8 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 		accNum:    account.GetAccountNumber(),
 	}
 }
+
+// TODO HV2: check usage testOpts (in v1 they are used because BuildAndBroadcastMsgs is invoked)
 
 // BroadcastToHeimdall broadcast to heimdall
 func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, testOpts ...*helper.TestOpts) (*sdk.TxResponse, error) {
@@ -148,7 +151,7 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	ac := addressCodec.NewHexCodec()
 	addressString, err := ac.BytesToString(address)
 	if err != nil {
-		return fmt.Errorf("Error converting address to string: %v", err)
+		return fmt.Errorf("error converting address to string: %v", err)
 	}
 
 	// fetch from APIs
@@ -164,16 +167,16 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	return nil
 }
 
-// BroadcastToBorChain broadcast to matic
+// BroadcastToBorChain broadcasts a msg to bor chain
 func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
-	tb.maticMutex.Lock()
-	defer tb.maticMutex.Unlock()
+	tb.borMutex.Lock()
+	defer tb.borMutex.Unlock()
 
-	// get matic client
-	maticClient := helper.GetPolygonPosClient()
+	// get bor client
+	borClient := helper.GetBorClient()
 
 	// get auth
-	auth, err := helper.GenerateAuthObj(maticClient, *msg.To, msg.Data)
+	auth, err := helper.GenerateAuthObj(borClient, *msg.To, msg.Data)
 
 	if err != nil {
 		tb.logger.Error("Error generating auth object", "error", err)
@@ -204,8 +207,8 @@ func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
 	defer cancel()
 
 	// broadcast transaction
-	if err = maticClient.SendTransaction(ctx, signedTx); err != nil {
-		tb.logger.Error("Error while broadcasting the transaction to polygon pos chain", "error", err)
+	if err = borClient.SendTransaction(ctx, signedTx); err != nil {
+		tb.logger.Error("Error while broadcasting the transaction to bor chain", "error", err)
 		return err
 	}
 

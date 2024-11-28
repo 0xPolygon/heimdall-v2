@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"google.golang.org/grpc"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"google.golang.org/grpc"
 )
 
 // SideTxHandler defines the core of side-tx execution of an application
@@ -69,5 +68,5 @@ func CommonRegisterSideMsgServer(
 }
 
 func noopInterceptor(_ context.Context, _ interface{}, _ *grpc.UnaryServerInfo, _ grpc.UnaryHandler) (interface{}, error) {
-	return nil, nil
+	return new(interface{}), nil
 }

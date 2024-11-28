@@ -27,13 +27,11 @@ const (
 // TestCheckpointSigs decodes signers from checkpoint sigs data
 func TestCheckpointSigs(t *testing.T) {
 	t.Skip("Skipped because RecoverPubKey is not actively used in cosmos-sdk and GetCheckpointSign (invoking UnpackSigAndVotes) is not used in Heimdall")
-	// TODO HV2: Besides the reason explained above, this test currently depends on the config file
-	//  To fix it, see https://polygon.atlassian.net/browse/POS-2626
 	t.Parallel()
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 	viper.Set("log_level", "info")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	contractCallerObj, err := NewContractCaller()
 	if err != nil {
@@ -120,7 +118,7 @@ func TestPopulateABIs(t *testing.T) {
 		"values for %s not equals", stakemanager.StakemanagerMetaData.ABI)
 	assert.Equalf(t, ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI], &contractCallerObjFirst.SlashManagerABI,
 		"values for %s not equals", slashmanager.SlashmanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjFirst.PolygonPosTokenABI,
+	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjFirst.PolTokenABI,
 		"values for %s not equals", erc20.Erc20MetaData.ABI)
 
 	t.Log("ABIs map should not be empty and all ABIs found")
@@ -159,6 +157,6 @@ func TestPopulateABIs(t *testing.T) {
 		"values for %s not equals", stakemanager.StakemanagerMetaData.ABI)
 	assert.Equalf(t, ContractsABIsMap[slashmanager.SlashmanagerMetaData.ABI], &contractCallerObjSecond.SlashManagerABI,
 		"values for %s not equals", slashmanager.SlashmanagerMetaData.ABI)
-	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjSecond.PolygonPosTokenABI,
+	assert.Equalf(t, ContractsABIsMap[erc20.Erc20MetaData.ABI], &contractCallerObjSecond.PolTokenABI,
 		"values for %s not equals", erc20.Erc20MetaData.ABI)
 }

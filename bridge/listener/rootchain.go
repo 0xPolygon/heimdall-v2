@@ -6,14 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 // RootChainListenerContext root chain listener context
@@ -228,7 +229,7 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 
 // getRootChainContext returns the root chain context
 func (rl *RootChainListener) getRootChainContext() (*RootChainListenerContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams(rl.cliCtx)
+	chainmanagerParams, err := util.GetChainmanagerParams()
 	if err != nil {
 		rl.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

@@ -1,3 +1,5 @@
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
 # Checkpoint
 
 Heimdall selects the next proposer using Peppermint’s leader selection algorithm.  
@@ -39,14 +41,14 @@ string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 ```
 
-### MsgCheckpointAck
+### MsgCpAck
 
-`MsgCheckpointAck` defines a message for creating the ack tx of a submitted checkpoint.
+`MsgCpAck` defines a message for creating the ack tx of a submitted checkpoint.
 
 ```protobuf
-message MsgCheckpointAck {
+message MsgCpAck {
 option (cosmos.msg.v1.signer) = "from";
-option (amino.name) = "checkpoint/MsgCheckpointAck";
+option (amino.name) = "checkpoint/MsgCpAck";
 
 option (gogoproto.equal) = false;
 option (gogoproto.goproto_getters) = true;
@@ -94,8 +96,6 @@ string from = 1 [
 ];
 }
 ```
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## CLI Commands
 

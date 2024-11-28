@@ -5,16 +5,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/spf13/viper"
-
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/spf13/viper"
 )
 
 // TestHeimdallConfig checks heimdall configs
 func TestHeimdallConfig(t *testing.T) {
-	// TODO HV2: fix this test as it currently depends on the config file
-	//  See https://polygon.atlassian.net/browse/POS-2626
-	t.Skip("to be enabled")
 	t.Parallel()
 
 	// cli context
@@ -22,7 +18,7 @@ func TestHeimdallConfig(t *testing.T) {
 	viper.Set(CometBFTNodeFlag, cometBFTNode)
 	viper.Set("log_level", "info")
 
-	InitHeimdallConfig(os.ExpandEnv("$HOME/.heimdalld"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	fmt.Println("Address", GetAddress())
 
@@ -45,7 +41,11 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 		{chain: "mumbai", viper: "viper", def: "default", value: "viper"},
 		{chain: "mumbai", viper: "viper", def: "", value: "viper"},
 		{chain: "mumbai", viper: "", def: "default", value: "default"},
-		{chain: "mumbai", viper: "", def: "", value: DefaultTestnetSeeds},
+		{chain: "mumbai", viper: "", def: "", value: DefaultMumbaiTestnetSeeds},
+		{chain: "amoy", viper: "viper", def: "default", value: "viper"},
+		{chain: "amoy", viper: "viper", def: "", value: "viper"},
+		{chain: "amoy", viper: "", def: "default", value: "default"},
+		{chain: "amoy", viper: "", def: "", value: DefaultAmoyTestnetSeeds},
 		{chain: "mainnet", viper: "viper", def: "default", value: "viper"},
 		{chain: "mainnet", viper: "viper", def: "", value: "viper"},
 		{chain: "mainnet", viper: "", def: "default", value: "default"},
@@ -72,4 +72,44 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 	}
 
 	conf.Custom.Chain = oldConf
+}
+
+func TestGetChainManagerAddressMigration(t *testing.T) {
+	t.Parallel()
+
+	newPolContractAddress := "0x0000000000000000000000000000000000001234"
+
+	chainManagerAddressMigrations["mumbai"] = map[int64]ChainManagerAddressMigration{
+		350: {PolTokenAddress: newPolContractAddress},
+	}
+
+	viper.Set("chain", "mumbai")
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+
+	migration, found := GetChainManagerAddressMigration(350)
+
+	if !found {
+		t.Errorf("Expected migration to be found")
+	}
+
+	if migration.PolTokenAddress != newPolContractAddress {
+		t.Errorf("Expected pol token address to be %s, got %s", newPolContractAddress, migration.PolTokenAddress)
+	}
+
+	// test for non-existing migration
+	_, found = GetChainManagerAddressMigration(351)
+	if found {
+		t.Errorf("Expected migration to not be found")
+	}
+
+	// test for non-existing chain
+	conf.Custom.BorRPCUrl = ""
+
+	viper.Set("chain", "newChain")
+	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+
+	_, found = GetChainManagerAddressMigration(350)
+	if found {
+		t.Errorf("Expected migration to not be found")
+	}
 }

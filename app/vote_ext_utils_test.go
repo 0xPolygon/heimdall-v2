@@ -25,7 +25,7 @@ import (
 func TestValidateVoteExtensions(t *testing.T) {
 	// TODO HV2: find a way to extend these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)
 	hApp, _, _ := SetupApp(t, 1)
-	ctx := hApp.BaseApp.NewContext(false)
+	ctx := hApp.BaseApp.NewContext(true)
 	vals := hApp.StakeKeeper.GetAllValidators(ctx)
 	valAddr := common.FromHex(vals[0].Signer)
 
@@ -33,8 +33,6 @@ func TestValidateVoteExtensions(t *testing.T) {
 		Address: valAddr,
 		Power:   vals[0].VotingPower,
 	}
-	_, err := hApp.Commit()
-	require.NoError(t, err)
 
 	tests := []struct {
 		name        string
@@ -72,7 +70,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldPanic {
 				require.Panics(t, func() {
-					err = ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
+					err := ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
 					fmt.Printf("err: %v\n", err)
 				})
 			} else {

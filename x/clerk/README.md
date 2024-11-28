@@ -1,4 +1,6 @@
-# Clerk Module
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
+# Clerk module
 
 ## Table of Contents
 
@@ -56,10 +58,10 @@ message EventRecord {
 * `borChainID` is the chain id of the bor chain.
 * `recordTime` is the time at which the event was recorded in heimdall state.
 
-The bridge will listen to the state-sync events from L1 and generate a txn with `MsgEventRecordRequest` which is responsible for validating events from `StateSender` contract and storing the `EventRecord` on the heimdall state for bor to use.
+The bridge will listen to the state-sync events from L1 and generate a txn with `MsgEventRecord` which is responsible for validating events from `StateSender` contract and storing the `EventRecord` on the heimdall state for bor to use.
 
 ```protobuf
-message MsgEventRecordRequest {
+message MsgEventRecord {
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
 
@@ -85,8 +87,6 @@ message MsgEventRecordRequest {
 Once the event is validated by the Handler, It will go to `SideHandleMsgEventRecord` in each validator node and after verifying the event, The validators will vote with either a `YES` return an error for a failed verification.
 
 Only when there is a majority of `YES` votes, The event will be processed by `PostHandleMsgEventRecord` which will persist the event in the state via keeper.
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## How to add an event
 

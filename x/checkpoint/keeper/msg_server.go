@@ -158,7 +158,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 }
 
 // CheckpointAck handles the checkpoint ack msg
-func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAck) (*types.MsgCheckpointAckResponse, error) {
+func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*types.MsgCpAckResponse, error) {
 	logger := m.Logger(ctx)
 
 	// get last checkpoint from buffer
@@ -197,11 +197,11 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCheckpointAc
 		),
 	})
 
-	return &types.MsgCheckpointAckResponse{}, nil
+	return &types.MsgCpAckResponse{}, nil
 }
 
 // CheckpointNoAck handles checkpoint no-ack msg
-func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCheckpointNoAck) (*types.MsgCheckpointNoAckResponse, error) {
+func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (*types.MsgCheckpointNoAckResponse, error) {
 	logger := m.Logger(ctx)
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)

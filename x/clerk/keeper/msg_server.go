@@ -24,7 +24,7 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 
 var _ types.MsgServer = msgServer{}
 
-func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEventRecordRequest) (*types.MsgEventRecordResponse, error) {
+func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEventRecord) (*types.MsgEventRecordResponse, error) {
 	logger := srv.Logger(ctx)
 
 	logger.Debug("✅ Validating clerk msg",

@@ -23,6 +23,12 @@ eth_rpc_url = "{{ .Custom.EthRPCUrl }}"
 # RPC endpoint for bor chain
 bor_rpc_url = "{{ .Custom.BorRPCUrl }}"
 
+# GRPC flag for bor chain
+bor_grpc_flag = "{{ .Custom.BorGRPCFlag }}"
+
+# GRPC endpoint for bor chain
+bor_grpc_url = "{{ .Custom.BorGRPCUrl }}"
+
 # RPC endpoint for cometBFT
 comet_bft_rpc_url = "{{ .Custom.CometBFTRPCUrl }}"
 

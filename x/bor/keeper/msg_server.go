@@ -24,7 +24,7 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 	return &msgServer{Keeper: keeper}
 }
 
-func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpanRequest) (*types.MsgProposeSpanResponse, error) {
+func (m msgServer) ProposeSpan(ctx context.Context, msg *types.MsgProposeSpan) (*types.MsgProposeSpanResponse, error) {
 	logger := m.Logger(ctx)
 
 	logger.Debug("✅ validating proposed span msg",

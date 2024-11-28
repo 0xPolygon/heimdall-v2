@@ -110,7 +110,7 @@ func (k *Keeper) GetTotalPower(ctx context.Context) (totalPower int64, err error
 	k.PanicIfSetupIsIncomplete()
 	err = k.IterateCurrentValidatorsAndApplyFn(ctx, func(validator types.Validator) bool {
 		totalPower += validator.GetBondedTokens().Int64()
-		return true
+		return false
 	})
 	if err != nil {
 		return 0, err
@@ -491,7 +491,7 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 	}
 
 	for _, v := range currentValidatorSet.Validators {
-		if stop := f(*v); !stop {
+		if stop := f(*v); stop {
 			return nil
 		}
 	}
@@ -597,6 +597,9 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 			k.Logger(ctx).Error("unable to update current validator set in state", "error", err)
 			return nil, err
 		}
+
+		// TODO HV2: this was missed during migration, and added within POS-2600. Double check.
+		currentValidatorSet.IncrementProposerPriority(1)
 
 		// convert updates from map to array
 		for _, v := range setUpdates {

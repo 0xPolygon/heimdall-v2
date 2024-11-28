@@ -18,13 +18,13 @@ const (
 	MainChainTxConfirmations = "main_chain_tx_confirmations"
 	BorChainTxConfirmations  = "bor_chain_tx_confirmations"
 
-	BorChainID             = "bor_chain_id"
-	PolygonPosTokenAddress = "polygon_pos_token_address"
-	StakingManagerAddress  = "staking_manager_address"
-	SlashManagerAddress    = "slash_manager_address"
-	RootChainAddress       = "root_chain_address"
-	StakingInfoAddress     = "staking_info_address"
-	StateSenderAddress     = "state_sender_address"
+	BorChainID            = "bor_chain_id"
+	PolTokenAddress       = "pol_token_address"
+	StakingManagerAddress = "staking_manager_address"
+	SlashManagerAddress   = "slash_manager_address"
+	RootChainAddress      = "root_chain_address"
+	StakingInfoAddress    = "staking_info_address"
+	StateSenderAddress    = "state_sender_address"
 
 	// Bor Chain Contracts
 
@@ -59,7 +59,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 		mainChainTxConfirmations uint64
 		borChainTxConfirmations  uint64
 		borChainID               string
-		polygonPosTokenAddress   string
+		polTokenAddress          string
 		stakingManagerAddress    string
 		slashManagerAddress      string
 		rootChainAddress         string
@@ -81,8 +81,8 @@ func RandomizedGenState(simState *module.SimulationState) {
 		borChainID = genBorChainId(r)
 	})
 
-	simState.AppParams.GetOrGenerate(PolygonPosTokenAddress, &polygonPosTokenAddress, simState.Rand, func(r *rand.Rand) {
-		polygonPosTokenAddress = genAddress(r)
+	simState.AppParams.GetOrGenerate(PolTokenAddress, &polTokenAddress, simState.Rand, func(r *rand.Rand) {
+		polTokenAddress = genAddress(r)
 	})
 
 	simState.AppParams.GetOrGenerate(StakingManagerAddress, &stakingManagerAddress, simState.Rand, func(r *rand.Rand) {
@@ -114,15 +114,15 @@ func RandomizedGenState(simState *module.SimulationState) {
 	})
 
 	chainParams := types.ChainParams{
-		BorChainId:             borChainID,
-		PolygonPosTokenAddress: polygonPosTokenAddress,
-		StakingManagerAddress:  stakingManagerAddress,
-		SlashManagerAddress:    slashManagerAddress,
-		RootChainAddress:       rootChainAddress,
-		StakingInfoAddress:     stakingInfoAddress,
-		StateSenderAddress:     stateSenderAddress,
-		StateReceiverAddress:   stateReceiverAddress,
-		ValidatorSetAddress:    validatorSetAddress,
+		BorChainId:            borChainID,
+		PolTokenAddress:       polTokenAddress,
+		StakingManagerAddress: stakingManagerAddress,
+		SlashManagerAddress:   slashManagerAddress,
+		RootChainAddress:      rootChainAddress,
+		StakingInfoAddress:    stakingInfoAddress,
+		StateSenderAddress:    stateSenderAddress,
+		StateReceiverAddress:  stateReceiverAddress,
+		ValidatorSetAddress:   validatorSetAddress,
 	}
 
 	params := types.NewParams(mainChainTxConfirmations, borChainTxConfirmations, chainParams)

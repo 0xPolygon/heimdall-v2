@@ -24,7 +24,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	ctx, require, msgServer, keeper, stakeKeeper := s.ctx, s.Require(), s.msgServer, s.milestoneKeeper, s.stakeKeeper
 
 	start := uint64(0)
-	milestoneID := "0000"
+	milestoneID := TestMilestoneID
 	params := types.DefaultParams()
 	err := keeper.SetParams(ctx, params)
 	require.NoError(err)
@@ -245,7 +245,7 @@ func (s *KeeperTestSuite) TestHandleMsgMilestoneTimeout() {
 	hash := testutil.RandomBytes()
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(0)
-	milestoneID := "0000"
+	milestoneID := TestMilestoneID
 
 	proposer := common.Address{}.String()
 

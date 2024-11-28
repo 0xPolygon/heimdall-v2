@@ -37,7 +37,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 	}{
 		{
 			name: "seed mismatch",
-			msg: &types.MsgProposeSpanRequest{
+			msg: &types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   "0x91b54cD48FD796A5d0A120A4C5298a7fAEA59B",
 				StartBlock: 102,
@@ -49,7 +49,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 		},
 		{
 			name: "span is not in turn (current child block is less than last span start block)",
-			msg: &types.MsgProposeSpanRequest{
+			msg: &types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -59,12 +59,12 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
+				contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
 			},
 		},
 		{
 			name: "span is not in turn (current child block is greater than last span end block)",
-			msg: &types.MsgProposeSpanRequest{
+			msg: &types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -74,12 +74,12 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
-				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
+				contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(103)}, nil).Times(1)
 			},
 		},
 		{
 			name: "correct span is proposed",
-			msg: &types.MsgProposeSpanRequest{
+			msg: &types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -89,7 +89,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			},
 			expVote: sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
-				contractCaller.On("GetPolygonPosChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
+				contractCaller.On("GetBorChainBlock", (*big.Int)(nil)).Return(&ethTypes.Header{Number: big.NewInt(50)}, nil).Times(1)
 			},
 		},
 	}
@@ -101,7 +101,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			if tc.mockFn != nil {
 				tc.mockFn()
 			}
-			sideHandler := sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
+			sideHandler := sideMsgServer.SideTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpan{}))
 			res := sideHandler(s.ctx, tc.msg)
 			require.Equal(tc.expVote, res)
 		})
@@ -132,7 +132,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 	}{
 		{
 			name: "doesn't have yes vote",
-			msg: &types.MsgProposeSpanRequest{
+			msg: &types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   "0x91b54cD48FD796A5d0A120A4C5298a7fAEA59B",
 				StartBlock: 102,
@@ -145,7 +145,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 		},
 		{
 			name: "span replayed",
-			msg: &types.MsgProposeSpanRequest{
+			msg: &types.MsgProposeSpan{
 				SpanId:     1,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 1,
@@ -158,7 +158,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 		},
 		{
 			name: "correct span is proposed",
-			msg: &types.MsgProposeSpanRequest{
+			msg: &types.MsgProposeSpan{
 				SpanId:     2,
 				Proposer:   common.HexToAddress("someProposer").String(),
 				StartBlock: 102,
@@ -173,7 +173,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			postHandler := sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpanRequest{}))
+			postHandler := sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpan{}))
 			postHandler(ctx, tc.msg, tc.vote)
 
 			lastSpan, err := borKeeper.GetLastSpan(ctx)

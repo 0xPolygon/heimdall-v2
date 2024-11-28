@@ -24,8 +24,10 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -86,7 +88,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator
 	return validators, accounts, balances
 }
 
-func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance) (*HeimdallApp, *dbm.MemDB, log.Logger) {
+func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger) {
 	t.Helper()
 
 	db := dbm.NewMemDB()
@@ -108,16 +110,50 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	require.NoError(t, err)
 
 	// initialize chain with the validator set and genesis accounts
-	_, err = app.InitChain(&abci.RequestInitChain{
+	req := &abci.RequestInitChain{
 		Validators:      []abci.ValidatorUpdate{},
 		ConsensusParams: simtestutil.DefaultConsensusParams,
 		AppStateBytes:   stateBytes,
-		InitialHeight:   100,
-	},
-	)
+		InitialHeight:   VoteExtBlockHeight,
+	}
+	if len(testOpts) > 0 && testOpts[0] != nil {
+		req.ChainId = testOpts[0].GetChainId()
+	}
+
+	_, err = app.InitChain(req)
+	require.NoError(t, err)
+
+	RequestFinalizeBlock(t, app, VoteExtBlockHeight)
+
+	_, err = app.Commit()
 	require.NoError(t, err)
 
 	return app, db, logger
+}
+
+func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:    [][]byte{commitInfo},
+		Height: height,
+	})
+	require.NoError(t, err)
+}
+
+func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
+	extCommitInfo := new(abci.ExtendedCommitInfo)
+	commitInfo, err := extCommitInfo.Marshal()
+	require.NoError(t, err)
+	allTxs := [][]byte{commitInfo}
+	allTxs = append(allTxs, txs...)
+	res, err := app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Txs:    allTxs,
+		Height: height,
+	})
+	require.NoError(t, err)
+	return res
 }
 
 func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxResponse) []byte {

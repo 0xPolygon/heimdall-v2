@@ -29,7 +29,7 @@ service Msg {
 //  MsgValidatorJoin defines a message for a new validator to join the network
 message MsgValidatorJoin {
   option (cosmos.msg.v1.signer) = "from";
-  option (amino.name) = "heimdallv2/MsgValidatorJoin";
+  option (amino.name) = "heimdallv2/stake/MsgValidatorJoin";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -58,7 +58,7 @@ message MsgValidatorJoinResponse {}
 // MsgStakeUpdate defines a message for performing a stake update
 message MsgStakeUpdate {
   option (cosmos.msg.v1.signer) = "from";
-  option (amino.name) = "heimdallv2/MsgStakeUpdate";
+  option (amino.name) = "heimdallv2/stake/MsgStakeUpdate";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -90,7 +90,7 @@ message MsgStakeUpdateResponse {}
 // validator
 message MsgSignerUpdate {
   option (cosmos.msg.v1.signer) = "from";
-  option (amino.name) = "heimdallv2/MsgSignerUpdate";
+  option (amino.name) = "heimdallv2/stake/MsgSignerUpdate";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -113,7 +113,7 @@ message MsgSignerUpdateResponse {}
 // MsgValidatorExit defines a message for exiting the validator
 message MsgValidatorExit {
   option (cosmos.msg.v1.signer) = "from";
-  option (amino.name) = "heimdallv2/MsgValidatorExit";
+  option (amino.name) = "heimdallv2/stake/MsgValidatorExit";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;

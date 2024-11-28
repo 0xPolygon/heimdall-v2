@@ -154,8 +154,8 @@ func (m *MsgCheckpointResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCheckpointResponse proto.InternalMessageInfo
 
-// MsgCheckpointAck defines a SDK message for creating the ack of checkpoint
-type MsgCheckpointAck struct {
+// MsgCpAck defines a SDK message for creating the ack of checkpoint
+type MsgCpAck struct {
 	From       string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	Number     uint64 `protobuf:"varint,2,opt,name=number,proto3" json:"number,omitempty"`
 	Proposer   string `protobuf:"bytes,3,opt,name=proposer,proto3" json:"proposer,omitempty"`
@@ -166,18 +166,18 @@ type MsgCheckpointAck struct {
 	LogIndex   uint64 `protobuf:"varint,8,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 }
 
-func (m *MsgCheckpointAck) Reset()         { *m = MsgCheckpointAck{} }
-func (m *MsgCheckpointAck) String() string { return proto.CompactTextString(m) }
-func (*MsgCheckpointAck) ProtoMessage()    {}
-func (*MsgCheckpointAck) Descriptor() ([]byte, []int) {
+func (m *MsgCpAck) Reset()         { *m = MsgCpAck{} }
+func (m *MsgCpAck) String() string { return proto.CompactTextString(m) }
+func (*MsgCpAck) ProtoMessage()    {}
+func (*MsgCpAck) Descriptor() ([]byte, []int) {
 	return fileDescriptor_fba7a5bcca97bf3e, []int{2}
 }
-func (m *MsgCheckpointAck) XXX_Unmarshal(b []byte) error {
+func (m *MsgCpAck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgCheckpointAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgCpAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgCheckpointAck.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgCpAck.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -187,90 +187,90 @@ func (m *MsgCheckpointAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (m *MsgCheckpointAck) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgCheckpointAck.Merge(m, src)
+func (m *MsgCpAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCpAck.Merge(m, src)
 }
-func (m *MsgCheckpointAck) XXX_Size() int {
+func (m *MsgCpAck) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgCheckpointAck) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgCheckpointAck.DiscardUnknown(m)
+func (m *MsgCpAck) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCpAck.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgCheckpointAck proto.InternalMessageInfo
+var xxx_messageInfo_MsgCpAck proto.InternalMessageInfo
 
-func (m *MsgCheckpointAck) GetFrom() string {
+func (m *MsgCpAck) GetFrom() string {
 	if m != nil {
 		return m.From
 	}
 	return ""
 }
 
-func (m *MsgCheckpointAck) GetNumber() uint64 {
+func (m *MsgCpAck) GetNumber() uint64 {
 	if m != nil {
 		return m.Number
 	}
 	return 0
 }
 
-func (m *MsgCheckpointAck) GetProposer() string {
+func (m *MsgCpAck) GetProposer() string {
 	if m != nil {
 		return m.Proposer
 	}
 	return ""
 }
 
-func (m *MsgCheckpointAck) GetStartBlock() uint64 {
+func (m *MsgCpAck) GetStartBlock() uint64 {
 	if m != nil {
 		return m.StartBlock
 	}
 	return 0
 }
 
-func (m *MsgCheckpointAck) GetEndBlock() uint64 {
+func (m *MsgCpAck) GetEndBlock() uint64 {
 	if m != nil {
 		return m.EndBlock
 	}
 	return 0
 }
 
-func (m *MsgCheckpointAck) GetRootHash() []byte {
+func (m *MsgCpAck) GetRootHash() []byte {
 	if m != nil {
 		return m.RootHash
 	}
 	return nil
 }
 
-func (m *MsgCheckpointAck) GetTxHash() []byte {
+func (m *MsgCpAck) GetTxHash() []byte {
 	if m != nil {
 		return m.TxHash
 	}
 	return nil
 }
 
-func (m *MsgCheckpointAck) GetLogIndex() uint64 {
+func (m *MsgCpAck) GetLogIndex() uint64 {
 	if m != nil {
 		return m.LogIndex
 	}
 	return 0
 }
 
-// MsgCheckpointAckResponse defines the Msg/CheckpointAck response type.
-type MsgCheckpointAckResponse struct {
+// MsgCpAckResponse defines the MsgCpAck response type.
+type MsgCpAckResponse struct {
 }
 
-func (m *MsgCheckpointAckResponse) Reset()         { *m = MsgCheckpointAckResponse{} }
-func (m *MsgCheckpointAckResponse) String() string { return proto.CompactTextString(m) }
-func (*MsgCheckpointAckResponse) ProtoMessage()    {}
-func (*MsgCheckpointAckResponse) Descriptor() ([]byte, []int) {
+func (m *MsgCpAckResponse) Reset()         { *m = MsgCpAckResponse{} }
+func (m *MsgCpAckResponse) String() string { return proto.CompactTextString(m) }
+func (*MsgCpAckResponse) ProtoMessage()    {}
+func (*MsgCpAckResponse) Descriptor() ([]byte, []int) {
 	return fileDescriptor_fba7a5bcca97bf3e, []int{3}
 }
-func (m *MsgCheckpointAckResponse) XXX_Unmarshal(b []byte) error {
+func (m *MsgCpAckResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgCheckpointAckResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgCpAckResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgCheckpointAckResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgCpAckResponse.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -280,35 +280,35 @@ func (m *MsgCheckpointAckResponse) XXX_Marshal(b []byte, deterministic bool) ([]
 		return b[:n], nil
 	}
 }
-func (m *MsgCheckpointAckResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgCheckpointAckResponse.Merge(m, src)
+func (m *MsgCpAckResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCpAckResponse.Merge(m, src)
 }
-func (m *MsgCheckpointAckResponse) XXX_Size() int {
+func (m *MsgCpAckResponse) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgCheckpointAckResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgCheckpointAckResponse.DiscardUnknown(m)
+func (m *MsgCpAckResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCpAckResponse.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgCheckpointAckResponse proto.InternalMessageInfo
+var xxx_messageInfo_MsgCpAckResponse proto.InternalMessageInfo
 
 // MsgCheckpointNoAck defines a SDK message for creating the no-ack
-type MsgCheckpointNoAck struct {
+type MsgCpNoAck struct {
 	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 }
 
-func (m *MsgCheckpointNoAck) Reset()         { *m = MsgCheckpointNoAck{} }
-func (m *MsgCheckpointNoAck) String() string { return proto.CompactTextString(m) }
-func (*MsgCheckpointNoAck) ProtoMessage()    {}
-func (*MsgCheckpointNoAck) Descriptor() ([]byte, []int) {
+func (m *MsgCpNoAck) Reset()         { *m = MsgCpNoAck{} }
+func (m *MsgCpNoAck) String() string { return proto.CompactTextString(m) }
+func (*MsgCpNoAck) ProtoMessage()    {}
+func (*MsgCpNoAck) Descriptor() ([]byte, []int) {
 	return fileDescriptor_fba7a5bcca97bf3e, []int{4}
 }
-func (m *MsgCheckpointNoAck) XXX_Unmarshal(b []byte) error {
+func (m *MsgCpNoAck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *MsgCheckpointNoAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MsgCpNoAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_MsgCheckpointNoAck.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MsgCpNoAck.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -318,26 +318,26 @@ func (m *MsgCheckpointNoAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *MsgCheckpointNoAck) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MsgCheckpointNoAck.Merge(m, src)
+func (m *MsgCpNoAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MsgCpNoAck.Merge(m, src)
 }
-func (m *MsgCheckpointNoAck) XXX_Size() int {
+func (m *MsgCpNoAck) XXX_Size() int {
 	return m.Size()
 }
-func (m *MsgCheckpointNoAck) XXX_DiscardUnknown() {
-	xxx_messageInfo_MsgCheckpointNoAck.DiscardUnknown(m)
+func (m *MsgCpNoAck) XXX_DiscardUnknown() {
+	xxx_messageInfo_MsgCpNoAck.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_MsgCheckpointNoAck proto.InternalMessageInfo
+var xxx_messageInfo_MsgCpNoAck proto.InternalMessageInfo
 
-func (m *MsgCheckpointNoAck) GetFrom() string {
+func (m *MsgCpNoAck) GetFrom() string {
 	if m != nil {
 		return m.From
 	}
 	return ""
 }
 
-// MsgCheckpointNoAckResponse defines the Msg/CheckpointNoAck response type.
+// MsgCheckpointNoAckResponse defines the MsgCpNoAck response type.
 type MsgCheckpointNoAckResponse struct {
 }
 
@@ -472,9 +472,9 @@ var xxx_messageInfo_MsgUpdateParamsResponse proto.InternalMessageInfo
 func init() {
 	proto.RegisterType((*MsgCheckpoint)(nil), "heimdallv2.checkpoint.MsgCheckpoint")
 	proto.RegisterType((*MsgCheckpointResponse)(nil), "heimdallv2.checkpoint.MsgCheckpointResponse")
-	proto.RegisterType((*MsgCheckpointAck)(nil), "heimdallv2.checkpoint.MsgCheckpointAck")
-	proto.RegisterType((*MsgCheckpointAckResponse)(nil), "heimdallv2.checkpoint.MsgCheckpointAckResponse")
-	proto.RegisterType((*MsgCheckpointNoAck)(nil), "heimdallv2.checkpoint.MsgCheckpointNoAck")
+	proto.RegisterType((*MsgCpAck)(nil), "heimdallv2.checkpoint.MsgCpAck")
+	proto.RegisterType((*MsgCpAckResponse)(nil), "heimdallv2.checkpoint.MsgCpAckResponse")
+	proto.RegisterType((*MsgCpNoAck)(nil), "heimdallv2.checkpoint.MsgCpNoAck")
 	proto.RegisterType((*MsgCheckpointNoAckResponse)(nil), "heimdallv2.checkpoint.MsgCheckpointNoAckResponse")
 	proto.RegisterType((*MsgUpdateParams)(nil), "heimdallv2.checkpoint.MsgUpdateParams")
 	proto.RegisterType((*MsgUpdateParamsResponse)(nil), "heimdallv2.checkpoint.MsgUpdateParamsResponse")
@@ -483,52 +483,52 @@ func init() {
 func init() { proto.RegisterFile("heimdallv2/checkpoint/tx.proto", fileDescriptor_fba7a5bcca97bf3e) }
 
 var fileDescriptor_fba7a5bcca97bf3e = []byte{
-	// 710 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x95, 0x3d, 0x6f, 0xd3, 0x5c,
-	0x14, 0xc7, 0xe3, 0xe6, 0xa5, 0xcd, 0x69, 0xab, 0x3e, 0xb5, 0x5a, 0xd5, 0xf5, 0x43, 0xdc, 0xca,
-	0x42, 0x6d, 0xa9, 0x68, 0x4c, 0xd2, 0x89, 0xb0, 0x90, 0x74, 0xa1, 0x43, 0x50, 0x55, 0xc4, 0xc2,
-	0x62, 0x1c, 0xdb, 0xb5, 0xad, 0xc4, 0x3e, 0x96, 0xef, 0x4d, 0x95, 0x4a, 0x0c, 0x88, 0x01, 0x21,
-	0x26, 0x3e, 0x42, 0x47, 0xc6, 0x0a, 0xf1, 0x21, 0x2a, 0xc4, 0x50, 0x31, 0x31, 0x21, 0xd4, 0x0e,
-	0xe5, 0x63, 0x20, 0xbf, 0xc4, 0xb1, 0x43, 0x22, 0x59, 0xb0, 0x24, 0xf6, 0xf9, 0xff, 0xee, 0x3d,
-	0x2f, 0xff, 0x9b, 0x1b, 0x10, 0x4c, 0xdd, 0xb2, 0x35, 0xa5, 0xd7, 0x3b, 0xad, 0x4b, 0xaa, 0xa9,
-	0xab, 0x5d, 0x17, 0x2d, 0x87, 0x4a, 0x74, 0x50, 0x75, 0x3d, 0xa4, 0xc8, 0xae, 0x8e, 0xf4, 0xea,
-	0x48, 0xe7, 0x97, 0x15, 0xdb, 0x72, 0x50, 0x0a, 0x3e, 0x43, 0x92, 0x5f, 0x57, 0x91, 0xd8, 0x48,
-	0xe4, 0xe0, 0x4d, 0x0a, 0x5f, 0x22, 0x69, 0x2d, 0x7c, 0x93, 0x6c, 0x62, 0x48, 0xa7, 0x35, 0xff,
-	0x2b, 0x12, 0x56, 0x0c, 0x34, 0x30, 0x5c, 0xe0, 0x3f, 0x45, 0xd1, 0xad, 0xc9, 0x35, 0x8d, 0x1e,
-	0x43, 0x4e, 0xfc, 0x32, 0x03, 0x8b, 0x6d, 0x62, 0x1c, 0xc4, 0x71, 0xf6, 0x21, 0xcc, 0xb9, 0x1e,
-	0xba, 0x48, 0x74, 0x8f, 0x63, 0x36, 0x99, 0x9d, 0x72, 0xab, 0xf2, 0xed, 0xf3, 0xde, 0x4a, 0x54,
-	0x4c, 0x53, 0xd3, 0x3c, 0x9d, 0x90, 0x67, 0xd4, 0xb3, 0x1c, 0xe3, 0xe3, 0xed, 0xc5, 0x2e, 0x73,
-	0x1c, 0xe3, 0xec, 0x16, 0xcc, 0x13, 0xaa, 0x78, 0x54, 0xee, 0xf4, 0x50, 0xed, 0x72, 0x33, 0x9b,
-	0xcc, 0x4e, 0xa1, 0x55, 0x0c, 0x29, 0x08, 0x94, 0x96, 0x2f, 0xb0, 0x22, 0x94, 0x75, 0x47, 0x8b,
-	0xa8, 0x7c, 0x92, 0x9a, 0xd3, 0x1d, 0x2d, 0x66, 0x3c, 0x44, 0x2a, 0x9b, 0x0a, 0x31, 0xb9, 0xc2,
-	0x26, 0xb3, 0xb3, 0x10, 0x33, 0x7e, 0xfc, 0x89, 0x42, 0x4c, 0xb6, 0x06, 0xcb, 0x8a, 0xaa, 0x62,
-	0xdf, 0xa1, 0xf2, 0x88, 0x2d, 0x26, 0xd9, 0xa5, 0x48, 0x3f, 0x1e, 0x2e, 0xd9, 0x86, 0x85, 0x0e,
-	0x7a, 0xb2, 0x6a, 0x2a, 0x96, 0x23, 0x5b, 0x1a, 0x57, 0x0a, 0x3a, 0x1c, 0xd6, 0xd8, 0x41, 0xef,
-	0xc0, 0x57, 0x0e, 0xb5, 0x46, 0xfd, 0xdd, 0xf9, 0x06, 0xf3, 0xeb, 0x7c, 0x83, 0x79, 0x73, 0x7b,
-	0xb1, 0x1b, 0xb7, 0xf8, 0xfe, 0xf6, 0x62, 0x97, 0x4b, 0xcc, 0x33, 0x35, 0x3a, 0x71, 0x0d, 0x56,
-	0x53, 0x81, 0x63, 0x9d, 0xb8, 0xe8, 0x10, 0x5d, 0x7c, 0x9b, 0x87, 0xff, 0x52, 0x4a, 0x53, 0xed,
-	0xb2, 0x35, 0x28, 0x9c, 0x78, 0x68, 0x67, 0x1b, 0x72, 0x80, 0xb2, 0x15, 0x28, 0x39, 0x7d, 0xbb,
-	0xa3, 0x7b, 0xe9, 0xd9, 0x46, 0xc1, 0x94, 0x75, 0xf9, 0x7f, 0xb2, 0xae, 0x90, 0xc9, 0xba, 0x62,
-	0x06, 0xeb, 0x4a, 0x93, 0xad, 0x13, 0x60, 0x96, 0x0e, 0x42, 0x62, 0x36, 0x49, 0x94, 0xe8, 0x20,
-	0xd0, 0x45, 0x28, 0xf7, 0xd0, 0x90, 0x2d, 0x47, 0xd3, 0x07, 0xdc, 0x5c, 0x2a, 0x4f, 0x0f, 0x8d,
-	0x43, 0x3f, 0xdc, 0xa8, 0x45, 0x16, 0xe5, 0x7c, 0x8b, 0x82, 0x01, 0xf9, 0xf6, 0xfc, 0x3f, 0xcd,
-	0x9e, 0xa6, 0xda, 0x15, 0x79, 0xe0, 0xc6, 0x63, 0xb1, 0x49, 0xaf, 0x80, 0x4d, 0x69, 0x4f, 0xf1,
-	0xef, 0x5c, 0x6a, 0xec, 0x4f, 0xac, 0xab, 0x32, 0xad, 0xae, 0x20, 0x8f, 0x78, 0x07, 0xf8, 0x3f,
-	0xa3, 0x71, 0x6d, 0x5f, 0x19, 0x58, 0x6a, 0x13, 0xe3, 0xb9, 0xab, 0x29, 0x54, 0x3f, 0x52, 0x3c,
-	0xc5, 0x26, 0xec, 0x23, 0x28, 0x2b, 0x7d, 0x6a, 0xa2, 0x67, 0xd1, 0xb3, 0x6c, 0xe5, 0x8d, 0x78,
-	0xf6, 0x31, 0x94, 0xdc, 0x60, 0x9b, 0xe0, 0x24, 0xcd, 0xd7, 0x2b, 0xd5, 0x89, 0x97, 0x54, 0x35,
-	0xcc, 0xd5, 0x2a, 0x5f, 0xfe, 0xd8, 0xc8, 0x45, 0x0e, 0x85, 0xeb, 0x1a, 0x0d, 0xbf, 0xbb, 0xd1,
-	0x8e, 0x7e, 0x8b, 0xdb, 0x89, 0x4b, 0x67, 0x20, 0xa5, 0xfb, 0x4d, 0x96, 0x2e, 0xae, 0xc3, 0xda,
-	0x58, 0x68, 0xd8, 0x69, 0xfd, 0x53, 0x1e, 0xf2, 0x6d, 0x62, 0xb0, 0x2f, 0x01, 0x12, 0x97, 0xd2,
-	0xdd, 0x29, 0xe5, 0xa5, 0x46, 0xc6, 0xdf, 0xcf, 0x42, 0x0d, 0x33, 0xb1, 0x16, 0x2c, 0xa6, 0x7f,
-	0x90, 0xdb, 0x59, 0x96, 0x37, 0xd5, 0x2e, 0x2f, 0x65, 0x04, 0xe3, 0x54, 0x08, 0x4b, 0xe3, 0xe7,
-	0xea, 0x5e, 0x96, 0x3d, 0x02, 0x94, 0xaf, 0x65, 0x46, 0xe3, 0x84, 0x27, 0xb0, 0x90, 0x3a, 0x2b,
-	0x5b, 0xd3, 0xb7, 0x48, 0x72, 0x7c, 0x35, 0x1b, 0x37, 0xcc, 0xc3, 0x17, 0x5f, 0xfb, 0x67, 0xa2,
-	0xd5, 0xbe, 0xbc, 0x16, 0x98, 0xab, 0x6b, 0x81, 0xf9, 0x79, 0x2d, 0x30, 0x1f, 0x6e, 0x84, 0xdc,
-	0xd5, 0x8d, 0x90, 0xfb, 0x7e, 0x23, 0xe4, 0x5e, 0xec, 0x1b, 0x16, 0x35, 0xfb, 0x9d, 0xaa, 0x8a,
-	0xb6, 0xf4, 0x60, 0x70, 0x84, 0xbd, 0x33, 0x03, 0x1d, 0x69, 0x98, 0x64, 0x6f, 0xfc, 0xa0, 0xd0,
-	0x33, 0x57, 0x27, 0x9d, 0x52, 0xf0, 0xdf, 0xb4, 0xff, 0x3b, 0x00, 0x00, 0xff, 0xff, 0xd2, 0x12,
-	0x49, 0xd9, 0x59, 0x07, 0x00, 0x00,
+	// 719 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0x4d, 0x6f, 0xd3, 0x4a,
+	0x14, 0x8d, 0x9b, 0x8f, 0x26, 0xb7, 0xad, 0xfa, 0x3a, 0x6a, 0xd5, 0xd4, 0x7a, 0x75, 0xf2, 0xfc,
+	0xde, 0x6b, 0xab, 0x8a, 0xc6, 0x24, 0x45, 0x08, 0x82, 0x90, 0x68, 0xba, 0xa1, 0x8b, 0xa0, 0xaa,
+	0x88, 0x05, 0x6c, 0x82, 0x63, 0xbb, 0xb6, 0xd5, 0xd8, 0x63, 0x79, 0x26, 0x25, 0xdd, 0x01, 0x2b,
+	0xc4, 0x8a, 0x35, 0xab, 0x2e, 0x59, 0x76, 0xc1, 0x8f, 0xa8, 0x58, 0x55, 0x48, 0x48, 0xac, 0x10,
+	0x6a, 0x17, 0xe5, 0x67, 0xa0, 0x19, 0x3b, 0x4e, 0x5c, 0x25, 0xc5, 0x82, 0x4d, 0xe2, 0x39, 0xe7,
+	0xcc, 0xdc, 0x73, 0xef, 0x19, 0xd9, 0x20, 0x59, 0x86, 0xed, 0xe8, 0x6a, 0xa7, 0x73, 0x58, 0x53,
+	0x34, 0xcb, 0xd0, 0x0e, 0x3c, 0x6c, 0xbb, 0x54, 0xa1, 0xbd, 0x8a, 0xe7, 0x63, 0x8a, 0xd1, 0xc2,
+	0x80, 0xaf, 0x0c, 0x78, 0x71, 0x4e, 0x75, 0x6c, 0x17, 0x2b, 0xfc, 0x37, 0x50, 0x8a, 0x4b, 0x1a,
+	0x26, 0x0e, 0x26, 0x2d, 0xbe, 0x52, 0x82, 0x45, 0x48, 0x2d, 0x06, 0x2b, 0xc5, 0x21, 0xa6, 0x72,
+	0x58, 0x65, 0x7f, 0x21, 0x31, 0x6f, 0x62, 0x13, 0x07, 0x1b, 0xd8, 0x53, 0x88, 0xae, 0x8c, 0xf6,
+	0x34, 0x78, 0x0c, 0x74, 0xf2, 0x97, 0x09, 0x98, 0x69, 0x12, 0x73, 0x3b, 0xc2, 0xd1, 0x5d, 0xc8,
+	0x7b, 0x3e, 0xf6, 0x30, 0x31, 0xfc, 0xa2, 0x50, 0x16, 0xd6, 0x0a, 0x8d, 0xe5, 0xcf, 0x1f, 0x37,
+	0xe6, 0x43, 0x33, 0x5b, 0xba, 0xee, 0x1b, 0x84, 0x3c, 0xa6, 0xbe, 0xed, 0x9a, 0x1f, 0x2e, 0x4f,
+	0xd6, 0x85, 0xbd, 0x48, 0x8e, 0x56, 0x60, 0x8a, 0x50, 0xd5, 0xa7, 0xad, 0x76, 0x07, 0x6b, 0x07,
+	0xc5, 0x89, 0xb2, 0xb0, 0x96, 0x69, 0x64, 0x03, 0x15, 0x70, 0xa6, 0xc1, 0x08, 0x24, 0x43, 0xc1,
+	0x70, 0xf5, 0x50, 0x95, 0x1e, 0x56, 0xe5, 0x0d, 0x57, 0x8f, 0x34, 0x3e, 0xc6, 0xb4, 0x65, 0xa9,
+	0xc4, 0x2a, 0x66, 0xca, 0xc2, 0xda, 0x74, 0xa4, 0x61, 0xf8, 0x43, 0x95, 0x58, 0xa8, 0x0a, 0x73,
+	0xaa, 0xa6, 0xe1, 0xae, 0x4b, 0x5b, 0x03, 0x6d, 0x76, 0x58, 0x3b, 0x1b, 0xf2, 0x7b, 0xfd, 0x2d,
+	0xab, 0x30, 0xdd, 0xc6, 0x7e, 0x4b, 0xb3, 0x54, 0xdb, 0x6d, 0xd9, 0x7a, 0x31, 0xc7, 0x3b, 0xec,
+	0x7b, 0x6c, 0x63, 0x7f, 0x9b, 0x31, 0x3b, 0x7a, 0xfd, 0xfe, 0x9b, 0xe3, 0x92, 0xf0, 0xe3, 0xb8,
+	0x24, 0xbc, 0xbe, 0x3c, 0x59, 0x8f, 0x5a, 0x7c, 0x7b, 0x79, 0xb2, 0xfe, 0xef, 0xe8, 0xd1, 0xc6,
+	0xa6, 0x28, 0x2f, 0xc2, 0x42, 0x0c, 0xd8, 0x33, 0x88, 0x87, 0x5d, 0x62, 0xc8, 0xaf, 0xd2, 0x90,
+	0x67, 0x8c, 0xb7, 0xa5, 0x1d, 0xa0, 0x2a, 0x64, 0xf6, 0x7d, 0xec, 0x24, 0x9b, 0x33, 0x97, 0xa2,
+	0x65, 0xc8, 0xb9, 0x5d, 0xa7, 0x6d, 0xf8, 0xf1, 0xf1, 0x86, 0x60, 0x2c, 0xbd, 0xf4, 0x1f, 0xa5,
+	0x97, 0x49, 0x94, 0x5e, 0x36, 0x41, 0x7a, 0xb9, 0xd1, 0xe9, 0x49, 0x30, 0x49, 0x7b, 0x81, 0x62,
+	0x72, 0x58, 0x91, 0xa3, 0x3d, 0xce, 0xcb, 0x50, 0xe8, 0x60, 0xb3, 0x65, 0xbb, 0xba, 0xd1, 0x2b,
+	0xe6, 0x63, 0x75, 0x3a, 0xd8, 0xdc, 0x61, 0x70, 0xfd, 0x56, 0x98, 0x52, 0x8a, 0xa5, 0xc4, 0x07,
+	0xc4, 0x12, 0x92, 0xc6, 0x27, 0xc4, 0xc6, 0x2e, 0x23, 0xf8, 0xab, 0xff, 0x1c, 0xe5, 0xf2, 0x02,
+	0x80, 0x63, 0x8f, 0xf0, 0xef, 0x05, 0x53, 0xbf, 0x3d, 0xd2, 0x4a, 0xf9, 0x1a, 0x2b, 0xbc, 0x94,
+	0xfc, 0x37, 0x88, 0xb1, 0x9b, 0xc2, 0xd1, 0xc8, 0xd6, 0x27, 0x01, 0x66, 0x9b, 0xc4, 0x7c, 0xe2,
+	0xe9, 0x2a, 0x35, 0x76, 0x55, 0x5f, 0x75, 0x08, 0xba, 0x07, 0x05, 0xb5, 0x4b, 0x2d, 0xec, 0xdb,
+	0xf4, 0x28, 0x99, 0xc3, 0x81, 0x1e, 0x3d, 0x80, 0x9c, 0xc7, 0x8f, 0xe1, 0xf7, 0x67, 0xaa, 0xb6,
+	0x5c, 0x19, 0xf9, 0x76, 0xaa, 0x04, 0xb5, 0x1a, 0x85, 0xd3, 0x6f, 0xa5, 0x54, 0x98, 0x4b, 0xb0,
+	0xaf, 0x7e, 0x87, 0x35, 0x38, 0x38, 0x91, 0x75, 0xf9, 0xff, 0xd8, 0x2e, 0x87, 0x8d, 0xcb, 0x4b,
+	0xb0, 0x78, 0x05, 0xea, 0xf7, 0x59, 0x7b, 0x9f, 0x86, 0x74, 0x93, 0x98, 0xe8, 0x39, 0xc0, 0xd0,
+	0xbb, 0xe8, 0xbf, 0x31, 0xe6, 0x62, 0x03, 0x13, 0x6f, 0x24, 0x51, 0xf5, 0x2b, 0xa1, 0xa7, 0x30,
+	0x33, 0x40, 0x59, 0xd6, 0xa5, 0x6b, 0xb6, 0xb3, 0x2b, 0x22, 0xae, 0xfe, 0x42, 0x10, 0x1d, 0x6d,
+	0xc2, 0xec, 0x95, 0x1c, 0xd1, 0x3f, 0xd7, 0xed, 0xe5, 0x12, 0xb1, 0x9a, 0xc4, 0x7e, 0xec, 0x56,
+	0xa0, 0x7d, 0x98, 0x8e, 0xdd, 0x88, 0x95, 0xf1, 0x47, 0x0c, 0xeb, 0xc4, 0x4a, 0x32, 0x5d, 0xbf,
+	0x8e, 0x98, 0x7d, 0xc9, 0x92, 0x6f, 0x34, 0x4f, 0xcf, 0x25, 0xe1, 0xec, 0x5c, 0x12, 0xbe, 0x9f,
+	0x4b, 0xc2, 0xbb, 0x0b, 0x29, 0x75, 0x76, 0x21, 0xa5, 0xbe, 0x5e, 0x48, 0xa9, 0x67, 0x9b, 0xa6,
+	0x4d, 0xad, 0x6e, 0xbb, 0xa2, 0x61, 0x47, 0xb9, 0xd9, 0xdb, 0xc5, 0x9d, 0x23, 0x13, 0xbb, 0x4a,
+	0xbf, 0xc8, 0xc6, 0x61, 0x4d, 0xe9, 0xc5, 0x3e, 0x89, 0x47, 0x9e, 0x41, 0xda, 0x39, 0xfe, 0xe9,
+	0xd9, 0xfc, 0x19, 0x00, 0x00, 0xff, 0xff, 0x37, 0x5e, 0x11, 0x5e, 0x38, 0x07, 0x00, 0x00,
 }
 
 func (this *MsgCheckpoint) Equal(that interface{}) bool {
@@ -586,9 +586,9 @@ type MsgClient interface {
 	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
-	CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opts ...grpc.CallOption) (*MsgCheckpointAckResponse, error)
+	CheckpointAck(ctx context.Context, in *MsgCpAck, opts ...grpc.CallOption) (*MsgCpAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
-	CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error)
+	CheckpointNoAck(ctx context.Context, in *MsgCpNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
@@ -610,8 +610,8 @@ func (c *msgClient) Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...g
 	return out, nil
 }
 
-func (c *msgClient) CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opts ...grpc.CallOption) (*MsgCheckpointAckResponse, error) {
-	out := new(MsgCheckpointAckResponse)
+func (c *msgClient) CheckpointAck(ctx context.Context, in *MsgCpAck, opts ...grpc.CallOption) (*MsgCpAckResponse, error) {
+	out := new(MsgCpAckResponse)
 	err := c.cc.Invoke(ctx, "/heimdallv2.checkpoint.Msg/CheckpointAck", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -619,7 +619,7 @@ func (c *msgClient) CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opt
 	return out, nil
 }
 
-func (c *msgClient) CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error) {
+func (c *msgClient) CheckpointNoAck(ctx context.Context, in *MsgCpNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error) {
 	out := new(MsgCheckpointNoAckResponse)
 	err := c.cc.Invoke(ctx, "/heimdallv2.checkpoint.Msg/CheckpointNoAck", in, out, opts...)
 	if err != nil {
@@ -642,9 +642,9 @@ type MsgServer interface {
 	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
-	CheckpointAck(context.Context, *MsgCheckpointAck) (*MsgCheckpointAckResponse, error)
+	CheckpointAck(context.Context, *MsgCpAck) (*MsgCpAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
-	CheckpointNoAck(context.Context, *MsgCheckpointNoAck) (*MsgCheckpointNoAckResponse, error)
+	CheckpointNoAck(context.Context, *MsgCpNoAck) (*MsgCheckpointNoAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 }
@@ -656,10 +656,10 @@ type UnimplementedMsgServer struct {
 func (*UnimplementedMsgServer) Checkpoint(ctx context.Context, req *MsgCheckpoint) (*MsgCheckpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Checkpoint not implemented")
 }
-func (*UnimplementedMsgServer) CheckpointAck(ctx context.Context, req *MsgCheckpointAck) (*MsgCheckpointAckResponse, error) {
+func (*UnimplementedMsgServer) CheckpointAck(ctx context.Context, req *MsgCpAck) (*MsgCpAckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckpointAck not implemented")
 }
-func (*UnimplementedMsgServer) CheckpointNoAck(ctx context.Context, req *MsgCheckpointNoAck) (*MsgCheckpointNoAckResponse, error) {
+func (*UnimplementedMsgServer) CheckpointNoAck(ctx context.Context, req *MsgCpNoAck) (*MsgCheckpointNoAckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckpointNoAck not implemented")
 }
 func (*UnimplementedMsgServer) UpdateParams(ctx context.Context, req *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
@@ -689,7 +689,7 @@ func _Msg_Checkpoint_Handler(srv interface{}, ctx context.Context, dec func(inte
 }
 
 func _Msg_CheckpointAck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgCheckpointAck)
+	in := new(MsgCpAck)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -701,13 +701,13 @@ func _Msg_CheckpointAck_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: "/heimdallv2.checkpoint.Msg/CheckpointAck",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CheckpointAck(ctx, req.(*MsgCheckpointAck))
+		return srv.(MsgServer).CheckpointAck(ctx, req.(*MsgCpAck))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Msg_CheckpointNoAck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgCheckpointNoAck)
+	in := new(MsgCpNoAck)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -719,7 +719,7 @@ func _Msg_CheckpointNoAck_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/heimdallv2.checkpoint.Msg/CheckpointNoAck",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CheckpointNoAck(ctx, req.(*MsgCheckpointNoAck))
+		return srv.(MsgServer).CheckpointNoAck(ctx, req.(*MsgCpNoAck))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -851,7 +851,7 @@ func (m *MsgCheckpointResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgCheckpointAck) Marshal() (dAtA []byte, err error) {
+func (m *MsgCpAck) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -861,12 +861,12 @@ func (m *MsgCheckpointAck) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgCheckpointAck) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgCpAck) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgCheckpointAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgCpAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -922,7 +922,7 @@ func (m *MsgCheckpointAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgCheckpointAckResponse) Marshal() (dAtA []byte, err error) {
+func (m *MsgCpAckResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -932,12 +932,12 @@ func (m *MsgCheckpointAckResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgCheckpointAckResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgCpAckResponse) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgCheckpointAckResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgCpAckResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -945,7 +945,7 @@ func (m *MsgCheckpointAckResponse) MarshalToSizedBuffer(dAtA []byte) (int, error
 	return len(dAtA) - i, nil
 }
 
-func (m *MsgCheckpointNoAck) Marshal() (dAtA []byte, err error) {
+func (m *MsgCpNoAck) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -955,12 +955,12 @@ func (m *MsgCheckpointNoAck) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *MsgCheckpointNoAck) MarshalTo(dAtA []byte) (int, error) {
+func (m *MsgCpNoAck) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *MsgCheckpointNoAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MsgCpNoAck) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1112,7 +1112,7 @@ func (m *MsgCheckpointResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgCheckpointAck) Size() (n int) {
+func (m *MsgCpAck) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1149,7 +1149,7 @@ func (m *MsgCheckpointAck) Size() (n int) {
 	return n
 }
 
-func (m *MsgCheckpointAckResponse) Size() (n int) {
+func (m *MsgCpAckResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1158,7 +1158,7 @@ func (m *MsgCheckpointAckResponse) Size() (n int) {
 	return n
 }
 
-func (m *MsgCheckpointNoAck) Size() (n int) {
+func (m *MsgCpNoAck) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1480,7 +1480,7 @@ func (m *MsgCheckpointResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgCheckpointAck) Unmarshal(dAtA []byte) error {
+func (m *MsgCpAck) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1503,10 +1503,10 @@ func (m *MsgCheckpointAck) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgCheckpointAck: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgCpAck: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgCheckpointAck: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgCpAck: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1738,7 +1738,7 @@ func (m *MsgCheckpointAck) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgCheckpointAckResponse) Unmarshal(dAtA []byte) error {
+func (m *MsgCpAckResponse) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1761,10 +1761,10 @@ func (m *MsgCheckpointAckResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgCheckpointAckResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgCpAckResponse: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgCheckpointAckResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgCpAckResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		default:
@@ -1788,7 +1788,7 @@ func (m *MsgCheckpointAckResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *MsgCheckpointNoAck) Unmarshal(dAtA []byte) error {
+func (m *MsgCpNoAck) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1811,10 +1811,10 @@ func (m *MsgCheckpointNoAck) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: MsgCheckpointNoAck: wiretype end group for non-group")
+			return fmt.Errorf("proto: MsgCpNoAck: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MsgCheckpointNoAck: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MsgCpNoAck: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

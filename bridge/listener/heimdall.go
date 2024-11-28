@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 const (
@@ -30,7 +31,7 @@ func (hl *HeimdallListener) Start() error {
 	headerCtx, cancelHeaderProcess := context.WithCancel(context.Background())
 	hl.cancelHeaderProcess = cancelHeaderProcess
 
-	// Heimdall pollInterval = (minimal pollInterval of rootchain and matichain)
+	// Heimdall pollInterval = (minimal pollInterval of root chain and bor chain)
 	pollInterval := helper.GetConfig().SyncerPollInterval
 	if helper.GetConfig().CheckpointPollInterval < helper.GetConfig().SyncerPollInterval {
 		pollInterval = helper.GetConfig().CheckpointPollInterval

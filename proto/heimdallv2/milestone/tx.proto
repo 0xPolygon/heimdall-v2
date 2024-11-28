@@ -29,8 +29,7 @@ service Msg {
 
 // MsgMilestone defines a SDK message for the milestone
 message MsgMilestone {
-  option (cosmos.msg.v1.signer) = "proposer";
-  option (amino.name) = "heimdallv2/MsgMilestone";
+  option (amino.name) = "heimdallv2/milestone/MsgMilestone";
   option (cosmos.msg.v1.signer) = "proposer";
 
   option (gogoproto.equal) = true;
@@ -59,7 +58,7 @@ message MsgMilestoneResponse {}
 // was proposed within the timeout period
 message MsgMilestoneTimeout {
   option (cosmos.msg.v1.signer) = "from";
-  option (amino.name) = "heimdallv2/MsgMilestoneTimeout";
+  option (amino.name) = "heimdallv2/milestone/MsgTimeout";
 
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
@@ -76,7 +75,7 @@ message MsgMilestoneTimeoutResponse {}
 // MsgUpdateParams is the Msg/UpdateParams request type.
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name) = "heimdallv2/x/milestone/MsgUpdateParams";
+  option (amino.name) = "heimdallv2/milestone/MsgUpdateParams";
 
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).

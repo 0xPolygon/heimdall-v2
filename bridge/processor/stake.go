@@ -6,11 +6,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	stakingTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -19,6 +14,11 @@ import (
 	authTx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	stakingTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const (
@@ -411,7 +411,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 }
 
 func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64) (bool, uint64, error) {
-	currentNonce, err := util.GetValidatorNonce(sp.cliCtx, validatorId)
+	currentNonce, err := util.GetValidatorNonce(validatorId)
 	if err != nil {
 		sp.Logger.Error("Failed to fetch validator nonce and height data from API", "validatorId", validatorId)
 		return false, 0, err

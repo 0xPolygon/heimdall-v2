@@ -10,9 +10,8 @@ import (
 
 // Default parameter values
 const (
-	DefaultMainChainTxConfirmations         uint64 = 6
-	DefaultBorChainTxConfirmations          uint64 = 10
-	DefaultBorChainMilestoneTxConfirmations uint64 = 16
+	DefaultMainChainTxConfirmations uint64 = 6
+	DefaultBorChainTxConfirmations  uint64 = 10
 
 	DefaultStateReceiverAddress = "0x0000000000000000000000000000000000001001"
 	DefaultValidatorSetAddress  = "0x0000000000000000000000000000000000001000"
@@ -42,7 +41,7 @@ func NewParams(mainChainTxConfirmations uint64, borChainTxConfirmations uint64, 
 
 // Validate checks that the parameters have valid values.
 func (p Params) Validate() error {
-	if err := validateHeimdallAddress("polygon_pos_token_address", p.ChainParams.PolygonPosTokenAddress); err != nil {
+	if err := validateHeimdallAddress("pol_token_address", p.ChainParams.PolTokenAddress); err != nil {
 		return err
 	}
 

@@ -4,6 +4,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+// TODO HV2: is this file needed? Otherwise remove
+
 // FindEvents find out the particular event based on the given function
 func FindEvents(events []sdk.StringEvent, fn func(sdk.StringEvent) bool) *sdk.StringEvent {
 	for _, event := range events {

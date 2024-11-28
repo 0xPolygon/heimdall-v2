@@ -1,4 +1,6 @@
-# Topup
+<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+
+# Topup module
 
 Heimdall Topup is an amount which will be used to pay fees on Heimdall chain.
 
@@ -54,8 +56,6 @@ message MsgWithdrawFeeTx {
    ];
 }
 ```
-
-<!-- TODO HV2 - update/verify the query, cli, and REST behaviour -->
 
 ## CLI Commands
 

@@ -30,7 +30,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/std"
-	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
@@ -128,7 +127,7 @@ type HeimdallApp struct {
 	MilestoneKeeper    milestoneKeeper.Keeper
 	BorKeeper          borKeeper.Keeper
 
-	// utility for invoking contracts in Ethereum and Polygon PoS chain
+	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
 
 	ModuleManager *module.Manager
@@ -421,8 +420,6 @@ func NewHeimdallApp(
 	}
 	reflectionv1.RegisterReflectionServiceServer(app.GRPCQueryRouter(), reflectionSvc)
 
-	testdata.RegisterQueryServer(app.GRPCQueryRouter(), testdata.QueryImpl{})
-
 	// initialize stores
 	app.MountKVStores(keys)
 	app.MountTransientStores(tKeys)
@@ -431,7 +428,7 @@ func NewHeimdallApp(
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
-	app.setAnteHandler(txConfig)
+	app.setAnteHandler(txConfig, sideTxCfg)
 	app.setPostHandler()
 
 	// At startup, after all modules have been registered, check that all proto
@@ -459,15 +456,16 @@ func NewHeimdallApp(
 	return app
 }
 
-func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig) {
+func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig, sideTxConfig sidetxs.SideTxConfigurator) {
 	anteHandler, err := NewAnteHandler(
 		HandlerOptions{
-			ante.HandlerOptions{
+			HandlerOptions: ante.HandlerOptions{
 				AccountKeeper:   app.AccountKeeper,
 				BankKeeper:      app.BankKeeper,
 				SignModeHandler: txConfig.SignModeHandler(),
 				SigGasConsumer:  ante.DefaultSigVerificationGasConsumer,
 			},
+			SideTxConfig: sideTxConfig,
 		},
 	)
 	if err != nil {

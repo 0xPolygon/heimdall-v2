@@ -11,18 +11,19 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 // CheckpointProcessor - processor for checkpoint queue.
@@ -103,9 +104,9 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 	}
 }
 
-// sendCheckpointToHeimdall - handles headerblock from polygonposchain
+// sendCheckpointToHeimdall - handles header block from bor
 // 1. check if i am the proposer for next checkpoint
-// 2. check if checkpoint has to be proposed for given headerblock
+// 2. check if checkpoint has to be proposed for given header block
 // 3. if so, propose checkpoint to heimdall.
 func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (err error) {
 	var header = types.Header{}
@@ -155,7 +156,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 		timeStamp := uint64(time.Now().Unix())
 		checkpointBufferTime := uint64(checkpointContext.CheckpointParams.CheckpointBufferTime.Seconds())
 
-		bufferedCheckpoint, err := util.GetBufferedCheckpoint(cp.cliCtx)
+		bufferedCheckpoint, err := util.GetBufferedCheckpoint()
 		if err != nil {
 			cp.Logger.Debug("No buffered checkpoint", "bufferedCheckpoint", bufferedCheckpoint)
 		}
@@ -198,7 +199,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 
 	cp.Logger.Info("processing checkpoint confirmation event", "eventtype", event.Type)
 
-	isCurrentProposer, err := util.IsCurrentProposer(cp.cliCtx)
+	isCurrentProposer, err := util.IsCurrentProposer()
 	if err != nil {
 		cp.Logger.Error("Error checking isCurrentProposer in CheckpointConfirmation handler", "error", err)
 		return err
@@ -282,7 +283,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		)
 
 		// fetch latest checkpoint
-		latestCheckpoint, err := util.GetLatestCheckpoint(cp.cliCtx)
+		latestCheckpoint, err := util.GetLatestCheckpoint()
 		// event checkpoint is older than or equal to latest checkpoint
 		if err == nil && latestCheckpoint != nil && latestCheckpoint.EndBlock >= event.End.Uint64() {
 			cp.Logger.Debug("Checkpoint ack is already submitted", "start", event.Start, "end", event.End)
@@ -290,7 +291,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		}
 
 		// create msg checkpoint ack message
-		msg := checkpointtypes.NewMsgCheckpointAck(
+		msg := checkpointtypes.NewMsgCpAck(
 			helper.GetFromAddress(cp.cliCtx),
 			checkpointNumber.Uint64(),
 			event.Proposer.String(),
@@ -339,7 +340,7 @@ func (cp *CheckpointProcessor) handleCheckpointNoAck() {
 	if isNoAckRequired {
 		var isProposer bool
 
-		if isProposer, err = util.IsInProposerList(cp.cliCtx, count); err != nil {
+		if isProposer, err = util.IsInProposerList(count); err != nil {
 			cp.Logger.Error("Error checking IsInProposerList while proposing Checkpoint No-Ack ", "error", err)
 			return
 		}
@@ -462,7 +463,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	cp.Logger.Info("Root hash calculated", "rootHash", string(root[:]))
 
 	var accountRootHash []byte
-	//Get DividendAccountRoot from HeimdallServer
+	// get DividendAccountRoot from heimdall
 	if accountRootHash, err = cp.fetchDividendAccountRoot(); err != nil {
 		cp.Logger.Info("Error while fetching initial account root hash from HeimdallServer", "err", err)
 		return err
@@ -747,13 +748,13 @@ func (cp *CheckpointProcessor) Stop() {
 //
 
 func (cp *CheckpointProcessor) getCheckpointContext() (*CheckpointContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx)
+	chainmanagerParams, err := util.GetChainmanagerParams()
 	if err != nil {
 		cp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err
 	}
 
-	checkpointParams, err := util.GetCheckpointParams(cp.cliCtx)
+	checkpointParams, err := util.GetCheckpointParams()
 	if err != nil {
 		cp.Logger.Error("Error while fetching checkpoint params", "error", err)
 		return nil, err
