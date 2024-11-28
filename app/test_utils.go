@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
