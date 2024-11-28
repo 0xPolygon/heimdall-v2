@@ -156,7 +156,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 	return cmd
 }
 
-// SendCheckpointAckCmd returns a CLI command handler for creating a MsgCheckpointAck transaction.
+// SendCheckpointAckCmd returns a CLI command handler for creating a MsgCpAck transaction.
 func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-ack",
@@ -222,7 +222,7 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("invalid transaction for header block. Error: %v", err)
 			}
 
-			msg := checkpointTypes.NewMsgCheckpointAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
+			msg := checkpointTypes.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
 		},

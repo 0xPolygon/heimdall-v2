@@ -32,9 +32,9 @@ type MsgClient interface {
 	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...grpc.CallOption) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
-	CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opts ...grpc.CallOption) (*MsgCheckpointAckResponse, error)
+	CheckpointAck(ctx context.Context, in *MsgCpAck, opts ...grpc.CallOption) (*MsgCpAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
-	CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error)
+	CheckpointNoAck(ctx context.Context, in *MsgCpNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
 	UpdateParams(ctx context.Context, in *MsgUpdateParams, opts ...grpc.CallOption) (*MsgUpdateParamsResponse, error)
 }
@@ -56,8 +56,8 @@ func (c *msgClient) Checkpoint(ctx context.Context, in *MsgCheckpoint, opts ...g
 	return out, nil
 }
 
-func (c *msgClient) CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opts ...grpc.CallOption) (*MsgCheckpointAckResponse, error) {
-	out := new(MsgCheckpointAckResponse)
+func (c *msgClient) CheckpointAck(ctx context.Context, in *MsgCpAck, opts ...grpc.CallOption) (*MsgCpAckResponse, error) {
+	out := new(MsgCpAckResponse)
 	err := c.cc.Invoke(ctx, Msg_CheckpointAck_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func (c *msgClient) CheckpointAck(ctx context.Context, in *MsgCheckpointAck, opt
 	return out, nil
 }
 
-func (c *msgClient) CheckpointNoAck(ctx context.Context, in *MsgCheckpointNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error) {
+func (c *msgClient) CheckpointNoAck(ctx context.Context, in *MsgCpNoAck, opts ...grpc.CallOption) (*MsgCheckpointNoAckResponse, error) {
 	out := new(MsgCheckpointNoAckResponse)
 	err := c.cc.Invoke(ctx, Msg_CheckpointNoAck_FullMethodName, in, out, opts...)
 	if err != nil {
@@ -90,9 +90,9 @@ type MsgServer interface {
 	// Checkpoint defines a method for the new checkpoint
 	Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error)
 	// CheckpointAck defines a method for checkpoint ack
-	CheckpointAck(context.Context, *MsgCheckpointAck) (*MsgCheckpointAckResponse, error)
+	CheckpointAck(context.Context, *MsgCpAck) (*MsgCpAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
-	CheckpointNoAck(context.Context, *MsgCheckpointNoAck) (*MsgCheckpointNoAckResponse, error)
+	CheckpointNoAck(context.Context, *MsgCpNoAck) (*MsgCheckpointNoAckResponse, error)
 	// CheckpointNoAck defines a method for checkpoint no ack
 	UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error)
 	mustEmbedUnimplementedMsgServer()
@@ -105,10 +105,10 @@ type UnimplementedMsgServer struct {
 func (UnimplementedMsgServer) Checkpoint(context.Context, *MsgCheckpoint) (*MsgCheckpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Checkpoint not implemented")
 }
-func (UnimplementedMsgServer) CheckpointAck(context.Context, *MsgCheckpointAck) (*MsgCheckpointAckResponse, error) {
+func (UnimplementedMsgServer) CheckpointAck(context.Context, *MsgCpAck) (*MsgCpAckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckpointAck not implemented")
 }
-func (UnimplementedMsgServer) CheckpointNoAck(context.Context, *MsgCheckpointNoAck) (*MsgCheckpointNoAckResponse, error) {
+func (UnimplementedMsgServer) CheckpointNoAck(context.Context, *MsgCpNoAck) (*MsgCheckpointNoAckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckpointNoAck not implemented")
 }
 func (UnimplementedMsgServer) UpdateParams(context.Context, *MsgUpdateParams) (*MsgUpdateParamsResponse, error) {
@@ -146,7 +146,7 @@ func _Msg_Checkpoint_Handler(srv interface{}, ctx context.Context, dec func(inte
 }
 
 func _Msg_CheckpointAck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgCheckpointAck)
+	in := new(MsgCpAck)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -158,13 +158,13 @@ func _Msg_CheckpointAck_Handler(srv interface{}, ctx context.Context, dec func(i
 		FullMethod: Msg_CheckpointAck_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CheckpointAck(ctx, req.(*MsgCheckpointAck))
+		return srv.(MsgServer).CheckpointAck(ctx, req.(*MsgCpAck))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _Msg_CheckpointNoAck_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MsgCheckpointNoAck)
+	in := new(MsgCpNoAck)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func _Msg_CheckpointNoAck_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: Msg_CheckpointNoAck_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MsgServer).CheckpointNoAck(ctx, req.(*MsgCheckpointNoAck))
+		return srv.(MsgServer).CheckpointNoAck(ctx, req.(*MsgCpNoAck))
 	}
 	return interceptor(ctx, in, info, handler)
 }

@@ -17,35 +17,35 @@ import (
 )
 
 var (
-	md_MsgProposeSpanRequest             protoreflect.MessageDescriptor
-	fd_MsgProposeSpanRequest_span_id     protoreflect.FieldDescriptor
-	fd_MsgProposeSpanRequest_proposer    protoreflect.FieldDescriptor
-	fd_MsgProposeSpanRequest_start_block protoreflect.FieldDescriptor
-	fd_MsgProposeSpanRequest_end_block   protoreflect.FieldDescriptor
-	fd_MsgProposeSpanRequest_chain_id    protoreflect.FieldDescriptor
-	fd_MsgProposeSpanRequest_seed        protoreflect.FieldDescriptor
+	md_MsgProposeSpan             protoreflect.MessageDescriptor
+	fd_MsgProposeSpan_span_id     protoreflect.FieldDescriptor
+	fd_MsgProposeSpan_proposer    protoreflect.FieldDescriptor
+	fd_MsgProposeSpan_start_block protoreflect.FieldDescriptor
+	fd_MsgProposeSpan_end_block   protoreflect.FieldDescriptor
+	fd_MsgProposeSpan_chain_id    protoreflect.FieldDescriptor
+	fd_MsgProposeSpan_seed        protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_bor_tx_proto_init()
-	md_MsgProposeSpanRequest = File_heimdallv2_bor_tx_proto.Messages().ByName("MsgProposeSpanRequest")
-	fd_MsgProposeSpanRequest_span_id = md_MsgProposeSpanRequest.Fields().ByName("span_id")
-	fd_MsgProposeSpanRequest_proposer = md_MsgProposeSpanRequest.Fields().ByName("proposer")
-	fd_MsgProposeSpanRequest_start_block = md_MsgProposeSpanRequest.Fields().ByName("start_block")
-	fd_MsgProposeSpanRequest_end_block = md_MsgProposeSpanRequest.Fields().ByName("end_block")
-	fd_MsgProposeSpanRequest_chain_id = md_MsgProposeSpanRequest.Fields().ByName("chain_id")
-	fd_MsgProposeSpanRequest_seed = md_MsgProposeSpanRequest.Fields().ByName("seed")
+	md_MsgProposeSpan = File_heimdallv2_bor_tx_proto.Messages().ByName("MsgProposeSpan")
+	fd_MsgProposeSpan_span_id = md_MsgProposeSpan.Fields().ByName("span_id")
+	fd_MsgProposeSpan_proposer = md_MsgProposeSpan.Fields().ByName("proposer")
+	fd_MsgProposeSpan_start_block = md_MsgProposeSpan.Fields().ByName("start_block")
+	fd_MsgProposeSpan_end_block = md_MsgProposeSpan.Fields().ByName("end_block")
+	fd_MsgProposeSpan_chain_id = md_MsgProposeSpan.Fields().ByName("chain_id")
+	fd_MsgProposeSpan_seed = md_MsgProposeSpan.Fields().ByName("seed")
 }
 
-var _ protoreflect.Message = (*fastReflection_MsgProposeSpanRequest)(nil)
+var _ protoreflect.Message = (*fastReflection_MsgProposeSpan)(nil)
 
-type fastReflection_MsgProposeSpanRequest MsgProposeSpanRequest
+type fastReflection_MsgProposeSpan MsgProposeSpan
 
-func (x *MsgProposeSpanRequest) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_MsgProposeSpanRequest)(x)
+func (x *MsgProposeSpan) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgProposeSpan)(x)
 }
 
-func (x *MsgProposeSpanRequest) slowProtoReflect() protoreflect.Message {
+func (x *MsgProposeSpan) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_bor_tx_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -57,43 +57,43 @@ func (x *MsgProposeSpanRequest) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_MsgProposeSpanRequest_messageType fastReflection_MsgProposeSpanRequest_messageType
-var _ protoreflect.MessageType = fastReflection_MsgProposeSpanRequest_messageType{}
+var _fastReflection_MsgProposeSpan_messageType fastReflection_MsgProposeSpan_messageType
+var _ protoreflect.MessageType = fastReflection_MsgProposeSpan_messageType{}
 
-type fastReflection_MsgProposeSpanRequest_messageType struct{}
+type fastReflection_MsgProposeSpan_messageType struct{}
 
-func (x fastReflection_MsgProposeSpanRequest_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_MsgProposeSpanRequest)(nil)
+func (x fastReflection_MsgProposeSpan_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgProposeSpan)(nil)
 }
-func (x fastReflection_MsgProposeSpanRequest_messageType) New() protoreflect.Message {
-	return new(fastReflection_MsgProposeSpanRequest)
+func (x fastReflection_MsgProposeSpan_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgProposeSpan)
 }
-func (x fastReflection_MsgProposeSpanRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgProposeSpanRequest
+func (x fastReflection_MsgProposeSpan_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgProposeSpan
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_MsgProposeSpanRequest) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgProposeSpanRequest
+func (x *fastReflection_MsgProposeSpan) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgProposeSpan
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_MsgProposeSpanRequest) Type() protoreflect.MessageType {
-	return _fastReflection_MsgProposeSpanRequest_messageType
+func (x *fastReflection_MsgProposeSpan) Type() protoreflect.MessageType {
+	return _fastReflection_MsgProposeSpan_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_MsgProposeSpanRequest) New() protoreflect.Message {
-	return new(fastReflection_MsgProposeSpanRequest)
+func (x *fastReflection_MsgProposeSpan) New() protoreflect.Message {
+	return new(fastReflection_MsgProposeSpan)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_MsgProposeSpanRequest) Interface() protoreflect.ProtoMessage {
-	return (*MsgProposeSpanRequest)(x)
+func (x *fastReflection_MsgProposeSpan) Interface() protoreflect.ProtoMessage {
+	return (*MsgProposeSpan)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -101,40 +101,40 @@ func (x *fastReflection_MsgProposeSpanRequest) Interface() protoreflect.ProtoMes
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_MsgProposeSpanRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_MsgProposeSpan) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.SpanId != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.SpanId)
-		if !f(fd_MsgProposeSpanRequest_span_id, value) {
+		if !f(fd_MsgProposeSpan_span_id, value) {
 			return
 		}
 	}
 	if x.Proposer != "" {
 		value := protoreflect.ValueOfString(x.Proposer)
-		if !f(fd_MsgProposeSpanRequest_proposer, value) {
+		if !f(fd_MsgProposeSpan_proposer, value) {
 			return
 		}
 	}
 	if x.StartBlock != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.StartBlock)
-		if !f(fd_MsgProposeSpanRequest_start_block, value) {
+		if !f(fd_MsgProposeSpan_start_block, value) {
 			return
 		}
 	}
 	if x.EndBlock != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.EndBlock)
-		if !f(fd_MsgProposeSpanRequest_end_block, value) {
+		if !f(fd_MsgProposeSpan_end_block, value) {
 			return
 		}
 	}
 	if x.ChainId != "" {
 		value := protoreflect.ValueOfString(x.ChainId)
-		if !f(fd_MsgProposeSpanRequest_chain_id, value) {
+		if !f(fd_MsgProposeSpan_chain_id, value) {
 			return
 		}
 	}
 	if len(x.Seed) != 0 {
 		value := protoreflect.ValueOfBytes(x.Seed)
-		if !f(fd_MsgProposeSpanRequest_seed, value) {
+		if !f(fd_MsgProposeSpan_seed, value) {
 			return
 		}
 	}
@@ -151,25 +151,25 @@ func (x *fastReflection_MsgProposeSpanRequest) Range(f func(protoreflect.FieldDe
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_MsgProposeSpanRequest) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_MsgProposeSpan) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.bor.MsgProposeSpanRequest.span_id":
+	case "heimdallv2.bor.MsgProposeSpan.span_id":
 		return x.SpanId != uint64(0)
-	case "heimdallv2.bor.MsgProposeSpanRequest.proposer":
+	case "heimdallv2.bor.MsgProposeSpan.proposer":
 		return x.Proposer != ""
-	case "heimdallv2.bor.MsgProposeSpanRequest.start_block":
+	case "heimdallv2.bor.MsgProposeSpan.start_block":
 		return x.StartBlock != uint64(0)
-	case "heimdallv2.bor.MsgProposeSpanRequest.end_block":
+	case "heimdallv2.bor.MsgProposeSpan.end_block":
 		return x.EndBlock != uint64(0)
-	case "heimdallv2.bor.MsgProposeSpanRequest.chain_id":
+	case "heimdallv2.bor.MsgProposeSpan.chain_id":
 		return x.ChainId != ""
-	case "heimdallv2.bor.MsgProposeSpanRequest.seed":
+	case "heimdallv2.bor.MsgProposeSpan.seed":
 		return len(x.Seed) != 0
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpanRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpan"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpanRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpan does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -179,25 +179,25 @@ func (x *fastReflection_MsgProposeSpanRequest) Has(fd protoreflect.FieldDescript
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgProposeSpanRequest) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_MsgProposeSpan) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.MsgProposeSpanRequest.span_id":
+	case "heimdallv2.bor.MsgProposeSpan.span_id":
 		x.SpanId = uint64(0)
-	case "heimdallv2.bor.MsgProposeSpanRequest.proposer":
+	case "heimdallv2.bor.MsgProposeSpan.proposer":
 		x.Proposer = ""
-	case "heimdallv2.bor.MsgProposeSpanRequest.start_block":
+	case "heimdallv2.bor.MsgProposeSpan.start_block":
 		x.StartBlock = uint64(0)
-	case "heimdallv2.bor.MsgProposeSpanRequest.end_block":
+	case "heimdallv2.bor.MsgProposeSpan.end_block":
 		x.EndBlock = uint64(0)
-	case "heimdallv2.bor.MsgProposeSpanRequest.chain_id":
+	case "heimdallv2.bor.MsgProposeSpan.chain_id":
 		x.ChainId = ""
-	case "heimdallv2.bor.MsgProposeSpanRequest.seed":
+	case "heimdallv2.bor.MsgProposeSpan.seed":
 		x.Seed = nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpanRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpan"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpanRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpan does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -207,31 +207,31 @@ func (x *fastReflection_MsgProposeSpanRequest) Clear(fd protoreflect.FieldDescri
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_MsgProposeSpanRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgProposeSpan) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.bor.MsgProposeSpanRequest.span_id":
+	case "heimdallv2.bor.MsgProposeSpan.span_id":
 		value := x.SpanId
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.bor.MsgProposeSpanRequest.proposer":
+	case "heimdallv2.bor.MsgProposeSpan.proposer":
 		value := x.Proposer
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.bor.MsgProposeSpanRequest.start_block":
+	case "heimdallv2.bor.MsgProposeSpan.start_block":
 		value := x.StartBlock
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.bor.MsgProposeSpanRequest.end_block":
+	case "heimdallv2.bor.MsgProposeSpan.end_block":
 		value := x.EndBlock
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.bor.MsgProposeSpanRequest.chain_id":
+	case "heimdallv2.bor.MsgProposeSpan.chain_id":
 		value := x.ChainId
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.bor.MsgProposeSpanRequest.seed":
+	case "heimdallv2.bor.MsgProposeSpan.seed":
 		value := x.Seed
 		return protoreflect.ValueOfBytes(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpanRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpan"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpanRequest does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpan does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -245,25 +245,25 @@ func (x *fastReflection_MsgProposeSpanRequest) Get(descriptor protoreflect.Field
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgProposeSpanRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_MsgProposeSpan) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.bor.MsgProposeSpanRequest.span_id":
+	case "heimdallv2.bor.MsgProposeSpan.span_id":
 		x.SpanId = value.Uint()
-	case "heimdallv2.bor.MsgProposeSpanRequest.proposer":
+	case "heimdallv2.bor.MsgProposeSpan.proposer":
 		x.Proposer = value.Interface().(string)
-	case "heimdallv2.bor.MsgProposeSpanRequest.start_block":
+	case "heimdallv2.bor.MsgProposeSpan.start_block":
 		x.StartBlock = value.Uint()
-	case "heimdallv2.bor.MsgProposeSpanRequest.end_block":
+	case "heimdallv2.bor.MsgProposeSpan.end_block":
 		x.EndBlock = value.Uint()
-	case "heimdallv2.bor.MsgProposeSpanRequest.chain_id":
+	case "heimdallv2.bor.MsgProposeSpan.chain_id":
 		x.ChainId = value.Interface().(string)
-	case "heimdallv2.bor.MsgProposeSpanRequest.seed":
+	case "heimdallv2.bor.MsgProposeSpan.seed":
 		x.Seed = value.Bytes()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpanRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpan"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpanRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpan does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -277,60 +277,60 @@ func (x *fastReflection_MsgProposeSpanRequest) Set(fd protoreflect.FieldDescript
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgProposeSpanRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgProposeSpan) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.MsgProposeSpanRequest.span_id":
-		panic(fmt.Errorf("field span_id of message heimdallv2.bor.MsgProposeSpanRequest is not mutable"))
-	case "heimdallv2.bor.MsgProposeSpanRequest.proposer":
-		panic(fmt.Errorf("field proposer of message heimdallv2.bor.MsgProposeSpanRequest is not mutable"))
-	case "heimdallv2.bor.MsgProposeSpanRequest.start_block":
-		panic(fmt.Errorf("field start_block of message heimdallv2.bor.MsgProposeSpanRequest is not mutable"))
-	case "heimdallv2.bor.MsgProposeSpanRequest.end_block":
-		panic(fmt.Errorf("field end_block of message heimdallv2.bor.MsgProposeSpanRequest is not mutable"))
-	case "heimdallv2.bor.MsgProposeSpanRequest.chain_id":
-		panic(fmt.Errorf("field chain_id of message heimdallv2.bor.MsgProposeSpanRequest is not mutable"))
-	case "heimdallv2.bor.MsgProposeSpanRequest.seed":
-		panic(fmt.Errorf("field seed of message heimdallv2.bor.MsgProposeSpanRequest is not mutable"))
+	case "heimdallv2.bor.MsgProposeSpan.span_id":
+		panic(fmt.Errorf("field span_id of message heimdallv2.bor.MsgProposeSpan is not mutable"))
+	case "heimdallv2.bor.MsgProposeSpan.proposer":
+		panic(fmt.Errorf("field proposer of message heimdallv2.bor.MsgProposeSpan is not mutable"))
+	case "heimdallv2.bor.MsgProposeSpan.start_block":
+		panic(fmt.Errorf("field start_block of message heimdallv2.bor.MsgProposeSpan is not mutable"))
+	case "heimdallv2.bor.MsgProposeSpan.end_block":
+		panic(fmt.Errorf("field end_block of message heimdallv2.bor.MsgProposeSpan is not mutable"))
+	case "heimdallv2.bor.MsgProposeSpan.chain_id":
+		panic(fmt.Errorf("field chain_id of message heimdallv2.bor.MsgProposeSpan is not mutable"))
+	case "heimdallv2.bor.MsgProposeSpan.seed":
+		panic(fmt.Errorf("field seed of message heimdallv2.bor.MsgProposeSpan is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpanRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpan"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpanRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpan does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_MsgProposeSpanRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgProposeSpan) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.bor.MsgProposeSpanRequest.span_id":
+	case "heimdallv2.bor.MsgProposeSpan.span_id":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.bor.MsgProposeSpanRequest.proposer":
+	case "heimdallv2.bor.MsgProposeSpan.proposer":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.bor.MsgProposeSpanRequest.start_block":
+	case "heimdallv2.bor.MsgProposeSpan.start_block":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.bor.MsgProposeSpanRequest.end_block":
+	case "heimdallv2.bor.MsgProposeSpan.end_block":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.bor.MsgProposeSpanRequest.chain_id":
+	case "heimdallv2.bor.MsgProposeSpan.chain_id":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.bor.MsgProposeSpanRequest.seed":
+	case "heimdallv2.bor.MsgProposeSpan.seed":
 		return protoreflect.ValueOfBytes(nil)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpanRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.bor.MsgProposeSpan"))
 		}
-		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpanRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.bor.MsgProposeSpan does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_MsgProposeSpanRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_MsgProposeSpan) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.MsgProposeSpanRequest", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.bor.MsgProposeSpan", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -338,7 +338,7 @@ func (x *fastReflection_MsgProposeSpanRequest) WhichOneof(d protoreflect.OneofDe
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_MsgProposeSpanRequest) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_MsgProposeSpan) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -349,7 +349,7 @@ func (x *fastReflection_MsgProposeSpanRequest) GetUnknown() protoreflect.RawFiel
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgProposeSpanRequest) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_MsgProposeSpan) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -361,7 +361,7 @@ func (x *fastReflection_MsgProposeSpanRequest) SetUnknown(fields protoreflect.Ra
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_MsgProposeSpanRequest) IsValid() bool {
+func (x *fastReflection_MsgProposeSpan) IsValid() bool {
 	return x != nil
 }
 
@@ -371,9 +371,9 @@ func (x *fastReflection_MsgProposeSpanRequest) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_MsgProposeSpanRequest) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_MsgProposeSpan) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*MsgProposeSpanRequest)
+		x := input.Message.Interface().(*MsgProposeSpan)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -416,7 +416,7 @@ func (x *fastReflection_MsgProposeSpanRequest) ProtoMethods() *protoiface.Method
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*MsgProposeSpanRequest)
+		x := input.Message.Interface().(*MsgProposeSpan)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -482,7 +482,7 @@ func (x *fastReflection_MsgProposeSpanRequest) ProtoMethods() *protoiface.Method
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*MsgProposeSpanRequest)
+		x := input.Message.Interface().(*MsgProposeSpan)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -514,10 +514,10 @@ func (x *fastReflection_MsgProposeSpanRequest) ProtoMethods() *protoiface.Method
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgProposeSpanRequest: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgProposeSpan: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgProposeSpanRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgProposeSpan: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -1934,8 +1934,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgProposeSpanRequest represents a message to propose a span.
-type MsgProposeSpanRequest struct {
+// MsgProposeSpan represents a message to propose a span.
+type MsgProposeSpan struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1948,8 +1948,8 @@ type MsgProposeSpanRequest struct {
 	Seed       []byte `protobuf:"bytes,6,opt,name=seed,proto3" json:"seed,omitempty"`
 }
 
-func (x *MsgProposeSpanRequest) Reset() {
-	*x = MsgProposeSpanRequest{}
+func (x *MsgProposeSpan) Reset() {
+	*x = MsgProposeSpan{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_bor_tx_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1957,53 +1957,53 @@ func (x *MsgProposeSpanRequest) Reset() {
 	}
 }
 
-func (x *MsgProposeSpanRequest) String() string {
+func (x *MsgProposeSpan) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MsgProposeSpanRequest) ProtoMessage() {}
+func (*MsgProposeSpan) ProtoMessage() {}
 
-// Deprecated: Use MsgProposeSpanRequest.ProtoReflect.Descriptor instead.
-func (*MsgProposeSpanRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use MsgProposeSpan.ProtoReflect.Descriptor instead.
+func (*MsgProposeSpan) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_tx_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *MsgProposeSpanRequest) GetSpanId() uint64 {
+func (x *MsgProposeSpan) GetSpanId() uint64 {
 	if x != nil {
 		return x.SpanId
 	}
 	return 0
 }
 
-func (x *MsgProposeSpanRequest) GetProposer() string {
+func (x *MsgProposeSpan) GetProposer() string {
 	if x != nil {
 		return x.Proposer
 	}
 	return ""
 }
 
-func (x *MsgProposeSpanRequest) GetStartBlock() uint64 {
+func (x *MsgProposeSpan) GetStartBlock() uint64 {
 	if x != nil {
 		return x.StartBlock
 	}
 	return 0
 }
 
-func (x *MsgProposeSpanRequest) GetEndBlock() uint64 {
+func (x *MsgProposeSpan) GetEndBlock() uint64 {
 	if x != nil {
 		return x.EndBlock
 	}
 	return 0
 }
 
-func (x *MsgProposeSpanRequest) GetChainId() string {
+func (x *MsgProposeSpan) GetChainId() string {
 	if x != nil {
 		return x.ChainId
 	}
 	return ""
 }
 
-func (x *MsgProposeSpanRequest) GetSeed() []byte {
+func (x *MsgProposeSpan) GetSeed() []byte {
 	if x != nil {
 		return x.Seed
 	}
@@ -2126,60 +2126,61 @@ var file_heimdallv2_bor_tx_proto_rawDesc = []byte{
 	0x1a, 0x14, 0x67, 0x6f, 0x67, 0x6f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x18, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
 	0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x62, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x22, 0xe2, 0x01, 0x0a, 0x15, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x53,
-	0x70, 0x61, 0x6e, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x70,
-	0x61, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x73, 0x70, 0x61,
-	0x6e, 0x49, 0x64, 0x12, 0x34, 0x0a, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
-	0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52,
-	0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x12, 0x1f, 0x0a, 0x0b, 0x73, 0x74, 0x61,
-	0x72, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a,
-	0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x1b, 0x0a, 0x09, 0x65, 0x6e,
-	0x64, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x52, 0x08, 0x65,
-	0x6e, 0x64, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e,
-	0x5f, 0x69, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e,
-	0x49, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x65, 0x65, 0x64, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0c,
-	0x52, 0x04, 0x73, 0x65, 0x65, 0x64, 0x3a, 0x0d, 0x82, 0xe7, 0xb0, 0x2a, 0x08, 0x70, 0x72, 0x6f,
-	0x70, 0x6f, 0x73, 0x65, 0x72, 0x22, 0x18, 0x0a, 0x16, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70,
-	0x6f, 0x73, 0x65, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0xb9, 0x01, 0x0a, 0x0f, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x12, 0x36, 0x0a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d,
-	0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67,
-	0x52, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x12, 0x39, 0x0a, 0x06, 0x70,
-	0x61, 0x72, 0x61, 0x6d, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x50, 0x61, 0x72,
-	0x61, 0x6d, 0x73, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06,
-	0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x3a, 0x33, 0x82, 0xe7, 0xb0, 0x2a, 0x09, 0x61, 0x75, 0x74,
-	0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x8a, 0xe7, 0xb0, 0x2a, 0x20, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x78, 0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x4d, 0x73, 0x67, 0x55,
-	0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x22, 0x19, 0x0a, 0x17, 0x4d,
-	0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32, 0xc4, 0x01, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x5c,
-	0x0a, 0x0b, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x25, 0x2e,
-	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x4d,
-	0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x71,
-	0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65,
-	0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x58, 0x0a, 0x0c,
-	0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x1f, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x4d, 0x73,
-	0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a, 0x27, 0x2e,
-	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x4d,
-	0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0, 0x2a, 0x01, 0x42, 0xab, 0x01,
-	0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x62, 0x6f, 0x72, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a,
-	0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f,
-	0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76,
-	0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e, 0x48, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02, 0x1a, 0x48,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c, 0x47, 0x50,
-	0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x22, 0xfd, 0x01, 0x0a, 0x0e, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x53,
+	0x70, 0x61, 0x6e, 0x12, 0x17, 0x0a, 0x07, 0x73, 0x70, 0x61, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x04, 0x52, 0x06, 0x73, 0x70, 0x61, 0x6e, 0x49, 0x64, 0x12, 0x34, 0x0a, 0x08,
+	0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x18,
+	0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65,
+	0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73,
+	0x65, 0x72, 0x12, 0x1f, 0x0a, 0x0b, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63,
+	0x6b, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x52, 0x0a, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c,
+	0x6f, 0x63, 0x6b, 0x12, 0x1b, 0x0a, 0x09, 0x65, 0x6e, 0x64, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x52, 0x08, 0x65, 0x6e, 0x64, 0x42, 0x6c, 0x6f, 0x63, 0x6b,
+	0x12, 0x19, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x73,
+	0x65, 0x65, 0x64, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x04, 0x73, 0x65, 0x65, 0x64, 0x3a,
+	0x2f, 0x82, 0xe7, 0xb0, 0x2a, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x8a, 0xe7,
+	0xb0, 0x2a, 0x1d, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x62, 0x6f,
+	0x72, 0x2f, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x53, 0x70, 0x61, 0x6e,
+	0x22, 0x18, 0x0a, 0x16, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x53, 0x70,
+	0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0xb7, 0x01, 0x0a, 0x0f, 0x4d,
+	0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x36,
+	0x0a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x42, 0x18, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64,
+	0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x52, 0x09, 0x61, 0x75, 0x74,
+	0x68, 0x6f, 0x72, 0x69, 0x74, 0x79, 0x12, 0x39, 0x0a, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x42, 0x09,
+	0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x70, 0x61, 0x72, 0x61, 0x6d,
+	0x73, 0x3a, 0x31, 0x82, 0xe7, 0xb0, 0x2a, 0x09, 0x61, 0x75, 0x74, 0x68, 0x6f, 0x72, 0x69, 0x74,
+	0x79, 0x8a, 0xe7, 0xb0, 0x2a, 0x1e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2f, 0x62, 0x6f, 0x72, 0x2f, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61,
+	0x72, 0x61, 0x6d, 0x73, 0x22, 0x19, 0x0a, 0x17, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74,
+	0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x32,
+	0xbd, 0x01, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x55, 0x0a, 0x0b, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x65, 0x53, 0x70, 0x61, 0x6e, 0x12, 0x1e, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x65, 0x53, 0x70, 0x61, 0x6e, 0x1a, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e, 0x4d, 0x73, 0x67, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x65, 0x53, 0x70, 0x61, 0x6e, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x58,
+	0x0a, 0x0c, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x1f,
+	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x2e,
+	0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x1a,
+	0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72,
+	0x2e, 0x4d, 0x73, 0x67, 0x55, 0x70, 0x64, 0x61, 0x74, 0x65, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0, 0x2a, 0x01, 0x42,
+	0xab, 0x01, 0x0a, 0x12, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x62, 0x6f, 0x72, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50,
+	0x01, 0x5a, 0x33, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78,
+	0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2f, 0x62, 0x6f, 0x72, 0xa2, 0x02, 0x03, 0x48, 0x42, 0x58, 0xaa, 0x02, 0x0e, 0x48,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x42, 0x6f, 0x72, 0xca, 0x02, 0x0e,
+	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0xe2, 0x02,
+	0x1a, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x42, 0x6f, 0x72, 0x5c,
+	0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x0f, 0x48, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x42, 0x6f, 0x72, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2196,7 +2197,7 @@ func file_heimdallv2_bor_tx_proto_rawDescGZIP() []byte {
 
 var file_heimdallv2_bor_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_heimdallv2_bor_tx_proto_goTypes = []interface{}{
-	(*MsgProposeSpanRequest)(nil),   // 0: heimdallv2.bor.MsgProposeSpanRequest
+	(*MsgProposeSpan)(nil),          // 0: heimdallv2.bor.MsgProposeSpan
 	(*MsgProposeSpanResponse)(nil),  // 1: heimdallv2.bor.MsgProposeSpanResponse
 	(*MsgUpdateParams)(nil),         // 2: heimdallv2.bor.MsgUpdateParams
 	(*MsgUpdateParamsResponse)(nil), // 3: heimdallv2.bor.MsgUpdateParamsResponse
@@ -2204,7 +2205,7 @@ var file_heimdallv2_bor_tx_proto_goTypes = []interface{}{
 }
 var file_heimdallv2_bor_tx_proto_depIdxs = []int32{
 	4, // 0: heimdallv2.bor.MsgUpdateParams.params:type_name -> heimdallv2.bor.Params
-	0, // 1: heimdallv2.bor.Msg.ProposeSpan:input_type -> heimdallv2.bor.MsgProposeSpanRequest
+	0, // 1: heimdallv2.bor.Msg.ProposeSpan:input_type -> heimdallv2.bor.MsgProposeSpan
 	2, // 2: heimdallv2.bor.Msg.UpdateParams:input_type -> heimdallv2.bor.MsgUpdateParams
 	1, // 3: heimdallv2.bor.Msg.ProposeSpan:output_type -> heimdallv2.bor.MsgProposeSpanResponse
 	3, // 4: heimdallv2.bor.Msg.UpdateParams:output_type -> heimdallv2.bor.MsgUpdateParamsResponse
@@ -2223,7 +2224,7 @@ func file_heimdallv2_bor_tx_proto_init() {
 	file_heimdallv2_bor_bor_proto_init()
 	if !protoimpl.UnsafeEnabled {
 		file_heimdallv2_bor_tx_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgProposeSpanRequest); i {
+			switch v := v.(*MsgProposeSpan); i {
 			case 0:
 				return &v.state
 			case 1:

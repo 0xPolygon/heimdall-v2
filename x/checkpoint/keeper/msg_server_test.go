@@ -257,7 +257,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	headerId := uint64(1)
 
 	s.Run("No checkpoint in buffer", func() {
-		msgCheckpointAck := types.NewMsgCheckpointAck(
+		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
 			headerId,
 			header.Proposer,
@@ -268,7 +268,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(1),
 		)
 
-		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
 		require.ErrorContains(err, types.ErrBadAck.Error())
 
 	})
@@ -277,7 +277,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	require.NoError(err)
 
 	s.Run("Success", func() {
-		msgCheckpointAck := types.NewMsgCheckpointAck(
+		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
 			headerId,
 			header.Proposer,
@@ -288,7 +288,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(1),
 		)
 
-		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
 		require.NoError(err)
 
 		afterAckBufferedCheckpoint, _ := keeper.GetCheckpointFromBuffer(ctx)
@@ -296,7 +296,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	})
 
 	s.Run("Invalid start", func() {
-		msgCheckpointAck := types.NewMsgCheckpointAck(
+		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
 			headerId,
 			header.Proposer,
@@ -307,12 +307,12 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(1),
 		)
 
-		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
 		require.ErrorContains(err, types.ErrBadAck.Error())
 	})
 
 	s.Run("Invalid RootHash", func() {
-		msgCheckpointAck := types.NewMsgCheckpointAck(
+		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
 			headerId,
 			header.Proposer,
@@ -323,7 +323,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(1),
 		)
 
-		_, err = msgServer.CheckpointAck(ctx, &msgCheckpointAck)
+		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
 		require.ErrorContains(err, types.ErrBadAck.Error())
 	})
 }
@@ -369,7 +369,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	dupValidatorSet.IncrementProposerPriority(1)
 	noAckProposer := dupValidatorSet.Proposer.Signer
 
-	msgNoAck := types.MsgCheckpointNoAck{
+	msgNoAck := types.MsgCpNoAck{
 		From: noAckProposer,
 	}
 
@@ -385,7 +385,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	newTime = lastCheckpoint.Timestamp + uint64(checkpointBufferTime.Seconds())
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
-	msgNoAck = types.MsgCheckpointNoAck{
+	msgNoAck = types.MsgCpNoAck{
 		From: header.Proposer,
 	}
 
@@ -400,7 +400,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	dupValidatorSet.IncrementProposerPriority(1)
 	noAckProposer = dupValidatorSet.Proposer.Signer
 
-	msgNoAck = types.MsgCheckpointNoAck{
+	msgNoAck = types.MsgCpNoAck{
 		From: noAckProposer,
 	}
 

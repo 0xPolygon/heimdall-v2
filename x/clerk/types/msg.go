@@ -20,13 +20,13 @@ func NewMsgEventRecord(
 	data []byte,
 	chainID string,
 
-) MsgEventRecordRequest {
+) MsgEventRecord {
 	contractAddressBytes, err := hexCodec.NewHexCodec().BytesToString(contractAddress)
 	if err != nil {
 		contractAddressBytes = ""
 	}
 
-	return MsgEventRecordRequest{
+	return MsgEventRecord{
 		From:            util.FormatAddress(from),
 		TxHash:          txHash,
 		LogIndex:        logIndex,
@@ -39,13 +39,13 @@ func NewMsgEventRecord(
 }
 
 // Route Implements Msg
-func (msg MsgEventRecordRequest) Route() string { return RouterKey }
+func (msg MsgEventRecord) Route() string { return RouterKey }
 
 // Type Implements Msg.
-func (msg MsgEventRecordRequest) Type() string { return "event-record" }
+func (msg MsgEventRecord) Type() string { return "event-record" }
 
 // ValidateBasic Implements Msg
-func (msg MsgEventRecordRequest) ValidateBasic() error {
+func (msg MsgEventRecord) ValidateBasic() error {
 	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
 	if err != nil {
 		return sdkerrors.ErrInvalidAddress
@@ -70,11 +70,11 @@ func (msg MsgEventRecordRequest) ValidateBasic() error {
 }
 
 // GetTxHash Returns tx hash
-func (msg MsgEventRecordRequest) GetTxHash() string {
+func (msg MsgEventRecord) GetTxHash() string {
 	return msg.TxHash
 }
 
 // GetLogIndex Returns log index
-func (msg MsgEventRecordRequest) GetLogIndex() uint64 {
+func (msg MsgEventRecord) GetLogIndex() uint64 {
 	return msg.LogIndex
 }
