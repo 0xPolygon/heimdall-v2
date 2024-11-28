@@ -37,9 +37,6 @@ sub_graph_url = "{{ .Custom.SubGraphUrl }}"
 
 #### Bridge configs ####
 
-# Heimdall REST server endpoint, which is used by bridge
-heimdall_rest_server = "{{ .Custom.HeimdallServerURL }}"
-
 # AMQP endpoint
 amqp_url = "{{ .Custom.AmqpURL }}"
 

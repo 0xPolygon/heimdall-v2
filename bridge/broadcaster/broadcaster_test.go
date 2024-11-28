@@ -18,6 +18,7 @@ import (
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil/cli"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
@@ -107,10 +108,17 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNodeUrl)
 	viper.Set("log_level", "info")
 
+	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
 	configuration.CometBFTRPCUrl = dummyCometBFTNodeUrl
-	configuration.HeimdallServerURL = dummyHeimdallServerUrl
-	helper.SetTestConfig(configuration)
+	// configuration.HeimdallServerURL = dummyHeimdallServerUrl
+	srvconf.API.Enable = true
+	srvconf.API.Address = dummyHeimdallServerUrl
+	customAppConf := helper.CustomAppConfig{
+		Config: *srvconf,
+		Custom: configuration,
+	}
+	helper.SetTestConfig(customAppConf)
 	helper.SetTestPrivPubKey(privKey)
 
 	mockCtrl := prepareMockData(t)

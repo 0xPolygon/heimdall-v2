@@ -135,8 +135,11 @@ func initCometBFTConfig() *cmtcfg.Config {
 // initAppConfig helps to override default appConfig template and configs.
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
+	srvConf := serverconfig.DefaultConfig()
+	srvConf.API.Enable = true // enable REST server by default
+	srvConf.API.Address = helper.DefaultHeimdallServerURL
 	customAppConfig := helper.CustomAppConfig{
-		Config: *serverconfig.DefaultConfig(),
+		Config: *srvConf,
 		Custom: helper.GetDefaultHeimdallConfig(),
 	}
 

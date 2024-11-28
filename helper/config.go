@@ -183,9 +183,9 @@ type CustomConfig struct {
 	EthRPCTimeout time.Duration `mapstructure:"eth_rpc_timeout"` // timeout for eth rpc
 	BorRPCTimeout time.Duration `mapstructure:"bor_rpc_timeout"` // timeout for bor rpc
 
-	AmqpURL           string `mapstructure:"amqp_url"`             // amqp url
-	HeimdallServerURL string `mapstructure:"heimdall_rest_server"` // heimdall server url
-	GRPCServerURL     string `mapstructure:"grpc_server_url"`      // grpc server url
+	AmqpURL string `mapstructure:"amqp_url"` // amqp url
+	// HeimdallServerURL string `mapstructure:"heimdall_rest_server"` // heimdall server url
+	// GRPCServerURL     string `mapstructure:"grpc_server_url"`      // grpc server url
 
 	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction. eg....submit checkpoint.
 
@@ -428,9 +428,9 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		EthRPCTimeout: DefaultEthRPCTimeout,
 		BorRPCTimeout: DefaultBorRPCTimeout,
 
-		AmqpURL:           DefaultAmqpURL,
-		HeimdallServerURL: DefaultHeimdallServerURL,
-		GRPCServerURL:     DefaultGRPCServerURL,
+		AmqpURL: DefaultAmqpURL,
+		// HeimdallServerURL: DefaultHeimdallServerURL,
+		// GRPCServerURL:     DefaultGRPCServerURL,
 
 		MainchainGasLimit: DefaultMainchainGasLimit,
 
@@ -800,13 +800,17 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 	// get Heimdall REST server endpoint from viper/cobra
 	stringConfgValue = v.GetString(HeimdallServerURLFlag)
 	if stringConfgValue != "" {
-		c.Custom.HeimdallServerURL = stringConfgValue
+		// c.BaseConfig.HeimdallServerURL = stringConfgValue
+		c.API.Enable = true
+		c.API.Address = stringConfgValue
 	}
 
 	// get Heimdall GRPC server endpoint from viper/cobra
 	stringConfgValue = v.GetString(GRPCServerURLFlag)
 	if stringConfgValue != "" {
-		c.Custom.GRPCServerURL = stringConfgValue
+		// c.Custom.GRPCServerURL = stringConfgValue
+		c.GRPC.Enable = true
+		c.GRPC.Address = stringConfgValue
 	}
 
 	// need this error for parsing Duration values
@@ -926,13 +930,13 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 		c.Custom.AmqpURL = cc.AmqpURL
 	}
 
-	if cc.HeimdallServerURL != "" {
-		c.Custom.HeimdallServerURL = cc.HeimdallServerURL
-	}
+	// if cc.HeimdallServerURL != "" {
+	// 	c.API.Address = cc.HeimdallServerURL
+	// }
 
-	if cc.GRPCServerURL != "" {
-		c.Custom.GRPCServerURL = cc.GRPCServerURL
-	}
+	// if cc.GRPCServerURL != "" {
+	// 	c.Custom.GRPCServerURL = cc.GRPCServerURL
+	// }
 
 	if cc.MainchainGasLimit != 0 {
 		c.Custom.MainchainGasLimit = cc.MainchainGasLimit
@@ -1032,8 +1036,8 @@ func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 }
 
 // SetTestConfig sets test configuration
-func SetTestConfig(_conf CustomConfig) {
-	conf.Custom = _conf
+func SetTestConfig(_conf CustomAppConfig) {
+	conf = _conf
 }
 
 // TEST PURPOSE ONLY
