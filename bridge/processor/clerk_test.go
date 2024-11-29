@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
@@ -256,11 +257,16 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	viper.Set("log_level", "debug")
 	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
+	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
-	configuration.HeimdallServerURL = dummyHeimdallServerUrl
+	srvconf.API.Enable = true
+	srvconf.API.Address = dummyHeimdallServerUrl
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
-
-	helper.SetTestConfig(configuration)
+	customAppConf := helper.CustomAppConfig{
+		Config: *srvconf,
+		Custom: configuration,
+	}
+	helper.SetTestConfig(customAppConf)
 
 	txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
 	txBroadcaster.CliCtx.Simulate = true
@@ -287,10 +293,16 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
 	viper.Set("log_level", "debug")
 
+	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
-	configuration.HeimdallServerURL = dummyHeimdallServerUrl
+	srvconf.API.Enable = true
+	srvconf.API.Address = dummyHeimdallServerUrl
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
-	helper.SetTestConfig(configuration)
+	customAppConf := helper.CustomAppConfig{
+		Config: *srvconf,
+		Custom: configuration,
+	}
+	helper.SetTestConfig(customAppConf)
 
 	stopFn := func() {}
 

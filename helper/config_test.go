@@ -83,7 +83,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 		350: {PolTokenAddress: newPolContractAddress},
 	}
 
-	viper.Set("chain", "mumbai")
+	viper.Set(ChainFlag, "mumbai")
 	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	migration, found := GetChainManagerAddressMigration(350)
@@ -104,8 +104,9 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 
 	// test for non-existing chain
 	conf.Custom.BorRPCUrl = ""
+	conf.Custom.Chain = ""
 
-	viper.Set("chain", "newChain")
+	viper.Set(ChainFlag, "newChain")
 	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
 
 	_, found = GetChainManagerAddressMigration(350)

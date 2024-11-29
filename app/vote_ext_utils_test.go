@@ -55,7 +55,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 		},
 		{
 			name: "function executed correctly, but failing on signature verification",
-			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 10),
+			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 1),
 			extVoteInfo: []abci.ExtendedVoteInfo{
 				setupExtendedVoteInfo(cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal),
 			},
@@ -499,7 +499,7 @@ func TestIsBlockIDFlagValid(t *testing.T) {
 }
 
 func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
-	VoteExtEnableHeight := 100
+	VoteExtEnableHeight := 1
 	key := storetypes.NewKVStoreKey("testStoreKey")
 	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := setupContextWithVoteExtensionsEnableHeight(testCtx.Ctx, int64(VoteExtEnableHeight))
