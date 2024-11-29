@@ -51,9 +51,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	}
 
 	newRecords := make([]types.EventRecord, len(records))
-	for i, record := range records {
-		newRecords[i] = record
-	}
+	copy(newRecords, records)
 
 	return &types.RecordListResponse{EventRecords: newRecords}, nil
 }
@@ -70,9 +68,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	newRecords := make([]types.EventRecord, len(records))
-	for i, record := range records {
-		newRecords[i] = record
-	}
+	copy(newRecords, records)
 
 	return &types.RecordListWithTimeResponse{EventRecords: newRecords}, nil
 }
