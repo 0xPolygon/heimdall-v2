@@ -17,10 +17,10 @@ service Msg {
   rpc Checkpoint(MsgCheckpoint) returns (MsgCheckpointResponse);
 
   // CheckpointAck defines a method for checkpoint ack
-  rpc CheckpointAck(MsgCheckpointAck) returns (MsgCheckpointAckResponse);
+  rpc CheckpointAck(MsgCpAck) returns (MsgCpAckResponse);
 
   // CheckpointNoAck defines a method for checkpoint no ack
-  rpc CheckpointNoAck(MsgCheckpointNoAck) returns (MsgCheckpointNoAckResponse);
+  rpc CheckpointNoAck(MsgCpNoAck) returns (MsgCheckpointNoAckResponse);
 
   // CheckpointNoAck defines a method for checkpoint no ack
   rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
@@ -29,7 +29,7 @@ service Msg {
 // MsgCheckpoint defines a SDK message for creating the checkpoint
 message MsgCheckpoint {
   option (cosmos.msg.v1.signer) = "proposer";
-  option (amino.name) = "checkpoint/MsgCheckpoint";
+  option (amino.name) = "heimdallv2/checkpoint/MsgCheckpoint";
 
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
@@ -53,10 +53,10 @@ message MsgCheckpoint {
 // MsgCheckpointResponse defines the Msg/Checkpoint response type.
 message MsgCheckpointResponse {}
 
-// MsgCheckpointAck defines a SDK message for creating the ack of checkpoint
-message MsgCheckpointAck {
+// MsgCpAck defines a SDK message for creating the ack of checkpoint
+message MsgCpAck {
   option (cosmos.msg.v1.signer) = "from";
-  option (amino.name) = "checkpoint/MsgCheckpointAck";
+  option (amino.name) = "heimdallv2/checkpoint/MsgCpAck";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -84,14 +84,13 @@ message MsgCheckpointAck {
   uint64 log_index = 8 [ (amino.dont_omitempty) = true ];
 }
 
-// MsgCheckpointAckResponse defines the Msg/CheckpointAck response type.
-message MsgCheckpointAckResponse {}
+// MsgCpAckResponse defines the MsgCpAck response type.
+message MsgCpAckResponse {}
 
 // MsgCheckpointNoAck defines a SDK message for creating the no-ack
-message MsgCheckpointNoAck {
+message MsgCpNoAck {
   option (cosmos.msg.v1.signer) = "from";
-
-  option (amino.name) = "checkpoint/MsgCheckpointNoAck";
+  option (amino.name) = "heimdallv2/checkpoint/MsgCpNoAck";
 
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
@@ -102,13 +101,13 @@ message MsgCheckpointNoAck {
   ];
 }
 
-// MsgCheckpointNoAckResponse defines the Msg/CheckpointNoAck response type.
+// MsgCheckpointNoAckResponse defines the MsgCpNoAck response type.
 message MsgCheckpointNoAckResponse {}
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
 message MsgUpdateParams {
   option (cosmos.msg.v1.signer) = "authority";
-  option (amino.name) = "heimdallv2/x/checkpoint/MsgUpdateParams";
+  option (amino.name) = "heimdallv2/checkpoint/MsgUpdateParams";
 
   // authority is the address that controls the module (defaults to x/gov unless
   // overwritten).

@@ -91,7 +91,7 @@ var (
 		milestoneTypes.NewMsgMilestoneTimeout(
 			heimdallAddress,
 		),
-		borTypes.NewMsgProposeSpanRequest(
+		borTypes.NewMsgProposeSpan(
 			1,
 			heimdallAddress,
 			0,

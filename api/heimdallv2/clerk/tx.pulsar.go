@@ -373,39 +373,39 @@ func (x *fastReflection_MsgEventRecordResponse) ProtoMethods() *protoiface.Metho
 }
 
 var (
-	md_MsgEventRecordRequest                  protoreflect.MessageDescriptor
-	fd_MsgEventRecordRequest_from             protoreflect.FieldDescriptor
-	fd_MsgEventRecordRequest_tx_hash          protoreflect.FieldDescriptor
-	fd_MsgEventRecordRequest_log_index        protoreflect.FieldDescriptor
-	fd_MsgEventRecordRequest_block_number     protoreflect.FieldDescriptor
-	fd_MsgEventRecordRequest_contract_address protoreflect.FieldDescriptor
-	fd_MsgEventRecordRequest_data             protoreflect.FieldDescriptor
-	fd_MsgEventRecordRequest_id               protoreflect.FieldDescriptor
-	fd_MsgEventRecordRequest_chain_id         protoreflect.FieldDescriptor
+	md_MsgEventRecord                  protoreflect.MessageDescriptor
+	fd_MsgEventRecord_from             protoreflect.FieldDescriptor
+	fd_MsgEventRecord_tx_hash          protoreflect.FieldDescriptor
+	fd_MsgEventRecord_log_index        protoreflect.FieldDescriptor
+	fd_MsgEventRecord_block_number     protoreflect.FieldDescriptor
+	fd_MsgEventRecord_contract_address protoreflect.FieldDescriptor
+	fd_MsgEventRecord_data             protoreflect.FieldDescriptor
+	fd_MsgEventRecord_id               protoreflect.FieldDescriptor
+	fd_MsgEventRecord_chain_id         protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_clerk_tx_proto_init()
-	md_MsgEventRecordRequest = File_heimdallv2_clerk_tx_proto.Messages().ByName("MsgEventRecordRequest")
-	fd_MsgEventRecordRequest_from = md_MsgEventRecordRequest.Fields().ByName("from")
-	fd_MsgEventRecordRequest_tx_hash = md_MsgEventRecordRequest.Fields().ByName("tx_hash")
-	fd_MsgEventRecordRequest_log_index = md_MsgEventRecordRequest.Fields().ByName("log_index")
-	fd_MsgEventRecordRequest_block_number = md_MsgEventRecordRequest.Fields().ByName("block_number")
-	fd_MsgEventRecordRequest_contract_address = md_MsgEventRecordRequest.Fields().ByName("contract_address")
-	fd_MsgEventRecordRequest_data = md_MsgEventRecordRequest.Fields().ByName("data")
-	fd_MsgEventRecordRequest_id = md_MsgEventRecordRequest.Fields().ByName("id")
-	fd_MsgEventRecordRequest_chain_id = md_MsgEventRecordRequest.Fields().ByName("chain_id")
+	md_MsgEventRecord = File_heimdallv2_clerk_tx_proto.Messages().ByName("MsgEventRecord")
+	fd_MsgEventRecord_from = md_MsgEventRecord.Fields().ByName("from")
+	fd_MsgEventRecord_tx_hash = md_MsgEventRecord.Fields().ByName("tx_hash")
+	fd_MsgEventRecord_log_index = md_MsgEventRecord.Fields().ByName("log_index")
+	fd_MsgEventRecord_block_number = md_MsgEventRecord.Fields().ByName("block_number")
+	fd_MsgEventRecord_contract_address = md_MsgEventRecord.Fields().ByName("contract_address")
+	fd_MsgEventRecord_data = md_MsgEventRecord.Fields().ByName("data")
+	fd_MsgEventRecord_id = md_MsgEventRecord.Fields().ByName("id")
+	fd_MsgEventRecord_chain_id = md_MsgEventRecord.Fields().ByName("chain_id")
 }
 
-var _ protoreflect.Message = (*fastReflection_MsgEventRecordRequest)(nil)
+var _ protoreflect.Message = (*fastReflection_MsgEventRecord)(nil)
 
-type fastReflection_MsgEventRecordRequest MsgEventRecordRequest
+type fastReflection_MsgEventRecord MsgEventRecord
 
-func (x *MsgEventRecordRequest) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_MsgEventRecordRequest)(x)
+func (x *MsgEventRecord) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MsgEventRecord)(x)
 }
 
-func (x *MsgEventRecordRequest) slowProtoReflect() protoreflect.Message {
+func (x *MsgEventRecord) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_clerk_tx_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -417,43 +417,43 @@ func (x *MsgEventRecordRequest) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_MsgEventRecordRequest_messageType fastReflection_MsgEventRecordRequest_messageType
-var _ protoreflect.MessageType = fastReflection_MsgEventRecordRequest_messageType{}
+var _fastReflection_MsgEventRecord_messageType fastReflection_MsgEventRecord_messageType
+var _ protoreflect.MessageType = fastReflection_MsgEventRecord_messageType{}
 
-type fastReflection_MsgEventRecordRequest_messageType struct{}
+type fastReflection_MsgEventRecord_messageType struct{}
 
-func (x fastReflection_MsgEventRecordRequest_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_MsgEventRecordRequest)(nil)
+func (x fastReflection_MsgEventRecord_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MsgEventRecord)(nil)
 }
-func (x fastReflection_MsgEventRecordRequest_messageType) New() protoreflect.Message {
-	return new(fastReflection_MsgEventRecordRequest)
+func (x fastReflection_MsgEventRecord_messageType) New() protoreflect.Message {
+	return new(fastReflection_MsgEventRecord)
 }
-func (x fastReflection_MsgEventRecordRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgEventRecordRequest
+func (x fastReflection_MsgEventRecord_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgEventRecord
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_MsgEventRecordRequest) Descriptor() protoreflect.MessageDescriptor {
-	return md_MsgEventRecordRequest
+func (x *fastReflection_MsgEventRecord) Descriptor() protoreflect.MessageDescriptor {
+	return md_MsgEventRecord
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_MsgEventRecordRequest) Type() protoreflect.MessageType {
-	return _fastReflection_MsgEventRecordRequest_messageType
+func (x *fastReflection_MsgEventRecord) Type() protoreflect.MessageType {
+	return _fastReflection_MsgEventRecord_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_MsgEventRecordRequest) New() protoreflect.Message {
-	return new(fastReflection_MsgEventRecordRequest)
+func (x *fastReflection_MsgEventRecord) New() protoreflect.Message {
+	return new(fastReflection_MsgEventRecord)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_MsgEventRecordRequest) Interface() protoreflect.ProtoMessage {
-	return (*MsgEventRecordRequest)(x)
+func (x *fastReflection_MsgEventRecord) Interface() protoreflect.ProtoMessage {
+	return (*MsgEventRecord)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -461,52 +461,52 @@ func (x *fastReflection_MsgEventRecordRequest) Interface() protoreflect.ProtoMes
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_MsgEventRecordRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_MsgEventRecord) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if x.From != "" {
 		value := protoreflect.ValueOfString(x.From)
-		if !f(fd_MsgEventRecordRequest_from, value) {
+		if !f(fd_MsgEventRecord_from, value) {
 			return
 		}
 	}
 	if x.TxHash != "" {
 		value := protoreflect.ValueOfString(x.TxHash)
-		if !f(fd_MsgEventRecordRequest_tx_hash, value) {
+		if !f(fd_MsgEventRecord_tx_hash, value) {
 			return
 		}
 	}
 	if x.LogIndex != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.LogIndex)
-		if !f(fd_MsgEventRecordRequest_log_index, value) {
+		if !f(fd_MsgEventRecord_log_index, value) {
 			return
 		}
 	}
 	if x.BlockNumber != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.BlockNumber)
-		if !f(fd_MsgEventRecordRequest_block_number, value) {
+		if !f(fd_MsgEventRecord_block_number, value) {
 			return
 		}
 	}
 	if x.ContractAddress != "" {
 		value := protoreflect.ValueOfString(x.ContractAddress)
-		if !f(fd_MsgEventRecordRequest_contract_address, value) {
+		if !f(fd_MsgEventRecord_contract_address, value) {
 			return
 		}
 	}
 	if len(x.Data) != 0 {
 		value := protoreflect.ValueOfBytes(x.Data)
-		if !f(fd_MsgEventRecordRequest_data, value) {
+		if !f(fd_MsgEventRecord_data, value) {
 			return
 		}
 	}
 	if x.Id != uint64(0) {
 		value := protoreflect.ValueOfUint64(x.Id)
-		if !f(fd_MsgEventRecordRequest_id, value) {
+		if !f(fd_MsgEventRecord_id, value) {
 			return
 		}
 	}
 	if x.ChainId != "" {
 		value := protoreflect.ValueOfString(x.ChainId)
-		if !f(fd_MsgEventRecordRequest_chain_id, value) {
+		if !f(fd_MsgEventRecord_chain_id, value) {
 			return
 		}
 	}
@@ -523,29 +523,29 @@ func (x *fastReflection_MsgEventRecordRequest) Range(f func(protoreflect.FieldDe
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_MsgEventRecordRequest) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_MsgEventRecord) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.MsgEventRecordRequest.from":
+	case "heimdallv2.clerk.MsgEventRecord.from":
 		return x.From != ""
-	case "heimdallv2.clerk.MsgEventRecordRequest.tx_hash":
+	case "heimdallv2.clerk.MsgEventRecord.tx_hash":
 		return x.TxHash != ""
-	case "heimdallv2.clerk.MsgEventRecordRequest.log_index":
+	case "heimdallv2.clerk.MsgEventRecord.log_index":
 		return x.LogIndex != uint64(0)
-	case "heimdallv2.clerk.MsgEventRecordRequest.block_number":
+	case "heimdallv2.clerk.MsgEventRecord.block_number":
 		return x.BlockNumber != uint64(0)
-	case "heimdallv2.clerk.MsgEventRecordRequest.contract_address":
+	case "heimdallv2.clerk.MsgEventRecord.contract_address":
 		return x.ContractAddress != ""
-	case "heimdallv2.clerk.MsgEventRecordRequest.data":
+	case "heimdallv2.clerk.MsgEventRecord.data":
 		return len(x.Data) != 0
-	case "heimdallv2.clerk.MsgEventRecordRequest.id":
+	case "heimdallv2.clerk.MsgEventRecord.id":
 		return x.Id != uint64(0)
-	case "heimdallv2.clerk.MsgEventRecordRequest.chain_id":
+	case "heimdallv2.clerk.MsgEventRecord.chain_id":
 		return x.ChainId != ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecordRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecord"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecordRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecord does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -555,29 +555,29 @@ func (x *fastReflection_MsgEventRecordRequest) Has(fd protoreflect.FieldDescript
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgEventRecordRequest) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_MsgEventRecord) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.MsgEventRecordRequest.from":
+	case "heimdallv2.clerk.MsgEventRecord.from":
 		x.From = ""
-	case "heimdallv2.clerk.MsgEventRecordRequest.tx_hash":
+	case "heimdallv2.clerk.MsgEventRecord.tx_hash":
 		x.TxHash = ""
-	case "heimdallv2.clerk.MsgEventRecordRequest.log_index":
+	case "heimdallv2.clerk.MsgEventRecord.log_index":
 		x.LogIndex = uint64(0)
-	case "heimdallv2.clerk.MsgEventRecordRequest.block_number":
+	case "heimdallv2.clerk.MsgEventRecord.block_number":
 		x.BlockNumber = uint64(0)
-	case "heimdallv2.clerk.MsgEventRecordRequest.contract_address":
+	case "heimdallv2.clerk.MsgEventRecord.contract_address":
 		x.ContractAddress = ""
-	case "heimdallv2.clerk.MsgEventRecordRequest.data":
+	case "heimdallv2.clerk.MsgEventRecord.data":
 		x.Data = nil
-	case "heimdallv2.clerk.MsgEventRecordRequest.id":
+	case "heimdallv2.clerk.MsgEventRecord.id":
 		x.Id = uint64(0)
-	case "heimdallv2.clerk.MsgEventRecordRequest.chain_id":
+	case "heimdallv2.clerk.MsgEventRecord.chain_id":
 		x.ChainId = ""
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecordRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecord"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecordRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecord does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -587,37 +587,37 @@ func (x *fastReflection_MsgEventRecordRequest) Clear(fd protoreflect.FieldDescri
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_MsgEventRecordRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgEventRecord) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.clerk.MsgEventRecordRequest.from":
+	case "heimdallv2.clerk.MsgEventRecord.from":
 		value := x.From
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.clerk.MsgEventRecordRequest.tx_hash":
+	case "heimdallv2.clerk.MsgEventRecord.tx_hash":
 		value := x.TxHash
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.clerk.MsgEventRecordRequest.log_index":
+	case "heimdallv2.clerk.MsgEventRecord.log_index":
 		value := x.LogIndex
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.clerk.MsgEventRecordRequest.block_number":
+	case "heimdallv2.clerk.MsgEventRecord.block_number":
 		value := x.BlockNumber
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.clerk.MsgEventRecordRequest.contract_address":
+	case "heimdallv2.clerk.MsgEventRecord.contract_address":
 		value := x.ContractAddress
 		return protoreflect.ValueOfString(value)
-	case "heimdallv2.clerk.MsgEventRecordRequest.data":
+	case "heimdallv2.clerk.MsgEventRecord.data":
 		value := x.Data
 		return protoreflect.ValueOfBytes(value)
-	case "heimdallv2.clerk.MsgEventRecordRequest.id":
+	case "heimdallv2.clerk.MsgEventRecord.id":
 		value := x.Id
 		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.clerk.MsgEventRecordRequest.chain_id":
+	case "heimdallv2.clerk.MsgEventRecord.chain_id":
 		value := x.ChainId
 		return protoreflect.ValueOfString(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecordRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecord"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecordRequest does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecord does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -631,29 +631,29 @@ func (x *fastReflection_MsgEventRecordRequest) Get(descriptor protoreflect.Field
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgEventRecordRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_MsgEventRecord) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.MsgEventRecordRequest.from":
+	case "heimdallv2.clerk.MsgEventRecord.from":
 		x.From = value.Interface().(string)
-	case "heimdallv2.clerk.MsgEventRecordRequest.tx_hash":
+	case "heimdallv2.clerk.MsgEventRecord.tx_hash":
 		x.TxHash = value.Interface().(string)
-	case "heimdallv2.clerk.MsgEventRecordRequest.log_index":
+	case "heimdallv2.clerk.MsgEventRecord.log_index":
 		x.LogIndex = value.Uint()
-	case "heimdallv2.clerk.MsgEventRecordRequest.block_number":
+	case "heimdallv2.clerk.MsgEventRecord.block_number":
 		x.BlockNumber = value.Uint()
-	case "heimdallv2.clerk.MsgEventRecordRequest.contract_address":
+	case "heimdallv2.clerk.MsgEventRecord.contract_address":
 		x.ContractAddress = value.Interface().(string)
-	case "heimdallv2.clerk.MsgEventRecordRequest.data":
+	case "heimdallv2.clerk.MsgEventRecord.data":
 		x.Data = value.Bytes()
-	case "heimdallv2.clerk.MsgEventRecordRequest.id":
+	case "heimdallv2.clerk.MsgEventRecord.id":
 		x.Id = value.Uint()
-	case "heimdallv2.clerk.MsgEventRecordRequest.chain_id":
+	case "heimdallv2.clerk.MsgEventRecord.chain_id":
 		x.ChainId = value.Interface().(string)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecordRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecord"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecordRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecord does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -667,68 +667,68 @@ func (x *fastReflection_MsgEventRecordRequest) Set(fd protoreflect.FieldDescript
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgEventRecordRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgEventRecord) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.MsgEventRecordRequest.from":
-		panic(fmt.Errorf("field from of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
-	case "heimdallv2.clerk.MsgEventRecordRequest.tx_hash":
-		panic(fmt.Errorf("field tx_hash of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
-	case "heimdallv2.clerk.MsgEventRecordRequest.log_index":
-		panic(fmt.Errorf("field log_index of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
-	case "heimdallv2.clerk.MsgEventRecordRequest.block_number":
-		panic(fmt.Errorf("field block_number of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
-	case "heimdallv2.clerk.MsgEventRecordRequest.contract_address":
-		panic(fmt.Errorf("field contract_address of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
-	case "heimdallv2.clerk.MsgEventRecordRequest.data":
-		panic(fmt.Errorf("field data of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
-	case "heimdallv2.clerk.MsgEventRecordRequest.id":
-		panic(fmt.Errorf("field id of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
-	case "heimdallv2.clerk.MsgEventRecordRequest.chain_id":
-		panic(fmt.Errorf("field chain_id of message heimdallv2.clerk.MsgEventRecordRequest is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.from":
+		panic(fmt.Errorf("field from of message heimdallv2.clerk.MsgEventRecord is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.tx_hash":
+		panic(fmt.Errorf("field tx_hash of message heimdallv2.clerk.MsgEventRecord is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.log_index":
+		panic(fmt.Errorf("field log_index of message heimdallv2.clerk.MsgEventRecord is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.block_number":
+		panic(fmt.Errorf("field block_number of message heimdallv2.clerk.MsgEventRecord is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.contract_address":
+		panic(fmt.Errorf("field contract_address of message heimdallv2.clerk.MsgEventRecord is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.data":
+		panic(fmt.Errorf("field data of message heimdallv2.clerk.MsgEventRecord is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.id":
+		panic(fmt.Errorf("field id of message heimdallv2.clerk.MsgEventRecord is not mutable"))
+	case "heimdallv2.clerk.MsgEventRecord.chain_id":
+		panic(fmt.Errorf("field chain_id of message heimdallv2.clerk.MsgEventRecord is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecordRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecord"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecordRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecord does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_MsgEventRecordRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_MsgEventRecord) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.MsgEventRecordRequest.from":
+	case "heimdallv2.clerk.MsgEventRecord.from":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.clerk.MsgEventRecordRequest.tx_hash":
+	case "heimdallv2.clerk.MsgEventRecord.tx_hash":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.clerk.MsgEventRecordRequest.log_index":
+	case "heimdallv2.clerk.MsgEventRecord.log_index":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.clerk.MsgEventRecordRequest.block_number":
+	case "heimdallv2.clerk.MsgEventRecord.block_number":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.clerk.MsgEventRecordRequest.contract_address":
+	case "heimdallv2.clerk.MsgEventRecord.contract_address":
 		return protoreflect.ValueOfString("")
-	case "heimdallv2.clerk.MsgEventRecordRequest.data":
+	case "heimdallv2.clerk.MsgEventRecord.data":
 		return protoreflect.ValueOfBytes(nil)
-	case "heimdallv2.clerk.MsgEventRecordRequest.id":
+	case "heimdallv2.clerk.MsgEventRecord.id":
 		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.clerk.MsgEventRecordRequest.chain_id":
+	case "heimdallv2.clerk.MsgEventRecord.chain_id":
 		return protoreflect.ValueOfString("")
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecordRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.MsgEventRecord"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecordRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.MsgEventRecord does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_MsgEventRecordRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_MsgEventRecord) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.MsgEventRecordRequest", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.MsgEventRecord", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -736,7 +736,7 @@ func (x *fastReflection_MsgEventRecordRequest) WhichOneof(d protoreflect.OneofDe
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_MsgEventRecordRequest) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_MsgEventRecord) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -747,7 +747,7 @@ func (x *fastReflection_MsgEventRecordRequest) GetUnknown() protoreflect.RawFiel
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_MsgEventRecordRequest) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_MsgEventRecord) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -759,7 +759,7 @@ func (x *fastReflection_MsgEventRecordRequest) SetUnknown(fields protoreflect.Ra
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_MsgEventRecordRequest) IsValid() bool {
+func (x *fastReflection_MsgEventRecord) IsValid() bool {
 	return x != nil
 }
 
@@ -769,9 +769,9 @@ func (x *fastReflection_MsgEventRecordRequest) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_MsgEventRecordRequest) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_MsgEventRecord) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*MsgEventRecordRequest)
+		x := input.Message.Interface().(*MsgEventRecord)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -822,7 +822,7 @@ func (x *fastReflection_MsgEventRecordRequest) ProtoMethods() *protoiface.Method
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*MsgEventRecordRequest)
+		x := input.Message.Interface().(*MsgEventRecord)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -902,7 +902,7 @@ func (x *fastReflection_MsgEventRecordRequest) ProtoMethods() *protoiface.Method
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*MsgEventRecordRequest)
+		x := input.Message.Interface().(*MsgEventRecord)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -934,10 +934,10 @@ func (x *fastReflection_MsgEventRecordRequest) ProtoMethods() *protoiface.Method
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgEventRecordRequest: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgEventRecord: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgEventRecordRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MsgEventRecord: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
@@ -1233,7 +1233,7 @@ func (*MsgEventRecordResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_clerk_tx_proto_rawDescGZIP(), []int{0}
 }
 
-type MsgEventRecordRequest struct {
+type MsgEventRecord struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -1248,8 +1248,8 @@ type MsgEventRecordRequest struct {
 	ChainId         string `protobuf:"bytes,8,opt,name=chain_id,json=chainId,proto3" json:"chain_id,omitempty"`
 }
 
-func (x *MsgEventRecordRequest) Reset() {
-	*x = MsgEventRecordRequest{}
+func (x *MsgEventRecord) Reset() {
+	*x = MsgEventRecord{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_clerk_tx_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1257,67 +1257,67 @@ func (x *MsgEventRecordRequest) Reset() {
 	}
 }
 
-func (x *MsgEventRecordRequest) String() string {
+func (x *MsgEventRecord) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*MsgEventRecordRequest) ProtoMessage() {}
+func (*MsgEventRecord) ProtoMessage() {}
 
-// Deprecated: Use MsgEventRecordRequest.ProtoReflect.Descriptor instead.
-func (*MsgEventRecordRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use MsgEventRecord.ProtoReflect.Descriptor instead.
+func (*MsgEventRecord) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_clerk_tx_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *MsgEventRecordRequest) GetFrom() string {
+func (x *MsgEventRecord) GetFrom() string {
 	if x != nil {
 		return x.From
 	}
 	return ""
 }
 
-func (x *MsgEventRecordRequest) GetTxHash() string {
+func (x *MsgEventRecord) GetTxHash() string {
 	if x != nil {
 		return x.TxHash
 	}
 	return ""
 }
 
-func (x *MsgEventRecordRequest) GetLogIndex() uint64 {
+func (x *MsgEventRecord) GetLogIndex() uint64 {
 	if x != nil {
 		return x.LogIndex
 	}
 	return 0
 }
 
-func (x *MsgEventRecordRequest) GetBlockNumber() uint64 {
+func (x *MsgEventRecord) GetBlockNumber() uint64 {
 	if x != nil {
 		return x.BlockNumber
 	}
 	return 0
 }
 
-func (x *MsgEventRecordRequest) GetContractAddress() string {
+func (x *MsgEventRecord) GetContractAddress() string {
 	if x != nil {
 		return x.ContractAddress
 	}
 	return ""
 }
 
-func (x *MsgEventRecordRequest) GetData() []byte {
+func (x *MsgEventRecord) GetData() []byte {
 	if x != nil {
 		return x.Data
 	}
 	return nil
 }
 
-func (x *MsgEventRecordRequest) GetId() uint64 {
+func (x *MsgEventRecord) GetId() uint64 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *MsgEventRecordRequest) GetChainId() string {
+func (x *MsgEventRecord) GetChainId() string {
 	if x != nil {
 		return x.ChainId
 	}
@@ -1337,49 +1337,50 @@ var file_heimdallv2_clerk_tx_proto_rawDesc = []byte{
 	0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x14, 0x67, 0x6f, 0x67, 0x6f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f,
 	0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x18, 0x0a, 0x16, 0x4d, 0x73,
 	0x67, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0xe0, 0x02, 0x0a, 0x15, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e,
-	0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x31,
-	0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4,
-	0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73,
-	0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04, 0x66, 0x72, 0x6f,
-	0x6d, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61, 0x73,
-	0x68, 0x12, 0x22, 0x0a, 0x09, 0x6c, 0x6f, 0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03,
-	0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x6c, 0x6f, 0x67,
-	0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x28, 0x0a, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x6e,
-	0x75, 0x6d, 0x62, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
-	0x2a, 0x01, 0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x12,
-	0x48, 0x0a, 0x10, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72,
-	0x65, 0x73, 0x73, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72,
-	0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61,
-	0x63, 0x74, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x12, 0x19, 0x0a, 0x04, 0x64, 0x61, 0x74,
-	0x61, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04,
-	0x64, 0x61, 0x74, 0x61, 0x12, 0x15, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x07, 0x20, 0x01, 0x28, 0x04,
-	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x02, 0x69, 0x64, 0x12, 0x20, 0x0a, 0x08, 0x63,
-	0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8,
-	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x3a, 0x08, 0x88,
-	0xa0, 0x1f, 0x00, 0xe8, 0xa0, 0x1f, 0x00, 0x32, 0x77, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x69,
-	0x0a, 0x14, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e, 0x74,
-	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65,
-	0x6e, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65,
-	0x72, 0x6b, 0x2e, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72,
-	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a, 0x05, 0x80, 0xe7, 0xb0, 0x2a, 0x01,
-	0x42, 0xb7, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x42, 0x07, 0x54, 0x78, 0x50, 0x72, 0x6f,
-	0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d,
-	0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0xa2, 0x02, 0x03, 0x48, 0x43,
-	0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43,
-	0x6c, 0x65, 0x72, 0x6b, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
-	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0xfd, 0x02, 0x0a, 0x0e, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e,
+	0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x12, 0x31, 0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2e, 0x41, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8,
+	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78,
+	0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
+	0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61, 0x73, 0x68, 0x12, 0x22, 0x0a, 0x09, 0x6c, 0x6f,
+	0x67, 0x5f, 0x69, 0x6e, 0x64, 0x65, 0x78, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8,
+	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x08, 0x6c, 0x6f, 0x67, 0x49, 0x6e, 0x64, 0x65, 0x78, 0x12, 0x28,
+	0x0a, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0b, 0x62, 0x6c, 0x6f,
+	0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x48, 0x0a, 0x10, 0x63, 0x6f, 0x6e, 0x74,
+	0x72, 0x61, 0x63, 0x74, 0x5f, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x09, 0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41,
+	0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x0f, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x61, 0x63, 0x74, 0x41, 0x64, 0x64, 0x72, 0x65,
+	0x73, 0x73, 0x12, 0x19, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0c,
+	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x12, 0x15, 0x0a,
+	0x02, 0x69, 0x64, 0x18, 0x07, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
+	0x52, 0x02, 0x69, 0x64, 0x12, 0x20, 0x0a, 0x08, 0x63, 0x68, 0x61, 0x69, 0x6e, 0x5f, 0x69, 0x64,
+	0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x07, 0x63,
+	0x68, 0x61, 0x69, 0x6e, 0x49, 0x64, 0x3a, 0x2c, 0x88, 0xa0, 0x1f, 0x00, 0xe8, 0xa0, 0x1f, 0x00,
+	0x8a, 0xe7, 0xb0, 0x2a, 0x1f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f,
+	0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x65,
+	0x63, 0x6f, 0x72, 0x64, 0x32, 0x70, 0x0a, 0x03, 0x4d, 0x73, 0x67, 0x12, 0x62, 0x0a, 0x14, 0x48,
+	0x61, 0x6e, 0x64, 0x6c, 0x65, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52, 0x65, 0x63,
+	0x6f, 0x72, 0x64, 0x12, 0x20, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x52,
+	0x65, 0x63, 0x6f, 0x72, 0x64, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4d, 0x73, 0x67, 0x45, 0x76, 0x65, 0x6e,
+	0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x1a,
+	0x05, 0x80, 0xe7, 0xb0, 0x2a, 0x01, 0x42, 0xb7, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x42,
+	0x07, 0x54, 0x78, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x6c, 0x65, 0x72,
+	0x6b, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xe2, 0x02, 0x1c,
+	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b,
+	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43, 0x6c, 0x65, 0x72, 0x6b,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1397,10 +1398,10 @@ func file_heimdallv2_clerk_tx_proto_rawDescGZIP() []byte {
 var file_heimdallv2_clerk_tx_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_heimdallv2_clerk_tx_proto_goTypes = []interface{}{
 	(*MsgEventRecordResponse)(nil), // 0: heimdallv2.clerk.MsgEventRecordResponse
-	(*MsgEventRecordRequest)(nil),  // 1: heimdallv2.clerk.MsgEventRecordRequest
+	(*MsgEventRecord)(nil),         // 1: heimdallv2.clerk.MsgEventRecord
 }
 var file_heimdallv2_clerk_tx_proto_depIdxs = []int32{
-	1, // 0: heimdallv2.clerk.Msg.HandleMsgEventRecord:input_type -> heimdallv2.clerk.MsgEventRecordRequest
+	1, // 0: heimdallv2.clerk.Msg.HandleMsgEventRecord:input_type -> heimdallv2.clerk.MsgEventRecord
 	0, // 1: heimdallv2.clerk.Msg.HandleMsgEventRecord:output_type -> heimdallv2.clerk.MsgEventRecordResponse
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
@@ -1428,7 +1429,7 @@ func file_heimdallv2_clerk_tx_proto_init() {
 			}
 		}
 		file_heimdallv2_clerk_tx_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*MsgEventRecordRequest); i {
+			switch v := v.(*MsgEventRecord); i {
 			case 0:
 				return &v.state
 			case 1:

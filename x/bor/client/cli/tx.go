@@ -96,7 +96,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 				return err
 			}
 			seed := common.HexToHash(nextSpanSeedResponse.Seed)
-			msg := types.NewMsgProposeSpanRequest(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes())
+			msg := types.NewMsgProposeSpan(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes())
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},

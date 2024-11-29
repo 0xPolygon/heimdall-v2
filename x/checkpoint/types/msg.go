@@ -17,8 +17,8 @@ import (
 
 var (
 	_ sdk.Msg = &MsgCheckpoint{}
-	_ sdk.Msg = &MsgCheckpointAck{}
-	_ sdk.Msg = &MsgCheckpointNoAck{}
+	_ sdk.Msg = &MsgCpAck{}
+	_ sdk.Msg = &MsgCpNoAck{}
 )
 
 // NewMsgCheckpointBlock creates new checkpoint message using mentioned arguments
@@ -88,9 +88,9 @@ func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 	)
 }
 
-var _ sdk.Msg = &MsgCheckpointAck{}
+var _ sdk.Msg = &MsgCpAck{}
 
-func NewMsgCheckpointAck(
+func NewMsgCpAck(
 	from string,
 	number uint64,
 	proposer string,
@@ -99,8 +99,8 @@ func NewMsgCheckpointAck(
 	rootHash []byte,
 	txHash []byte,
 	logIndex uint64,
-) MsgCheckpointAck {
-	return MsgCheckpointAck{
+) MsgCpAck {
+	return MsgCpAck{
 		From:       util.FormatAddress(from),
 		Number:     number,
 		Proposer:   proposer,
@@ -113,7 +113,7 @@ func NewMsgCheckpointAck(
 }
 
 // ValidateBasic validate basic
-func (msg MsgCheckpointAck) ValidateBasic(ac address.Codec) error {
+func (msg MsgCpAck) ValidateBasic(ac address.Codec) error {
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
@@ -142,19 +142,19 @@ func (msg MsgCheckpointAck) ValidateBasic(ac address.Codec) error {
 }
 
 // GetSideSignBytes returns side sign bytes
-func (msg MsgCheckpointAck) GetSideSignBytes() []byte {
+func (msg MsgCpAck) GetSideSignBytes() []byte {
 	return nil
 }
 
-var _ sdk.Msg = &MsgCheckpointNoAck{}
+var _ sdk.Msg = &MsgCpNoAck{}
 
-func NewMsgCheckpointNoAck(from string) MsgCheckpointNoAck {
-	return MsgCheckpointNoAck{
+func NewMsgCheckpointNoAck(from string) MsgCpNoAck {
+	return MsgCpNoAck{
 		From: util.FormatAddress(from),
 	}
 }
 
-func (msg MsgCheckpointNoAck) ValidateBasic(ac address.Codec) error {
+func (msg MsgCpNoAck) ValidateBasic(ac address.Codec) error {
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)

@@ -21,7 +21,7 @@ type sideMsgServer struct {
 
 var (
 	checkpointTypeUrl    = sdk.MsgTypeURL(&types.MsgCheckpoint{})
-	checkpointAckTypeUrl = sdk.MsgTypeURL(&types.MsgCheckpointAck{})
+	checkpointAckTypeUrl = sdk.MsgTypeURL(&types.MsgCpAck{})
 )
 
 // NewSideMsgServerImpl returns an implementation of the checkpoint sideMsgServer interface
@@ -113,9 +113,9 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	// logger
 	logger := srv.Logger(ctx)
 
-	msg, ok := sdkMsg.(*types.MsgCheckpointAck)
+	msg, ok := sdkMsg.(*types.MsgCpAck)
 	if !ok {
-		logger.Error("type mismatch for MsgCheckpointAck")
+		logger.Error("type mismatch for MsgCpAck")
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -284,9 +284,9 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk.Msg, sideTxResult sidetxs.Vote) {
 	logger := srv.Logger(ctx)
 
-	msg, ok := sdkMsg.(*types.MsgCheckpointAck)
+	msg, ok := sdkMsg.(*types.MsgCpAck)
 	if !ok {
-		logger.Error("type mismatch for MsgCheckpointAck")
+		logger.Error("type mismatch for MsgCpAck")
 		return
 	}
 
