@@ -51,7 +51,7 @@ linters-settings:
 
   gosec:
     excludes:
-      - G115 # Overflow errors ignored for review later TODO: REMOVE THIS EXCLUSION LATER
+      - G115  # TODO: overflow errors ignored. to review later
 
   goconst:
     min-len: 3 # minimum length of string constant

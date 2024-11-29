@@ -6,14 +6,13 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 

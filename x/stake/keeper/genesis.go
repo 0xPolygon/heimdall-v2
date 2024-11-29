@@ -60,8 +60,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 		}
 	}
 
-	var cometVals = make([]abci.ValidatorUpdate, 0)
 	validators := k.GetAllValidators(ctx)
+	var cometVals = make([]abci.ValidatorUpdate, len(validators))
 	for _, validator := range validators {
 		cmtPk, err := validator.CmtConsPublicKey()
 		if err != nil {

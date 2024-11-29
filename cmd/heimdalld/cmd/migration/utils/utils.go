@@ -51,8 +51,7 @@ func SaveJSONToFile(data map[string]interface{}, filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-	// #nosec G306 IGNORING GOSEC G306: write file with 0644 permission
-	if err := os.WriteFile(filename, fileContent, 0644); err != nil {
+	if err := os.WriteFile(filename, fileContent, 0644); err != nil { // #nosec G306 -- write file with 0644 permission
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
