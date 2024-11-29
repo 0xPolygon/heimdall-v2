@@ -186,7 +186,7 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 		return records, err
 	}
 
-	var allRecords = make([]types.EventRecord, len(stateIDs))
+	var allRecords = make([]types.EventRecord, 0, len(stateIDs))
 
 	// loop through records to get valid records
 	for _, stateID := range stateIDs {
