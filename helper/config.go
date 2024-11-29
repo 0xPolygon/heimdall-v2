@@ -158,8 +158,8 @@ const (
 )
 
 var (
-	DefaultCLIHome  = os.ExpandEnv("$HOME/var/lib/heimdall")
-	DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
+	DefaultCLIHome  = os.ExpandEnv("$HOME/opt/heimdall")
+	DefaultNodeHome = os.ExpandEnv("$HOME/opt/heimdall")
 	MinBalance      = big.NewInt(100000000000000000) // aka 0.1 Ether
 )
 
@@ -278,14 +278,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// read configuration from the standard configuration file
-	configDir := filepath.Join(homeDir, "config")
 	heimdallViper := viper.New()
 	heimdallViper.SetEnvPrefix("HEIMDALL")
 	heimdallViper.AutomaticEnv()
 
 	if heimdallConfigFileFromFlag == "" {
-		heimdallViper.SetConfigName("app")     // name of config file (without extension)
-		heimdallViper.AddConfigPath(configDir) // call multiple times to add many search paths
+		heimdallViper.SetConfigName("app")   // name of config file (without extension)
+		heimdallViper.AddConfigPath(homeDir) // call multiple times to add many search paths
 	} else {
 		heimdallViper.SetConfigFile(heimdallConfigFileFromFlag) // set config file explicitly
 	}
@@ -390,12 +389,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	*/
 
 	// load pv file, unmarshall and set to privKeyObject
-	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
+	err = file.PermCheck(file.Rootify("priv_validator_key.json", homeDir), secretFilePerm)
 	if err != nil {
 		Logger.Error(err.Error())
 	}
 
-	privVal := privval.LoadFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
+	privVal := privval.LoadFilePV(filepath.Join(homeDir, "priv_validator_key.json"), filepath.Join(homeDir, "priv_validator_key.json"))
 	fmt.Println(privVal)
 	privKeyObject = privVal.Key.PrivKey.Bytes()
 	pubKeyObject = privVal.Key.PubKey.Bytes()

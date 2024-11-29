@@ -147,7 +147,7 @@ func init() {
 		panic(err)
 	}
 
-	DefaultNodeHome = filepath.Join(userHomeDir, "/var/lib/heimdall")
+	DefaultNodeHome = filepath.Join(userHomeDir, "/opt/heimdall")
 }
 
 func NewHeimdallApp(
@@ -302,7 +302,7 @@ func NewHeimdallApp(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 

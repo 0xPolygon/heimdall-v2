@@ -5,8 +5,6 @@ import (
 	"path"
 
 	"cosmossdk.io/log"
-	"github.com/0xPolygon/heimdall-v2/app"
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -22,6 +20,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 var logger = helper.Logger.With("module", "cmd/heimdalld")
@@ -36,7 +37,7 @@ type EncodingConfig struct {
 // NewRootCmd creates a new root command for heimdalld. It is called once in the
 // main function.
 func NewRootCmd() *cobra.Command {
-	dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
+	dataDir := path.Join(viper.GetString(cli.HomeFlag), "")
 	db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, dataDir)
 	if err != nil {
 		panic(err)

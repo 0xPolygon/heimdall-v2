@@ -18,7 +18,7 @@ func TestHeimdallConfig(t *testing.T) {
 	viper.Set(CometBFTNodeFlag, cometBFTNode)
 	viper.Set("log_level", "info")
 
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/opt/heimdall/"))
 
 	fmt.Println("Address", GetAddress())
 
@@ -84,7 +84,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	}
 
 	viper.Set("chain", "mumbai")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/etc/heimdall"))
 
 	migration, found := GetChainManagerAddressMigration(350)
 
@@ -106,7 +106,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	conf.Custom.BorRPCUrl = ""
 
 	viper.Set("chain", "newChain")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/etc/heimdall"))
 
 	_, found = GetChainManagerAddressMigration(350)
 	if found {

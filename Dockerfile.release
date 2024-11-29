@@ -1,7 +1,7 @@
 # TODO-HV2: check this file once we have a proper build
 FROM alpine:3.14
 
-ARG HEIMDALL_DIR=/var/lib/heimdall
+ARG HEIMDALL_DIR=/opt/heimdall
 ENV HEIMDALL_DIR=$HEIMDALL_DIR
 
 RUN apk add --no-cache \

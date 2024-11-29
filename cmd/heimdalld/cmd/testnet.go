@@ -98,7 +98,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				config.SetRoot(nodeDir)
 
 				// create config folder
-				err := os.MkdirAll(filepath.Join(nodeDir, "config"), nodeDirPerm)
+				err := os.MkdirAll(filepath.Join(nodeDir, ""), nodeDirPerm)
 				if err != nil {
 					_ = os.RemoveAll(outDir)
 					return err
@@ -143,7 +143,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 
 				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
 
-				WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "config/heimdall-config.toml"), helper.GetDefaultHeimdallConfig())
+				WriteDefaultHeimdallConfig(filepath.Join(config.RootDir, "heimdall-config.toml"), helper.GetDefaultHeimdallConfig())
 			}
 
 			// other data

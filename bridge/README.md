@@ -80,7 +80,7 @@ Your Heimdall Bridge has issues please follow the steps below to fix this
 
 ```
 stop rabbitmq-server
-rm /var/lib/rabbitmq/mnesia
+rm /opt/heimdall/rabbitmq/mnesia
 start rabbitmq-server
 ```
 

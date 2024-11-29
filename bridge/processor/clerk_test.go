@@ -254,7 +254,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
 	viper.Set("log_level", "debug")
-	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/opt/heimdall/"))
 
 	configuration := helper.GetDefaultHeimdallConfig()
 	configuration.HeimdallServerURL = dummyHeimdallServerUrl

@@ -12,3 +12,4 @@ logs
 .idea*
 
 data
+application.db

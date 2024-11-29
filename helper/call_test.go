@@ -31,7 +31,7 @@ func TestCheckpointSigs(t *testing.T) {
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 	viper.Set("log_level", "info")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitHeimdallConfig(os.ExpandEnv("$HOME/opt/heimdall"))
 
 	contractCallerObj, err := NewContractCaller()
 	if err != nil {

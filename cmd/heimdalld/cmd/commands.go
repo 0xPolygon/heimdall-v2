@@ -543,7 +543,7 @@ func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 			helper.InitHeimdallConfig("")
 
 			// Loading genesis doc
-			genDoc, err := cmttypes.GenesisDocFromFile(filepath.Join(config.RootDir, "config/genesis.json"))
+			genDoc, err := cmttypes.GenesisDocFromFile(filepath.Join(config.RootDir, "genesis.json"))
 			if err != nil {
 				return err
 			}
@@ -663,7 +663,7 @@ func populatePersistentPeersInConfigAndWriteIt(config *cmtcfg.Config) {
 		config.P2P.AddrBookStrict = false
 
 		// overwrite default config
-		cmtcfg.WriteConfigFile(filepath.Join(nodeDir(i), "config", "config.toml"), config)
+		cmtcfg.WriteConfigFile(filepath.Join(nodeDir(i), "", "config.toml"), config)
 	}
 }
 
