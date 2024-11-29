@@ -13,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 // Note: returning any error in ABCI functions will cause cometBFT to panic
@@ -24,6 +26,11 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
+			return nil, err
+		}
+
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
 			return nil, err
 		}
 
@@ -108,6 +115,11 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+			logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
 		for _, tx := range req.Txs[1:] {
 
 			txn, err := app.TxDecode(tx)
@@ -157,6 +169,12 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			panic("error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
 		}
 
+		nonRpVoteExt, err := getDummyNonRpVoteExtension(req.Height, ctx.ChainID())
+		if err != nil {
+			logger.Error("Error occurred while getting dummy vote extension", "error", err)
+			return nil, err
+		}
+
 		txs := req.Txs[1:]
 
 		// decode txs and execute side txs
@@ -183,6 +201,18 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				// execute the side handler to collect the votes from the validators
 				res := sideHandler(ctx, msg)
 
+				// We want to explicitly allow which side msg data to sign and only if the vote is YES.
+				// This prevents DoS via submitting invalid side txs and signing of arbitrary data.
+				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
+					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+					if !ok {
+						logger.Error("ExtendVoteHandler: type mismatch for MsgCheckpoint")
+						continue
+					}
+
+					nonRpVoteExt = checkpointMsg.GetSideSignBytes()
+				}
+
 				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response
 				txHash := cmtTypes.Tx(rawTx).Hash()
 				logger.Debug("Adding vote extension", "txHash", txHash, "blockHeight", req.Height, "blockHash", req.Hash, "vote", res)
@@ -202,13 +232,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			BlockHash:       req.Hash,
 		}
 
-		bz, err := consolidatedSideTxRes.Marshal()
+		bz, err = consolidatedSideTxRes.Marshal()
 		if err != nil {
 			logger.Error("Error occurred while marshalling the ConsolidatedSideTxResponse in ExtendVoteHandler", "error", err)
 			return nil, err
 		}
 
-		return &abci.ResponseExtendVote{VoteExtension: bz}, nil
+		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
 	}
 }
 
@@ -248,6 +278,11 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		txHash, err := validateSideTxResponses(consolidatedSideTxResponse.SideTxResponses)
 		if err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "tx hash", common.Bytes2Hex(txHash), "error", err)
+			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
+		}
+
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
