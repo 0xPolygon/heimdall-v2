@@ -41,7 +41,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 	// get validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryParamsResponse{
@@ -53,7 +53,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequest) (*types.QueryAckCountResponse, error) {
 	count, err := q.k.GetAckCount(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryAckCountResponse{AckCount: count}, err
@@ -63,7 +63,7 @@ func (q queryServer) GetAckCount(ctx context.Context, _ *types.QueryAckCountRequ
 func (q queryServer) GetCheckpoint(ctx context.Context, req *types.QueryCheckpointRequest) (*types.QueryCheckpointResponse, error) {
 	checkpoint, err := q.k.GetCheckpointByNumber(ctx, req.Number)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCheckpointResponse{Checkpoint: checkpoint}, nil
@@ -73,7 +73,7 @@ func (q queryServer) GetCheckpoint(ctx context.Context, req *types.QueryCheckpoi
 func (q queryServer) GetCheckpointLatest(ctx context.Context, _ *types.QueryCheckpointLatestRequest) (*types.QueryCheckpointLatestResponse, error) {
 	checkpoint, err := q.k.GetLastCheckpoint(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCheckpointLatestResponse{Checkpoint: checkpoint}, nil
@@ -83,7 +83,7 @@ func (q queryServer) GetCheckpointLatest(ctx context.Context, _ *types.QueryChec
 func (q queryServer) GetCheckpointBuffer(ctx context.Context, _ *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
 	checkpoint, err := q.k.GetCheckpointFromBuffer(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryCheckpointBufferResponse{Checkpoint: checkpoint}, nil
@@ -93,7 +93,7 @@ func (q queryServer) GetCheckpointBuffer(ctx context.Context, _ *types.QueryChec
 func (q queryServer) GetLastNoAck(ctx context.Context, _ *types.QueryLastNoAckRequest) (*types.QueryLastNoAckResponse, error) {
 	noAck, err := q.k.GetLastNoAck(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryLastNoAckResponse{LastNoAckId: noAck}, err
@@ -108,18 +108,18 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	// get validator set
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	proposer := validatorSet.GetProposer()
 	ackCount, err := q.k.GetAckCount(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	var start uint64
@@ -129,7 +129,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 
 		lastCheckpoint, err := q.k.GetCheckpointByNumber(ctx, checkpointNumber)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		start = lastCheckpoint.EndBlock + 1
@@ -142,19 +142,19 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 	rootHash, err := contractCaller.GetRootHash(start, endBlockNumber, params.MaxCheckpointLength)
 	if err != nil {
 		q.k.Logger(ctx).Error("could not fetch rootHash", "start", start, "end", endBlockNumber, "error", err)
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	dividendAccounts, err := q.k.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
 		q.k.Logger(ctx).Error("could not get the dividends accounts", "error", err)
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		q.k.Logger(ctx).Error("could not get generate account root hash", "error", err)
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	checkpointMsg := types.MsgCheckpoint{
@@ -186,7 +186,7 @@ func (q queryServer) GetProposers(ctx context.Context, req *types.QueryProposerR
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		q.k.Logger(ctx).Error("could not get get validators set", "error", err)
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	times := int(req.Times)

@@ -14,8 +14,6 @@ import (
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abci.ValidatorUpdate {
 	k.PanicIfSetupIsIncomplete()
 
-	ctx = sdk.UnwrapSDKContext(ctx)
-
 	// get current val set
 	var vals []*types.Validator
 	if len(data.CurrentValidatorSet.Validators) == 0 {
@@ -62,8 +60,8 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 		}
 	}
 
-	var cometVals []abci.ValidatorUpdate
 	validators := k.GetAllValidators(ctx)
+	var cometVals = make([]abci.ValidatorUpdate, 0, len(validators))
 	for _, validator := range validators {
 		cmtPk, err := validator.CmtConsPublicKey()
 		if err != nil {

@@ -19,7 +19,7 @@ linters:
     - errchkjson
     - errname
     # - exhaustive
-    - exportloopref
+    - copyloopvar
     # - gocognit
     - gofmt
     # - gomnd
@@ -48,6 +48,10 @@ linters:
 linters-settings:
   gofmt:
     simplify: true
+
+  gosec:
+    excludes:
+      - G115  # TODO: overflow errors ignored. to review later
 
   goconst:
     min-len: 3 # minimum length of string constant
@@ -132,8 +136,13 @@ linters-settings:
           - (github.com/ethereum/go-ethereum/log.Logger).Crit
 
 issues:
+  exclude-generated: strict
+  exclude-dirs:
+    - "api/"
   exclude-files:
     - ".*_test\\.go"
+    - ".*\\.pb\\.go"
+    - ".*\\.pulsar\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
   new-from-rev: ${GOLANGCI_LINT_NEW_FROM_REV}

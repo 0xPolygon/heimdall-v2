@@ -63,9 +63,9 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// check if incoming tx already exists
-	exists, err := m.k.HasTopupSequence(sdkCtx, sequence.String())
+	exists, err := m.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 	if exists {
 		logger.Error("older tx found",
@@ -139,7 +139,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 			"fromAddress", msg.Proposer,
 			"module", types.ModuleName,
 			"err", err)
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 	// burn coins from module
 	err = m.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
@@ -148,19 +148,19 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 			"module", types.ModuleName,
 			"coinsAmount", coins.String(),
 			"err", err)
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// add Fee to dividendAccount
 	feeAmount := amount.BigInt()
-	if err := m.k.AddFeeToDividendAccount(sdkCtx, msg.Proposer, feeAmount); err != nil {
+	if err := m.k.AddFeeToDividendAccount(ctx, msg.Proposer, feeAmount); err != nil {
 		logger.Error("error while adding fee to dividend account",
 			"fromAddress", msg.Proposer,
 			"feeAmount", feeAmount,
 			"err", err)
-		return nil, errors.Wrapf(sdkerrors.ErrLogic, err.Error())
+		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 
 	sdkCtx.EventManager().EmitEvents(sdk.Events{

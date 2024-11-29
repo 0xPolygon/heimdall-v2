@@ -4,7 +4,6 @@ import (
 	"context"
 
 	errorsmod "cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
@@ -32,8 +31,7 @@ func (srv msgServer) UpdateParams(ctx context.Context, req *types.MsgUpdateParam
 		return nil, errorsmod.Wrapf(types.ErrInvalidParams, "invalid chainmanager params; %s", err)
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	if err := srv.SetParams(sdkCtx, req.Params); err != nil {
+	if err := srv.SetParams(ctx, req.Params); err != nil {
 		return nil, errorsmod.Wrapf(sdkerrors.ErrLogic, "failed to update chainmanager params; %s", err)
 	}
 

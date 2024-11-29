@@ -37,7 +37,7 @@ func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpan
 
 	spans, err := q.k.GetAllSpans(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if len(spans) == 0 {
@@ -73,24 +73,24 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	// fetch params
 	params, err := q.k.FetchParams(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// fetch current validator set
 	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// fetch next selected block producers
 	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	selectedProducers, err := q.k.SelectNextProducers(ctx, nextSpanSeed)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	selectedProducers = types.SortValidatorByAddress(selectedProducers)
@@ -114,7 +114,7 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpan
 	// fetch next span seed
 	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryNextSpanSeedResponse{Seed: nextSpanSeed.String()}, nil
@@ -125,7 +125,7 @@ func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest)
 
 	params, err := q.k.FetchParams(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QueryParamsResponse{Params: params}, nil
@@ -139,12 +139,12 @@ func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRe
 
 	spanId, err := strconv.Atoi(req.Id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	span, err := q.k.GetSpan(ctx, uint64(spanId))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &types.QuerySpanByIdResponse{Span: &span}, nil
