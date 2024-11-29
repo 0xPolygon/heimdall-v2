@@ -111,7 +111,6 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
 	configuration.CometBFTRPCUrl = dummyCometBFTNodeUrl
-	// configuration.HeimdallServerURL = dummyHeimdallServerUrl
 	srvconf.API.Enable = true
 	srvconf.API.Address = dummyHeimdallServerUrl
 	customAppConf := helper.CustomAppConfig{

@@ -184,8 +184,6 @@ type CustomConfig struct {
 	BorRPCTimeout time.Duration `mapstructure:"bor_rpc_timeout"` // timeout for bor rpc
 
 	AmqpURL string `mapstructure:"amqp_url"` // amqp url
-	// HeimdallServerURL string `mapstructure:"heimdall_rest_server"` // heimdall server url
-	// GRPCServerURL     string `mapstructure:"grpc_server_url"`      // grpc server url
 
 	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction. eg....submit checkpoint.
 
@@ -384,7 +382,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
-	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 	// TODO HV2 - Why was this added? We are never using this
 	/*
 		// Loading genesis doc
@@ -429,8 +426,6 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		BorRPCTimeout: DefaultBorRPCTimeout,
 
 		AmqpURL: DefaultAmqpURL,
-		// HeimdallServerURL: DefaultHeimdallServerURL,
-		// GRPCServerURL:     DefaultGRPCServerURL,
 
 		MainchainGasLimit: DefaultMainchainGasLimit,
 
@@ -800,7 +795,6 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 	// get Heimdall REST server endpoint from viper/cobra
 	stringConfgValue = v.GetString(HeimdallServerURLFlag)
 	if stringConfgValue != "" {
-		// c.BaseConfig.HeimdallServerURL = stringConfgValue
 		c.API.Enable = true
 		c.API.Address = stringConfgValue
 	}
@@ -808,7 +802,6 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 	// get Heimdall GRPC server endpoint from viper/cobra
 	stringConfgValue = v.GetString(GRPCServerURLFlag)
 	if stringConfgValue != "" {
-		// c.Custom.GRPCServerURL = stringConfgValue
 		c.GRPC.Enable = true
 		c.GRPC.Address = stringConfgValue
 	}
@@ -929,14 +922,6 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 	if cc.AmqpURL != "" {
 		c.Custom.AmqpURL = cc.AmqpURL
 	}
-
-	// if cc.HeimdallServerURL != "" {
-	// 	c.API.Address = cc.HeimdallServerURL
-	// }
-
-	// if cc.GRPCServerURL != "" {
-	// 	c.Custom.GRPCServerURL = cc.GRPCServerURL
-	// }
 
 	if cc.MainchainGasLimit != 0 {
 		c.Custom.MainchainGasLimit = cc.MainchainGasLimit

@@ -293,17 +293,3 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 
 	return cmd
 }
-
-// func getGenesisAccount(address []byte) authTypes.GenesisAccount {
-// 	acc := authTypes.NewBaseAccountWithAddress(hmTypes.BytesToHeimdallAddress(address))
-
-// 	genesisBalance, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
-
-// 	if err := acc.SetCoins(sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: sdk.NewIntFromBigInt(genesisBalance)}}); err != nil {
-// 		logger.Error("getGenesisAccount | SetCoins", "Error", err)
-// 	}
-
-// 	result, _ := authTypes.NewGenesisAccountI(&acc)
-
-// 	return result
-// }

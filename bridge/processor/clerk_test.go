@@ -259,7 +259,6 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
-	// configuration.HeimdallServerURL = dummyHeimdallServerUrl
 	srvconf.API.Enable = true
 	srvconf.API.Address = dummyHeimdallServerUrl
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
@@ -296,7 +295,6 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
-	// configuration.HeimdallServerURL = dummyHeimdallServerUrl
 	srvconf.API.Enable = true
 	srvconf.API.Address = dummyHeimdallServerUrl
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
