@@ -288,7 +288,7 @@ replace (
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
 	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.12.0
 	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.2-beta-polygon
-	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.50.11-0.20241128133244-6e75cdfe2ec4
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.1.7-beta-polygon
 	github.com/ethereum/go-ethereum => github.com/maticnetwork/bor v1.5.2
 	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
