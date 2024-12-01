@@ -96,7 +96,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
 	// check if incoming tx already exists
 	if !q.k.HasRecordSequence(ctx, sequence.String()) {
-		return nil, nil
+		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}
 
 	return &types.RecordSequenceResponse{Sequence: sequence.Uint64()}, nil

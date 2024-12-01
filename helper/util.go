@@ -387,7 +387,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 		}
 		if !ok {
 			_, _ = fmt.Fprintln(os.Stderr, "canceled transaction")
-			return nil, nil
+			return nil, errors.New("transaction canceled by user")
 		}
 	}
 

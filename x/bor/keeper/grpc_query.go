@@ -41,7 +41,7 @@ func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpan
 	}
 
 	if len(spans) == 0 {
-		return nil, nil
+		return nil, status.Error(codes.NotFound, "no spans found")
 	}
 
 	latestSpan := spans[len(spans)-1]
