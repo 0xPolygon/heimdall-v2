@@ -5,10 +5,10 @@ import (
 )
 
 // ExponentialBackoff performs exponential backoff attempts on a given action
-func ExponentialBackoff(action func() error, max uint, wait time.Duration) error {
+func ExponentialBackoff(action func() error, maxValue uint, wait time.Duration) error {
 	var err error
 
-	for i := uint(0); i < max; i++ {
+	for i := uint(0); i < maxValue; i++ {
 		if err = action(); err == nil {
 			break
 		}
