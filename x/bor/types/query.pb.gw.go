@@ -524,13 +524,13 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 var (
 	pattern_Query_GetSpanById_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"bor", "span", "id"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetSpanList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"bor", "span", "list"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetSpanList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"bor", "span-list"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetLatestSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"bor", "span", "latest"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetLatestSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"bor", "span-latest"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetNextSpanSeed_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"bor", "span", "seed"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetNextSpanSeed_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"bor", "span-seed"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetNextSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"bor", "span", "prepare"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetNextSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"bor", "span-prepare"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"bor", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 )
