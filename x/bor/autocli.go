@@ -30,8 +30,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "GetNextSpanSeed",
-					Use:       "next-span-seed",
+					Use:       "next-span-seed [id]",
 					Short:     "Query next bor span seed",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "id"},
+					},
 				},
 				{
 					RpcMethod: "GetNextSpan",

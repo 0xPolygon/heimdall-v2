@@ -31,7 +31,7 @@ service Query {
   rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
       returns (QueryNextSpanSeedResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/seed";
+    option (google.api.http).get = "/bor/span/seed/{id}";
   }
 
   rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
@@ -85,7 +85,9 @@ message QueryLatestSpanResponse {
 
 // QueryNextSpanSeedRequest defines the gRPC request structure for querying
 // the next bor span seed.
-message QueryNextSpanSeedRequest {}
+message QueryNextSpanSeedRequest {
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
+}
 
 // QueryNextSpanSeedResponse defines the gRPC response structure for querying
 // the next bor span seed.

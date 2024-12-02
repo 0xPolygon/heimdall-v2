@@ -145,6 +145,24 @@ func request_Query_GetNextSpanSeed_0(ctx context.Context, marshaler runtime.Mars
 	var protoReq QueryNextSpanSeedRequest
 	var metadata runtime.ServerMetadata
 
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+	}
+
+	protoReq.Id, err = runtime.Uint64(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
+
 	msg, err := client.GetNextSpanSeed(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -153,6 +171,24 @@ func request_Query_GetNextSpanSeed_0(ctx context.Context, marshaler runtime.Mars
 func local_request_Query_GetNextSpanSeed_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryNextSpanSeedRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["id"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "id")
+	}
+
+	protoReq.Id, err = runtime.Uint64(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
+	}
 
 	msg, err := server.GetNextSpanSeed(ctx, &protoReq)
 	return msg, metadata, err
@@ -528,7 +564,7 @@ var (
 
 	pattern_Query_GetLatestSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"bor", "span", "latest"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetNextSpanSeed_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"bor", "span", "seed"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetNextSpanSeed_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"bor", "span", "seed", "id"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetNextSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"bor", "span", "prepare"}, "", runtime.AssumeColonVerbOpt(false)))
 

@@ -91,7 +91,9 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			spanDuration := res.Params.SpanDuration
 
 			// fetch next span seed
-			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{})
+			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{
+				Id: spanID,
+			})
 			if err != nil {
 				return err
 			}
