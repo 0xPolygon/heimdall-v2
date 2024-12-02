@@ -130,6 +130,7 @@ func ValidateTxResult(cliCtx cosmosContext.Context, resTx *ctypes.ResultTx) erro
 }
 */
 
+//lint:ignore U1000 ignore unused error
 func getBlocksForTxResults(cliCtx cosmosContext.Context, resTxs []*ctypes.ResultTx) (map[int64]*ctypes.ResultBlock, error) {
 	node, err := cliCtx.GetNode()
 	if err != nil {

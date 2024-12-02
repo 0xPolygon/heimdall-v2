@@ -272,6 +272,7 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 }
 
 // genesisCommand builds genesis-related `heimdalld genesis` command. Users may provide application specific commands as a parameter
+// nolint:unused // TODO - remove this once the function is being used
 func genesisCommand(txConfig client.TxConfig, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
 	cmd := genutilcli.Commands(txConfig, basicManager, app.DefaultNodeHome)
 
