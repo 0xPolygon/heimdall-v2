@@ -53,7 +53,7 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 
 	account, err := util.GetAccount(cliCtx, addressString)
 	if err != nil {
-		panic("Error connecting to rest-server, please start server before bridge.")
+		panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
 	}
 
 	return &TxBroadcaster{

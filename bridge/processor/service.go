@@ -85,8 +85,8 @@ func NewProcessorService(
 	//
 
 	// add into processor list
-	startAll := viper.GetBool("all")
-	onlyServices := viper.GetStringSlice("only")
+	startAll := viper.GetBool(helper.AllProcessesFlag)
+	onlyServices := viper.GetStringSlice(helper.OnlyProcessesFlag)
 
 	if startAll {
 		processorService.processors = append(processorService.processors,
