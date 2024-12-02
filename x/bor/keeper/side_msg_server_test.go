@@ -15,6 +15,7 @@ import (
 )
 
 func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
+	// TODO HV2: fix this test
 	ctx, require, borKeeper, sideMsgServer := s.ctx, s.Require(), s.borKeeper, s.sideMsgServer
 	testChainParams, contractCaller := chainmanagertypes.DefaultParams(), &s.contractCaller
 
@@ -40,8 +41,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 	require.NoError(err)
 
 	lastBorBlock := big.NewInt(100)
-	err = borKeeper.SetLastEthBlock(ctx, lastBorBlock)
-	require.NoError(err)
 	contractCaller.On("GetBorChainBlock", big.NewInt(100)).Return(&ethTypes.Header{Number: big.NewInt(100)}, nil).Times(1)
 	contractCaller.On("GetBorChainBlock", big.NewInt(84)).Return(&ethTypes.Header{Number: big.NewInt(84)}, nil).Times(4)
 	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(100)).Return(&producer1, nil).Times(4)
@@ -106,8 +105,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				StartBlock: 102,
 				EndBlock:   202,
 				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("0x66845362dcf5faa6c933c4353888306207954693e9923859c46bccbae065a1bf").Bytes(),
-				//Seed: nextBorBlockHeader.Hash().Bytes(),
+				//Seed:       common.HexToHash("0x66845362dcf5faa6c933c4353888306207954693e9923859c46bccbae065a1bf").Bytes(),
+				Seed: nextBorBlockHeader.Hash().Bytes(),
 			},
 			expVote: sidetxs.Vote_VOTE_YES,
 			mockFn: func() {

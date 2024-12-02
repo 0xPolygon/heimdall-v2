@@ -36,7 +36,6 @@ type Keeper struct {
 	Schema           collections.Schema
 	spans            collections.Map[uint64, types.Span]
 	latestSpan       collections.Item[uint64]
-	lastEthBlock     collections.Item[[]byte]
 	seedLastProducer collections.Map[uint64, []byte]
 	Params           collections.Item[types.Params]
 }
@@ -71,7 +70,6 @@ func NewKeeper(
 		contractCaller:   caller,
 		spans:            collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
 		latestSpan:       collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
-		lastEthBlock:     collections.NewItem(sb, types.LastProcessedEthBlock, "lastEthBlock", collections.BytesValue),
 		seedLastProducer: collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
 		Params:           collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
@@ -287,48 +285,6 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 // UpdateLastSpan updates the last span
 func (k *Keeper) UpdateLastSpan(ctx context.Context, id uint64) error {
 	return k.latestSpan.Set(ctx, id)
-}
-
-// IncrementLastEthBlock increment last eth block
-func (k *Keeper) IncrementLastEthBlock(ctx context.Context) error {
-	lastEthBlock := big.NewInt(0)
-	ok, err := k.lastEthBlock.Has(ctx)
-	if err != nil {
-		return err
-	}
-	if ok {
-		lastEthBlockBytes, err := k.lastEthBlock.Get(ctx)
-		if err != nil {
-			return err
-		}
-		lastEthBlock = lastEthBlock.SetBytes(lastEthBlockBytes)
-	}
-
-	return k.lastEthBlock.Set(ctx, lastEthBlock.Add(lastEthBlock, big.NewInt(1)).Bytes())
-}
-
-// SetLastEthBlock sets last eth block number
-func (k *Keeper) SetLastEthBlock(ctx context.Context, blockNumber *big.Int) error {
-	return k.lastEthBlock.Set(ctx, blockNumber.Bytes())
-}
-
-// GetLastEthBlock gets last processed Eth block for seed
-func (k *Keeper) GetLastEthBlock(ctx context.Context) (*big.Int, error) {
-	lastEthBlock := big.NewInt(0)
-	ok, err := k.lastEthBlock.Has(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if ok {
-		lastEthBlockBytes, err := k.lastEthBlock.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
-		lastEthBlock = lastEthBlock.SetBytes(lastEthBlockBytes)
-	}
-
-	return lastEthBlock, nil
 }
 
 // FetchNextSpanSeed gets the eth block hash which serves as seed for random selection of producer set

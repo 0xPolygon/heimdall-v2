@@ -306,44 +306,6 @@ func (s *KeeperTestSuite) TestUpdateLastSpan() {
 	}
 }
 
-func (s *KeeperTestSuite) TestIncrementLastEthBlock() {
-	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
-
-	testcases := []struct {
-		name            string
-		setLastEthBlock *big.Int
-		expLastEthBlock *big.Int
-	}{
-		{
-			name:            "no eth block has been set",
-			setLastEthBlock: nil,
-			expLastEthBlock: big.NewInt(1),
-		},
-		{
-			name:            "eth block gets correctly incremented",
-			setLastEthBlock: big.NewInt(10),
-			expLastEthBlock: big.NewInt(11),
-		},
-	}
-
-	for _, tc := range testcases {
-		s.T().Run(tc.name, func(t *testing.T) {
-			if tc.setLastEthBlock != nil {
-				err := borKeeper.SetLastEthBlock(ctx, tc.setLastEthBlock)
-				require.NoError(err)
-			}
-
-			err := borKeeper.IncrementLastEthBlock(ctx)
-			require.NoError(err)
-
-			resLastEthBlock, err := borKeeper.GetLastEthBlock(ctx)
-			require.NoError(err)
-			require.Equal(tc.expLastEthBlock, resLastEthBlock)
-
-		})
-	}
-}
-
 func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
 
