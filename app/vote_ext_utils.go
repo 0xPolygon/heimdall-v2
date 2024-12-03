@@ -389,6 +389,10 @@ func ValidateNonRpVoteExtensions(
 	contractCaller helper.IContractCaller,
 ) error {
 
+	if height == retrieveVoteExtensionsEnableHeight(ctx) {
+		return nil
+	}
+
 	// Check if there are 2/3 voting power for one same extension
 	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, stakeKeeper)
 	if err != nil {
@@ -417,7 +421,7 @@ func ValidateNonRpVoteExtension(
 	contractCaller helper.IContractCaller,
 ) error {
 	// Check if its dummy vote non rp extension
-	prevHeightDummyExt, err := getDummyNonRpVoteExtension(height-1, ctx.ChainID())
+	prevHeightDummyExt, err := getDummyNonRpVoteExtension(height, ctx.ChainID())
 	if err != nil {
 		return err
 	}
