@@ -21,10 +21,3 @@ TODO: removal/purge on removal using dpkg
       cleanup of control files to list what we want
       copyright inclusion
 
-
-CLI:
-
-heimdallcli/
-   DEBIAN/control
-   DEBIAN/postinst
-   usr/local/bin/heimdallcli
