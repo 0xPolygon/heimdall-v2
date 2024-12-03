@@ -131,8 +131,8 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 	return &types.QueryNextSpanSeedResponse{Seed: nextSpanSeed.String()}, nil
 }
 
-// GetParams returns the bor module parameters
-func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetBorParams returns the bor module parameters
+func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 
 	params, err := q.k.FetchParams(ctx)
 	if err != nil {

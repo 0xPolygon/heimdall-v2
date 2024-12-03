@@ -2726,7 +2726,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgMilestone defines a SDK message for the milestone
 type MsgMilestone struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2802,7 +2801,6 @@ func (x *MsgMilestone) GetMilestoneId() string {
 	return ""
 }
 
-// MsgMilestoneResponse defines the Msg/Milestone response type.
 type MsgMilestoneResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2829,8 +2827,6 @@ func (*MsgMilestoneResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_milestone_tx_proto_rawDescGZIP(), []int{1}
 }
 
-// MsgMilestoneTimeout defines a SDK message to indicate that no milestone
-// was proposed within the timeout period
 type MsgMilestoneTimeout struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2866,7 +2862,6 @@ func (x *MsgMilestoneTimeout) GetFrom() string {
 	return ""
 }
 
-// MsgMilestoneTimeoutResponse defines the Msg/MilestoneTimeout response type.
 type MsgMilestoneTimeoutResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2893,18 +2888,13 @@ func (*MsgMilestoneTimeoutResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_milestone_tx_proto_rawDescGZIP(), []int{3}
 }
 
-// MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// authority is the address that controls the module (defaults to x/gov unless
-	// overwritten).
-	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	// params defines the x/milestone parameters to update.
-	// NOTE: All parameters must be supplied.
-	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	Authority string  `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	Params    *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *MsgUpdateParams) Reset() {
@@ -2941,8 +2931,6 @@ func (x *MsgUpdateParams) GetParams() *Params {
 	return nil
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
 type MsgUpdateParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

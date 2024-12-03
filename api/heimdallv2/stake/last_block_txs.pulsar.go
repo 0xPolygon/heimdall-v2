@@ -506,7 +506,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// LastBlockTxs define the last block's transactions
 type LastBlockTxs struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

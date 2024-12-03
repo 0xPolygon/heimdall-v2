@@ -36,8 +36,8 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-// GetParams returns the checkpoint params
-func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetCheckpointParams returns the checkpoint params
+func (q queryServer) GetCheckpointParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {

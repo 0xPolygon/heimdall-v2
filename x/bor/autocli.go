@@ -47,7 +47,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					},
 				},
 				{
-					RpcMethod: "GetParams",
+					RpcMethod: "GetBorParams",
 					Use:       "params",
 					Short:     "Query bor params",
 				},

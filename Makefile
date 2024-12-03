@@ -59,7 +59,7 @@ protoVer=0.14.0
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
-proto-all: proto-format proto-lint proto-gen
+proto-all: proto-format proto-lint proto-gen proto-swagger-gen
 
 proto-gen:
 	@echo "Generating Protobuf files"
@@ -73,6 +73,10 @@ proto-lint:
 
 proto-check-breaking:
 	@$(protoImage) buf breaking --against "$(HTTPS_GIT)#branch=develop"
+
+proto-swagger-gen:
+	@echo "Generating Protobuf Swagger"
+	@$(protoImage) sh ./scripts/protoc-swagger-gen.sh
 
 .PHONY: proto-all proto-gen proto-format proto-lint proto-check-breaking
 

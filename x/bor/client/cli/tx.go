@@ -84,7 +84,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 
 			// fetch params
 			queryClient := types.NewQueryClient(clientCtx)
-			res, err := queryClient.GetParams(cmd.Context(), &types.QueryParamsRequest{})
+			res, err := queryClient.GetBorParams(cmd.Context(), &types.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

@@ -24,11 +24,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// GenesisState defines the checkpoint module's genesis state.
 type GenesisState struct {
-	// It defines the params
-	Params Params `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
-	// BufferedCheckpoint defines the buffered checkpoint
+	Params             Params       `protobuf:"bytes,1,opt,name=params,proto3" json:"params"`
 	BufferedCheckpoint *Checkpoint  `protobuf:"bytes,2,opt,name=buffered_checkpoint,json=bufferedCheckpoint,proto3" json:"buffered_checkpoint,omitempty"`
 	LastNoAck          uint64       `protobuf:"varint,3,opt,name=last_no_ack,json=lastNoAck,proto3" json:"last_no_ack,omitempty"`
 	AckCount           uint64       `protobuf:"varint,4,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`

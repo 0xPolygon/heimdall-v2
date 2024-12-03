@@ -10,24 +10,27 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
-// Query defines the gRPC querier service.
 service Query {
+  // GetRecordById retrieves a record by its id
   rpc GetRecordById(RecordRequest) returns (RecordResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/event-record/{record_id}";
   }
 
+  // GetRecordList queries a list of records
   rpc GetRecordList(RecordListRequest) returns (RecordListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/event-record/list";
   }
 
+  // GetRecordListWithTime queries a list of records with time
   rpc GetRecordListWithTime(RecordListWithTimeRequest)
       returns (RecordListWithTimeResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/time";
   }
 
+  // GetRecordSequence queries the sequence of the record
   rpc GetRecordSequence(RecordSequenceRequest)
       returns (RecordSequenceResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -39,7 +42,6 @@ message RecordRequest {
   uint64 record_id = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// RecordResponse defines the params for RecordListRequest.
 message RecordResponse {
   EventRecord record = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
@@ -50,7 +52,6 @@ message RecordListRequest {
   uint64 limit = 2 [ (amino.dont_omitempty) = true ];
 }
 
-// RecordListResponse defines the params for RecordListRequest
 message RecordListResponse {
   repeated EventRecord event_records = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
@@ -71,8 +72,6 @@ message RecordListWithTimeRequest {
   uint64 limit = 4 [ (amino.dont_omitempty) = true ];
 }
 
-// RecordListWithTimeResponse defines the params for querying
-// RecordListWithTimeRequest
 message RecordListWithTimeResponse {
   repeated EventRecord event_records = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];

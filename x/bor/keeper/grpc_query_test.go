@@ -113,7 +113,7 @@ func (s *KeeperTestSuite) TestGetParams() {
 	err := keeper.SetParams(ctx, params)
 	require.NoError(err)
 
-	res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+	res, err := queryClient.GetBorParams(ctx, &types.QueryParamsRequest{})
 	require.NoError(err)
 	require.Equal(&types.QueryParamsResponse{Params: params}, res)
 }

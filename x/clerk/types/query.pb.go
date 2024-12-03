@@ -79,7 +79,6 @@ func (m *RecordRequest) GetRecordId() uint64 {
 	return 0
 }
 
-// RecordResponse defines the params for RecordListRequest.
 type RecordResponse struct {
 	Record EventRecord `protobuf:"bytes,1,opt,name=record,proto3" json:"record"`
 }
@@ -176,7 +175,6 @@ func (m *RecordListRequest) GetLimit() uint64 {
 	return 0
 }
 
-// RecordListResponse defines the params for RecordListRequest
 type RecordListResponse struct {
 	EventRecords []EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records"`
 }
@@ -289,8 +287,6 @@ func (m *RecordListWithTimeRequest) GetLimit() uint64 {
 	return 0
 }
 
-// RecordListWithTimeResponse defines the params for querying
-// RecordListWithTimeRequest
 type RecordListWithTimeResponse struct {
 	EventRecords []EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records"`
 }
@@ -503,9 +499,13 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
+	// GetRecordById retrieves a record by its id
 	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+	// GetRecordList queries a list of records
 	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
+	// GetRecordListWithTime queries a list of records with time
 	GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
+	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
 }
 
@@ -555,9 +555,13 @@ func (c *queryClient) GetRecordSequence(ctx context.Context, in *RecordSequenceR
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
+	// GetRecordById retrieves a record by its id
 	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
+	// GetRecordList queries a list of records
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
+	// GetRecordListWithTime queries a list of records with time
 	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
+	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
 }
 

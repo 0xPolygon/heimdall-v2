@@ -4711,8 +4711,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence and
-// IsTopupTxOld RPC methods
 type QueryTopupSequenceRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4756,8 +4754,6 @@ func (x *QueryTopupSequenceRequest) GetLogIndex() uint64 {
 	return 0
 }
 
-// QueryTopupSequenceResponse is response type for the GetTopupTxSequence RPC
-// method
 type QueryTopupSequenceResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4793,8 +4789,6 @@ func (x *QueryTopupSequenceResponse) GetSequence() string {
 	return ""
 }
 
-// QueryIsTopupTxOldResponse is response type for the IsTopupTxOld RPC
-// method
 type QueryIsTopupTxOldResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4830,8 +4824,6 @@ func (x *QueryIsTopupTxOldResponse) GetIsOld() bool {
 	return false
 }
 
-// QueryDividendAccountRequest is the request type for the
-// GetDividendAccountByAddress RPC method
 type QueryDividendAccountRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4867,8 +4859,6 @@ func (x *QueryDividendAccountRequest) GetAddress() string {
 	return ""
 }
 
-// QueryDividendAccountResponse the is response type for the
-// GetDividendAccountByAddress RPC method
 type QueryDividendAccountResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4904,8 +4894,6 @@ func (x *QueryDividendAccountResponse) GetDividendAccount() *types.DividendAccou
 	return nil
 }
 
-// QueryDividendAccountRootHashRequest is the request type for the
-// GetDividendAccountRootHash RPC method
 type QueryDividendAccountRootHashRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4932,8 +4920,6 @@ func (*QueryDividendAccountRootHashRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_topup_query_proto_rawDescGZIP(), []int{5}
 }
 
-// QueryDividendAccountRootResponse is the response type for the
-// GetDividendAccountRootHash RPC method
 type QueryDividendAccountRootHashResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4969,8 +4955,6 @@ func (x *QueryDividendAccountRootHashResponse) GetAccountRootHash() []byte {
 	return nil
 }
 
-// QueryVerifyAccountProofParams is the request type for the VerifyAccountProof
-// RPC method
 type QueryVerifyAccountProofRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5014,8 +4998,6 @@ func (x *QueryVerifyAccountProofRequest) GetProof() string {
 	return ""
 }
 
-// QueryVerifyAccountProofResponse the is response type for the
-// VerifyAccountProof RPC method
 type QueryVerifyAccountProofResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5051,8 +5033,6 @@ func (x *QueryVerifyAccountProofResponse) GetIsVerified() bool {
 	return false
 }
 
-// QueryAccountProofRequest is the request type for the
-// GetAccountProof RPC method
 type QueryAccountProofRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -5088,8 +5068,6 @@ func (x *QueryAccountProofRequest) GetAddress() string {
 	return ""
 }
 
-// QueryAccountProofResponse the is response type for the GetAccountProof RPC
-// method
 type QueryAccountProofResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -9,36 +9,36 @@ import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
-// Query defines the gRPC querier service.
 service Query {
 
-  // CurrentValidatorSet queries for the current validator set
+  // GetCurrentValidatorSet queries for the current validator set
   rpc GetCurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator-set";
   }
 
-  // Signer queries validator info for a given validator address.
+  // GetSignerByAddress queries validator info for a given validator address
   rpc GetSignerByAddress(QuerySignerRequest) returns (QuerySignerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/signer/{val_address}";
   }
 
-  // Validator queries validator info for a given validator id.
+  // GetValidatorById queries validator info for a given validator id
   rpc GetValidatorById(QueryValidatorRequest) returns (QueryValidatorResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator/{id}";
   }
 
-  // ValidatorStatus queries validator status for given validator val_address.
+  // GetValidatorStatusByAddress queries validator status for given validator
+  // val_address
   rpc GetValidatorStatusByAddress(QueryValidatorStatusRequest)
       returns (QueryValidatorStatusResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/validator-status/{val_address}";
   }
 
-  // TotalPower queries the total power of a validator set
+  // GetTotalPower queries the total power of a validator set
   rpc GetTotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/total-power";
@@ -52,80 +52,50 @@ service Query {
   }
 }
 
-// QueryCurrentValidatorSetRequest is request type for Query/CurrentValidatorSet
-// RPC method.
 message QueryCurrentValidatorSetRequest {}
 
-// QueryCurrentValidatorSetResponse is response type for the Query/ValidatorSet
-// RPC method
 message QueryCurrentValidatorSetResponse {
-  // validator_set contains the queried set of validators
   ValidatorSet validator_set = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QuerySignerRequest is request type for the Query/Signer RPC method
 message QuerySignerRequest {
-  // val_address defines the validator val_address to query for.
   string val_address = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QuerySignerResponse is response type for the Query/Signer RPC method
 message QuerySignerResponse {
-  // validator defines the validator info.
   Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryValidatorRequest is request type for the Query/Validator RPC method
 message QueryValidatorRequest {
-  // id defines the validator id to query for.
   uint64 id = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryValidatorResponse is response type for the Query/Validator RPC method
 message QueryValidatorResponse {
-  // validator defines the validator info.
   Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryTotalPowerRequest is request type for the
-// Query/TotalPower RPC method
 message QueryTotalPowerRequest {}
 
-// QueryTotalPowerResponse is response type for the
-// Query/TotalPower RPC method
 message QueryTotalPowerResponse {
-  // total power denotes the total power of all the validators
   int64 total_power = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryValidatorStatusRequest is response type for the Query/ValidatorStatus
-// RPC method
 message QueryValidatorStatusRequest {
-  // val_address defines the validator address to query for.
   string val_address = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryValidatorStatusResponse is response type for the Query/ValidatorStatus
-// RPC method
 message QueryValidatorStatusResponse {
-  // status define whether the particular validator is active in the validator
-  // set
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryStakeIsOldTxRequest is request type for the Query/IsStakeTxOld
-// RPC method
 message QueryStakeIsOldTxRequest {
   string tx_hash = 1 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryStakeIsOldTxResponse is response type for the Query/IsStakeTxOld
-// RPC method
 message QueryStakeIsOldTxResponse {
-  // status define the active status of validator
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }

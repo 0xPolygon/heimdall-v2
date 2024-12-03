@@ -31,15 +31,16 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	// CurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries for the current validator set
 	GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for a given validator address.
+	// GetSignerByAddress queries validator info for a given validator address
 	GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
-	// Validator queries validator info for a given validator id.
+	// GetValidatorById queries validator info for a given validator id
 	GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
-	// ValidatorStatus queries validator status for given validator val_address.
+	// GetValidatorStatusByAddress queries validator status for given validator
+	// val_address
 	GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries the total power of a validator set
+	// GetTotalPower queries the total power of a validator set
 	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
@@ -111,15 +112,16 @@ func (c *queryClient) IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxReq
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	// CurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries for the current validator set
 	GetCurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for a given validator address.
+	// GetSignerByAddress queries validator info for a given validator address
 	GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
-	// Validator queries validator info for a given validator id.
+	// GetValidatorById queries validator info for a given validator id
 	GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
-	// ValidatorStatus queries validator status for given validator val_address.
+	// GetValidatorStatusByAddress queries validator status for given validator
+	// val_address
 	GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries the total power of a validator set
+	// GetTotalPower queries the total power of a validator set
 	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)

@@ -24,14 +24,10 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// GenesisState defines the staking module's genesis state.
 type GenesisState struct {
-	// validators defines the validator set at genesis.
-	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
-	// current_validator_set defines the active current validator set at genesis.
+	Validators          []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
 	CurrentValidatorSet ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set"`
-	// staking_sequences defines the staking sequences at genesis.
-	StakingSequences []string `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
+	StakingSequences    []string     `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
 }
 
 func (m *GenesisState) Reset()         { *m = GenesisState{} }

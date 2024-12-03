@@ -4621,7 +4621,6 @@ func (x *MsgValidatorJoin) GetNonce() uint64 {
 	return 0
 }
 
-// MsgValidatorJoinResponse defines the Msg/ValidatorJoin response type.
 type MsgValidatorJoinResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4648,20 +4647,15 @@ func (*MsgValidatorJoinResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_tx_proto_rawDescGZIP(), []int{1}
 }
 
-// MsgStakeUpdate defines a message for performing a stake update
 type MsgStakeUpdate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	From      string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	ValId     uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	NewAmount string `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3" json:"new_amount,omitempty"`
-	TxHash    []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	// TODO HV2: the following fields are repeated frequently in the messages.
-	//
-	//	Consider wrapping them in a separate proto message (see
-	//	https://polygon.atlassian.net/browse/POS-2615)
+	From        string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId       uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
+	NewAmount   string `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3" json:"new_amount,omitempty"`
+	TxHash      []byte `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex    uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
 	BlockNumber uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
 	Nonce       uint64 `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
@@ -4736,7 +4730,6 @@ func (x *MsgStakeUpdate) GetNonce() uint64 {
 	return 0
 }
 
-// MsgStakeUpdateResponse defines the Msg/StakeUpdate response type.
 type MsgStakeUpdateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4763,8 +4756,6 @@ func (*MsgStakeUpdateResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_tx_proto_rawDescGZIP(), []int{3}
 }
 
-// MsgSignerUpdate defines a message for updating signer of the existing
-// validator
 type MsgSignerUpdate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4848,7 +4839,6 @@ func (x *MsgSignerUpdate) GetNonce() uint64 {
 	return 0
 }
 
-// MsgSignerUpdateResponse defines the Msg/SignerUpdate response type.
 type MsgSignerUpdateResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4875,7 +4865,6 @@ func (*MsgSignerUpdateResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_stake_tx_proto_rawDescGZIP(), []int{5}
 }
 
-// MsgValidatorExit defines a message for exiting the validator
 type MsgValidatorExit struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4959,7 +4948,6 @@ func (x *MsgValidatorExit) GetNonce() uint64 {
 	return 0
 }
 
-// MsgValidatorExitResponse defines the Msg/ValidatorExit response type.
 type MsgValidatorExitResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -3,7 +3,11 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/0xPolygon/heimdall-v2/client/docs"
+	"github.com/gorilla/mux"
 	"io"
+	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -680,8 +684,13 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	// Register grpc-gateway routes for all modules.
 	app.BasicManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	// register swagger API from root so that other applications can override easily
+	// register cosmos-sdk swagger API from root so that other applications can override easily
 	if err := server.RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
+		panic(err)
+	}
+
+	// register heimdall-v2 swagger API
+	if err := RegisterHeimdallSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
 		panic(err)
 	}
 }
@@ -785,4 +794,20 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(borTypes.ModuleName)
 
 	return paramsKeeper
+}
+
+func RegisterHeimdallSwaggerAPI(_ client.Context, rtr *mux.Router, swaggerEnabled bool) interface{} {
+	if !swaggerEnabled {
+		return nil
+	}
+
+	root, err := fs.Sub(docs.SwaggerUI, "swagger-ui")
+	if err != nil {
+		return err
+	}
+
+	staticServer := http.FileServer(http.FS(root))
+	rtr.PathPrefix("/heimdall/swagger/").Handler(http.StripPrefix("/heimdall/swagger/", staticServer))
+
+	return nil
 }
