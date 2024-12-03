@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -119,17 +121,42 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
-	RequestFinalizeBlock(t, app, VoteExtBlockHeight)
+	requestFinalizeBlock(t, app, VoteExtBlockHeight, validators[0])
 
 	_, err = app.Commit()
 	require.NoError(t, err)
 
 	return app, db, logger
 }
-
 func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 	t.Helper()
+	proposer := app.StakeKeeper.GetCurrentProposer(context.Background())
+	require.NotNil(t, proposer)
+	requestFinalizeBlock(t, app, height, proposer)
+}
+
+func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validator *stakeTypes.Validator) {
+	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
+	require.NoError(t, err)
+	consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
+		SideTxResponses: []sidetxs.SideTxResponse{},
+		Height:          height - 1,
+	}
+
+	txResExt, err := consolidatedSideTxRes.Marshal()
+	require.NoError(t, err)
+
 	extCommitInfo := new(abci.ExtendedCommitInfo)
+	extCommitInfo.Votes = make([]abci.ExtendedVoteInfo, 0)
+	extCommitInfo.Votes = append(extCommitInfo.Votes, abci.ExtendedVoteInfo{
+		VoteExtension:      txResExt,
+		NonRpVoteExtension: dummyExt,
+		BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+		Validator: abci.Validator{
+			Address: common.Hex2Bytes(validator.Signer),
+			Power:   validator.VotingPower,
+		},
+	})
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{

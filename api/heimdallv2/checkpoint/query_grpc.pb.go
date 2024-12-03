@@ -19,17 +19,18 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_GetCheckpointParams_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointParams"
-	Query_GetCheckpointOverview_FullMethodName = "/heimdallv2.checkpoint.Query/GetCheckpointOverview"
-	Query_GetAckCount_FullMethodName           = "/heimdallv2.checkpoint.Query/GetAckCount"
-	Query_GetCheckpointLatest_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointLatest"
-	Query_GetCheckpointBuffer_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointBuffer"
-	Query_GetLastNoAck_FullMethodName          = "/heimdallv2.checkpoint.Query/GetLastNoAck"
-	Query_GetNextCheckpoint_FullMethodName     = "/heimdallv2.checkpoint.Query/GetNextCheckpoint"
-	Query_GetCurrentProposer_FullMethodName    = "/heimdallv2.checkpoint.Query/GetCurrentProposer"
-	Query_GetProposers_FullMethodName          = "/heimdallv2.checkpoint.Query/GetProposers"
-	Query_GetCheckpointList_FullMethodName     = "/heimdallv2.checkpoint.Query/GetCheckpointList"
-	Query_GetCheckpoint_FullMethodName         = "/heimdallv2.checkpoint.Query/GetCheckpoint"
+	Query_GetCheckpointParams_FullMethodName     = "/heimdallv2.checkpoint.Query/GetCheckpointParams"
+	Query_GetCheckpointOverview_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointOverview"
+	Query_GetAckCount_FullMethodName             = "/heimdallv2.checkpoint.Query/GetAckCount"
+	Query_GetCheckpointLatest_FullMethodName     = "/heimdallv2.checkpoint.Query/GetCheckpointLatest"
+	Query_GetCheckpointBuffer_FullMethodName     = "/heimdallv2.checkpoint.Query/GetCheckpointBuffer"
+	Query_GetLastNoAck_FullMethodName            = "/heimdallv2.checkpoint.Query/GetLastNoAck"
+	Query_GetNextCheckpoint_FullMethodName       = "/heimdallv2.checkpoint.Query/GetNextCheckpoint"
+	Query_GetCurrentProposer_FullMethodName      = "/heimdallv2.checkpoint.Query/GetCurrentProposer"
+	Query_GetProposers_FullMethodName            = "/heimdallv2.checkpoint.Query/GetProposers"
+	Query_GetCheckpointList_FullMethodName       = "/heimdallv2.checkpoint.Query/GetCheckpointList"
+	Query_GetCheckpoint_FullMethodName           = "/heimdallv2.checkpoint.Query/GetCheckpoint"
+	Query_GetCheckpointSignatures_FullMethodName = "/heimdallv2.checkpoint.Query/GetCheckpointSignatures"
 )
 
 // QueryClient is the client API for Query service.
@@ -58,6 +59,8 @@ type QueryClient interface {
 	GetCheckpointList(ctx context.Context, in *QueryCheckpointListRequest, opts ...grpc.CallOption) (*QueryCheckpointListResponse, error)
 	// GetCheckpoint queries for the checkpoint based on the number
 	GetCheckpoint(ctx context.Context, in *QueryCheckpointRequest, opts ...grpc.CallOption) (*QueryCheckpointResponse, error)
+	// QueryCheckpointSignatures queries signatures for latest checkpoint
+	GetCheckpointSignatures(ctx context.Context, in *QueryCheckpointSignaturesRequest, opts ...grpc.CallOption) (*QueryCheckpointSignaturesResponse, error)
 }
 
 type queryClient struct {
@@ -167,6 +170,15 @@ func (c *queryClient) GetCheckpoint(ctx context.Context, in *QueryCheckpointRequ
 	return out, nil
 }
 
+func (c *queryClient) GetCheckpointSignatures(ctx context.Context, in *QueryCheckpointSignaturesRequest, opts ...grpc.CallOption) (*QueryCheckpointSignaturesResponse, error) {
+	out := new(QueryCheckpointSignaturesResponse)
+	err := c.cc.Invoke(ctx, Query_GetCheckpointSignatures_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -193,6 +205,8 @@ type QueryServer interface {
 	GetCheckpointList(context.Context, *QueryCheckpointListRequest) (*QueryCheckpointListResponse, error)
 	// GetCheckpoint queries for the checkpoint based on the number
 	GetCheckpoint(context.Context, *QueryCheckpointRequest) (*QueryCheckpointResponse, error)
+	// QueryCheckpointSignatures queries signatures for latest checkpoint
+	GetCheckpointSignatures(context.Context, *QueryCheckpointSignaturesRequest) (*QueryCheckpointSignaturesResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -232,6 +246,9 @@ func (UnimplementedQueryServer) GetCheckpointList(context.Context, *QueryCheckpo
 }
 func (UnimplementedQueryServer) GetCheckpoint(context.Context, *QueryCheckpointRequest) (*QueryCheckpointResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCheckpoint not implemented")
+}
+func (UnimplementedQueryServer) GetCheckpointSignatures(context.Context, *QueryCheckpointSignaturesRequest) (*QueryCheckpointSignaturesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCheckpointSignatures not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -444,6 +461,24 @@ func _Query_GetCheckpoint_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetCheckpointSignatures_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCheckpointSignaturesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetCheckpointSignatures(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetCheckpointSignatures_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetCheckpointSignatures(ctx, req.(*QueryCheckpointSignaturesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -494,6 +529,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCheckpoint",
 			Handler:    _Query_GetCheckpoint_Handler,
+		},
+		{
+			MethodName: "GetCheckpointSignatures",
+			Handler:    _Query_GetCheckpointSignatures_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -13,6 +13,7 @@ import (
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	cometTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
@@ -23,6 +24,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -399,7 +401,7 @@ func ValidateNonRpVoteExtensions(
 		return err
 	}
 
-	if err := ValidateNonRpVoteExtension(ctx, height, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+	if err := ValidateNonRpVoteExtension(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
 	}
 
@@ -499,8 +501,8 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 			continue
 		}
 
-		hash := common.BytesToHash(crypto.Keccak256(vote.VoteExtension)).String()
-		hashToExt[hash] = vote.VoteExtension
+		hash := common.BytesToHash(crypto.Keccak256(vote.NonRpVoteExtension)).String()
+		hashToExt[hash] = vote.NonRpVoteExtension
 		if _, ok := hashToVotingPower[hash]; !ok {
 			hashToVotingPower[hash] = 0
 		}
@@ -600,6 +602,58 @@ func getValidatorPublicKey(validator *stakeTypes.Validator) (cmtCrypto.PubKey, e
 	}
 
 	return cmtPubKey, nil
+}
+
+// FindCheckpointTx finds the checkpoint tx from the given txs that generated the given extension
+// If no such tx is found empty string is returned
+func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logger log.Logger) string {
+	for _, rawTx := range txs {
+		tx, err := txDecoder.TxDecode(rawTx)
+		if err != nil {
+			logger.Error("failed to decode tx", "error", err)
+			continue
+		}
+
+		messages := tx.GetMsgs()
+		for _, msg := range messages {
+			if checkpointTypes.IsCheckpointMsg(msg) {
+				checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+				if !ok {
+					logger.Error("type mismatch for MsgCheckpoint")
+					continue
+				}
+
+				signBytes := checkpointMsg.GetSideSignBytes()
+
+				if bytes.Compare(signBytes, extension) == 0 {
+					var txBytes cometTypes.Tx = rawTx
+					return common.Bytes2Hex(txBytes.Hash())
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// getCheckpointSignatures returns the checkpoint signatures from the given extVoteInfo
+func getCheckpointSignatures(extension []byte, extVoteInfo []abciTypes.ExtendedVoteInfo) checkpointTypes.CheckpointSignatures {
+	result := checkpointTypes.CheckpointSignatures{
+		Signatures: make([]checkpointTypes.CheckpointSignature, 0),
+	}
+	for _, vote := range extVoteInfo {
+		if bytes.Equal(vote.NonRpVoteExtension, extension) {
+			result.Signatures = append(result.Signatures, checkpointTypes.CheckpointSignature{
+				ValidatorAddress: vote.Validator.Address,
+				Signature:        vote.ExtensionSignature,
+			})
+		}
+	}
+	return result
+}
+
+type txDecoder interface {
+	TxDecode(txBytes []byte) (sdk.Tx, error)
 }
 
 var dummyNonRpVoteExtension = []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t")

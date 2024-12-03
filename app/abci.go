@@ -29,7 +29,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height-1, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height-1, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -349,9 +349,26 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	// execute side txs
+	approvedTxsMap := make(map[string]bool)
+	for _, tx := range approvedTxs {
+		approvedTxsMap[common.Bytes2Hex(tx)] = true
+	}
+
 	txs := lastBlockTxs.Txs
 
+	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, app.StakeKeeper)
+	if err != nil {
+		logger.Error("Error occurred while getting majority non-rp vote extension", "error", err)
+		return nil, err
+	}
+
+	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
+	if approvedTxsMap[checkpointTxHash] {
+		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+		app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures)
+	}
+
+	// execute side txs
 	for _, rawTx := range txs {
 		decodedTx, err := app.TxDecode(rawTx)
 		if err != nil {
@@ -361,26 +378,23 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		var txBytes cmtTypes.Tx = rawTx
 
-		for _, approvedTx := range approvedTxs {
+		if approvedTxsMap[common.Bytes2Hex(txBytes.Hash())] {
 
-			if bytes.Equal(approvedTx, txBytes.Hash()) {
-
-				// execute post handler for the approved side tx
-				msgs := decodedTx.GetMsgs()
-				executedPostHandlers := 0
-				for _, msg := range msgs {
-					postHandler := app.sideTxCfg.GetPostHandler(msg)
-					if postHandler != nil {
-						postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
-						executedPostHandlers++
-					}
-					// make sure only one post handler is executed
-					if executedPostHandlers > 0 {
-						break
-					}
+			// execute post handler for the approved side tx
+			msgs := decodedTx.GetMsgs()
+			executedPostHandlers := 0
+			for _, msg := range msgs {
+				postHandler := app.sideTxCfg.GetPostHandler(msg)
+				if postHandler != nil {
+					postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
+					executedPostHandlers++
 				}
-
+				// make sure only one post handler is executed
+				if executedPostHandlers > 0 {
+					break
+				}
 			}
+
 		}
 	}
 

@@ -260,3 +260,12 @@ func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCh
 		ValidatorSet:     validatorSet,
 	}, nil
 }
+
+// GetCheckpointSignatures queries for the last checkpoint signatures
+func (q queryServer) GetCheckpointSignatures(ctx context.Context, _ *types.QueryCheckpointSignaturesRequest) (*types.QueryCheckpointSignaturesResponse, error) {
+	checkpointSignatures := q.k.GetCheckpointSignatures(ctx)
+	if len(checkpointSignatures.Signatures) == 0 {
+		return nil, status.Error(codes.NotFound, "checkpoint signatures not set")
+	}
+	return &types.QueryCheckpointSignaturesResponse{Signatures: checkpointSignatures.Signatures}, nil
+}

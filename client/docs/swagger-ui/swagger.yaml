@@ -995,6 +995,54 @@ paths:
           format: uint64
       tags:
         - Query
+  /checkpoint/signatures:
+    get:
+      summary: QueryCheckpointSignatures queries signatures for latest checkpoint
+      operationId: GetCheckpointSignatures
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              signatures:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    validator_address:
+                      type: string
+                      format: byte
+                    signature:
+                      type: string
+                      format: byte
+            title: |-
+              QueryCheckpointSignaturesResponse is response type for
+              QueryCheckpointSignatures RPC method
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /checkpoints/buffer:
     get:
       summary: GetCheckpointBuffer queries for the checkpoint in the buffer
@@ -3863,6 +3911,15 @@ definitions:
       timestamp:
         type: string
         format: uint64
+  heimdallv2.checkpoint.CheckpointSignature:
+    type: object
+    properties:
+      validator_address:
+        type: string
+        format: byte
+      signature:
+        type: string
+        format: byte
   heimdallv2.checkpoint.MsgCheckpoint:
     type: object
     properties:
@@ -4117,6 +4174,23 @@ definitions:
           timestamp:
             type: string
             format: uint64
+  heimdallv2.checkpoint.QueryCheckpointSignaturesResponse:
+    type: object
+    properties:
+      signatures:
+        type: array
+        items:
+          type: object
+          properties:
+            validator_address:
+              type: string
+              format: byte
+            signature:
+              type: string
+              format: byte
+    title: |-
+      QueryCheckpointSignaturesResponse is response type for
+      QueryCheckpointSignatures RPC method
   heimdallv2.checkpoint.QueryCurrentProposerResponse:
     type: object
     properties:
