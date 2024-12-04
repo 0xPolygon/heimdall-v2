@@ -2,8 +2,8 @@ syntax = "proto3";
 package heimdallv2.checkpoint;
 
 import "amino/amino.proto";
-import "cosmos/query/v1/query.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/checkpoint/checkpoint.proto";
@@ -24,12 +24,6 @@ service Query {
   rpc GetAckCount(QueryAckCountRequest) returns (QueryAckCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/count";
-  }
-
-  // GetCheckpoint queries for the checkpoint based on the number
-  rpc GetCheckpoint(QueryCheckpointRequest) returns (QueryCheckpointResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoints/{number}";
   }
 
   // GetCheckpointLatest queries for the latest checkpoint
@@ -59,6 +53,19 @@ service Query {
     option (google.api.http).get = "/checkpoints/prepare-next";
   }
 
+  // GetCheckpointList queries for the list of checkpoints
+  rpc GetCheckpointList(QueryCheckpointListRequest)
+      returns (QueryCheckpointListResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/list";
+  }
+
+  // GetCheckpoint queries for the checkpoint based on the number
+  rpc GetCheckpoint(QueryCheckpointRequest) returns (QueryCheckpointResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/{number}";
+  }
+
   // GetCurrentProposer queries validator info for the current proposer
   rpc GetCurrentProposer(QueryCurrentProposerRequest)
       returns (QueryCurrentProposerResponse) {
@@ -70,13 +77,6 @@ service Query {
   rpc GetProposers(QueryProposerRequest) returns (QueryProposerResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoint/proposers/{times}";
-  }
-
-  // GetCheckpointList queries for the list of checkpoints
-  rpc GetCheckpointList(QueryCheckpointListRequest)
-      returns (QueryCheckpointListResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoints/list";
   }
 }
 

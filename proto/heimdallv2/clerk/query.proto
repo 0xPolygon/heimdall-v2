@@ -1,25 +1,25 @@
 syntax = "proto3";
 package heimdallv2.clerk;
 
+import "amino/amino.proto";
 import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "heimdallv2/clerk/clerk.proto";
-import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
 // Query defines the gRPC querier service.
 service Query {
-  rpc GetRecordById(RecordRequest) returns (RecordResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/{record_id}";
-  }
-
   rpc GetRecordList(RecordListRequest) returns (RecordListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/event-record/list";
+  }
+
+  rpc GetRecordById(RecordRequest) returns (RecordResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/event-record/{record_id}";
   }
 
   rpc GetRecordListWithTime(RecordListWithTimeRequest)
