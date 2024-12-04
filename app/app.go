@@ -306,7 +306,7 @@ func NewHeimdallApp(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -684,13 +684,8 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	// Register grpc-gateway routes for all modules.
 	app.BasicManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	// register cosmos-sdk swagger API from root so that other applications can override easily
-	if err := server.RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
-		panic(err)
-	}
-
-	// register heimdall-v2 swagger API
-	if err := RegisterHeimdallSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
+	// register heimdall-v2 and cosmos swagger API
+	if err := RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
 		panic(err)
 	}
 }
@@ -796,7 +791,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	return paramsKeeper
 }
 
-func RegisterHeimdallSwaggerAPI(_ client.Context, rtr *mux.Router, swaggerEnabled bool) interface{} {
+func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router, swaggerEnabled bool) interface{} {
 	if !swaggerEnabled {
 		return nil
 	}
@@ -807,7 +802,12 @@ func RegisterHeimdallSwaggerAPI(_ client.Context, rtr *mux.Router, swaggerEnable
 	}
 
 	staticServer := http.FileServer(http.FS(root))
-	rtr.PathPrefix("/heimdall/swagger/").Handler(http.StripPrefix("/heimdall/swagger/", staticServer))
+	rtr.PathPrefix("/heimdall-v2/swagger/").Handler(http.StripPrefix("/heimdall-v2/swagger/", staticServer))
+
+	// register cosmos-sdk swagger API from root so that other applications can override easily
+	if err := server.RegisterSwaggerAPI(ctx, rtr, swaggerEnabled); err != nil {
+		panic(err)
+	}
 
 	return nil
 }
