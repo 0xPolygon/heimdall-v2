@@ -1160,8 +1160,8 @@ type ConsolidatedSideTxResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	SideTxResponses []*SideTxResponse `protobuf:"bytes,1,rep,name=side_tx_responses,json=sideTxResponses,proto3" json:"side_tx_responses,omitempty"`
-	BlockHash       []byte            `protobuf:"bytes,2,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"` // denotes the block hash of the block that this vote is referring to.
-	Height          int64             `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`                       // denotes the block height of the extended vote
+	BlockHash       []byte            `protobuf:"bytes,2,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	Height          int64             `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
 }
 
 func (x *ConsolidatedSideTxResponse) Reset() {
@@ -1210,8 +1210,8 @@ type SideTxResponse struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	TxHash []byte `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`                 // denotes the tx hash for which this V.E correspond to.
-	Result Vote   `protobuf:"varint,2,opt,name=result,proto3,enum=heimdallv2.sidetxs.Vote" json:"result,omitempty"` // will have YES/NO/UNSPECIFIED depending on the
+	TxHash []byte `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	Result Vote   `protobuf:"varint,2,opt,name=result,proto3,enum=heimdallv2.sidetxs.Vote" json:"result,omitempty"`
 }
 
 func (x *SideTxResponse) Reset() {

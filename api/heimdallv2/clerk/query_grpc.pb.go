@@ -29,9 +29,13 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
+	// GetRecordList queries a list of records
 	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
+	// GetRecordById retrieves a record by its id
 	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+	// GetRecordListWithTime queries a list of records with time
 	GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
+	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
 }
 
@@ -83,9 +87,13 @@ func (c *queryClient) GetRecordSequence(ctx context.Context, in *RecordSequenceR
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
+	// GetRecordList queries a list of records
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
+	// GetRecordById retrieves a record by its id
 	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
+	// GetRecordListWithTime queries a list of records with time
 	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
+	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }

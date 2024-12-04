@@ -31,7 +31,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgProposeSpan represents a message to propose a span.
 type MsgProposeSpan struct {
 	SpanId     uint64 `protobuf:"varint,1,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
 	Proposer   string `protobuf:"bytes,2,opt,name=proposer,proto3" json:"proposer,omitempty"`
@@ -116,7 +115,6 @@ func (m *MsgProposeSpan) GetSeed() []byte {
 	return nil
 }
 
-// MsgProposeSpanResponse represents a response to a Msg/ProposeSpan message.
 type MsgProposeSpanResponse struct {
 }
 
@@ -153,14 +151,9 @@ func (m *MsgProposeSpanResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgProposeSpanResponse proto.InternalMessageInfo
 
-// MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
-	// authority is the address that controls the module (defaults to x/gov unless
-	// overwritten).
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	// params defines the x/bor parameters to update.
-	// NOTE: All parameters must be supplied.
-	Params Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
+	Params    Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
 }
 
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
@@ -210,8 +203,6 @@ func (m *MsgUpdateParams) GetParams() Params {
 	return Params{}
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
 type MsgUpdateParamsResponse struct {
 }
 

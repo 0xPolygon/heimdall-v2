@@ -26,6 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MsgClient interface {
+	// HandleMsgEventRecord defines a clerk operation for handling an event record
 	HandleMsgEventRecord(ctx context.Context, in *MsgEventRecord, opts ...grpc.CallOption) (*MsgEventRecordResponse, error)
 }
 
@@ -50,6 +51,7 @@ func (c *msgClient) HandleMsgEventRecord(ctx context.Context, in *MsgEventRecord
 // All implementations must embed UnimplementedMsgServer
 // for forward compatibility
 type MsgServer interface {
+	// HandleMsgEventRecord defines a clerk operation for handling an event record
 	HandleMsgEventRecord(context.Context, *MsgEventRecord) (*MsgEventRecordResponse, error)
 	mustEmbedUnimplementedMsgServer()
 }

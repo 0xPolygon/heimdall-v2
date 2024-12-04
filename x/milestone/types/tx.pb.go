@@ -32,7 +32,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgMilestone defines a SDK message for the milestone
 type MsgMilestone struct {
 	Proposer    string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
 	StartBlock  uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
@@ -117,7 +116,6 @@ func (m *MsgMilestone) GetMilestoneId() string {
 	return ""
 }
 
-// MsgMilestoneResponse defines the Msg/Milestone response type.
 type MsgMilestoneResponse struct {
 }
 
@@ -154,8 +152,6 @@ func (m *MsgMilestoneResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgMilestoneResponse proto.InternalMessageInfo
 
-// MsgMilestoneTimeout defines a SDK message to indicate that no milestone
-// was proposed within the timeout period
 type MsgMilestoneTimeout struct {
 	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 }
@@ -200,7 +196,6 @@ func (m *MsgMilestoneTimeout) GetFrom() string {
 	return ""
 }
 
-// MsgMilestoneTimeoutResponse defines the Msg/MilestoneTimeout response type.
 type MsgMilestoneTimeoutResponse struct {
 }
 
@@ -237,14 +232,9 @@ func (m *MsgMilestoneTimeoutResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgMilestoneTimeoutResponse proto.InternalMessageInfo
 
-// MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
-	// authority is the address that controls the module (defaults to x/gov unless
-	// overwritten).
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	// params defines the x/milestone parameters to update.
-	// NOTE: All parameters must be supplied.
-	Params Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
+	Params    Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
 }
 
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
@@ -294,8 +284,6 @@ func (m *MsgUpdateParams) GetParams() Params {
 	return Params{}
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
 type MsgUpdateParamsResponse struct {
 }
 

@@ -32,7 +32,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// MsgCheckpoint defines a SDK message for creating the checkpoint
 type MsgCheckpoint struct {
 	Proposer        string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
 	StartBlock      uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
@@ -117,7 +116,6 @@ func (m *MsgCheckpoint) GetBorChainId() string {
 	return ""
 }
 
-// MsgCheckpointResponse defines the Msg/Checkpoint response type.
 type MsgCheckpointResponse struct {
 }
 
@@ -154,7 +152,6 @@ func (m *MsgCheckpointResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCheckpointResponse proto.InternalMessageInfo
 
-// MsgCpAck defines a SDK message for creating the ack of checkpoint
 type MsgCpAck struct {
 	From       string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	Number     uint64 `protobuf:"varint,2,opt,name=number,proto3" json:"number,omitempty"`
@@ -255,7 +252,6 @@ func (m *MsgCpAck) GetLogIndex() uint64 {
 	return 0
 }
 
-// MsgCpAckResponse defines the MsgCpAck response type.
 type MsgCpAckResponse struct {
 }
 
@@ -292,7 +288,6 @@ func (m *MsgCpAckResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCpAckResponse proto.InternalMessageInfo
 
-// MsgCheckpointNoAck defines a SDK message for creating the no-ack
 type MsgCpNoAck struct {
 	From string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 }
@@ -337,7 +332,6 @@ func (m *MsgCpNoAck) GetFrom() string {
 	return ""
 }
 
-// MsgCheckpointNoAckResponse defines the MsgCpNoAck response type.
 type MsgCheckpointNoAckResponse struct {
 }
 
@@ -374,14 +368,9 @@ func (m *MsgCheckpointNoAckResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgCheckpointNoAckResponse proto.InternalMessageInfo
 
-// MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
-	// authority is the address that controls the module (defaults to x/gov unless
-	// overwritten).
 	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	// params defines the x/bor parameters to update.
-	// NOTE: All parameters must be supplied.
-	Params Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
+	Params    Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params"`
 }
 
 func (m *MsgUpdateParams) Reset()         { *m = MsgUpdateParams{} }
@@ -431,8 +420,6 @@ func (m *MsgUpdateParams) GetParams() Params {
 	return Params{}
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
 type MsgUpdateParamsResponse struct {
 }
 

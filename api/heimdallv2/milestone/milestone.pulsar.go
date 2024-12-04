@@ -1770,7 +1770,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Milestone represents the milestone struct
 type Milestone struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1889,7 +1888,6 @@ func (x *MilestoneCount) GetCount() uint64 {
 	return 0
 }
 
-// Params represents the milestone parameters
 type Params struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

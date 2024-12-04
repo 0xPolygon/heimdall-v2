@@ -84,14 +84,16 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 
 			// fetch params
 			queryClient := types.NewQueryClient(clientCtx)
-			res, err := queryClient.GetParams(cmd.Context(), &types.QueryParamsRequest{})
+			res, err := queryClient.GetBorParams(cmd.Context(), &types.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}
 			spanDuration := res.Params.SpanDuration
 
 			// fetch next span seed
-			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{})
+			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{
+				Id: spanID,
+			})
 			if err != nil {
 				return err
 			}

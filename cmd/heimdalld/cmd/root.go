@@ -44,7 +44,11 @@ func NewRootCmd() *cobra.Command {
 
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
-	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+
+	// TODO HV2: loadLatest is set to false to avoid redundant logs when invoking the version command
+	//  check if this is still the case when releasing a tag for heimdall-v2
+	//  if yes, can we leave it to false?
+	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, false, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),

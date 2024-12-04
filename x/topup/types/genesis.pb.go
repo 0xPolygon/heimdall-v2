@@ -25,7 +25,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// GenesisState is the topup state that must be provided at genesis
 type GenesisState struct {
 	TopupSequences   []string                `protobuf:"bytes,1,rep,name=topup_sequences,json=topupSequences,proto3" json:"topup_sequences,omitempty"`
 	DividendAccounts []types.DividendAccount `protobuf:"bytes,2,rep,name=dividend_accounts,json=dividendAccounts,proto3" json:"dividend_accounts"`

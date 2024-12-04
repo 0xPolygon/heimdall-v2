@@ -19,12 +19,13 @@ require (
 	github.com/cometbft/cometbft v0.38.15
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
-	github.com/cosmos/cosmos-sdk v0.50.6
+	github.com/cosmos/cosmos-sdk v0.50.10
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/ethereum/go-ethereum v1.14.12
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/hashicorp/golang-lru v1.0.2
@@ -153,7 +154,6 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.3 // indirect
 	github.com/gorilla/handlers v1.5.2 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -163,7 +163,6 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-plugin v1.5.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
-	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
@@ -181,6 +180,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.10.9 // indirect
+	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/linxGnu/grocksdb v1.8.14 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/manifoldco/promptui v0.9.0 // indirect
@@ -280,15 +280,15 @@ replace (
 	cosmossdk.io/api => github.com/0xPolygon/cosmos-sdk/api v0.7.5
 	cosmossdk.io/client/v2 => github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.1
 	cosmossdk.io/collections => github.com/0xPolygon/cosmos-sdk/collections v0.4.0
-	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.0
-	cosmossdk.io/errors => github.com/0xPolygon/cosmos-sdk/errors v1.0.0
-	cosmossdk.io/log => github.com/0xPolygon/cosmos-sdk/log v1.3.1
-	cosmossdk.io/math => github.com/0xPolygon/cosmos-sdk/math v1.3.0
-	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.0
+	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.3-0.20241126102051-89dc71d02611
+	cosmossdk.io/errors => github.com/0xPolygon/cosmos-sdk/errors v1.0.0-beta.7.0.20241126102051-89dc71d02611
+	cosmossdk.io/log => github.com/0xPolygon/cosmos-sdk/log v1.4.1
+	cosmossdk.io/math => github.com/0xPolygon/cosmos-sdk/math v1.4.0
+	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.2-0.20241126102051-89dc71d02611
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
-	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.12.0
-	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.2-beta-polygon
-	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.1.7-beta-polygon
+	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20241126102051-89dc71d02611
+	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.1-beta-polygon
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.1.6-beta-polygon
 	github.com/ethereum/go-ethereum => github.com/maticnetwork/bor v1.5.2
 	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

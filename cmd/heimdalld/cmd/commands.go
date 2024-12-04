@@ -39,7 +39,6 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	cosmosversion "github.com/cosmos/cosmos-sdk/version"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -196,18 +195,6 @@ func initRootCmd(
 		},
 	})
 
-	cometbftCmd := &cobra.Command{
-		Use:   "cometbft",
-		Short: "CometBFT subcommands",
-	}
-
-	cometbftCmd.AddCommand(
-		server.ShowNodeIDCmd(),
-		server.ShowValidatorCmd(),
-		server.ShowAddressCmd(),
-		server.VersionCmd(),
-	)
-
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
@@ -216,11 +203,11 @@ func initRootCmd(
 		queryCommand(),
 		txCommand(),
 		keys.Commands(),
-		cometbftCmd,
 	)
 
 	// add custom commands
 	rootCmd.AddCommand(
+		testnetCmd(ctx, cdc, hApp.BasicManager),
 		generateKeystore(),
 		importKeyStore(),
 		generateValidatorKey(),
@@ -239,13 +226,6 @@ func initRootCmd(
 	// commenting it out for now, will remove it later (after testing)
 	// rootCmd.AddCommand(initCmd(ctx, cdc, hApp.BasicManager))
 
-	rootCmd.AddCommand(testnetCmd(ctx, cdc, hApp.BasicManager))
-
-	// pruning cmd
-	pruning.Cmd(newApp, app.DefaultNodeHome)
-
-	// snapshot cmd
-	snapshot.Cmd(newApp)
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
@@ -273,7 +253,6 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 		startCmd,
 		cometCmd,
 		server.ExportCmd(appExport, defaultNodeHome),
-		cosmosversion.NewVersionCommand(),
 		server.NewRollbackCmd(appCreator, defaultNodeHome),
 	)
 }

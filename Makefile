@@ -9,11 +9,13 @@ DOCKER := $(shell which docker)
 
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME).git
-GOLANG_CROSS_VERSION  ?= v1.21.0
+GOLANG_CROSS_VERSION  ?= v1.23.2
 
 # Fetch git latest tag
 LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))
 VERSION := $(shell git describe --tags | sed 's/^v//')
+CMT_VERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::')
+COSMOS_VERSION := $(shell go list -m github.com/cosmos/cosmos-sdk | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 
 ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
@@ -22,8 +24,8 @@ ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
 		  -X github.com/0xPolygon/heimdall-v2/version.Commit=$(COMMIT) \
 		  -X github.com/cosmos/cosmos-sdk/version.Name=heimdall \
 		  -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld \
-		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
+		  -X github.com/cosmos/cosmos-sdk/version.Version=$(COSMOS_VERSION) \
+		  -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(CMT_VERSION)
 
 BUILD_FLAGS := -ldflags '$(ldflags)'
 
@@ -57,7 +59,7 @@ protoVer=0.14.0
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
-proto-all: proto-format proto-lint proto-gen
+proto-all: proto-format proto-lint proto-gen proto-swagger-gen
 
 proto-gen:
 	@echo "Generating Protobuf files"
@@ -71,6 +73,10 @@ proto-lint:
 
 proto-check-breaking:
 	@$(protoImage) buf breaking --against "$(HTTPS_GIT)#branch=develop"
+
+proto-swagger-gen:
+	@echo "Generating Protobuf Swagger"
+	@$(protoImage) sh ./scripts/protoc-swagger-gen.sh
 
 .PHONY: proto-all proto-gen proto-format proto-lint proto-check-breaking
 
@@ -95,11 +101,11 @@ mock:
 build-docker: # TODO-HV2: check this command once we have a proper docker build
 	@echo Fetching latest tag: $(LATEST_GIT_TAG)
 	git checkout $(LATEST_GIT_TAG)
-	docker build -t "0xpolygon/heimdall:$(LATEST_GIT_TAG)" -f Dockerfile .
+	docker build -t "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)" -f Dockerfile .
 
 push-docker: # TODO-HV2: check this command once we have a proper docker push
 	@echo Pushing docker tag image: $(LATEST_GIT_TAG)
-	docker push "0xpolygon/heimdall:$(LATEST_GIT_TAG)"
+	docker push "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)"
 
 ###############################################################################
 ###                                release                                  ###

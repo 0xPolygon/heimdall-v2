@@ -5,7 +5,6 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
 import "amino/amino.proto";
 
-// LastBlockTxs define the last block's transactions
 message LastBlockTxs {
   repeated bytes txs = 1 [ (amino.dont_omitempty) = true ];
 }

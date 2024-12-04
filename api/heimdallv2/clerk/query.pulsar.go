@@ -3826,7 +3826,6 @@ func (x *RecordRequest) GetRecordId() uint64 {
 	return 0
 }
 
-// RecordResponse defines the params for RecordListRequest.
 type RecordResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3905,7 +3904,6 @@ func (x *RecordListRequest) GetLimit() uint64 {
 	return 0
 }
 
-// RecordListResponse defines the params for RecordListRequest
 type RecordListResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4000,8 +3998,6 @@ func (x *RecordListWithTimeRequest) GetLimit() uint64 {
 	return 0
 }
 
-// RecordListWithTimeResponse defines the params for querying
-// RecordListWithTimeRequest
 type RecordListWithTimeResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

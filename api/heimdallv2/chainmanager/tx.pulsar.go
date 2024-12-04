@@ -884,17 +884,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// authority is the address that controls the module (defaults to x/gov unless
-	// overwritten).
-	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	// params defines the x/chainmanager parameters to update.
-	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	Authority string  `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	Params    *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *MsgUpdateParams) Reset() {
@@ -931,8 +927,6 @@ func (x *MsgUpdateParams) GetParams() *Params {
 	return nil
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
 type MsgUpdateParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

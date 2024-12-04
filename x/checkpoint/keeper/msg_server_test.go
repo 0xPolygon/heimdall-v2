@@ -509,7 +509,7 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), keeper.GetAuthority())
 				require.NoError(err)
 
-				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+				res, err := queryClient.GetCheckpointParams(ctx, &types.QueryParamsRequest{})
 				require.NoError(err)
 				require.Equal(params, res.Params)
 			}

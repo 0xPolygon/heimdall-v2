@@ -30,7 +30,6 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Checkpoint structure
 type Checkpoint struct {
 	Proposer   string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
 	StartBlock uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
@@ -115,7 +114,6 @@ func (m *Checkpoint) GetTimestamp() uint64 {
 	return 0
 }
 
-// Params structure
 type Params struct {
 	CheckpointBufferTime    time.Duration `protobuf:"bytes,1,opt,name=checkpoint_buffer_time,json=checkpointBufferTime,proto3,stdduration" json:"checkpoint_buffer_time"`
 	AvgCheckpointLength     uint64        `protobuf:"varint,2,opt,name=avg_checkpoint_length,json=avgCheckpointLength,proto3" json:"avg_checkpoint_length,omitempty"`

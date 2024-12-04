@@ -2,69 +2,68 @@ syntax = "proto3";
 package heimdallv2.bor;
 
 import "amino/amino.proto";
-import "cosmos/base/query/v1beta1/pagination.proto";
 import "cosmos/query/v1/query.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/bor/bor.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
 
-// Query defines the gRPC querier service.
 service Query {
+
+  // GetSpanList queries a list of spans.
   rpc GetSpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/span/list";
   }
 
-  rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/latest";
-  }
-
-  rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
-      returns (QueryNextSpanSeedResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/seed";
-  }
-
-  rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/prepare";
-  }
-
+  // GetSpanById retrieves a span by its id.
   rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/span/{id}";
   }
 
-  rpc GetParams(QueryParamsRequest) returns (QueryParamsResponse) {
+  // GetLatestSpan queries the latest span.
+  rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/latest";
+  }
+
+  // GetNextSpanSeed queries the next span seed given a
+  // QueryNextSpanSeedRequest.
+  rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
+      returns (QueryNextSpanSeedResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/seed/{id}";
+  }
+
+  // GetNextSpan queries the next span given a QueryNextSpanRequest.
+  rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/prepare";
+  }
+
+  // GetBorParams queries the parameters of x/bor module.
+  rpc GetBorParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/params";
   }
 }
 
-// QuerySpanByIdRequest defines the gRPC request structure for querying
-// a bor span by span id.
 message QuerySpanByIdRequest {
   string id = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QuerySpanByIdResponse defines the gRPC response structure for querying
-// a bor span by span id.
 message QuerySpanByIdResponse {
   Span span = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QuerySpanListRequest defines the gRPC request structure for querying
-// a list of bor spans.
 message QuerySpanListRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
-// QuerySpanListResponse defines the gRPC response structure for querying
-// a list of bor spans.
 message QuerySpanListResponse {
   repeated Span span_list = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
@@ -72,46 +71,32 @@ message QuerySpanListResponse {
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
-// QueryLatestSpanResponse defines the gRPC response structure for querying
-// the latest bor span.
 message QueryLatestSpanRequest {}
 
-// QueryLatestSpanResponse defines the gRPC response structure for querying
-// the latest bor span.
 message QueryLatestSpanResponse {
   Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
-// QueryNextSpanSeedRequest defines the gRPC request structure for querying
-// the next bor span seed.
-message QueryNextSpanSeedRequest {}
+message QueryNextSpanSeedRequest {
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
+}
 
-// QueryNextSpanSeedResponse defines the gRPC response structure for querying
-// the next bor span seed.
 message QueryNextSpanSeedResponse {
   string seed = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryNextSpanRequest defines the gRPC request structure for querying
-// the next bor span.
 message QueryNextSpanRequest {
   uint64 span_id = 1 [ (amino.dont_omitempty) = true ];
   uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
   string bor_chain_id = 3 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryNextSpanResponse defines the gRPC response structure for querying
-// the next bor span.
 message QueryNextSpanResponse {
   Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
-// QueryParamsRequest defines the gRPC request structure for querying
-// the bor module parameters.
 message QueryParamsRequest {}
 
-// QueryParamsResponse defines the gRPC response structure for querying
-// the bor module parameters.
 message QueryParamsResponse {
   Params params = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
