@@ -27,17 +27,17 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/latest";
   }
-  // GetMilestoneByNumber queries for the milestone based on the number
-  rpc GetMilestoneByNumber(QueryMilestoneRequest)
-      returns (QueryMilestoneResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/{number}";
-  }
   // GetLatestNoAckMilestone query for the LatestNoAck
   rpc GetLatestNoAckMilestone(QueryLatestNoAckMilestoneRequest)
       returns (QueryLatestNoAckMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/last-no-ack";
+  }
+  // GetMilestoneByNumber queries for the milestone based on the number
+  rpc GetMilestoneByNumber(QueryMilestoneRequest)
+      returns (QueryMilestoneResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/{number}";
   }
   // GetNoAckMilestoneById query for the no-ack by id
   rpc GetNoAckMilestoneById(QueryNoAckMilestoneByIDRequest)

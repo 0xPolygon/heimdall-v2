@@ -1,35 +1,32 @@
 syntax = "proto3";
 package heimdallv2.clerk;
 
+import "amino/amino.proto";
 import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "heimdallv2/clerk/clerk.proto";
-import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 
 service Query {
-  // GetRecordById retrieves a record by its id
-  rpc GetRecordById(RecordRequest) returns (RecordResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/{record_id}";
-  }
-
   // GetRecordList queries a list of records
   rpc GetRecordList(RecordListRequest) returns (RecordListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/event-record/list";
   }
-
+  // GetRecordById retrieves a record by its id
+  rpc GetRecordById(RecordRequest) returns (RecordResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/event-record/{record_id}";
+  }
   // GetRecordListWithTime queries a list of records with time
   rpc GetRecordListWithTime(RecordListWithTimeRequest)
       returns (RecordListWithTimeResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/time";
   }
-
   // GetRecordSequence queries the sequence of the record
   rpc GetRecordSequence(RecordSequenceRequest)
       returns (RecordSequenceResponse) {
