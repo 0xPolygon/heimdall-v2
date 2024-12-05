@@ -254,10 +254,7 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 	}
 
 	// select next producers using seed as block header hash
-	newProducersIds, err := selectNextProducers(seed, spanEligibleVals, producerCount)
-	if err != nil {
-		return nil, err
-	}
+	newProducersIds := selectNextProducers(seed, spanEligibleVals, producerCount)
 
 	vals := make([]staketypes.Validator, 0, len(newProducersIds))
 
