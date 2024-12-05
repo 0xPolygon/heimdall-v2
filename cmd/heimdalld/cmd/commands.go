@@ -182,7 +182,9 @@ func initRootCmd(
 			helper.InitHeimdallConfig("")
 
 			// wait for rest server to start
-			g.Wait()
+			if err := g.Wait(); err != nil {
+				return fmt.Errorf("error waiting for goroutines: %w", err)
+			}
 
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {

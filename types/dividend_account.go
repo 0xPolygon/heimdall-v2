@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"sort"
 	"strings"
@@ -133,8 +134,11 @@ func AppendBytes32(data ...[]byte) []byte {
 
 func convertTo32(input []byte) (output [32]byte, err error) {
 	l := len(input)
-	if l > 32 || l == 0 {
-		return
+	if l > 32 {
+		return output, fmt.Errorf("input length %d exceeds 32 bytes", l)
+	}
+	if l == 0 {
+		return output, fmt.Errorf("input length is zero")
 	}
 
 	copy(output[32-l:], input[:])
