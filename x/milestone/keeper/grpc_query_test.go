@@ -57,7 +57,7 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	resByNum, err := queryClient.GetMilestoneByNumber(ctx, reqByNumber)
 
 	require.Error(err)
-	require.Nil(res)
+	require.Nil(resByNum)
 
 	res, err = queryClient.GetLatestMilestone(ctx, reqLatest)
 
@@ -92,6 +92,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 
 	req := &types.QueryLatestNoAckMilestoneRequest{}
 	res, err := queryClient.GetLatestNoAckMilestone(ctx, req)
+	require.Error(err)
 	require.Nil(res)
 
 	milestoneID := TestMilestoneID
