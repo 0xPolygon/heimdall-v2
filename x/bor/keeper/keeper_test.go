@@ -88,7 +88,6 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	sideMsgServer := keeper.NewSideMsgServerImpl(&s.borKeeper)
 	s.sideMsgServer = sideMsgServer
-
 }
 
 func (s *KeeperTestSuite) TestAddNewSpan() {
@@ -199,7 +198,11 @@ func (s *KeeperTestSuite) TestFreezeSet() {
 
 	valSet, vals := s.genTestValidators()
 
-	params := types.DefaultParams()
+	// set genesis span
+	err := borKeeper.AddNewSpan(ctx, &types.Span{
+		Id: 0,
+	})
+	require.NoError(err)
 
 	testcases := []struct {
 		name            string
@@ -233,45 +236,35 @@ func (s *KeeperTestSuite) TestFreezeSet() {
 		},
 	}
 
-	stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(len(testcases))
-	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(len(testcases))
-	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (staketypes.Validator, error) {
-		for _, v := range vals {
-			if v.ValId == valID {
-				return v, nil
-			}
-		}
-		return staketypes.Validator{}, errors.New("validator not found")
-	}).AnyTimes()
-
 	for _, tc := range testcases {
+		stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
+		stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+		stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (staketypes.Validator, error) {
+			for _, v := range vals {
+				if v.ValId == valID {
+					return v, nil
+				}
+			}
+			return staketypes.Validator{}, errors.New("validator not found")
+		}).AnyTimes()
+
 		s.T().Run(tc.name, func(t *testing.T) {
+			params := types.DefaultParams()
 			params.ProducerCount = tc.producerCount
 			err := borKeeper.SetParams(ctx, params)
 			require.NoError(err)
-
-			resLastEthBlock, err := borKeeper.GetLastEthBlock(ctx)
+			err = borKeeper.AddNewSpan(ctx, &types.Span{
+				Id: tc.id,
+			})
 			require.NoError(err)
-			require.Equal(tc.expLastEthBlock, resLastEthBlock)
-
 			err = borKeeper.FreezeSet(ctx, tc.id, tc.startBlock, tc.endBlock, "test-chain", tc.seed)
 			require.NoError(err)
 
-			resSpan, err := borKeeper.GetSpan(ctx, tc.id)
+			span, err := borKeeper.GetSpan(ctx, tc.id)
 			require.NoError(err)
-			require.Equal(tc.id, resSpan.Id)
-			require.Equal(tc.startBlock, resSpan.StartBlock)
-			require.Equal(tc.endBlock, resSpan.EndBlock)
-			require.Equal("test-chain", resSpan.ChainId)
-			require.Equal(tc.expValSet, resSpan.ValidatorSet)
-			require.LessOrEqual(uint64(len(resSpan.SelectedProducers)), tc.producerCount)
-
-			resLastEthBlock, err = borKeeper.GetLastEthBlock(ctx)
-			require.NoError(err)
-			require.Equal(tc.expLastEthBlock.Add(tc.expLastEthBlock, big.NewInt(1)), resLastEthBlock)
+			require.Equal(tc.expValSet, span.ValidatorSet)
 		})
 	}
-
 }
 
 func (s *KeeperTestSuite) TestUpdateLastSpan() {
@@ -313,58 +306,224 @@ func (s *KeeperTestSuite) TestUpdateLastSpan() {
 	}
 }
 
-func (s *KeeperTestSuite) TestIncrementLastEthBlock() {
+func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
 
-	testcases := []struct {
-		name            string
-		setLastEthBlock *big.Int
-		expLastEthBlock *big.Int
-	}{
+	borParams := types.DefaultParams()
+	err := borKeeper.SetParams(ctx, borParams)
+	require.NoError(err)
+
+	valSet, vals := s.genTestValidators()
+
+	spans := []types.Span{
 		{
-			name:            "no eth block has been set",
-			setLastEthBlock: nil,
-			expLastEthBlock: big.NewInt(1),
+			Id:                0,
+			StartBlock:        0,
+			EndBlock:          256,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			ChainId:           "test-chain",
 		},
 		{
-			name:            "eth block gets correctly incremented",
-			setLastEthBlock: big.NewInt(10),
-			expLastEthBlock: big.NewInt(11),
+			Id:                1,
+			StartBlock:        257,
+			EndBlock:          6656,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			ChainId:           "test-chain",
+		},
+		{
+			Id:                2,
+			StartBlock:        6657,
+			EndBlock:          16656,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			ChainId:           "test-chain",
+		},
+		{
+			Id:                3,
+			StartBlock:        16657,
+			EndBlock:          26656,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			ChainId:           "test-chain",
+		},
+	}
+
+	for _, span := range spans {
+		err := borKeeper.AddNewSpan(ctx, &span)
+		require.NoError(err)
+	}
+
+	val1Addr := common.HexToAddress(vals[0].GetOperator())
+	val2Addr := common.HexToAddress(vals[1].GetOperator())
+	val3Addr := common.HexToAddress(vals[2].GetOperator())
+
+	seedBlock1 := spans[0].EndBlock
+	s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(seedBlock1))).Return(&val2Addr, nil)
+
+	seedBlock2 := spans[1].EndBlock - borParams.SprintDuration
+	s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(spans[1].EndBlock))).Return(&val2Addr, nil)
+	s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(seedBlock2))).Return(&val1Addr, nil)
+	for block := spans[1].EndBlock - (2 * borParams.SprintDuration); block >= spans[1].StartBlock; block -= borParams.SprintDuration {
+		s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(block))).Return(&val1Addr, nil)
+	}
+
+	seedBlock3 := spans[2].EndBlock - (2 * borParams.SprintDuration)
+	s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(spans[2].EndBlock))).Return(&val1Addr, nil)
+	s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(spans[2].EndBlock-borParams.SprintDuration))).Return(&val2Addr, nil)
+	s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(seedBlock3))).Return(&val3Addr, nil)
+
+	seedBlock4 := spans[3].EndBlock - borParams.SprintDuration
+	s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(spans[3].EndBlock))).Return(&val1Addr, nil)
+
+	for block := spans[3].EndBlock; block >= spans[3].StartBlock; block -= borParams.SprintDuration {
+		s.contractCaller.On("GetBorChainBlockAuthor", big.NewInt(int64(block))).Return(&val2Addr, nil)
+	}
+
+	blockHeader1 := ethTypes.Header{Number: big.NewInt(int64(seedBlock1))}
+	blockHash1 := blockHeader1.Hash()
+	blockHeader2 := ethTypes.Header{Number: big.NewInt(int64(seedBlock2))}
+	blockHash2 := blockHeader2.Hash()
+	blockHeader3 := ethTypes.Header{Number: big.NewInt(int64(seedBlock3))}
+	blockHash3 := blockHeader3.Hash()
+	blockHeader4 := ethTypes.Header{Number: big.NewInt(int64(seedBlock4))}
+	blockHash4 := blockHeader4.Hash()
+
+	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock1))).Return(&blockHeader1, nil)
+	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock2))).Return(&blockHeader2, nil)
+	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock3))).Return(&blockHeader3, nil)
+	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock4))).Return(&blockHeader4, nil)
+
+	testcases := []struct {
+		name             string
+		lastSpanId       uint64
+		lastSeedProducer common.Address
+		expSeed          common.Hash
+	}{
+		{
+			name:             "Last seed producer is different than end block author",
+			lastSeedProducer: val2Addr,
+			lastSpanId:       0,
+			expSeed:          blockHash1,
+		},
+		{
+			name:             "Last seed producer is same as end block author",
+			lastSeedProducer: val1Addr,
+			lastSpanId:       1,
+			expSeed:          blockHash2,
+		},
+		{
+			name:             "Next seed producer should be different from previous recent seed producers",
+			lastSeedProducer: val2Addr,
+			lastSpanId:       2,
+			expSeed:          blockHash3,
+		},
+		{
+			name:             "If no unique seed producer is found, first block with different author from previous seed producer is selected",
+			lastSeedProducer: val1Addr,
+			lastSpanId:       3,
+			expSeed:          blockHash4,
+		},
+	}
+
+	lastSpanID := uint64(0)
+
+	for _, tc := range testcases {
+		err := borKeeper.StoreSeedProducer(ctx, tc.lastSpanId, &tc.lastSeedProducer)
+		require.NoError(err)
+
+		lastSpanID = tc.lastSpanId
+	}
+
+	v1A := val1Addr
+
+	err = borKeeper.StoreSeedProducer(ctx, lastSpanID+1, &v1A)
+	require.NoError(err)
+
+	for _, tc := range testcases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			seed, err := borKeeper.FetchNextSpanSeed(ctx, tc.lastSpanId+2)
+			require.NoError(err)
+			require.Equal(tc.expSeed.Bytes(), seed.Bytes())
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestProposeSpanOne() {
+	require, ctx, borKeeper, contractCaller := s.Require(), s.ctx, s.borKeeper, &s.contractCaller
+
+	valSet, vals := s.genTestValidators()
+
+	err := borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:                0,
+		StartBlock:        0,
+		EndBlock:          256,
+		ValidatorSet:      valSet,
+		SelectedProducers: vals,
+		ChainId:           "test-chain",
+	})
+	require.NoError(err)
+
+	val1Addr := common.HexToAddress(vals[0].GetOperator())
+
+	seedBlock1 := int64(1)
+	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(seedBlock1)).Return(&val1Addr, nil)
+
+	blockHeader1 := ethTypes.Header{Number: big.NewInt(seedBlock1)}
+	blockHash1 := blockHeader1.Hash()
+	contractCaller.On("GetBorChainBlock", big.NewInt(seedBlock1)).Return(&blockHeader1, nil)
+
+	seed, err := borKeeper.FetchNextSpanSeed(ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(blockHash1.Bytes(), seed.Bytes())
+}
+
+func (s *KeeperTestSuite) TestGetSeedProducer() {
+	borKeeper := s.borKeeper
+
+	producer := common.HexToAddress("0xc0ffee254729296a45a3885639AC7E10F9d54979")
+	err := borKeeper.StoreSeedProducer(s.ctx, 1, &producer)
+	s.Require().NoError(err)
+
+	author, err := borKeeper.GetSeedProducer(s.ctx, 1)
+	s.Require().NoError(err)
+	s.Require().Equal(producer.Bytes(), author.Bytes())
+}
+
+func (s *KeeperTestSuite) TestRollbackVotingPowers() {
+	testcases := []struct {
+		name    string
+		valsOld []staketypes.Validator
+		valsNew []staketypes.Validator
+		expRes  []staketypes.Validator
+	}{
+		{
+			name:    "Revert to old voting powers",
+			valsOld: []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}, {ValId: 3, VotingPower: 300}},
+			valsNew: []staketypes.Validator{{ValId: 1, VotingPower: 200}, {ValId: 2, VotingPower: 400}, {ValId: 3, VotingPower: 200}},
+			expRes:  []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}, {ValId: 3, VotingPower: 300}},
+		},
+		{
+			name:    "Validator joined",
+			valsOld: []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}},
+			valsNew: []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}, {ValId: 3, VotingPower: 300}},
+			expRes:  []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}, {ValId: 3, VotingPower: 0}},
+		},
+		{
+			name:    "Validator left",
+			valsOld: []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}, {ValId: 3, VotingPower: 300}},
+			valsNew: []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}},
+			expRes:  []staketypes.Validator{{ValId: 1, VotingPower: 100}, {ValId: 2, VotingPower: 200}},
 		},
 	}
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			if tc.setLastEthBlock != nil {
-				err := borKeeper.SetLastEthBlock(ctx, tc.setLastEthBlock)
-				require.NoError(err)
-			}
-
-			err := borKeeper.IncrementLastEthBlock(ctx)
-			require.NoError(err)
-
-			resLastEthBlock, err := borKeeper.GetLastEthBlock(ctx)
-			require.NoError(err)
-			require.Equal(tc.expLastEthBlock, resLastEthBlock)
-
+			res := keeper.RollbackVotingPowers(tc.valsNew, tc.valsOld)
+			s.Require().Equal(tc.expRes, res)
 		})
 	}
-}
-
-func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
-	require, ctx, borKeeper, contractCaller := s.Require(), s.ctx, s.borKeeper, &s.contractCaller
-
-	lastEthBlock := big.NewInt(10)
-	nextEthBlock := big.NewInt(11)
-	nextEthBlockHeader := &ethTypes.Header{Number: big.NewInt(11)}
-	nextEthBlockHash := nextEthBlockHeader.Hash()
-	err := borKeeper.SetLastEthBlock(ctx, lastEthBlock)
-	require.NoError(err)
-	contractCaller.On("GetMainChainBlock", nextEthBlock).Return(nextEthBlockHeader, nil).Times(1)
-
-	res, err := borKeeper.FetchNextSpanSeed(ctx)
-	require.NoError(err)
-	require.Equal(nextEthBlockHash, res)
 }
 
 func (s *KeeperTestSuite) TestParamsGetterSetter() {
@@ -373,7 +532,7 @@ func (s *KeeperTestSuite) TestParamsGetterSetter() {
 	expParams := types.DefaultParams()
 	expParams.ProducerCount = 66
 	expParams.SpanDuration = 100
-	expParams.SprintDuration = 64
+	expParams.SprintDuration = 16
 	require.NoError(borKeeper.SetParams(ctx, expParams))
 	resParams, err := borKeeper.FetchParams(ctx)
 	require.NoError(err)

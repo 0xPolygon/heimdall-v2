@@ -561,8 +561,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// AccountProof embeds user and account info for the the
-// QueryAccountProofResponse
 type AccountProof struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

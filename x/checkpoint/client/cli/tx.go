@@ -201,7 +201,7 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 
 			// fetch params
 			queryClient := chainmanagerTypes.NewQueryClient(clientCtx)
-			cmParams, err := queryClient.GetParams(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
+			cmParams, err := queryClient.GetChainManagerParams(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}

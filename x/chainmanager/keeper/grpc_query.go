@@ -22,8 +22,8 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-// GetParams implements the gRPC service handler for querying x/chainmanager parameters.
-func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetChainManagerParams implements the gRPC service handler for querying x/chainmanager parameters.
+func (q queryServer) GetChainManagerParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get params: %s", err)

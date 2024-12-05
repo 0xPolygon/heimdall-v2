@@ -60,7 +60,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	)
 
 	// calculate next span seed locally
-	nextSpanSeed, err := s.k.FetchNextSpanSeed(ctx)
+	nextSpanSeed, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
 	if err != nil {
 		logger.Error("error fetching next span seed from mainChain", "error", err)
 		return sidetxs.Vote_UNSPECIFIED
@@ -147,12 +147,36 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	logger.Debug("persisting span state", "span id", msg.SpanId, "sideTxResult", sideTxResult)
 
+	var seedSpanID uint64
+	if msg.GetSpanId() < 2 {
+		seedSpanID = msg.SpanId - 1
+	} else {
+		seedSpanID = msg.SpanId - 2
+	}
+
+	lastSpan, err := s.k.GetSpan(ctx, seedSpanID)
+	if err != nil {
+		logger.Error("Unable to get last span", "error", err)
+		return
+	}
+
+	// store the seed producer
+	_, producer, err := s.k.getBorBlockForSpanSeed(ctx, &lastSpan, msg.SpanId)
+	if err != nil {
+		logger.Error("Unable to get seed producer", "error", err)
+		return
+	}
+
+	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, producer); err != nil {
+		logger.Error("Unable to store seed producer", "error", err)
+		return
+	}
+
 	// freeze for new span
 	err = s.k.FreezeSet(ctx, msg.SpanId, msg.StartBlock, msg.EndBlock, msg.ChainId, common.Hash(msg.Seed))
 	if err != nil {
 		logger.Error("unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
 		return
-
 	}
 
 	txBytes := ctx.TxBytes()

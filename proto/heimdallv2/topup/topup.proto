@@ -6,8 +6,6 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
-// AccountProof embeds user and account info for the the
-// QueryAccountProofResponse
 message AccountProof {
   string address = 1 [ (cosmos_proto.scalar) = "cosmos.AddressString" ];
   bytes account_proof = 2 [ (amino.dont_omitempty) = true ];

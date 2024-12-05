@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const maxSpanListLimitPerPage = 1000
@@ -82,13 +83,19 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Convert []*Validator to []staketypes.Validator
+	validators := make([]staketypes.Validator, len(validatorSet.Validators))
+	for i, v := range validatorSet.Validators {
+		validators[i] = *v
+	}
+
 	// fetch next selected block producers
-	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
+	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx, req.SpanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	selectedProducers, err := q.k.SelectNextProducers(ctx, nextSpanSeed)
+	selectedProducers, err := q.k.SelectNextProducers(ctx, nextSpanSeed, validators)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -109,10 +116,14 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 }
 
 // GetNextSpanSeed returns the next span seed
-func (q queryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
+func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+	spanId := req.GetId()
 
 	// fetch next span seed
-	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
+	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx, spanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -120,8 +131,8 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpan
 	return &types.QueryNextSpanSeedResponse{Seed: nextSpanSeed.String()}, nil
 }
 
-// GetParams returns the bor module parameters
-func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetBorParams returns the bor module parameters
+func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 
 	params, err := q.k.FetchParams(ctx)
 	if err != nil {

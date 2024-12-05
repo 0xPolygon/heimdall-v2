@@ -12,7 +12,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: chainmanager.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod: "GetParams",
+					RpcMethod: "GetChainManagerParams",
 					Use:       "params",
 					Short:     "Query values set as chainmanager parameters.",
 					Long:      "Query the current chainmanager parameters information",

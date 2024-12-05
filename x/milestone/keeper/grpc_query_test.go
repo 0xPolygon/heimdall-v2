@@ -18,7 +18,7 @@ func (s *KeeperTestSuite) TestQueryParams() {
 	req := &types.QueryParamsRequest{}
 	defaultParams := types.DefaultParams()
 
-	res, err := queryClient.GetParams(ctx, req)
+	res, err := queryClient.GetMilestoneParams(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 

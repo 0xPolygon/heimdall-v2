@@ -33,8 +33,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QueryTopupSequenceRequest is the request type for the GetTopupTxSequence and
-// IsTopupTxOld RPC methods
 type QueryTopupSequenceRequest struct {
 	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
@@ -87,8 +85,6 @@ func (m *QueryTopupSequenceRequest) GetLogIndex() uint64 {
 	return 0
 }
 
-// QueryTopupSequenceResponse is response type for the GetTopupTxSequence RPC
-// method
 type QueryTopupSequenceResponse struct {
 	Sequence string `protobuf:"bytes,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
 }
@@ -133,8 +129,6 @@ func (m *QueryTopupSequenceResponse) GetSequence() string {
 	return ""
 }
 
-// QueryIsTopupTxOldResponse is response type for the IsTopupTxOld RPC
-// method
 type QueryIsTopupTxOldResponse struct {
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
@@ -179,8 +173,6 @@ func (m *QueryIsTopupTxOldResponse) GetIsOld() bool {
 	return false
 }
 
-// QueryDividendAccountRequest is the request type for the
-// GetDividendAccountByAddress RPC method
 type QueryDividendAccountRequest struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
@@ -225,8 +217,6 @@ func (m *QueryDividendAccountRequest) GetAddress() string {
 	return ""
 }
 
-// QueryDividendAccountResponse the is response type for the
-// GetDividendAccountByAddress RPC method
 type QueryDividendAccountResponse struct {
 	DividendAccount types.DividendAccount `protobuf:"bytes,1,opt,name=dividend_account,json=dividendAccount,proto3" json:"dividend_account"`
 }
@@ -271,8 +261,6 @@ func (m *QueryDividendAccountResponse) GetDividendAccount() types.DividendAccoun
 	return types.DividendAccount{}
 }
 
-// QueryDividendAccountRootHashRequest is the request type for the
-// GetDividendAccountRootHash RPC method
 type QueryDividendAccountRootHashRequest struct {
 }
 
@@ -309,8 +297,6 @@ func (m *QueryDividendAccountRootHashRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryDividendAccountRootHashRequest proto.InternalMessageInfo
 
-// QueryDividendAccountRootResponse is the response type for the
-// GetDividendAccountRootHash RPC method
 type QueryDividendAccountRootHashResponse struct {
 	AccountRootHash []byte `protobuf:"bytes,1,opt,name=account_root_hash,json=accountRootHash,proto3" json:"account_root_hash,omitempty"`
 }
@@ -355,8 +341,6 @@ func (m *QueryDividendAccountRootHashResponse) GetAccountRootHash() []byte {
 	return nil
 }
 
-// QueryVerifyAccountProofParams is the request type for the VerifyAccountProof
-// RPC method
 type QueryVerifyAccountProofRequest struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	Proof   string `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
@@ -409,8 +393,6 @@ func (m *QueryVerifyAccountProofRequest) GetProof() string {
 	return ""
 }
 
-// QueryVerifyAccountProofResponse the is response type for the
-// VerifyAccountProof RPC method
 type QueryVerifyAccountProofResponse struct {
 	IsVerified bool `protobuf:"varint,1,opt,name=is_verified,json=isVerified,proto3" json:"is_verified,omitempty"`
 }
@@ -455,8 +437,6 @@ func (m *QueryVerifyAccountProofResponse) GetIsVerified() bool {
 	return false
 }
 
-// QueryAccountProofRequest is the request type for the
-// GetAccountProof RPC method
 type QueryAccountProofRequest struct {
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 }
@@ -501,8 +481,6 @@ func (m *QueryAccountProofRequest) GetAddress() string {
 	return ""
 }
 
-// QueryAccountProofResponse the is response type for the GetAccountProof RPC
-// method
 type QueryAccountProofResponse struct {
 	Proof AccountProof `protobuf:"bytes,1,opt,name=proof,proto3" json:"proof"`
 }

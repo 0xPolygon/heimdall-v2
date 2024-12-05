@@ -1934,7 +1934,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgProposeSpan represents a message to propose a span.
 type MsgProposeSpan struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2010,7 +2009,6 @@ func (x *MsgProposeSpan) GetSeed() []byte {
 	return nil
 }
 
-// MsgProposeSpanResponse represents a response to a Msg/ProposeSpan message.
 type MsgProposeSpanResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2037,18 +2035,13 @@ func (*MsgProposeSpanResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_bor_tx_proto_rawDescGZIP(), []int{1}
 }
 
-// MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// authority is the address that controls the module (defaults to x/gov unless
-	// overwritten).
-	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	// params defines the x/bor parameters to update.
-	// NOTE: All parameters must be supplied.
-	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	Authority string  `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	Params    *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *MsgUpdateParams) Reset() {
@@ -2085,8 +2078,6 @@ func (x *MsgUpdateParams) GetParams() *Params {
 	return nil
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
 type MsgUpdateParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
