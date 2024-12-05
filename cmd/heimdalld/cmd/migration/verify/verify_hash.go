@@ -1,6 +1,7 @@
 package verify
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -32,7 +33,11 @@ func VerifyMigratedGenesisHash(migratedGenesisFilePath string, logger logger.Log
 	logger.Info(fmt.Sprintf("Migrated genesis hash: %s", localHash))
 
 	for {
-		remoteHash, err := fetchRemoteHash(REMOTE_GENESIS_HASH_URL)
+		// Create a context with timeout for each retry attempt
+		ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
+		defer cancel()
+
+		remoteHash, err := fetchRemoteHash(ctx, REMOTE_GENESIS_HASH_URL)
 		if err != nil {
 			logger.Info("Failed to fetch remote genesis hash. Retrying...")
 			logger.Info("If you wish to skip this automatic verification and verify the hash manually later, press Ctrl+C to stop the process.")
@@ -73,12 +78,20 @@ func computeFileHash(filePath string) (string, error) {
 
 // fetchRemoteHash fetches the precomputed genesis hash from the given URL.
 // It expects the URL to return a JSON object with a "genesis_hash" field.
-func fetchRemoteHash(url string) (string, error) {
+// Now accepts a context for better control over the request lifecycle.
+func fetchRemoteHash(ctx context.Context, url string) (string, error) {
 	client := &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	resp, err := client.Get(url)
+	// Create a new HTTP GET request with the provided context
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	// Execute the request using Do, which respects the context
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch remote hash: %w", err)
 	}
