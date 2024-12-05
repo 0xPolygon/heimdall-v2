@@ -92,7 +92,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	dividendAccounts, err := m.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
 		logger.Error("error while fetching dividends accounts", "error", err)
-		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("error while fetching dividends accounts"))
+		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "error while fetching dividends accounts")
 	}
 
 	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
@@ -101,7 +101,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		logger.Error("error while fetching account root hash", "error", err)
-		return nil, errorsmod.Wrap(types.ErrAccountHash, fmt.Sprint("error while fetching account root hash"))
+		return nil, errorsmod.Wrap(types.ErrAccountHash, "error while fetching account root hash")
 	}
 
 	logger.Debug("Validator account root hash generated", "accountRootHash", common.Bytes2Hex(accountRoot))
@@ -113,19 +113,19 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			"hash", common.Bytes2Hex(accountRoot),
 			"msgHash", msg.AccountRootHash,
 		)
-		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("accountRootHash of current state doesn't match from msg"))
+		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "accountRootHash of current state doesn't match from msg")
 	}
 
 	// Check proposer in message
 	validatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
 	if validatorSet.Proposer == nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
 	msgProposer := util.FormatAddress(msg.Proposer)
@@ -138,7 +138,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			"msgProposer", msg.Proposer,
 		)
 
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("invalid proposer in msg"))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "invalid proposer in msg")
 	}
 
 	// Emit event for checkpoint
@@ -165,7 +165,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	headerBlock, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
-		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("unable to get checkpoint"))
+		return nil, errorsmod.Wrap(types.ErrBadAck, "unable to get checkpoint")
 	}
 
 	if msg.StartBlock != headerBlock.StartBlock {

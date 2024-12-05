@@ -63,8 +63,8 @@ func LoadRandomValidatorSet(require *require.Assertions, count int, keeper *stak
 	return valSet
 }
 
-func generateRandNumber(max int64) uint64 {
-	nBig, err := rand.Int(rand.Reader, big.NewInt(max))
+func generateRandNumber(maxValue int64) uint64 {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(maxValue))
 	if err != nil {
 		return 1
 	}

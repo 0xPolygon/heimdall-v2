@@ -40,9 +40,7 @@ var (
 )
 
 // AppModuleBasic defines the basic application module used by the stake module.
-type AppModuleBasic struct {
-	cdc codec.Codec
-}
+type AppModuleBasic struct{}
 
 // AppModule implements an application module for the stake module.
 type AppModule struct {

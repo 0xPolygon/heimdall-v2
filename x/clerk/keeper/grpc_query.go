@@ -51,9 +51,7 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 	}
 
 	newRecords := make([]types.EventRecord, len(records))
-	for i, record := range records {
-		newRecords[i] = record
-	}
+	copy(newRecords, records)
 
 	return &types.RecordListResponse{EventRecords: newRecords}, nil
 }
@@ -70,9 +68,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	newRecords := make([]types.EventRecord, len(records))
-	for i, record := range records {
-		newRecords[i] = record
-	}
+	copy(newRecords, records)
 
 	return &types.RecordListWithTimeResponse{EventRecords: newRecords}, nil
 }
@@ -100,7 +96,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
 	// check if incoming tx already exists
 	if !q.k.HasRecordSequence(ctx, sequence.String()) {
-		return nil, nil
+		return nil, status.Error(codes.NotFound, "record sequence not found")
 	}
 
 	return &types.RecordSequenceResponse{Sequence: sequence.Uint64()}, nil

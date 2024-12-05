@@ -376,5 +376,4 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		),
 	})
 
-	return
 }
