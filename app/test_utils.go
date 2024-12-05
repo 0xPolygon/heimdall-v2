@@ -130,6 +130,7 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 }
 
 func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
+	t.Helper()
 	extCommitInfo := new(abci.ExtendedCommitInfo)
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
@@ -141,6 +142,7 @@ func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 }
 
 func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
+	t.Helper()
 	extCommitInfo := new(abci.ExtendedCommitInfo)
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)

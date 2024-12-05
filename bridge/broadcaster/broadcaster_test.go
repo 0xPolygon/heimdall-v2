@@ -204,6 +204,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 }
 
 func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context) {
+	t.Helper()
 	hApp, _, _ := app.SetupApp(t, 1)
 	ctx := hApp.BaseApp.NewContext(true)
 	hApp.BankKeeper.SetSendEnabled(ctx, "", true)
