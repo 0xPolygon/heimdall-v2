@@ -13,6 +13,7 @@ import (
 
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -268,7 +269,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	}
 	helper.SetTestConfig(customAppConf)
 
-	txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
+	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{})
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.SkipConfirm = true
 

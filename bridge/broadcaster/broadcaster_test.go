@@ -129,7 +129,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	encodingConfig := moduletestutil.MakeTestEncodingConfig()
 	txConfig := encodingConfig.TxConfig
 
-	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec())
+	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec(), client.Context{})
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.TxConfig = txConfig
 	txBroadcaster.CliCtx.FromAddress = heimdallAddressBytes

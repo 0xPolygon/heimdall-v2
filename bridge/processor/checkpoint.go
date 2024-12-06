@@ -748,7 +748,7 @@ func (cp *CheckpointProcessor) Stop() {
 //
 
 func (cp *CheckpointProcessor) getCheckpointContext() (*CheckpointContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -30,6 +32,7 @@ type BridgeEvent string
 
 const (
 	AccountDetailsURL      = "/cosmos/auth/v1beta1/accounts/%v"
+	AccountParamsURL       = "/cosmos/auth/v1beta1/params"
 	LastNoAckURL           = "/checkpoints/last-no-ack"
 	CheckpointParamsURL    = "/checkpoints/params"
 	MilestoneCountURL      = "/milestone/count"
@@ -41,9 +44,9 @@ const (
 	LatestMilestoneURL     = "/milestone/latest"
 	CountCheckpointURL     = "/checkpoints/count"
 	CurrentProposerURL     = "/checkpoint/proposers/current"
-	LatestSpanURL          = "/bor/span/latest"
-	NextSpanInfoURL        = "/bor/span/prepare"
-	NextSpanSeedURL        = "/bor/span/seed"
+	LatestSpanURL          = "/bor/span-latest"
+	NextSpanInfoURL        = "/bor/span-prepare"
+	NextSpanSeedURL        = "/bor/span-seed"
 	DividendAccountRootURL = "/topup/dividend-account-root"
 	ValidatorURL           = "/stake/validator/%v"
 	CurrentValidatorSetURL = "/stake/validator-set"
@@ -374,27 +377,29 @@ func IsCatchingUp(cliCtx client.Context) bool {
 
 // GetAccount returns heimdall auth account
 func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
-	logger := Logger()
+	var account sdk.AccountI
+	cmt := helper.GetConfig().CometBFTRPCUrl
+	rpc, err := client.NewClientFromNode(cmt)
+	if err != nil {
+		panic(err)
+	}
+	cliCtx = cliCtx.WithClient(rpc)
 
-	serverEndpoint := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
-
-	// call account rest api
-	response, err := helper.FetchFromAPI(serverEndpoint)
+	queryClient := authtypes.NewQueryClient(cliCtx)
+	res, err := queryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: address})
 	if err != nil {
 		return nil, err
 	}
 
-	var account authtypes.BaseAccount
-	if err = cliCtx.Codec.UnmarshalJSON(response, &account); err != nil {
-		logger.Error("Error unmarshalling account details", "url", serverEndpoint)
+	if err := cliCtx.InterfaceRegistry.UnpackAny(res.Account, &account); err != nil {
 		return nil, err
 	}
 
-	return &account, nil
+	return account, nil
 }
 
 // GetChainmanagerParams return chain manager params
-func GetChainmanagerParams() (*chainmanagertypes.Params, error) {
+func GetChainmanagerParams(cdc codec.Codec) (*chainmanagertypes.Params, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(ChainManagerParamsURL))
@@ -403,13 +408,13 @@ func GetChainmanagerParams() (*chainmanagertypes.Params, error) {
 		return nil, err
 	}
 
-	var params chainmanagertypes.Params
-	if err = json.Unmarshal(response, &params); err != nil {
+	var params chainmanagertypes.QueryParamsResponse
+	if err = cdc.UnmarshalJSON(response, &params); err != nil {
 		logger.Error("Error unmarshalling chainmanager params", "url", ChainManagerParamsURL, "err", err)
 		return nil, err
 	}
 
-	return &params, nil
+	return &params.Params, nil
 }
 
 // GetCheckpointParams return checkpoint params

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,6 +54,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/app"
 	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 )
@@ -176,19 +178,30 @@ func initRootCmd(
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
 			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
 			startCmd.Flags().Bool(helper.AllProcessesFlag, false, "Enable all bridge processes")
-			startCmd.Flags().Bool(helper.OnlyProcessesFlag, false, "Enable only the specified bridge process(es)")
+			startCmd.Flags().StringSlice(helper.OnlyProcessesFlag, []string{}, "Enable only the specified bridge process(es)")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
 			// wait for rest server to start
-			g.Wait()
+			resultChan := make(chan string)
+			timeout := time.After(60 * time.Second)
 
+			go checkServerStatus(helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, "0x721BD41B00187DB182205925BE3D72729AC2E2D4")), resultChan)
+
+			select {
+			case result := <-resultChan:
+				fmt.Println("Fetch successful, received data:", result)
+			case <-timeout:
+				fmt.Println("Fetch operation timed out.")
+			}
+
+			fmt.Println("BRIDGE FLAG!!: ", viper.GetBool(helper.BridgeFlag))
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
 				bridgeCmd.AdjustBridgeDBValue(rootCmd)
 				g.Go(func() error {
-					return bridgeCmd.StartBridgeWithCtx(ctx)
+					return bridgeCmd.StartBridgeWithCtx(ctx, clientCtx)
 				})
 			}
 
@@ -246,6 +259,39 @@ func initRootCmd(
 
 	// snapshot cmd
 	snapshot.Cmd(newApp)
+}
+
+func checkServerStatus(url string, resultChan chan<- string) {
+	fmt.Println("URL BEING QUERIED!!: ", url)
+	ticker := time.NewTicker(2 * time.Second) // Ticker to retry every 2 seconds
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C: // On each tick, perform the fetch operation
+			resp, err := http.Get(url)
+			if err != nil {
+				fmt.Println("Error fetching the URL:", err)
+				continue
+			}
+			defer resp.Body.Close()
+
+			// If we get an HTTP 200 OK status
+			if resp.StatusCode == http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Println("Error reading response body:", err)
+					continue
+				}
+
+				resultChan <- string(body) // Send result via resultChan
+				// doneChan <- struct{}{}     // Signal completion
+				return // Exit the function once success
+			} else {
+				fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
+			}
+		}
+	}
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.

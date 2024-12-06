@@ -312,7 +312,7 @@ func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
 }
 
 func (mp *MilestoneProcessor) getMilestoneContext() (*MilestoneContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(mp.cliCtx.Codec)
 	if err != nil {
 		mp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

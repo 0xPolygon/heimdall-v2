@@ -39,8 +39,8 @@ type TxBroadcaster struct {
 }
 
 // NewTxBroadcaster creates a new instance of TxBroadcaster
-func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
-	cliCtx := client.Context{}.WithCodec(cdc)
+func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context) *TxBroadcaster {
+	cliCtx = cliCtx.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastSync
 
 	// current address

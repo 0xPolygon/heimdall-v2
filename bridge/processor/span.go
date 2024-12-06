@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -28,7 +29,7 @@ type SpanProcessor struct {
 
 // Start starts new block subscription
 func (sp *SpanProcessor) Start() error {
-	sp.Logger.Info("Starting")
+	sp.Logger.Info("STARTING BOR PROCESS!!")
 
 	// create cancellable context
 	spanCtx, cancelSpanService := context.WithCancel(context.Background())
@@ -36,7 +37,7 @@ func (sp *SpanProcessor) Start() error {
 	sp.cancelSpanService = cancelSpanService
 
 	// start polling for span
-	sp.Logger.Info("Start polling for span", "pollInterval", helper.GetConfig().SpanPollInterval)
+	sp.Logger.Info("START POLLING for span", "pollInterval", helper.GetConfig().SpanPollInterval)
 
 	go sp.startPolling(spanCtx, helper.GetConfig().SpanPollInterval)
 
@@ -76,8 +77,11 @@ func (sp *SpanProcessor) checkAndPropose() {
 	}
 
 	if lastSpan == nil {
+		fmt.Println("NIL LAST SPAN!!")
 		return
 	}
+
+	fmt.Println("LAST SPAN!!: ", lastSpan)
 
 	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.Id, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
 
@@ -143,16 +147,27 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
 	if err != nil {
 		sp.Logger.Error("Error while fetching latest span")
+		fmt.Println("ERROR WHILE FETCHING LAST SPAN: ", err)
 		return nil, err
 	}
 
-	var lastSpan types.Span
-	if err = json.Unmarshal(result, &lastSpan); err != nil {
-		sp.Logger.Error("Error unmarshalling span", "error", err)
-		return nil, err
-	}
+	var lastSpan types.QueryLatestSpanResponse
+	// if err = lastSpan.Unmarshal(result); err != nil {
+	// 	fmt.Println("ERROR HRE!!: ", err)
+	// 	return nil, err
+	// }
 
-	return &lastSpan, nil
+	if err = sp.cliCtx.Codec.UnmarshalJSON(result, &lastSpan); err != nil {
+		fmt.Println("ERROR HERE: ", err)
+	}
+	// if err = proto.Unmarshal(result, &lastSpan); err != nil {
+	// 	sp.Logger.Error("Error unmarshalling span", "error", err)
+	// 	fmt.Println("ERROR WHILE UNMARSHALLING LAST SPAN: ", err)
+	// 	return nil, err
+	// }
+
+	fmt.Println("SPAN FETCGeD IN getLastSpan: ", lastSpan)
+	return &lastSpan.Span, nil
 }
 
 // getCurrentChildBlock gets the current child block
@@ -190,11 +205,14 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 		return nil, err
 	}
 
-	configParams, err := util.GetChainmanagerParams()
+	configParams, err := util.GetChainmanagerParams(sp.cliCtx.Codec)
 	if err != nil {
 		sp.Logger.Error("Error while fetching chainmanager params", "error", err)
 		return nil, err
 	}
+
+	fmt.Println("CONFIG PARAMS: ", configParams)
+	fmt.Println("FROM ADDR: ", helper.GetFromAddress(sp.cliCtx))
 
 	q := req.URL.Query()
 	q.Add("span_id", strconv.FormatUint(id, 10))
@@ -210,15 +228,15 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 		return nil, err
 	}
 
-	var msg types.Span
-	if err = json.Unmarshal(result, &msg); err != nil {
+	var res types.QueryNextSpanResponse
+	if err = sp.cliCtx.Codec.UnmarshalJSON(result, &res); err != nil {
 		sp.Logger.Error("Error unmarshalling propose tx msg ", "error", err)
 		return nil, err
 	}
 
-	sp.Logger.Debug("◽ Generated proposer span msg", "msg", msg.String())
+	sp.Logger.Debug("◽ Generated proposer span msg", "msg", res.Span.String())
 
-	return &msg, nil
+	return &res.Span, nil
 }
 
 // fetchNextSpanSeed - fetches seed for next span

@@ -9,9 +9,8 @@ import (
 	"math/big"
 	"math/bits"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
+	"strings"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
@@ -43,7 +42,12 @@ var (
 func GetFromAddress(cliCtx client.Context) string {
 	ac := address.NewHexCodec()
 	fromAddress := cliCtx.GetFromAddress()
-	addressString, err := ac.BytesToString(fromAddress.Bytes())
+	if !fromAddress.Empty() {
+		return fromAddress.String()
+	}
+
+	addr := GetAddress()
+	addressString, err := ac.BytesToString(addr)
 	if err != nil {
 		panic(err)
 	}
@@ -224,19 +228,23 @@ func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
 
 // GetHeimdallServerEndpoint returns heimdall server endpoint
 func GetHeimdallServerEndpoint(endpoint string) string {
-	u, _ := url.Parse(conf.API.Address)
-	u.Path = path.Join(u.Path, endpoint)
+	url, found := strings.CutPrefix(conf.API.Address, "tcp")
+	fmt.Println("FOUND!!: ", found, "ENDP: ", endpoint, "PATH: ")
+	addr := "http" + url + endpoint
+	// u, _ := url.Parse(addr)
+	// fmt.Println("PATH!!: ", u.Path)
+	// u.Path = path.Join(u.Path, endpoint)
 
-	return u.String()
+	return addr
 }
 
 // TODO HV2 - FetchFromAPI method needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
 
 // FetchFromAPI fetches data from any URL with limited read size
-func FetchFromAPI(URL string) (result []byte, err error) {
+func FetchFromAPI(URL string) ([]byte, error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	defer func() {
@@ -253,15 +261,15 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 	if resp.StatusCode == 200 {
 		body, err := io.ReadAll(limitedBody)
 		if err != nil {
-			return result, err
+			return nil, err
 		}
 
 		return body, nil
 	}
 
-	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
+	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL, "ERROR", err, "RESP", resp.Status, "RESP MORE", resp)
 
-	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
+	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
 }
 
 // TODO HV2 - Older version of FetchFromAPI kept for reference, to be removed later
