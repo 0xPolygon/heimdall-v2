@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
@@ -19,7 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -192,7 +190,6 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 
 	validators := make([]*stakeTypes.Validator, 0, len(valSet.Validators))
 	seqs := make([]string, 0, len(valSet.Validators))
-	r := rand.New(rand.NewSource(time.Now().UnixMilli()))
 
 	for i, val := range valSet.Validators {
 
@@ -208,7 +205,14 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 		}
 
 		validators = append(validators, &validator)
-		seqs = append(seqs, strconv.Itoa(simulation.RandIntBetween(r, 1, 1000000)))
+
+		// Generate a secure random integer between 1 and 1,000,000
+		n, err := helper.SecureRandomInt(1, 1000000)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate secure random number: %w", err)
+		}
+
+		seqs = append(seqs, strconv.FormatInt(n, 10))
 	}
 
 	// set validators and delegations

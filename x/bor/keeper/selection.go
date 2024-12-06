@@ -26,6 +26,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketype
 	// extract seed from hash
 	seedBytes := helper.ToBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
+	// #nosec G404 -- suppress gosec warning as predictable randomness is required
 	r := rand.New(rand.NewSource(seed))
 
 	// weighted range from validators' voting power

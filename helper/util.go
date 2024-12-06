@@ -3,6 +3,7 @@ package helper
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -408,6 +409,38 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 	}
 
 	return res, nil
+}
+
+// SecureRandomInt generates a cryptographically secure random integer between minValue and maxLimit inclusive.
+func SecureRandomInt(minValue, maxLimit int64) (int64, error) {
+	if minValue > maxLimit {
+		return 0, fmt.Errorf("invalid range: minValue cannot be greater than maxLimit")
+	}
+	if minValue == maxLimit {
+		return minValue, nil
+	}
+
+	minBig := big.NewInt(minValue)
+	maxBig := big.NewInt(maxLimit)
+
+	// rangeSize = (maxLimit - minValue) + 1
+	rangeSize := new(big.Int).Sub(maxBig, minBig)
+	rangeSize.Add(rangeSize, big.NewInt(1))
+
+	if rangeSize.Sign() <= 0 {
+		return 0, fmt.Errorf("invalid range: non-positive range size")
+	}
+
+	// Generate a random number [0, rangeSize-1]
+	nBig, err := rand.Int(rand.Reader, rangeSize)
+	if err != nil {
+		return 0, err
+	}
+
+	// Result = minValue + randomValue
+	nBig.Add(nBig, minBig)
+
+	return nBig.Int64(), nil
 }
 
 // TODO HV2 - I don't think we need this anymore
