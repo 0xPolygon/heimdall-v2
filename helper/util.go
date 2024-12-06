@@ -356,7 +356,6 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	if !clientCtx.SkipConfirm {
 		panic("this should not happen as SkipConfirm is set to true")
-
 		// TODO HV2 - create a function
 		// func (f Factory) GetTxConfig() client.TxConfig { return f.txConfig }
 		// I guess this is no longer needed as this if block is never used
@@ -366,7 +365,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 				return errors.New("failed to encode transaction: tx json encoder is nil")
 			}
 		*/
-
+		//nolint:govet //ignoring the unreachable code linter error
 		// Maybe the above code can be replaced with this
 		encoder := clientCtx.TxConfig.TxEncoder()
 

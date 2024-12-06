@@ -376,6 +376,4 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 			return events, errors.New("timed out waiting for event")
 		}
 	}
-
-	return events, err
 }
