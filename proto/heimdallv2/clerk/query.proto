@@ -33,6 +33,13 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/sequence";
   }
+
+  // IsClerkTxOld queries for a specific clerk tx to check its status (old
+  // means already submitted)
+  rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/isoldtx";
+  }
 }
 
 message RecordRequest {
@@ -81,4 +88,8 @@ message RecordSequenceRequest {
 
 message RecordSequenceResponse {
   uint64 sequence = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message IsClerkTxOldResponse {
+  bool is_old = 1 [ (amino.dont_omitempty) = true ];
 }

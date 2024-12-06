@@ -23,6 +23,7 @@ const (
 	Query_GetRecordById_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordById"
 	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
 	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
+	Query_IsClerkTxOld_FullMethodName          = "/heimdallv2.clerk.Query/IsClerkTxOld"
 )
 
 // QueryClient is the client API for Query service.
@@ -37,6 +38,9 @@ type QueryClient interface {
 	GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
 	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
+	// IsClerkTxOld queries for a specific clerk tx to check its status (old
+	// means already submitted)
+	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
 }
 
 type queryClient struct {
@@ -83,6 +87,15 @@ func (c *queryClient) GetRecordSequence(ctx context.Context, in *RecordSequenceR
 	return out, nil
 }
 
+func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error) {
+	out := new(IsClerkTxOldResponse)
+	err := c.cc.Invoke(ctx, Query_IsClerkTxOld_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -95,6 +108,9 @@ type QueryServer interface {
 	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
 	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
+	// IsClerkTxOld queries for a specific clerk tx to check its status (old
+	// means already submitted)
+	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -113,6 +129,9 @@ func (UnimplementedQueryServer) GetRecordListWithTime(context.Context, *RecordLi
 }
 func (UnimplementedQueryServer) GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordSequence not implemented")
+}
+func (UnimplementedQueryServer) IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsClerkTxOld not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -199,6 +218,24 @@ func _Query_GetRecordSequence_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_IsClerkTxOld_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordSequenceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).IsClerkTxOld(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_IsClerkTxOld_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).IsClerkTxOld(ctx, req.(*RecordSequenceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -221,6 +258,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRecordSequence",
 			Handler:    _Query_GetRecordSequence_Handler,
+		},
+		{
+			MethodName: "IsClerkTxOld",
+			Handler:    _Query_IsClerkTxOld_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
