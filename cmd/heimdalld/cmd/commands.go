@@ -187,13 +187,13 @@ func initRootCmd(
 			resultChan := make(chan string)
 			timeout := time.After(60 * time.Second)
 
-			go checkServerStatus(helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, "0x721BD41B00187DB182205925BE3D72729AC2E2D4")), resultChan)
+			go checkServerStatus(helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
 
 			select {
 			case result := <-resultChan:
 				fmt.Println("Fetch successful, received data:", result)
 			case <-timeout:
-				fmt.Println("Fetch operation timed out.")
+				return fmt.Errorf("Fetch operation timed out")
 			}
 
 			fmt.Println("BRIDGE FLAG!!: ", viper.GetBool(helper.BridgeFlag))
