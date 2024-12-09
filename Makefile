@@ -48,7 +48,7 @@ lint-deps:
 
 .PHONY: lint
 lint:
-	@./build/bin/golangci-lint run --config ./.golangci.yml
+	@./build/bin/golangci-lint run --config ./.golangci.yml $(if $(NEW_FROM_REV),--new-from-rev $(NEW_FROM_REV))
 
 
 ###############################################################################

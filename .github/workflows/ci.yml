@@ -16,8 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -30,7 +28,7 @@ jobs:
         run: make lint-deps
 
       - name: "Run linter"
-        run: make lint
+        run: make lint NEW_FROM_REV=origin/develop
 
       - name: "Build binaries"
         run: make heimdalld
