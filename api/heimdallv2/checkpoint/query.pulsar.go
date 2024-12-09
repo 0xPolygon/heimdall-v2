@@ -8302,6 +8302,1020 @@ func (x *fastReflection_QueryCheckpointListResponse) ProtoMethods() *protoiface.
 	}
 }
 
+var (
+	md_QueryCheckpointOverviewRequest protoreflect.MessageDescriptor
+)
+
+func init() {
+	file_heimdallv2_checkpoint_query_proto_init()
+	md_QueryCheckpointOverviewRequest = File_heimdallv2_checkpoint_query_proto.Messages().ByName("QueryCheckpointOverviewRequest")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryCheckpointOverviewRequest)(nil)
+
+type fastReflection_QueryCheckpointOverviewRequest QueryCheckpointOverviewRequest
+
+func (x *QueryCheckpointOverviewRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryCheckpointOverviewRequest)(x)
+}
+
+func (x *QueryCheckpointOverviewRequest) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_checkpoint_query_proto_msgTypes[20]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryCheckpointOverviewRequest_messageType fastReflection_QueryCheckpointOverviewRequest_messageType
+var _ protoreflect.MessageType = fastReflection_QueryCheckpointOverviewRequest_messageType{}
+
+type fastReflection_QueryCheckpointOverviewRequest_messageType struct{}
+
+func (x fastReflection_QueryCheckpointOverviewRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryCheckpointOverviewRequest)(nil)
+}
+func (x fastReflection_QueryCheckpointOverviewRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryCheckpointOverviewRequest)
+}
+func (x fastReflection_QueryCheckpointOverviewRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryCheckpointOverviewRequest
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryCheckpointOverviewRequest
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Type() protoreflect.MessageType {
+	return _fastReflection_QueryCheckpointOverviewRequest_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryCheckpointOverviewRequest) New() protoreflect.Message {
+	return new(fastReflection_QueryCheckpointOverviewRequest)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Interface() protoreflect.ProtoMessage {
+	return (*QueryCheckpointOverviewRequest)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewRequest does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryCheckpointOverviewRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewRequest"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewRequest does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryCheckpointOverviewRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.QueryCheckpointOverviewRequest", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryCheckpointOverviewRequest) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewRequest) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryCheckpointOverviewRequest) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryCheckpointOverviewRequest) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryCheckpointOverviewRequest)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryCheckpointOverviewRequest)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryCheckpointOverviewRequest)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryCheckpointOverviewRequest: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryCheckpointOverviewRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_QueryCheckpointOverviewResponse                   protoreflect.MessageDescriptor
+	fd_QueryCheckpointOverviewResponse_ack_count         protoreflect.FieldDescriptor
+	fd_QueryCheckpointOverviewResponse_last_no_ack_id    protoreflect.FieldDescriptor
+	fd_QueryCheckpointOverviewResponse_buffer_checkpoint protoreflect.FieldDescriptor
+	fd_QueryCheckpointOverviewResponse_validator_count   protoreflect.FieldDescriptor
+	fd_QueryCheckpointOverviewResponse_validator_set     protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_heimdallv2_checkpoint_query_proto_init()
+	md_QueryCheckpointOverviewResponse = File_heimdallv2_checkpoint_query_proto.Messages().ByName("QueryCheckpointOverviewResponse")
+	fd_QueryCheckpointOverviewResponse_ack_count = md_QueryCheckpointOverviewResponse.Fields().ByName("ack_count")
+	fd_QueryCheckpointOverviewResponse_last_no_ack_id = md_QueryCheckpointOverviewResponse.Fields().ByName("last_no_ack_id")
+	fd_QueryCheckpointOverviewResponse_buffer_checkpoint = md_QueryCheckpointOverviewResponse.Fields().ByName("buffer_checkpoint")
+	fd_QueryCheckpointOverviewResponse_validator_count = md_QueryCheckpointOverviewResponse.Fields().ByName("validator_count")
+	fd_QueryCheckpointOverviewResponse_validator_set = md_QueryCheckpointOverviewResponse.Fields().ByName("validator_set")
+}
+
+var _ protoreflect.Message = (*fastReflection_QueryCheckpointOverviewResponse)(nil)
+
+type fastReflection_QueryCheckpointOverviewResponse QueryCheckpointOverviewResponse
+
+func (x *QueryCheckpointOverviewResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_QueryCheckpointOverviewResponse)(x)
+}
+
+func (x *QueryCheckpointOverviewResponse) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_checkpoint_query_proto_msgTypes[21]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_QueryCheckpointOverviewResponse_messageType fastReflection_QueryCheckpointOverviewResponse_messageType
+var _ protoreflect.MessageType = fastReflection_QueryCheckpointOverviewResponse_messageType{}
+
+type fastReflection_QueryCheckpointOverviewResponse_messageType struct{}
+
+func (x fastReflection_QueryCheckpointOverviewResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_QueryCheckpointOverviewResponse)(nil)
+}
+func (x fastReflection_QueryCheckpointOverviewResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_QueryCheckpointOverviewResponse)
+}
+func (x fastReflection_QueryCheckpointOverviewResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryCheckpointOverviewResponse
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_QueryCheckpointOverviewResponse
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Type() protoreflect.MessageType {
+	return _fastReflection_QueryCheckpointOverviewResponse_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_QueryCheckpointOverviewResponse) New() protoreflect.Message {
+	return new(fastReflection_QueryCheckpointOverviewResponse)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Interface() protoreflect.ProtoMessage {
+	return (*QueryCheckpointOverviewResponse)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.AckCount != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.AckCount)
+		if !f(fd_QueryCheckpointOverviewResponse_ack_count, value) {
+			return
+		}
+	}
+	if x.LastNoAckId != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.LastNoAckId)
+		if !f(fd_QueryCheckpointOverviewResponse_last_no_ack_id, value) {
+			return
+		}
+	}
+	if x.BufferCheckpoint != nil {
+		value := protoreflect.ValueOfMessage(x.BufferCheckpoint.ProtoReflect())
+		if !f(fd_QueryCheckpointOverviewResponse_buffer_checkpoint, value) {
+			return
+		}
+	}
+	if x.ValidatorCount != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.ValidatorCount)
+		if !f(fd_QueryCheckpointOverviewResponse_validator_count, value) {
+			return
+		}
+	}
+	if x.ValidatorSet != nil {
+		value := protoreflect.ValueOfMessage(x.ValidatorSet.ProtoReflect())
+		if !f(fd_QueryCheckpointOverviewResponse_validator_set, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.ack_count":
+		return x.AckCount != uint64(0)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.last_no_ack_id":
+		return x.LastNoAckId != uint64(0)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.buffer_checkpoint":
+		return x.BufferCheckpoint != nil
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_count":
+		return x.ValidatorCount != uint64(0)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_set":
+		return x.ValidatorSet != nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.ack_count":
+		x.AckCount = uint64(0)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.last_no_ack_id":
+		x.LastNoAckId = uint64(0)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.buffer_checkpoint":
+		x.BufferCheckpoint = nil
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_count":
+		x.ValidatorCount = uint64(0)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_set":
+		x.ValidatorSet = nil
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.ack_count":
+		value := x.AckCount
+		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.last_no_ack_id":
+		value := x.LastNoAckId
+		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.buffer_checkpoint":
+		value := x.BufferCheckpoint
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_count":
+		value := x.ValidatorCount
+		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_set":
+		value := x.ValidatorSet
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewResponse does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.ack_count":
+		x.AckCount = value.Uint()
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.last_no_ack_id":
+		x.LastNoAckId = value.Uint()
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.buffer_checkpoint":
+		x.BufferCheckpoint = value.Message().Interface().(*Checkpoint)
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_count":
+		x.ValidatorCount = value.Uint()
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_set":
+		x.ValidatorSet = value.Message().Interface().(*stake.ValidatorSet)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.buffer_checkpoint":
+		if x.BufferCheckpoint == nil {
+			x.BufferCheckpoint = new(Checkpoint)
+		}
+		return protoreflect.ValueOfMessage(x.BufferCheckpoint.ProtoReflect())
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_set":
+		if x.ValidatorSet == nil {
+			x.ValidatorSet = new(stake.ValidatorSet)
+		}
+		return protoreflect.ValueOfMessage(x.ValidatorSet.ProtoReflect())
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.ack_count":
+		panic(fmt.Errorf("field ack_count of message heimdallv2.checkpoint.QueryCheckpointOverviewResponse is not mutable"))
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.last_no_ack_id":
+		panic(fmt.Errorf("field last_no_ack_id of message heimdallv2.checkpoint.QueryCheckpointOverviewResponse is not mutable"))
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_count":
+		panic(fmt.Errorf("field validator_count of message heimdallv2.checkpoint.QueryCheckpointOverviewResponse is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_QueryCheckpointOverviewResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.ack_count":
+		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.last_no_ack_id":
+		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.buffer_checkpoint":
+		m := new(Checkpoint)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_count":
+		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_set":
+		m := new(stake.ValidatorSet)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.QueryCheckpointOverviewResponse"))
+		}
+		panic(fmt.Errorf("message heimdallv2.checkpoint.QueryCheckpointOverviewResponse does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_QueryCheckpointOverviewResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.checkpoint.QueryCheckpointOverviewResponse", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_QueryCheckpointOverviewResponse) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_QueryCheckpointOverviewResponse) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_QueryCheckpointOverviewResponse) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_QueryCheckpointOverviewResponse) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*QueryCheckpointOverviewResponse)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if x.AckCount != 0 {
+			n += 1 + runtime.Sov(uint64(x.AckCount))
+		}
+		if x.LastNoAckId != 0 {
+			n += 1 + runtime.Sov(uint64(x.LastNoAckId))
+		}
+		if x.BufferCheckpoint != nil {
+			l = options.Size(x.BufferCheckpoint)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.ValidatorCount != 0 {
+			n += 1 + runtime.Sov(uint64(x.ValidatorCount))
+		}
+		if x.ValidatorSet != nil {
+			l = options.Size(x.ValidatorSet)
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*QueryCheckpointOverviewResponse)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.ValidatorSet != nil {
+			encoded, err := options.Marshal(x.ValidatorSet)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x2a
+		}
+		if x.ValidatorCount != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.ValidatorCount))
+			i--
+			dAtA[i] = 0x20
+		}
+		if x.BufferCheckpoint != nil {
+			encoded, err := options.Marshal(x.BufferCheckpoint)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
+			i--
+			dAtA[i] = 0x1a
+		}
+		if x.LastNoAckId != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.LastNoAckId))
+			i--
+			dAtA[i] = 0x10
+		}
+		if x.AckCount != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.AckCount))
+			i--
+			dAtA[i] = 0x8
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*QueryCheckpointOverviewResponse)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryCheckpointOverviewResponse: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: QueryCheckpointOverviewResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field AckCount", wireType)
+				}
+				x.AckCount = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.AckCount |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field LastNoAckId", wireType)
+				}
+				x.LastNoAckId = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.LastNoAckId |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			case 3:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field BufferCheckpoint", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.BufferCheckpoint == nil {
+					x.BufferCheckpoint = &Checkpoint{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.BufferCheckpoint); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 4:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ValidatorCount", wireType)
+				}
+				x.ValidatorCount = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.ValidatorCount |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			case 5:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ValidatorSet", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.ValidatorSet == nil {
+					x.ValidatorSet = &stake.ValidatorSet{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.ValidatorSet); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
 // Code generated by protoc-gen-go. DO NOT EDIT.
 // versions:
 // 	protoc-gen-go v1.27.0
@@ -8969,6 +9983,99 @@ func (x *QueryCheckpointListResponse) GetPagination() *v1beta1.PageResponse {
 	return nil
 }
 
+type QueryCheckpointOverviewRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *QueryCheckpointOverviewRequest) Reset() {
+	*x = QueryCheckpointOverviewRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_checkpoint_query_proto_msgTypes[20]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryCheckpointOverviewRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryCheckpointOverviewRequest) ProtoMessage() {}
+
+// Deprecated: Use QueryCheckpointOverviewRequest.ProtoReflect.Descriptor instead.
+func (*QueryCheckpointOverviewRequest) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{20}
+}
+
+type QueryCheckpointOverviewResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	AckCount         uint64              `protobuf:"varint,1,opt,name=ack_count,json=ackCount,proto3" json:"ack_count,omitempty"`
+	LastNoAckId      uint64              `protobuf:"varint,2,opt,name=last_no_ack_id,json=lastNoAckId,proto3" json:"last_no_ack_id,omitempty"`
+	BufferCheckpoint *Checkpoint         `protobuf:"bytes,3,opt,name=buffer_checkpoint,json=bufferCheckpoint,proto3" json:"buffer_checkpoint,omitempty"`
+	ValidatorCount   uint64              `protobuf:"varint,4,opt,name=validator_count,json=validatorCount,proto3" json:"validator_count,omitempty"`
+	ValidatorSet     *stake.ValidatorSet `protobuf:"bytes,5,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set,omitempty"`
+}
+
+func (x *QueryCheckpointOverviewResponse) Reset() {
+	*x = QueryCheckpointOverviewResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_checkpoint_query_proto_msgTypes[21]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *QueryCheckpointOverviewResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QueryCheckpointOverviewResponse) ProtoMessage() {}
+
+// Deprecated: Use QueryCheckpointOverviewResponse.ProtoReflect.Descriptor instead.
+func (*QueryCheckpointOverviewResponse) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_checkpoint_query_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *QueryCheckpointOverviewResponse) GetAckCount() uint64 {
+	if x != nil {
+		return x.AckCount
+	}
+	return 0
+}
+
+func (x *QueryCheckpointOverviewResponse) GetLastNoAckId() uint64 {
+	if x != nil {
+		return x.LastNoAckId
+	}
+	return 0
+}
+
+func (x *QueryCheckpointOverviewResponse) GetBufferCheckpoint() *Checkpoint {
+	if x != nil {
+		return x.BufferCheckpoint
+	}
+	return nil
+}
+
+func (x *QueryCheckpointOverviewResponse) GetValidatorCount() uint64 {
+	if x != nil {
+		return x.ValidatorCount
+	}
+	return 0
+}
+
+func (x *QueryCheckpointOverviewResponse) GetValidatorSet() *stake.ValidatorSet {
+	if x != nil {
+		return x.ValidatorSet
+	}
+	return nil
+}
+
 var File_heimdallv2_checkpoint_query_proto protoreflect.FileDescriptor
 
 var file_heimdallv2_checkpoint_query_proto_rawDesc = []byte{
@@ -8976,11 +10083,11 @@ var file_heimdallv2_checkpoint_query_proto_rawDesc = []byte{
 	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x70, 0x72,
 	0x6f, 0x74, 0x6f, 0x12, 0x15, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
 	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x1a, 0x11, 0x61, 0x6d, 0x69, 0x6e,
-	0x6f, 0x2f, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x63,
-	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x76, 0x31, 0x2f, 0x71,
-	0x75, 0x65, 0x72, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2a, 0x63, 0x6f, 0x73, 0x6d,
-	0x6f, 0x73, 0x2f, 0x62, 0x61, 0x73, 0x65, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x76, 0x31,
-	0x62, 0x65, 0x74, 0x61, 0x31, 0x2f, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x6f, 0x2f, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x2a, 0x63,
+	0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2f, 0x62, 0x61, 0x73, 0x65, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79,
+	0x2f, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2f, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74,
+	0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x63, 0x6f, 0x73, 0x6d, 0x6f,
+	0x73, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2f, 0x76, 0x31, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x14, 0x67, 0x6f, 0x67, 0x6f, 0x70, 0x72, 0x6f, 0x74,
 	0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1c, 0x67, 0x6f,
 	0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74,
@@ -9086,119 +10193,153 @@ var file_heimdallv2_checkpoint_query_proto_rawDesc = []byte{
 	0x65, 0x2e, 0x71, 0x75, 0x65, 0x72, 0x79, 0x2e, 0x76, 0x31, 0x62, 0x65, 0x74, 0x61, 0x31, 0x2e,
 	0x50, 0x61, 0x67, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x09, 0xc8, 0xde,
 	0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0a, 0x70, 0x61, 0x67, 0x69, 0x6e, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x32, 0x9e, 0x0c, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x8e, 0x01,
-	0x0a, 0x13, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x50,
-	0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
-	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x61,
-	0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x88, 0xe7,
-	0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12, 0x13, 0x2f, 0x63, 0x68, 0x65, 0x63,
-	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x89,
-	0x01, 0x0a, 0x0b, 0x47, 0x65, 0x74, 0x41, 0x63, 0x6b, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x2b,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63,
-	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x63, 0x6b, 0x43,
-	0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x63, 0x6b, 0x43, 0x6f, 0x75, 0x6e,
-	0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x88, 0xe7, 0xb0, 0x2a, 0x01,
-	0x82, 0xd3, 0xe4, 0x93, 0x02, 0x14, 0x12, 0x12, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x73, 0x2f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0xa2, 0x01, 0x0a, 0x13, 0x47,
-	0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4c, 0x61, 0x74, 0x65,
-	0x73, 0x74, 0x12, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x34, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4c,
-	0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x88,
+	0x69, 0x6f, 0x6e, 0x22, 0x20, 0x0a, 0x1e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4f, 0x76, 0x65, 0x72, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0xcc, 0x02, 0x0a, 0x1f, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4f, 0x76, 0x65, 0x72, 0x76, 0x69, 0x65,
+	0x77, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x22, 0x0a, 0x09, 0x61, 0x63, 0x6b,
+	0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7,
+	0xb0, 0x2a, 0x01, 0x52, 0x08, 0x61, 0x63, 0x6b, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x2a, 0x0a,
+	0x0e, 0x6c, 0x61, 0x73, 0x74, 0x5f, 0x6e, 0x6f, 0x5f, 0x61, 0x63, 0x6b, 0x5f, 0x69, 0x64, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0b, 0x6c, 0x61,
+	0x73, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x49, 0x64, 0x12, 0x59, 0x0a, 0x11, 0x62, 0x75, 0x66,
+	0x66, 0x65, 0x72, 0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x43, 0x68, 0x65,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x42, 0x09, 0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0,
+	0x2a, 0x01, 0x52, 0x10, 0x62, 0x75, 0x66, 0x66, 0x65, 0x72, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0x12, 0x2e, 0x0a, 0x0f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
+	0x72, 0x5f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8,
+	0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0e, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x43,
+	0x6f, 0x75, 0x6e, 0x74, 0x12, 0x4e, 0x0a, 0x0d, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
+	0x72, 0x5f, 0x73, 0x65, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x74, 0x61, 0x6b, 0x65, 0x2e, 0x56,
+	0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f, 0x72, 0x53, 0x65, 0x74, 0x42, 0x09, 0xc8, 0xde, 0x1f,
+	0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0c, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x6f,
+	0x72, 0x53, 0x65, 0x74, 0x32, 0xcb, 0x0d, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x8e,
+	0x01, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
+	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x29, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50,
+	0x61, 0x72, 0x61, 0x6d, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x88,
 	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12, 0x13, 0x2f, 0x63, 0x68, 0x65,
-	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x12,
-	0xa2, 0x01, 0x0a, 0x13, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
-	0x74, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x12, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e,
-	0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x42,
-	0x75, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x34, 0x2e, 0x68,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70,
-	0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70,
-	0x6f, 0x69, 0x6e, 0x74, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x20, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12,
-	0x13, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x62, 0x75,
-	0x66, 0x66, 0x65, 0x72, 0x12, 0x92, 0x01, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x73, 0x74,
-	0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x12, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x4c, 0x61, 0x73, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x71, 0x75,
-	0x65, 0x73, 0x74, 0x1a, 0x2d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72,
-	0x79, 0x4c, 0x61, 0x73, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
-	0x73, 0x65, 0x22, 0x25, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1a, 0x12,
-	0x18, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x6c, 0x61,
-	0x73, 0x74, 0x2d, 0x6e, 0x6f, 0x2d, 0x61, 0x63, 0x6b, 0x12, 0xa2, 0x01, 0x0a, 0x11, 0x47, 0x65,
-	0x74, 0x4e, 0x65, 0x78, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x12,
-	0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65,
-	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78,
-	0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
-	0x73, 0x74, 0x1a, 0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79,
-	0x4e, 0x65, 0x78, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4,
-	0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x73, 0x2f, 0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x2d, 0x6e, 0x65, 0x78, 0x74, 0x12, 0xa9,
-	0x01, 0x0a, 0x12, 0x47, 0x65, 0x74, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f,
-	0x70, 0x6f, 0x73, 0x65, 0x72, 0x12, 0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
-	0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75,
-	0x65, 0x72, 0x79, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73,
-	0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x70, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12,
+	0xaa, 0x01, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x4f, 0x76, 0x65, 0x72, 0x76, 0x69, 0x65, 0x77, 0x12, 0x35, 0x2e, 0x68, 0x65, 0x69, 0x6d,
 	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
-	0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x50, 0x72,
-	0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2a,
-	0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x63, 0x68,
-	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65,
-	0x72, 0x73, 0x2f, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x12, 0x95, 0x01, 0x0a, 0x0c, 0x47,
-	0x65, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x73, 0x12, 0x2b, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65,
-	0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x52, 0x65,
-	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2a, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4,
-	0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x7b, 0x74, 0x69, 0x6d, 0x65,
-	0x73, 0x7d, 0x12, 0x9a, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70,
-	0x6f, 0x69, 0x6e, 0x74, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
-	0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x32, 0x2e, 0x68, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f,
-	0x69, 0x6e, 0x74, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22,
-	0x1e, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x13, 0x12, 0x11, 0x2f, 0x63,
-	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x12,
-	0x92, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
-	0x74, 0x12, 0x2d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
-	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43,
-	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x2e, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
+	0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x4f, 0x76, 0x65, 0x72, 0x76, 0x69, 0x65, 0x77, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x36, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
 	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68,
-	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x22, 0x22, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f,
-	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x7b, 0x6e, 0x75, 0x6d,
-	0x62, 0x65, 0x72, 0x7d, 0x42, 0xd8, 0x01, 0x0a, 0x19, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4f, 0x76, 0x65, 0x72, 0x76, 0x69, 0x65, 0x77,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x22, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x73, 0x2f, 0x6f, 0x76, 0x65, 0x72, 0x76, 0x69, 0x65, 0x77, 0x12, 0x89, 0x01, 0x0a,
+	0x0b, 0x47, 0x65, 0x74, 0x41, 0x63, 0x6b, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0x2b, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70,
+	0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x63, 0x6b, 0x43, 0x6f, 0x75,
+	0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x41, 0x63, 0x6b, 0x43, 0x6f, 0x75, 0x6e, 0x74, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1f, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x14, 0x12, 0x12, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x73, 0x2f, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x12, 0xa2, 0x01, 0x0a, 0x13, 0x47, 0x65, 0x74,
+	0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74,
+	0x12, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x34, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4c, 0x61, 0x74,
+	0x65, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x20, 0x88, 0xe7, 0xb0,
+	0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12, 0x13, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b,
+	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x12, 0xa2, 0x01,
+	0x0a, 0x13, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x42,
+	0x75, 0x66, 0x66, 0x65, 0x72, 0x12, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75,
+	0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x42, 0x75, 0x66,
+	0x66, 0x65, 0x72, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x34, 0x2e, 0x68, 0x65, 0x69,
 	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
-	0x6e, 0x74, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01,
-	0x5a, 0x3a, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50,
-	0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d,
-	0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xa2, 0x02, 0x03, 0x48,
-	0x43, 0x58, 0xaa, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
-	0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xca, 0x02, 0x15, 0x48, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
-	0x6e, 0x74, 0xe2, 0x02, 0x21, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c,
-	0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65,
-	0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x16, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x62,
-	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x20, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x15, 0x12, 0x13, 0x2f,
+	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x62, 0x75, 0x66, 0x66,
+	0x65, 0x72, 0x12, 0x92, 0x01, 0x0a, 0x0c, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x73, 0x74, 0x4e, 0x6f,
+	0x41, 0x63, 0x6b, 0x12, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x4c, 0x61, 0x73, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
+	0x74, 0x1a, 0x2d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4c,
+	0x61, 0x73, 0x74, 0x4e, 0x6f, 0x41, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x22, 0x25, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1a, 0x12, 0x18, 0x2f,
+	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x6c, 0x61, 0x73, 0x74,
+	0x2d, 0x6e, 0x6f, 0x2d, 0x61, 0x63, 0x6b, 0x12, 0xa2, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x4e,
+	0x65, 0x78, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x12, 0x31, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b,
+	0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65, 0x78, 0x74, 0x43,
+	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
+	0x1a, 0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x4e, 0x65,
+	0x78, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x1b, 0x12, 0x19, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f,
+	0x70, 0x72, 0x65, 0x70, 0x61, 0x72, 0x65, 0x2d, 0x6e, 0x65, 0x78, 0x74, 0x12, 0xa9, 0x01, 0x0a,
+	0x12, 0x47, 0x65, 0x74, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f,
+	0x73, 0x65, 0x72, 0x12, 0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72,
+	0x79, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72,
+	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x33, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e,
+	0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x70,
+	0x6f, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2a, 0x88, 0xe7,
+	0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1f, 0x12, 0x1d, 0x2f, 0x63, 0x68, 0x65, 0x63,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x73,
+	0x2f, 0x63, 0x75, 0x72, 0x72, 0x65, 0x6e, 0x74, 0x12, 0x95, 0x01, 0x0a, 0x0c, 0x47, 0x65, 0x74,
+	0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x73, 0x12, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x52,
+	0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2a, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x1f, 0x12, 0x1d, 0x2f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2f, 0x70,
+	0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x73, 0x2f, 0x7b, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x7d,
+	0x12, 0x9a, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69,
+	0x6e, 0x74, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x31, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51,
+	0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x4c, 0x69,
+	0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x32, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e,
+	0x74, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x1e, 0x88,
+	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x13, 0x12, 0x11, 0x2f, 0x63, 0x68, 0x65,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x12, 0x92, 0x01,
+	0x0a, 0x0d, 0x47, 0x65, 0x74, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x12,
+	0x2d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65,
+	0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2e,
+	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x2e, 0x51, 0x75, 0x65, 0x72, 0x79, 0x43, 0x68, 0x65, 0x63,
+	0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x22,
+	0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x17, 0x12, 0x15, 0x2f, 0x63, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x73, 0x2f, 0x7b, 0x6e, 0x75, 0x6d, 0x62, 0x65,
+	0x72, 0x7d, 0x42, 0xd8, 0x01, 0x0a, 0x19, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
+	0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x3a,
+	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c,
+	0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32,
+	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f,
+	0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58,
+	0xaa, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0xca, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74,
+	0xe2, 0x02, 0x21, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x68,
+	0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x16, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x3a, 0x3a, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -9213,71 +10354,78 @@ func file_heimdallv2_checkpoint_query_proto_rawDescGZIP() []byte {
 	return file_heimdallv2_checkpoint_query_proto_rawDescData
 }
 
-var file_heimdallv2_checkpoint_query_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_heimdallv2_checkpoint_query_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_heimdallv2_checkpoint_query_proto_goTypes = []interface{}{
-	(*QueryParamsRequest)(nil),            // 0: heimdallv2.checkpoint.QueryParamsRequest
-	(*QueryParamsResponse)(nil),           // 1: heimdallv2.checkpoint.QueryParamsResponse
-	(*QueryAckCountRequest)(nil),          // 2: heimdallv2.checkpoint.QueryAckCountRequest
-	(*QueryAckCountResponse)(nil),         // 3: heimdallv2.checkpoint.QueryAckCountResponse
-	(*QueryLastNoAckRequest)(nil),         // 4: heimdallv2.checkpoint.QueryLastNoAckRequest
-	(*QueryLastNoAckResponse)(nil),        // 5: heimdallv2.checkpoint.QueryLastNoAckResponse
-	(*QueryCheckpointBufferRequest)(nil),  // 6: heimdallv2.checkpoint.QueryCheckpointBufferRequest
-	(*QueryCheckpointBufferResponse)(nil), // 7: heimdallv2.checkpoint.QueryCheckpointBufferResponse
-	(*QueryCheckpointRequest)(nil),        // 8: heimdallv2.checkpoint.QueryCheckpointRequest
-	(*QueryCheckpointResponse)(nil),       // 9: heimdallv2.checkpoint.QueryCheckpointResponse
-	(*QueryCheckpointLatestRequest)(nil),  // 10: heimdallv2.checkpoint.QueryCheckpointLatestRequest
-	(*QueryCheckpointLatestResponse)(nil), // 11: heimdallv2.checkpoint.QueryCheckpointLatestResponse
-	(*QueryNextCheckpointRequest)(nil),    // 12: heimdallv2.checkpoint.QueryNextCheckpointRequest
-	(*QueryNextCheckpointResponse)(nil),   // 13: heimdallv2.checkpoint.QueryNextCheckpointResponse
-	(*QueryCurrentProposerRequest)(nil),   // 14: heimdallv2.checkpoint.QueryCurrentProposerRequest
-	(*QueryCurrentProposerResponse)(nil),  // 15: heimdallv2.checkpoint.QueryCurrentProposerResponse
-	(*QueryProposerRequest)(nil),          // 16: heimdallv2.checkpoint.QueryProposerRequest
-	(*QueryProposerResponse)(nil),         // 17: heimdallv2.checkpoint.QueryProposerResponse
-	(*QueryCheckpointListRequest)(nil),    // 18: heimdallv2.checkpoint.QueryCheckpointListRequest
-	(*QueryCheckpointListResponse)(nil),   // 19: heimdallv2.checkpoint.QueryCheckpointListResponse
-	(*Params)(nil),                        // 20: heimdallv2.checkpoint.Params
-	(*Checkpoint)(nil),                    // 21: heimdallv2.checkpoint.Checkpoint
-	(*MsgCheckpoint)(nil),                 // 22: heimdallv2.checkpoint.MsgCheckpoint
-	(*stake.Validator)(nil),               // 23: heimdallv2.stake.Validator
-	(*v1beta1.PageRequest)(nil),           // 24: cosmos.base.query.v1beta1.PageRequest
-	(*v1beta1.PageResponse)(nil),          // 25: cosmos.base.query.v1beta1.PageResponse
+	(*QueryParamsRequest)(nil),              // 0: heimdallv2.checkpoint.QueryParamsRequest
+	(*QueryParamsResponse)(nil),             // 1: heimdallv2.checkpoint.QueryParamsResponse
+	(*QueryAckCountRequest)(nil),            // 2: heimdallv2.checkpoint.QueryAckCountRequest
+	(*QueryAckCountResponse)(nil),           // 3: heimdallv2.checkpoint.QueryAckCountResponse
+	(*QueryLastNoAckRequest)(nil),           // 4: heimdallv2.checkpoint.QueryLastNoAckRequest
+	(*QueryLastNoAckResponse)(nil),          // 5: heimdallv2.checkpoint.QueryLastNoAckResponse
+	(*QueryCheckpointBufferRequest)(nil),    // 6: heimdallv2.checkpoint.QueryCheckpointBufferRequest
+	(*QueryCheckpointBufferResponse)(nil),   // 7: heimdallv2.checkpoint.QueryCheckpointBufferResponse
+	(*QueryCheckpointRequest)(nil),          // 8: heimdallv2.checkpoint.QueryCheckpointRequest
+	(*QueryCheckpointResponse)(nil),         // 9: heimdallv2.checkpoint.QueryCheckpointResponse
+	(*QueryCheckpointLatestRequest)(nil),    // 10: heimdallv2.checkpoint.QueryCheckpointLatestRequest
+	(*QueryCheckpointLatestResponse)(nil),   // 11: heimdallv2.checkpoint.QueryCheckpointLatestResponse
+	(*QueryNextCheckpointRequest)(nil),      // 12: heimdallv2.checkpoint.QueryNextCheckpointRequest
+	(*QueryNextCheckpointResponse)(nil),     // 13: heimdallv2.checkpoint.QueryNextCheckpointResponse
+	(*QueryCurrentProposerRequest)(nil),     // 14: heimdallv2.checkpoint.QueryCurrentProposerRequest
+	(*QueryCurrentProposerResponse)(nil),    // 15: heimdallv2.checkpoint.QueryCurrentProposerResponse
+	(*QueryProposerRequest)(nil),            // 16: heimdallv2.checkpoint.QueryProposerRequest
+	(*QueryProposerResponse)(nil),           // 17: heimdallv2.checkpoint.QueryProposerResponse
+	(*QueryCheckpointListRequest)(nil),      // 18: heimdallv2.checkpoint.QueryCheckpointListRequest
+	(*QueryCheckpointListResponse)(nil),     // 19: heimdallv2.checkpoint.QueryCheckpointListResponse
+	(*QueryCheckpointOverviewRequest)(nil),  // 20: heimdallv2.checkpoint.QueryCheckpointOverviewRequest
+	(*QueryCheckpointOverviewResponse)(nil), // 21: heimdallv2.checkpoint.QueryCheckpointOverviewResponse
+	(*Params)(nil),                          // 22: heimdallv2.checkpoint.Params
+	(*Checkpoint)(nil),                      // 23: heimdallv2.checkpoint.Checkpoint
+	(*MsgCheckpoint)(nil),                   // 24: heimdallv2.checkpoint.MsgCheckpoint
+	(*stake.Validator)(nil),                 // 25: heimdallv2.stake.Validator
+	(*v1beta1.PageRequest)(nil),             // 26: cosmos.base.query.v1beta1.PageRequest
+	(*v1beta1.PageResponse)(nil),            // 27: cosmos.base.query.v1beta1.PageResponse
+	(*stake.ValidatorSet)(nil),              // 28: heimdallv2.stake.ValidatorSet
 }
 var file_heimdallv2_checkpoint_query_proto_depIdxs = []int32{
-	20, // 0: heimdallv2.checkpoint.QueryParamsResponse.params:type_name -> heimdallv2.checkpoint.Params
-	21, // 1: heimdallv2.checkpoint.QueryCheckpointBufferResponse.checkpoint:type_name -> heimdallv2.checkpoint.Checkpoint
-	21, // 2: heimdallv2.checkpoint.QueryCheckpointResponse.checkpoint:type_name -> heimdallv2.checkpoint.Checkpoint
-	21, // 3: heimdallv2.checkpoint.QueryCheckpointLatestResponse.checkpoint:type_name -> heimdallv2.checkpoint.Checkpoint
-	22, // 4: heimdallv2.checkpoint.QueryNextCheckpointResponse.checkpoint:type_name -> heimdallv2.checkpoint.MsgCheckpoint
-	23, // 5: heimdallv2.checkpoint.QueryCurrentProposerResponse.validator:type_name -> heimdallv2.stake.Validator
-	23, // 6: heimdallv2.checkpoint.QueryProposerResponse.proposers:type_name -> heimdallv2.stake.Validator
-	24, // 7: heimdallv2.checkpoint.QueryCheckpointListRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
-	21, // 8: heimdallv2.checkpoint.QueryCheckpointListResponse.checkpoint_list:type_name -> heimdallv2.checkpoint.Checkpoint
-	25, // 9: heimdallv2.checkpoint.QueryCheckpointListResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
-	0,  // 10: heimdallv2.checkpoint.Query.GetCheckpointParams:input_type -> heimdallv2.checkpoint.QueryParamsRequest
-	2,  // 11: heimdallv2.checkpoint.Query.GetAckCount:input_type -> heimdallv2.checkpoint.QueryAckCountRequest
-	10, // 12: heimdallv2.checkpoint.Query.GetCheckpointLatest:input_type -> heimdallv2.checkpoint.QueryCheckpointLatestRequest
-	6,  // 13: heimdallv2.checkpoint.Query.GetCheckpointBuffer:input_type -> heimdallv2.checkpoint.QueryCheckpointBufferRequest
-	4,  // 14: heimdallv2.checkpoint.Query.GetLastNoAck:input_type -> heimdallv2.checkpoint.QueryLastNoAckRequest
-	12, // 15: heimdallv2.checkpoint.Query.GetNextCheckpoint:input_type -> heimdallv2.checkpoint.QueryNextCheckpointRequest
-	14, // 16: heimdallv2.checkpoint.Query.GetCurrentProposer:input_type -> heimdallv2.checkpoint.QueryCurrentProposerRequest
-	16, // 17: heimdallv2.checkpoint.Query.GetProposers:input_type -> heimdallv2.checkpoint.QueryProposerRequest
-	18, // 18: heimdallv2.checkpoint.Query.GetCheckpointList:input_type -> heimdallv2.checkpoint.QueryCheckpointListRequest
-	8,  // 19: heimdallv2.checkpoint.Query.GetCheckpoint:input_type -> heimdallv2.checkpoint.QueryCheckpointRequest
-	1,  // 20: heimdallv2.checkpoint.Query.GetCheckpointParams:output_type -> heimdallv2.checkpoint.QueryParamsResponse
-	3,  // 21: heimdallv2.checkpoint.Query.GetAckCount:output_type -> heimdallv2.checkpoint.QueryAckCountResponse
-	11, // 22: heimdallv2.checkpoint.Query.GetCheckpointLatest:output_type -> heimdallv2.checkpoint.QueryCheckpointLatestResponse
-	7,  // 23: heimdallv2.checkpoint.Query.GetCheckpointBuffer:output_type -> heimdallv2.checkpoint.QueryCheckpointBufferResponse
-	5,  // 24: heimdallv2.checkpoint.Query.GetLastNoAck:output_type -> heimdallv2.checkpoint.QueryLastNoAckResponse
-	13, // 25: heimdallv2.checkpoint.Query.GetNextCheckpoint:output_type -> heimdallv2.checkpoint.QueryNextCheckpointResponse
-	15, // 26: heimdallv2.checkpoint.Query.GetCurrentProposer:output_type -> heimdallv2.checkpoint.QueryCurrentProposerResponse
-	17, // 27: heimdallv2.checkpoint.Query.GetProposers:output_type -> heimdallv2.checkpoint.QueryProposerResponse
-	19, // 28: heimdallv2.checkpoint.Query.GetCheckpointList:output_type -> heimdallv2.checkpoint.QueryCheckpointListResponse
-	9,  // 29: heimdallv2.checkpoint.Query.GetCheckpoint:output_type -> heimdallv2.checkpoint.QueryCheckpointResponse
-	20, // [20:30] is the sub-list for method output_type
-	10, // [10:20] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	22, // 0: heimdallv2.checkpoint.QueryParamsResponse.params:type_name -> heimdallv2.checkpoint.Params
+	23, // 1: heimdallv2.checkpoint.QueryCheckpointBufferResponse.checkpoint:type_name -> heimdallv2.checkpoint.Checkpoint
+	23, // 2: heimdallv2.checkpoint.QueryCheckpointResponse.checkpoint:type_name -> heimdallv2.checkpoint.Checkpoint
+	23, // 3: heimdallv2.checkpoint.QueryCheckpointLatestResponse.checkpoint:type_name -> heimdallv2.checkpoint.Checkpoint
+	24, // 4: heimdallv2.checkpoint.QueryNextCheckpointResponse.checkpoint:type_name -> heimdallv2.checkpoint.MsgCheckpoint
+	25, // 5: heimdallv2.checkpoint.QueryCurrentProposerResponse.validator:type_name -> heimdallv2.stake.Validator
+	25, // 6: heimdallv2.checkpoint.QueryProposerResponse.proposers:type_name -> heimdallv2.stake.Validator
+	26, // 7: heimdallv2.checkpoint.QueryCheckpointListRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
+	23, // 8: heimdallv2.checkpoint.QueryCheckpointListResponse.checkpoint_list:type_name -> heimdallv2.checkpoint.Checkpoint
+	27, // 9: heimdallv2.checkpoint.QueryCheckpointListResponse.pagination:type_name -> cosmos.base.query.v1beta1.PageResponse
+	23, // 10: heimdallv2.checkpoint.QueryCheckpointOverviewResponse.buffer_checkpoint:type_name -> heimdallv2.checkpoint.Checkpoint
+	28, // 11: heimdallv2.checkpoint.QueryCheckpointOverviewResponse.validator_set:type_name -> heimdallv2.stake.ValidatorSet
+	0,  // 12: heimdallv2.checkpoint.Query.GetCheckpointParams:input_type -> heimdallv2.checkpoint.QueryParamsRequest
+	20, // 13: heimdallv2.checkpoint.Query.GetCheckpointOverview:input_type -> heimdallv2.checkpoint.QueryCheckpointOverviewRequest
+	2,  // 14: heimdallv2.checkpoint.Query.GetAckCount:input_type -> heimdallv2.checkpoint.QueryAckCountRequest
+	10, // 15: heimdallv2.checkpoint.Query.GetCheckpointLatest:input_type -> heimdallv2.checkpoint.QueryCheckpointLatestRequest
+	6,  // 16: heimdallv2.checkpoint.Query.GetCheckpointBuffer:input_type -> heimdallv2.checkpoint.QueryCheckpointBufferRequest
+	4,  // 17: heimdallv2.checkpoint.Query.GetLastNoAck:input_type -> heimdallv2.checkpoint.QueryLastNoAckRequest
+	12, // 18: heimdallv2.checkpoint.Query.GetNextCheckpoint:input_type -> heimdallv2.checkpoint.QueryNextCheckpointRequest
+	14, // 19: heimdallv2.checkpoint.Query.GetCurrentProposer:input_type -> heimdallv2.checkpoint.QueryCurrentProposerRequest
+	16, // 20: heimdallv2.checkpoint.Query.GetProposers:input_type -> heimdallv2.checkpoint.QueryProposerRequest
+	18, // 21: heimdallv2.checkpoint.Query.GetCheckpointList:input_type -> heimdallv2.checkpoint.QueryCheckpointListRequest
+	8,  // 22: heimdallv2.checkpoint.Query.GetCheckpoint:input_type -> heimdallv2.checkpoint.QueryCheckpointRequest
+	1,  // 23: heimdallv2.checkpoint.Query.GetCheckpointParams:output_type -> heimdallv2.checkpoint.QueryParamsResponse
+	21, // 24: heimdallv2.checkpoint.Query.GetCheckpointOverview:output_type -> heimdallv2.checkpoint.QueryCheckpointOverviewResponse
+	3,  // 25: heimdallv2.checkpoint.Query.GetAckCount:output_type -> heimdallv2.checkpoint.QueryAckCountResponse
+	11, // 26: heimdallv2.checkpoint.Query.GetCheckpointLatest:output_type -> heimdallv2.checkpoint.QueryCheckpointLatestResponse
+	7,  // 27: heimdallv2.checkpoint.Query.GetCheckpointBuffer:output_type -> heimdallv2.checkpoint.QueryCheckpointBufferResponse
+	5,  // 28: heimdallv2.checkpoint.Query.GetLastNoAck:output_type -> heimdallv2.checkpoint.QueryLastNoAckResponse
+	13, // 29: heimdallv2.checkpoint.Query.GetNextCheckpoint:output_type -> heimdallv2.checkpoint.QueryNextCheckpointResponse
+	15, // 30: heimdallv2.checkpoint.Query.GetCurrentProposer:output_type -> heimdallv2.checkpoint.QueryCurrentProposerResponse
+	17, // 31: heimdallv2.checkpoint.Query.GetProposers:output_type -> heimdallv2.checkpoint.QueryProposerResponse
+	19, // 32: heimdallv2.checkpoint.Query.GetCheckpointList:output_type -> heimdallv2.checkpoint.QueryCheckpointListResponse
+	9,  // 33: heimdallv2.checkpoint.Query.GetCheckpoint:output_type -> heimdallv2.checkpoint.QueryCheckpointResponse
+	23, // [23:34] is the sub-list for method output_type
+	12, // [12:23] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_checkpoint_query_proto_init() }
@@ -9528,6 +10676,30 @@ func file_heimdallv2_checkpoint_query_proto_init() {
 				return nil
 			}
 		}
+		file_heimdallv2_checkpoint_query_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryCheckpointOverviewRequest); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_heimdallv2_checkpoint_query_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*QueryCheckpointOverviewResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -9535,7 +10707,7 @@ func file_heimdallv2_checkpoint_query_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_heimdallv2_checkpoint_query_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -227,3 +227,36 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 
 	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: *pageRes}, nil
 }
+
+// GetChekpointOverview returns the checkpoint overview
+// which includes AckCount, LastNoAckId, BufferCheckpoint, ValidatorCount, and ValidatorSet
+func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCheckpointOverviewRequest) (*types.QueryCheckpointOverviewResponse, error) {
+	// get validator set
+	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	ackCount, err := q.k.GetAckCount(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	lastNoAck, err := q.k.GetLastNoAck(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	bufferCheckpoint, err := q.k.GetCheckpointFromBuffer(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryCheckpointOverviewResponse{
+		AckCount:         ackCount,
+		LastNoAckId:      lastNoAck,
+		BufferCheckpoint: bufferCheckpoint,
+		ValidatorCount:   uint64(len(validatorSet.Validators)),
+		ValidatorSet:     validatorSet,
+	}, nil
+}
