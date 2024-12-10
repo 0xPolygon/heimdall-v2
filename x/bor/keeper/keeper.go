@@ -307,7 +307,7 @@ func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash,
 		return common.Hash{}, err
 	}
 
-	blockHeader, err := k.contractCaller.GetBorChainBlock(big.NewInt(int64(borBlock)))
+	blockHeader, err := k.contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(borBlock)))
 	if err != nil {
 		k.Logger(ctx).Error("error fetching block header from bor chain while calculating next span seed", "error", err, "block", borBlock)
 		return common.Hash{}, err
