@@ -23,8 +23,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Set GOLANGCI_LINT_NEW_FROM_REV
-        run: echo "GOLANGCI_LINT_NEW_FROM_REV=origin/develop" >> $GITHUB_ENV
 
       - name: "Install linter deps"
         run: make lint-deps
