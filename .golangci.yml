@@ -7,25 +7,24 @@ run:
 
 linters:
   enable:
-    - goconst
-    - goimports
-    - misspell
-    - unconvert
     - bodyclose
     - containedctx
     - contextcheck
+    - copyloopvar
     - decorder
     - durationcheck
     - errchkjson
     - errname
     # - exhaustive
-    - copyloopvar
     # - gocognit
+    - goconst
     - gofmt
+    - goimports
     # - gomnd
     #- gomoddirectives
     - gosec
     - makezero
+    - misspell
     #- nestif
     - nilerr
     - nilnil
