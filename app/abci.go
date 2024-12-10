@@ -29,7 +29,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
 			return nil, err
 		}
@@ -115,7 +115,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
 			logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -180,7 +180,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
 			// create a cache wrapped context for stateless execution
-			ctx, _ = app.cacheTxContext(ctx, rawTx)
+			ctx, _ = app.cacheTxContext(ctx)
 			tx, err := app.TxDecode(rawTx)
 			if err != nil {
 				// This tx comes from a block that has already been pre-voted by >2/3 of the voting power, so this should never happen
@@ -235,6 +235,11 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		bz, err = consolidatedSideTxRes.Marshal()
 		if err != nil {
 			logger.Error("Error occurred while marshalling the ConsolidatedSideTxResponse in ExtendVoteHandler", "error", err)
+			return nil, err
+		}
+
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
 			return nil, err
 		}
 
@@ -356,7 +361,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	txs := lastBlockTxs.Txs
 
-	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, app.StakeKeeper)
+	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, app.StakeKeeper, logger)
 	if err != nil {
 		logger.Error("Error occurred while getting majority non-rp vote extension", "error", err)
 		return nil, err
@@ -365,7 +370,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
 	if approvedTxsMap[checkpointTxHash] {
 		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
-		app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures)
+		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
+			logger.Error("Error occurred while setting checkpoint signatures", "error", err)
+			return nil, err
+		}
 	}
 
 	// execute side txs
@@ -386,9 +394,16 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			for _, msg := range msgs {
 				postHandler := app.sideTxCfg.GetPostHandler(msg)
 				if postHandler != nil {
-					postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
+					// Create a new context based off of the existing context with a cache wrapped
+					// multi-store in case message processing fails.
+					postHandlerCtx, msCache := app.cacheTxContext(ctx)
+					if err := postHandler(postHandlerCtx, msg, sidetxs.Vote_VOTE_YES); err == nil {
+						msCache.Write()
+					}
+
 					executedPostHandlers++
 				}
+
 				// make sure only one post handler is executed
 				if executedPostHandlers > 0 {
 					break

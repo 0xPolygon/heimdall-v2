@@ -37,7 +37,7 @@ type Keeper struct {
 	lastNoAck          collections.Item[uint64]
 	ackCount           collections.Item[uint64]
 
-	checkpointSignatures types.CheckpointSignatures
+	checkpointSignatures collections.Item[types.CheckpointSignatures]
 }
 
 // NewKeeper creates a new checkpoint Keeper instance
@@ -78,7 +78,7 @@ func NewKeeper(
 		params:               collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
 		lastNoAck:            collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
 		ackCount:             collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
-		checkpointSignatures: types.CheckpointSignatures{},
+		checkpointSignatures: collections.NewItem(sb, types.CheckpointSignaturesPrefixKey, "checkpoint_signatures", codec.CollValue[types.CheckpointSignatures](cdc)),
 	}
 
 	// build the schema and set it in the keeper
@@ -305,11 +305,11 @@ func (k Keeper) IncrementAckCount(ctx context.Context) error {
 }
 
 // SetCheckpointSignatures stores the checkpoint signatures
-func (k Keeper) SetCheckpointSignatures(ctx context.Context, checkpointSignatures types.CheckpointSignatures) {
-	k.checkpointSignatures = checkpointSignatures
+func (k Keeper) SetCheckpointSignatures(ctx context.Context, checkpointSignatures types.CheckpointSignatures) error {
+	return k.checkpointSignatures.Set(ctx, checkpointSignatures)
 }
 
 // GetCheckpointSignatures retrives the checkpoint signatures
-func (k Keeper) GetCheckpointSignatures(ctx context.Context) types.CheckpointSignatures {
-	return k.checkpointSignatures
+func (k Keeper) GetCheckpointSignatures(ctx context.Context) (types.CheckpointSignatures, error) {
+	return k.checkpointSignatures.Get(ctx)
 }

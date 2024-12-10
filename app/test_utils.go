@@ -133,11 +133,13 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	return app, db, logger
 }
 func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
+	t.Helper()
 	validators := app.StakeKeeper.GetCurrentValidators(app.NewContext(true))
 	requestFinalizeBlock(t, app, height, validators)
 }
 
 func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validators []stakeTypes.Validator) {
+	t.Helper()
 	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
 	require.NoError(t, err)
 	consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"errors"
 	"strconv"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
@@ -134,30 +135,31 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 }
 
 // PostHandleMsgSpan handles state persisting span msg
-func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
+func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
-		logger.Error("MsgProposeSpan type mismatch", "msg type received", msg)
-		return
+		err := errors.New("MsgProposeSpan type mismatch")
+		logger.Error(err.Error(), "msg type received", msg)
+		return err
 	}
 
 	// Skip handler if span is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new span since side-tx didn't get yes votes")
-		return
+		return errors.New("side-tx didn't get yes votes")
 	}
 
 	// check for replay
 	ok, err := s.k.HasSpan(ctx, msg.SpanId)
 	if err != nil {
 		logger.Error("error occurred while checking for span", "span id", msg.SpanId, "error", err)
-		return
+		return err
 	}
 	if ok {
 		logger.Debug("skipping new span as it's already processed", "span id", msg.SpanId)
-		return
+		return errors.New("span already processed")
 	}
 
 	logger.Debug("persisting span state", "span id", msg.SpanId, "sideTxResult", sideTxResult)
@@ -165,14 +167,14 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	seedAuthor := common.HexToAddress(msg.SeedAuthor)
 	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, &seedAuthor); err != nil {
 		logger.Error("Unable to store seed producer", "error", err)
-		return
+		return err
 	}
 
 	// freeze for new span
 	err = s.k.FreezeSet(ctx, msg.SpanId, msg.StartBlock, msg.EndBlock, msg.ChainId, common.Hash(msg.Seed))
 	if err != nil {
 		logger.Error("unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
-		return
+		return err
 	}
 
 	txBytes := ctx.TxBytes()
@@ -192,4 +194,5 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		),
 	})
 
+	return nil
 }

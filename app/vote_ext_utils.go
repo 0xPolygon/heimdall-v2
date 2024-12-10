@@ -389,6 +389,7 @@ func ValidateNonRpVoteExtensions(
 	chainManagerKeeper chainManagerKeeper.Keeper,
 	checkpointKeeper checkpointKeeper.Keeper,
 	contractCaller helper.IContractCaller,
+	logger log.Logger,
 ) error {
 
 	if height == retrieveVoteExtensionsEnableHeight(ctx) {
@@ -396,7 +397,7 @@ func ValidateNonRpVoteExtensions(
 	}
 
 	// Check if there are 2/3 voting power for one same extension
-	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, stakeKeeper)
+	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, stakeKeeper, logger)
 	if err != nil {
 		return err
 	}
@@ -423,12 +424,12 @@ func ValidateNonRpVoteExtension(
 	contractCaller helper.IContractCaller,
 ) error {
 	// Check if its dummy vote non rp extension
-	prevHeightDummyExt, err := getDummyNonRpVoteExtension(height, ctx.ChainID())
+	dummyExt, err := getDummyNonRpVoteExtension(height, ctx.ChainID())
 	if err != nil {
 		return err
 	}
 
-	if bytes.Equal(extension, prevHeightDummyExt) {
+	if bytes.Equal(extension, dummyExt) {
 		// This is dummy vote extension, we have nothing else to check
 		return nil
 	}
@@ -481,7 +482,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 }
 
 // getMajorityNonRpVoteExtension returns the non-rp vote extension with atleast 2/3 voting power
-func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper) ([]byte, error) {
+func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) ([]byte, error) {
 	// Fetch validatorSet from previous block
 	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
 	if err != nil {
@@ -489,8 +490,6 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 	}
 
 	ac := address.HexCodec{}
-
-	var totalVotingPower = validatorSet.GetTotalVotingPower()
 
 	hashToExt := make(map[string][]byte)
 	hashToVotingPower := make(map[string]int64)
@@ -520,6 +519,10 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 		hashToVotingPower[hash] += validator.VotingPower
 	}
 
+	if len(hashToVotingPower) > 1 {
+		logger.Error("MULTIPLE NON-RP VOTE EXTENSIONS DETECTED, THERE SHOULD BE ONLY ONE - POSSIBLE MALICIOUS ACTIVITY")
+	}
+
 	var maxVotingPower int64
 	var maxHash string
 	for hash, votingPower := range hashToVotingPower {
@@ -527,12 +530,6 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 			maxVotingPower = votingPower
 			maxHash = hash
 		}
-	}
-
-	majorityVP := totalVotingPower * 2 / 3
-
-	if maxVotingPower <= majorityVP {
-		return nil, fmt.Errorf("insufficient cumulative voting power received to verify non rp vote extensions: got %d, expected >= %d", maxVotingPower, majorityVP)
 	}
 
 	return hashToExt[maxHash], nil
@@ -625,7 +622,7 @@ func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logge
 
 				signBytes := checkpointMsg.GetSideSignBytes()
 
-				if bytes.Compare(signBytes, extension) == 0 {
+				if bytes.Equal(signBytes, extension) {
 					var txBytes cometTypes.Tx = rawTx
 					return common.Bytes2Hex(txBytes.Hash())
 				}
