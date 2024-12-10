@@ -101,3 +101,33 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 
 	return &types.RecordSequenceResponse{Sequence: sequence.Uint64()}, nil
 }
+
+// IsClerkTxOld implements the gRPC service handler to query the status of a clerk tx
+func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequenceRequest) (*types.IsClerkTxOldResponse, error) {
+	if request == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// get main tx receipt
+	txHash := common.FromHex(request.TxHash)
+	receipt, err := q.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(txHash), chainParams.GetMainChainTxConfirmations())
+	if err != nil || receipt == nil {
+		return nil, status.Errorf(codes.Internal, "transaction is not confirmed yet. please wait for sometime and try again")
+	}
+
+	// sequence id
+	sequence := new(big.Int).Mul(receipt.BlockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
+	sequence.Add(sequence, new(big.Int).SetUint64(request.LogIndex))
+
+	// check if incoming tx already exists
+	if !q.k.HasRecordSequence(ctx, sequence.String()) {
+		return nil, status.Error(codes.NotFound, "record sequence not found")
+	}
+
+	return &types.IsClerkTxOldResponse{IsOld: true}, nil
+}

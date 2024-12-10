@@ -19,16 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_GetCheckpointParams_FullMethodName = "/heimdallv2.checkpoint.Query/GetCheckpointParams"
-	Query_GetAckCount_FullMethodName         = "/heimdallv2.checkpoint.Query/GetAckCount"
-	Query_GetCheckpointLatest_FullMethodName = "/heimdallv2.checkpoint.Query/GetCheckpointLatest"
-	Query_GetCheckpointBuffer_FullMethodName = "/heimdallv2.checkpoint.Query/GetCheckpointBuffer"
-	Query_GetLastNoAck_FullMethodName        = "/heimdallv2.checkpoint.Query/GetLastNoAck"
-	Query_GetNextCheckpoint_FullMethodName   = "/heimdallv2.checkpoint.Query/GetNextCheckpoint"
-	Query_GetCurrentProposer_FullMethodName  = "/heimdallv2.checkpoint.Query/GetCurrentProposer"
-	Query_GetProposers_FullMethodName        = "/heimdallv2.checkpoint.Query/GetProposers"
-	Query_GetCheckpointList_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointList"
-	Query_GetCheckpoint_FullMethodName       = "/heimdallv2.checkpoint.Query/GetCheckpoint"
+	Query_GetCheckpointParams_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointParams"
+	Query_GetCheckpointOverview_FullMethodName = "/heimdallv2.checkpoint.Query/GetCheckpointOverview"
+	Query_GetAckCount_FullMethodName           = "/heimdallv2.checkpoint.Query/GetAckCount"
+	Query_GetCheckpointLatest_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointLatest"
+	Query_GetCheckpointBuffer_FullMethodName   = "/heimdallv2.checkpoint.Query/GetCheckpointBuffer"
+	Query_GetLastNoAck_FullMethodName          = "/heimdallv2.checkpoint.Query/GetLastNoAck"
+	Query_GetNextCheckpoint_FullMethodName     = "/heimdallv2.checkpoint.Query/GetNextCheckpoint"
+	Query_GetCurrentProposer_FullMethodName    = "/heimdallv2.checkpoint.Query/GetCurrentProposer"
+	Query_GetProposers_FullMethodName          = "/heimdallv2.checkpoint.Query/GetProposers"
+	Query_GetCheckpointList_FullMethodName     = "/heimdallv2.checkpoint.Query/GetCheckpointList"
+	Query_GetCheckpoint_FullMethodName         = "/heimdallv2.checkpoint.Query/GetCheckpoint"
 )
 
 // QueryClient is the client API for Query service.
@@ -37,6 +38,8 @@ const (
 type QueryClient interface {
 	// GetCheckpointParams queries for the x/checkpoint params
 	GetCheckpointParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// GetChekpointOverview queries for the checkpoint overview
+	GetCheckpointOverview(ctx context.Context, in *QueryCheckpointOverviewRequest, opts ...grpc.CallOption) (*QueryCheckpointOverviewResponse, error)
 	// GetAckCount queries for the ack count
 	GetAckCount(ctx context.Context, in *QueryAckCountRequest, opts ...grpc.CallOption) (*QueryAckCountResponse, error)
 	// GetCheckpointLatest queries for the latest checkpoint
@@ -68,6 +71,15 @@ func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 func (c *queryClient) GetCheckpointParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
 	err := c.cc.Invoke(ctx, Query_GetCheckpointParams_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetCheckpointOverview(ctx context.Context, in *QueryCheckpointOverviewRequest, opts ...grpc.CallOption) (*QueryCheckpointOverviewResponse, error) {
+	out := new(QueryCheckpointOverviewResponse)
+	err := c.cc.Invoke(ctx, Query_GetCheckpointOverview_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -161,6 +173,8 @@ func (c *queryClient) GetCheckpoint(ctx context.Context, in *QueryCheckpointRequ
 type QueryServer interface {
 	// GetCheckpointParams queries for the x/checkpoint params
 	GetCheckpointParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// GetChekpointOverview queries for the checkpoint overview
+	GetCheckpointOverview(context.Context, *QueryCheckpointOverviewRequest) (*QueryCheckpointOverviewResponse, error)
 	// GetAckCount queries for the ack count
 	GetAckCount(context.Context, *QueryAckCountRequest) (*QueryAckCountResponse, error)
 	// GetCheckpointLatest queries for the latest checkpoint
@@ -188,6 +202,9 @@ type UnimplementedQueryServer struct {
 
 func (UnimplementedQueryServer) GetCheckpointParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCheckpointParams not implemented")
+}
+func (UnimplementedQueryServer) GetCheckpointOverview(context.Context, *QueryCheckpointOverviewRequest) (*QueryCheckpointOverviewResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCheckpointOverview not implemented")
 }
 func (UnimplementedQueryServer) GetAckCount(context.Context, *QueryAckCountRequest) (*QueryAckCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAckCount not implemented")
@@ -243,6 +260,24 @@ func _Query_GetCheckpointParams_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).GetCheckpointParams(ctx, req.(*QueryParamsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetCheckpointOverview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCheckpointOverviewRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetCheckpointOverview(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetCheckpointOverview_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetCheckpointOverview(ctx, req.(*QueryCheckpointOverviewRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -419,6 +454,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCheckpointParams",
 			Handler:    _Query_GetCheckpointParams_Handler,
+		},
+		{
+			MethodName: "GetCheckpointOverview",
+			Handler:    _Query_GetCheckpointOverview_Handler,
 		},
 		{
 			MethodName: "GetAckCount",

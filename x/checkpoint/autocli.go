@@ -21,6 +21,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
+					RpcMethod:      "GetCheckpointOverview",
+					Use:            "get-overview",
+					Short:          "Get checkpoint overview",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
+				},
+				{
 					RpcMethod:      "GetAckCount",
 					Use:            "get-ack-count",
 					Short:          "Get checkpoint ack count",
