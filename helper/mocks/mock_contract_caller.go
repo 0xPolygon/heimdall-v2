@@ -10,6 +10,8 @@ import (
 
 	erc20 "github.com/0xPolygon/heimdall-v2/contracts/erc20"
 
+	helper "github.com/0xPolygon/heimdall-v2/helper"
+
 	mock "github.com/stretchr/testify/mock"
 
 	rootchain "github.com/0xPolygon/heimdall-v2/contracts/rootchain"
@@ -669,61 +671,31 @@ func (_m *IContractCaller) GetConfirmedTxReceipt(_a0 common.Hash, _a1 uint64) (*
 }
 
 // GetHeaderInfo provides a mock function with given fields: headerID, rootChainInstance, childBlockInterval
-func (_m *IContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (common.Hash, uint64, uint64, uint64, string, error) {
+func (_m *IContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (helper.HeaderInfo, error) {
 	ret := _m.Called(headerID, rootChainInstance, childBlockInterval)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetHeaderInfo")
 	}
 
-	var r0 common.Hash
-	var r1 uint64
-	var r2 uint64
-	var r3 uint64
-	var r4 string
-	var r5 error
-	if rf, ok := ret.Get(0).(func(uint64, *rootchain.Rootchain, uint64) (common.Hash, uint64, uint64, uint64, string, error)); ok {
+	var r0 helper.HeaderInfo
+	var r1 error
+	if rf, ok := ret.Get(0).(func(uint64, *rootchain.Rootchain, uint64) (helper.HeaderInfo, error)); ok {
 		return rf(headerID, rootChainInstance, childBlockInterval)
 	}
-	if rf, ok := ret.Get(0).(func(uint64, *rootchain.Rootchain, uint64) common.Hash); ok {
+	if rf, ok := ret.Get(0).(func(uint64, *rootchain.Rootchain, uint64) helper.HeaderInfo); ok {
 		r0 = rf(headerID, rootChainInstance, childBlockInterval)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(common.Hash)
-		}
+		r0 = ret.Get(0).(helper.HeaderInfo)
 	}
 
-	if rf, ok := ret.Get(1).(func(uint64, *rootchain.Rootchain, uint64) uint64); ok {
+	if rf, ok := ret.Get(1).(func(uint64, *rootchain.Rootchain, uint64) error); ok {
 		r1 = rf(headerID, rootChainInstance, childBlockInterval)
 	} else {
-		r1 = ret.Get(1).(uint64)
+		r1 = ret.Error(1)
 	}
 
-	if rf, ok := ret.Get(2).(func(uint64, *rootchain.Rootchain, uint64) uint64); ok {
-		r2 = rf(headerID, rootChainInstance, childBlockInterval)
-	} else {
-		r2 = ret.Get(2).(uint64)
-	}
-
-	if rf, ok := ret.Get(3).(func(uint64, *rootchain.Rootchain, uint64) uint64); ok {
-		r3 = rf(headerID, rootChainInstance, childBlockInterval)
-	} else {
-		r3 = ret.Get(3).(uint64)
-	}
-
-	if rf, ok := ret.Get(4).(func(uint64, *rootchain.Rootchain, uint64) string); ok {
-		r4 = rf(headerID, rootChainInstance, childBlockInterval)
-	} else {
-		r4 = ret.Get(4).(string)
-	}
-
-	if rf, ok := ret.Get(5).(func(uint64, *rootchain.Rootchain, uint64) error); ok {
-		r5 = rf(headerID, rootChainInstance, childBlockInterval)
-	} else {
-		r5 = ret.Error(5)
-	}
-
-	return r0, r1, r2, r3, r4, r5
+	return r0, r1
 }
 
 // GetLastChildBlock provides a mock function with given fields: rootChainInstance

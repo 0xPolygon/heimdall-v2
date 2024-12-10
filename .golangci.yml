@@ -12,6 +12,7 @@ linters:
     - contextcheck
     - copyloopvar
     - decorder
+    - dogsled
     - durationcheck
     - errchkjson
     - errname
