@@ -48,7 +48,12 @@ lint-deps:
 
 .PHONY: lint
 lint:
-	@./build/bin/golangci-lint run --config ./.golangci.yml
+	@if [ -n "$(NEW_FROM_REV)" ]; then \
+		echo "NEW_FROM_REV is set to: $(NEW_FROM_REV)"; \
+	else \
+		echo "NEW_FROM_REV is not set"; \
+	fi
+	@./build/bin/golangci-lint run --config ./.golangci.yml $(if $(NEW_FROM_REV),--new-from-rev $(NEW_FROM_REV))
 
 
 ###############################################################################

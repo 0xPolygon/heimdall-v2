@@ -58,7 +58,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 	for {
 		select {
 		case <-ticker.C:
-			sp.checkAndPropose()
+			sp.checkAndPropose(ctx)
 		case <-ctx.Done():
 			sp.Logger.Info("Polling stopped")
 			ticker.Stop()
@@ -69,7 +69,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 }
 
 // checkAndPropose - will check if current user is span proposer and proposes the span
-func (sp *SpanProcessor) checkAndPropose() {
+func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	lastSpan, err := sp.getLastSpan()
 	if err != nil {
 		sp.Logger.Error("Unable to fetch last span", "error", err)
@@ -90,14 +90,14 @@ func (sp *SpanProcessor) checkAndPropose() {
 
 	// check if current user is among next span producers
 	if sp.isSpanProposer(nextSpanMsg.SelectedProducers) {
-		go sp.propose(lastSpan, nextSpanMsg)
+		go sp.propose(ctx, lastSpan, nextSpanMsg)
 	}
 }
 
 // propose producers for next span if needed
-func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) {
+func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, nextSpanMsg *types.Span) {
 	// call with last span on record + new span duration and see if it has been proposed
-	currentBlock, err := sp.getCurrentChildBlock()
+	currentBlock, err := sp.getCurrentChildBlock(ctx)
 	if err != nil {
 		sp.Logger.Error("Unable to fetch current block", "error", err)
 		return
@@ -157,8 +157,8 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 }
 
 // getCurrentChildBlock gets the current child block
-func (sp *SpanProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := sp.contractCaller.GetBorChainBlock(nil)
+func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, error) {
+	childBlock, err := sp.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
 		return 0, err
 	}

@@ -56,7 +56,7 @@ func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validato
 	validator, err = k.validators.Get(ctx, util.FormatAddress(address))
 
 	if err != nil {
-		return validator, fmt.Errorf(fmt.Sprintf("error while fetching the validator from the store %v", err))
+		return validator, fmt.Errorf("error while fetching the validator from the store %v", err)
 	}
 
 	return validator, nil

@@ -18,7 +18,8 @@ const (
 	MainChainTxConfirmations = "main_chain_tx_confirmations"
 	BorChainTxConfirmations  = "bor_chain_tx_confirmations"
 
-	BorChainID            = "bor_chain_id"
+	BorChainID = "bor_chain_id"
+	// #nosec G101 -- suppress gosec warning
 	PolTokenAddress       = "pol_token_address"
 	StakingManagerAddress = "staking_manager_address"
 	SlashManagerAddress   = "slash_manager_address"

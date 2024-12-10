@@ -12,7 +12,7 @@ import (
 )
 
 // selectNextProducers selects producers for next span
-func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketypes.Validator, producerCount uint64) ([]uint64, error) {
+func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketypes.Validator, producerCount uint64) []uint64 {
 	selectedProducers := make([]uint64, 0)
 
 	if len(spanEligibleValidators) <= int(producerCount) {
@@ -20,12 +20,13 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketype
 			selectedProducers = append(selectedProducers, validator.ValId)
 		}
 
-		return selectedProducers, nil
+		return selectedProducers
 	}
 
 	// extract seed from hash
 	seedBytes := helper.ToBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
+	// #nosec G404 -- suppress gosec warning as predictable randomness is required
 	r := rand.New(rand.NewSource(seed))
 
 	// weighted range from validators' voting power
@@ -48,7 +49,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketype
 		selectedProducers = append(selectedProducers, spanEligibleValidators[index].ValId)
 	}
 
-	return selectedProducers[:producerCount], nil
+	return selectedProducers[:producerCount]
 }
 
 func binarySearch(array []uint64, search uint64) int {

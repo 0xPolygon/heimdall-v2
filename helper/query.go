@@ -325,11 +325,11 @@ func GetFinalizeBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event
 }
 
 // GetBeginBlockEvents get block through per height
-func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, error) {
+func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height int64) ([]abci.Event, error) {
 	var events []abci.Event
 	var err error
 
-	c, cancel := context.WithTimeout(context.Background(), CommitTimeout)
+	c, cancel := context.WithTimeout(ctx, CommitTimeout)
 	defer cancel()
 
 	// get block using client
@@ -376,6 +376,4 @@ func GetBeginBlockEvents(client *httpClient.HTTP, height int64) ([]abci.Event, e
 			return events, errors.New("timed out waiting for event")
 		}
 	}
-
-	return events, err
 }

@@ -58,7 +58,7 @@ type IContractCaller interface {
 	SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error)
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
-	GetBorChainBlock(*big.Int) (*ethTypes.Header, error)
+	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
@@ -442,7 +442,7 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
 
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-	if err != nil && &stakerDetails != nil {
+	if err != nil {
 		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
 		return
 	}
@@ -507,8 +507,8 @@ func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uin
 }
 
 // GetBorChainBlock returns bor chain block header
-func (c *ContractCaller) GetBorChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
+func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int) (header *ethTypes.Header, err error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
 	var latestBlock *ethTypes.Header
@@ -884,10 +884,10 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 	error,
 ) {
 	d, err := validatorSetInstance.GetSpan(nil, id)
-	if &d != nil {
-		return d.Number, d.StartBlock, d.EndBlock, err
+	if err != nil {
+		return nil, nil, nil, errors.New("unable to get span details")
 	}
-	return nil, nil, nil, errors.New("unable to get span details")
+	return d.Number, d.StartBlock, d.EndBlock, err
 }
 
 // CurrentStateCounter get state counter

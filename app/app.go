@@ -3,13 +3,14 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/0xPolygon/heimdall-v2/client/docs"
-	"github.com/gorilla/mux"
 	"io"
 	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/0xPolygon/heimdall-v2/client/docs"
+	"github.com/gorilla/mux"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -306,7 +307,7 @@ func NewHeimdallApp(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-			// register the governance hooks
+		// register the governance hooks
 		),
 	)
 

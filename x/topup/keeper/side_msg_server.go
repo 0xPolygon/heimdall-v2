@@ -98,7 +98,16 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 
 	ac := address.NewHexCodec()
 	msgAddrBytes, err := ac.StringToBytes(msg.User)
+	if err != nil {
+		logger.Error("error converting msg.User to bytes", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	eventLogBytes, err := ac.StringToBytes(eventLog.User.String())
+	if err != nil {
+		logger.Error("error converting eventLog.User to bytes", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
 
 	if !bytes.Equal(eventLogBytes, msgAddrBytes) {
 		logger.Error(

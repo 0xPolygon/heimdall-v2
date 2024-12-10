@@ -114,23 +114,25 @@ func NewMsgCpAck(
 
 // ValidateBasic validate basic
 func (msg MsgCpAck) ValidateBasic(ac address.Codec) error {
-	addrBytes, err := ac.StringToBytes(msg.From)
+	// Validate sender (msg.From)
+	fromBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
-	accAddr := sdk.AccAddress(addrBytes)
-
-	if accAddr.Empty() {
+	fromAccAddr := sdk.AccAddress(fromBytes)
+	if fromAccAddr.Empty() {
 		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
-	addrBytes, err = ac.StringToBytes(msg.Proposer)
+	// Validate proposer (msg.Proposer)
+	proposerBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
-	if accAddr.Empty() {
+	proposerAccAddr := sdk.AccAddress(proposerBytes)
+	if proposerAccAddr.Empty() {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 

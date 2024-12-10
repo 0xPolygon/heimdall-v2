@@ -298,7 +298,7 @@ func (k Keeper) IncrementAckCount(ctx context.Context) error {
 	// get current ACK Count
 	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
-		return nil
+		return fmt.Errorf("error while fetching the ack count: %w", err)
 	}
 
 	return k.ackCount.Set(ctx, ackCount+1)

@@ -78,7 +78,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	// fetch current child block
-	childBlock, err := s.k.contractCaller.GetBorChainBlock(nil)
+	childBlock, err := s.k.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
 		logger.Error("error fetching current child block", "error", err)
 		return sidetxs.Vote_UNSPECIFIED
