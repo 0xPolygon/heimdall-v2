@@ -58,7 +58,7 @@ type IContractCaller interface {
 	SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error)
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
-	GetBorChainBlock(*big.Int) (*ethTypes.Header, error)
+	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
@@ -507,8 +507,8 @@ func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uin
 }
 
 // GetBorChainBlock returns bor chain block header
-func (c *ContractCaller) GetBorChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
+func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int) (header *ethTypes.Header, err error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
 	var latestBlock *ethTypes.Header
