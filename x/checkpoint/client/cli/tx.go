@@ -45,7 +45,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-checkpoint",
 		Short: "send checkpoint to cometBFT and ethereum",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -160,7 +160,7 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-ack",
 		Short: "send acknowledgement for checkpoint in buffer",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err

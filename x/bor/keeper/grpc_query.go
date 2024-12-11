@@ -171,7 +171,7 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 	spans, pageRes, err := query.CollectionPaginate(
 		ctx,
 		q.k.spans,
-		&req.Pagination, func(id uint64, span types.Span) (types.Span, error) {
+		&req.Pagination, func(id uint64, _ types.Span) (types.Span, error) {
 			return q.k.GetSpan(ctx, id)
 		},
 	)

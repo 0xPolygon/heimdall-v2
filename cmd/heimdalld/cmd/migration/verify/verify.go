@@ -23,6 +23,7 @@ import (
 
 // VerifyMigration verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
 // and verifying balances, validators, bor spans, clerk events, and checkpoints
+// revive:disable-next-line exported
 func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger) error {
 	logger.Info("Verifying migration")
 

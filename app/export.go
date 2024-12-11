@@ -12,8 +12,8 @@ import (
 // file.
 func (app *HeimdallApp) ExportAppStateAndValidators(
 	// TODO HV2: remove unused args?
-	forZeroHeight bool,
-	jailAllowedAddrs []string,
+	_ bool,
+	_ []string,
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
 	// as if they could withdraw from the start of the next block

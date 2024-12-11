@@ -17,6 +17,7 @@ const (
 )
 
 // ListenerService starts and stops all chain event listeners
+// revive:disable-next-line exported
 type ListenerService struct {
 	// Base service
 	common.BaseService

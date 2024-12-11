@@ -24,7 +24,7 @@ const (
 )
 
 // NewResponse creates a new Response instance
-func NewResponse(height int64, result json.RawMessage) Response {
+func NewResponse(_ int64, result json.RawMessage) Response {
 	return Response{
 		Result: result,
 	}

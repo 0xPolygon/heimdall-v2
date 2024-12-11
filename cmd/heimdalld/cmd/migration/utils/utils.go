@@ -139,7 +139,7 @@ func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) er
 }
 
 // MigrateValidator migrates a single validator to the new format by renaming few fields and migrating the public key to proto encoding.
-func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) error {
+func MigrateValidator(_ codec.Codec, validator map[string]interface{}) error {
 	if err := RenameProperty(validator, ".", "power", "voting_power"); err != nil {
 		return fmt.Errorf("failed to rename power field: %w", err)
 	}

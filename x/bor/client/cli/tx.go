@@ -38,7 +38,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "propose-span",
 		Short: "send propose span tx",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err

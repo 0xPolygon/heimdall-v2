@@ -254,12 +254,12 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 	}
 
 	// select next producers using seed as block header hash
-	newProducersIds := selectNextProducers(seed, spanEligibleVals, producerCount)
+	newProducersIDs := selectNextProducers(seed, spanEligibleVals, producerCount)
 
-	vals := make([]staketypes.Validator, 0, len(newProducersIds))
+	vals := make([]staketypes.Validator, 0, len(newProducersIDs))
 
 	IDToPower := make(map[uint64]uint64)
-	for _, ID := range newProducersIds {
+	for _, ID := range newProducersIDs {
 		IDToPower[ID] = IDToPower[ID] + 1
 	}
 

@@ -66,7 +66,7 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 // TODO HV2: check usage testOpts (in v1 they are used because BuildAndBroadcastMsgs is invoked)
 
 // BroadcastToHeimdall broadcast to heimdall
-func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, testOpts ...*helper.TestOpts) (*sdk.TxResponse, error) {
+func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, _ ...*helper.TestOpts) (*sdk.TxResponse, error) {
 	tb.heimdallMutex.Lock()
 	defer tb.heimdallMutex.Unlock()
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "BroadcastToHeimdall", time.Now())
@@ -137,7 +137,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 
 	tb.logger.Info("Tx sent on heimdall", "txHash", txHash, "accSeq", tb.lastSeqNo, "accNum", tb.accNum, "txResponse", txResponse)
 	// increment account sequence
-	tb.lastSeqNo += 1
+	tb.lastSeqNo++
 
 	return txResponse, nil
 }

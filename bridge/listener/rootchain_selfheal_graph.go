@@ -41,7 +41,7 @@ type stateSyncResponse struct {
 	} `json:"data"`
 }
 
-func (rl *RootChainListener) querySubGraph(query []byte, ctx context.Context) (data []byte, err error) {
+func (rl *RootChainListener) querySubGraph(ctx context.Context, query []byte) (data []byte, err error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, rl.subGraphClient.graphURL, bytes.NewBuffer(query))
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, er
 		return nil, err
 	}
 
-	data, err := rl.querySubGraph(byteQuery, ctx)
+	data, err := rl.querySubGraph(ctx, byteQuery)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %w", err)
 	}
@@ -139,7 +139,7 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateID int64) (*
 		return nil, err
 	}
 
-	data, err := rl.querySubGraph(byteQuery, ctx)
+	data, err := rl.querySubGraph(ctx, byteQuery)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %w", err)
 	}
@@ -184,7 +184,7 @@ func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorID uin
 		return 0, err
 	}
 
-	data, err := rl.querySubGraph(byteQuery, ctx)
+	data, err := rl.querySubGraph(ctx, byteQuery)
 	if err != nil {
 		return 0, fmt.Errorf("unable to fetch latest nonce from graph with err: %w", err)
 	}
@@ -224,7 +224,7 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorID, no
 		return nil, err
 	}
 
-	data, err := rl.querySubGraph(byteQuery, ctx)
+	data, err := rl.querySubGraph(ctx, byteQuery)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch stake update from graph with err: %w", err)
 	}

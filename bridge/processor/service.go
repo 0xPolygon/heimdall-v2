@@ -15,6 +15,7 @@ const (
 )
 
 // ProcessorService starts and stops all event processors
+// revive:disable-next-line exported
 type ProcessorService struct {
 	// Base service
 	common.BaseService

@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 	Use:     "heimdall-bridge",
 	Aliases: []string{"bridge"},
 	Short:   "Heimdall bridge daemon",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 		if cmd.Use != version.Cmd.Use {
 			// initialize cometbft viper config
 			initCometBFTViperConfig(cmd)
@@ -43,7 +43,7 @@ var rootCmd = &cobra.Command{
 			initMetrics()
 		}
 	},
-	PostRunE: func(cmd *cobra.Command, args []string) error {
+	PostRunE: func(_ *cobra.Command, _ []string) error {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 		defer cancel()
 

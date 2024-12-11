@@ -158,7 +158,7 @@ func ErrEmptySubspace(_ string) error {
 }
 
 // ErrEmptyKey returns an error for when an empty key is given.
-func ErrEmptyKey(codespace string) error {
+func ErrEmptyKey(_ string) error {
 	return fmt.Errorf("parameter key is empty")
 }
 

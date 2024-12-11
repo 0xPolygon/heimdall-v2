@@ -8,6 +8,7 @@ import (
 )
 
 // QueueConnector is used to connect to the queue
+// revive:disable-next-line exported
 type QueueConnector struct {
 	logger log.Logger
 	Server *machinery.Server

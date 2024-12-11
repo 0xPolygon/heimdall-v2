@@ -112,7 +112,7 @@ func CryptoKeyToPubKey(key crypto.PubKey) secp256k1.PubKey {
 }
 
 // GetSignerInfo returns signer information
-func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
+func GetSignerInfo(pub crypto.PubKey, privKey []byte, _ *codec.LegacyAmino) ValidatorAccountFormatter {
 	privKeyObject := secp256k1.PrivKey(privKey)
 	pubKeyObject := secp256k1.PubKey(pub.Bytes())
 
@@ -175,7 +175,7 @@ func initRootCmd(
 			startCmd.Flags().Bool(helper.AllProcessesFlag, false, "Enable all bridge processes")
 			startCmd.Flags().Bool(helper.OnlyProcessesFlag, false, "Enable only the specified bridge process(es)")
 		},
-		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+		PostSetup: func(_ *server.Context, _ client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
 			// wait for rest server to start
@@ -378,7 +378,7 @@ func generateKeystore() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate-keystore",
 		Short: "Generates keystore file",
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			pk, err := ethcrypto.GenerateKey()
 			if err != nil {
 				return err
@@ -401,7 +401,7 @@ func importKeyStore() *cobra.Command {
 		Use:   "import-keystore <keystore-file>",
 		Short: "Import keystore from a private key stored in file (without 0x prefix)",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			pk, err := ethcrypto.LoadECDSA(args[0])
 			if err != nil {
 				return err
@@ -423,7 +423,7 @@ func generateValidatorKey() *cobra.Command {
 		Use:   "generate-validator-key",
 		Short: "Generate validator key",
 		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		RunE: func(_ *cobra.Command, _ []string) error {
 			// generate private key
 			privKeyObject := secp256k1.GenPrivKey()
 
@@ -457,7 +457,7 @@ func importValidatorKey() *cobra.Command {
 	return &cobra.Command{
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(_ *cobra.Command, args []string) error {
 			pk, err := ethcrypto.LoadECDSA(args[0])
 			if err != nil {
 				return err
@@ -495,7 +495,7 @@ func showPrivateKeyCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "show-private-key",
 		Short: "Print the account's private key",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			// init heimdall config
 			helper.InitHeimdallConfig("")
 

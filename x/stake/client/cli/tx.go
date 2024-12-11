@@ -46,7 +46,7 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "validator-join",
 		Short: "send validator join tx",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err
@@ -179,7 +179,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "signer-update",
 		Short: "Update signer for a validator",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
 			if err != nil {
 				return err

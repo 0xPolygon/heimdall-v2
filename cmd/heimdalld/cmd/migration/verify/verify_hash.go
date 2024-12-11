@@ -23,6 +23,7 @@ const (
 
 // VerifyMigratedGenesisHash verifies the SHA256 hash of the migrated genesis file against a remote precomputed hash.
 // It computes the hash of the local file, fetches the precomputed hash from the remote JSON file, then compares the two hashes.
+// revive:disable-next-line exported
 func VerifyMigratedGenesisHash(migratedGenesisFilePath string, logger logger.Logger) error {
 	logger.Info("Generating migrated genesis hash...")
 

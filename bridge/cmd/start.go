@@ -209,9 +209,8 @@ func StartBridge(isStandAlone bool) {
 		if !util.IsCatchingUp(cliCtx) {
 			logger.Info("Node upto date, starting bridge services")
 			break
-		} else {
-			logger.Info("Waiting for heimdall to be synced")
 		}
+		logger.Info("Waiting for heimdall to be synced")
 
 		time.Sleep(waitDuration)
 	}
@@ -239,7 +238,7 @@ func GetStartCmd() *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start bridge server",
-		Run: func(cmd *cobra.Command, args []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			StartBridge(true)
 		},
 	}

@@ -11,7 +11,7 @@ import (
 var purgeCmd = &cobra.Command{
 	Use:   "purge-queue",
 	Short: "Reset bridge queue tasks",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		// purge Queue
 		purgeQueue()
 	},

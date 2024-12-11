@@ -241,7 +241,7 @@ var Logger logger.Logger
 // GenesisDoc contains the genesis file
 var GenesisDoc cmTypes.GenesisDoc
 
-var milestoneBorBlockHeight uint64 = 0
+var milestoneBorBlockHeight uint64
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -1013,9 +1013,8 @@ func GetLogsWriter(logsWriterFile string) io.Writer {
 		}
 
 		return logWriter
-	} else {
-		return os.Stdout
 	}
+	return os.Stdout
 }
 
 // GetBorGRPCClient returns bor gRPC client

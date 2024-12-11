@@ -132,7 +132,7 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 	counter := 0
 
 	// Use Walk to iterate over the records
-	err := k.RecordsWithID.Walk(ctx, nil, func(key uint64, record types.EventRecord) (bool, error) {
+	err := k.RecordsWithID.Walk(ctx, nil, func(_ uint64, record types.EventRecord) (bool, error) {
 		// If the current index is within the desired range, add the record to the slice
 		if counter >= startIndex && counter < endIndex {
 			records = append(records, record)
