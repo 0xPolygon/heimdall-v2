@@ -42,8 +42,8 @@ func genBorChainTxConfirmations(r *rand.Rand) uint64 {
 	return uint64(r.Intn(100) + 1)
 }
 
-// genBorChainId returns a randomized bor chain id
-func genBorChainId(r *rand.Rand) string {
+// genBorChainID returns a randomized bor chain id
+func genBorChainID(r *rand.Rand) string {
 	return strconv.Itoa(r.Intn(math.MaxInt32))
 }
 
@@ -76,7 +76,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 	})
 
 	simState.AppParams.GetOrGenerate(BorChainID, &borChainID, simState.Rand, func(r *rand.Rand) {
-		borChainID = genBorChainId(r)
+		borChainID = genBorChainID(r)
 	})
 
 	simState.AppParams.GetOrGenerate(PolTokenAddress, &polTokenAddress, simState.Rand, func(r *rand.Rand) {

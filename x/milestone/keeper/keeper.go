@@ -259,14 +259,14 @@ func (k *Keeper) GetMilestoneBlockNumber(ctx context.Context) (int64, error) {
 }
 
 // SetNoAckMilestone sets the last no-ack milestone
-func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) error {
-	err := k.noAckMap.Set(ctx, milestoneId, true)
+func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneID string) error {
+	err := k.noAckMap.Set(ctx, milestoneID, true)
 	if err != nil {
 		k.Logger(ctx).Error("error while storing milestone no ack in store", "err", err)
 		return err
 	}
 
-	err = k.lastNoAckID.Set(ctx, milestoneId)
+	err = k.lastNoAckID.Set(ctx, milestoneID)
 	if err != nil {
 		k.Logger(ctx).Error("error while setting last milestone id in store", "err", err)
 		return err
@@ -287,8 +287,8 @@ func (k *Keeper) GetLastNoAckMilestone(ctx context.Context) (string, error) {
 }
 
 // HasNoAckMilestone checks for existence of the last no-ack milestone
-func (k *Keeper) HasNoAckMilestone(ctx context.Context, milestoneId string) (bool, error) {
-	res, err := k.noAckMap.Has(ctx, milestoneId)
+func (k *Keeper) HasNoAckMilestone(ctx context.Context, milestoneID string) (bool, error) {
+	res, err := k.noAckMap.Has(ctx, milestoneID)
 	if err != nil {
 		k.Logger(ctx).Error("error while getting no ack from store", "err", err)
 		return false, err

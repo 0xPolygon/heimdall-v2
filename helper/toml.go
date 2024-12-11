@@ -33,12 +33,12 @@ bor_grpc_url = "{{ .Custom.BorGRPCUrl }}"
 comet_bft_rpc_url = "{{ .Custom.CometBFTRPCUrl }}"
 
 # Polygon Sub Graph URL for self-heal mechanism (optional)
-sub_graph_url = "{{ .Custom.SubGraphUrl }}"
+sub_graph_url = "{{ .Custom.SubGraphURL }}"
 
 #### Bridge configs ####
 
 # AMQP endpoint
-amqp_url = "{{ .Custom.AmqpURL }}"
+amqp_url = "{{ .Custom.AMQPURL }}"
 
 ## Poll intervals
 checkpoint_poll_interval = "{{ .Custom.CheckpointPollInterval }}"

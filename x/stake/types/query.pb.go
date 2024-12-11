@@ -675,7 +675,7 @@ func (c *queryClient) GetSignerByAddress(ctx context.Context, in *QuerySignerReq
 
 func (c *queryClient) GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error) {
 	out := new(QueryValidatorResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/GetValidatorById", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.stake.Query/GetValidatorByID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -716,7 +716,7 @@ type QueryServer interface {
 	// GetSignerByAddress queries validator info for a given validator address
 	GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
 	// GetValidatorById queries validator info for a given validator id
-	GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
+	GetValidatorByID(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
 	// GetValidatorStatusByAddress queries validator status for given validator
 	// val_address
 	GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
@@ -736,8 +736,8 @@ func (*UnimplementedQueryServer) GetCurrentValidatorSet(ctx context.Context, req
 func (*UnimplementedQueryServer) GetSignerByAddress(ctx context.Context, req *QuerySignerRequest) (*QuerySignerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignerByAddress not implemented")
 }
-func (*UnimplementedQueryServer) GetValidatorById(ctx context.Context, req *QueryValidatorRequest) (*QueryValidatorResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorById not implemented")
+func (*UnimplementedQueryServer) GetValidatorByID(ctx context.Context, req *QueryValidatorRequest) (*QueryValidatorResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorByID not implemented")
 }
 func (*UnimplementedQueryServer) GetValidatorStatusByAddress(ctx context.Context, req *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorStatusByAddress not implemented")
@@ -795,14 +795,14 @@ func _Query_GetValidatorById_Handler(srv interface{}, ctx context.Context, dec f
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetValidatorById(ctx, in)
+		return srv.(QueryServer).GetValidatorByID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.stake.Query/GetValidatorById",
+		FullMethod: "/heimdallv2.stake.Query/GetValidatorByID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetValidatorById(ctx, req.(*QueryValidatorRequest))
+		return srv.(QueryServer).GetValidatorByID(ctx, req.(*QueryValidatorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -874,7 +874,7 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetSignerByAddress_Handler,
 		},
 		{
-			MethodName: "GetValidatorById",
+			MethodName: "GetValidatorByID",
 			Handler:    _Query_GetValidatorById_Handler,
 		},
 		{

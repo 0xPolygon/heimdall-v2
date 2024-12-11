@@ -19,8 +19,8 @@ type sideMsgServer struct {
 }
 
 var (
-	checkpointTypeUrl    = sdk.MsgTypeURL(&types.MsgCheckpoint{})
-	checkpointAckTypeUrl = sdk.MsgTypeURL(&types.MsgCpAck{})
+	checkpointTypeURL    = sdk.MsgTypeURL(&types.MsgCheckpoint{})
+	checkpointAckTypeURL = sdk.MsgTypeURL(&types.MsgCpAck{})
 )
 
 // NewSideMsgServerImpl returns an implementation of the checkpoint sideMsgServer interface
@@ -32,9 +32,9 @@ func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 // SideTxHandler returns a side handler for "checkpoint" type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	switch methodName {
-	case checkpointTypeUrl:
+	case checkpointTypeURL:
 		return srv.SideHandleMsgCheckpoint
-	case checkpointAckTypeUrl:
+	case checkpointAckTypeURL:
 		return srv.SideHandleMsgCheckpointAck
 	default:
 		return nil
@@ -44,9 +44,9 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 // PostTxHandler returns a post handler for "checkpoint" type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
-	case checkpointTypeUrl:
+	case checkpointTypeURL:
 		return srv.PostHandleMsgCheckpoint
-	case checkpointAckTypeUrl:
+	case checkpointAckTypeURL:
 		return srv.PostHandleMsgCheckpointAck
 	default:
 		return nil

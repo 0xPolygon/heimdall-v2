@@ -14,7 +14,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: clerk.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod: "GetRecordById",
+					RpcMethod: "GetRecordByID",
 					Use:       "record [record-id]",
 					Short:     "Query a record by its ID.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{

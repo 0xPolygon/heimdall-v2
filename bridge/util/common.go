@@ -559,10 +559,10 @@ func GetValidatorSet() (*staketypes.ValidatorSet, error) {
 }
 
 // GetClerkEventRecord return last successful checkpoint
-func GetClerkEventRecord(stateId int64) (*clerktypes.EventRecord, error) {
+func GetClerkEventRecord(stateID int64) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateID)))
 	if err != nil {
 		logger.Error("Error fetching event record by state ID", "error", err)
 		return nil, err

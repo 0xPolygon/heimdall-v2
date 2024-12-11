@@ -219,28 +219,28 @@ func prepareMockData(b *testing.B) *gomock.Controller {
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(chainManagerParamsUrl).Return(prepareResponse(chainManagerParamsResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(chainManagerParamsURL).Return(prepareResponse(chainManagerParamsResponse), nil).AnyTimes()
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(getAccountUrl).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(getAccountURL).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(getAccountUrl2).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(getAccountURL2).Return(prepareResponse(getAccountResponse), nil).AnyTimes()
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(isOldTxUrl).Return(prepareResponse(isOldTxResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(isOldTxURL).Return(prepareResponse(isOldTxResponse), nil).AnyTimes()
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(checkpointCountUrl).Return(prepareResponse(checkpointCountResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(checkpointCountURL).Return(prepareResponse(checkpointCountResponse), nil).AnyTimes()
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(unconfirmedTxsUrl).Return(prepareResponse(unconfirmedTxsResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(unconfirmedTxsURL).Return(prepareResponse(unconfirmedTxsResponse), nil).AnyTimes()
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(getUnconfirmedTxnCountUrl).Return(prepareResponse(getUnconfirmedTxnCountResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(getUnconfirmedTxnCountURL).Return(prepareResponse(getUnconfirmedTxnCountResponse), nil).AnyTimes()
 
 	//nolint: bodyclose
-	mockHttpClient.EXPECT().Get(getValidatorSetUrl).Return(prepareResponse(getValidatorSetResponse), nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(getValidatorSetURL).Return(prepareResponse(getValidatorSetResponse), nil).AnyTimes()
 
 	helper.Client = mockHttpClient
 
@@ -259,7 +259,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
 	srvconf.API.Enable = true
-	srvconf.API.Address = dummyHeimdallServerUrl
+	srvconf.API.Address = dummyHeimdallServerURL
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
 	customAppConf := helper.CustomAppConfig{
 		Config: *srvconf,
@@ -295,7 +295,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
 	srvconf.API.Enable = true
-	srvconf.API.Address = dummyHeimdallServerUrl
+	srvconf.API.Address = dummyHeimdallServerURL
 	configuration.CometBFTRPCUrl = dummyCometBFTNode
 	customAppConf := helper.CustomAppConfig{
 		Config: *srvconf,

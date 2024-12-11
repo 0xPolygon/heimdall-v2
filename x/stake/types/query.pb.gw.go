@@ -147,7 +147,7 @@ func local_request_Query_GetValidatorById_0(ctx context.Context, marshaler runti
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := server.GetValidatorById(ctx, &protoReq)
+	msg, err := server.GetValidatorByID(ctx, &protoReq)
 	return msg, metadata, err
 }
 

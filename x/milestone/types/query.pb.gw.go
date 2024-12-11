@@ -195,7 +195,7 @@ func local_request_Query_GetNoAckMilestoneById_0(ctx context.Context, marshaler 
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := server.GetNoAckMilestoneById(ctx, &protoReq)
+	msg, err := server.GetNoAckMilestoneByID(ctx, &protoReq)
 	return msg, metadata, err
 }
 

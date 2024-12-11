@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Query_GetRecordList_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordList"
-	Query_GetRecordById_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordById"
+	Query_GetRecordById_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordByID"
 	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
 	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
 	Query_IsClerkTxOld_FullMethodName          = "/heimdallv2.clerk.Query/IsClerkTxOld"
@@ -122,7 +122,7 @@ func (UnimplementedQueryServer) GetRecordList(context.Context, *RecordListReques
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordList not implemented")
 }
 func (UnimplementedQueryServer) GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRecordById not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordByID not implemented")
 }
 func (UnimplementedQueryServer) GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordListWithTime not implemented")
@@ -248,7 +248,7 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetRecordList_Handler,
 		},
 		{
-			MethodName: "GetRecordById",
+			MethodName: "GetRecordByID",
 			Handler:    _Query_GetRecordById_Handler,
 		},
 		{

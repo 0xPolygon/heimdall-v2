@@ -191,8 +191,8 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 				proposer = clientCtx.GetFromAddress().String()
 			}
 
-			valId := viper.GetUint64(FlagValidatorID)
-			if valId == 0 {
+			valID := viper.GetUint64(FlagValidatorID)
+			if valID == 0 {
 				return fmt.Errorf("validator id cannot be 0")
 			}
 
@@ -223,7 +223,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("public key first byte mismatch")
 			}
 
-			msg, err := types.NewMsgSignerUpdate(proposer, valId, pubKey.Bytes(), common.Hex2Bytes(txHash), viper.GetUint64(FlagLogIndex), viper.GetUint64(FlagBlockNumber), viper.GetUint64(FlagNonce))
+			msg, err := types.NewMsgSignerUpdate(proposer, valID, pubKey.Bytes(), common.Hex2Bytes(txHash), viper.GetUint64(FlagLogIndex), viper.GetUint64(FlagBlockNumber), viper.GetUint64(FlagNonce))
 			if err != nil {
 				return err
 			}

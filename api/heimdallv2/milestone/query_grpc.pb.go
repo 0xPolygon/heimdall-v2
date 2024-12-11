@@ -24,7 +24,7 @@ const (
 	Query_GetLatestMilestone_FullMethodName          = "/heimdallv2.milestone.Query/GetLatestMilestone"
 	Query_GetLatestNoAckMilestone_FullMethodName     = "/heimdallv2.milestone.Query/GetLatestNoAckMilestone"
 	Query_GetMilestoneByNumber_FullMethodName        = "/heimdallv2.milestone.Query/GetMilestoneByNumber"
-	Query_GetNoAckMilestoneById_FullMethodName       = "/heimdallv2.milestone.Query/GetNoAckMilestoneById"
+	Query_GetNoAckMilestoneById_FullMethodName       = "/heimdallv2.milestone.Query/GetNoAckMilestoneByID"
 	Query_GetMilestoneProposerByTimes_FullMethodName = "/heimdallv2.milestone.Query/GetMilestoneProposerByTimes"
 )
 
@@ -160,7 +160,7 @@ func (UnimplementedQueryServer) GetMilestoneByNumber(context.Context, *QueryMile
 	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneByNumber not implemented")
 }
 func (UnimplementedQueryServer) GetNoAckMilestoneById(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetNoAckMilestoneById not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method GetNoAckMilestoneByID not implemented")
 }
 func (UnimplementedQueryServer) GetMilestoneProposerByTimes(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneProposerByTimes not implemented")
@@ -332,7 +332,7 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetMilestoneByNumber_Handler,
 		},
 		{
-			MethodName: "GetNoAckMilestoneById",
+			MethodName: "GetNoAckMilestoneByID",
 			Handler:    _Query_GetNoAckMilestoneById_Handler,
 		},
 		{

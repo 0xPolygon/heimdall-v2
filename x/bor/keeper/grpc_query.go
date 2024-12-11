@@ -118,10 +118,10 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
-	spanId := req.GetId()
+	spanID := req.GetId()
 
 	// fetch next span seed
-	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx, spanId)
+	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx, spanID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -140,17 +140,17 @@ func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsReque
 }
 
 // GetSpanById returns the span by id
-func (q queryServer) GetSpanById(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
+func (q queryServer) GetSpanByID(ctx context.Context, req *types.QuerySpanByIdRequest) (*types.QuerySpanByIdResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	spanId, err := strconv.Atoi(req.Id)
+	spanID, err := strconv.Atoi(req.Id)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	span, err := q.k.GetSpan(ctx, uint64(spanId))
+	span, err := q.k.GetSpan(ctx, uint64(spanID))
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

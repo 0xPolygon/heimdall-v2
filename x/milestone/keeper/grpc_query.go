@@ -77,7 +77,7 @@ func (q queryServer) GetLatestNoAckMilestone(ctx context.Context, _ *types.Query
 }
 
 // GetNoAckMilestoneById gives the result by id
-func (q queryServer) GetNoAckMilestoneById(ctx context.Context, req *types.QueryNoAckMilestoneByIDRequest) (*types.QueryNoAckMilestoneByIDResponse, error) {
+func (q queryServer) GetNoAckMilestoneByID(ctx context.Context, req *types.QueryNoAckMilestoneByIDRequest) (*types.QueryNoAckMilestoneByIDResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}

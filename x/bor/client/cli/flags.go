@@ -2,7 +2,7 @@ package cli
 
 const (
 	FlagProposerAddress = "proposer"
-	FlagBorChainId      = "bor-chain-id"
+	FlagBorChainID      = "bor-chain-id"
 	FlagStartBlock      = "start-block"
-	FlagSpanId          = "span-id"
+	FlagSpanID          = "span-id"
 )

@@ -580,7 +580,7 @@ func (c *queryClient) GetRecordList(ctx context.Context, in *RecordListRequest, 
 
 func (c *queryClient) GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
 	out := new(RecordResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.Query/GetRecordById", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.Query/GetRecordByID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -619,7 +619,7 @@ type QueryServer interface {
 	// GetRecordList queries a list of records
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
 	// GetRecordById retrieves a record by its id
-	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
+	GetRecordByID(context.Context, *RecordRequest) (*RecordResponse, error)
 	// GetRecordListWithTime queries a list of records with time
 	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
 	// GetRecordSequence queries the sequence of the record
@@ -636,8 +636,8 @@ type UnimplementedQueryServer struct {
 func (*UnimplementedQueryServer) GetRecordList(ctx context.Context, req *RecordListRequest) (*RecordListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordList not implemented")
 }
-func (*UnimplementedQueryServer) GetRecordById(ctx context.Context, req *RecordRequest) (*RecordResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRecordById not implemented")
+func (*UnimplementedQueryServer) GetRecordByID(ctx context.Context, req *RecordRequest) (*RecordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordByID not implemented")
 }
 func (*UnimplementedQueryServer) GetRecordListWithTime(ctx context.Context, req *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordListWithTime not implemented")
@@ -677,14 +677,14 @@ func _Query_GetRecordById_Handler(srv interface{}, ctx context.Context, dec func
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetRecordById(ctx, in)
+		return srv.(QueryServer).GetRecordByID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.clerk.Query/GetRecordById",
+		FullMethod: "/heimdallv2.clerk.Query/GetRecordByID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetRecordById(ctx, req.(*RecordRequest))
+		return srv.(QueryServer).GetRecordByID(ctx, req.(*RecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -752,7 +752,7 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetRecordList_Handler,
 		},
 		{
-			MethodName: "GetRecordById",
+			MethodName: "GetRecordByID",
 			Handler:    _Query_GetRecordById_Handler,
 		},
 		{

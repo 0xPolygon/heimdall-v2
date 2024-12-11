@@ -41,6 +41,7 @@ linters:
     #- promlinter
     #- revive
     # - tagliatelle
+    - stylecheck
     - tenv
     - thelper
     - tparallel

@@ -497,16 +497,16 @@ func GetSignedTxBytes(cliCtx client.Context,
 
 	txFactory := tx.Factory{}
 	txFactory = txFactory.
-		WithChainID(testOpts[0].chainId)
+		WithChainID(testOpts[0].chainID)
 
 	// just simulate (useful for testing)
 	if cliCtx.Simulate {
-		if len(testOpts) == 0 || testOpts[0].chainId == "" {
+		if len(testOpts) == 0 || testOpts[0].chainID == "" {
 			return nil, nil
 		}
 
 		// We are no longer able to set ChainID
-		// txBldr = txBldr.WithChainID(testOpts[0].chainId)
+		// txBldr = txBldr.WithChainID(testOpts[0].chainID)
 
 		return txBldr.BuildAndSign(GetPrivKey(), msgs)
 	}

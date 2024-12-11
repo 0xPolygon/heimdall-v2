@@ -160,10 +160,10 @@ func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 	}
 
 	if len(curValSetGenesis) > 0 {
-		curValSetDbMap := map[string]hmTypes.Validator{}
+		curValSetDBMap := map[string]hmTypes.Validator{}
 
 		for _, valDB := range curValSetDB {
-			curValSetDbMap[valDB.Signer] = valDB
+			curValSetDBMap[valDB.Signer] = valDB
 		}
 
 		for i, validator := range curValSetGenesis {
@@ -172,7 +172,7 @@ func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 				return fmt.Errorf("failed to get validator basic info at index %d: %w", i, err)
 			}
 
-			validatorDB, ok := curValSetDbMap[basicValInfo.signer]
+			validatorDB, ok := curValSetDBMap[basicValInfo.signer]
 			if !ok {
 				return fmt.Errorf("validator not found in current validator set database: %s", basicValInfo.signer)
 			}
@@ -181,7 +181,7 @@ func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 				return fmt.Errorf("validator mismatch %s: %w", basicValInfo.signer, err)
 			}
 
-			delete(curValSetDbMap, basicValInfo.signer)
+			delete(curValSetDBMap, basicValInfo.signer)
 		}
 
 		return nil
@@ -194,9 +194,9 @@ func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 
 	allValidatorsDB := app.StakeKeeper.GetAllValidators(ctx)
 
-	validatorsDbMap := map[string]*hmTypes.Validator{}
+	validatorsDBMap := map[string]*hmTypes.Validator{}
 	for _, valDB := range allValidatorsDB {
-		validatorsDbMap[valDB.Signer] = valDB
+		validatorsDBMap[valDB.Signer] = valDB
 	}
 
 	for i, validator := range allValidatorsGenesis {
@@ -205,7 +205,7 @@ func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 			return fmt.Errorf("failed to get validator basic info at index %d: %w", i, err)
 		}
 
-		validatorDB, ok := validatorsDbMap[basicValInfo.signer]
+		validatorDB, ok := validatorsDBMap[basicValInfo.signer]
 		if !ok {
 			return fmt.Errorf("validator not found in database: %s", basicValInfo.signer)
 		}
@@ -214,7 +214,7 @@ func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 			return fmt.Errorf("validator mismatch %s: %w", basicValInfo.signer, err)
 		}
 
-		delete(validatorsDbMap, basicValInfo.signer)
+		delete(validatorsDBMap, basicValInfo.signer)
 	}
 
 	return nil

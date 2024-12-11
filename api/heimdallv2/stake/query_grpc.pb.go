@@ -21,7 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Query_GetCurrentValidatorSet_FullMethodName      = "/heimdallv2.stake.Query/GetCurrentValidatorSet"
 	Query_GetSignerByAddress_FullMethodName          = "/heimdallv2.stake.Query/GetSignerByAddress"
-	Query_GetValidatorById_FullMethodName            = "/heimdallv2.stake.Query/GetValidatorById"
+	Query_GetValidatorById_FullMethodName            = "/heimdallv2.stake.Query/GetValidatorByID"
 	Query_GetValidatorStatusByAddress_FullMethodName = "/heimdallv2.stake.Query/GetValidatorStatusByAddress"
 	Query_GetTotalPower_FullMethodName               = "/heimdallv2.stake.Query/GetTotalPower"
 	Query_IsStakeTxOld_FullMethodName                = "/heimdallv2.stake.Query/IsStakeTxOld"
@@ -139,7 +139,7 @@ func (UnimplementedQueryServer) GetSignerByAddress(context.Context, *QuerySigner
 	return nil, status.Errorf(codes.Unimplemented, "method GetSignerByAddress not implemented")
 }
 func (UnimplementedQueryServer) GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorById not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorByID not implemented")
 }
 func (UnimplementedQueryServer) GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetValidatorStatusByAddress not implemented")
@@ -287,7 +287,7 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetSignerByAddress_Handler,
 		},
 		{
-			MethodName: "GetValidatorById",
+			MethodName: "GetValidatorByID",
 			Handler:    _Query_GetValidatorById_Handler,
 		},
 		{

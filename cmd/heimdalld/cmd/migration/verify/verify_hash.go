@@ -15,6 +15,7 @@ import (
 
 const (
 	// REMOTE_GENESIS_HASH_URL is the URL where the precomputed genesis hash is stored in JSON format.
+	//nolint
 	REMOTE_GENESIS_HASH_URL = "http://localhost:8000/genesis-hash.json"
 	// RetryDelay defines the delay between retries when fetching the remote hash fails.
 	RetryDelay = 10 * time.Second

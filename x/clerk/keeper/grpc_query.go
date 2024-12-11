@@ -24,7 +24,7 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
+func (q queryServer) GetRecordByID(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}

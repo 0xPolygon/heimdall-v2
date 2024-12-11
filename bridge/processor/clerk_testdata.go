@@ -4,9 +4,9 @@ import "github.com/0xPolygon/heimdall-v2/bridge/util"
 
 const (
 	dummyCometBFTNode      = "http://localhost:26657"
-	dummyHeimdallServerUrl = "https://dummy-heimdall-api-testnet.polygon.technology"
+	dummyHeimdallServerURL = "https://dummy-heimdall-api-testnet.polygon.technology"
 
-	chainManagerParamsUrl      = dummyHeimdallServerUrl + util.ChainManagerParamsURL
+	chainManagerParamsURL      = dummyHeimdallServerURL + util.ChainManagerParamsURL
 	chainManagerParamsResponse = `
 	{
 	"height": "0",
@@ -27,8 +27,8 @@ const (
 		}
 	}`
 
-	getAccountUrl      = dummyHeimdallServerUrl + "/auth/accounts/9FB29AAC15B9A4B7F17C3385939B007540F4D791"
-	getAccountUrl2     = dummyHeimdallServerUrl + "/auth/accounts/3F17F1962B36E491B30A40B2405849E597BA5FB5"
+	getAccountURL      = dummyHeimdallServerURL + "/auth/accounts/9FB29AAC15B9A4B7F17C3385939B007540F4D791"
+	getAccountURL2     = dummyHeimdallServerURL + "/auth/accounts/3F17F1962B36E491B30A40B2405849E597BA5FB5"
 	getAccountResponse = `
 	{
 	"type": "auth/Account",
@@ -46,13 +46,13 @@ const (
 	}
 	}`
 
-	isOldTxUrl      = dummyHeimdallServerUrl + "/clerk/isoldtx?logindex=0&txhash=0x6d428739815d7c84cf89db055158861b089e0fd649676a0243a2a2d204c1d854"
+	isOldTxURL      = dummyHeimdallServerURL + "/clerk/isoldtx?logindex=0&txhash=0x6d428739815d7c84cf89db055158861b089e0fd649676a0243a2a2d204c1d854"
 	isOldTxResponse = `
 	{
 		"result": false
 	}`
 
-	checkpointCountUrl      = dummyHeimdallServerUrl + util.CountCheckpointURL
+	checkpointCountURL      = dummyHeimdallServerURL + util.CountCheckpointURL
 	checkpointCountResponse = `
 	{
   		"result": {
@@ -60,7 +60,7 @@ const (
   		}
 	}`
 
-	unconfirmedTxsUrl      = dummyCometBFTNode + "/unconfirmed_txs"
+	unconfirmedTxsURL      = dummyCometBFTNode + "/unconfirmed_txs"
 	unconfirmedTxsResponse = `
 	{
 		"result": {
@@ -69,7 +69,7 @@ const (
 		}
 	}`
 
-	getUnconfirmedTxnCountUrl      = dummyCometBFTNode + "/num_unconfirmed_txs"
+	getUnconfirmedTxnCountURL      = dummyCometBFTNode + "/num_unconfirmed_txs"
 	getUnconfirmedTxnCountResponse = `
 	{
 		"result": {
@@ -78,7 +78,7 @@ const (
 		}
 	}`
 
-	getValidatorSetUrl      = dummyHeimdallServerUrl + "/staking/validator-set"
+	getValidatorSetURL      = dummyHeimdallServerURL + "/staking/validator-set"
 	getValidatorSetResponse = `
 	{
 	"result": {

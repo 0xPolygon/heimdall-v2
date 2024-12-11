@@ -155,11 +155,11 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 
 	endHash := block.ParentHash
 
-	newRandUuid, err := uuid.NewRandom()
+	newRandUUID, err := uuid.NewRandom()
 	if err != nil {
 		return err
 	}
-	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), string(endHash[:]))
+	milestoneID := fmt.Sprintf("%s - %s", newRandUUID.String(), string(endHash[:]))
 
 	mp.Logger.Info("End block hash", string(endHash[:]))
 
@@ -167,7 +167,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 		"start", startNum,
 		"end", endNum,
 		"hash", string(endHash[:]),
-		"milestoneId", milestoneId,
+		"milestoneID", milestoneID,
 		"milestoneLength", milestoneLength,
 	)
 
@@ -180,7 +180,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 		endNum,
 		endHash[:],
 		chainParams.BorChainId,
-		milestoneId,
+		milestoneID,
 	)
 
 	// broadcast to heimdall

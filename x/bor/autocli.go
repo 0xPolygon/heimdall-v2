@@ -11,7 +11,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: bor.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod: "GetSpanById",
+					RpcMethod: "GetSpanByID",
 					Use:       "span-by-id [id]",
 					Short:     "Query bor span by id",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{

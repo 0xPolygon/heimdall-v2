@@ -42,7 +42,7 @@ type stateSyncResponse struct {
 }
 
 func (rl *RootChainListener) querySubGraph(query []byte, ctx context.Context) (data []byte, err error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, rl.subGraphClient.graphUrl, bytes.NewBuffer(query))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, rl.subGraphClient.graphURL, bytes.NewBuffer(query))
 	if err != nil {
 		return nil, err
 	}
@@ -113,20 +113,20 @@ func (rl *RootChainListener) getCurrentStateID(ctx context.Context) (*big.Int, e
 		return nil, err
 	}
 
-	stateId, err := stateReceiverInstance.LastStateId(&bind.CallOpts{Context: ctx})
+	stateID, err := stateReceiverInstance.LastStateId(&bind.CallOpts{Context: ctx})
 	if err != nil {
 		return nil, err
 	}
 
-	return stateId, nil
+	return stateID, nil
 }
 
 // getStateSync returns the StateSynced event based on the given state ID
-func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*types.Log, error) {
+func (rl *RootChainListener) getStateSync(ctx context.Context, stateID int64) (*types.Log, error) {
 	query := map[string]string{
 		"query": `
 		{
-			stateSyncs(where: {stateId: ` + strconv.Itoa(int(stateId)) + `}) {
+			stateSyncs(where: {stateID: ` + strconv.Itoa(int(stateID)) + `}) {
 				logIndex
 				transactionHash
 			}
@@ -150,7 +150,7 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*
 	}
 
 	if len(response.Data.StateSyncs) == 0 {
-		return nil, fmt.Errorf("no state sync found for state id %d", stateId)
+		return nil, fmt.Errorf("no state sync found for state id %d", stateID)
 	}
 
 	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StateSyncs[0].TransactionHash))
@@ -164,15 +164,15 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*
 		}
 	}
 
-	return nil, fmt.Errorf("no log found for given log index %s and state id %d", response.Data.StateSyncs[0].LogIndex, stateId)
+	return nil, fmt.Errorf("no log found for given log index %s and state id %d", response.Data.StateSyncs[0].LogIndex, stateID)
 }
 
 // getLatestNonce returns the nonce from the latest StakeUpdate event
-func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uint64) (uint64, error) {
+func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorID uint64) (uint64, error) {
 	query := map[string]string{
 		"query": `
 		{
-			stakeUpdates(first:1, orderBy: nonce, orderDirection : desc, where: {validatorId: ` + strconv.Itoa(int(validatorId)) + `}){
+			stakeUpdates(first:1, orderBy: nonce, orderDirection : desc, where: {validatorID: ` + strconv.Itoa(int(validatorID)) + `}){
 				nonce
 		   } 
 		}   
@@ -207,11 +207,11 @@ func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uin
 }
 
 // getStakeUpdate returns StakeUpdate event based on the given validator ID and nonce
-func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, nonce uint64) (*types.Log, error) {
+func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorID, nonce uint64) (*types.Log, error) {
 	query := map[string]string{
 		"query": `
 		{
-			stakeUpdates(where: {validatorId: ` + strconv.Itoa(int(validatorId)) + `, nonce: ` + strconv.Itoa(int(nonce)) + `}){
+			stakeUpdates(where: {validatorID: ` + strconv.Itoa(int(validatorID)) + `, nonce: ` + strconv.Itoa(int(nonce)) + `}){
 				transactionHash
 				logIndex
 		   } 
@@ -235,7 +235,7 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 	}
 
 	if len(response.Data.StakeUpdates) == 0 {
-		return nil, fmt.Errorf("no stake update found for validator %d and nonce %d", validatorId, nonce)
+		return nil, fmt.Errorf("no stake update found for validator %d and nonce %d", validatorID, nonce)
 	}
 
 	receipt, err := rl.contractCaller.MainChainClient.TransactionReceipt(ctx, common.HexToHash(response.Data.StakeUpdates[0].TransactionHash))
@@ -249,5 +249,5 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 		}
 	}
 
-	return nil, fmt.Errorf("no log found for given log index %s ,validator %d and nonce %d", response.Data.StakeUpdates[0].LogIndex, validatorId, nonce)
+	return nil, fmt.Errorf("no log found for given log index %s ,validator %d and nonce %d", response.Data.StakeUpdates[0].LogIndex, validatorID, nonce)
 }

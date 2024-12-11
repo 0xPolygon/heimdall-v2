@@ -354,8 +354,8 @@ func (k *Keeper) GetSignerFromValidatorID(ctx context.Context, valID uint64) (st
 	return signer, nil
 }
 
-// DoesValIdExist checks if validator ID exists in store
-func (k *Keeper) DoesValIdExist(ctx context.Context, valID uint64) (bool, error) {
+// DoesValIDExist checks if validator ID exists in store
+func (k *Keeper) DoesValIDExist(ctx context.Context, valID uint64) (bool, error) {
 	k.PanicIfSetupIsIncomplete()
 	return k.signer.Has(ctx, valID)
 }
@@ -455,7 +455,8 @@ func (k *Keeper) IterateStakingSequencesAndApplyFn(ctx context.Context, f func(s
 	return
 }
 
-// GetValIdFromAddress returns a validator's id given its address string
+// GetValIDFromAddress returns a validator's id given its address string
+//nolint
 func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint64, error) {
 	k.PanicIfSetupIsIncomplete()
 	// get ack count

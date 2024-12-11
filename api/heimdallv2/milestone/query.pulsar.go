@@ -7197,14 +7197,14 @@ var file_heimdallv2_milestone_query_proto_depIdxs = []int32{
 	6,  // 6: heimdallv2.milestone.Query.GetLatestMilestone:input_type -> heimdallv2.milestone.QueryLatestMilestoneRequest
 	10, // 7: heimdallv2.milestone.Query.GetLatestNoAckMilestone:input_type -> heimdallv2.milestone.QueryLatestNoAckMilestoneRequest
 	8,  // 8: heimdallv2.milestone.Query.GetMilestoneByNumber:input_type -> heimdallv2.milestone.QueryMilestoneRequest
-	12, // 9: heimdallv2.milestone.Query.GetNoAckMilestoneById:input_type -> heimdallv2.milestone.QueryNoAckMilestoneByIDRequest
+	12, // 9: heimdallv2.milestone.Query.GetNoAckMilestoneByID:input_type -> heimdallv2.milestone.QueryNoAckMilestoneByIDRequest
 	14, // 10: heimdallv2.milestone.Query.GetMilestoneProposerByTimes:input_type -> heimdallv2.milestone.QueryMilestoneProposerRequest
 	1,  // 11: heimdallv2.milestone.Query.GetMilestoneParams:output_type -> heimdallv2.milestone.QueryParamsResponse
 	3,  // 12: heimdallv2.milestone.Query.GetMilestoneCount:output_type -> heimdallv2.milestone.QueryCountResponse
 	7,  // 13: heimdallv2.milestone.Query.GetLatestMilestone:output_type -> heimdallv2.milestone.QueryLatestMilestoneResponse
 	11, // 14: heimdallv2.milestone.Query.GetLatestNoAckMilestone:output_type -> heimdallv2.milestone.QueryLatestNoAckMilestoneResponse
 	9,  // 15: heimdallv2.milestone.Query.GetMilestoneByNumber:output_type -> heimdallv2.milestone.QueryMilestoneResponse
-	13, // 16: heimdallv2.milestone.Query.GetNoAckMilestoneById:output_type -> heimdallv2.milestone.QueryNoAckMilestoneByIDResponse
+	13, // 16: heimdallv2.milestone.Query.GetNoAckMilestoneByID:output_type -> heimdallv2.milestone.QueryNoAckMilestoneByIDResponse
 	15, // 17: heimdallv2.milestone.Query.GetMilestoneProposerByTimes:output_type -> heimdallv2.milestone.QueryMilestoneProposerResponse
 	11, // [11:18] is the sub-list for method output_type
 	4,  // [4:11] is the sub-list for method input_type

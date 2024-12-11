@@ -489,12 +489,12 @@ func TestIsVoteValid(t *testing.T) {
 }
 
 func TestIsBlockIDFlagValid(t *testing.T) {
-	require.True(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagAbsent))
-	require.True(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagCommit))
-	require.True(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagNil))
-	require.False(t, isBlockIdFlagValid(cmtTypes.BlockIDFlagUnknown))
-	require.False(t, isBlockIdFlagValid(100))
-	require.False(t, isBlockIdFlagValid(-1))
+	require.True(t, isBlockIDFlagValid(cmtTypes.BlockIDFlagAbsent))
+	require.True(t, isBlockIDFlagValid(cmtTypes.BlockIDFlagCommit))
+	require.True(t, isBlockIDFlagValid(cmtTypes.BlockIDFlagNil))
+	require.False(t, isBlockIDFlagValid(cmtTypes.BlockIDFlagUnknown))
+	require.False(t, isBlockIDFlagValid(100))
+	require.False(t, isBlockIDFlagValid(-1))
 }
 
 func TestPanicOnVoteExtensionsDisabled(t *testing.T) {

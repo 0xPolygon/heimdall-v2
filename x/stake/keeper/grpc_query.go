@@ -49,7 +49,7 @@ func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySig
 }
 
 // GetValidatorById queries validator info for a given validator id.
-func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
+func (q queryServer) GetValidatorByID(ctx context.Context, req *types.QueryValidatorRequest) (*types.QueryValidatorResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}

@@ -113,7 +113,7 @@ func local_request_Query_GetSpanById_0(ctx context.Context, marshaler runtime.Ma
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "id", err)
 	}
 
-	msg, err := server.GetSpanById(ctx, &protoReq)
+	msg, err := server.GetSpanByID(ctx, &protoReq)
 	return msg, metadata, err
 }
 

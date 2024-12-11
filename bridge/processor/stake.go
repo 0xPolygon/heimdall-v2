@@ -409,10 +409,10 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 	return nil
 }
 
-func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64) (bool, uint64, error) {
-	currentNonce, err := util.GetValidatorNonce(validatorId)
+func (sp *StakingProcessor) checkValidNonce(validatorID uint64, txnNonce uint64) (bool, uint64, error) {
+	currentNonce, err := util.GetValidatorNonce(validatorID)
 	if err != nil {
-		sp.Logger.Error("Failed to fetch validator nonce and height data from API", "validatorId", validatorId)
+		sp.Logger.Error("Failed to fetch validator nonce and height data from API", "validatorID", validatorID)
 		return false, 0, err
 	}
 
@@ -422,19 +422,19 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 			diff = 10
 		}
 
-		sp.Logger.Error("Nonce for the given event not in order", "validatorId", validatorId, "currentNonce", currentNonce, "txnNonce", txnNonce, "delay", diff*uint64(defaultDelayDuration))
+		sp.Logger.Error("Nonce for the given event not in order", "validatorID", validatorID, "currentNonce", currentNonce, "txnNonce", txnNonce, "delay", diff*uint64(defaultDelayDuration))
 
 		return false, diff, nil
 	}
 
-	stakingTxnCount, err := queryTxCount(sp.cliCtx, validatorId)
+	stakingTxnCount, err := queryTxCount(sp.cliCtx, validatorID)
 	if err != nil {
-		sp.Logger.Error("Failed to query stake txns by txquery for the given validator", "validatorId", validatorId)
+		sp.Logger.Error("Failed to query stake txns by txquery for the given validator", "validatorID", validatorID)
 		return false, 0, err
 	}
 
 	if stakingTxnCount != 0 {
-		sp.Logger.Info("Recent staking txn count for the given validator is not zero", "validatorId", validatorId, "currentNonce", currentNonce, "txnNonce", txnNonce)
+		sp.Logger.Info("Recent staking txn count for the given validator is not zero", "validatorID", validatorID, "currentNonce", currentNonce, "txnNonce", txnNonce)
 		return false, 1, nil
 	}
 
@@ -442,7 +442,7 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 }
 
 // TODO HV2 - this function was modified a bit, please review carefully
-func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
+func queryTxCount(cliCtx client.Context, validatorID uint64) (int, error) {
 	const (
 		defaultPage  = 1
 		defaultLimit = 100
@@ -458,7 +458,7 @@ func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	for msg, action := range stakingTxnMsgMap {
 		event1 := fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg)
 
-		event2 := fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId)
+		event2 := fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorID)
 
 		searchResult1, err1 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event1, "")
 		searchResult2, err2 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event2, "")

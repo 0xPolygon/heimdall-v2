@@ -5565,13 +5565,13 @@ var file_heimdallv2_stake_query_proto_depIdxs = []int32{
 	13, // 2: heimdallv2.stake.QueryValidatorResponse.validator:type_name -> heimdallv2.stake.Validator
 	0,  // 3: heimdallv2.stake.Query.GetCurrentValidatorSet:input_type -> heimdallv2.stake.QueryCurrentValidatorSetRequest
 	2,  // 4: heimdallv2.stake.Query.GetSignerByAddress:input_type -> heimdallv2.stake.QuerySignerRequest
-	4,  // 5: heimdallv2.stake.Query.GetValidatorById:input_type -> heimdallv2.stake.QueryValidatorRequest
+	4,  // 5: heimdallv2.stake.Query.GetValidatorByID:input_type -> heimdallv2.stake.QueryValidatorRequest
 	8,  // 6: heimdallv2.stake.Query.GetValidatorStatusByAddress:input_type -> heimdallv2.stake.QueryValidatorStatusRequest
 	6,  // 7: heimdallv2.stake.Query.GetTotalPower:input_type -> heimdallv2.stake.QueryTotalPowerRequest
 	10, // 8: heimdallv2.stake.Query.IsStakeTxOld:input_type -> heimdallv2.stake.QueryStakeIsOldTxRequest
 	1,  // 9: heimdallv2.stake.Query.GetCurrentValidatorSet:output_type -> heimdallv2.stake.QueryCurrentValidatorSetResponse
 	3,  // 10: heimdallv2.stake.Query.GetSignerByAddress:output_type -> heimdallv2.stake.QuerySignerResponse
-	5,  // 11: heimdallv2.stake.Query.GetValidatorById:output_type -> heimdallv2.stake.QueryValidatorResponse
+	5,  // 11: heimdallv2.stake.Query.GetValidatorByID:output_type -> heimdallv2.stake.QueryValidatorResponse
 	9,  // 12: heimdallv2.stake.Query.GetValidatorStatusByAddress:output_type -> heimdallv2.stake.QueryValidatorStatusResponse
 	7,  // 13: heimdallv2.stake.Query.GetTotalPower:output_type -> heimdallv2.stake.QueryTotalPowerResponse
 	11, // 14: heimdallv2.stake.Query.IsStakeTxOld:output_type -> heimdallv2.stake.QueryStakeIsOldTxResponse

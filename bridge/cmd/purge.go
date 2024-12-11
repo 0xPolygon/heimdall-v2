@@ -18,7 +18,7 @@ var purgeCmd = &cobra.Command{
 }
 
 func purgeQueue() {
-	dialer := helper.GetConfig().AmqpURL
+	dialer := helper.GetConfig().AMQPURL
 
 	// amqp dialer
 	conn, err := amqp.Dial(dialer)

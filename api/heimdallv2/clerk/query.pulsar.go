@@ -4716,12 +4716,12 @@ var file_heimdallv2_clerk_query_proto_depIdxs = []int32{
 	10, // 3: heimdallv2.clerk.RecordListWithTimeRequest.to_time:type_name -> google.protobuf.Timestamp
 	9,  // 4: heimdallv2.clerk.RecordListWithTimeResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
 	2,  // 5: heimdallv2.clerk.Query.GetRecordList:input_type -> heimdallv2.clerk.RecordListRequest
-	0,  // 6: heimdallv2.clerk.Query.GetRecordById:input_type -> heimdallv2.clerk.RecordRequest
+	0,  // 6: heimdallv2.clerk.Query.GetRecordByID:input_type -> heimdallv2.clerk.RecordRequest
 	4,  // 7: heimdallv2.clerk.Query.GetRecordListWithTime:input_type -> heimdallv2.clerk.RecordListWithTimeRequest
 	6,  // 8: heimdallv2.clerk.Query.GetRecordSequence:input_type -> heimdallv2.clerk.RecordSequenceRequest
 	6,  // 9: heimdallv2.clerk.Query.IsClerkTxOld:input_type -> heimdallv2.clerk.RecordSequenceRequest
 	3,  // 10: heimdallv2.clerk.Query.GetRecordList:output_type -> heimdallv2.clerk.RecordListResponse
-	1,  // 11: heimdallv2.clerk.Query.GetRecordById:output_type -> heimdallv2.clerk.RecordResponse
+	1,  // 11: heimdallv2.clerk.Query.GetRecordByID:output_type -> heimdallv2.clerk.RecordResponse
 	5,  // 12: heimdallv2.clerk.Query.GetRecordListWithTime:output_type -> heimdallv2.clerk.RecordListWithTimeResponse
 	7,  // 13: heimdallv2.clerk.Query.GetRecordSequence:output_type -> heimdallv2.clerk.RecordSequenceResponse
 	8,  // 14: heimdallv2.clerk.Query.IsClerkTxOld:output_type -> heimdallv2.clerk.IsClerkTxOldResponse

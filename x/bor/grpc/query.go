@@ -33,12 +33,12 @@ func (h *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endB
 	return res.RootHash, nil
 }
 
-func (h *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error) {
+func (h *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneID string) (bool, error) {
 	req := &proto.GetVoteOnHashRequest{
 		StartBlockNumber: startBlock,
 		EndBlockNumber:   endBlock,
 		Hash:             rootHash,
-		MilestoneId:      milestoneId,
+		MilestoneId:      milestoneID,
 	}
 
 	log.Info("Fetching vote on hash")

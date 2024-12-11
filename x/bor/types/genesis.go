@@ -54,11 +54,11 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 	// set state to bor state
 	borState := GetGenesisStateFromAppState(cdc, appState)
 	chainState := chainmanagertypes.GetGenesisStateFromAppState(cdc, appState)
-	borChainId := chainState.Params.ChainParams.BorChainId
-	if borChainId == "" {
-		panic("borChainId is empty, please check the order of genesis initialization in your app")
+	borChainID := chainState.Params.ChainParams.BorChainId
+	if borChainID == "" {
+		panic("borChainID is empty, please check the order of genesis initialization in your app")
 	}
-	borState.Spans = genFirstSpan(currentValSet, borChainId)
+	borState.Spans = genFirstSpan(currentValSet, borChainID)
 
 	appState[ModuleName] = cdc.MustMarshalJSON(borState)
 
@@ -66,7 +66,7 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 }
 
 // genFirstSpan generates default first span using the validators producer set
-func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
+func genFirstSpan(valSet staketypes.ValidatorSet, chainID string) []Span {
 	var (
 		firstSpan         []Span
 		selectedProducers []staketypes.Validator
@@ -89,7 +89,7 @@ func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 		EndBlock:          0 + DefaultFirstSpanDuration - 1,
 		ValidatorSet:      valSet,
 		SelectedProducers: selectedProducers,
-		ChainId:           chainId,
+		ChainId:           chainID,
 	}
 
 	firstSpan = append(firstSpan, newSpan)

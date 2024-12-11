@@ -178,12 +178,12 @@ func (k *Keeper) GetLastSpan(ctx context.Context) (types.Span, error) {
 	}
 
 	// get last span id
-	lastSpanId, err := k.latestSpan.Get(ctx)
+	lastSpanID, err := k.latestSpan.Get(ctx)
 	if err != nil {
 		return types.Span{}, err
 	}
 
-	return k.GetSpan(ctx, lastSpanId)
+	return k.GetSpan(ctx, lastSpanID)
 }
 
 // FreezeSet freezes validator set for next span
@@ -191,13 +191,13 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 	logger := k.Logger(ctx)
 
 	var lastSpan types.Span
-	var lastSpanId uint64
+	var lastSpanID uint64
 	if id < 2 {
-		lastSpanId = id - 1
+		lastSpanID = id - 1
 	} else {
-		lastSpanId = id - 2
+		lastSpanID = id - 2
 	}
-	lastSpan, err := k.GetSpan(ctx, lastSpanId)
+	lastSpan, err := k.GetSpan(ctx, lastSpanID)
 	if err != nil {
 		return err
 	}

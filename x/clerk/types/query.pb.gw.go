@@ -113,7 +113,7 @@ func local_request_Query_GetRecordById_0(ctx context.Context, marshaler runtime.
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "record_id", err)
 	}
 
-	msg, err := server.GetRecordById(ctx, &protoReq)
+	msg, err := server.GetRecordByID(ctx, &protoReq)
 	return msg, metadata, err
 }
 

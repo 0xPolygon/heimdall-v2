@@ -6,13 +6,13 @@ import (
 
 type TestOpts struct {
 	app     abci.Application
-	chainId string
+	chainID string
 }
 
-func NewTestOpts(app abci.Application, chainId string) *TestOpts {
+func NewTestOpts(app abci.Application, chainID string) *TestOpts {
 	return &TestOpts{
 		app:     app,
-		chainId: chainId,
+		chainID: chainID,
 	}
 }
 
@@ -24,10 +24,10 @@ func (t *TestOpts) GetApplication() abci.Application {
 	return t.app
 }
 
-func (t *TestOpts) SetChainId(chainId string) {
-	t.chainId = chainId
+func (t *TestOpts) SetChainID(chainID string) {
+	t.chainID = chainID
 }
 
-func (t *TestOpts) GetChainId() string {
-	return t.chainId
+func (t *TestOpts) GetChainID() string {
+	return t.chainID
 }

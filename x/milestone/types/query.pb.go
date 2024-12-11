@@ -854,7 +854,7 @@ func (c *queryClient) GetMilestoneByNumber(ctx context.Context, in *QueryMilesto
 
 func (c *queryClient) GetNoAckMilestoneById(ctx context.Context, in *QueryNoAckMilestoneByIDRequest, opts ...grpc.CallOption) (*QueryNoAckMilestoneByIDResponse, error) {
 	out := new(QueryNoAckMilestoneByIDResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetNoAckMilestoneById", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/heimdallv2.milestone.Query/GetNoAckMilestoneByID", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -883,7 +883,7 @@ type QueryServer interface {
 	// GetMilestoneByNumber queries for the milestone based on the number
 	GetMilestoneByNumber(context.Context, *QueryMilestoneRequest) (*QueryMilestoneResponse, error)
 	// GetNoAckMilestoneById query for the no-ack by id
-	GetNoAckMilestoneById(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error)
+	GetNoAckMilestoneByID(context.Context, *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error)
 	// GetMilestoneProposerByTimes queries for the milestone proposer
 	GetMilestoneProposerByTimes(context.Context, *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error)
 }
@@ -907,8 +907,8 @@ func (*UnimplementedQueryServer) GetLatestNoAckMilestone(ctx context.Context, re
 func (*UnimplementedQueryServer) GetMilestoneByNumber(ctx context.Context, req *QueryMilestoneRequest) (*QueryMilestoneResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneByNumber not implemented")
 }
-func (*UnimplementedQueryServer) GetNoAckMilestoneById(ctx context.Context, req *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetNoAckMilestoneById not implemented")
+func (*UnimplementedQueryServer) GetNoAckMilestoneByID(ctx context.Context, req *QueryNoAckMilestoneByIDRequest) (*QueryNoAckMilestoneByIDResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetNoAckMilestoneByID not implemented")
 }
 func (*UnimplementedQueryServer) GetMilestoneProposerByTimes(ctx context.Context, req *QueryMilestoneProposerRequest) (*QueryMilestoneProposerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneProposerByTimes not implemented")
@@ -1014,14 +1014,14 @@ func _Query_GetNoAckMilestoneById_Handler(srv interface{}, ctx context.Context, 
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetNoAckMilestoneById(ctx, in)
+		return srv.(QueryServer).GetNoAckMilestoneByID(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/heimdallv2.milestone.Query/GetNoAckMilestoneById",
+		FullMethod: "/heimdallv2.milestone.Query/GetNoAckMilestoneByID",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetNoAckMilestoneById(ctx, req.(*QueryNoAckMilestoneByIDRequest))
+		return srv.(QueryServer).GetNoAckMilestoneByID(ctx, req.(*QueryNoAckMilestoneByIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1069,7 +1069,7 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetMilestoneByNumber_Handler,
 		},
 		{
-			MethodName: "GetNoAckMilestoneById",
+			MethodName: "GetNoAckMilestoneByID",
 			Handler:    _Query_GetNoAckMilestoneById_Handler,
 		},
 		{

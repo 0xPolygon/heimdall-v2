@@ -43,7 +43,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			borChainID := viper.GetString(FlagBorChainId)
+			borChainID := viper.GetString(FlagBorChainID)
 			if borChainID == "" {
 				return fmt.Errorf("BorChainID cannot be empty")
 			}
@@ -71,7 +71,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			}
 
 			// get span id
-			spanIDStr := viper.GetString(FlagSpanId)
+			spanIDStr := viper.GetString(FlagSpanID)
 			if spanIDStr == "" {
 				return fmt.Errorf("span id cannot be empty")
 			}
@@ -104,12 +104,12 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 	}
 
 	cmd.Flags().StringP(FlagProposerAddress, "p", "", "--proposer=<proposer-address>")
-	cmd.Flags().String(FlagSpanId, "", "--span-id=<span-id>")
-	cmd.Flags().String(FlagBorChainId, "", "--bor-chain-id=<bor-chain-id>")
+	cmd.Flags().String(FlagSpanID, "", "--span-id=<span-id>")
+	cmd.Flags().String(FlagBorChainID, "", "--bor-chain-id=<bor-chain-id>")
 	cmd.Flags().String(FlagStartBlock, "", "--start-block=<start-block-number>")
 
-	if err := cmd.MarkFlagRequired(FlagBorChainId); err != nil {
-		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagBorChainId Error: %v", err)
+	if err := cmd.MarkFlagRequired(FlagBorChainID); err != nil {
+		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagBorChainID Error: %v", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagStartBlock); err != nil {

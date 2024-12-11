@@ -60,7 +60,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 	for _, vote := range extVoteInfo {
 
 		// make sure the BlockIdFlag is valid
-		if !isBlockIdFlagValid(vote.BlockIdFlag) {
+		if !isBlockIDFlagValid(vote.BlockIdFlag) {
 			return fmt.Errorf("received vote with invalid block ID %s flag at height %d", vote.BlockIdFlag.String(), reqHeight)
 		}
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
@@ -219,7 +219,7 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 
 	for _, vote := range extVoteInfo {
 		// make sure the BlockIdFlag is valid
-		if !isBlockIdFlagValid(vote.BlockIdFlag) {
+		if !isBlockIDFlagValid(vote.BlockIdFlag) {
 			return nil, fmt.Errorf("received vote with invalid block ID %s flag at height %d", vote.BlockIdFlag.String(), currentHeight-1)
 		}
 		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
@@ -341,7 +341,7 @@ func isVoteValid(v sidetxs.Vote) bool {
 	return v == sidetxs.Vote_UNSPECIFIED || v == sidetxs.Vote_VOTE_YES || v == sidetxs.Vote_VOTE_NO
 }
 
-func isBlockIdFlagValid(flag cmtTypes.BlockIDFlag) bool {
+func isBlockIDFlagValid(flag cmtTypes.BlockIDFlag) bool {
 	return flag == cmtTypes.BlockIDFlagAbsent || flag == cmtTypes.BlockIDFlagCommit || flag == cmtTypes.BlockIDFlagNil
 }
 

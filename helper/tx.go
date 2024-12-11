@@ -70,14 +70,14 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 		return
 	}
 
-	chainId, err := client.ChainID(context.Background())
+	chainID, err := client.ChainID(context.Background())
 	if err != nil {
 		Logger.Error("unable to fetch ChainID", "error", err)
 		return
 	}
 
 	// create auth
-	auth, err = bind.NewKeyedTransactorWithChainID(ecdsaPrivateKey, chainId)
+	auth, err = bind.NewKeyedTransactorWithChainID(ecdsaPrivateKey, chainID)
 	if err != nil {
 		Logger.Error("unable to create auth object", "error", err)
 		return

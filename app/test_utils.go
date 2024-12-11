@@ -112,7 +112,7 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 		InitialHeight:   VoteExtBlockHeight,
 	}
 	if len(testOpts) > 0 && testOpts[0] != nil {
-		req.ChainId = testOpts[0].GetChainId()
+		req.ChainId = testOpts[0].GetChainID()
 	}
 
 	_, err = app.InitChain(req)

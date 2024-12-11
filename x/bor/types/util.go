@@ -17,8 +17,8 @@ func SortValidatorByAddress(a []staketypes.Validator) []staketypes.Validator {
 	return a
 }
 
-// SortSpansById sorts spans by SpanID
-func SortSpansById(a []Span) {
+// SortSpansByID sorts spans by SpanID
+func SortSpansByID(a []Span) {
 	sort.Slice(a, func(i, j int) bool {
 		return a[i].Id < a[j].Id
 	})

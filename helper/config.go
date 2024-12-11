@@ -57,7 +57,7 @@ const (
 	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
 	HeimdallServerURLFlag        = "heimdall_rest_server"
 	GRPCServerURLFlag            = "grpc_server"
-	AmqpURLFlag                  = "amqp_url"
+	AMQPURLFlag                  = "amqp_url"
 	CheckpointerPollIntervalFlag = "checkpoint_poll_interval"
 	SyncerPollIntervalFlag       = "syncer_poll_interval"
 	NoACKPollIntervalFlag        = "noack_poll_interval"
@@ -97,8 +97,8 @@ const (
 
 	// Services
 
-	// DefaultAmqpURL represents default AMQP url
-	DefaultAmqpURL           = "amqp://guest:guest@localhost:5672/"
+	// DefaultAMQPURL represents default AMQP url
+	DefaultAMQPURL           = "amqp://guest:guest@localhost:5672/"
 	DefaultHeimdallServerURL = "http://0.0.0.0:1317"
 	DefaultGRPCServerURL     = "http://0.0.0.0:1318"
 
@@ -177,12 +177,12 @@ type CustomConfig struct {
 	BorGRPCFlag    bool   `mapstructure:"bor_grpc_flag"`     // gRPC flag for bor chain
 	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
 	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometbft node url
-	SubGraphUrl    string `mapstructure:"sub_graph_url"`     // sub graph url
+	SubGraphURL    string `mapstructure:"sub_graph_url"`     // sub graph url
 
 	EthRPCTimeout time.Duration `mapstructure:"eth_rpc_timeout"` // timeout for eth rpc
 	BorRPCTimeout time.Duration `mapstructure:"bor_rpc_timeout"` // timeout for bor rpc
 
-	AmqpURL string `mapstructure:"amqp_url"` // amqp url
+	AMQPURL string `mapstructure:"amqp_url"` // amqp url
 
 	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction. eg....submit checkpoint.
 
@@ -428,7 +428,7 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		EthRPCTimeout: DefaultEthRPCTimeout,
 		BorRPCTimeout: DefaultBorRPCTimeout,
 
-		AmqpURL: DefaultAmqpURL,
+		AMQPURL: DefaultAMQPURL,
 
 		MainchainGasLimit: DefaultMainchainGasLimit,
 
@@ -623,15 +623,15 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, GRPCServerURLFlag), "Error", err)
 	}
 
-	// add AmqpURLFlag flag
+	// add AMQPURLFlag flag
 	cmd.PersistentFlags().String(
-		AmqpURLFlag,
+		AMQPURLFlag,
 		"",
 		"Set AMQP endpoint",
 	)
 
-	if err := v.BindPFlag(AmqpURLFlag, cmd.PersistentFlags().Lookup(AmqpURLFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, AmqpURLFlag), "Error", err)
+	if err := v.BindPFlag(AMQPURLFlag, cmd.PersistentFlags().Lookup(AMQPURLFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, AMQPURLFlag), "Error", err)
 	}
 
 	// add CheckpointerPollIntervalFlag flag
@@ -790,9 +790,9 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 	}
 
 	// get endpoint for CometBFT from viper/cobra
-	stringConfgValue = v.GetString(AmqpURLFlag)
+	stringConfgValue = v.GetString(AMQPURLFlag)
 	if stringConfgValue != "" {
-		c.Custom.AmqpURL = stringConfgValue
+		c.Custom.AMQPURL = stringConfgValue
 	}
 
 	// get Heimdall REST server endpoint from viper/cobra
@@ -922,8 +922,8 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 		c.Custom.CometBFTRPCUrl = cc.CometBFTRPCUrl
 	}
 
-	if cc.AmqpURL != "" {
-		c.Custom.AmqpURL = cc.AmqpURL
+	if cc.AMQPURL != "" {
+		c.Custom.AMQPURL = cc.AMQPURL
 	}
 
 	if cc.MainchainGasLimit != 0 {

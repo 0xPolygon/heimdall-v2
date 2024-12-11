@@ -40,7 +40,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context) error {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	// queue connector & http client
-	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
+	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AMQPURL)
 	_queueConnector.StartWorker()
 
 	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
@@ -144,7 +144,7 @@ func StartBridge(isStandAlone bool) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	// queue connector & http client
-	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
+	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AMQPURL)
 	_queueConnector.StartWorker()
 
 	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc)

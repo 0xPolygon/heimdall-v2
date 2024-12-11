@@ -44,11 +44,11 @@ func MigrateCommand() *cobra.Command {
 		RunE:  runMigrate,
 	}
 
-	cmd.Flags().String(flagChainId, "", "The new network chain id")
+	cmd.Flags().String(flagChainID, "", "The new network chain id")
 	cmd.Flags().String(flagGenesisTime, "", "The new network genesis time")
 	cmd.Flags().Uint64(flagInitialHeight, 0, "The new network initial height")
 
-	if err := cmd.MarkFlagRequired(flagChainId); err != nil {
+	if err := cmd.MarkFlagRequired(flagChainID); err != nil {
 		panic(err)
 	}
 
@@ -65,7 +65,7 @@ func MigrateCommand() *cobra.Command {
 
 // runMigrate handles the execution of the migrate command, performing the migration process.
 func runMigrate(cmd *cobra.Command, args []string) error {
-	chainId, err := cmd.Flags().GetString(flagChainId)
+	chainID, err := cmd.Flags().GetString(flagChainID)
 	if err != nil {
 		return err
 	}
@@ -80,7 +80,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	flagsToCheck := []string{flagChainId, flagGenesisTime, flagInitialHeight}
+	flagsToCheck := []string{flagChainID, flagGenesisTime, flagInitialHeight}
 	for _, flag := range flagsToCheck {
 		if !cmd.Flags().Changed(flag) {
 			return fmt.Errorf("flag --%s must be provided", flag)
@@ -135,7 +135,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	v036gov.RegisterLegacyAminoCodec(legacyAmino)
 	v036params.RegisterLegacyAminoCodec(legacyAmino)
 
-	if err := performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime, initialHeight); err != nil {
+	if err := performMigrations(genesisFileV1, genesisFileV2, chainID, genesisTime, initialHeight); err != nil {
 		logger.Error("Migration failed", "error", err)
 		return err
 	}
@@ -155,7 +155,7 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 
 // performMigrations loads v1 genesis file, executes all the migration functions on the genesis data.
 // Stores the new v2 genesis file on disk.
-func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string, initialHeight uint64) error {
+func performMigrations(genesisFileV1, genesisFileV2, chainID, genesisTime string, initialHeight uint64) error {
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
 	genesisData, err := utils.LoadJSONFromFile(genesisFileV1)
@@ -215,7 +215,7 @@ func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string
 		return err
 	}
 
-	genesisData["chain_id"] = chainId
+	genesisData["chain_id"] = chainID
 	genesisData["genesis_time"] = genesisTime
 	strInitialHeight := strconv.FormatUint(initialHeight, 10)
 	genesisData["initial_height"] = strInitialHeight
@@ -844,7 +844,7 @@ var (
 )
 
 const (
-	flagChainId       = "chain-id"
+	flagChainID       = "chain-id"
 	flagGenesisTime   = "genesis-time"
 	flagInitialHeight = "initial-height"
 )

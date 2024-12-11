@@ -20,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Query_GetSpanList_FullMethodName     = "/heimdallv2.bor.Query/GetSpanList"
-	Query_GetSpanById_FullMethodName     = "/heimdallv2.bor.Query/GetSpanById"
+	Query_GetSpanById_FullMethodName     = "/heimdallv2.bor.Query/GetSpanByID"
 	Query_GetLatestSpan_FullMethodName   = "/heimdallv2.bor.Query/GetLatestSpan"
 	Query_GetNextSpanSeed_FullMethodName = "/heimdallv2.bor.Query/GetNextSpanSeed"
 	Query_GetNextSpan_FullMethodName     = "/heimdallv2.bor.Query/GetNextSpan"
@@ -136,7 +136,7 @@ func (UnimplementedQueryServer) GetSpanList(context.Context, *QuerySpanListReque
 	return nil, status.Errorf(codes.Unimplemented, "method GetSpanList not implemented")
 }
 func (UnimplementedQueryServer) GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSpanById not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method GetSpanByID not implemented")
 }
 func (UnimplementedQueryServer) GetLatestSpan(context.Context, *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLatestSpan not implemented")
@@ -283,7 +283,7 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetSpanList_Handler,
 		},
 		{
-			MethodName: "GetSpanById",
+			MethodName: "GetSpanByID",
 			Handler:    _Query_GetSpanById_Handler,
 		},
 		{

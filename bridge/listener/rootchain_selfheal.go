@@ -31,19 +31,19 @@ var (
 )
 
 type subGraphClient struct {
-	graphUrl   string
+	graphURL   string
 	httpClient *http.Client
 }
 
 // startSelfHealing starts self-healing processes for all required events
 func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
-	if !helper.GetConfig().EnableSH || helper.GetConfig().SubGraphUrl == "" {
+	if !helper.GetConfig().EnableSH || helper.GetConfig().SubGraphURL == "" {
 		rl.Logger.Info("Self-healing disabled")
 		return
 	}
 
 	rl.subGraphClient = &subGraphClient{
-		graphUrl:   helper.GetConfig().SubGraphUrl,
+		graphURL:   helper.GetConfig().SubGraphURL,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
 	}
 
@@ -142,23 +142,23 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 
 // processStateSynced checks if chains are in sync, otherwise syncs them by broadcasting missing events
 func (rl *RootChainListener) processStateSynced(ctx context.Context) {
-	latestPolygonStateId, err := rl.getCurrentStateID(ctx)
+	latestPolygonStateID, err := rl.getCurrentStateID(ctx)
 	if err != nil {
 		rl.Logger.Error("Unable to fetch latest state id from state receiver contract", "error", err)
 		return
 	}
 
-	latestEthereumStateId, err := rl.getLatestStateID(ctx)
+	latestEthereumStateID, err := rl.getLatestStateID(ctx)
 	if err != nil {
 		rl.Logger.Error("Unable to fetch latest state id from state sender contract", "error", err)
 		return
 	}
 
-	if latestEthereumStateId.Cmp(latestPolygonStateId) != 1 {
+	if latestEthereumStateID.Cmp(latestPolygonStateID) != 1 {
 		return
 	}
 
-	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
+	for i := latestPolygonStateID.Int64() + 1; i <= latestEthereumStateID.Int64(); i++ {
 		if _, err = util.GetClerkEventRecord(i); err == nil {
 			rl.Logger.Info("State found on heimdall", "id", i)
 			continue

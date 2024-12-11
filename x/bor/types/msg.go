@@ -13,7 +13,7 @@ func NewMsgProposeSpan(
 	proposer string,
 	startBlock uint64,
 	endBlock uint64,
-	chainId string,
+	chainID string,
 	seed []byte,
 ) *MsgProposeSpan {
 	return &MsgProposeSpan{
@@ -21,7 +21,7 @@ func NewMsgProposeSpan(
 		Proposer:   util.FormatAddress(proposer),
 		StartBlock: startBlock,
 		EndBlock:   endBlock,
-		ChainId:    chainId,
+		ChainId:    chainID,
 		Seed:       seed,
 	}
 }

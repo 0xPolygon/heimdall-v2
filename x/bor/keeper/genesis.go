@@ -14,7 +14,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	}
 
 	// sort data spans before inserting to ensure lastSpanId fetched is correct
-	types.SortSpansById(data.Spans)
+	types.SortSpansByID(data.Spans)
 
 	// add new span
 	for _, span := range data.Spans {
@@ -48,7 +48,7 @@ func (k Keeper) ExportGenesis(ctx context.Context) *types.GenesisState {
 		spans[i] = *spanPtr
 	}
 
-	types.SortSpansById(spans)
+	types.SortSpansByID(spans)
 
 	return types.NewGenesisState(
 		params,

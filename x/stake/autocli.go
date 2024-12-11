@@ -26,7 +26,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "val_address"}},
 				},
 				{
-					RpcMethod:      "GetValidatorById",
+					RpcMethod:      "GetValidatorByID",
 					Use:            "validator [id]",
 					Short:          "Query validator info for a given validator id",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}},

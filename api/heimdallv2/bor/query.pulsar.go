@@ -5852,13 +5852,13 @@ var file_heimdallv2_bor_query_proto_depIdxs = []int32{
 	12, // 5: heimdallv2.bor.QueryNextSpanResponse.span:type_name -> heimdallv2.bor.Span
 	15, // 6: heimdallv2.bor.QueryParamsResponse.params:type_name -> heimdallv2.bor.Params
 	2,  // 7: heimdallv2.bor.Query.GetSpanList:input_type -> heimdallv2.bor.QuerySpanListRequest
-	0,  // 8: heimdallv2.bor.Query.GetSpanById:input_type -> heimdallv2.bor.QuerySpanByIdRequest
+	0,  // 8: heimdallv2.bor.Query.GetSpanByID:input_type -> heimdallv2.bor.QuerySpanByIdRequest
 	4,  // 9: heimdallv2.bor.Query.GetLatestSpan:input_type -> heimdallv2.bor.QueryLatestSpanRequest
 	6,  // 10: heimdallv2.bor.Query.GetNextSpanSeed:input_type -> heimdallv2.bor.QueryNextSpanSeedRequest
 	8,  // 11: heimdallv2.bor.Query.GetNextSpan:input_type -> heimdallv2.bor.QueryNextSpanRequest
 	10, // 12: heimdallv2.bor.Query.GetBorParams:input_type -> heimdallv2.bor.QueryParamsRequest
 	3,  // 13: heimdallv2.bor.Query.GetSpanList:output_type -> heimdallv2.bor.QuerySpanListResponse
-	1,  // 14: heimdallv2.bor.Query.GetSpanById:output_type -> heimdallv2.bor.QuerySpanByIdResponse
+	1,  // 14: heimdallv2.bor.Query.GetSpanByID:output_type -> heimdallv2.bor.QuerySpanByIdResponse
 	5,  // 15: heimdallv2.bor.Query.GetLatestSpan:output_type -> heimdallv2.bor.QueryLatestSpanResponse
 	7,  // 16: heimdallv2.bor.Query.GetNextSpanSeed:output_type -> heimdallv2.bor.QueryNextSpanSeedResponse
 	9,  // 17: heimdallv2.bor.Query.GetNextSpan:output_type -> heimdallv2.bor.QueryNextSpanResponse
