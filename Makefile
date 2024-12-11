@@ -95,7 +95,7 @@ mock:
 	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -destination=helper/mocks/mock_http_client.go.go -package=mocks --source=./helper/util.go HTTPClient
 	go install github.com/vektra/mockery/v2/...@latest
-	cd helper && mockery --name IContractCaller  --output ./mocks --filename=mock_contract_caller.go
+	cd helper && mockery --name IContractCaller  --output ./mocks --filename=i_contract_caller.go
 
 
 ###############################################################################
