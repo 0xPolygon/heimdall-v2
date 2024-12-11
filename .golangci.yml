@@ -14,8 +14,10 @@ linters:
     - decorder
     - dogsled
     - durationcheck
+    - errcheck
     - errchkjson
     - errname
+    - errorlint
     # - exhaustive
     # - gocognit
     - goconst

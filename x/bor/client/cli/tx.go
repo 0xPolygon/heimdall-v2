@@ -57,7 +57,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 
 			_, err = ac.StringToBytes(proposer)
 			if err != nil {
-				return fmt.Errorf("proposer address is invalid: %v", err)
+				return fmt.Errorf("proposer address is invalid: %w", err)
 			}
 
 			// get start block

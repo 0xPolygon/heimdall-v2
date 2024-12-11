@@ -67,7 +67,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 
 				signerBytes, err := ac.StringToBytes(proposer.Validator.Signer)
 				if err != nil {
-					return fmt.Errorf("the validator signer address is invalid: %v", err)
+					return fmt.Errorf("the validator signer address is invalid: %w", err)
 				}
 
 				if !bytes.Equal(signerBytes, helper.GetAddress()) {
@@ -91,7 +91,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 			if proposer == "" {
 				proposer, err = ac.BytesToString(helper.GetAddress())
 				if err != nil {
-					return fmt.Errorf("the proposer address is invalid: %v", err)
+					return fmt.Errorf("the proposer address is invalid: %w", err)
 				}
 			}
 
@@ -172,7 +172,7 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 			if proposer == "" {
 				proposer, err = ac.BytesToString(helper.GetAddress())
 				if err != nil {
-					return fmt.Errorf("the proposer address is invalid: %v", err)
+					return fmt.Errorf("the proposer address is invalid: %w", err)
 				}
 			}
 
@@ -219,7 +219,7 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 				uint64(viper.GetInt64(FlagCheckpointLogIndex)),
 			)
 			if err != nil {
-				return fmt.Errorf("invalid transaction for header block. Error: %v", err)
+				return fmt.Errorf("invalid transaction for header block. Error: %w", err)
 			}
 
 			msg := checkpointTypes.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))

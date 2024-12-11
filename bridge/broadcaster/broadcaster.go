@@ -151,7 +151,7 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	ac := addressCodec.NewHexCodec()
 	addressString, err := ac.BytesToString(address)
 	if err != nil {
-		return fmt.Errorf("error converting address to string: %v", err)
+		return fmt.Errorf("error converting address to string: %w", err)
 	}
 
 	// fetch from APIs
