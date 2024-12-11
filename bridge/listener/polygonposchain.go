@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/RichardKnop/machinery/v1/tasks"
-
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/RichardKnop/machinery/v1/tasks"
 )
 
 // BorChainListener - Listens to and process headerBlocks from bor chain

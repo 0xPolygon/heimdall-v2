@@ -9,14 +9,13 @@ import (
 	"strconv"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // SpanProcessor - process span related events

@@ -7,11 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RichardKnop/machinery/v1/tasks"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/0xPolygon/heimdall-v2/helper"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/RichardKnop/machinery/v1/tasks"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 const (

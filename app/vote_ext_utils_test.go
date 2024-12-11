@@ -7,6 +7,9 @@ import (
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
+	util "github.com/0xPolygon/heimdall-v2/common/address"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -16,10 +19,6 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
-
-	util "github.com/0xPolygon/heimdall-v2/common/address"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
 func TestValidateVoteExtensions(t *testing.T) {

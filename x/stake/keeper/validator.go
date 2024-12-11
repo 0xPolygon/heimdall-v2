@@ -7,10 +7,9 @@ import (
 
 	"cosmossdk.io/collections"
 	addresscodec "cosmossdk.io/core/address"
-	abci "github.com/cometbft/cometbft/abci/types"
-
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	abci "github.com/cometbft/cometbft/abci/types"
 )
 
 // AddValidator adds validator indexed with address

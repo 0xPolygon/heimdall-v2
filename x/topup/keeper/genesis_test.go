@@ -6,10 +6,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 )
 
 // TestInitExportGenesis tests import and export of genesis state

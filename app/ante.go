@@ -3,10 +3,9 @@ package app
 import (
 	"errors"
 
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
 // HandlerOptions are the options required for constructing a default SDK AnteHandler.

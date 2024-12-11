@@ -6,12 +6,11 @@ import (
 	"strconv"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common/math"
-
-	"github.com/0xPolygon/heimdall-v2/types"
-	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 var SequenceNumber = "sequence_number"

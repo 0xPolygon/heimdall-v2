@@ -8,10 +8,9 @@ import (
 	"math/rand"
 	"strconv"
 
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 const (

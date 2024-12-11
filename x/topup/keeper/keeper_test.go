@@ -8,6 +8,14 @@ import (
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
+	util "github.com/0xPolygon/heimdall-v2/common/address"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/types"
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
+	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -20,15 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
-
-	util "github.com/0xPolygon/heimdall-v2/common/address"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/types"
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
-	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
-	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 const (

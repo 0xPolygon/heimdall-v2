@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // ValidateMilestone validates the structure of the milestone

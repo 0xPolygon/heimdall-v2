@@ -4,10 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/telemetry"
-
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // EndBlocker called at the end of every block, and returns validator updates

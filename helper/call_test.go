@@ -5,12 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/x/auth/signing"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 	"github.com/0xPolygon/heimdall-v2/contracts/slashmanager"
@@ -18,6 +12,11 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/x/auth/signing"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 const (

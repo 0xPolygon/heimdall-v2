@@ -10,6 +10,13 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/0xPolygon/heimdall-v2/app"
+	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -32,14 +39,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
-
-	"github.com/0xPolygon/heimdall-v2/app"
-	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
-	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 var (

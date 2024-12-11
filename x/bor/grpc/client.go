@@ -6,11 +6,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/retry"
+	proto "github.com/maticnetwork/polyproto/bor"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
-
-	proto "github.com/maticnetwork/polyproto/bor"
 )
 
 type BorGRPCClient struct {

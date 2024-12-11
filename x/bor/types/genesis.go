@@ -3,10 +3,9 @@ package types
 import (
 	"encoding/json"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/cosmos/cosmos-sdk/codec"
 )
 
 // NewGenesisState creates a new genesis state for bor.

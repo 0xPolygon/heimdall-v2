@@ -3,16 +3,15 @@ package keeper_test
 import (
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/types/query"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/golang/mock/gomock"
-
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/golang/mock/gomock"
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {

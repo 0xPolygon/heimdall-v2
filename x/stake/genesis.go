@@ -3,13 +3,12 @@ package stake
 import (
 	"errors"
 
+	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // ValidateGenesis validates the provided stake genesis state to ensure that listed

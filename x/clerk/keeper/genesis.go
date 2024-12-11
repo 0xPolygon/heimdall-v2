@@ -1,9 +1,8 @@
 package keeper
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // InitGenesis sets clerk information for genesis.

@@ -3,13 +3,12 @@ package keeper_test
 import (
 	"time"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/golang/mock/gomock"
-
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/golang/mock/gomock"
 )
 
 func (s *KeeperTestSuite) TestQueryParams() {

@@ -8,6 +8,8 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
@@ -16,9 +18,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness

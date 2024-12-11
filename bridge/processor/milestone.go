@@ -7,13 +7,12 @@ import (
 	"math/big"
 	"time"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/google/uuid"
-
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/google/uuid"
 )
 
 // MilestoneProcessor - process milestone related events

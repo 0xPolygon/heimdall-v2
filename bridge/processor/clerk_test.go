@@ -11,6 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/listener"
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -21,13 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
-
-	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/bridge/listener"
-	"github.com/0xPolygon/heimdall-v2/bridge/queue"
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 )
 
 func BenchmarkSendStateSyncedToHeimdall(b *testing.B) {

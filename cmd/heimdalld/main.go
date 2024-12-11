@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
-
 	"github.com/0xPolygon/heimdall-v2/app"
 	heimdalld "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd"
+	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 )
 
 func main() {

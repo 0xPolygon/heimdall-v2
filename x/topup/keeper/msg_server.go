@@ -5,12 +5,11 @@ import (
 	"math/big"
 
 	"cosmossdk.io/errors"
+	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 type msgServer struct {

@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	cmtprotocrypto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cosmosCryto "github.com/cometbft/cometbft/proto/tendermint/crypto"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
-
-	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 // NewValidator func creates a new validator

@@ -1,11 +1,10 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/streadway/amqp"
-
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/spf13/cobra"
+	"github.com/streadway/amqp"
 )
 
 // purgeCmd represents the reset of queue

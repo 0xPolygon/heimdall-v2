@@ -1,10 +1,9 @@
 package keeper_test
 
 import (
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
-
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 const (

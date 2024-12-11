@@ -6,16 +6,15 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/appmodule"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 // ConsensusVersion defines the current x/clerk module consensus version.

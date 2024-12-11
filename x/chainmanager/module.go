@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"cosmossdk.io/core/appmodule"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/simulation"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -15,10 +18,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	simtypes "github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/simulation"
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 // ConsensusVersion defines the current x/chainmanager module consensus version.

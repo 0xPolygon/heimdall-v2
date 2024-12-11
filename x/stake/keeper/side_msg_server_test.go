@@ -9,6 +9,11 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -18,12 +23,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-
-	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var addressCodec = address.HexCodec{}

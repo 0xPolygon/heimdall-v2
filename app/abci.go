@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
 )
 
 // Note: returning any error in ABCI functions will cause cometBFT to panic

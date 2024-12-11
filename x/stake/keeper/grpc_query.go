@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var _ types.QueryServer = queryServer{}

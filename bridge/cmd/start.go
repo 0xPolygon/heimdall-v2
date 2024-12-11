@@ -9,6 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/listener"
+	"github.com/0xPolygon/heimdall-v2/bridge/processor"
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -19,13 +25,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/bridge/listener"
-	"github.com/0xPolygon/heimdall-v2/bridge/processor"
-	"github.com/0xPolygon/heimdall-v2/bridge/queue"
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 const (

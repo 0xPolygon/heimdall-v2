@@ -12,6 +12,11 @@ import (
 	"time"
 
 	"cosmossdk.io/x/tx/signing"
+	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
+	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
+	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
+	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/verify"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -22,12 +27,6 @@ import (
 	paramTypes "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
-
-	v036gov "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/gov/v036"
-	v036params "github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/params/v036"
-	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
-	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/verify"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 // TODO HV2: Initially in heimdall v2 we used HexBytes, HeimdallHash and TxHash

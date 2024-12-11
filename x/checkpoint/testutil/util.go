@@ -4,9 +4,8 @@ import (
 	"crypto/rand"
 	"math/big"
 
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 )
 
 func RandomBytes() []byte {

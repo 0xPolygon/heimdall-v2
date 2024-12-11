@@ -3,9 +3,8 @@ package keeper
 import (
 	"fmt"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // InitGenesis sets x/topup module information for genesis

@@ -6,17 +6,16 @@ import (
 	"strconv"
 
 	"cosmossdk.io/core/address"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
-	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var logger = helper.Logger.With("module", "checkpoint/client/cli")

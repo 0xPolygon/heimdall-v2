@@ -3,12 +3,11 @@ package keeper_test
 import (
 	"testing"
 
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 func (s *KeeperTestSuite) TestProposeSpan() {

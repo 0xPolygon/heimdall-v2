@@ -7,6 +7,11 @@ import (
 	"time"
 
 	"cosmossdk.io/core/appmodule"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/bor/client/cli"
+	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -15,12 +20,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/bor/client/cli"
-	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
 // ConsensusVersion defines the current x/bor module consensus version.

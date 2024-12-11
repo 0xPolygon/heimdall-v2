@@ -9,6 +9,9 @@ import (
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
+	heimdallApp "github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
+	hmTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	logger "github.com/cometbft/cometbft/libs/log"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -16,10 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types"
-
-	heimdallApp "github.com/0xPolygon/heimdall-v2/app"
-	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
-	hmTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // VerifyMigration verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file

@@ -3,16 +3,15 @@ package keeper_test
 import (
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
+	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
-
-	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
-	milestoneSim "github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
 
 const (
