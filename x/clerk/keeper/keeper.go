@@ -148,7 +148,6 @@ func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint
 
 		return false, nil // Continue walking
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +184,7 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 		return records, err
 	}
 
-	var allRecords = make([]types.EventRecord, 0, len(stateIDs))
+	allRecords := make([]types.EventRecord, 0, len(stateIDs))
 
 	// loop through records to get valid records
 	for _, stateID := range stateIDs {
@@ -279,7 +278,6 @@ func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 // HasRecordSequence checks if record already exists
 func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 	isPresent, err := k.RecordSequences.Has(ctx, sequence)
-
 	if err != nil {
 		return false
 	}

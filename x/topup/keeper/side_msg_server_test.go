@@ -110,7 +110,6 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 
 	t.Run("no log", func(t *testing.T) {
-
 		logIndex := uint64(10)
 		blockNumber := uint64(599)
 		txReceipt := &ethTypes.Receipt{
@@ -134,7 +133,6 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 
 		res := sideHandler(ctx, &msg)
 		require.Equal(res, sidetxs.Vote_VOTE_NO, "side tx handler should fail")
-
 	})
 
 	t.Run("block mismatch", func(t *testing.T) {

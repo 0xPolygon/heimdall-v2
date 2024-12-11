@@ -441,7 +441,6 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
 	if err != nil {
 		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
@@ -675,9 +674,7 @@ func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string,
 
 // DecodeValidatorTopupFeesEvent represents topUp for fees tokens
 func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
-	var (
-		event = new(stakinginfo.StakinginfoTopUpFee)
-	)
+	event := new(stakinginfo.StakinginfoTopUpFee)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -715,9 +712,7 @@ func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddressString string, 
 
 // DecodeValidatorStakeUpdateEvent represents validator stake update event
 func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
-	var (
-		event = new(stakinginfo.StakinginfoStakeUpdate)
-	)
+	event := new(stakinginfo.StakinginfoStakeUpdate)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -732,14 +727,11 @@ func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString s
 	}
 
 	return nil, errors.New("event not found")
-
 }
 
 // DecodeValidatorExitEvent represents validator stake unStake event
 func (c *ContractCaller) DecodeValidatorExitEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
-	var (
-		event = new(stakinginfo.StakinginfoUnstakeInit)
-	)
+	event := new(stakinginfo.StakinginfoUnstakeInit)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -754,14 +746,11 @@ func (c *ContractCaller) DecodeValidatorExitEvent(contractAddressString string, 
 	}
 
 	return nil, errors.New("event not found")
-
 }
 
 // DecodeSignerUpdateEvent represents sig update event
 func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
-	var (
-		event = new(stakinginfo.StakinginfoSignerChange)
-	)
+	event := new(stakinginfo.StakinginfoSignerChange)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -780,9 +769,7 @@ func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, r
 
 // DecodeStateSyncedEvent decode state sync data
 func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*statesender.StatesenderStateSynced, error) {
-	var (
-		event = new(statesender.StatesenderStateSynced)
-	)
+	event := new(statesender.StatesenderStateSynced)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -803,9 +790,7 @@ func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, re
 
 // DecodeSlashedEvent represents tick ack on contract
 func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSlashed, error) {
-	var (
-		event = new(stakinginfo.StakinginfoSlashed)
-	)
+	event := new(stakinginfo.StakinginfoSlashed)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -824,9 +809,7 @@ func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receip
 
 // DecodeUnJailedEvent represents unJail on contract
 func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnJailed, error) {
-	var (
-		event = new(stakinginfo.StakinginfoUnJailed)
-	)
+	event := new(stakinginfo.StakinginfoUnJailed)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -850,7 +833,6 @@ func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, recei
 // CurrentAccountStateRoot get current account root from on chain
 func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error) {
 	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(nil)
-
 	if err != nil {
 		Logger.Error("unable to get current account state root", "error", err)
 
@@ -996,9 +978,11 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 
 	var err error
 
-	contractsABIs := [8]string{rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
+	contractsABIs := [8]string{
+		rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
 		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
-		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI}
+		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI,
+	}
 
 	// iterate over supported ABIs
 	for _, contractABI := range contractsABIs {

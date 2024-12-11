@@ -18,7 +18,6 @@ func NewMsgEventRecord(
 	contractAddress sdk.AccAddress,
 	data []byte,
 	chainID string,
-
 ) MsgEventRecord {
 	contractAddressBytes, err := hexCodec.NewHexCodec().BytesToString(contractAddress)
 	if err != nil {

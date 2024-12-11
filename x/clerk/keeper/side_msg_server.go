@@ -19,9 +19,7 @@ type sideMsgServer struct {
 	Keeper
 }
 
-var (
-	msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
-)
+var msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.

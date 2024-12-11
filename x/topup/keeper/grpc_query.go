@@ -122,7 +122,6 @@ func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types
 
 // GetDividendAccountRootHash implements the gRPC service handler to query the root hash of all dividend accounts
 func (q queryServer) GetDividendAccountRootHash(ctx context.Context, _ *types.QueryDividendAccountRootHashRequest) (*types.QueryDividendAccountRootHashResponse, error) {
-
 	dividendAccounts, err := q.k.GetAllDividendAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -157,7 +156,6 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 	}
 
 	return &types.QueryVerifyAccountProofResponse{IsVerified: accountProofStatus}, nil
-
 }
 
 // GetAccountProofByAddress implements the gRPC service handler to get the account proof by its address

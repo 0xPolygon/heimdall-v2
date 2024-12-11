@@ -25,9 +25,11 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-var Address1 = "0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"
-var Address2 = "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
-var TxHash1 = "0x000000000000000000000000000000000000000000000000000000000000dead"
+var (
+	Address1 = "0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+	Address2 = "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+	TxHash1  = "0x000000000000000000000000000000000000000000000000000000000000dead"
+)
 
 // KeeperTestSuite integrate test suite context object
 type KeeperTestSuite struct {

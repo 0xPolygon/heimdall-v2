@@ -14,9 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var (
-	topupMsgTypeURL = sdk.MsgTypeURL(&types.MsgTopupTx{})
-)
+var topupMsgTypeURL = sdk.MsgTypeURL(&types.MsgTopupTx{})
 
 type sideMsgServer struct {
 	k *Keeper

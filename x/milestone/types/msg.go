@@ -9,8 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var _ sdk.Msg = &MsgMilestone{}
-var _ sdk.Msg = &MsgMilestoneTimeout{}
+var (
+	_ sdk.Msg = &MsgMilestone{}
+	_ sdk.Msg = &MsgMilestoneTimeout{}
+)
 
 // NewMsgMilestoneBlock creates new milestone message using mentioned arguments
 func NewMsgMilestoneBlock(

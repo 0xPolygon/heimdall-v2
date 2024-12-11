@@ -26,8 +26,8 @@ type SideMsgServer interface {
 func CommonRegisterSideMsgServer(
 	sideCfg SideTxConfigurator,
 	srv SideMsgServer,
-	serviceDesc grpc.ServiceDesc) {
-
+	serviceDesc grpc.ServiceDesc,
+) {
 	for _, service := range serviceDesc.Methods {
 
 		var requestTypeName string

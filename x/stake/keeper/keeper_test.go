@@ -96,7 +96,6 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 	types.RegisterSideMsgServer(s.sideMsgCfg, stakeKeeper.NewSideMsgServerImpl(&keeper))
-
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -212,7 +211,6 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 }
 
 func (s *KeeperTestSuite) TestCurrentValidator() {
-
 	ctx, keeper, require, sKeeper, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.stakeKeeper, s.checkpointKeeper
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))

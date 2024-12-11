@@ -118,7 +118,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	ctx = ctx.WithBlockHeight(int64(4))
 
 	s.Run("Previous milestone is still in voting phase", func() {
-
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
 			start,
@@ -137,7 +136,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	ctx = ctx.WithBlockHeight(int64(6))
 
 	s.Run("Milestone not in continuity", func() {
-
 		err := keeper.AddMilestone(ctx, header)
 		require.NoError(err)
 

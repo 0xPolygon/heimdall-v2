@@ -25,17 +25,17 @@ import (
 )
 
 // Suppress "imported and not used" errors
-var _ codes.Code
-var _ io.Reader
-var _ status.Status
-var _ = runtime.String
-var _ = utilities.NewDoubleArray
-var _ = descriptor.ForMessage
-var _ = metadata.Join
-
 var (
-	filter_Query_IsTopupTxOld_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
+	_ codes.Code
+	_ io.Reader
+	_ status.Status
+	_ = runtime.String
+	_ = utilities.NewDoubleArray
+	_ = descriptor.ForMessage
+	_ = metadata.Join
 )
+
+var filter_Query_IsTopupTxOld_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 
 func request_Query_IsTopupTxOld_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryTopupSequenceRequest
@@ -50,7 +50,6 @@ func request_Query_IsTopupTxOld_0(ctx context.Context, marshaler runtime.Marshal
 
 	msg, err := client.IsTopupTxOld(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Query_IsTopupTxOld_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -66,12 +65,9 @@ func local_request_Query_IsTopupTxOld_0(ctx context.Context, marshaler runtime.M
 
 	msg, err := server.IsTopupTxOld(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_Query_GetTopupTxSequence_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
+var filter_Query_GetTopupTxSequence_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
 
 func request_Query_GetTopupTxSequence_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryTopupSequenceRequest
@@ -86,7 +82,6 @@ func request_Query_GetTopupTxSequence_0(ctx context.Context, marshaler runtime.M
 
 	msg, err := client.GetTopupTxSequence(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Query_GetTopupTxSequence_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -102,7 +97,6 @@ func local_request_Query_GetTopupTxSequence_0(ctx context.Context, marshaler run
 
 	msg, err := server.GetTopupTxSequence(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_Query_GetDividendAccountByAddress_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -122,14 +116,12 @@ func request_Query_GetDividendAccountByAddress_0(ctx context.Context, marshaler 
 	}
 
 	protoReq.Address, err = runtime.String(val)
-
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
 	}
 
 	msg, err := client.GetDividendAccountByAddress(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Query_GetDividendAccountByAddress_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -149,14 +141,12 @@ func local_request_Query_GetDividendAccountByAddress_0(ctx context.Context, mars
 	}
 
 	protoReq.Address, err = runtime.String(val)
-
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
 	}
 
 	msg, err := server.GetDividendAccountByAddress(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_Query_GetDividendAccountRootHash_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -165,7 +155,6 @@ func request_Query_GetDividendAccountRootHash_0(ctx context.Context, marshaler r
 
 	msg, err := client.GetDividendAccountRootHash(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Query_GetDividendAccountRootHash_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -174,12 +163,9 @@ func local_request_Query_GetDividendAccountRootHash_0(ctx context.Context, marsh
 
 	msg, err := server.GetDividendAccountRootHash(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
-var (
-	filter_Query_VerifyAccountProofByAddress_0 = &utilities.DoubleArray{Encoding: map[string]int{"address": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
-)
+var filter_Query_VerifyAccountProofByAddress_0 = &utilities.DoubleArray{Encoding: map[string]int{"address": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 
 func request_Query_VerifyAccountProofByAddress_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryVerifyAccountProofRequest
@@ -198,7 +184,6 @@ func request_Query_VerifyAccountProofByAddress_0(ctx context.Context, marshaler 
 	}
 
 	protoReq.Address, err = runtime.String(val)
-
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
 	}
@@ -212,7 +197,6 @@ func request_Query_VerifyAccountProofByAddress_0(ctx context.Context, marshaler 
 
 	msg, err := client.VerifyAccountProofByAddress(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Query_VerifyAccountProofByAddress_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -232,7 +216,6 @@ func local_request_Query_VerifyAccountProofByAddress_0(ctx context.Context, mars
 	}
 
 	protoReq.Address, err = runtime.String(val)
-
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
 	}
@@ -246,7 +229,6 @@ func local_request_Query_VerifyAccountProofByAddress_0(ctx context.Context, mars
 
 	msg, err := server.VerifyAccountProofByAddress(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 func request_Query_GetAccountProofByAddress_0(ctx context.Context, marshaler runtime.Marshaler, client QueryClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -266,14 +248,12 @@ func request_Query_GetAccountProofByAddress_0(ctx context.Context, marshaler run
 	}
 
 	protoReq.Address, err = runtime.String(val)
-
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
 	}
 
 	msg, err := client.GetAccountProofByAddress(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
-
 }
 
 func local_request_Query_GetAccountProofByAddress_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
@@ -293,14 +273,12 @@ func local_request_Query_GetAccountProofByAddress_0(ctx context.Context, marshal
 	}
 
 	protoReq.Address, err = runtime.String(val)
-
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "address", err)
 	}
 
 	msg, err := server.GetAccountProofByAddress(ctx, &protoReq)
 	return msg, metadata, err
-
 }
 
 // RegisterQueryHandlerServer registers the http handlers for service Query to "mux".
@@ -308,7 +286,6 @@ func local_request_Query_GetAccountProofByAddress_0(ctx context.Context, marshal
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterQueryHandlerFromEndpoint instead.
 func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, server QueryServer) error {
-
 	mux.Handle("GET", pattern_Query_IsTopupTxOld_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -329,7 +306,6 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		}
 
 		forward_Query_IsTopupTxOld_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetTopupTxSequence_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -352,7 +328,6 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		}
 
 		forward_Query_GetTopupTxSequence_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetDividendAccountByAddress_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -375,7 +350,6 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		}
 
 		forward_Query_GetDividendAccountByAddress_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetDividendAccountRootHash_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -398,7 +372,6 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		}
 
 		forward_Query_GetDividendAccountRootHash_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_VerifyAccountProofByAddress_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -421,7 +394,6 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		}
 
 		forward_Query_VerifyAccountProofByAddress_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetAccountProofByAddress_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -444,7 +416,6 @@ func RegisterQueryHandlerServer(ctx context.Context, mux *runtime.ServeMux, serv
 		}
 
 		forward_Query_GetAccountProofByAddress_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil
@@ -487,7 +458,6 @@ func RegisterQueryHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
 // "QueryClient" to call the correct interceptors.
 func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, client QueryClient) error {
-
 	mux.Handle("GET", pattern_Query_IsTopupTxOld_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -505,7 +475,6 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_Query_IsTopupTxOld_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetTopupTxSequence_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -525,7 +494,6 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_Query_GetTopupTxSequence_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetDividendAccountByAddress_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -545,7 +513,6 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_Query_GetDividendAccountByAddress_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetDividendAccountRootHash_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -565,7 +532,6 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_Query_GetDividendAccountRootHash_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_VerifyAccountProofByAddress_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -585,7 +551,6 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_Query_VerifyAccountProofByAddress_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	mux.Handle("GET", pattern_Query_GetAccountProofByAddress_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -605,7 +570,6 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 		}
 
 		forward_Query_GetAccountProofByAddress_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
-
 	})
 
 	return nil

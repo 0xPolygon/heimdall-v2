@@ -95,6 +95,7 @@ func (s *KeeperTestSuite) SetupTest() {
 func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
+
 func (s *KeeperTestSuite) TestAddCheckpoint() {
 	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 
