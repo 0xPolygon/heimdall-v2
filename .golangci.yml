@@ -33,6 +33,7 @@ linters:
     - nilerr
     - nilnil
     - noctx
+    - nolintlint
     #- nosprintfhostport
     - paralleltest
     - prealloc
