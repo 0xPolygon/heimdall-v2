@@ -199,7 +199,7 @@ func (sp *SpanProcessor) isSpanProposer(nextSpanProducers []stakeTypes.Validator
 
 // fetch next span details from heimdall.
 func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.Span, error) {
-	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(util.NextSpanInfoURL), nil)
+	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.NextSpanInfoURL, strconv.FormatUint(id, 10))), nil)
 	if err != nil {
 		sp.Logger.Error("Error creating a new request", "error", err)
 		return nil, err
@@ -215,10 +215,10 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 	fmt.Println("FROM ADDR: ", helper.GetFromAddress(sp.cliCtx))
 
 	q := req.URL.Query()
-	q.Add("span_id", strconv.FormatUint(id, 10))
+	// q.Add("span_id", strconv.FormatUint(id, 10))
 	q.Add("start_block", strconv.FormatUint(start, 10))
 	q.Add("chain_id", configParams.ChainParams.BorChainId)
-	q.Add("proposer", helper.GetFromAddress(sp.cliCtx))
+	// q.Add("proposer", helper.GetFromAddress(sp.cliCtx))
 	req.URL.RawQuery = q.Encode()
 
 	// fetch next span details

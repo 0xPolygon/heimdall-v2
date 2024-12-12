@@ -262,13 +262,12 @@ func initRootCmd(
 }
 
 func checkServerStatus(url string, resultChan chan<- string) {
-	fmt.Println("URL BEING QUERIED!!: ", url)
-	ticker := time.NewTicker(2 * time.Second) // Ticker to retry every 2 seconds
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-ticker.C: // On each tick, perform the fetch operation
+		case <-ticker.C:
 			resp, err := http.Get(url)
 			if err != nil {
 				fmt.Println("Error fetching the URL:", err)
@@ -276,7 +275,6 @@ func checkServerStatus(url string, resultChan chan<- string) {
 			}
 			defer resp.Body.Close()
 
-			// If we get an HTTP 200 OK status
 			if resp.StatusCode == http.StatusOK {
 				body, err := io.ReadAll(resp.Body)
 				if err != nil {
@@ -284,9 +282,8 @@ func checkServerStatus(url string, resultChan chan<- string) {
 					continue
 				}
 
-				resultChan <- string(body) // Send result via resultChan
-				// doneChan <- struct{}{}     // Signal completion
-				return // Exit the function once success
+				resultChan <- string(body)
+				return
 			} else {
 				fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
 			}

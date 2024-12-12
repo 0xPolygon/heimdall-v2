@@ -45,7 +45,7 @@ const (
 	CountCheckpointURL     = "/checkpoints/count"
 	CurrentProposerURL     = "/checkpoint/proposers/current"
 	LatestSpanURL          = "/bor/span-latest"
-	NextSpanInfoURL        = "/bor/span-prepare"
+	NextSpanInfoURL        = "/bor/span-prepare/%v"
 	NextSpanSeedURL        = "/bor/span-seed"
 	DividendAccountRootURL = "/topup/dividend-account-root"
 	ValidatorURL           = "/stake/validator/%v"

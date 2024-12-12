@@ -36,7 +36,7 @@ service Query {
 
   rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span-prepare";
+    option (google.api.http).get = "/bor/span-prepare/{span_id}";
   }
 
   rpc GetParams(QueryParamsRequest) returns (QueryParamsResponse) {
