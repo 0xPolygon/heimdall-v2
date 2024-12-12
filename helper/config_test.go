@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	cfg "github.com/cometbft/cometbft/config"
@@ -18,7 +17,7 @@ func TestHeimdallConfig(t *testing.T) {
 	viper.Set(CometBFTNodeFlag, cometBFTNode)
 	viper.Set("log_level", "info")
 
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitTestHeimdallConfig("")
 
 	fmt.Println("Address", GetAddress())
 
@@ -83,8 +82,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 		350: {PolTokenAddress: newPolContractAddress},
 	}
 
-	viper.Set(ChainFlag, "mumbai")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitTestHeimdallConfig("mumbai")
 
 	migration, found := GetChainManagerAddressMigration(350)
 
@@ -107,7 +105,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 	conf.Custom.Chain = ""
 
 	viper.Set(ChainFlag, "newChain")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitTestHeimdallConfig("newChain")
 
 	_, found = GetChainManagerAddressMigration(350)
 	if found {

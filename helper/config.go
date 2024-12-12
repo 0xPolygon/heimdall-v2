@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -1020,12 +1021,44 @@ func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 	return borGRPCClient
 }
 
+// TEST PURPOSE ONLY
+
+// InitTestHeimdallConfig initializes test config for the unit tests
+func InitTestHeimdallConfig(chain string) {
+	customAppConf := CustomAppConfig{
+		Config: *serverconfig.DefaultConfig(),
+		Custom: GetDefaultHeimdallConfig(),
+	}
+
+	if chain == MumbaiChain {
+		customAppConf.Custom.Chain = MumbaiChain
+	} else if chain == AmoyChain {
+		customAppConf.Custom.Chain = AmoyChain
+	} else if chain == MainChain {
+		customAppConf.Custom.Chain = MainChain
+	}
+
+	SetTestConfig(customAppConf)
+
+	// Get the directory of the current file
+	_, currentFile, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("unable to get current file path")
+	}
+
+	// Construct the absolute path to the priv_validator_key.json
+	basePath := filepath.Dir(currentFile)
+	privKeyPath := filepath.Join(basePath, "testdata", "config", "test_priv_validator_key.json")
+
+	privVal := privval.LoadFilePV(privKeyPath, privKeyPath)
+	privKeyObject = privVal.Key.PrivKey.Bytes()
+	pubKeyObject = privVal.Key.PubKey.Bytes()
+}
+
 // SetTestConfig sets test configuration
 func SetTestConfig(_conf CustomAppConfig) {
 	conf = _conf
 }
-
-// TEST PURPOSE ONLY
 
 // SetTestPrivPubKey sets test priv and pub key for testing
 func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
