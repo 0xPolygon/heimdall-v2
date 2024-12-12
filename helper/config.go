@@ -13,6 +13,7 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
 	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
@@ -1020,12 +1021,33 @@ func GetBorGRPCClient() *borgrpc.BorGRPCClient {
 	return borGRPCClient
 }
 
+// TEST PURPOSE ONLY
+
+// InitTestHeimdallConfig initializes test config for the unit tests
+func InitTestHeimdallConfig(chain string) {
+	customAppConf := CustomAppConfig{
+		Config: *serverconfig.DefaultConfig(),
+		Custom: GetDefaultHeimdallConfig(),
+	}
+
+	if chain == MumbaiChain {
+		customAppConf.Custom.Chain = MumbaiChain
+	} else if chain == AmoyChain {
+		customAppConf.Custom.Chain = AmoyChain
+	} else if chain == MainChain {
+		customAppConf.Custom.Chain = MainChain
+	}
+
+	SetTestConfig(customAppConf)
+
+	privKeyObject = cmtcrypto.GenPrivKey()
+	pubKeyObject = privKeyObject.PubKey().(secp256k1.PubKey)
+}
+
 // SetTestConfig sets test configuration
 func SetTestConfig(_conf CustomAppConfig) {
 	conf = _conf
 }
-
-// TEST PURPOSE ONLY
 
 // SetTestPrivPubKey sets test priv and pub key for testing
 func SetTestPrivPubKey(privKey secp256k1.PrivKey) {

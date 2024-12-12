@@ -2,7 +2,6 @@ package helper
 
 import (
 	"encoding/hex"
-	"os"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -31,7 +30,7 @@ func TestCheckpointSigs(t *testing.T) {
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 	viper.Set("log_level", "info")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitTestHeimdallConfig("")
 
 	contractCallerObj, err := NewContractCaller()
 	if err != nil {
