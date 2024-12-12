@@ -8,12 +8,12 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
 	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
@@ -1040,19 +1040,8 @@ func InitTestHeimdallConfig(chain string) {
 
 	SetTestConfig(customAppConf)
 
-	// Get the directory of the current file
-	_, currentFile, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("unable to get current file path")
-	}
-
-	// Construct the absolute path to the priv_validator_key.json
-	basePath := filepath.Dir(currentFile)
-	privKeyPath := filepath.Join(basePath, "testdata", "config", "test_priv_validator_key.json")
-
-	privVal := privval.LoadFilePV(privKeyPath, privKeyPath)
-	privKeyObject = privVal.Key.PrivKey.Bytes()
-	pubKeyObject = privVal.Key.PubKey.Bytes()
+	privKeyObject = cmtcrypto.GenPrivKey()
+	pubKeyObject = privKeyObject.PubKey().(secp256k1.PubKey)
 }
 
 // SetTestConfig sets test configuration
