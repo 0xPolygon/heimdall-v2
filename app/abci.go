@@ -318,7 +318,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	extVoteInfo := extCommitInfo.Votes
 
-	if req.Height == retrieveVoteExtensionsEnableHeight(ctx) {
+	if req.Height <= retrieveVoteExtensionsEnableHeight(ctx) {
 		if len(extVoteInfo) != 0 {
 			logger.Error("Unexpected behavior, non-empty VEs found in the initial height's pre-blocker", "height", req.Height)
 			return nil, errors.New("non-empty VEs found in the initial height's pre-blocker")

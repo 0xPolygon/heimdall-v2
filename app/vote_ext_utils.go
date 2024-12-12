@@ -40,7 +40,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 	panicOnVoteExtensionsDisabled(ctx, reqHeight+1)
 
 	// check if reqHeight is the initial height
-	if reqHeight == retrieveVoteExtensionsEnableHeight(ctx) {
+	if reqHeight <= retrieveVoteExtensionsEnableHeight(ctx) {
 		if len(extVoteInfo) != 0 {
 			return fmt.Errorf("non-empty VEs received at initial height %d", reqHeight)
 		}
@@ -392,7 +392,7 @@ func ValidateNonRpVoteExtensions(
 	logger log.Logger,
 ) error {
 
-	if height == retrieveVoteExtensionsEnableHeight(ctx) {
+	if height <= retrieveVoteExtensionsEnableHeight(ctx) {
 		return nil
 	}
 
