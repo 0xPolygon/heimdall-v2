@@ -18,6 +18,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	if err != nil {
 		panic(fmt.Sprint("error in setting the milestone params", "err", err))
 	}
+
 }
 
 // ExportGenesis returns milestone module's genesis state

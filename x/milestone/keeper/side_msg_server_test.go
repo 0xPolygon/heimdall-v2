@@ -54,6 +54,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 
 		milestoneReceived, _ := keeper.GetLastMilestone(ctx)
 		require.Nil(milestoneReceived, "Should not store state")
+
 	})
 
 	s.Run("No Hash", func() {
@@ -284,6 +285,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, milestoneId)
 		require.NoError(err)
 		require.True(IsNoAckMilestone)
+
 	})
 
 	milestoneId = "00004"

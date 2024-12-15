@@ -26,7 +26,7 @@ func NewQueueConnector(dialer string) *QueueConnector {
 		panic(err)
 	}
 
-	cnf := &config.Config{
+	var cnf = &config.Config{
 		Broker:        dialer,
 		DefaultQueue:  QueueName,
 		ResultBackend: dialer,

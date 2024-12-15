@@ -36,8 +36,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "validator-status [val_address]",
 					Short:     "Query validator status for given validator address",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "val_address"},
-					},
+						{ProtoField: "val_address"}},
 				},
 				{
 					RpcMethod:      "GetTotalPower",

@@ -20,10 +20,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-const (
-	blockAuthorsCollisionCheck   = 10
-	blockProducerMaxSpanLookback = 50
-)
+const blockAuthorsCollisionCheck = 10
+const blockProducerMaxSpanLookback = 50
 
 // Keeper stores all bor module related data
 type Keeper struct {
@@ -50,6 +48,7 @@ func NewKeeper(
 	stakingKeeper types.StakeKeeper,
 	caller helper.IContractCaller,
 ) Keeper {
+
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
 		panic(fmt.Errorf("invalid bor authority address: %w", err))

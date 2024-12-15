@@ -114,7 +114,6 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 
 	require.Equal(res.Result, milestoneID)
 }
-
 func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient
 

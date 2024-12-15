@@ -109,6 +109,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	tb.CliCtx.SkipConfirm = true
 
 	txResponse, err := helper.BroadcastTx(tb.CliCtx, txf, msg)
+
 	// Check for an error from broadcasting the transaction
 	if err != nil {
 		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err)
@@ -175,6 +176,7 @@ func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
 
 	// get auth
 	auth, err := helper.GenerateAuthObj(borClient, *msg.To, msg.Data)
+
 	if err != nil {
 		tb.logger.Error("Error generating auth object", "error", err)
 		return err

@@ -41,6 +41,7 @@ func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySig
 	}
 
 	validator, err := q.k.GetValidatorInfo(ctx, req.ValAddress)
+
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "error in getting validator corresponding to the given address %s", req.ValAddress)
 	}
@@ -55,6 +56,7 @@ func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValid
 	}
 
 	validator, err := q.k.GetValidatorFromValID(ctx, req.Id)
+
 	if err != nil {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given id %d", req.Id))
 	}

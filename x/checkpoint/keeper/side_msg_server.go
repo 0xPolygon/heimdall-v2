@@ -31,6 +31,7 @@ func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 
 // SideTxHandler returns a side handler for "checkpoint" type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
+
 	switch methodName {
 	case checkpointTypeUrl:
 		return srv.SideHandleMsgCheckpoint
@@ -43,6 +44,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 
 // PostTxHandler returns a post handler for "checkpoint" type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
+
 	switch methodName {
 	case checkpointTypeUrl:
 		return srv.PostHandleMsgCheckpoint
@@ -374,4 +376,5 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			sdk.NewAttribute(types.AttributeKeyHeaderIndex, strconv.FormatUint(msg.Number, 10)),
 		),
 	})
+
 }

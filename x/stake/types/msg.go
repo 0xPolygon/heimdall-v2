@@ -68,8 +68,7 @@ func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
 // NewMsgStakeUpdate creates a new MsgStakeUpdate instance
 func NewMsgStakeUpdate(from string, id uint64,
 	newAmount math.Int, txHash []byte, logIndex uint64,
-	blockNumber uint64, nonce uint64,
-) (*MsgStakeUpdate, error) {
+	blockNumber uint64, nonce uint64) (*MsgStakeUpdate, error) {
 	return &MsgStakeUpdate{
 		From:        util.FormatAddress(from),
 		ValId:       id,
@@ -104,8 +103,7 @@ func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
 // NewMsgSignerUpdate creates a new MsgSignerUpdate instance.
 func NewMsgSignerUpdate(from string, id uint64,
 	pubKey []byte, txHash []byte, logIndex uint64,
-	blockNumber uint64, nonce uint64,
-) (*MsgSignerUpdate, error) {
+	blockNumber uint64, nonce uint64) (*MsgSignerUpdate, error) {
 	return &MsgSignerUpdate{
 		From:            util.FormatAddress(from),
 		ValId:           id,

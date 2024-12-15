@@ -36,7 +36,9 @@ type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
 
-var Client HTTPClient
+var (
+	Client HTTPClient
+)
 
 // GetFromAddress returns the from address from the context's name
 func GetFromAddress(cliCtx client.Context) string {

@@ -185,6 +185,7 @@ func (_Rootchain *RootchainTransactorRaw) Transact(opts *bind.TransactOpts, meth
 func (_Rootchain *RootchainCaller) CurrentHeaderBlock(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Rootchain.contract.Call(opts, &out, "currentHeaderBlock")
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -192,6 +193,7 @@ func (_Rootchain *RootchainCaller) CurrentHeaderBlock(opts *bind.CallOpts) (*big
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // CurrentHeaderBlock is a free data retrieval call binding the contract method 0xec7e4855.
@@ -214,6 +216,7 @@ func (_Rootchain *RootchainCallerSession) CurrentHeaderBlock() (*big.Int, error)
 func (_Rootchain *RootchainCaller) GetLastChildBlock(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Rootchain.contract.Call(opts, &out, "getLastChildBlock")
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -221,6 +224,7 @@ func (_Rootchain *RootchainCaller) GetLastChildBlock(opts *bind.CallOpts) (*big.
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // GetLastChildBlock is a free data retrieval call binding the contract method 0xb87e1b66.
@@ -246,8 +250,7 @@ func (_Rootchain *RootchainCaller) HeaderBlocks(opts *bind.CallOpts, arg0 *big.I
 	End       *big.Int
 	CreatedAt *big.Int
 	Proposer  common.Address
-}, error,
-) {
+}, error) {
 	var out []interface{}
 	err := _Rootchain.contract.Call(opts, &out, "headerBlocks", arg0)
 
@@ -269,6 +272,7 @@ func (_Rootchain *RootchainCaller) HeaderBlocks(opts *bind.CallOpts, arg0 *big.I
 	outstruct.Proposer = *abi.ConvertType(out[4], new(common.Address)).(*common.Address)
 
 	return *outstruct, err
+
 }
 
 // HeaderBlocks is a free data retrieval call binding the contract method 0x41539d4a.
@@ -280,8 +284,7 @@ func (_Rootchain *RootchainSession) HeaderBlocks(arg0 *big.Int) (struct {
 	End       *big.Int
 	CreatedAt *big.Int
 	Proposer  common.Address
-}, error,
-) {
+}, error) {
 	return _Rootchain.Contract.HeaderBlocks(&_Rootchain.CallOpts, arg0)
 }
 
@@ -294,8 +297,7 @@ func (_Rootchain *RootchainCallerSession) HeaderBlocks(arg0 *big.Int) (struct {
 	End       *big.Int
 	CreatedAt *big.Int
 	Proposer  common.Address
-}, error,
-) {
+}, error) {
 	return _Rootchain.Contract.HeaderBlocks(&_Rootchain.CallOpts, arg0)
 }
 
@@ -423,6 +425,7 @@ type RootchainNewHeaderBlock struct {
 //
 // Solidity: event NewHeaderBlock(address indexed proposer, uint256 indexed headerBlockId, uint256 indexed reward, uint256 start, uint256 end, bytes32 root)
 func (_Rootchain *RootchainFilterer) FilterNewHeaderBlock(opts *bind.FilterOpts, proposer []common.Address, headerBlockId []*big.Int, reward []*big.Int) (*RootchainNewHeaderBlockIterator, error) {
+
 	var proposerRule []interface{}
 	for _, proposerItem := range proposer {
 		proposerRule = append(proposerRule, proposerItem)
@@ -447,6 +450,7 @@ func (_Rootchain *RootchainFilterer) FilterNewHeaderBlock(opts *bind.FilterOpts,
 //
 // Solidity: event NewHeaderBlock(address indexed proposer, uint256 indexed headerBlockId, uint256 indexed reward, uint256 start, uint256 end, bytes32 root)
 func (_Rootchain *RootchainFilterer) WatchNewHeaderBlock(opts *bind.WatchOpts, sink chan<- *RootchainNewHeaderBlock, proposer []common.Address, headerBlockId []*big.Int, reward []*big.Int) (event.Subscription, error) {
+
 	var proposerRule []interface{}
 	for _, proposerItem := range proposer {
 		proposerRule = append(proposerRule, proposerItem)

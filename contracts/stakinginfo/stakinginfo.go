@@ -185,6 +185,7 @@ func (_Stakinginfo *StakinginfoTransactorRaw) Transact(opts *bind.TransactOpts, 
 func (_Stakinginfo *StakinginfoCaller) GetAccountStateRoot(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
 	err := _Stakinginfo.contract.Call(opts, &out, "getAccountStateRoot")
+
 	if err != nil {
 		return *new([32]byte), err
 	}
@@ -192,6 +193,7 @@ func (_Stakinginfo *StakinginfoCaller) GetAccountStateRoot(opts *bind.CallOpts) 
 	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
 
 	return out0, err
+
 }
 
 // GetAccountStateRoot is a free data retrieval call binding the contract method 0x4b6b87ce.
@@ -218,8 +220,7 @@ func (_Stakinginfo *StakinginfoCaller) GetStakerDetails(opts *bind.CallOpts, val
 	DeactivationEpoch *big.Int
 	Signer            common.Address
 	Status            *big.Int
-}, error,
-) {
+}, error) {
 	var out []interface{}
 	err := _Stakinginfo.contract.Call(opts, &out, "getStakerDetails", validatorId)
 
@@ -243,6 +244,7 @@ func (_Stakinginfo *StakinginfoCaller) GetStakerDetails(opts *bind.CallOpts, val
 	outstruct.Status = *abi.ConvertType(out[5], new(*big.Int)).(**big.Int)
 
 	return *outstruct, err
+
 }
 
 // GetStakerDetails is a free data retrieval call binding the contract method 0x78daaf69.
@@ -255,8 +257,7 @@ func (_Stakinginfo *StakinginfoSession) GetStakerDetails(validatorId *big.Int) (
 	DeactivationEpoch *big.Int
 	Signer            common.Address
 	Status            *big.Int
-}, error,
-) {
+}, error) {
 	return _Stakinginfo.Contract.GetStakerDetails(&_Stakinginfo.CallOpts, validatorId)
 }
 
@@ -270,8 +271,7 @@ func (_Stakinginfo *StakinginfoCallerSession) GetStakerDetails(validatorId *big.
 	DeactivationEpoch *big.Int
 	Signer            common.Address
 	Status            *big.Int
-}, error,
-) {
+}, error) {
 	return _Stakinginfo.Contract.GetStakerDetails(&_Stakinginfo.CallOpts, validatorId)
 }
 
@@ -281,6 +281,7 @@ func (_Stakinginfo *StakinginfoCallerSession) GetStakerDetails(validatorId *big.
 func (_Stakinginfo *StakinginfoCaller) GetValidatorContractAddress(opts *bind.CallOpts, validatorId *big.Int) (common.Address, error) {
 	var out []interface{}
 	err := _Stakinginfo.contract.Call(opts, &out, "getValidatorContractAddress", validatorId)
+
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -288,6 +289,7 @@ func (_Stakinginfo *StakinginfoCaller) GetValidatorContractAddress(opts *bind.Ca
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
+
 }
 
 // GetValidatorContractAddress is a free data retrieval call binding the contract method 0x178d46aa.
@@ -310,6 +312,7 @@ func (_Stakinginfo *StakinginfoCallerSession) GetValidatorContractAddress(valida
 func (_Stakinginfo *StakinginfoCaller) Registry(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakinginfo.contract.Call(opts, &out, "registry")
+
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -317,6 +320,7 @@ func (_Stakinginfo *StakinginfoCaller) Registry(opts *bind.CallOpts) (common.Add
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
+
 }
 
 // Registry is a free data retrieval call binding the contract method 0x7b103999.
@@ -339,6 +343,7 @@ func (_Stakinginfo *StakinginfoCallerSession) Registry() (common.Address, error)
 func (_Stakinginfo *StakinginfoCaller) TotalValidatorStake(opts *bind.CallOpts, validatorId *big.Int) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakinginfo.contract.Call(opts, &out, "totalValidatorStake", validatorId)
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -346,6 +351,7 @@ func (_Stakinginfo *StakinginfoCaller) TotalValidatorStake(opts *bind.CallOpts, 
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // TotalValidatorStake is a free data retrieval call binding the contract method 0xca7d34b6.
@@ -368,6 +374,7 @@ func (_Stakinginfo *StakinginfoCallerSession) TotalValidatorStake(validatorId *b
 func (_Stakinginfo *StakinginfoCaller) ValidatorNonce(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakinginfo.contract.Call(opts, &out, "validatorNonce", arg0)
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -375,6 +382,7 @@ func (_Stakinginfo *StakinginfoCaller) ValidatorNonce(opts *bind.CallOpts, arg0 
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // ValidatorNonce is a free data retrieval call binding the contract method 0xebde9f93.
@@ -973,6 +981,7 @@ type StakinginfoClaimFee struct {
 //
 // Solidity: event ClaimFee(address indexed user, uint256 indexed fee)
 func (_Stakinginfo *StakinginfoFilterer) FilterClaimFee(opts *bind.FilterOpts, user []common.Address, fee []*big.Int) (*StakinginfoClaimFeeIterator, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -993,6 +1002,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterClaimFee(opts *bind.FilterOpts, u
 //
 // Solidity: event ClaimFee(address indexed user, uint256 indexed fee)
 func (_Stakinginfo *StakinginfoFilterer) WatchClaimFee(opts *bind.WatchOpts, sink chan<- *StakinginfoClaimFee, user []common.Address, fee []*big.Int) (event.Subscription, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -1125,6 +1135,7 @@ type StakinginfoClaimRewards struct {
 //
 // Solidity: event ClaimRewards(uint256 indexed validatorId, uint256 indexed amount, uint256 indexed totalAmount)
 func (_Stakinginfo *StakinginfoFilterer) FilterClaimRewards(opts *bind.FilterOpts, validatorId []*big.Int, amount []*big.Int, totalAmount []*big.Int) (*StakinginfoClaimRewardsIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1149,6 +1160,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterClaimRewards(opts *bind.FilterOpt
 //
 // Solidity: event ClaimRewards(uint256 indexed validatorId, uint256 indexed amount, uint256 indexed totalAmount)
 func (_Stakinginfo *StakinginfoFilterer) WatchClaimRewards(opts *bind.WatchOpts, sink chan<- *StakinginfoClaimRewards, validatorId []*big.Int, amount []*big.Int, totalAmount []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1285,6 +1297,7 @@ type StakinginfoConfirmAuction struct {
 //
 // Solidity: event ConfirmAuction(uint256 indexed newValidatorId, uint256 indexed oldValidatorId, uint256 indexed amount)
 func (_Stakinginfo *StakinginfoFilterer) FilterConfirmAuction(opts *bind.FilterOpts, newValidatorId []*big.Int, oldValidatorId []*big.Int, amount []*big.Int) (*StakinginfoConfirmAuctionIterator, error) {
+
 	var newValidatorIdRule []interface{}
 	for _, newValidatorIdItem := range newValidatorId {
 		newValidatorIdRule = append(newValidatorIdRule, newValidatorIdItem)
@@ -1309,6 +1322,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterConfirmAuction(opts *bind.FilterO
 //
 // Solidity: event ConfirmAuction(uint256 indexed newValidatorId, uint256 indexed oldValidatorId, uint256 indexed amount)
 func (_Stakinginfo *StakinginfoFilterer) WatchConfirmAuction(opts *bind.WatchOpts, sink chan<- *StakinginfoConfirmAuction, newValidatorId []*big.Int, oldValidatorId []*big.Int, amount []*big.Int) (event.Subscription, error) {
+
 	var newValidatorIdRule []interface{}
 	for _, newValidatorIdItem := range newValidatorId {
 		newValidatorIdRule = append(newValidatorIdRule, newValidatorIdItem)
@@ -1446,6 +1460,7 @@ type StakinginfoDelClaimRewards struct {
 //
 // Solidity: event DelClaimRewards(uint256 indexed validatorId, address indexed user, uint256 indexed rewards, uint256 tokens)
 func (_Stakinginfo *StakinginfoFilterer) FilterDelClaimRewards(opts *bind.FilterOpts, validatorId []*big.Int, user []common.Address, rewards []*big.Int) (*StakinginfoDelClaimRewardsIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1470,6 +1485,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterDelClaimRewards(opts *bind.Filter
 //
 // Solidity: event DelClaimRewards(uint256 indexed validatorId, address indexed user, uint256 indexed rewards, uint256 tokens)
 func (_Stakinginfo *StakinginfoFilterer) WatchDelClaimRewards(opts *bind.WatchOpts, sink chan<- *StakinginfoDelClaimRewards, validatorId []*big.Int, user []common.Address, rewards []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1606,6 +1622,7 @@ type StakinginfoDelReStaked struct {
 //
 // Solidity: event DelReStaked(uint256 indexed validatorId, address indexed user, uint256 indexed totalStaked)
 func (_Stakinginfo *StakinginfoFilterer) FilterDelReStaked(opts *bind.FilterOpts, validatorId []*big.Int, user []common.Address, totalStaked []*big.Int) (*StakinginfoDelReStakedIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1630,6 +1647,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterDelReStaked(opts *bind.FilterOpts
 //
 // Solidity: event DelReStaked(uint256 indexed validatorId, address indexed user, uint256 indexed totalStaked)
 func (_Stakinginfo *StakinginfoFilterer) WatchDelReStaked(opts *bind.WatchOpts, sink chan<- *StakinginfoDelReStaked, validatorId []*big.Int, user []common.Address, totalStaked []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1766,6 +1784,7 @@ type StakinginfoDelUnstaked struct {
 //
 // Solidity: event DelUnstaked(uint256 indexed validatorId, address indexed user, uint256 amount)
 func (_Stakinginfo *StakinginfoFilterer) FilterDelUnstaked(opts *bind.FilterOpts, validatorId []*big.Int, user []common.Address) (*StakinginfoDelUnstakedIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1786,6 +1805,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterDelUnstaked(opts *bind.FilterOpts
 //
 // Solidity: event DelUnstaked(uint256 indexed validatorId, address indexed user, uint256 amount)
 func (_Stakinginfo *StakinginfoFilterer) WatchDelUnstaked(opts *bind.WatchOpts, sink chan<- *StakinginfoDelUnstaked, validatorId []*big.Int, user []common.Address) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -1917,6 +1937,7 @@ type StakinginfoDynastyValueChange struct {
 //
 // Solidity: event DynastyValueChange(uint256 newDynasty, uint256 oldDynasty)
 func (_Stakinginfo *StakinginfoFilterer) FilterDynastyValueChange(opts *bind.FilterOpts) (*StakinginfoDynastyValueChangeIterator, error) {
+
 	logs, sub, err := _Stakinginfo.contract.FilterLogs(opts, "DynastyValueChange")
 	if err != nil {
 		return nil, err
@@ -1928,6 +1949,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterDynastyValueChange(opts *bind.Fil
 //
 // Solidity: event DynastyValueChange(uint256 newDynasty, uint256 oldDynasty)
 func (_Stakinginfo *StakinginfoFilterer) WatchDynastyValueChange(opts *bind.WatchOpts, sink chan<- *StakinginfoDynastyValueChange) (event.Subscription, error) {
+
 	logs, sub, err := _Stakinginfo.contract.WatchLogs(opts, "DynastyValueChange")
 	if err != nil {
 		return nil, err
@@ -2051,6 +2073,7 @@ type StakinginfoJailed struct {
 //
 // Solidity: event Jailed(uint256 indexed validatorId, uint256 indexed exitEpoch, address indexed signer)
 func (_Stakinginfo *StakinginfoFilterer) FilterJailed(opts *bind.FilterOpts, validatorId []*big.Int, exitEpoch []*big.Int, signer []common.Address) (*StakinginfoJailedIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2075,6 +2098,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterJailed(opts *bind.FilterOpts, val
 //
 // Solidity: event Jailed(uint256 indexed validatorId, uint256 indexed exitEpoch, address indexed signer)
 func (_Stakinginfo *StakinginfoFilterer) WatchJailed(opts *bind.WatchOpts, sink chan<- *StakinginfoJailed, validatorId []*big.Int, exitEpoch []*big.Int, signer []common.Address) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2210,6 +2234,7 @@ type StakinginfoProposerBonusChange struct {
 //
 // Solidity: event ProposerBonusChange(uint256 newProposerBonus, uint256 oldProposerBonus)
 func (_Stakinginfo *StakinginfoFilterer) FilterProposerBonusChange(opts *bind.FilterOpts) (*StakinginfoProposerBonusChangeIterator, error) {
+
 	logs, sub, err := _Stakinginfo.contract.FilterLogs(opts, "ProposerBonusChange")
 	if err != nil {
 		return nil, err
@@ -2221,6 +2246,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterProposerBonusChange(opts *bind.Fi
 //
 // Solidity: event ProposerBonusChange(uint256 newProposerBonus, uint256 oldProposerBonus)
 func (_Stakinginfo *StakinginfoFilterer) WatchProposerBonusChange(opts *bind.WatchOpts, sink chan<- *StakinginfoProposerBonusChange) (event.Subscription, error) {
+
 	logs, sub, err := _Stakinginfo.contract.WatchLogs(opts, "ProposerBonusChange")
 	if err != nil {
 		return nil, err
@@ -2344,6 +2370,7 @@ type StakinginfoReStaked struct {
 //
 // Solidity: event ReStaked(uint256 indexed validatorId, uint256 amount, uint256 total)
 func (_Stakinginfo *StakinginfoFilterer) FilterReStaked(opts *bind.FilterOpts, validatorId []*big.Int) (*StakinginfoReStakedIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2360,6 +2387,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterReStaked(opts *bind.FilterOpts, v
 //
 // Solidity: event ReStaked(uint256 indexed validatorId, uint256 amount, uint256 total)
 func (_Stakinginfo *StakinginfoFilterer) WatchReStaked(opts *bind.WatchOpts, sink chan<- *StakinginfoReStaked, validatorId []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2487,6 +2515,7 @@ type StakinginfoRewardUpdate struct {
 //
 // Solidity: event RewardUpdate(uint256 newReward, uint256 oldReward)
 func (_Stakinginfo *StakinginfoFilterer) FilterRewardUpdate(opts *bind.FilterOpts) (*StakinginfoRewardUpdateIterator, error) {
+
 	logs, sub, err := _Stakinginfo.contract.FilterLogs(opts, "RewardUpdate")
 	if err != nil {
 		return nil, err
@@ -2498,6 +2527,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterRewardUpdate(opts *bind.FilterOpt
 //
 // Solidity: event RewardUpdate(uint256 newReward, uint256 oldReward)
 func (_Stakinginfo *StakinginfoFilterer) WatchRewardUpdate(opts *bind.WatchOpts, sink chan<- *StakinginfoRewardUpdate) (event.Subscription, error) {
+
 	logs, sub, err := _Stakinginfo.contract.WatchLogs(opts, "RewardUpdate")
 	if err != nil {
 		return nil, err
@@ -2622,6 +2652,7 @@ type StakinginfoShareBurned struct {
 //
 // Solidity: event ShareBurned(uint256 indexed validatorId, address indexed user, uint256 indexed amount, uint256 tokens)
 func (_Stakinginfo *StakinginfoFilterer) FilterShareBurned(opts *bind.FilterOpts, validatorId []*big.Int, user []common.Address, amount []*big.Int) (*StakinginfoShareBurnedIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2646,6 +2677,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterShareBurned(opts *bind.FilterOpts
 //
 // Solidity: event ShareBurned(uint256 indexed validatorId, address indexed user, uint256 indexed amount, uint256 tokens)
 func (_Stakinginfo *StakinginfoFilterer) WatchShareBurned(opts *bind.WatchOpts, sink chan<- *StakinginfoShareBurned, validatorId []*big.Int, user []common.Address, amount []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2783,6 +2815,7 @@ type StakinginfoShareMinted struct {
 //
 // Solidity: event ShareMinted(uint256 indexed validatorId, address indexed user, uint256 indexed amount, uint256 tokens)
 func (_Stakinginfo *StakinginfoFilterer) FilterShareMinted(opts *bind.FilterOpts, validatorId []*big.Int, user []common.Address, amount []*big.Int) (*StakinginfoShareMintedIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2807,6 +2840,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterShareMinted(opts *bind.FilterOpts
 //
 // Solidity: event ShareMinted(uint256 indexed validatorId, address indexed user, uint256 indexed amount, uint256 tokens)
 func (_Stakinginfo *StakinginfoFilterer) WatchShareMinted(opts *bind.WatchOpts, sink chan<- *StakinginfoShareMinted, validatorId []*big.Int, user []common.Address, amount []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2945,6 +2979,7 @@ type StakinginfoSignerChange struct {
 //
 // Solidity: event SignerChange(uint256 indexed validatorId, uint256 nonce, address indexed oldSigner, address indexed newSigner, bytes signerPubkey)
 func (_Stakinginfo *StakinginfoFilterer) FilterSignerChange(opts *bind.FilterOpts, validatorId []*big.Int, oldSigner []common.Address, newSigner []common.Address) (*StakinginfoSignerChangeIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -2970,6 +3005,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterSignerChange(opts *bind.FilterOpt
 //
 // Solidity: event SignerChange(uint256 indexed validatorId, uint256 nonce, address indexed oldSigner, address indexed newSigner, bytes signerPubkey)
 func (_Stakinginfo *StakinginfoFilterer) WatchSignerChange(opts *bind.WatchOpts, sink chan<- *StakinginfoSignerChange, validatorId []*big.Int, oldSigner []common.Address, newSigner []common.Address) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -3106,6 +3142,7 @@ type StakinginfoSlashed struct {
 //
 // Solidity: event Slashed(uint256 indexed nonce, uint256 indexed amount)
 func (_Stakinginfo *StakinginfoFilterer) FilterSlashed(opts *bind.FilterOpts, nonce []*big.Int, amount []*big.Int) (*StakinginfoSlashedIterator, error) {
+
 	var nonceRule []interface{}
 	for _, nonceItem := range nonce {
 		nonceRule = append(nonceRule, nonceItem)
@@ -3126,6 +3163,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterSlashed(opts *bind.FilterOpts, no
 //
 // Solidity: event Slashed(uint256 indexed nonce, uint256 indexed amount)
 func (_Stakinginfo *StakinginfoFilterer) WatchSlashed(opts *bind.WatchOpts, sink chan<- *StakinginfoSlashed, nonce []*big.Int, amount []*big.Int) (event.Subscription, error) {
+
 	var nonceRule []interface{}
 	for _, nonceItem := range nonce {
 		nonceRule = append(nonceRule, nonceItem)
@@ -3258,6 +3296,7 @@ type StakinginfoStakeUpdate struct {
 //
 // Solidity: event StakeUpdate(uint256 indexed validatorId, uint256 indexed nonce, uint256 indexed newAmount)
 func (_Stakinginfo *StakinginfoFilterer) FilterStakeUpdate(opts *bind.FilterOpts, validatorId []*big.Int, nonce []*big.Int, newAmount []*big.Int) (*StakinginfoStakeUpdateIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -3282,6 +3321,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterStakeUpdate(opts *bind.FilterOpts
 //
 // Solidity: event StakeUpdate(uint256 indexed validatorId, uint256 indexed nonce, uint256 indexed newAmount)
 func (_Stakinginfo *StakinginfoFilterer) WatchStakeUpdate(opts *bind.WatchOpts, sink chan<- *StakinginfoStakeUpdate, validatorId []*big.Int, nonce []*big.Int, newAmount []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -3422,6 +3462,7 @@ type StakinginfoStaked struct {
 //
 // Solidity: event Staked(address indexed signer, uint256 indexed validatorId, uint256 nonce, uint256 indexed activationEpoch, uint256 amount, uint256 total, bytes signerPubkey)
 func (_Stakinginfo *StakinginfoFilterer) FilterStaked(opts *bind.FilterOpts, signer []common.Address, validatorId []*big.Int, activationEpoch []*big.Int) (*StakinginfoStakedIterator, error) {
+
 	var signerRule []interface{}
 	for _, signerItem := range signer {
 		signerRule = append(signerRule, signerItem)
@@ -3447,6 +3488,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterStaked(opts *bind.FilterOpts, sig
 //
 // Solidity: event Staked(address indexed signer, uint256 indexed validatorId, uint256 nonce, uint256 indexed activationEpoch, uint256 amount, uint256 total, bytes signerPubkey)
 func (_Stakinginfo *StakinginfoFilterer) WatchStaked(opts *bind.WatchOpts, sink chan<- *StakinginfoStaked, signer []common.Address, validatorId []*big.Int, activationEpoch []*big.Int) (event.Subscription, error) {
+
 	var signerRule []interface{}
 	for _, signerItem := range signer {
 		signerRule = append(signerRule, signerItem)
@@ -3584,6 +3626,7 @@ type StakinginfoStartAuction struct {
 //
 // Solidity: event StartAuction(uint256 indexed validatorId, uint256 indexed amount, uint256 indexed auctionAmount)
 func (_Stakinginfo *StakinginfoFilterer) FilterStartAuction(opts *bind.FilterOpts, validatorId []*big.Int, amount []*big.Int, auctionAmount []*big.Int) (*StakinginfoStartAuctionIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -3608,6 +3651,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterStartAuction(opts *bind.FilterOpt
 //
 // Solidity: event StartAuction(uint256 indexed validatorId, uint256 indexed amount, uint256 indexed auctionAmount)
 func (_Stakinginfo *StakinginfoFilterer) WatchStartAuction(opts *bind.WatchOpts, sink chan<- *StakinginfoStartAuction, validatorId []*big.Int, amount []*big.Int, auctionAmount []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -3743,6 +3787,7 @@ type StakinginfoThresholdChange struct {
 //
 // Solidity: event ThresholdChange(uint256 newThreshold, uint256 oldThreshold)
 func (_Stakinginfo *StakinginfoFilterer) FilterThresholdChange(opts *bind.FilterOpts) (*StakinginfoThresholdChangeIterator, error) {
+
 	logs, sub, err := _Stakinginfo.contract.FilterLogs(opts, "ThresholdChange")
 	if err != nil {
 		return nil, err
@@ -3754,6 +3799,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterThresholdChange(opts *bind.Filter
 //
 // Solidity: event ThresholdChange(uint256 newThreshold, uint256 oldThreshold)
 func (_Stakinginfo *StakinginfoFilterer) WatchThresholdChange(opts *bind.WatchOpts, sink chan<- *StakinginfoThresholdChange) (event.Subscription, error) {
+
 	logs, sub, err := _Stakinginfo.contract.WatchLogs(opts, "ThresholdChange")
 	if err != nil {
 		return nil, err
@@ -3876,6 +3922,7 @@ type StakinginfoTopUpFee struct {
 //
 // Solidity: event TopUpFee(address indexed user, uint256 indexed fee)
 func (_Stakinginfo *StakinginfoFilterer) FilterTopUpFee(opts *bind.FilterOpts, user []common.Address, fee []*big.Int) (*StakinginfoTopUpFeeIterator, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -3896,6 +3943,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterTopUpFee(opts *bind.FilterOpts, u
 //
 // Solidity: event TopUpFee(address indexed user, uint256 indexed fee)
 func (_Stakinginfo *StakinginfoFilterer) WatchTopUpFee(opts *bind.WatchOpts, sink chan<- *StakinginfoTopUpFee, user []common.Address, fee []*big.Int) (event.Subscription, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -4027,6 +4075,7 @@ type StakinginfoUnJailed struct {
 //
 // Solidity: event UnJailed(uint256 indexed validatorId, address indexed signer)
 func (_Stakinginfo *StakinginfoFilterer) FilterUnJailed(opts *bind.FilterOpts, validatorId []*big.Int, signer []common.Address) (*StakinginfoUnJailedIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -4047,6 +4096,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterUnJailed(opts *bind.FilterOpts, v
 //
 // Solidity: event UnJailed(uint256 indexed validatorId, address indexed signer)
 func (_Stakinginfo *StakinginfoFilterer) WatchUnJailed(opts *bind.WatchOpts, sink chan<- *StakinginfoUnJailed, validatorId []*big.Int, signer []common.Address) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -4181,6 +4231,7 @@ type StakinginfoUnstakeInit struct {
 //
 // Solidity: event UnstakeInit(address indexed user, uint256 indexed validatorId, uint256 nonce, uint256 deactivationEpoch, uint256 indexed amount)
 func (_Stakinginfo *StakinginfoFilterer) FilterUnstakeInit(opts *bind.FilterOpts, user []common.Address, validatorId []*big.Int, amount []*big.Int) (*StakinginfoUnstakeInitIterator, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -4206,6 +4257,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterUnstakeInit(opts *bind.FilterOpts
 //
 // Solidity: event UnstakeInit(address indexed user, uint256 indexed validatorId, uint256 nonce, uint256 deactivationEpoch, uint256 indexed amount)
 func (_Stakinginfo *StakinginfoFilterer) WatchUnstakeInit(opts *bind.WatchOpts, sink chan<- *StakinginfoUnstakeInit, user []common.Address, validatorId []*big.Int, amount []*big.Int) (event.Subscription, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -4344,6 +4396,7 @@ type StakinginfoUnstaked struct {
 //
 // Solidity: event Unstaked(address indexed user, uint256 indexed validatorId, uint256 amount, uint256 total)
 func (_Stakinginfo *StakinginfoFilterer) FilterUnstaked(opts *bind.FilterOpts, user []common.Address, validatorId []*big.Int) (*StakinginfoUnstakedIterator, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -4364,6 +4417,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterUnstaked(opts *bind.FilterOpts, u
 //
 // Solidity: event Unstaked(address indexed user, uint256 indexed validatorId, uint256 amount, uint256 total)
 func (_Stakinginfo *StakinginfoFilterer) WatchUnstaked(opts *bind.WatchOpts, sink chan<- *StakinginfoUnstaked, user []common.Address, validatorId []*big.Int) (event.Subscription, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -4496,6 +4550,7 @@ type StakinginfoUpdateCommissionRate struct {
 //
 // Solidity: event UpdateCommissionRate(uint256 indexed validatorId, uint256 indexed newCommissionRate, uint256 indexed oldCommissionRate)
 func (_Stakinginfo *StakinginfoFilterer) FilterUpdateCommissionRate(opts *bind.FilterOpts, validatorId []*big.Int, newCommissionRate []*big.Int, oldCommissionRate []*big.Int) (*StakinginfoUpdateCommissionRateIterator, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)
@@ -4520,6 +4575,7 @@ func (_Stakinginfo *StakinginfoFilterer) FilterUpdateCommissionRate(opts *bind.F
 //
 // Solidity: event UpdateCommissionRate(uint256 indexed validatorId, uint256 indexed newCommissionRate, uint256 indexed oldCommissionRate)
 func (_Stakinginfo *StakinginfoFilterer) WatchUpdateCommissionRate(opts *bind.WatchOpts, sink chan<- *StakinginfoUpdateCommissionRate, validatorId []*big.Int, newCommissionRate []*big.Int, oldCommissionRate []*big.Int) (event.Subscription, error) {
+
 	var validatorIdRule []interface{}
 	for _, validatorIdItem := range validatorId {
 		validatorIdRule = append(validatorIdRule, validatorIdItem)

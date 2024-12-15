@@ -22,7 +22,7 @@ linters:
     # - gocognit
     - gci
     - goconst
-    - gofumpt
+    - gofmt
     - goimports
     # - gomnd
     #- gomoddirectives

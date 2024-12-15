@@ -22,7 +22,9 @@ const (
 	MaxTitleLength       int = 140
 )
 
-var _ Content = TextProposal{}
+var (
+	_ Content = TextProposal{}
+)
 
 type (
 	Proposals     []Proposal
@@ -72,6 +74,7 @@ func NewGenesisState(
 	startingProposalID uint64, deposits v034gov.Deposits, votes v034gov.Votes, proposals []Proposal,
 	depositParams v034gov.DepositParams, votingParams v034gov.VotingParams, tallyParams v034gov.TallyParams,
 ) GenesisState {
+
 	return GenesisState{
 		StartingProposalID: startingProposalID,
 		Deposits:           deposits,

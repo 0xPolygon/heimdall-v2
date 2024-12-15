@@ -25,6 +25,7 @@ import (
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
 func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
+
 	// check if VEs are enabled
 	panicOnVoteExtensionsDisabled(ctx, reqHeight+1)
 
@@ -45,7 +46,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 		return errors.New("no validators found in validator set")
 	}
 
-	totalVotingPower := validatorSet.GetTotalVotingPower()
+	var totalVotingPower = validatorSet.GetTotalVotingPower()
 	sumVP := math.NewInt(0)
 
 	// Map to track seen validator addresses

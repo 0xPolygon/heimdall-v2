@@ -84,5 +84,5 @@ func WriteConfigFile(configFilePath string, config *CustomConfig) {
 		panic(err)
 	}
 
-	cmtos.MustWriteFile(configFilePath, buffer.Bytes(), 0o644)
+	cmtos.MustWriteFile(configFilePath, buffer.Bytes(), 0644)
 }

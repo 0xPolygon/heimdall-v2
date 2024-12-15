@@ -158,6 +158,7 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 		acceptDelegation,
 		signerPubKey,
 	)
+
 	if err != nil {
 		Logger.Error("error while submitting stake", "error", err)
 		return err

@@ -269,6 +269,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
 		require.ErrorContains(err, types.ErrBadAck.Error())
+
 	})
 
 	err = keeper.SetCheckpointBuffer(ctx, header)
@@ -362,7 +363,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	newTime := lastCheckpoint.Timestamp + uint64(checkpointBufferTime.Seconds()) - uint64(5)
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
-	// Rotate the list to get the next proposer in line
+	//Rotate the list to get the next proposer in line
 	dupValidatorSet := validatorSet.Copy()
 	dupValidatorSet.IncrementProposerPriority(1)
 	noAckProposer := dupValidatorSet.Proposer.Signer

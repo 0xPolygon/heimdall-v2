@@ -185,6 +185,7 @@ func (_Slashmanager *SlashmanagerTransactorRaw) Transact(opts *bind.TransactOpts
 func (_Slashmanager *SlashmanagerCaller) VOTETYPE(opts *bind.CallOpts) (uint8, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "VOTE_TYPE")
+
 	if err != nil {
 		return *new(uint8), err
 	}
@@ -192,6 +193,7 @@ func (_Slashmanager *SlashmanagerCaller) VOTETYPE(opts *bind.CallOpts) (uint8, e
 	out0 := *abi.ConvertType(out[0], new(uint8)).(*uint8)
 
 	return out0, err
+
 }
 
 // VOTETYPE is a free data retrieval call binding the contract method 0xd5b844eb.
@@ -214,6 +216,7 @@ func (_Slashmanager *SlashmanagerCallerSession) VOTETYPE() (uint8, error) {
 func (_Slashmanager *SlashmanagerCaller) HeimdallId(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "heimdallId")
+
 	if err != nil {
 		return *new([32]byte), err
 	}
@@ -221,6 +224,7 @@ func (_Slashmanager *SlashmanagerCaller) HeimdallId(opts *bind.CallOpts) ([32]by
 	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
 
 	return out0, err
+
 }
 
 // HeimdallId is a free data retrieval call binding the contract method 0xfbc3dd36.
@@ -243,6 +247,7 @@ func (_Slashmanager *SlashmanagerCallerSession) HeimdallId() ([32]byte, error) {
 func (_Slashmanager *SlashmanagerCaller) IsOwner(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "isOwner")
+
 	if err != nil {
 		return *new(bool), err
 	}
@@ -250,6 +255,7 @@ func (_Slashmanager *SlashmanagerCaller) IsOwner(opts *bind.CallOpts) (bool, err
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
+
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
@@ -272,6 +278,7 @@ func (_Slashmanager *SlashmanagerCallerSession) IsOwner() (bool, error) {
 func (_Slashmanager *SlashmanagerCaller) JailCheckpoints(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "jailCheckpoints")
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -279,6 +286,7 @@ func (_Slashmanager *SlashmanagerCaller) JailCheckpoints(opts *bind.CallOpts) (*
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // JailCheckpoints is a free data retrieval call binding the contract method 0x556b2ce9.
@@ -301,6 +309,7 @@ func (_Slashmanager *SlashmanagerCallerSession) JailCheckpoints() (*big.Int, err
 func (_Slashmanager *SlashmanagerCaller) Logger(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "logger")
+
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -308,6 +317,7 @@ func (_Slashmanager *SlashmanagerCaller) Logger(opts *bind.CallOpts) (common.Add
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
+
 }
 
 // Logger is a free data retrieval call binding the contract method 0xf24ccbfe.
@@ -330,6 +340,7 @@ func (_Slashmanager *SlashmanagerCallerSession) Logger() (common.Address, error)
 func (_Slashmanager *SlashmanagerCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "owner")
+
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -337,6 +348,7 @@ func (_Slashmanager *SlashmanagerCaller) Owner(opts *bind.CallOpts) (common.Addr
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -359,6 +371,7 @@ func (_Slashmanager *SlashmanagerCallerSession) Owner() (common.Address, error) 
 func (_Slashmanager *SlashmanagerCaller) ProposerRate(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "proposerRate")
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -366,6 +379,7 @@ func (_Slashmanager *SlashmanagerCaller) ProposerRate(opts *bind.CallOpts) (*big
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // ProposerRate is a free data retrieval call binding the contract method 0x3199e305.
@@ -388,6 +402,7 @@ func (_Slashmanager *SlashmanagerCallerSession) ProposerRate() (*big.Int, error)
 func (_Slashmanager *SlashmanagerCaller) Registry(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "registry")
+
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -395,6 +410,7 @@ func (_Slashmanager *SlashmanagerCaller) Registry(opts *bind.CallOpts) (common.A
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
+
 }
 
 // Registry is a free data retrieval call binding the contract method 0x7b103999.
@@ -417,6 +433,7 @@ func (_Slashmanager *SlashmanagerCallerSession) Registry() (common.Address, erro
 func (_Slashmanager *SlashmanagerCaller) ReportRate(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "reportRate")
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -424,6 +441,7 @@ func (_Slashmanager *SlashmanagerCaller) ReportRate(opts *bind.CallOpts) (*big.I
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // ReportRate is a free data retrieval call binding the contract method 0xc25593be.
@@ -446,6 +464,7 @@ func (_Slashmanager *SlashmanagerCallerSession) ReportRate() (*big.Int, error) {
 func (_Slashmanager *SlashmanagerCaller) SlashingNonce(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Slashmanager.contract.Call(opts, &out, "slashingNonce")
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -453,6 +472,7 @@ func (_Slashmanager *SlashmanagerCaller) SlashingNonce(opts *bind.CallOpts) (*bi
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // SlashingNonce is a free data retrieval call binding the contract method 0xa2d32176.
@@ -694,6 +714,7 @@ type SlashmanagerOwnershipTransferred struct {
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_Slashmanager *SlashmanagerFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*SlashmanagerOwnershipTransferredIterator, error) {
+
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
 		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
@@ -714,6 +735,7 @@ func (_Slashmanager *SlashmanagerFilterer) FilterOwnershipTransferred(opts *bind
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_Slashmanager *SlashmanagerFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *SlashmanagerOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
+
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
 		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)

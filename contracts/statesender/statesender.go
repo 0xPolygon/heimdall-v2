@@ -185,6 +185,7 @@ func (_Statesender *StatesenderTransactorRaw) Transact(opts *bind.TransactOpts, 
 func (_Statesender *StatesenderCaller) Counter(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Statesender.contract.Call(opts, &out, "counter")
+
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -192,6 +193,7 @@ func (_Statesender *StatesenderCaller) Counter(opts *bind.CallOpts) (*big.Int, e
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
+
 }
 
 // Counter is a free data retrieval call binding the contract method 0x61bc221a.
@@ -214,6 +216,7 @@ func (_Statesender *StatesenderCallerSession) Counter() (*big.Int, error) {
 func (_Statesender *StatesenderCaller) IsOwner(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
 	err := _Statesender.contract.Call(opts, &out, "isOwner")
+
 	if err != nil {
 		return *new(bool), err
 	}
@@ -221,6 +224,7 @@ func (_Statesender *StatesenderCaller) IsOwner(opts *bind.CallOpts) (bool, error
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
+
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
@@ -243,6 +247,7 @@ func (_Statesender *StatesenderCallerSession) IsOwner() (bool, error) {
 func (_Statesender *StatesenderCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Statesender.contract.Call(opts, &out, "owner")
+
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -250,6 +255,7 @@ func (_Statesender *StatesenderCaller) Owner(opts *bind.CallOpts) (common.Addres
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
+
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -272,6 +278,7 @@ func (_Statesender *StatesenderCallerSession) Owner() (common.Address, error) {
 func (_Statesender *StatesenderCaller) Registrations(opts *bind.CallOpts, arg0 common.Address) (common.Address, error) {
 	var out []interface{}
 	err := _Statesender.contract.Call(opts, &out, "registrations", arg0)
+
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -279,6 +286,7 @@ func (_Statesender *StatesenderCaller) Registrations(opts *bind.CallOpts, arg0 c
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
+
 }
 
 // Registrations is a free data retrieval call binding the contract method 0x942e6bcf.
@@ -458,6 +466,7 @@ type StatesenderNewRegistration struct {
 //
 // Solidity: event NewRegistration(address indexed user, address indexed sender, address indexed receiver)
 func (_Statesender *StatesenderFilterer) FilterNewRegistration(opts *bind.FilterOpts, user []common.Address, sender []common.Address, receiver []common.Address) (*StatesenderNewRegistrationIterator, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -482,6 +491,7 @@ func (_Statesender *StatesenderFilterer) FilterNewRegistration(opts *bind.Filter
 //
 // Solidity: event NewRegistration(address indexed user, address indexed sender, address indexed receiver)
 func (_Statesender *StatesenderFilterer) WatchNewRegistration(opts *bind.WatchOpts, sink chan<- *StatesenderNewRegistration, user []common.Address, sender []common.Address, receiver []common.Address) (event.Subscription, error) {
+
 	var userRule []interface{}
 	for _, userItem := range user {
 		userRule = append(userRule, userItem)
@@ -617,6 +627,7 @@ type StatesenderOwnershipTransferred struct {
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_Statesender *StatesenderFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*StatesenderOwnershipTransferredIterator, error) {
+
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
 		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
@@ -637,6 +648,7 @@ func (_Statesender *StatesenderFilterer) FilterOwnershipTransferred(opts *bind.F
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_Statesender *StatesenderFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *StatesenderOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
+
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
 		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
@@ -769,6 +781,7 @@ type StatesenderStateSynced struct {
 //
 // Solidity: event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)
 func (_Statesender *StatesenderFilterer) FilterStateSynced(opts *bind.FilterOpts, id []*big.Int, contractAddress []common.Address) (*StatesenderStateSyncedIterator, error) {
+
 	var idRule []interface{}
 	for _, idItem := range id {
 		idRule = append(idRule, idItem)
@@ -789,6 +802,7 @@ func (_Statesender *StatesenderFilterer) FilterStateSynced(opts *bind.FilterOpts
 //
 // Solidity: event StateSynced(uint256 indexed id, address indexed contractAddress, bytes data)
 func (_Statesender *StatesenderFilterer) WatchStateSynced(opts *bind.WatchOpts, sink chan<- *StatesenderStateSynced, id []*big.Int, contractAddress []common.Address) (event.Subscription, error) {
+
 	var idRule []interface{}
 	for _, idItem := range id {
 		idRule = append(idRule, idItem)

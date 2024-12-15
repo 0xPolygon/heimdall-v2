@@ -241,8 +241,7 @@ func GetStartCmd() *cobra.Command {
 		Short: "Start bridge server",
 		Run: func(cmd *cobra.Command, args []string) {
 			StartBridge(true)
-		},
-	}
+		}}
 
 	// log level
 	startCmd.Flags().String(helper.LogLevel, "info", "Log level for bridge")

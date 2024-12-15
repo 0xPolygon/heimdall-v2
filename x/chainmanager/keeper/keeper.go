@@ -34,6 +34,7 @@ func NewKeeper(
 	storeService store.KVStoreService,
 	authority string,
 ) Keeper {
+
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
 		panic(fmt.Errorf("invalid chainmanager authority address: %w", err))
