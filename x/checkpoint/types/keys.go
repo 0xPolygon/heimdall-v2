@@ -29,4 +29,7 @@ var (
 
 	// LastNoAckPrefixKey represents the prefix for last no ack
 	LastNoAckPrefixKey = collections.NewPrefix([]byte{0x84})
+
+	// CheckpointSignaturesPrefixKey represents the prefix for checkpoint signatures
+	CheckpointSignaturesPrefixKey = collections.NewPrefix([]byte{0x85})
 )
