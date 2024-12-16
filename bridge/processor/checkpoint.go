@@ -514,7 +514,6 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 		return err
 	}
 
-	// TODO HV2 - check if the codec passed here is correct or not (original was `authTypes.ModuleCdc`)
 	// fetch side txs sigs
 	decoder := authlegacytx.DefaultTxDecoder(cp.cliCtx.Codec)
 

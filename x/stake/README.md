@@ -1,4 +1,4 @@
-<!-- TODO HV2 - update/verify the models, query, cli, and REST behaviour -->
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
 
 # Stake module
 

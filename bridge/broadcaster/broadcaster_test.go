@@ -123,7 +123,6 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	mockCtrl := prepareMockData(t)
 	defer mockCtrl.Finish()
 
-	testOpts := helper.NewTestOpts(nil, testChainId)
 	heimdallApp, sdkCtx, _ := createTestApp(t)
 
 	encodingConfig := moduletestutil.MakeTestEncodingConfig()
@@ -190,7 +189,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 				shouldFailSimulate = false
 			}
 
-			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil, testOpts)
+			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil)
 			if tc.expErr {
 				require.Error(t, err)
 			} else {

@@ -31,7 +31,6 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// TODO HV2 - this function was heavily modified, review carefully
 // testnetCmd initialises files required to start heimdall testnet
 func testnetCmd(_ *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
@@ -246,7 +245,6 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 
 			// dump signer information in a json file
 			// this is required when setting up node dirs for devnet
-			// TODO move to const string flag
 			dump := viper.GetBool("signer-dump")
 			if dump {
 				signerJSON, err := json.MarshalIndent(signers, "", "  ")

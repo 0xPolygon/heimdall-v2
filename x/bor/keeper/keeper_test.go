@@ -18,6 +18,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
@@ -390,10 +391,10 @@ func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 	blockHeader4 := ethTypes.Header{Number: big.NewInt(int64(seedBlock4))}
 	blockHash4 := blockHeader4.Hash()
 
-	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock1))).Return(&blockHeader1, nil)
-	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock2))).Return(&blockHeader2, nil)
-	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock3))).Return(&blockHeader3, nil)
-	s.contractCaller.On("GetBorChainBlock", big.NewInt(int64(seedBlock4))).Return(&blockHeader4, nil)
+	s.contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(int64(seedBlock1))).Return(&blockHeader1, nil)
+	s.contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(int64(seedBlock2))).Return(&blockHeader2, nil)
+	s.contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(int64(seedBlock3))).Return(&blockHeader3, nil)
+	s.contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(int64(seedBlock4))).Return(&blockHeader4, nil)
 
 	testcases := []struct {
 		name             string
@@ -472,7 +473,7 @@ func (s *KeeperTestSuite) TestProposeSpanOne() {
 
 	blockHeader1 := ethTypes.Header{Number: big.NewInt(seedBlock1)}
 	blockHash1 := blockHeader1.Hash()
-	contractCaller.On("GetBorChainBlock", big.NewInt(seedBlock1)).Return(&blockHeader1, nil)
+	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(seedBlock1)).Return(&blockHeader1, nil)
 
 	seed, err := borKeeper.FetchNextSpanSeed(ctx, 1)
 	s.Require().NoError(err)

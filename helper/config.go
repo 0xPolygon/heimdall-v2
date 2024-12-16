@@ -1,11 +1,9 @@
 package helper
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 	"io"
 	"log"
-	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,7 +16,6 @@ import (
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	ethCrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/spf13/cobra"
@@ -33,10 +30,7 @@ const (
 	CometBFTNodeFlag       = "node"
 	WithHeimdallConfigFlag = "app"
 	HomeFlag               = "home"
-	FlagClientHome         = "home-client"
-	OverwriteGenesisFlag   = "overwrite-genesis"
 	RestServerFlag         = "rest-server"
-	GRPCServerFlag         = "grpc-server"
 	BridgeFlag             = "bridge"
 	AllProcessesFlag       = "all"
 	OnlyProcessesFlag      = "only"
@@ -47,7 +41,6 @@ const (
 	MainChain   = "mainnet"
 	MumbaiChain = "mumbai"
 	AmoyChain   = "amoy"
-	LocalChain  = "local"
 
 	// heimdall-config flags
 
@@ -72,21 +65,6 @@ const (
 	NoACKWaitTimeFlag = "no_ack_wait_time"
 	ChainFlag         = "chain"
 
-	// TODO HV2 Move these to common client flags
-
-	// BroadcastBlock defines a tx broadcasting mode where the client waits for
-	// the tx to be committed in a block.
-	BroadcastBlock = "block"
-
-	// BroadcastSync defines a tx broadcasting mode where the client waits for
-	// a CheckTx execution response only.
-	BroadcastSync = "sync"
-
-	// BroadcastAsync defines a tx broadcasting mode where the client returns
-	// immediately.
-	BroadcastAsync = "async"
-	// --
-
 	// RPC Endpoints
 	DefaultMainRPCUrl  = "http://localhost:9545"
 	DefaultBorRPCUrl   = "http://localhost:8545"
@@ -102,7 +80,6 @@ const (
 	// DefaultAmqpURL represents default AMQP url
 	DefaultAmqpURL           = "amqp://guest:guest@localhost:5672/"
 	DefaultHeimdallServerURL = "http://0.0.0.0:1317"
-	DefaultGRPCServerURL     = "http://0.0.0.0:1318"
 
 	DefaultCometBFTNodeURL = "http://0.0.0.0:26657"
 
@@ -133,7 +110,8 @@ const (
 
 	DefaultCometBFTNode = "tcp://localhost:26657"
 
-	// TODO HV2: Check these values and eventually update with the correct ones. Also, add support for amoy.
+	// TODO HV2: https://polygon.atlassian.net/browse/POS-2763
+
 	DefaultMainnetSeeds       = "1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656"
 	DefaultMumbaiTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
 	DefaultAmoyTestnetSeeds   = "eb57fffe96d74312963ced94a94cbaf8e0d8ec2e@54.217.171.196:26656,080dcdffcc453367684b61d8f3ce032f357b0f73@13.251.184.185:26656"
@@ -146,8 +124,6 @@ const (
 	// MilestoneLength is minimum supported length of milestone
 	MilestoneLength = uint64(12)
 
-	MilestonePruneNumber = uint64(100)
-
 	BorChainMilestoneConfirmation = uint64(16)
 
 	// MilestoneBufferLength defines the condition to propose the
@@ -155,15 +131,10 @@ const (
 	// the last milestone
 	MilestoneBufferLength = MilestoneLength * 5
 	MilestoneBufferTime   = 256 * time.Second
-
-	// DefaultOpenCollectorEndpoint is the default port of Heimdall open collector endpoint
-	DefaultOpenCollectorEndpoint = "localhost:4317"
 )
 
 var (
-	DefaultCLIHome  = os.ExpandEnv("$HOME/var/lib/heimdall")
 	DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
-	MinBalance      = big.NewInt(100000000000000000) // aka 0.1 Ether
 )
 
 var cdc = amino.NewCodec()
@@ -383,17 +354,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
-	// TODO HV2 - Why was this added? We are never using this
-	/*
-		// Loading genesis doc
-		genDoc, err := cmTypes.GenesisDocFromFile(filepath.Join(configDir, "genesis.json"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		GenesisDoc = *genDoc
-	*/
-
 	// load pv file, unmarshall and set to privKeyObject
 	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
 	if err != nil {
@@ -405,11 +365,9 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	privKeyObject = privVal.Key.PrivKey.Bytes()
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
-	// TODO HV2 - seems incomplete! Why?
 	switch conf.Custom.Chain {
 	case MainChain, MumbaiChain, AmoyChain:
 	default:
-
 	}
 }
 
@@ -456,10 +414,6 @@ func GetConfig() CustomConfig {
 	return conf.Custom
 }
 
-func GetGenesisDoc() cmTypes.GenesisDoc {
-	return GenesisDoc
-}
-
 //
 // Get main/pos clients
 //
@@ -487,17 +441,6 @@ func GetBorRPCClient() *rpc.Client {
 // GetPrivKey returns priv key object
 func GetPrivKey() secp256k1.PrivKey {
 	return privKeyObject
-}
-
-// GetECDSAPrivKey return ecdsa private key
-func GetECDSAPrivKey() *ecdsa.PrivateKey {
-	// get priv key
-	pkObject := GetPrivKey()
-
-	// create ecdsa private key
-	ecdsaPrivateKey, _ := ethCrypto.ToECDSA(pkObject[:])
-
-	return ecdsaPrivateKey
 }
 
 // GetPubKey returns pub key object

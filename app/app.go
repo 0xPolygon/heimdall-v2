@@ -377,18 +377,15 @@ func NewHeimdallApp(
 	bApp.SetExtendVoteHandler(app.ExtendVoteHandler())
 	bApp.SetVerifyVoteExtensionHandler(app.VerifyVoteExtensionHandler())
 
-	// TODO HV2: is this order correct?
 	app.ModuleManager.SetOrderBeginBlockers(
 		staketypes.ModuleName,
 	)
 
-	// TODO HV2: is this order correct? Do we need any other module?
 	app.ModuleManager.SetOrderEndBlockers(
 		govtypes.ModuleName,
 		staketypes.ModuleName,
 	)
 
-	// TODO HV2: is this order correct?
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -771,23 +768,20 @@ func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) m
 	return modAccAddrs
 }
 
-// TODO HV2: params will be soon deprecated
-
 // initParamsKeeper init params keeper and its subspaces
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, storeKey storetypes.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, storeKey)
 
-	// TODO HV2: are all the following needed?
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName)
-	paramsKeeper.Subspace(staketypes.ModuleName)
-	paramsKeeper.Subspace(clerktypes.ModuleName)
-	paramsKeeper.Subspace(checkpointTypes.ModuleName)
-	paramsKeeper.Subspace(topupTypes.ModuleName)
-	paramsKeeper.Subspace(chainmanagertypes.ModuleName)
-	paramsKeeper.Subspace(milestoneTypes.ModuleName)
 	paramsKeeper.Subspace(borTypes.ModuleName)
+	paramsKeeper.Subspace(chainmanagertypes.ModuleName)
+	paramsKeeper.Subspace(checkpointTypes.ModuleName)
+	paramsKeeper.Subspace(clerktypes.ModuleName)
+	paramsKeeper.Subspace(milestoneTypes.ModuleName)
+	paramsKeeper.Subspace(staketypes.ModuleName)
+	paramsKeeper.Subspace(topupTypes.ModuleName)
 
 	return paramsKeeper
 }
