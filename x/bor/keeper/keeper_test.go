@@ -70,9 +70,10 @@ func (s *KeeperTestSuite) SetupTest() {
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.chainManagerKeeper,
 		s.stakeKeeper,
-		&s.contractCaller,
+		nil,
 	)
 
+	s.borKeeper.SetContractCaller(&s.contractCaller)
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)

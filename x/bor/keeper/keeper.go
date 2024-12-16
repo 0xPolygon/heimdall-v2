@@ -44,7 +44,7 @@ func NewKeeper(
 	authority string,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
-	caller helper.IContractCaller,
+	caller *helper.ContractCaller,
 ) Keeper {
 
 	bz, err := address.NewHexCodec().StringToBytes(authority)
@@ -89,6 +89,10 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 // GetAuthority returns x/bor module's authority
 func (k Keeper) GetAuthority() string {
 	return k.authority
+}
+
+func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
+	k.contractCaller = contractCaller
 }
 
 // TODO HV2: delete this function if not needed
