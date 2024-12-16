@@ -399,39 +399,44 @@ func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 	testcases := []struct {
 		name             string
 		lastSpanId       uint64
-		lastSeedProducer common.Address
+		lastSeedProducer *common.Address
 		expSeed          common.Hash
+		expAuthor        *common.Address
 	}{
 		{
 			name:             "Last seed producer is different than end block author",
-			lastSeedProducer: val2Addr,
+			lastSeedProducer: &val2Addr,
 			lastSpanId:       0,
 			expSeed:          blockHash1,
+			expAuthor:        &val2Addr,
 		},
 		{
 			name:             "Last seed producer is same as end block author",
-			lastSeedProducer: val1Addr,
+			lastSeedProducer: &val1Addr,
 			lastSpanId:       1,
 			expSeed:          blockHash2,
+			expAuthor:        &val1Addr,
 		},
 		{
 			name:             "Next seed producer should be different from previous recent seed producers",
-			lastSeedProducer: val2Addr,
+			lastSeedProducer: &val2Addr,
 			lastSpanId:       2,
 			expSeed:          blockHash3,
+			expAuthor:        &val3Addr,
 		},
 		{
 			name:             "If no unique seed producer is found, first block with different author from previous seed producer is selected",
-			lastSeedProducer: val1Addr,
+			lastSeedProducer: &val1Addr,
 			lastSpanId:       3,
 			expSeed:          blockHash4,
+			expAuthor:        &val2Addr,
 		},
 	}
 
 	lastSpanID := uint64(0)
 
 	for _, tc := range testcases {
-		err := borKeeper.StoreSeedProducer(ctx, tc.lastSpanId, &tc.lastSeedProducer)
+		err := borKeeper.StoreSeedProducer(ctx, tc.lastSpanId, tc.lastSeedProducer)
 		require.NoError(err)
 
 		lastSpanID = tc.lastSpanId
@@ -444,9 +449,10 @@ func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			seed, err := borKeeper.FetchNextSpanSeed(ctx, tc.lastSpanId+2)
+			seed, seedAuthor, err := borKeeper.FetchNextSpanSeed(ctx, tc.lastSpanId+2)
 			require.NoError(err)
 			require.Equal(tc.expSeed.Bytes(), seed.Bytes())
+			require.Equal(*tc.expAuthor, seedAuthor)
 		})
 	}
 }
@@ -475,9 +481,10 @@ func (s *KeeperTestSuite) TestProposeSpanOne() {
 	blockHash1 := blockHeader1.Hash()
 	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(seedBlock1)).Return(&blockHeader1, nil)
 
-	seed, err := borKeeper.FetchNextSpanSeed(ctx, 1)
+	seed, seedAuthor, err := borKeeper.FetchNextSpanSeed(ctx, 1)
 	s.Require().NoError(err)
 	s.Require().Equal(blockHash1.Bytes(), seed.Bytes())
+	s.Require().Equal(val1Addr.Bytes(), seedAuthor.Bytes())
 }
 
 func (s *KeeperTestSuite) TestGetSeedProducer() {

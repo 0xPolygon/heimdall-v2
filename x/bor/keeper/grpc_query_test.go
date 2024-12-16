@@ -1,8 +1,9 @@
 package keeper_test
 
 import (
-	"github.com/stretchr/testify/mock"
 	"math/big"
+
+	"github.com/stretchr/testify/mock"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,9 +16,8 @@ import (
 func (s *KeeperTestSuite) TestGetLatestSpan() {
 	require, ctx, queryClient := s.Require(), s.ctx, s.queryClient
 
-	res, err := queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
-	require.Error(err)
-	require.Contains(err.Error(), "no spans found")
+	res, _ := queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
+	require.Empty(res)
 
 	spans := s.genTestSpans(5)
 	for _, span := range spans {
@@ -25,7 +25,7 @@ func (s *KeeperTestSuite) TestGetLatestSpan() {
 		require.NoError(err)
 	}
 
-	res, err = queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
+	res, err := queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
 	expRes := &types.QueryLatestSpanResponse{Span: *spans[len(spans)-1]}
 	require.NoError(err)
 	require.Equal(expRes, res)
@@ -104,7 +104,7 @@ func (s *KeeperTestSuite) TestGetNextSpanSeed() {
 	res, err := queryClient.GetNextSpanSeed(ctx, &types.QueryNextSpanSeedRequest{Id: 1})
 	require.NoError(err)
 	require.NotNil(res)
-	require.Equal(&types.QueryNextSpanSeedResponse{Seed: lastBorBlockHeader.Hash().String()}, res)
+	require.Equal(&types.QueryNextSpanSeedResponse{Seed: lastBorBlockHeader.Hash().String(), SeedAuthor: valAddr.Hex()}, res)
 }
 
 func (s *KeeperTestSuite) TestGetParams() {

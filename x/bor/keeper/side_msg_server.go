@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"strconv"
 
-	cmttypes "github.com/cometbft/cometbft/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	cmttypes "github.com/cometbft/cometbft/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var (
@@ -60,7 +60,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	)
 
 	// calculate next span seed locally
-	nextSpanSeed, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
+	nextSpanSeed, nextSpanSeedAuthor, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
 	if err != nil {
 		logger.Error("error fetching next span seed from mainChain", "error", err)
 		return sidetxs.Vote_UNSPECIFIED
@@ -72,6 +72,21 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 			"span seed does not match",
 			"msgSeed", msg.Seed,
 			"mainChainSeed", nextSpanSeed.String(),
+		)
+
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// check if span seed author matches or not.
+	if util.FormatAddress(msg.SeedAuthor) != util.FormatAddress(nextSpanSeedAuthor.Hex()) {
+		logger.Error(
+			"Span Seed Author does not match",
+			"proposer", msg.Proposer,
+			"chainID", msg.ChainId,
+			"msgSeed", msg.Seed,
+			"msgSeedAuthor", msg.SeedAuthor,
+			"mainchainSeedAuthor", nextSpanSeedAuthor.Hex(),
+			"mainchainSeed", nextSpanSeed,
 		)
 
 		return sidetxs.Vote_VOTE_NO
@@ -147,27 +162,8 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	logger.Debug("persisting span state", "span id", msg.SpanId, "sideTxResult", sideTxResult)
 
-	var seedSpanID uint64
-	if msg.GetSpanId() < 2 {
-		seedSpanID = msg.SpanId - 1
-	} else {
-		seedSpanID = msg.SpanId - 2
-	}
-
-	lastSpan, err := s.k.GetSpan(ctx, seedSpanID)
-	if err != nil {
-		logger.Error("Unable to get last span", "error", err)
-		return
-	}
-
-	// store the seed producer
-	_, producer, err := s.k.getBorBlockForSpanSeed(ctx, &lastSpan, msg.SpanId)
-	if err != nil {
-		logger.Error("Unable to get seed producer", "error", err)
-		return
-	}
-
-	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, producer); err != nil {
+	seedAuthor := common.HexToAddress(msg.SeedAuthor)
+	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, &seedAuthor); err != nil {
 		logger.Error("Unable to store seed producer", "error", err)
 		return
 	}

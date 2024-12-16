@@ -90,7 +90,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	}
 
 	// fetch next selected block producers
-	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx, req.SpanId)
+	nextSpanSeed, _, err := q.k.FetchNextSpanSeed(ctx, req.SpanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -123,12 +123,15 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 	spanId := req.GetId()
 
 	// fetch next span seed
-	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx, spanId)
+	nextSpanSeed, nextSpanSeedAuthor, err := q.k.FetchNextSpanSeed(ctx, spanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.QueryNextSpanSeedResponse{Seed: nextSpanSeed.String()}, nil
+	return &types.QueryNextSpanSeedResponse{
+		Seed:       nextSpanSeed.String(),
+		SeedAuthor: nextSpanSeedAuthor.Hex(),
+	}, nil
 }
 
 // GetBorParams returns the bor module parameters

@@ -129,6 +129,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				EndBlock:   30000,
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       blockHash1.Bytes(),
+				SeedAuthor: val1Addr.Hex(),
 			},
 			lastSeedProducer: &val1Addr,
 			lastSpanId:       3,
