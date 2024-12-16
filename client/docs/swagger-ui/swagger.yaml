@@ -610,6 +610,8 @@ paths:
             properties:
               seed:
                 type: string
+              seed_author:
+                type: string
         default:
           description: An unexpected error response.
           schema:
@@ -3266,6 +3268,8 @@ definitions:
     type: object
     properties:
       seed:
+        type: string
+      seed_author:
         type: string
   heimdallv2.bor.QueryParamsResponse:
     type: object
