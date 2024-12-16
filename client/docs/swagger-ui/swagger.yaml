@@ -997,7 +997,7 @@ paths:
         - Query
   /checkpoint/signatures:
     get:
-      summary: QueryCheckpointSignatures queries signatures for latest checkpoint
+      summary: GetCheckpointSignatures queries signatures for latest checkpoint
       operationId: GetCheckpointSignatures
       responses:
         '200':
