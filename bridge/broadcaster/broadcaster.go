@@ -64,10 +64,8 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 	}
 }
 
-// TODO HV2: check usage testOpts (in v1 they are used because BuildAndBroadcastMsgs is invoked)
-
 // BroadcastToHeimdall broadcast to heimdall
-func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, testOpts ...*helper.TestOpts) (*sdk.TxResponse, error) {
+func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*sdk.TxResponse, error) {
 	tb.heimdallMutex.Lock()
 	defer tb.heimdallMutex.Unlock()
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "BroadcastToHeimdall", time.Now())
@@ -92,7 +90,6 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 	txBldr.SetMemo(viper.GetString("memo"))
 
 	txBldr.SetGasLimit(uint64(cometTypes.DefaultBlockParams().MaxGas))
-	// TODO HV2 - should we keep this limit?
 	txBldr.SetFeeAmount(ante.DefaultFeeWantedPerTx)
 
 	// create a factory

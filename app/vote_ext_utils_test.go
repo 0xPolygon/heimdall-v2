@@ -23,7 +23,7 @@ import (
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
-	// TODO HV2: find a way to extend these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)
+	// TODO HV2: https://polygon.atlassian.net/browse/POS-2761
 	hApp, _, _ := SetupApp(t, 1)
 	ctx := hApp.BaseApp.NewContext(true)
 	vals := hApp.StakeKeeper.GetAllValidators(ctx)

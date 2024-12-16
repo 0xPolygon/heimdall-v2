@@ -273,8 +273,6 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 		for _, res := range ve.SideTxResponses {
 			txHashStr := common.Bytes2Hex(res.TxHash)
 
-			// TODO HV2: (once slashing is enabled) we should slash in case a validator maliciously adds conflicting votes
-			//  Given that we also check for duplicate votes during VerifyVoteExtensionHandler, is this redundant ?
 			if _, hasVoted := validatorToTxMap[addr][txHashStr]; hasVoted {
 				logger.Error("multiple votes received for side tx",
 					"txHash", txHashStr, "validatorAddress", addr)

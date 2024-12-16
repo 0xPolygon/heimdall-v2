@@ -1,4 +1,4 @@
-<!-- TODO HV2 - revisit the commands and wording once we have a running app -->
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
 
 # Bridge
 

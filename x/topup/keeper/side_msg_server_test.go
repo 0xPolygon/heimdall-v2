@@ -236,11 +236,7 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 }
 
-/* TODO HV2: we need to implement checks about account balances for `TestPostHandleTopupTx`
-   This was done in heimdall-v1 by using a real app setup (no mocks).
-   Hence, either we do that when app test setup is fixed,
-   or we achieve something similar with mocked balances tracking
-*/
+// TODO HV2: https://polygon.atlassian.net/browse/POS-2765
 
 func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 	ctx, require, keeper, postHandler, t := s.ctx, s.Require(), s.keeper, s.postHandler, s.T()

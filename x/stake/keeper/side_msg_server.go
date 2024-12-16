@@ -182,9 +182,6 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// TODO HV2: these checks are repeated in all handlers, can be moved to a common function
-	//  See https://polygon.atlassian.net/browse/POS-2615
-
 	// check BlockNumber
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
 		s.k.Logger(ctx).Error(

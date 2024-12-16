@@ -231,8 +231,6 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return u.String()
 }
 
-// TODO HV2 - FetchFromAPI method needs further testing once we have a devnet running. It might be possibly replaced by using the proto services' query clients.
-
 // FetchFromAPI fetches data from any URL with limited read size
 func FetchFromAPI(URL string) (result []byte, err error) {
 	resp, err := Client.Get(URL)
@@ -264,47 +262,6 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 
 	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
 }
-
-// TODO HV2 - Older version of FetchFromAPI kept for reference, to be removed later
-/*
-// FetchFromAPI fetches data from any URL
-func FetchFromAPI(URL string) (result rest.Response, err error) {
-	// create codec
-	interfaceRegistry := codectypes.NewInterfaceRegistry()
-	cryptocodec.RegisterInterfaces(interfaceRegistry)
-	cdc := codec.NewProtoCodec(interfaceRegistry)
-
-	resp, err := Client.Get(URL)
-	if err != nil {
-		return result, err
-	}
-
-	defer func() {
-		if err = resp.Body.Close(); err != nil {
-			Logger.Error("Error closing response body:", err)
-		}
-	}()
-
-	if resp.StatusCode == 200 {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return result, err
-		}
-
-		// unmarshall data from buffer
-		var response rest.Response
-		if err = cdc.UnmarshalJSON(body, &response); err != nil {
-			return result, err
-		}
-
-		return response, nil
-	}
-
-	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
-
-	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
-}
-*/
 
 // IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
 // It must be 0x04 for uncompressed public keys
@@ -357,17 +314,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	if !clientCtx.SkipConfirm {
 		panic("this should not happen as SkipConfirm is set to true")
-		// TODO HV2 - create a function
-		// func (f Factory) GetTxConfig() client.TxConfig { return f.txConfig }
-		// I guess this is no longer needed as this if block is never used
-		/*
-			encoder := txf.GetTxConfig().TxJSONEncoder()
-			if encoder == nil {
-				return errors.New("failed to encode transaction: tx json encoder is nil")
-			}
-		*/
 		//nolint:govet //ignoring the unreachable code linter error
-		// Maybe the above code can be replaced with this
 		encoder := clientCtx.TxConfig.TxEncoder()
 
 		txBytes, err := encoder(tx.GetTx())
@@ -442,115 +389,6 @@ func SecureRandomInt(minValue, maxLimit int64) (int64, error) {
 
 	return nBig.Int64(), nil
 }
-
-// TODO HV2 - I don't think we need this anymore
-// Keep it for now, will remove later once everything is working
-/*
-// BuildAndBroadcastMsgs creates transaction and broadcasts it
-func BuildAndBroadcastMsgs(cliCtx client.Context,
-	txBldr client.TxBuilder,
-	msgs []sdk.Msg,
-	testOpts ...*TestOpts,
-) (*sdk.TxResponse, error) {
-	txBytes, err := GetSignedTxBytes(cliCtx, txBldr, msgs, testOpts...)
-	if err != nil {
-		return &sdk.TxResponse{}, err
-	}
-	// just simulate
-	if cliCtx.Simulate {
-		if len(testOpts) == 0 || testOpts[0].app == nil {
-			return &sdk.TxResponse{TxHash: "0x" + hex.EncodeToString(txBytes)}, nil
-		}
-
-		// Using cliCtx.GetNode() instead of this
-		// m := mock.ABCIApp{
-		// 	App: testOpts[0].app,
-		// }
-
-		node, err := cliCtx.GetNode()
-		if err != nil {
-			return &sdk.TxResponse{}, err
-		}
-
-		res, err := node.BroadcastTxSync(cliCtx.CmdContext, txBytes)
-		return sdk.NewResponseFormatBroadcastTx(res), err
-	}
-	// broadcast to a CometBFT node
-	return BroadcastTxBytes(cliCtx, txBytes, "")
-}
-
-// BroadcastTxBytes sends request to cometbft using CLI
-func BroadcastTxBytes(cliCtx client.Context, txBytes []byte, mode string) (*sdk.TxResponse, error) {
-	Logger.Debug("Broadcasting tx bytes to CometBFT", "txBytes", hex.EncodeToString(txBytes), "txHash", hex.EncodeToString(cmtTypes.Tx(txBytes).Hash()))
-
-	if mode != "" {
-		cliCtx.BroadcastMode = mode
-	}
-
-	return cliCtx.BroadcastTx(txBytes)
-}
-
-// GetSignedTxBytes returns signed tx bytes
-func GetSignedTxBytes(cliCtx client.Context,
-	txBldr client.TxBuilder,
-	msgs []sdk.Msg,
-	testOpts ...*TestOpts,
-) ([]byte, error) {
-
-	txFactory := tx.Factory{}
-	txFactory = txFactory.
-		WithChainID(testOpts[0].chainId)
-
-	// just simulate (useful for testing)
-	if cliCtx.Simulate {
-		if len(testOpts) == 0 || testOpts[0].chainId == "" {
-			return nil, nil
-		}
-
-		// We are no longer able to set ChainID
-		// txBldr = txBldr.WithChainID(testOpts[0].chainId)
-
-		return txBldr.BuildAndSign(GetPrivKey(), msgs)
-	}
-
-	// TODO HV2 - I don't think we need this anymore
-	// txBldr, err := PrepareTxBuilder(cliCtx, txBldr)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	fromName := cliCtx.GetFromName()
-	if fromName == "" {
-		return txBldr.BuildAndSign(GetPrivKey(), msgs)
-	}
-
-	if !cliCtx.SkipConfirm {
-		stdSignMsg, err := txBldr.BuildSignMsg(msgs)
-		if err != nil {
-			return nil, err
-		}
-
-		json := cliCtx.Codec.MustMarshalJSON(stdSignMsg)
-
-		_, _ = fmt.Fprintf(os.Stderr, "%s\n\n", json)
-
-		buf := bufio.NewReader(os.Stdin)
-
-		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf)
-		if err != nil || !ok {
-			_, _ = fmt.Fprintf(os.Stderr, "%s\n", "cancelled transaction")
-			return nil, err
-		}
-	}
-
-	passphrase, err := keys.GetPassphrase(fromName)
-	if err != nil {
-		return nil, err
-	}
-	// build and sign the transaction
-	return txBldr.BuildAndSignWithPassphrase(fromName, passphrase, msgs)
-}
-*/
 
 func GetSignature(signMode signing.SignMode, accSeq uint64) signing.SignatureV2 {
 	cosmosPrivKey := cosmossecp256k1.PrivKey{Key: GetPrivKey()}

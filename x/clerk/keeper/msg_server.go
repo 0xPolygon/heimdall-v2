@@ -5,9 +5,10 @@ import (
 	"math/big"
 	"strconv"
 
+	"cosmossdk.io/errors"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	"github.com/0xPolygon/heimdall-v2/common"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -53,7 +54,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	// check chain id
 	if chainParams.BorChainId != msg.ChainId {
 		logger.Error("Invalid Bor chain id", "msgChainID", msg.ChainId, "borChainId", chainParams.BorChainId)
-		return nil, common.ErrInvalidBorChainID(types.ModuleName)
+		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest, "invalid bor chain id")
 	}
 
 	// sequence id
@@ -64,7 +65,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	// check if incoming tx is older
 	if srv.HasRecordSequence(ctx, sequence.String()) {
 		logger.Error("Older invalid tx found", "Sequence", sequence.String())
-		return nil, common.ErrOldTx(types.ModuleName)
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old tx hash not allowed")
 	}
 
 	// add events

@@ -98,7 +98,6 @@ func (k Keeper) GetAuthority() string {
 func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 	logger := k.Logger(ctx)
 	if err := k.AddNewRawSpan(ctx, span); err != nil {
-		// TODO HV2: should we panic here instead ?
 		logger.Error("error setting span", "error", err, "span", span)
 		return err
 	}

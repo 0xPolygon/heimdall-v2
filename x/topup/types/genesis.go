@@ -51,8 +51,6 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 	return &genesisState, nil
 }
 
-// TODO HV2: remove this function if not needed
-
 // SetGenesisStateToAppState sets x/topup module GenesisState into the raw application genesis state.
 func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, dividendAccounts []types.DividendAccount) (map[string]json.RawMessage, error) {
 	topupState, err := GetGenesisStateFromAppState(cdc, appState)
