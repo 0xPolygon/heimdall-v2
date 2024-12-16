@@ -122,7 +122,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 			Proposer:   string(helper.GetAddress()[:]),
 			StartBlock: nextSpanMsg.StartBlock,
 			EndBlock:   nextSpanMsg.EndBlock,
-			ChainId:    nextSpanMsg.ChainId,
+			ChainId:    nextSpanMsg.BorChainId,
 			Seed:       seed.Bytes(),
 		}
 

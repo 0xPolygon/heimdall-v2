@@ -262,7 +262,7 @@ func (s *KeeperTestSuite) TestFreezeSet() {
 			require.Equal(tc.id, resSpan.Id)
 			require.Equal(tc.startBlock, resSpan.StartBlock)
 			require.Equal(tc.endBlock, resSpan.EndBlock)
-			require.Equal("test-chain", resSpan.ChainId)
+			require.Equal("test-chain", resSpan.BorChainId)
 			require.Equal(tc.expValSet, resSpan.ValidatorSet)
 			require.LessOrEqual(uint64(len(resSpan.SelectedProducers)), tc.producerCount)
 
@@ -396,7 +396,7 @@ func (s *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
 			EndBlock:          endBlock,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		}
 		spans = append(spans, &span)
 	}

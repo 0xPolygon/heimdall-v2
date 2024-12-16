@@ -17,7 +17,7 @@ message Span {
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   repeated heimdallv2.stake.Validator selected_producers = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-  string chain_id = 6 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 
 // TODO HV2: import stake module's proto definitions for

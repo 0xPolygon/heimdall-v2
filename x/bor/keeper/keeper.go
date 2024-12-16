@@ -215,7 +215,7 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 		EndBlock:          endBlock,
 		ValidatorSet:      valSet,
 		SelectedProducers: newProducers,
-		ChainId:           borChainID,
+		BorChainId:        borChainID,
 	}
 
 	return k.AddNewSpan(ctx, newSpan)

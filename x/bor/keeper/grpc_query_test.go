@@ -56,7 +56,7 @@ func (s *KeeperTestSuite) TestGetNextSpan() {
 	req := &types.QueryNextSpanRequest{
 		SpanId:     2,
 		StartBlock: 102,
-		BorChainId: firstSpan[0].ChainId,
+		BorChainId: firstSpan[0].BorChainId,
 	}
 
 	res, err := queryClient.GetNextSpan(ctx, req)
@@ -69,7 +69,7 @@ func (s *KeeperTestSuite) TestGetNextSpan() {
 			EndBlock:          req.StartBlock + params.SpanDuration - 1,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           req.BorChainId,
+			BorChainId:        req.BorChainId,
 		},
 	}
 
