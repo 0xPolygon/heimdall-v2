@@ -37,7 +37,6 @@ func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 
 // SideTxHandler returns a side handler for "staking" type messages.
 func (s *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
-
 	switch methodName {
 	case joinValidatorMethod:
 		return s.SideHandleMsgValidatorJoin
@@ -54,7 +53,6 @@ func (s *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 
 // PostTxHandler redirects to the right sideMsgServer post_handler based on methodName
 func (s *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
-
 	switch methodName {
 	case joinValidatorMethod:
 		return s.PostHandleMsgValidatorJoin

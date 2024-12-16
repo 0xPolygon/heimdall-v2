@@ -219,7 +219,6 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 			return q.k.GetCheckpointByNumber(ctx, number)
 		},
 	)
-
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}

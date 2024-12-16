@@ -14,9 +14,7 @@ type sideMsgServer struct {
 	*Keeper
 }
 
-var (
-	milestoneMsgTypeURL = sdk.MsgTypeURL(&types.MsgMilestone{})
-)
+var milestoneMsgTypeURL = sdk.MsgTypeURL(&types.MsgMilestone{})
 
 // NewSideMsgServerImpl returns an implementation of the milestone MsgServer interface
 // for the provided Keeper.
@@ -26,7 +24,6 @@ func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 
 // SideTxHandler returns a side handler for milestone type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
-
 	switch methodName {
 	case milestoneMsgTypeURL:
 		return srv.SideHandleMsgMilestone
@@ -37,7 +34,6 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 
 // PostTxHandler returns a side handler for milestone type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
-
 	switch methodName {
 	case milestoneMsgTypeURL:
 		return srv.PostHandleMsgMilestone

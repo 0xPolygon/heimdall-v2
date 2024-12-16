@@ -121,5 +121,4 @@ func TestMsgDecode(t *testing.T) {
 	require.Equal(t, msgValidatorExit.From, msgValidatorExit2.From)
 	require.Equal(t, msgValidatorExit.ValId, msgValidatorExit2.ValId)
 	require.Equal(t, msgValidatorExit.DeactivationEpoch, msgValidatorExit2.DeactivationEpoch)
-
 }

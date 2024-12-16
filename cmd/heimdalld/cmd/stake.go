@@ -136,7 +136,6 @@ func ApproveCmd() *cobra.Command {
 // GetChainManagerParams return configManager params
 func GetChainManagerParams() (*chainmanagertypes.Params, error) {
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(bridge.ChainManagerParamsURL))
-
 	if err != nil {
 		return nil, err
 	}

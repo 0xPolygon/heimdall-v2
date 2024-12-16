@@ -80,7 +80,6 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 // TestPopulateABIs tests that package level ABIs cache works as expected
 // by not invoking json methods after contracts ABIs' init
 func TestPopulateABIs(t *testing.T) {
-
 	t.Log("ABIs map should be empty and all ABIs not found")
 	assert.True(t, len(ContractsABIsMap) == 0)
 	_, found := ContractsABIsMap[rootchain.RootchainMetaData.ABI]

@@ -90,7 +90,7 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 	// Calculate the milestone length
 	msgMilestoneLength := int64(msg.EndBlock) - int64(msg.StartBlock) + 1
 
-	//check for the minimum length of milestone
+	// check for the minimum length of milestone
 	if msgMilestoneLength < int64(minMilestoneLength) {
 		logger.Error("length of the milestone should be greater than configured minimum milestone length",
 			"StartBlock", msg.StartBlock,
@@ -136,7 +136,6 @@ func (m msgServer) Milestone(ctx context.Context, msg *types.MsgMilestone) (*typ
 	})
 
 	return &types.MsgMilestoneResponse{}, nil
-
 }
 
 // MilestoneTimeout handles milestone timeout transaction

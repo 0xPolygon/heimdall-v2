@@ -158,7 +158,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 
 		result := sideHandler(ctx, &MsgCpAck)
 		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should pass")
-
 	})
 
 	s.Run("No HeaderInfo", func() {
@@ -182,7 +181,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 
 		result := sideHandler(ctx, &MsgCpAck)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
-
 	})
 }
 

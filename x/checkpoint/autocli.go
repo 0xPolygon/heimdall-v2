@@ -36,7 +36,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "get-checkpoint [number]",
 					Short:     "Get checkpoint based on its number",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "number"}},
+						{ProtoField: "number"},
+					},
 				},
 				{
 					RpcMethod:      "GetCheckpointLatest",
@@ -61,7 +62,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "get-next-checkpoint",
 					Short:     "Get the next checkpoint",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "bor_chain_id"}},
+						{ProtoField: "bor_chain_id"},
+					},
 				},
 				{
 					RpcMethod:      "GetCurrentProposer",

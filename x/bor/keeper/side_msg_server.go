@@ -12,9 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var (
-	SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
-)
+var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
 
 type sideMsgServer struct {
 	k *Keeper
@@ -194,5 +192,4 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			sdk.NewAttribute(types.AttributeKeySpanEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
 		),
 	})
-
 }

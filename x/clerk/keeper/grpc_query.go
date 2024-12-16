@@ -27,13 +27,11 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordRequest) (*types.RecordResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
-
 	}
 
 	record, err := q.k.GetEventRecord(ctx, request.RecordId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-
 	}
 
 	return &types.RecordResponse{Record: *record}, nil
@@ -58,7 +56,6 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.RecordListWithTimeRequest) (*types.RecordListWithTimeResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
-
 	}
 
 	records, err := q.k.GetEventRecordListWithTime(ctx, request.FromTime, request.ToTime, request.Page, request.Limit)
@@ -75,7 +72,6 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 func (q queryServer) GetRecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
-
 	}
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
