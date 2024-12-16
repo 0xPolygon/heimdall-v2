@@ -249,12 +249,13 @@ func (sp *SpanProcessor) fetchNextSpanSeed() (nextSpanSeed common.Hash, err erro
 
 	sp.Logger.Info("Next span seed fetched")
 
-	if err = json.Unmarshal(response, &nextSpanSeed); err != nil {
+	var nextSpanSeedRes types.QueryNextSpanSeedResponse
+	if err = json.Unmarshal(response, &nextSpanSeedRes); err != nil {
 		sp.Logger.Error("Error unmarshalling nextSpanSeed received from Heimdall Server", "error", err)
 		return nextSpanSeed, err
 	}
 
-	return nextSpanSeed, nil
+	return common.HexToHash(nextSpanSeedRes.Seed), nil
 }
 
 // Stop stops all necessary go routines
