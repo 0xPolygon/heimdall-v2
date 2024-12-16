@@ -215,10 +215,8 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 	fmt.Println("FROM ADDR: ", helper.GetFromAddress(sp.cliCtx))
 
 	q := req.URL.Query()
-	// q.Add("span_id", strconv.FormatUint(id, 10))
-	q.Add("chain_id", configParams.ChainParams.BorChainId)
+	q.Add("bor_chain_id", configParams.ChainParams.BorChainId)
 	q.Add("start_block", strconv.FormatUint(start, 10))
-	// q.Add("proposer", helper.GetFromAddress(sp.cliCtx))
 	req.URL.RawQuery = q.Encode()
 
 	// fetch next span details
