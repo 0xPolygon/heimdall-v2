@@ -51,6 +51,15 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 						{ProtoField: "log_index"},
 					},
 				},
+				{
+					RpcMethod: "IsClerkTxOld",
+					Use:       "is-old-tx [tx-hash] [log-index]",
+					Short:     "Check if a tx is old (already submitted).",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "tx_hash"},
+						{ProtoField: "log_index"},
+					},
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{

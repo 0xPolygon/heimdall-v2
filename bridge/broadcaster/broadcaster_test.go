@@ -39,7 +39,6 @@ import (
 	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 var (
@@ -80,25 +79,6 @@ var (
 			[]byte("0xd10b5c16c25efe0b0f5b3d75038834223934ae8c2ec2b63a62bbe42aa21e2d2d"),
 			"borChainID",
 		),
-		milestoneTypes.NewMsgMilestoneBlock(
-			heimdallAddress,
-			0,
-			63,
-			[]byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e"),
-			"testBorChainID",
-			"testMilestoneID",
-		),
-		milestoneTypes.NewMsgMilestoneTimeout(
-			heimdallAddress,
-		),
-		borTypes.NewMsgProposeSpan(
-			1,
-			heimdallAddress,
-			0,
-			63,
-			"testBorChainID",
-			[]byte("randseed"),
-		),
 	}
 )
 
@@ -123,7 +103,6 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	mockCtrl := prepareMockData(t)
 	defer mockCtrl.Finish()
 
-	testOpts := helper.NewTestOpts(nil, testChainId)
 	heimdallApp, sdkCtx, _ := createTestApp(t)
 
 	encodingConfig := moduletestutil.MakeTestEncodingConfig()
@@ -190,7 +169,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 				shouldFailSimulate = false
 			}
 
-			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil, testOpts)
+			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil)
 			if tc.expErr {
 				require.Error(t, err)
 			} else {
@@ -204,6 +183,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 }
 
 func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context) {
+	t.Helper()
 	hApp, _, _ := app.SetupApp(t, 1)
 	ctx := hApp.BaseApp.NewContext(true)
 	hApp.BankKeeper.SetSendEnabled(ctx, "", true)

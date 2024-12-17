@@ -31,8 +31,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// QueryCurrentValidatorSetRequest is request type for Query/CurrentValidatorSet
-// RPC method.
 type QueryCurrentValidatorSetRequest struct {
 }
 
@@ -69,10 +67,7 @@ func (m *QueryCurrentValidatorSetRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryCurrentValidatorSetRequest proto.InternalMessageInfo
 
-// QueryCurrentValidatorSetResponse is response type for the Query/ValidatorSet
-// RPC method
 type QueryCurrentValidatorSetResponse struct {
-	// validator_set contains the queried set of validators
 	ValidatorSet ValidatorSet `protobuf:"bytes,1,opt,name=validator_set,json=validatorSet,proto3" json:"validator_set"`
 }
 
@@ -116,9 +111,7 @@ func (m *QueryCurrentValidatorSetResponse) GetValidatorSet() ValidatorSet {
 	return ValidatorSet{}
 }
 
-// QuerySignerRequest is request type for the Query/Signer RPC method
 type QuerySignerRequest struct {
-	// val_address defines the validator val_address to query for.
 	ValAddress string `protobuf:"bytes,1,opt,name=val_address,json=valAddress,proto3" json:"val_address,omitempty"`
 }
 
@@ -162,9 +155,7 @@ func (m *QuerySignerRequest) GetValAddress() string {
 	return ""
 }
 
-// QuerySignerResponse is response type for the Query/Signer RPC method
 type QuerySignerResponse struct {
-	// validator defines the validator info.
 	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
 }
 
@@ -208,9 +199,7 @@ func (m *QuerySignerResponse) GetValidator() Validator {
 	return Validator{}
 }
 
-// QueryValidatorRequest is request type for the Query/Validator RPC method
 type QueryValidatorRequest struct {
-	// id defines the validator id to query for.
 	Id uint64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 }
 
@@ -254,9 +243,7 @@ func (m *QueryValidatorRequest) GetId() uint64 {
 	return 0
 }
 
-// QueryValidatorResponse is response type for the Query/Validator RPC method
 type QueryValidatorResponse struct {
-	// validator defines the validator info.
 	Validator Validator `protobuf:"bytes,1,opt,name=validator,proto3" json:"validator"`
 }
 
@@ -300,8 +287,6 @@ func (m *QueryValidatorResponse) GetValidator() Validator {
 	return Validator{}
 }
 
-// QueryTotalPowerRequest is request type for the
-// Query/TotalPower RPC method
 type QueryTotalPowerRequest struct {
 }
 
@@ -338,10 +323,7 @@ func (m *QueryTotalPowerRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryTotalPowerRequest proto.InternalMessageInfo
 
-// QueryTotalPowerResponse is response type for the
-// Query/TotalPower RPC method
 type QueryTotalPowerResponse struct {
-	// total power denotes the total power of all the validators
 	TotalPower int64 `protobuf:"varint,1,opt,name=total_power,json=totalPower,proto3" json:"total_power,omitempty"`
 }
 
@@ -385,10 +367,7 @@ func (m *QueryTotalPowerResponse) GetTotalPower() int64 {
 	return 0
 }
 
-// QueryValidatorStatusRequest is response type for the Query/ValidatorStatus
-// RPC method
 type QueryValidatorStatusRequest struct {
-	// val_address defines the validator address to query for.
 	ValAddress string `protobuf:"bytes,1,opt,name=val_address,json=valAddress,proto3" json:"val_address,omitempty"`
 }
 
@@ -432,11 +411,7 @@ func (m *QueryValidatorStatusRequest) GetValAddress() string {
 	return ""
 }
 
-// QueryValidatorStatusResponse is response type for the Query/ValidatorStatus
-// RPC method
 type QueryValidatorStatusResponse struct {
-	// status define whether the particular validator is active in the validator
-	// set
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -480,8 +455,6 @@ func (m *QueryValidatorStatusResponse) GetIsOld() bool {
 	return false
 }
 
-// QueryStakeIsOldTxRequest is request type for the Query/IsStakeTxOld
-// RPC method
 type QueryStakeIsOldTxRequest struct {
 	TxHash   string `protobuf:"bytes,1,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
 	LogIndex uint64 `protobuf:"varint,2,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
@@ -534,10 +507,7 @@ func (m *QueryStakeIsOldTxRequest) GetLogIndex() uint64 {
 	return 0
 }
 
-// QueryStakeIsOldTxResponse is response type for the Query/IsStakeTxOld
-// RPC method
 type QueryStakeIsOldTxResponse struct {
-	// status define the active status of validator
 	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
 }
 
@@ -662,15 +632,16 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	// CurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries for the current validator set
 	GetCurrentValidatorSet(ctx context.Context, in *QueryCurrentValidatorSetRequest, opts ...grpc.CallOption) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for a given validator address.
+	// GetSignerByAddress queries validator info for a given validator address
 	GetSignerByAddress(ctx context.Context, in *QuerySignerRequest, opts ...grpc.CallOption) (*QuerySignerResponse, error)
-	// Validator queries validator info for a given validator id.
+	// GetValidatorById queries validator info for a given validator id
 	GetValidatorById(ctx context.Context, in *QueryValidatorRequest, opts ...grpc.CallOption) (*QueryValidatorResponse, error)
-	// ValidatorStatus queries validator status for given validator val_address.
+	// GetValidatorStatusByAddress queries validator status for given validator
+	// val_address
 	GetValidatorStatusByAddress(ctx context.Context, in *QueryValidatorStatusRequest, opts ...grpc.CallOption) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries the total power of a validator set
+	// GetTotalPower queries the total power of a validator set
 	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
@@ -740,15 +711,16 @@ func (c *queryClient) IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxReq
 
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	// CurrentValidatorSet queries for the current validator set
+	// GetCurrentValidatorSet queries for the current validator set
 	GetCurrentValidatorSet(context.Context, *QueryCurrentValidatorSetRequest) (*QueryCurrentValidatorSetResponse, error)
-	// Signer queries validator info for a given validator address.
+	// GetSignerByAddress queries validator info for a given validator address
 	GetSignerByAddress(context.Context, *QuerySignerRequest) (*QuerySignerResponse, error)
-	// Validator queries validator info for a given validator id.
+	// GetValidatorById queries validator info for a given validator id
 	GetValidatorById(context.Context, *QueryValidatorRequest) (*QueryValidatorResponse, error)
-	// ValidatorStatus queries validator status for given validator val_address.
+	// GetValidatorStatusByAddress queries validator status for given validator
+	// val_address
 	GetValidatorStatusByAddress(context.Context, *QueryValidatorStatusRequest) (*QueryValidatorStatusResponse, error)
-	// TotalPower queries the total power of a validator set
+	// GetTotalPower queries the total power of a validator set
 	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)

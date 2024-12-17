@@ -2,34 +2,35 @@ syntax = "proto3";
 package heimdallv2.checkpoint;
 
 import "amino/amino.proto";
-import "cosmos/query/v1/query.proto";
 import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/checkpoint/checkpoint.proto";
+import "heimdallv2/checkpoint/checkpoint_signatures.proto";
 import "heimdallv2/checkpoint/tx.proto";
 import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 
-// Query defines the gRPC querier service.
 service Query {
-  // GetParams queries for the checkpoint params
-  rpc GetParams(QueryParamsRequest) returns (QueryParamsResponse) {
+  // GetCheckpointParams queries for the x/checkpoint params
+  rpc GetCheckpointParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/params";
+  }
+
+  // GetChekpointOverview queries for the checkpoint overview
+  rpc GetCheckpointOverview(QueryCheckpointOverviewRequest)
+      returns (QueryCheckpointOverviewResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/overview";
   }
 
   // GetAckCount queries for the ack count
   rpc GetAckCount(QueryAckCountRequest) returns (QueryAckCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/count";
-  }
-
-  // GetCheckpoint queries for the checkpoint based on the number
-  rpc GetCheckpoint(QueryCheckpointRequest) returns (QueryCheckpointResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoints/{number}";
   }
 
   // GetCheckpointLatest queries for the latest checkpoint
@@ -78,119 +79,119 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/list";
   }
+
+  // GetCheckpointSignatures queries signatures for latest checkpoint
+  rpc GetCheckpointSignatures(QueryCheckpointSignaturesRequest)
+      returns (QueryCheckpointSignaturesResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoint/signatures";
+  }
+
+  // GetCheckpoint queries for the checkpoint based on the number
+  rpc GetCheckpoint(QueryCheckpointRequest) returns (QueryCheckpointResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/{number}";
+  }
 }
 
-// QueryParamsRequest is request type for params
-// RPC method.
+// QueryCheckpointSignaturesRequest is request type for
+// QueryCheckpointSignatures RPC method
+message QueryCheckpointSignaturesRequest {}
+
+// QueryCheckpointSignaturesResponse is response type for
+// QueryCheckpointSignatures RPC method
+message QueryCheckpointSignaturesResponse {
+  repeated CheckpointSignature signatures = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
 message QueryParamsRequest {}
 
-// QueryParamsResponse is response type for the params
-// RPC method
 message QueryParamsResponse {
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryAckCountRequest is request type for the ack count RPC method
 message QueryAckCountRequest {}
 
-// QueryAckCountResponse is response type for the ack count RPC method
 message QueryAckCountResponse {
   uint64 ack_count = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryLastNoAckRequest is request type for the last no ack count RPC method
 message QueryLastNoAckRequest {}
 
-// QueryLastNoAckResponse is response type for the last no ack count RPC
-// method
 message QueryLastNoAckResponse {
   uint64 last_no_ack_id = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointBufferRequest is request type for the buffered checkpoint RPC
-// method
 message QueryCheckpointBufferRequest {}
 
-// QueryCheckpointBufferResponse is response type for the buffered checkpoint
-// RPC method
 message QueryCheckpointBufferResponse {
   Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointRequest is request type for the number based checkpoint RPC
-// method
 message QueryCheckpointRequest {
   uint64 number = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointResponse is response type for the number based checkpoint
-// RPC method
 message QueryCheckpointResponse {
   Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointLatestRequest is request type for the latest checkpoint
-// RPC method
 message QueryCheckpointLatestRequest {}
 
-// QueryCheckpointLatestResponse is response type for the
-// latest checkpoint RPC method
 message QueryCheckpointLatestResponse {
   Checkpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryNextCheckpointRequest is request type for the next checkpoint
-// RPC method
 message QueryNextCheckpointRequest {
   string bor_chain_id = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QueryNextCheckpointResponse is response type for the
-// Query/Checkpoints/prepare-next RPC method
 message QueryNextCheckpointResponse {
   MsgCheckpoint checkpoint = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryCurrentProposerRequest is request type for the currentProposer RPC
-// method
 message QueryCurrentProposerRequest {}
 
-// QueryCurrentProposerResponse is response type for the current proposer
-// RPC method
 message QueryCurrentProposerResponse {
-  // validator defines the validator info.
   heimdallv2.stake.Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryProposerRequest is request type for the proposer RPC method
 message QueryProposerRequest {
   uint64 times = 1 [ (amino.dont_omitempty) = true ];
 }
 
-// QuerySignerResponse is response type for the proposer RPC method
 message QueryProposerResponse {
   repeated heimdallv2.stake.Validator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointListRequest defines the gRPC request structure for querying
-// a list of checkpoints.
 message QueryCheckpointListRequest {
   cosmos.base.query.v1beta1.PageRequest pagination = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-// QueryCheckpointListResponse defines the gRPC response structure for querying
-// a list of checkpoints.
 message QueryCheckpointListResponse {
   repeated Checkpoint checkpoint_list = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   cosmos.base.query.v1beta1.PageResponse pagination = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointOverviewRequest {}
+
+message QueryCheckpointOverviewResponse {
+  uint64 ack_count = 1 [ (amino.dont_omitempty) = true ];
+  uint64 last_no_ack_id = 2 [ (amino.dont_omitempty) = true ];
+  Checkpoint buffer_checkpoint = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  uint64 validator_count = 4 [ (amino.dont_omitempty) = true ];
+  heimdallv2.stake.ValidatorSet validator_set = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

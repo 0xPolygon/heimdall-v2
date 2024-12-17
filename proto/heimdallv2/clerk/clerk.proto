@@ -11,7 +11,6 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/clerk/types";
 message EventRecord {
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.equal) = false;
-
   uint64 id = 1 [ (amino.dont_omitempty) = true ];
   string contract = 2 [
     (amino.dont_omitempty) = true,

@@ -9,21 +9,13 @@ import "gogoproto/gogo.proto";
 message ConsolidatedSideTxResponse {
   repeated SideTxResponse side_tx_responses = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
-  bytes block_hash = 2 [
-    (amino.dont_omitempty) = true
-  ]; // denotes the block hash of the block that this vote is referring to.
-  int64 height = 3
-      [ (amino.dont_omitempty) =
-            true ]; // denotes the block height of the extended vote
+  bytes block_hash = 2 [ (amino.dont_omitempty) = true ];
+  int64 height = 3 [ (amino.dont_omitempty) = true ];
 }
 
 message SideTxResponse {
-  bytes tx_hash = 1
-      [ (amino.dont_omitempty) =
-            true ]; // denotes the tx hash for which this V.E correspond to.
-  Vote result = 2 [ (amino.dont_omitempty) =
-                        true ]; // will have YES/NO/UNSPECIFIED depending on the
-                                // side-tx data correctness.
+  bytes tx_hash = 1 [ (amino.dont_omitempty) = true ];
+  Vote result = 2 [ (amino.dont_omitempty) = true ];
 }
 
 enum Vote {

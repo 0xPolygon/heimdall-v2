@@ -4,8 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/0xPolygon/heimdall-v2/client/docs"
+	"github.com/gorilla/mux"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -372,18 +377,15 @@ func NewHeimdallApp(
 	bApp.SetExtendVoteHandler(app.ExtendVoteHandler())
 	bApp.SetVerifyVoteExtensionHandler(app.VerifyVoteExtensionHandler())
 
-	// TODO HV2: is this order correct?
 	app.ModuleManager.SetOrderBeginBlockers(
 		staketypes.ModuleName,
 	)
 
-	// TODO HV2: is this order correct? Do we need any other module?
 	app.ModuleManager.SetOrderEndBlockers(
 		govtypes.ModuleName,
 		staketypes.ModuleName,
 	)
 
-	// TODO HV2: is this order correct?
 	genesisModuleOrder := []string{
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -680,8 +682,8 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	// Register grpc-gateway routes for all modules.
 	app.BasicManager.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
-	// register swagger API from root so that other applications can override easily
-	if err := server.RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
+	// register heimdall-v2 and cosmos swagger API
+	if err := RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
 		panic(err)
 	}
 }
@@ -743,7 +745,7 @@ func (app *HeimdallApp) GetMemKey(storeKey string) *storetypes.MemoryStoreKey {
 
 // cacheTxContext returns a new context based off of the provided context with
 // a cache wrapped multi-store.
-func (app *HeimdallApp) cacheTxContext(ctx sdk.Context, _ []byte) (sdk.Context, storetypes.CacheMultiStore) {
+func (app *HeimdallApp) cacheTxContext(ctx sdk.Context) (sdk.Context, storetypes.CacheMultiStore) {
 	ms := ctx.MultiStore()
 	msCache := ms.CacheMultiStore()
 
@@ -766,23 +768,41 @@ func (app *HeimdallApp) BlockedModuleAccountAddrs(modAccAddrs map[string]bool) m
 	return modAccAddrs
 }
 
-// TODO HV2: params will be soon deprecated
-
 // initParamsKeeper init params keeper and its subspaces
 func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino, key, storeKey storetypes.StoreKey) paramskeeper.Keeper {
 	paramsKeeper := paramskeeper.NewKeeper(appCodec, legacyAmino, key, storeKey)
 
-	// TODO HV2: are all the following needed?
 	paramsKeeper.Subspace(authtypes.ModuleName)
 	paramsKeeper.Subspace(banktypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName)
-	paramsKeeper.Subspace(staketypes.ModuleName)
-	paramsKeeper.Subspace(clerktypes.ModuleName)
-	paramsKeeper.Subspace(checkpointTypes.ModuleName)
-	paramsKeeper.Subspace(topupTypes.ModuleName)
-	paramsKeeper.Subspace(chainmanagertypes.ModuleName)
-	paramsKeeper.Subspace(milestoneTypes.ModuleName)
 	paramsKeeper.Subspace(borTypes.ModuleName)
+	paramsKeeper.Subspace(chainmanagertypes.ModuleName)
+	paramsKeeper.Subspace(checkpointTypes.ModuleName)
+	paramsKeeper.Subspace(clerktypes.ModuleName)
+	paramsKeeper.Subspace(milestoneTypes.ModuleName)
+	paramsKeeper.Subspace(staketypes.ModuleName)
+	paramsKeeper.Subspace(topupTypes.ModuleName)
 
 	return paramsKeeper
+}
+
+func RegisterSwaggerAPI(ctx client.Context, rtr *mux.Router, swaggerEnabled bool) interface{} {
+	if !swaggerEnabled {
+		return nil
+	}
+
+	root, err := fs.Sub(docs.SwaggerUI, "swagger-ui")
+	if err != nil {
+		return err
+	}
+
+	staticServer := http.FileServer(http.FS(root))
+	rtr.PathPrefix("/heimdall-v2/swagger/").Handler(http.StripPrefix("/heimdall-v2/swagger/", staticServer))
+
+	// register cosmos-sdk swagger API from root so that other applications can override easily
+	if err := server.RegisterSwaggerAPI(ctx, rtr, swaggerEnabled); err != nil {
+		panic(err)
+	}
+
+	return nil
 }

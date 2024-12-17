@@ -7,7 +7,6 @@ import (
 	"io"
 	"math/big"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -256,7 +255,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
 	viper.Set("log_level", "debug")
-	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	helper.InitTestHeimdallConfig("")
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
@@ -390,8 +389,8 @@ func getTestServer() (*machinery.Server, error) {
 	})
 }
 
-func generateRandNumber(max int64) uint64 {
-	nBig, err := rand.Int(rand.Reader, big.NewInt(max))
+func generateRandNumber(maxValue int64) uint64 {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(maxValue))
 	if err != nil {
 		return 1
 	}

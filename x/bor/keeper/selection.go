@@ -12,7 +12,7 @@ import (
 )
 
 // selectNextProducers selects producers for next span
-func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketypes.Validator, producerCount uint64) ([]uint64, error) {
+func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketypes.Validator, producerCount uint64) []uint64 {
 	selectedProducers := make([]uint64, 0)
 
 	if len(spanEligibleValidators) <= int(producerCount) {
@@ -20,12 +20,13 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketype
 			selectedProducers = append(selectedProducers, validator.ValId)
 		}
 
-		return selectedProducers, nil
+		return selectedProducers
 	}
 
 	// extract seed from hash
 	seedBytes := helper.ToBytes32(blkHash.Bytes()[:32])
 	seed := int64(binary.BigEndian.Uint64(seedBytes[:]))
+	// #nosec G404 -- suppress gosec warning as predictable randomness is required
 	r := rand.New(rand.NewSource(seed))
 
 	// weighted range from validators' voting power
@@ -48,7 +49,7 @@ func selectNextProducers(blkHash common.Hash, spanEligibleValidators []staketype
 		selectedProducers = append(selectedProducers, spanEligibleValidators[index].ValId)
 	}
 
-	return selectedProducers[:producerCount], nil
+	return selectedProducers[:producerCount]
 }
 
 func binarySearch(array []uint64, search uint64) int {
@@ -72,12 +73,12 @@ func binarySearch(array []uint64, search uint64) int {
 }
 
 // randomRangeInclusive produces unbiased pseudo random in the range [min, max]. Uses rand.Uint64() and can be seeded beforehand.
-func randomRangeInclusive(min uint64, max uint64, rand *rand.Rand) uint64 {
-	if max <= min {
-		return max
+func randomRangeInclusive(minValue uint64, maxValue uint64, rand *rand.Rand) uint64 {
+	if maxValue <= minValue {
+		return maxValue
 	}
 
-	rangeLength := max - min + 1
+	rangeLength := maxValue - minValue + 1
 	maxAllowedValue := math.MaxUint64 - math.MaxUint64%rangeLength - 1
 	randomValue := rand.Uint64() //nolint
 
@@ -86,7 +87,7 @@ func randomRangeInclusive(min uint64, max uint64, rand *rand.Rand) uint64 {
 		randomValue = rand.Uint64() //nolint
 	}
 
-	return min + randomValue%rangeLength
+	return minValue + randomValue%rangeLength
 }
 
 // createWeightedRanges converts array [1, 2, 3] into cumulative form [1, 3, 6]

@@ -58,7 +58,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 	for {
 		select {
 		case <-ticker.C:
-			sp.checkAndPropose()
+			sp.checkAndPropose(ctx)
 		case <-ctx.Done():
 			sp.Logger.Info("Polling stopped")
 			ticker.Stop()
@@ -69,7 +69,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 }
 
 // checkAndPropose - will check if current user is span proposer and proposes the span
-func (sp *SpanProcessor) checkAndPropose() {
+func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	lastSpan, err := sp.getLastSpan()
 	if err != nil {
 		sp.Logger.Error("Unable to fetch last span", "error", err)
@@ -93,14 +93,14 @@ func (sp *SpanProcessor) checkAndPropose() {
 
 	// check if current user is among next span producers
 	if sp.isSpanProposer(nextSpanMsg.SelectedProducers) {
-		go sp.propose(lastSpan, nextSpanMsg)
+		go sp.propose(ctx, lastSpan, nextSpanMsg)
 	}
 }
 
 // propose producers for next span if needed
-func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) {
+func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, nextSpanMsg *types.Span) {
 	// call with last span on record + new span duration and see if it has been proposed
-	currentBlock, err := sp.getCurrentChildBlock()
+	currentBlock, err := sp.getCurrentChildBlock(ctx)
 	if err != nil {
 		sp.Logger.Error("Unable to fetch current block", "error", err)
 		return
@@ -110,7 +110,7 @@ func (sp *SpanProcessor) propose(lastSpan *types.Span, nextSpanMsg *types.Span) 
 		// log new span
 		sp.Logger.Info("✅ Proposing new span", "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock)
 
-		seed, err := sp.fetchNextSpanSeed()
+		seed, err := sp.fetchNextSpanSeed(nextSpanMsg.Id)
 		if err != nil {
 			sp.Logger.Info("Error while fetching next span seed from HeimdallServer", "err", err)
 			return
@@ -171,8 +171,8 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 }
 
 // getCurrentChildBlock gets the current child block
-func (sp *SpanProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := sp.contractCaller.GetBorChainBlock(nil)
+func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, error) {
+	childBlock, err := sp.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -238,10 +238,10 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 }
 
 // fetchNextSpanSeed - fetches seed for next span
-func (sp *SpanProcessor) fetchNextSpanSeed() (nextSpanSeed common.Hash, err error) {
+func (sp *SpanProcessor) fetchNextSpanSeed(id uint64) (nextSpanSeed common.Hash, err error) {
 	sp.Logger.Info("Sending Rest call to Get Seed for next span")
 
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL))
+	response, err := helper.FetchFromAPI(fmt.Sprintf(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL), strconv.FormatUint(id, 10)))
 	if err != nil {
 		sp.Logger.Error("Error Fetching nextspanseed from HeimdallServer ", "error", err)
 		return nextSpanSeed, err

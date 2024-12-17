@@ -36,8 +36,8 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-// GetParams returns the checkpoint params
-func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetCheckpointParams returns the checkpoint params
+func (q queryServer) GetCheckpointParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	// get validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
@@ -226,4 +226,49 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 	}
 
 	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: *pageRes}, nil
+}
+
+// GetChekpointOverview returns the checkpoint overview
+// which includes AckCount, LastNoAckId, BufferCheckpoint, ValidatorCount, and ValidatorSet
+func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCheckpointOverviewRequest) (*types.QueryCheckpointOverviewResponse, error) {
+	// get validator set
+	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	ackCount, err := q.k.GetAckCount(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	lastNoAck, err := q.k.GetLastNoAck(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	bufferCheckpoint, err := q.k.GetCheckpointFromBuffer(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryCheckpointOverviewResponse{
+		AckCount:         ackCount,
+		LastNoAckId:      lastNoAck,
+		BufferCheckpoint: bufferCheckpoint,
+		ValidatorCount:   uint64(len(validatorSet.Validators)),
+		ValidatorSet:     validatorSet,
+	}, nil
+}
+
+// GetCheckpointSignatures queries for the last checkpoint signatures
+func (q queryServer) GetCheckpointSignatures(ctx context.Context, _ *types.QueryCheckpointSignaturesRequest) (*types.QueryCheckpointSignaturesResponse, error) {
+	checkpointSignatures, err := q.k.GetCheckpointSignatures(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if len(checkpointSignatures.Signatures) == 0 {
+		return nil, status.Error(codes.NotFound, "checkpoint signatures not set")
+	}
+	return &types.QueryCheckpointSignaturesResponse{Signatures: checkpointSignatures.Signatures}, nil
 }

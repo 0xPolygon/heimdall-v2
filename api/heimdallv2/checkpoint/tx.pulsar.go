@@ -3892,7 +3892,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// MsgCheckpoint defines a SDK message for creating the checkpoint
 type MsgCheckpoint struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3968,7 +3967,6 @@ func (x *MsgCheckpoint) GetBorChainId() string {
 	return ""
 }
 
-// MsgCheckpointResponse defines the Msg/Checkpoint response type.
 type MsgCheckpointResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3995,7 +3993,6 @@ func (*MsgCheckpointResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{1}
 }
 
-// MsgCpAck defines a SDK message for creating the ack of checkpoint
 type MsgCpAck struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4087,7 +4084,6 @@ func (x *MsgCpAck) GetLogIndex() uint64 {
 	return 0
 }
 
-// MsgCpAckResponse defines the MsgCpAck response type.
 type MsgCpAckResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4114,7 +4110,6 @@ func (*MsgCpAckResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{3}
 }
 
-// MsgCheckpointNoAck defines a SDK message for creating the no-ack
 type MsgCpNoAck struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4150,7 +4145,6 @@ func (x *MsgCpNoAck) GetFrom() string {
 	return ""
 }
 
-// MsgCheckpointNoAckResponse defines the MsgCpNoAck response type.
 type MsgCheckpointNoAckResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -4177,18 +4171,13 @@ func (*MsgCheckpointNoAckResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_checkpoint_tx_proto_rawDescGZIP(), []int{5}
 }
 
-// MsgUpdateParams is the Msg/UpdateParams request type.
 type MsgUpdateParams struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// authority is the address that controls the module (defaults to x/gov unless
-	// overwritten).
-	Authority string `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
-	// params defines the x/bor parameters to update.
-	// NOTE: All parameters must be supplied.
-	Params *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
+	Authority string  `protobuf:"bytes,1,opt,name=authority,proto3" json:"authority,omitempty"`
+	Params    *Params `protobuf:"bytes,2,opt,name=params,proto3" json:"params,omitempty"`
 }
 
 func (x *MsgUpdateParams) Reset() {
@@ -4225,8 +4214,6 @@ func (x *MsgUpdateParams) GetParams() *Params {
 	return nil
 }
 
-// MsgUpdateParamsResponse defines the response structure for executing a
-// MsgUpdateParams message.
 type MsgUpdateParamsResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

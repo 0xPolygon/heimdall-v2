@@ -9,6 +9,7 @@ import (
 	"cosmossdk.io/core/address"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	proto "github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
@@ -88,6 +89,62 @@ func (msg MsgCheckpoint) GetSideSignBytes() []byte {
 	)
 }
 
+// UnpackCheckpointSideSignBytes reconstructs a MsgCheckpoint from the provided byte slice
+func UnpackCheckpointSideSignBytes(data []byte) (*MsgCheckpoint, error) {
+	chunkSize := 32
+	if len(data) != chunkSize*6 { // 6 fields, each padded to 32 bytes
+		return nil, errors.New("invalid data length")
+	}
+
+	offset := 0
+
+	// Extract proposerBytes (address padded to 32 bytes)
+	proposerBytes := data[offset : offset+chunkSize]
+	offset += chunkSize
+
+	proposerAddrBytes := proposerBytes[12:] // Take last 20 bytes
+	ac := addressCodec.NewHexCodec()
+	proposer, err := ac.BytesToString(proposerAddrBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	// Extract StartBlock
+	startBlockBytes := data[offset : offset+chunkSize]
+	offset += chunkSize
+	startBlock := new(big.Int).SetBytes(startBlockBytes).Uint64()
+
+	// Extract EndBlock
+	endBlockBytes := data[offset : offset+chunkSize]
+	offset += chunkSize
+	endBlock := new(big.Int).SetBytes(endBlockBytes).Uint64()
+
+	// Extract RootHash
+	rootHash := data[offset : offset+chunkSize]
+	offset += chunkSize
+
+	// Extract AccountRootHash
+	accountRootHash := data[offset : offset+chunkSize]
+	offset += chunkSize
+
+	// Extract BorChainId
+	borChainIDBytes := data[offset : offset+chunkSize]
+	borChainIDUint := new(big.Int).SetBytes(borChainIDBytes).Uint64()
+	borChainIDStr := strconv.FormatUint(borChainIDUint, 10)
+
+	// Construct MsgCheckpoint
+	msg := &MsgCheckpoint{
+		Proposer:        proposer,
+		StartBlock:      startBlock,
+		EndBlock:        endBlock,
+		RootHash:        rootHash,
+		AccountRootHash: accountRootHash,
+		BorChainId:      borChainIDStr,
+	}
+
+	return msg, nil
+}
+
 var _ sdk.Msg = &MsgCpAck{}
 
 func NewMsgCpAck(
@@ -114,23 +171,25 @@ func NewMsgCpAck(
 
 // ValidateBasic validate basic
 func (msg MsgCpAck) ValidateBasic(ac address.Codec) error {
-	addrBytes, err := ac.StringToBytes(msg.From)
+	// Validate sender (msg.From)
+	fromBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
-	accAddr := sdk.AccAddress(addrBytes)
-
-	if accAddr.Empty() {
+	fromAccAddr := sdk.AccAddress(fromBytes)
+	if fromAccAddr.Empty() {
 		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)
 	}
 
-	addrBytes, err = ac.StringToBytes(msg.Proposer)
+	// Validate proposer (msg.Proposer)
+	proposerBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
-	if accAddr.Empty() {
+	proposerAccAddr := sdk.AccAddress(proposerBytes)
+	if proposerAccAddr.Empty() {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
@@ -168,3 +227,9 @@ func (msg MsgCpNoAck) ValidateBasic(ac address.Codec) error {
 
 	return nil
 }
+
+func IsCheckpointMsg(msg proto.Message) bool {
+	return sdk.MsgTypeURL(msg) == checkpointTypeUrl
+}
+
+var checkpointTypeUrl = sdk.MsgTypeURL(&MsgCheckpoint{})

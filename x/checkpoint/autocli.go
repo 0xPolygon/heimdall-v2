@@ -15,9 +15,15 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: checkpoint.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod:      "GetParams",
+					RpcMethod:      "GetCheckpointParams",
 					Use:            "get-params",
 					Short:          "Get checkpoint params",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
+				},
+				{
+					RpcMethod:      "GetCheckpointOverview",
+					Use:            "get-overview",
+					Short:          "Get checkpoint overview",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{

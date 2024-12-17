@@ -25,7 +25,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Span represents a range of block numbers in bor
 type Span struct {
 	Id                uint64             `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	StartBlock        uint64             `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
@@ -110,7 +109,6 @@ func (m *Span) GetBorChainId() string {
 	return ""
 }
 
-// Params represents the parameters for the bor module
 type Params struct {
 	SprintDuration uint64 `protobuf:"varint,1,opt,name=sprint_duration,json=sprintDuration,proto3" json:"sprint_duration,omitempty"`
 	SpanDuration   uint64 `protobuf:"varint,2,opt,name=span_duration,json=spanDuration,proto3" json:"span_duration,omitempty"`

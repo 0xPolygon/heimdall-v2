@@ -24,19 +24,16 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// ChainParams contains contract addresses and other chain specific parameters
 type ChainParams struct {
-	BorChainId string `protobuf:"bytes,1,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
-	// L1 Chain Contracts
+	BorChainId            string `protobuf:"bytes,1,opt,name=bor_chain_id,json=borChainId,proto3" json:"bor_chain_id,omitempty"`
 	PolTokenAddress       string `protobuf:"bytes,2,opt,name=pol_token_address,json=polTokenAddress,proto3" json:"pol_token_address,omitempty"`
 	StakingManagerAddress string `protobuf:"bytes,3,opt,name=staking_manager_address,json=stakingManagerAddress,proto3" json:"staking_manager_address,omitempty"`
 	SlashManagerAddress   string `protobuf:"bytes,4,opt,name=slash_manager_address,json=slashManagerAddress,proto3" json:"slash_manager_address,omitempty"`
 	RootChainAddress      string `protobuf:"bytes,5,opt,name=root_chain_address,json=rootChainAddress,proto3" json:"root_chain_address,omitempty"`
 	StakingInfoAddress    string `protobuf:"bytes,6,opt,name=staking_info_address,json=stakingInfoAddress,proto3" json:"staking_info_address,omitempty"`
 	StateSenderAddress    string `protobuf:"bytes,7,opt,name=state_sender_address,json=stateSenderAddress,proto3" json:"state_sender_address,omitempty"`
-	// Bor Chain Contracts
-	StateReceiverAddress string `protobuf:"bytes,8,opt,name=state_receiver_address,json=stateReceiverAddress,proto3" json:"state_receiver_address,omitempty"`
-	ValidatorSetAddress  string `protobuf:"bytes,9,opt,name=validator_set_address,json=validatorSetAddress,proto3" json:"validator_set_address,omitempty"`
+	StateReceiverAddress  string `protobuf:"bytes,8,opt,name=state_receiver_address,json=stateReceiverAddress,proto3" json:"state_receiver_address,omitempty"`
+	ValidatorSetAddress   string `protobuf:"bytes,9,opt,name=validator_set_address,json=validatorSetAddress,proto3" json:"validator_set_address,omitempty"`
 }
 
 func (m *ChainParams) Reset()         { *m = ChainParams{} }
@@ -135,7 +132,6 @@ func (m *ChainParams) GetValidatorSetAddress() string {
 	return ""
 }
 
-// Params contains the chain params for chainmanager module
 type Params struct {
 	ChainParams              ChainParams `protobuf:"bytes,1,opt,name=chain_params,json=chainParams,proto3" json:"chain_params"`
 	MainChainTxConfirmations uint64      `protobuf:"varint,2,opt,name=main_chain_tx_confirmations,json=mainChainTxConfirmations,proto3" json:"main_chain_tx_confirmations,omitempty"`

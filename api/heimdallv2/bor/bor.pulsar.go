@@ -1309,7 +1309,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Span represents a range of block numbers in bor
 type Span struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1385,7 +1384,6 @@ func (x *Span) GetBorChainId() string {
 	return ""
 }
 
-// Params represents the parameters for the bor module
 type Params struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

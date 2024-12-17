@@ -30,7 +30,6 @@ var _ = time.Kitchen
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// Milestone represents the milestone struct
 type Milestone struct {
 	Proposer    string `protobuf:"bytes,1,opt,name=proposer,proto3" json:"proposer,omitempty"`
 	StartBlock  uint64 `protobuf:"varint,2,opt,name=start_block,json=startBlock,proto3" json:"start_block,omitempty"`
@@ -167,7 +166,6 @@ func (m *MilestoneCount) GetCount() uint64 {
 	return 0
 }
 
-// Params represents the milestone parameters
 type Params struct {
 	MinMilestoneLength       uint64        `protobuf:"varint,1,opt,name=min_milestone_length,json=minMilestoneLength,proto3" json:"min_milestone_length,omitempty"`
 	MilestoneBufferTime      time.Duration `protobuf:"bytes,2,opt,name=milestone_buffer_time,json=milestoneBufferTime,proto3,stdduration" json:"milestone_buffer_time"`

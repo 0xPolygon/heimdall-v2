@@ -8,7 +8,6 @@ import "gogoproto/gogo.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
 
-// Msg defines the topup Msg service.
 service Msg {
   option (cosmos.msg.v1.service) = true;
   // HandleTopupTx defines a RPC method for handling a topup tx for a validator
@@ -20,7 +19,6 @@ service Msg {
 message MsgTopupTx {
   option (cosmos.msg.v1.signer) = "proposer";
   option (amino.name) = "heimdallv2/topup/MsgTopupTx";
-
   string proposer = 1 [
     (cosmos_proto.scalar) = "cosmos.AddressString",
     (amino.dont_omitempty) = true
@@ -42,7 +40,6 @@ message MsgTopupTx {
 message MsgWithdrawFeeTx {
   option (cosmos.msg.v1.signer) = "proposer";
   option (amino.name) = "heimdallv2/topup/MsgWithdrawFeeTx";
-
   string proposer = 1 [ (amino.dont_omitempty) = true ];
   string amount = 2 [
     (gogoproto.customtype) = "cosmossdk.io/math.Int",

@@ -1302,7 +1302,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Checkpoint structure
 type Checkpoint struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1378,7 +1377,6 @@ func (x *Checkpoint) GetTimestamp() uint64 {
 	return 0
 }
 
-// Params structure
 type Params struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

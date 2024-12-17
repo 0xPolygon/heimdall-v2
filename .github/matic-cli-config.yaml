@@ -1,4 +1,4 @@
-# TODO HV2: Test the CI and eventually update the config file with the correct values
+# TODO HV2: https://polygon.atlassian.net/browse/POS-2758
 defaultStake: 10000
 defaultFee: 2000
 borChainId: 15001

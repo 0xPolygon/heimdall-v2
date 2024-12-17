@@ -2,16 +2,6 @@ package types
 
 import "errors"
 
-// TODO HV2: remove this function if not needed
-
-// NewGenesisState creates a new genesis state.
-func NewGenesisState(eventRecords []EventRecord, recordSequences []string) GenesisState {
-	return GenesisState{
-		EventRecords:    eventRecords,
-		RecordSequences: recordSequences,
-	}
-}
-
 // DefaultGenesisState returns a default genesis state
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{

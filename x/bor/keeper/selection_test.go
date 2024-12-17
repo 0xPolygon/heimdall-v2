@@ -81,8 +81,8 @@ func TestSelectNextProducers(t *testing.T) {
 	for i, testcase := range testcases {
 		seed := common.HexToHash(testcase.seed)
 
-		producerIds, err := selectNextProducers(seed, TestValidators, testcase.producerCount)
-		require.NoError(t, err, "Error should be nil")
+		producerIds := selectNextProducers(seed, TestValidators, testcase.producerCount)
+		require.NoError(t, nil)
 
 		producers, slots := getSelectedValidatorsFromIDs(TestValidators, producerIds)
 		require.Equal(t, testcase.resultSlots, slots, "Total slots should be %v (Testcase %v)", testcase.resultSlots, i+1)

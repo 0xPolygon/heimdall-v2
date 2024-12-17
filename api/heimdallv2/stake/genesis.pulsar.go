@@ -724,18 +724,14 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// GenesisState defines the staking module's genesis state.
 type GenesisState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// validators defines the validator set at genesis.
-	Validators []*Validator `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
-	// current_validator_set defines the active current validator set at genesis.
+	Validators          []*Validator  `protobuf:"bytes,1,rep,name=validators,proto3" json:"validators,omitempty"`
 	CurrentValidatorSet *ValidatorSet `protobuf:"bytes,2,opt,name=current_validator_set,json=currentValidatorSet,proto3" json:"current_validator_set,omitempty"`
-	// staking_sequences defines the staking sequences at genesis.
-	StakingSequences []string `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
+	StakingSequences    []string      `protobuf:"bytes,3,rep,name=staking_sequences,json=stakingSequences,proto3" json:"staking_sequences,omitempty"`
 }
 
 func (x *GenesisState) Reset() {

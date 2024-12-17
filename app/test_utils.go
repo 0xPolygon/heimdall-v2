@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -19,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -121,16 +120,49 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
-	RequestFinalizeBlock(t, app, VoteExtBlockHeight)
+	vals := []stakeTypes.Validator{}
+	for _, val := range validators {
+		vals = append(vals, *val)
+	}
+
+	requestFinalizeBlock(t, app, VoteExtBlockHeight, vals)
 
 	_, err = app.Commit()
 	require.NoError(t, err)
 
 	return app, db, logger
 }
-
 func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
+	t.Helper()
+	validators := app.StakeKeeper.GetCurrentValidators(app.NewContext(true))
+	requestFinalizeBlock(t, app, height, validators)
+}
+
+func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validators []stakeTypes.Validator) {
+	t.Helper()
+	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
+	require.NoError(t, err)
+	consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
+		SideTxResponses: []sidetxs.SideTxResponse{},
+		Height:          height - 1,
+	}
+
+	txResExt, err := consolidatedSideTxRes.Marshal()
+	require.NoError(t, err)
+
 	extCommitInfo := new(abci.ExtendedCommitInfo)
+	extCommitInfo.Votes = make([]abci.ExtendedVoteInfo, 0)
+	for _, validator := range validators {
+		extCommitInfo.Votes = append(extCommitInfo.Votes, abci.ExtendedVoteInfo{
+			VoteExtension:      txResExt,
+			NonRpVoteExtension: dummyExt,
+			BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+			Validator: abci.Validator{
+				Address: common.Hex2Bytes(validator.Signer),
+				Power:   validator.VotingPower,
+			},
+		})
+	}
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
@@ -141,6 +173,7 @@ func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 }
 
 func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
+	t.Helper()
 	extCommitInfo := new(abci.ExtendedCommitInfo)
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
@@ -190,7 +223,6 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 
 	validators := make([]*stakeTypes.Validator, 0, len(valSet.Validators))
 	seqs := make([]string, 0, len(valSet.Validators))
-	r := rand.New(rand.NewSource(time.Now().UnixMilli()))
 
 	for i, val := range valSet.Validators {
 
@@ -206,7 +238,14 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 		}
 
 		validators = append(validators, &validator)
-		seqs = append(seqs, strconv.Itoa(simulation.RandIntBetween(r, 1, 1000000)))
+
+		// Generate a secure random integer between 1 and 1,000,000
+		n, err := helper.SecureRandomInt(1, 1000000)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate secure random number: %w", err)
+		}
+
+		seqs = append(seqs, strconv.FormatInt(n, 10))
 	}
 
 	// set validators and delegations

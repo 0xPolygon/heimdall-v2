@@ -78,23 +78,6 @@ const (
 		}
 	}`
 
-	getAccountWIthHeightResponseForAccountRetriever = `
-	{
-		"type": "auth/Account",
-		"value": {
-			"address": "0x5973918275c01f50555d44e92c9d9b353cadad54",
-			"coins": [{
-				"denom": "pol",
-				"amount": "10000000000000000000"
-			}],
-			"public_key": null,
-			"account_number": "0",
-			"sequence_number": "0",
-			"name": "",
-			"permissions": []
-		}
-	}`
-
 	getValidatorSetUrl      = dummyHeimdallServerUrl + "/staking/validator-set"
 	getValidatorSetResponse = `
 	{
