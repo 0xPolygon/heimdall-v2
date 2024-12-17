@@ -44,8 +44,10 @@ linters:
     - tenv
     - thelper
     - tparallel
+    - typecheck
     - unconvert
     - unparam
+    - unused
     # - wsl
     #- errorlint
 
