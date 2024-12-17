@@ -428,13 +428,13 @@ func GetCheckpointParams() (*checkpointTypes.Params, error) {
 		return nil, err
 	}
 
-	var params checkpointTypes.Params
+	var params checkpointTypes.QueryParamsResponse
 	if err := json.Unmarshal(response, &params); err != nil {
 		logger.Error("Error unmarshalling Checkpoint params", "url", CheckpointParamsURL)
 		return nil, err
 	}
 
-	return &params, nil
+	return &params.Params, nil
 }
 
 // GetBufferedCheckpoint return checkpoint from buffer
