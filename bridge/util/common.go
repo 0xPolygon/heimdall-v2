@@ -32,6 +32,7 @@ type BridgeEvent string
 
 const (
 	AccountDetailsURL       = "/cosmos/auth/v1beta1/accounts/%v"
+	AccountParamsURL        = "/cosmos/auth/v1beta1/params"
 	LastNoAckURL            = "/checkpoints/last-no-ack"
 	CheckpointParamsURL     = "/checkpoints/params"
 	CheckpointSignaturesURL = "/checkpoint/signatures"
