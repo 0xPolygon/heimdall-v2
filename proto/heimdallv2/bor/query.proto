@@ -14,19 +14,19 @@ service Query {
   // GetSpanList queries a list of spans.
   rpc GetSpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span-list";
+    option (google.api.http).get = "/bor/span/list";
+  }
+
+  // GetLatestSpan queries the latest span.
+  rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/latest";
   }
 
   // GetSpanById retrieves a span by its id.
   rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/span/{id}";
-  }
-
-  // GetLatestSpan queries the latest span.
-  rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span-latest";
   }
 
   // GetNextSpanSeed queries the next span seed given a
