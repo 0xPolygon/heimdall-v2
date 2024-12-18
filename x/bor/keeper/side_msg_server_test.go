@@ -33,7 +33,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			EndBlock:          256,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 		{
 			Id:                1,
@@ -41,7 +41,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			EndBlock:          6656,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 		{
 			Id:                2,
@@ -49,7 +49,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			EndBlock:          16656,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 		{
 			Id:                3,
@@ -57,7 +57,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			EndBlock:          26656,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 	}
 
