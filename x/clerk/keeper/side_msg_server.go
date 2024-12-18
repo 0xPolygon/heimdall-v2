@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"strconv"
 
@@ -136,24 +137,25 @@ func (srv *sideMsgServer) SideHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	return sidetxs.Vote_VOTE_YES
 }
 
-func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult sidetxs.Vote) {
+func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg, sideTxResult sidetxs.Vote) error {
 	logger := srv.Logger(ctx)
 
 	msg, ok := _msg.(*types.MsgEventRecord)
 	if !ok {
-		logger.Error("type mismatch for MsgEventRecord")
+		err := errors.New("type mismatch for MsgEventRecord")
+		logger.Error(err.Error())
 	}
 
 	// Skip handler if clerk is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new clerk since side-tx didn't get yes votes")
-		return
+		return nil
 	}
 
 	// check for replay
 	if srv.HasEventRecord(ctx, msg.Id) {
 		logger.Debug("skipping new clerk record as it's already processed")
-		return
+		return errors.New("clerk record already processed")
 	}
 
 	logger.Debug("persisting clerk state", "sideTxResult", sideTxResult)
@@ -177,7 +179,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	// save event into state
 	if err := srv.SetEventRecord(ctx, record); err != nil {
 		logger.Error("unable to update event record", "id", msg.Id, "error", err)
-		return
+		return err
 	}
 
 	// save record sequence
@@ -200,4 +202,6 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 			sdk.NewAttribute(types.AttributeKeyRecordContract, msg.ContractAddress),
 		),
 	})
+
+	return nil
 }

@@ -58,7 +58,6 @@ func (msg MsgEventRecord) ValidateBasic() error {
 		return ErrEmptyTxHash
 	}
 
-	// TODO HV2: Double check this
 	// DO NOT REMOVE THIS CHANGE
 	if len(msg.Data) > helper.MaxStateSyncSize {
 		return ErrSizeExceed

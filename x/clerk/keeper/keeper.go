@@ -22,9 +22,8 @@ type Keeper struct {
 	ChainKeeper    types.ChainKeeper
 	contractCaller helper.IContractCaller
 
-	Schema        collections.Schema
-	RecordsWithID collections.Map[uint64, types.EventRecord]
-	// TODO HV2 - is RecordsWithTime this needed? We can regenerate this from RecordsWithID
+	Schema          collections.Schema
+	RecordsWithID   collections.Map[uint64, types.EventRecord]
 	RecordsWithTime collections.Map[collections.Pair[time.Time, uint64], uint64]
 	RecordSequences collections.Map[string, []byte]
 }

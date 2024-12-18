@@ -441,7 +441,6 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 	return true, 0, nil
 }
 
-// TODO HV2 - this function was modified a bit, please review carefully
 func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	const (
 		defaultPage  = 1

@@ -5,16 +5,19 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/cosmos/cosmos-sdk/types/simulation"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
+
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
 )
 
 func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
@@ -186,8 +189,14 @@ func (s *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
 
-	// TODO HV2: double check this
-	AccountHashProof := "44ad89ba62b98ff34f51403ac22759b55759460c0bb5521eb4b6ee3cff49cf83"
+	// Retrieve all dividend accounts to create the proof
+	dividendAccounts, err := tk.GetAllDividendAccounts(ctx)
+	require.NoError(err)
+
+	// Dynamically generate the proof for the given account
+	proofBytes, _, err := hTypes.GetAccountProof(dividendAccounts, AccountHash)
+	require.NoError(err)
+	AccountHashProof := common.Bytes2Hex(proofBytes)
 
 	req := &types.QueryVerifyAccountProofRequest{
 		Address: AccountHash,

@@ -29,10 +29,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO HV2: Initially in heimdall v2 we used HexBytes, HeimdallHash and TxHash
-// types which were removed in favor of using bytes in proto definitions.
-// Because default encoding for bytes in proto is base64 instead of hex encoding like in heimdall v1,
-// it could be breaking change for anyone querying the node API.
+// HV2: Since default encoding for bytes in proto is base64 instead of hex encoding (like in heimdall-v1),
+// it could be breaking change for anyone querying the node APIs.
 
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {

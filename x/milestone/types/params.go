@@ -2,8 +2,6 @@ package types
 
 import (
 	"fmt"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 func (p Params) Validate() error {
@@ -24,15 +22,4 @@ func (p Params) Validate() error {
 	}
 
 	return nil
-}
-
-// TODO HV2: remove this function if not needed
-
-func GetDefaultParams() Params {
-	return Params{
-		MinMilestoneLength:       helper.MilestoneLength,
-		MilestoneBufferTime:      helper.MilestoneBufferTime,
-		MilestoneBufferLength:    helper.MilestoneBufferLength,
-		MilestoneTxConfirmations: helper.BorChainMilestoneConfirmation,
-	}
 }

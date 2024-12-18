@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"bytes"
+	"errors"
 	"strconv"
 
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -12,7 +14,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
+var (
+	SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
+)
 
 type sideMsgServer struct {
 	k *Keeper
@@ -57,7 +61,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	)
 
 	// calculate next span seed locally
-	nextSpanSeed, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
+	nextSpanSeed, nextSpanSeedAuthor, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
 	if err != nil {
 		logger.Error("error fetching next span seed from mainChain", "error", err)
 		return sidetxs.Vote_UNSPECIFIED
@@ -69,6 +73,21 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 			"span seed does not match",
 			"msgSeed", msg.Seed,
 			"mainChainSeed", nextSpanSeed.String(),
+		)
+
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// check if span seed author matches or not.
+	if util.FormatAddress(msg.SeedAuthor) != util.FormatAddress(nextSpanSeedAuthor.Hex()) {
+		logger.Error(
+			"Span Seed Author does not match",
+			"proposer", msg.Proposer,
+			"chainID", msg.ChainId,
+			"msgSeed", msg.Seed,
+			"msgSeedAuthor", msg.SeedAuthor,
+			"mainchainSeedAuthor", nextSpanSeedAuthor.Hex(),
+			"mainchainSeed", nextSpanSeed,
 		)
 
 		return sidetxs.Vote_VOTE_NO
@@ -116,64 +135,46 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 }
 
 // PostHandleMsgSpan handles state persisting span msg
-func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
+func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
-		logger.Error("MsgProposeSpan type mismatch", "msg type received", msg)
-		return
+		err := errors.New("MsgProposeSpan type mismatch")
+		logger.Error(err.Error(), "msg type received", msg)
+		return err
 	}
 
 	// Skip handler if span is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new span since side-tx didn't get yes votes")
-		return
+		return errors.New("side-tx didn't get yes votes")
 	}
 
 	// check for replay
 	ok, err := s.k.HasSpan(ctx, msg.SpanId)
 	if err != nil {
 		logger.Error("error occurred while checking for span", "span id", msg.SpanId, "error", err)
-		return
+		return err
 	}
 	if ok {
 		logger.Debug("skipping new span as it's already processed", "span id", msg.SpanId)
-		return
+		return errors.New("span already processed")
 	}
 
 	logger.Debug("persisting span state", "span id", msg.SpanId, "sideTxResult", sideTxResult)
 
-	var seedSpanID uint64
-	if msg.GetSpanId() < 2 {
-		seedSpanID = msg.SpanId - 1
-	} else {
-		seedSpanID = msg.SpanId - 2
-	}
-
-	lastSpan, err := s.k.GetSpan(ctx, seedSpanID)
-	if err != nil {
-		logger.Error("Unable to get last span", "error", err)
-		return
-	}
-
-	// store the seed producer
-	_, producer, err := s.k.getBorBlockForSpanSeed(ctx, &lastSpan, msg.SpanId)
-	if err != nil {
-		logger.Error("Unable to get seed producer", "error", err)
-		return
-	}
-
-	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, producer); err != nil {
+	seedAuthor := common.HexToAddress(msg.SeedAuthor)
+	if err = s.k.StoreSeedProducer(ctx, msg.SpanId, &seedAuthor); err != nil {
 		logger.Error("Unable to store seed producer", "error", err)
-		return
+		return err
 	}
 
 	// freeze for new span
 	err = s.k.FreezeSet(ctx, msg.SpanId, msg.StartBlock, msg.EndBlock, msg.ChainId, common.Hash(msg.Seed))
 	if err != nil {
 		logger.Error("unable to freeze validator set for span", "span id", msg.SpanId, "error", err)
-		return
+		return err
 	}
 
 	txBytes := ctx.TxBytes()
@@ -192,4 +193,6 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			sdk.NewAttribute(types.AttributeKeySpanEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
 		),
 	})
+
+	return nil
 }

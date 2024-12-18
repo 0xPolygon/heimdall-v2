@@ -27,9 +27,6 @@ const (
 	PriorityWindowSizeFactor = 2
 )
 
-// TODO HV2: compare the implementation of ValidatorSet with the one in the original cometBFT codebase
-//  See https://polygon.atlassian.net/browse/POS-2625
-
 // ValidatorSet represent a set of *Validator at a given height.
 // The validators can be fetched by address or index.
 // The index is in order of .Address, so the indices are fixed

@@ -610,6 +610,8 @@ paths:
             properties:
               seed:
                 type: string
+              seed_author:
+                type: string
         default:
           description: An unexpected error response.
           schema:
@@ -993,6 +995,54 @@ paths:
           format: uint64
       tags:
         - Query
+  /checkpoint/signatures:
+    get:
+      summary: GetCheckpointSignatures queries signatures for latest checkpoint
+      operationId: GetCheckpointSignatures
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              signatures:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    validator_address:
+                      type: string
+                      format: byte
+                    signature:
+                      type: string
+                      format: byte
+            title: |-
+              QueryCheckpointSignaturesResponse is response type for
+              QueryCheckpointSignatures RPC method
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /checkpoints/buffer:
     get:
       summary: GetCheckpointBuffer queries for the checkpoint in the buffer
@@ -1313,6 +1363,136 @@ paths:
           type: boolean
       tags:
         - Query
+  /checkpoints/overview:
+    get:
+      summary: GetChekpointOverview queries for the checkpoint overview
+      operationId: GetCheckpointOverview
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              ack_count:
+                type: string
+                format: uint64
+              last_no_ack_id:
+                type: string
+                format: uint64
+              buffer_checkpoint:
+                type: object
+                properties:
+                  proposer:
+                    type: string
+                  start_block:
+                    type: string
+                    format: uint64
+                  end_block:
+                    type: string
+                    format: uint64
+                  root_hash:
+                    type: string
+                    format: byte
+                  bor_chain_id:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: uint64
+              validator_count:
+                type: string
+                format: uint64
+              validator_set:
+                type: object
+                properties:
+                  validators:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        val_id:
+                          type: string
+                          format: uint64
+                        start_epoch:
+                          type: string
+                          format: uint64
+                        end_epoch:
+                          type: string
+                          format: uint64
+                        nonce:
+                          type: string
+                          format: uint64
+                        voting_power:
+                          type: string
+                          format: int64
+                        pub_key:
+                          type: string
+                          format: byte
+                        signer:
+                          type: string
+                        last_updated:
+                          type: string
+                        jailed:
+                          type: boolean
+                        proposer_priority:
+                          type: string
+                          format: int64
+                  proposer:
+                    type: object
+                    properties:
+                      val_id:
+                        type: string
+                        format: uint64
+                      start_epoch:
+                        type: string
+                        format: uint64
+                      end_epoch:
+                        type: string
+                        format: uint64
+                      nonce:
+                        type: string
+                        format: uint64
+                      voting_power:
+                        type: string
+                        format: int64
+                      pub_key:
+                        type: string
+                        format: byte
+                      signer:
+                        type: string
+                      last_updated:
+                        type: string
+                      jailed:
+                        type: boolean
+                      proposer_priority:
+                        type: string
+                        format: int64
+                  total_voting_power:
+                    type: string
+                    format: int64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /checkpoints/params:
     get:
       summary: GetCheckpointParams queries for the x/checkpoint params
@@ -1603,6 +1783,54 @@ paths:
         - name: record_id
           in: path
           required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
+  /clerk/isoldtx:
+    get:
+      summary: |-
+        IsClerkTxOld queries for a specific clerk tx to check its status (old
+        means already submitted)
+      operationId: IsClerkTxOld
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              is_old:
+                type: boolean
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: tx_hash
+          in: query
+          required: false
+          type: string
+        - name: log_index
+          in: query
+          required: false
           type: string
           format: uint64
       tags:
@@ -3089,6 +3317,8 @@ definitions:
     properties:
       seed:
         type: string
+      seed_author:
+        type: string
   heimdallv2.bor.QueryParamsResponse:
     type: object
     properties:
@@ -3681,6 +3911,15 @@ definitions:
       timestamp:
         type: string
         format: uint64
+  heimdallv2.checkpoint.CheckpointSignature:
+    type: object
+    properties:
+      validator_address:
+        type: string
+        format: byte
+      signature:
+        type: string
+        format: byte
   heimdallv2.checkpoint.MsgCheckpoint:
     type: object
     properties:
@@ -3814,6 +4053,105 @@ definitions:
                    repeated Bar results = 1;
                    PageResponse page = 2;
            }
+  heimdallv2.checkpoint.QueryCheckpointOverviewResponse:
+    type: object
+    properties:
+      ack_count:
+        type: string
+        format: uint64
+      last_no_ack_id:
+        type: string
+        format: uint64
+      buffer_checkpoint:
+        type: object
+        properties:
+          proposer:
+            type: string
+          start_block:
+            type: string
+            format: uint64
+          end_block:
+            type: string
+            format: uint64
+          root_hash:
+            type: string
+            format: byte
+          bor_chain_id:
+            type: string
+          timestamp:
+            type: string
+            format: uint64
+      validator_count:
+        type: string
+        format: uint64
+      validator_set:
+        type: object
+        properties:
+          validators:
+            type: array
+            items:
+              type: object
+              properties:
+                val_id:
+                  type: string
+                  format: uint64
+                start_epoch:
+                  type: string
+                  format: uint64
+                end_epoch:
+                  type: string
+                  format: uint64
+                nonce:
+                  type: string
+                  format: uint64
+                voting_power:
+                  type: string
+                  format: int64
+                pub_key:
+                  type: string
+                  format: byte
+                signer:
+                  type: string
+                last_updated:
+                  type: string
+                jailed:
+                  type: boolean
+                proposer_priority:
+                  type: string
+                  format: int64
+          proposer:
+            type: object
+            properties:
+              val_id:
+                type: string
+                format: uint64
+              start_epoch:
+                type: string
+                format: uint64
+              end_epoch:
+                type: string
+                format: uint64
+              nonce:
+                type: string
+                format: uint64
+              voting_power:
+                type: string
+                format: int64
+              pub_key:
+                type: string
+                format: byte
+              signer:
+                type: string
+              last_updated:
+                type: string
+              jailed:
+                type: boolean
+              proposer_priority:
+                type: string
+                format: int64
+          total_voting_power:
+            type: string
+            format: int64
   heimdallv2.checkpoint.QueryCheckpointResponse:
     type: object
     properties:
@@ -3836,6 +4174,23 @@ definitions:
           timestamp:
             type: string
             format: uint64
+  heimdallv2.checkpoint.QueryCheckpointSignaturesResponse:
+    type: object
+    properties:
+      signatures:
+        type: array
+        items:
+          type: object
+          properties:
+            validator_address:
+              type: string
+              format: byte
+            signature:
+              type: string
+              format: byte
+    title: |-
+      QueryCheckpointSignaturesResponse is response type for
+      QueryCheckpointSignatures RPC method
   heimdallv2.checkpoint.QueryCurrentProposerResponse:
     type: object
     properties:
@@ -3970,6 +4325,11 @@ definitions:
       record_time:
         type: string
         format: date-time
+  heimdallv2.clerk.IsClerkTxOldResponse:
+    type: object
+    properties:
+      is_old:
+        type: boolean
   heimdallv2.clerk.RecordListResponse:
     type: object
     properties:

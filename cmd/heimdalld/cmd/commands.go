@@ -15,10 +15,6 @@ import (
 
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
-	"github.com/0xPolygon/heimdall-v2/app"
-	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/version"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -53,6 +49,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/0xPolygon/heimdall-v2/app"
+	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/version"
 )
 
 const (
@@ -65,25 +66,8 @@ const (
 	flagNodeHostPrefix   = "node-host-prefix"
 )
 
-// CometBFT full-node start flags
 const (
-	flagAddress      = "address"
-	flagTraceStore   = "trace-store"
-	flagPruning      = "pruning"
-	flagCPUProfile   = "cpu-profile"
-	FlagMinGasPrices = "minimum-gas-prices"
-	FlagHaltHeight   = "halt-height"
-	FlagHaltTime     = "halt-time"
-)
-
-// Open Collector Flags
-var (
-	FlagOpenTracing           = "open-tracing"
-	FlagOpenCollectorEndpoint = "open-collector-endpoint"
-)
-
-const (
-	nodeDirPerm = 0o755
+	nodeDirPerm = 0755
 )
 
 var tempDir = func() string {
@@ -106,10 +90,6 @@ type ValidatorAccountFormatter struct {
 	Address string `json:"address,omitempty" yaml:"address"`
 	PrivKey string `json:"priv_key,omitempty" yaml:"priv_key"`
 	PubKey  string `json:"pub_key,omitempty" yaml:"pub_key"`
-}
-
-func CryptoKeyToPubKey(key crypto.PubKey) secp256k1.PubKey {
-	return helper.GetPubObjects(key)
 }
 
 // GetSignerInfo returns signer information
@@ -160,8 +140,6 @@ func initRootCmd(
 
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(basicManager, app.DefaultNodeHome),
-		// TODO HV2 - check this (Testnet Command)
-		// NewTestnetCmd(basicManager, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
@@ -199,8 +177,6 @@ func initRootCmd(
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		// TODO HV2: enable this? Removed from app and not present in v1
-		// genesisCommand(txConfig, basicManager),
 		queryCommand(),
 		txCommand(),
 		keys.Commands(),
@@ -221,11 +197,6 @@ func initRootCmd(
 	rootCmd.AddCommand(showPrivateKeyCmd())
 	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
-
-	// TODO HV2 - I guess we are safe to remove this, as `genutilcli.InitCmd(basicManager, app.DefaultNodeHome)`
-	// already does the same thing
-	// commenting it out for now, will remove it later (after testing)
-	// rootCmd.AddCommand(initCmd(ctx, cdc, hApp.BasicManager))
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
@@ -255,18 +226,6 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 		server.ExportCmd(appExport, defaultNodeHome),
 		server.NewRollbackCmd(appCreator, defaultNodeHome),
 	)
-}
-
-// genesisCommand builds genesis-related `heimdalld genesis` command. Users may provide application specific commands as a parameter
-//
-//nolint:unused // TODO - remove this once the function is being used
-func genesisCommand(txConfig client.TxConfig, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
-	cmd := genutilcli.Commands(txConfig, basicManager, app.DefaultNodeHome)
-
-	for _, subCmd := range cmds {
-		cmd.AddCommand(subCmd)
-	}
-	return cmd
 }
 
 func queryCommand() *cobra.Command {
@@ -339,8 +298,8 @@ func appExport(
 	db dbm.DB,
 	traceStore io.Writer,
 	height int64,
-	forZeroHeight bool,
-	jailAllowedAddrs []string,
+	_ bool,
+	_ []string,
 	appOpts servertypes.AppOptions,
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
@@ -371,7 +330,7 @@ func appExport(
 		hApp = app.NewHeimdallApp(logger, db, traceStore, true, appOpts)
 	}
 
-	return hApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
+	return hApp.ExportAppStateAndValidators(false, nil, modulesToExport)
 }
 
 // generateKeystore generate keystore file from private key
@@ -440,7 +399,7 @@ func generateValidatorKey() *cobra.Command {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
+			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0600)
 			if err != nil {
 				return err
 			}
@@ -459,6 +418,7 @@ func importValidatorKey() *cobra.Command {
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			pk, err := ethcrypto.LoadECDSA(args[0])
 			if err != nil {
 				return err
@@ -482,7 +442,7 @@ func importValidatorKey() *cobra.Command {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
+			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0600)
 			if err != nil {
 				return err
 			}
@@ -542,16 +502,6 @@ func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 				return err
 			}
 
-			// TODO HV2 - verify if this is correct to comment and use `hApp.BasicManager.ValidateGenesis` instead
-			/*
-				// verify genesis
-				for _, b := range hApp.ModuleBasics {
-					m := b.(hmModule.HeimdallModuleBasic)
-					if err := m.VerifyGenesis(genesisState); err != nil {
-						return err
-					}
-				}
-			*/
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			cliCdc := clientCtx.Codec
 
@@ -666,12 +616,12 @@ func InitializeNodeValidatorFiles(
 	nodeID = string(nodeKey.ID())
 
 	pvKeyFile := config.PrivValidatorKeyFile()
-	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0o777); err != nil {
+	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0777); err != nil {
 		return nodeID, valPubKey, privKey, err
 	}
 
 	pvStateFile := config.PrivValidatorStateFile()
-	if err := cmtos.EnsureDir(filepath.Dir(pvStateFile), 0o777); err != nil {
+	if err := cmtos.EnsureDir(filepath.Dir(pvStateFile), 0777); err != nil {
 		return nodeID, valPubKey, privKey, err
 	}
 
@@ -718,25 +668,9 @@ func createKeyStore(pk *ecdsa.PrivateKey) error {
 	}
 
 	// Then write the new keyfile in place of the old one.
-	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0o600); err != nil {
+	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0600); err != nil {
 		return err
 	}
 	return nil
+
 }
-
-// TODO HV2 - check if we need this
-/*
-func getGenesisAccount(address []byte) authTypes.GenesisAccount {
-	acc := authTypes.NewBaseAccountWithAddress(sdk.AccAddress(address))
-
-	genesisBalance, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
-
-	if err := acc.SetCoins(sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(genesisBalance)}}); err != nil {
-		logger.Error("getgenesisaccount | setcoins", "error", err)
-	}
-
-	result, _ := authTypes.NewGenesisAccountI(&acc)
-
-	return result
-}
-*/

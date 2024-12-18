@@ -7,6 +7,7 @@ import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "heimdallv2/checkpoint/checkpoint.proto";
+import "heimdallv2/checkpoint/checkpoint_signatures.proto";
 import "heimdallv2/checkpoint/tx.proto";
 import "heimdallv2/stake/validator.proto";
 
@@ -79,11 +80,29 @@ service Query {
     option (google.api.http).get = "/checkpoints/list";
   }
 
+  // GetCheckpointSignatures queries signatures for latest checkpoint
+  rpc GetCheckpointSignatures(QueryCheckpointSignaturesRequest)
+      returns (QueryCheckpointSignaturesResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoint/signatures";
+  }
+
   // GetCheckpoint queries for the checkpoint based on the number
   rpc GetCheckpoint(QueryCheckpointRequest) returns (QueryCheckpointResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/{number}";
   }
+}
+
+// QueryCheckpointSignaturesRequest is request type for
+// QueryCheckpointSignatures RPC method
+message QueryCheckpointSignaturesRequest {}
+
+// QueryCheckpointSignaturesResponse is response type for
+// QueryCheckpointSignatures RPC method
+message QueryCheckpointSignaturesResponse {
+  repeated CheckpointSignature signatures = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 message QueryParamsRequest {}

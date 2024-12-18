@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"bytes"
+	"errors"
 	"math/big"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -126,19 +127,20 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup tx
-func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) {
+func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	logger := s.k.Logger(ctx)
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
-		logger.Error("type mismatch for MsgTopupTx")
-		return
+		err := errors.New("type mismatch for MsgTopupTx")
+		logger.Error(err.Error())
+		return err
 	}
 
 	// skip handler if topup is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
-		return
+		return errors.New("side-tx didn't get yes votes")
 	}
 
 	// check if incoming tx is older
@@ -153,7 +155,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			"logIndex", msg.LogIndex,
 			"blockNumber", msg.BlockNumber,
 			"error", err)
-		return
+		return err
 	}
 	if exists {
 		logger.Error("older tx found",
@@ -161,7 +163,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			"logIndex", msg.LogIndex,
 			"blockNumber", msg.BlockNumber,
 			"txHash", msg.TxHash)
-		return
+		return errors.New("older tx found")
 	}
 
 	logger.Debug("persisting topup state", "sideTxResult", sideTxResult)
@@ -178,19 +180,19 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	err = s.k.BankKeeper.MintCoins(ctx, types.ModuleName, topupAmount)
 	if err != nil {
 		logger.Error("error while minting coins to x/topup module", "topupAmount", topupAmount, "error", err)
-		return
+		return err
 	}
 
 	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
 	if err != nil {
 		logger.Error("error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, "error", err)
-		return
+		return err
 	}
 
 	err = s.k.BankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
 	if err != nil {
 		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
-		return
+		return err
 	}
 
 	logger.Debug("persisted topup state for", "user", user, "topupAmount", topupAmount.String())
@@ -199,7 +201,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	err = s.k.SetTopupSequence(ctx, sequence.String())
 	if err != nil {
 		logger.Error("error while saving topup sequence", "sequence", sequence.String(), "error", err)
-		return
+		return err
 	}
 
 	txBytes := ctx.TxBytes()
@@ -216,4 +218,6 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			sdk.NewAttribute(types.AttributeKeyTopupAmount, msg.Fee.String()),
 		),
 	})
+
+	return nil
 }

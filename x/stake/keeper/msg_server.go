@@ -48,7 +48,6 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "pub key is invalid")
 	}
 
-	// TODO HV2: is any attack possible here?
 	signer, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
 	if err != nil {
 		m.k.Logger(ctx).Error("signer is invalid", "error", err)

@@ -1,10 +1,7 @@
 package types
 
 import (
-	"encoding/json"
-
 	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/cosmos/cosmos-sdk/codec"
 )
 
 // NewGenesisState creates a new genesis state.
@@ -16,20 +13,6 @@ func NewGenesisState(params Params) GenesisState {
 func DefaultGenesisState() *GenesisState {
 	params := DefaultParams()
 	return &GenesisState{Params: params}
-}
-
-// TODO HV2: remove this function if not needed
-
-// GetGenesisStateFromAppState returns x/Milestone GenesisState given raw application
-// genesis state.
-func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage) *GenesisState {
-	var genesisState GenesisState
-
-	if appState[ModuleName] != nil {
-		cdc.MustUnmarshalJSON(appState[ModuleName], &genesisState)
-	}
-
-	return &genesisState
 }
 
 // ValidateGenesis validates the provided checkpoint data

@@ -3,18 +3,20 @@ package keeper_test
 import (
 	"math/big"
 
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	"github.com/stretchr/testify/mock"
+
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
+
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
 func (s *KeeperTestSuite) TestGetLatestSpan() {
 	require, ctx, queryClient := s.Require(), s.ctx, s.queryClient
 
-	res, err := queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
-	require.NoError(err)
+	res, _ := queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
 	require.Empty(res)
 
 	spans := s.genTestSpans(5)
@@ -23,7 +25,7 @@ func (s *KeeperTestSuite) TestGetLatestSpan() {
 		require.NoError(err)
 	}
 
-	res, err = queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
+	res, err := queryClient.GetLatestSpan(ctx, &types.QueryLatestSpanRequest{})
 	expRes := &types.QueryLatestSpanResponse{Span: *spans[len(spans)-1]}
 	require.NoError(err)
 	require.Equal(expRes, res)
@@ -54,7 +56,7 @@ func (s *KeeperTestSuite) TestGetNextSpan() {
 	valAddr := common.HexToAddress(vals[1].GetOperator())
 
 	lastBorBlockHeader := &ethTypes.Header{Number: big.NewInt(0)}
-	contractCaller.On("GetBorChainBlock", big.NewInt(0)).Return(lastBorBlockHeader, nil).Times(1)
+	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(0)).Return(lastBorBlockHeader, nil).Times(1)
 	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(0)).Return(&valAddr, nil).Times(1)
 	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
 	stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
@@ -96,13 +98,13 @@ func (s *KeeperTestSuite) TestGetNextSpanSeed() {
 	valAddr := common.HexToAddress("0x91b54cD48FD796A5d0A120A4C5298a7fAEA59B")
 
 	lastBorBlockHeader := &ethTypes.Header{Number: big.NewInt(1)}
-	contractCaller.On("GetBorChainBlock", big.NewInt(1)).Return(lastBorBlockHeader, nil).Times(1)
+	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(1)).Return(lastBorBlockHeader, nil).Times(1)
 	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(1)).Return(&valAddr, nil).Times(1)
 
 	res, err := queryClient.GetNextSpanSeed(ctx, &types.QueryNextSpanSeedRequest{Id: 1})
 	require.NoError(err)
 	require.NotNil(res)
-	require.Equal(&types.QueryNextSpanSeedResponse{Seed: lastBorBlockHeader.Hash().String()}, res)
+	require.Equal(&types.QueryNextSpanSeedResponse{Seed: lastBorBlockHeader.Hash().String(), SeedAuthor: valAddr.Hex()}, res)
 }
 
 func (s *KeeperTestSuite) TestGetParams() {

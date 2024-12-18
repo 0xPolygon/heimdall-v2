@@ -98,7 +98,6 @@ func (k Keeper) GetAuthority() string {
 func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 	logger := k.Logger(ctx)
 	if err := k.AddNewRawSpan(ctx, span); err != nil {
-		// TODO HV2: should we panic here instead ?
 		logger.Error("error setting span", "error", err, "span", span)
 		return err
 	}
@@ -286,7 +285,7 @@ func (k *Keeper) UpdateLastSpan(ctx context.Context, id uint64) error {
 
 // FetchNextSpanSeed gets the eth block hash which serves as seed for random selection of producer set
 // for the next span
-func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash, error) {
+func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash, common.Address, error) {
 	logger := k.Logger(ctx)
 
 	var seedSpanID uint64
@@ -299,23 +298,28 @@ func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash,
 	seedSpan, err := k.GetSpan(ctx, seedSpanID)
 	if err != nil {
 		logger.Error("error fetching span while calculating next span seed", "error", err)
-		return common.Hash{}, err
+		return common.Hash{}, common.Address{}, err
 	}
 
 	borBlock, author, err := k.getBorBlockForSpanSeed(ctx, &seedSpan, id)
 	if err != nil {
-		return common.Hash{}, err
+		return common.Hash{}, common.Address{}, err
 	}
 
 	blockHeader, err := k.contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(borBlock)))
 	if err != nil {
 		k.Logger(ctx).Error("error fetching block header from bor chain while calculating next span seed", "error", err, "block", borBlock)
-		return common.Hash{}, err
+		return common.Hash{}, common.Address{}, err
+	}
+
+	if author == nil {
+		k.Logger(ctx).Error("seed author is nil")
+		return blockHeader.Hash(), common.Address{}, fmt.Errorf("seed author is nil")
 	}
 
 	logger.Debug("fetched block for seed", "block", borBlock, "author", author, "span id", id)
 
-	return blockHeader.Hash(), nil
+	return blockHeader.Hash(), *author, nil
 }
 
 // StoreSeedProducer stores producer of the block used for seed for the given span id

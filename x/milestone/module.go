@@ -6,24 +6,22 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/appmodule"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/spf13/cobra"
+
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 // ConsensusVersion defines the current x/milestone module consensus version.
 const ConsensusVersion = 1
 
 var (
-	// TODO HV2: implement simulation for milestone
-	//_ module.AppModuleSimulation = AppModule{}
 	_ module.HasGenesis     = AppModule{}
 	_ module.HasServices    = AppModule{}
 	_ module.AppModuleBasic = AppModule{}
@@ -82,14 +80,6 @@ func (am AppModule) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *gwr
 	if err := types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx)); err != nil {
 		panic(err)
 	}
-}
-
-// GetTxCmd returns the root tx command for the milestone module.
-func (am AppModule) GetTxCmd() *cobra.Command {
-	return nil
-	// TODO HV2 Please implement the CLI
-	//
-	//	return cli.NewTxCmd(amb.cdc.InterfaceRegistry().SigningContext().ValidatorAddressCodec(), amb.cdc.InterfaceRegistry().SigningContext().AddressCodec())
 }
 
 // IsAppModule implements the appmodule.AppModule interface.

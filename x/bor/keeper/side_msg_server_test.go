@@ -96,7 +96,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expVote:          sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
 				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
-				contractCaller.On("GetBorChainBlock", mock.Anything).Return(&blockHeader1, nil)
+				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 			},
 		},
 		{
@@ -115,8 +115,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expVote:          sidetxs.Vote_VOTE_NO,
 			mockFn: func() {
 				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
-				contractCaller.On("GetBorChainBlock", big.NewInt(16656)).Return(&blockHeader1, nil).Times(1)
-				contractCaller.On("GetBorChainBlock", mock.Anything).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
+				contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(16656)).Return(&blockHeader1, nil).Times(1)
+				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&ethTypes.Header{Number: big.NewInt(0)}, nil).Times(1)
 			},
 		},
 		{
@@ -128,6 +128,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 				EndBlock:   30000,
 				ChainId:    testChainParams.ChainParams.BorChainId,
 				Seed:       blockHash1.Bytes(),
+				SeedAuthor: val1Addr.Hex(),
 			},
 			lastSeedProducer: &val1Addr,
 			lastSpanId:       3,
@@ -135,7 +136,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			expVote:          sidetxs.Vote_VOTE_YES,
 			mockFn: func() {
 				contractCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
-				contractCaller.On("GetBorChainBlock", mock.Anything).Return(&blockHeader1, nil)
+				contractCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 			},
 		},
 	}
@@ -179,7 +180,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 	s.Require().NoError(err)
 
 	lastBorBlockHeader := &ethTypes.Header{Number: big.NewInt(0)}
-	contractCaller.On("GetBorChainBlock", big.NewInt(0)).Return(lastBorBlockHeader, nil).Times(1)
+	contractCaller.On("GetBorChainBlock", mock.Anything, big.NewInt(0)).Return(lastBorBlockHeader, nil).Times(1)
 	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(0)).Return(&producer1, nil).Times(1)
 	contractCaller.On("GetBorChainBlockAuthor", big.NewInt(100)).Return(&producer2, nil).Times(1)
 

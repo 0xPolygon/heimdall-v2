@@ -10,13 +10,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/app"
-	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
-	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -39,6 +32,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
+
+	"github.com/0xPolygon/heimdall-v2/app"
+	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 var (
@@ -79,25 +79,6 @@ var (
 			[]byte("0xd10b5c16c25efe0b0f5b3d75038834223934ae8c2ec2b63a62bbe42aa21e2d2d"),
 			"borChainID",
 		),
-		milestoneTypes.NewMsgMilestoneBlock(
-			heimdallAddress,
-			0,
-			63,
-			[]byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e"),
-			"testBorChainID",
-			"testMilestoneID",
-		),
-		milestoneTypes.NewMsgMilestoneTimeout(
-			heimdallAddress,
-		),
-		borTypes.NewMsgProposeSpan(
-			1,
-			heimdallAddress,
-			0,
-			63,
-			"testBorChainID",
-			[]byte("randseed"),
-		),
 	}
 )
 
@@ -122,7 +103,6 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	mockCtrl := prepareMockData(t)
 	defer mockCtrl.Finish()
 
-	testOpts := helper.NewTestOpts(nil, testChainId)
 	heimdallApp, sdkCtx, _ := createTestApp(t)
 
 	encodingConfig := moduletestutil.MakeTestEncodingConfig()
@@ -189,7 +169,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 				shouldFailSimulate = false
 			}
 
-			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil, testOpts)
+			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil)
 			if tc.expErr {
 				require.Error(t, err)
 			} else {

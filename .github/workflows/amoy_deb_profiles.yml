@@ -1,4 +1,4 @@
-# TODO HV2: Test the profiles/packager and eventually update the config file with the correct values (align with DevOps)
+# TODO HV2: https://polygon.atlassian.net/browse/POS-2759
 #name: amoy_deb_profiles
 #
 #on:

@@ -35,6 +35,8 @@ type Keeper struct {
 	params             collections.Item[types.Params]
 	lastNoAck          collections.Item[uint64]
 	ackCount           collections.Item[uint64]
+
+	checkpointSignatures collections.Item[types.CheckpointSignatures]
 }
 
 // NewKeeper creates a new checkpoint Keeper instance
@@ -68,11 +70,12 @@ func NewKeeper(
 		topupKeeper:     topupKeeper,
 		IContractCaller: contractCaller,
 
-		bufferedCheckpoint: collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
-		checkpoints:        collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
-		params:             collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
-		lastNoAck:          collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
-		ackCount:           collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
+		bufferedCheckpoint:   collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
+		checkpoints:          collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
+		params:               collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		lastNoAck:            collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
+		ackCount:             collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
+		checkpointSignatures: collections.NewItem(sb, types.CheckpointSignaturesPrefixKey, "checkpoint_signatures", codec.CollValue[types.CheckpointSignatures](cdc)),
 	}
 
 	// build the schema and set it in the keeper
@@ -247,10 +250,7 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) (checkpoints []types.Checkp
 
 	var checkpoint types.Checkpoint
 
-	// TODO HV2: double check once APIs are up and running, but https://github.com/maticnetwork/heimdall/pull/1183
-	//  should not be needed because the iterator.Key() used to iterate over the checkpoints collection is a uint64,
-	//  the checkpoint number itself, and not a []byte as it used to be in v1
-
+	// TODO HV2: https://polygon.atlassian.net/browse/POS-2764
 	for ; iterator.Valid(); iterator.Next() {
 		checkpoint, err = iterator.Value()
 		if err != nil {
@@ -298,4 +298,14 @@ func (k Keeper) IncrementAckCount(ctx context.Context) error {
 	}
 
 	return k.ackCount.Set(ctx, ackCount+1)
+}
+
+// SetCheckpointSignatures stores the checkpoint signatures
+func (k Keeper) SetCheckpointSignatures(ctx context.Context, checkpointSignatures types.CheckpointSignatures) error {
+	return k.checkpointSignatures.Set(ctx, checkpointSignatures)
+}
+
+// GetCheckpointSignatures retrives the checkpoint signatures
+func (k Keeper) GetCheckpointSignatures(ctx context.Context) (types.CheckpointSignatures, error) {
+	return k.checkpointSignatures.Get(ctx)
 }

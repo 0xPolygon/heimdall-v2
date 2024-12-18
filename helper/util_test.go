@@ -36,7 +36,6 @@ func TestUnpackSigAndVotes(t *testing.T) {
 
 	// Validating the Unpack Output
 	for i, j := 0, 0; i < len(signerAddresses); i, j = i+1, j+signatureLen {
-		// TODO HV2: Note that RecoverPubKey is not actively used in cosmos-sdk and GetCheckpointSign (invoking UnpackSigAndVotes) is not used in heimdall
 		pubKey, err := signing.RecoverPubKey(voteSignBytes, inputSigs[j:j+signatureLen])
 		require.Empty(t, err, "Error while recovering pubkey from signature. voteSignBytes = %v, Signature=%v ", voteSignBytes, hex.EncodeToString(inputSigs[i:i+signatureLen]))
 

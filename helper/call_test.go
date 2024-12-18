@@ -2,7 +2,6 @@ package helper
 
 import (
 	"encoding/hex"
-	"os"
 	"testing"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
@@ -30,7 +29,7 @@ func TestCheckpointSigs(t *testing.T) {
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 	viper.Set("log_level", "info")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitTestHeimdallConfig("")
 
 	contractCallerObj, err := NewContractCaller()
 	if err != nil {
@@ -65,7 +64,6 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 	for i := 0; i < len(sigInput); i += sigLength {
 		signature := sigInput[i : i+sigLength]
 
-		// TODO HV2: Note that RecoverPubKey is not actively used in cosmos-sdk. Double check if it is required.
 		pKey, err := signing.RecoverPubKey(voteBytes, signature)
 		if err != nil {
 			return nil, err
