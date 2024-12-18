@@ -324,6 +324,7 @@ func newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
+	helper.InitHeimdallConfig("")
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	return app.NewHeimdallApp(
