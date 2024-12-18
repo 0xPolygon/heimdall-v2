@@ -384,7 +384,6 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 		cp.Logger.Error("Error while fetching current header block object from rootchain", "error", err)
 		return nil, err
 	}
-	currentStart, currentEnd, lastCheckpointTime := headerInfo.Start, headerInfo.End, headerInfo.CreatedAt
 	// find next start/end
 	var start, end uint64
 	start = currentEnd
