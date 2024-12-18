@@ -91,18 +91,14 @@ func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLeng
 	}
 
 	if isProposer {
-		result, err := util.GetMilestoneCount()
+		milestoneCount, err := util.GetMilestoneCount()
 		if err != nil {
 			return err
 		}
 
-		if result == nil {
-			return fmt.Errorf("got nil result while fetching milestone count")
-		}
-
 		var start = helper.GetMilestoneBorBlockHeight()
 
-		if result.Count != 0 {
+		if milestoneCount != 0 {
 			// fetch latest milestone
 			latestMilestone, err := util.GetLatestMilestone()
 			if err != nil {

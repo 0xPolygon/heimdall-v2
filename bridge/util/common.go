@@ -447,13 +447,13 @@ func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
 		return nil, err
 	}
 
-	var checkpoint checkpointTypes.Checkpoint
+	var checkpoint checkpointTypes.QueryCheckpointBufferResponse
 	if err := json.Unmarshal(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling buffered checkpoint", "url", BufferedCheckpointURL, "err", err)
 		return nil, err
 	}
 
-	return &checkpoint, nil
+	return &checkpoint.Checkpoint, nil
 }
 
 // GetLatestCheckpoint return last successful checkpoint
@@ -466,13 +466,13 @@ func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
 		return nil, err
 	}
 
-	var checkpoint checkpointTypes.Checkpoint
+	var checkpoint checkpointTypes.QueryCheckpointLatestResponse
 	if err = json.Unmarshal(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling latest checkpoint", "url", LatestCheckpointURL, "err", err)
 		return nil, err
 	}
 
-	return &checkpoint, nil
+	return &checkpoint.Checkpoint, nil
 }
 
 // GetLatestMilestone return last successful milestone
@@ -485,32 +485,32 @@ func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
 		return nil, err
 	}
 
-	var milestone milestoneTypes.Milestone
-	if err = json.Unmarshal(response, &milestone); err != nil {
+	var milestoneResp milestoneTypes.QueryLatestMilestoneResponse
+	if err = json.Unmarshal(response, &milestoneResp); err != nil {
 		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
 		return nil, err
 	}
 
-	return &milestone, nil
+	return &milestoneResp.Milestone, nil
 }
 
 // GetMilestoneCount return milestones count
-func GetMilestoneCount() (*milestoneTypes.MilestoneCount, error) {
+func GetMilestoneCount() (uint64, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
 	if err != nil {
 		logger.Error("Error fetching Milestone count", "err", err)
-		return nil, err
+		return 0, err
 	}
 
-	var count milestoneTypes.MilestoneCount
+	var count milestoneTypes.QueryCountResponse
 	if err := json.Unmarshal(response, &count); err != nil {
 		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
-		return nil, err
+		return 0, err
 	}
 
-	return &count, nil
+	return count.Count, nil
 }
 
 // AppendPrefix returns PublicKey in uncompressed format
