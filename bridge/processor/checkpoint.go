@@ -13,6 +13,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -20,13 +26,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
-
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 // CheckpointProcessor - processor for checkpoint queue.
@@ -112,7 +111,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 // 2. check if checkpoint has to be proposed for given header block
 // 3. if so, propose checkpoint to heimdall.
 func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (err error) {
-	var header = types.Header{}
+	header := types.Header{}
 	if err := header.UnmarshalJSON([]byte(headerBlockStr)); err != nil {
 		cp.Logger.Error("Error while unmarshalling the header block", "error", err)
 		return err
@@ -260,7 +259,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		return err
 	}
 
-	var log = types.Log{}
+	log := types.Log{}
 	if err = json.Unmarshal([]byte(checkpointAckStr), &log); err != nil {
 		cp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -380,12 +379,12 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	currentHeaderBlockNumber := big.NewInt(0).SetUint64(_currentHeaderBlock)
 
 	// get header info
-	_, currentStart, currentEnd, lastCheckpointTime, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	headerInfo, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block object from rootchain", "error", err)
 		return nil, err
 	}
-
+	currentStart, currentEnd, lastCheckpointTime := headerInfo.Start, headerInfo.End, headerInfo.CreatedAt
 	// find next start/end
 	var start, end uint64
 	start = currentEnd
@@ -653,12 +652,13 @@ func (cp *CheckpointProcessor) getLatestCheckpointTime(checkpointContext *Checkp
 	}
 
 	// header block
-	_, _, _, createdAt, _, err := cp.contractCaller.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	headerinfo, err := cp.contractCaller.GetHeaderInfo(lastHeaderNumber, rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching header block object", "error", err)
 		return 0, err
 	}
 
+	createdAt := headerinfo.CreatedAt
 	return int64(createdAt), nil
 }
 
@@ -681,12 +681,12 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 func (cp *CheckpointProcessor) getCheckpointSignatures() ([]checkpointtypes.CheckpointSignature, error) {
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.CheckpointSignaturesURL))
 	if err != nil {
-		return nil, fmt.Errorf("Error while sending request for checkpoint signatures: %v", err)
+		return nil, fmt.Errorf("Error while sending request for checkpoint signatures: %w", err)
 	}
 
 	var res checkpointtypes.QueryCheckpointSignaturesResponse
 	if err := json.Unmarshal(response, &res); err != nil {
-		return nil, fmt.Errorf("Error unmarshalling checkpoint signatures: %v", err)
+		return nil, fmt.Errorf("Error unmarshalling checkpoint signatures: %w", err)
 	}
 
 	return res.Signatures, nil

@@ -131,6 +131,7 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 
 	return app, db, logger
 }
+
 func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 	t.Helper()
 	validators := app.StakeKeeper.GetCurrentValidators(app.NewContext(true))

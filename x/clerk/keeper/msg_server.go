@@ -6,11 +6,10 @@ import (
 	"strconv"
 
 	"cosmossdk.io/errors"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 type msgServer struct {

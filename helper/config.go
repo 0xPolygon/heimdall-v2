@@ -132,9 +132,7 @@ const (
 	MilestoneBufferTime   = 256 * time.Second
 )
 
-var (
-	DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
-)
+var DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
 
 var cdc = amino.NewCodec()
 

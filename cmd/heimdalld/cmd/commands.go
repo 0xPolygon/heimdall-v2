@@ -15,6 +15,10 @@ import (
 
 	"cosmossdk.io/log"
 	confixcmd "cosmossdk.io/tools/confix/cmd"
+	"github.com/0xPolygon/heimdall-v2/app"
+	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/version"
 	cmtcmd "github.com/cometbft/cometbft/cmd/cometbft/commands"
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
@@ -49,11 +53,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/0xPolygon/heimdall-v2/app"
-	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/version"
 )
 
 const (
@@ -67,7 +66,7 @@ const (
 )
 
 const (
-	nodeDirPerm = 0755
+	nodeDirPerm = 0o755
 )
 
 var tempDir = func() string {
@@ -399,7 +398,7 @@ func generateValidatorKey() *cobra.Command {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0600)
+			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
 			if err != nil {
 				return err
 			}
@@ -418,7 +417,6 @@ func importValidatorKey() *cobra.Command {
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			pk, err := ethcrypto.LoadECDSA(args[0])
 			if err != nil {
 				return err
@@ -442,7 +440,7 @@ func importValidatorKey() *cobra.Command {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0600)
+			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
 			if err != nil {
 				return err
 			}
@@ -616,12 +614,12 @@ func InitializeNodeValidatorFiles(
 	nodeID = string(nodeKey.ID())
 
 	pvKeyFile := config.PrivValidatorKeyFile()
-	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0777); err != nil {
+	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0o777); err != nil {
 		return nodeID, valPubKey, privKey, err
 	}
 
 	pvStateFile := config.PrivValidatorStateFile()
-	if err := cmtos.EnsureDir(filepath.Dir(pvStateFile), 0777); err != nil {
+	if err := cmtos.EnsureDir(filepath.Dir(pvStateFile), 0o777); err != nil {
 		return nodeID, valPubKey, privKey, err
 	}
 
@@ -668,9 +666,8 @@ func createKeyStore(pk *ecdsa.PrivateKey) error {
 	}
 
 	// Then write the new keyfile in place of the old one.
-	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0600); err != nil {
+	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0o600); err != nil {
 		return err
 	}
 	return nil
-
 }

@@ -7,13 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type sideMsgServer struct {
@@ -33,7 +32,6 @@ func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 
 // SideTxHandler returns a side handler for "checkpoint" type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
-
 	switch methodName {
 	case checkpointTypeUrl:
 		return srv.SideHandleMsgCheckpoint
@@ -46,7 +44,6 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 
 // PostTxHandler returns a post handler for "checkpoint" type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
-
 	switch methodName {
 	case checkpointTypeUrl:
 		return srv.PostHandleMsgCheckpoint
@@ -147,12 +144,13 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	root, start, end, _, proposer, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
+	headerInfo, err := contractCaller.GetHeaderInfo(msg.Number, rootChainInstance, params.ChildChainBlockInterval)
 	if err != nil {
 		logger.Error("unable to fetch checkpoint from rootChain", "checkpointNumber", msg.Number, "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	root, start, end, proposer := headerInfo.Root, headerInfo.Start, headerInfo.End, headerInfo.Proposer
 	// check if message data matches with contract data
 	if msg.StartBlock != start ||
 		msg.EndBlock != end ||

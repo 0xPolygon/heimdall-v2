@@ -3,14 +3,12 @@ package keeper_test
 import (
 	"math/big"
 
-	"github.com/stretchr/testify/mock"
-
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
-
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	"github.com/stretchr/testify/mock"
 )
 
 func (s *KeeperTestSuite) TestGetLatestSpan() {

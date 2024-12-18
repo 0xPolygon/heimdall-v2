@@ -8,6 +8,14 @@ import (
 	"sort"
 
 	"cosmossdk.io/log"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cmtCrypto "github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -19,15 +27,6 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
@@ -35,7 +34,6 @@ import (
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
 func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
-
 	// check if VEs are enabled
 	panicOnVoteExtensionsDisabled(ctx, reqHeight+1)
 
@@ -53,7 +51,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 		return err
 	}
 
-	var totalVotingPower = validatorSet.GetTotalVotingPower()
+	totalVotingPower := validatorSet.GetTotalVotingPower()
 	sumVP := int64(0)
 
 	// Map to track seen validator addresses
@@ -391,7 +389,6 @@ func ValidateNonRpVoteExtensions(
 	contractCaller helper.IContractCaller,
 	logger log.Logger,
 ) error {
-
 	if height <= retrieveVoteExtensionsEnableHeight(ctx) {
 		return nil
 	}
@@ -537,7 +534,6 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 // validateCheckpointMsgData validates the extension is valid checkpoint
 func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKeeper chainManagerKeeper.Keeper, checkpointKeeper checkpointKeeper.Keeper, contractCaller helper.IContractCaller) error {
-
 	checkpointMsg, err := checkpointTypes.UnpackCheckpointSideSignBytes(extension)
 	if err != nil {
 		return fmt.Errorf("failed to unpack checkpoint side sign bytes: %w", err)
