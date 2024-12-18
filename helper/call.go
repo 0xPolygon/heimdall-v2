@@ -47,7 +47,7 @@ var ContractsABIsMap = make(map[string]*abi.ABI)
 
 // IContractCaller represents contract caller
 type IContractCaller interface {
-	GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (headerInfo HeaderInfo, err error)
+	GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (root common.Hash, start, end, createdAt uint64, proposer string, err error)
 	GetRootHash(start, end, checkpointLength uint64) ([]byte, error)
 	GetVoteOnHash(start, end uint64, hash, milestoneID string) (bool, error)
 	GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error)
@@ -130,14 +130,6 @@ type txExtraInfo struct {
 
 type rpcTransaction struct {
 	txExtraInfo
-}
-
-type HeaderInfo struct {
-	Root      common.Hash
-	Start     uint64
-	End       uint64
-	CreatedAt uint64
-	Proposer  string
 }
 
 // NewContractCaller contract caller
@@ -328,22 +320,28 @@ func (c *ContractCaller) GetTokenInstance(tokenAddress string) (*erc20.Erc20, er
 }
 
 // GetHeaderInfo get header info from checkpoint number
-func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (HeaderInfo, error) {
+func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (
+	root common.Hash,
+	start,
+	end,
+	createdAt uint64,
+	proposer string,
+	err error,
+) {
 	// get header from rootChain
 	checkpointBigInt := big.NewInt(0).Mul(big.NewInt(0).SetUint64(headerID), big.NewInt(0).SetUint64(childBlockInterval))
 
 	headerBlock, err := rootChainInstance.HeaderBlocks(nil, checkpointBigInt)
 	if err != nil {
-		return HeaderInfo{}, errors.New("unable to fetch checkpoint block")
+		return root, start, end, createdAt, proposer, errors.New("unable to fetch checkpoint block")
 	}
 
-	return HeaderInfo{
-		headerBlock.Root,
+	return headerBlock.Root,
 		headerBlock.Start.Uint64(),
 		headerBlock.End.Uint64(),
 		headerBlock.CreatedAt.Uint64(),
 		headerBlock.Proposer.String(),
-	}, nil
+		nil
 }
 
 // GetRootHash get root hash from bor chain for the corresponding start and end block
