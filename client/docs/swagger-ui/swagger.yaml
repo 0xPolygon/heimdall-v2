@@ -50,169 +50,6 @@ paths:
                       format: byte
       tags:
         - Query
-  /bor/span-prepare/{span_id}:
-    get:
-      summary: GetNextSpan queries the next span given a QueryNextSpanRequest.
-      operationId: GetNextSpan
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              span:
-                type: object
-                properties:
-                  id:
-                    type: string
-                    format: uint64
-                  start_block:
-                    type: string
-                    format: uint64
-                  end_block:
-                    type: string
-                    format: uint64
-                  validator_set:
-                    type: object
-                    properties:
-                      validators:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            val_id:
-                              type: string
-                              format: uint64
-                            start_epoch:
-                              type: string
-                              format: uint64
-                            end_epoch:
-                              type: string
-                              format: uint64
-                            nonce:
-                              type: string
-                              format: uint64
-                            voting_power:
-                              type: string
-                              format: int64
-                            pub_key:
-                              type: string
-                              format: byte
-                            signer:
-                              type: string
-                            last_updated:
-                              type: string
-                            jailed:
-                              type: boolean
-                            proposer_priority:
-                              type: string
-                              format: int64
-                      proposer:
-                        type: object
-                        properties:
-                          val_id:
-                            type: string
-                            format: uint64
-                          start_epoch:
-                            type: string
-                            format: uint64
-                          end_epoch:
-                            type: string
-                            format: uint64
-                          nonce:
-                            type: string
-                            format: uint64
-                          voting_power:
-                            type: string
-                            format: int64
-                          pub_key:
-                            type: string
-                            format: byte
-                          signer:
-                            type: string
-                          last_updated:
-                            type: string
-                          jailed:
-                            type: boolean
-                          proposer_priority:
-                            type: string
-                            format: int64
-                      total_voting_power:
-                        type: string
-                        format: int64
-                  selected_producers:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        val_id:
-                          type: string
-                          format: uint64
-                        start_epoch:
-                          type: string
-                          format: uint64
-                        end_epoch:
-                          type: string
-                          format: uint64
-                        nonce:
-                          type: string
-                          format: uint64
-                        voting_power:
-                          type: string
-                          format: int64
-                        pub_key:
-                          type: string
-                          format: byte
-                        signer:
-                          type: string
-                        last_updated:
-                          type: string
-                        jailed:
-                          type: boolean
-                        proposer_priority:
-                          type: string
-                          format: int64
-                  bor_chain_id:
-                    type: string
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: span_id
-          in: path
-          required: true
-          type: string
-          format: uint64
-        - name: start_block
-          in: query
-          required: false
-          type: string
-          format: uint64
-        - name: bor_chain_id
-          in: query
-          required: false
-          type: string
-      tags:
-        - Query
   /bor/span/latest:
     get:
       summary: GetLatestSpan queries the latest span.
@@ -594,6 +431,169 @@ paths:
           in: query
           required: false
           type: boolean
+      tags:
+        - Query
+  /bor/span/prepare/{span_id}:
+    get:
+      summary: GetNextSpan queries the next span given a QueryNextSpanRequest.
+      operationId: GetNextSpan
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              span:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uint64
+                  start_block:
+                    type: string
+                    format: uint64
+                  end_block:
+                    type: string
+                    format: uint64
+                  validator_set:
+                    type: object
+                    properties:
+                      validators:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            val_id:
+                              type: string
+                              format: uint64
+                            start_epoch:
+                              type: string
+                              format: uint64
+                            end_epoch:
+                              type: string
+                              format: uint64
+                            nonce:
+                              type: string
+                              format: uint64
+                            voting_power:
+                              type: string
+                              format: int64
+                            pub_key:
+                              type: string
+                              format: byte
+                            signer:
+                              type: string
+                            last_updated:
+                              type: string
+                            jailed:
+                              type: boolean
+                            proposer_priority:
+                              type: string
+                              format: int64
+                      proposer:
+                        type: object
+                        properties:
+                          val_id:
+                            type: string
+                            format: uint64
+                          start_epoch:
+                            type: string
+                            format: uint64
+                          end_epoch:
+                            type: string
+                            format: uint64
+                          nonce:
+                            type: string
+                            format: uint64
+                          voting_power:
+                            type: string
+                            format: int64
+                          pub_key:
+                            type: string
+                            format: byte
+                          signer:
+                            type: string
+                          last_updated:
+                            type: string
+                          jailed:
+                            type: boolean
+                          proposer_priority:
+                            type: string
+                            format: int64
+                      total_voting_power:
+                        type: string
+                        format: int64
+                  selected_producers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        val_id:
+                          type: string
+                          format: uint64
+                        start_epoch:
+                          type: string
+                          format: uint64
+                        end_epoch:
+                          type: string
+                          format: uint64
+                        nonce:
+                          type: string
+                          format: uint64
+                        voting_power:
+                          type: string
+                          format: int64
+                        pub_key:
+                          type: string
+                          format: byte
+                        signer:
+                          type: string
+                        last_updated:
+                          type: string
+                        jailed:
+                          type: boolean
+                        proposer_priority:
+                          type: string
+                          format: int64
+                  bor_chain_id:
+                    type: string
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: span_id
+          in: path
+          required: true
+          type: string
+          format: uint64
+        - name: start_block
+          in: query
+          required: false
+          type: string
+          format: uint64
+        - name: bor_chain_id
+          in: query
+          required: false
+          type: string
       tags:
         - Query
   /bor/span/seed/{id}:

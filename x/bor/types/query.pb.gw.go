@@ -602,7 +602,7 @@ var (
 
 	pattern_Query_GetNextSpanSeed_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"bor", "span", "seed", "id"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetNextSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"bor", "span-prepare", "span_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetNextSpan_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 1, 0, 4, 1, 5, 3}, []string{"bor", "span", "prepare", "span_id"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetBorParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"bor", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 )
