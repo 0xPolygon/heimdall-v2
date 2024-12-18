@@ -3,7 +3,6 @@ package processor
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -110,7 +109,7 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 		// log new span
 		sp.Logger.Info("✅ Proposing new span", "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock)
 
-		seed, err := sp.fetchNextSpanSeed(nextSpanMsg.Id)
+		seed, seedAuthor, err := sp.fetchNextSpanSeed(nextSpanMsg.Id)
 		if err != nil {
 			sp.Logger.Info("Error while fetching next span seed from HeimdallServer", "err", err)
 			return
@@ -124,6 +123,7 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 			EndBlock:   nextSpanMsg.EndBlock,
 			ChainId:    nextSpanMsg.BorChainId,
 			Seed:       seed.Bytes(),
+			SeedAuthor: seedAuthor,
 		}
 
 		// return broadcast to heimdall
@@ -238,24 +238,24 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 }
 
 // fetchNextSpanSeed - fetches seed for next span
-func (sp *SpanProcessor) fetchNextSpanSeed(id uint64) (nextSpanSeed common.Hash, err error) {
+func (sp *SpanProcessor) fetchNextSpanSeed(id uint64) (common.Hash, string, error) {
 	sp.Logger.Info("Sending Rest call to Get Seed for next span")
 
 	response, err := helper.FetchFromAPI(fmt.Sprintf(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL), strconv.FormatUint(id, 10)))
 	if err != nil {
 		sp.Logger.Error("Error Fetching nextspanseed from HeimdallServer ", "error", err)
-		return nextSpanSeed, err
+		return common.Hash{}, "", err
 	}
 
 	sp.Logger.Info("Next span seed fetched")
 
 	var nextSpanSeedRes types.QueryNextSpanSeedResponse
-	if err = json.Unmarshal(response, &nextSpanSeedRes); err != nil {
+	if err := sp.cliCtx.Codec.UnmarshalJSON(response, &nextSpanSeedRes); err != nil {
 		sp.Logger.Error("Error unmarshalling nextSpanSeed received from Heimdall Server", "error", err)
-		return nextSpanSeed, err
+		return common.Hash{}, "", err
 	}
 
-	return common.HexToHash(nextSpanSeedRes.Seed), nil
+	return common.HexToHash(nextSpanSeedRes.Seed), nextSpanSeedRes.SeedAuthor, nil
 }
 
 // Stop stops all necessary go routines
