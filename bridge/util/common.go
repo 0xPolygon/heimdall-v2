@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
+	mLog "github.com/RichardKnop/machinery/v1/log"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -18,6 +20,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -84,9 +87,37 @@ const (
 	BridgeDBFlag = "bridge-db"
 )
 
+var logger log.Logger
+var loggerOnce sync.Once
+
 // Logger returns logger singleton instance
 func Logger() log.Logger {
-	return log.NewNopLogger().With("module", "bridge")
+	loggerOnce.Do(func() {
+		defaultLevel := "info"
+		logsWriter := helper.GetLogsWriter(helper.GetConfig().LogsWriterFile)
+		logger = log.NewTMLogger(log.NewSyncWriter(logsWriter))
+		option, err := log.AllowLevel(viper.GetString("log_level"))
+		if err != nil {
+			// cosmos sdk is using different style of log format
+			// and levels don't map well, config.toml
+			// see: https://github.com/cosmos/cosmos-sdk/pull/8072
+			logger.Error("Unable to parse logging level", "Error", err)
+			logger.Info("Using default log level")
+			option, err = log.AllowLevel(defaultLevel)
+			if err != nil {
+				logger.Error("failed to allow default log level", "Level", defaultLevel, "Error", err)
+			}
+		}
+
+		logger = log.NewFilter(logger, option)
+
+		// set no-op logger if log level is not debug for machinery
+		if viper.GetString("log_level") != "debug" {
+			mLog.SetDebug(NoopLogger{})
+		}
+	})
+
+	return logger
 }
 
 // IsProposer checks if we are proposer
@@ -447,13 +478,13 @@ func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
 		return nil, err
 	}
 
-	var checkpoint checkpointTypes.Checkpoint
+	var checkpoint checkpointTypes.QueryCheckpointBufferResponse
 	if err := json.Unmarshal(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling buffered checkpoint", "url", BufferedCheckpointURL, "err", err)
 		return nil, err
 	}
 
-	return &checkpoint, nil
+	return &checkpoint.Checkpoint, nil
 }
 
 // GetLatestCheckpoint return last successful checkpoint
@@ -466,13 +497,13 @@ func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
 		return nil, err
 	}
 
-	var checkpoint checkpointTypes.Checkpoint
+	var checkpoint checkpointTypes.QueryCheckpointLatestResponse
 	if err = json.Unmarshal(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling latest checkpoint", "url", LatestCheckpointURL, "err", err)
 		return nil, err
 	}
 
-	return &checkpoint, nil
+	return &checkpoint.Checkpoint, nil
 }
 
 // GetLatestMilestone return last successful milestone
@@ -485,32 +516,32 @@ func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
 		return nil, err
 	}
 
-	var milestone milestoneTypes.Milestone
-	if err = json.Unmarshal(response, &milestone); err != nil {
+	var milestoneResp milestoneTypes.QueryLatestMilestoneResponse
+	if err = json.Unmarshal(response, &milestoneResp); err != nil {
 		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
 		return nil, err
 	}
 
-	return &milestone, nil
+	return &milestoneResp.Milestone, nil
 }
 
 // GetMilestoneCount return milestones count
-func GetMilestoneCount() (*milestoneTypes.MilestoneCount, error) {
+func GetMilestoneCount() (uint64, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
 	if err != nil {
 		logger.Error("Error fetching Milestone count", "err", err)
-		return nil, err
+		return 0, err
 	}
 
-	var count milestoneTypes.MilestoneCount
+	var count milestoneTypes.QueryCountResponse
 	if err := json.Unmarshal(response, &count); err != nil {
 		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
-		return nil, err
+		return 0, err
 	}
 
-	return &count, nil
+	return count.Count, nil
 }
 
 // AppendPrefix returns PublicKey in uncompressed format
