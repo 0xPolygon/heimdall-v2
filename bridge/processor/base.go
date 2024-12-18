@@ -64,7 +64,7 @@ type BaseProcessor struct {
 
 // Logger returns logger singleton instance
 func Logger(name string) log.Logger {
-	return log.NewNopLogger().With("service", "processor", "module", name)
+	return util.Logger().With("service", "processor", "module", name)
 }
 
 // NewBaseProcessor creates a new BaseProcessor.
