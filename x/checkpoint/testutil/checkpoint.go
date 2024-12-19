@@ -3,8 +3,9 @@ package testutil
 import (
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 // GenRandCheckpoint returns a random checkpoint header

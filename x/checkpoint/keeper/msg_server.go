@@ -10,12 +10,13 @@ import (
 	"time"
 
 	errorsmod "cosmossdk.io/errors"
-	util "github.com/0xPolygon/heimdall-v2/common/address"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 type msgServer struct {

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // InitGenesis sets validator information for genesis in x/stake module

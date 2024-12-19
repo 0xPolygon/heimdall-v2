@@ -4,11 +4,12 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const maxSpanListLimitPerPage = 1000

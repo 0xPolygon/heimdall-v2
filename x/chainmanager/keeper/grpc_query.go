@@ -3,9 +3,10 @@ package keeper
 import (
 	"context"
 
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 var _ types.QueryServer = queryServer{}

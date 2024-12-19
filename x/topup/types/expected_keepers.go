@@ -3,8 +3,9 @@ package types
 import (
 	"context"
 
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 // BankKeeper defines the bank keeper contract used by x/topup module

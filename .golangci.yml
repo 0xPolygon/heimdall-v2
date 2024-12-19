@@ -48,9 +48,16 @@ linters:
     - unparam
     - unused
     # - wsl
-    #- errorlint
 
 linters-settings:
+  gci:
+    sections:
+      - Standard
+      - Default
+      - Prefix(github.com/0xPolygon/heimdall-v2)
+    skip-generated: true
+    separate-by-group: true
+
   gofmt:
     simplify: true
 

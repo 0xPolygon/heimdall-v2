@@ -7,12 +7,6 @@ import (
 	"time"
 
 	"cosmossdk.io/core/appmodule"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
-	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	stakeSimulation "github.com/0xPolygon/heimdall-v2/x/stake/simulation"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -23,6 +17,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
+	"github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeSimulation "github.com/0xPolygon/heimdall-v2/x/stake/simulation"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // ConsensusVersion defines the current x/stake module consensus version.

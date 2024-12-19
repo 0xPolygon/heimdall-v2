@@ -6,14 +6,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethCommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rpc"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 // RootChainListenerContext root chain listener context

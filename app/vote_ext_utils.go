@@ -8,14 +8,6 @@ import (
 	"sort"
 
 	"cosmossdk.io/log"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cmtCrypto "github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
@@ -27,6 +19,15 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness

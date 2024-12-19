@@ -13,12 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -26,6 +20,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 // CheckpointProcessor - processor for checkpoint queue.

@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"math/big"
 
-	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
+	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 var _ types.QueryServer = queryServer{}

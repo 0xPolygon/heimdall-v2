@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
+
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 // GenRandMilestone creates and returns a random milestone

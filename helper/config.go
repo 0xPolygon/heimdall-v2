@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/file"
-	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -23,6 +21,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
+
+	"github.com/0xPolygon/heimdall-v2/file"
+	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 )
 
 const (

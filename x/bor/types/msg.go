@@ -1,8 +1,9 @@
 package types
 
 import (
-	util "github.com/0xPolygon/heimdall-v2/common/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 var _ sdk.Msg = &MsgProposeSpan{}

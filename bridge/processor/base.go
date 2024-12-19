@@ -7,11 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
-	"github.com/0xPolygon/heimdall-v2/bridge/queue"
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/cometbft/cometbft/libs/log"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -21,6 +16,12 @@ import (
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/spf13/viper"
 	"github.com/syndtr/goleveldb/leveldb"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/broadcaster"
+	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 // Processor defines a block header listener for Rootchain, Borchain, Heimdall

@@ -9,14 +9,15 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
-	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
-	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+
+	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakemanager"
 )
 
 func GenerateAuthObj(client *ethclient.Client, address common.Address, data []byte) (auth *bind.TransactOpts, err error) {

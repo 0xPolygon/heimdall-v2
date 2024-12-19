@@ -8,6 +8,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/rpc"
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/pkg/errors"
+
 	"github.com/0xPolygon/heimdall-v2/contracts/erc20"
 	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 	"github.com/0xPolygon/heimdall-v2/contracts/slashmanager"
@@ -18,15 +28,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
 	"github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
-	lru "github.com/hashicorp/golang-lru"
-	"github.com/pkg/errors"
 )
 
 // smart contracts' events names

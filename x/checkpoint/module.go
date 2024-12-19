@@ -6,10 +6,6 @@ import (
 	"fmt"
 
 	"cosmossdk.io/core/appmodule"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/client/cli"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -17,6 +13,11 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	gwruntime "github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
+
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/client/cli"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 // ConsensusVersion defines the current x/checkpoint module consensus version.

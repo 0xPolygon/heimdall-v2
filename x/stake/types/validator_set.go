@@ -7,9 +7,10 @@ import (
 	"sort"
 	"strings"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
 // MaxTotalVotingPower - the maximum allowed total voting power.

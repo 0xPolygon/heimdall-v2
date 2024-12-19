@@ -3,9 +3,10 @@ package app
 import (
 	"encoding/json"
 
-	"github.com/0xPolygon/heimdall-v2/x/stake"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/stake"
 )
 
 // ExportAppStateAndValidators exports the state of the application for a genesis

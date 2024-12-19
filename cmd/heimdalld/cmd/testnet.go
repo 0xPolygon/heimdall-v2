@@ -7,12 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
-	hmTypes "github.com/0xPolygon/heimdall-v2/types"
-	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/libs/tempfile"
 	cmttime "github.com/cometbft/cometbft/types/time"
@@ -28,6 +22,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/genutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	cmdhelper "github.com/0xPolygon/heimdall-v2/cmd"
+	hmTypes "github.com/0xPolygon/heimdall-v2/types"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // testnetCmd initialises files required to start heimdall testnet

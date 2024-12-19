@@ -6,10 +6,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	stakingTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -18,6 +14,11 @@ import (
 	authTx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	stakingTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const (

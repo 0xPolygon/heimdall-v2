@@ -4,10 +4,11 @@ import (
 	"context"
 	"math"
 
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var _ types.QueryServer = queryServer{}

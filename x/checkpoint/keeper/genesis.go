@@ -3,8 +3,9 @@ package keeper
 import (
 	"context"
 
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 // InitGenesis sets initial state for checkpoint module

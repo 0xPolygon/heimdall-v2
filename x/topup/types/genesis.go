@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/0xPolygon/heimdall-v2/types"
 	"github.com/cosmos/cosmos-sdk/codec"
+
+	"github.com/0xPolygon/heimdall-v2/types"
 )
 
 // NewGenesisState creates a new genesis state for x/topup module

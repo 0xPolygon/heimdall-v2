@@ -5,9 +5,10 @@ import (
 	"math"
 	"math/rand"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/0xPolygon/heimdall-v2/helper"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // selectNextProducers selects producers for next span

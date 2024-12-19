@@ -3,8 +3,9 @@ package types
 import (
 	"fmt"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 // Default parameter values
