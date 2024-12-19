@@ -4,10 +4,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 func (s *KeeperTestSuite) TestInitExportGenesis() {

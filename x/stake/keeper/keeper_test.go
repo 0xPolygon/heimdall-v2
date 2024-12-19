@@ -7,15 +7,6 @@ import (
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
-	util "github.com/0xPolygon/heimdall-v2/common/address"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
-	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
-	testUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -30,6 +21,16 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	cmKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	testUtil "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var (

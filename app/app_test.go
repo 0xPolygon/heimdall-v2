@@ -4,13 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/x/bor"
-	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
-	"github.com/0xPolygon/heimdall-v2/x/clerk"
-	"github.com/0xPolygon/heimdall-v2/x/milestone"
-	"github.com/0xPolygon/heimdall-v2/x/stake"
-	"github.com/0xPolygon/heimdall-v2/x/topup"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
@@ -21,6 +14,14 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/x/bor"
+	"github.com/0xPolygon/heimdall-v2/x/chainmanager"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint"
+	"github.com/0xPolygon/heimdall-v2/x/clerk"
+	"github.com/0xPolygon/heimdall-v2/x/milestone"
+	"github.com/0xPolygon/heimdall-v2/x/stake"
+	"github.com/0xPolygon/heimdall-v2/x/topup"
 )
 
 func TestHeimdallAppExport(t *testing.T) {

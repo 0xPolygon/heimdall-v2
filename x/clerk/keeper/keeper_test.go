@@ -7,11 +7,6 @@ import (
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -23,6 +18,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
 var (

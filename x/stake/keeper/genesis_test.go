@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+
+	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func (s *KeeperTestSuite) TestInitExportGenesis() {

@@ -5,15 +5,16 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/ethereum/go-ethereum/common"
+
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 	stakingtypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 const (

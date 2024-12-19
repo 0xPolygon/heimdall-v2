@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/golang/mock/gomock"
+
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 func (s *KeeperTestSuite) TestCreateTopupTx() {

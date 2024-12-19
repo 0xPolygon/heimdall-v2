@@ -5,13 +5,6 @@ import (
 	"time"
 
 	storetypes "cosmossdk.io/store/types"
-	util "github.com/0xPolygon/heimdall-v2/common/address"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -24,6 +17,14 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
+
+	util "github.com/0xPolygon/heimdall-v2/common/address"
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 const (

@@ -5,10 +5,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/contracts/rootchain"
 )
 
 func TestUnpackSigAndVotes(t *testing.T) {

@@ -4,15 +4,16 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 )
 
 func (s *KeeperTestSuite) TestSideHandleMsgSpan() {

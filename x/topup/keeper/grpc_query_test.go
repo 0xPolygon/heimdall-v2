@@ -5,17 +5,18 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/mock"
+
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
 )
 
 func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {

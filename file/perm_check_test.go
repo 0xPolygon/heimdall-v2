@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	types "github.com/0xPolygon/heimdall-v2/types/error"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/stretchr/testify/assert"
+
+	types "github.com/0xPolygon/heimdall-v2/types/error"
 )
 
 func TestPermCheck(t *testing.T) {

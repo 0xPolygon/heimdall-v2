@@ -7,11 +7,6 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
-	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
@@ -20,6 +15,12 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote {

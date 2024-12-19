@@ -4,10 +4,11 @@ import (
 	"reflect"
 	"testing"
 
-	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var TestValidators = []staketypes.Validator{

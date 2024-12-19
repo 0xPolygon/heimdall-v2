@@ -6,12 +6,6 @@ import (
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
-	"github.com/0xPolygon/heimdall-v2/helper/mocks"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
-	bortestutil "github.com/0xPolygon/heimdall-v2/x/bor/testutil"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -26,6 +20,13 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/0xPolygon/heimdall-v2/helper/mocks"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	bortestutil "github.com/0xPolygon/heimdall-v2/x/bor/testutil"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 type KeeperTestSuite struct {
