@@ -81,12 +81,12 @@ func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, er
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %s", err)
+		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %w", err)
 	}
 
 	var response stateSyncResponse
 	if err = json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal graph response: %s", err)
+		return nil, fmt.Errorf("unable to unmarshal graph response: %w", err)
 	}
 
 	if len(response.Data.StateSyncs) == 0 {
@@ -141,12 +141,12 @@ func (rl *RootChainListener) getStateSync(ctx context.Context, stateId int64) (*
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %s", err)
+		return nil, fmt.Errorf("unable to fetch latest state id from graph with err: %w", err)
 	}
 
 	var response stateSyncResponse
 	if err = json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal graph response: %s", err)
+		return nil, fmt.Errorf("unable to unmarshal graph response: %w", err)
 	}
 
 	if len(response.Data.StateSyncs) == 0 {
@@ -186,7 +186,7 @@ func (rl *RootChainListener) getLatestNonce(ctx context.Context, validatorId uin
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return 0, fmt.Errorf("unable to fetch latest nonce from graph with err: %s", err)
+		return 0, fmt.Errorf("unable to fetch latest nonce from graph with err: %w", err)
 	}
 
 	var response stakeUpdateResponse
@@ -226,7 +226,7 @@ func (rl *RootChainListener) getStakeUpdate(ctx context.Context, validatorId, no
 
 	data, err := rl.querySubGraph(byteQuery, ctx)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch stake update from graph with err: %s", err)
+		return nil, fmt.Errorf("unable to fetch stake update from graph with err: %w", err)
 	}
 
 	var response stakeUpdateResponse

@@ -390,7 +390,6 @@ func migrateGovModule(genesisData map[string]interface{}) error {
 
 	newProposals := make([]*govTypes.Proposal, len(oldGovState.Proposals))
 	for i, oldProposal := range oldGovState.Proposals {
-
 		newProposals[i] = &govTypes.Proposal{
 			Id:       oldProposal.ProposalID,
 			Messages: []*codecTypes.Any{utils.MigrateGovProposalContent(oldProposal.Content)},
@@ -838,8 +837,10 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	return nil
 }
 
-var appCodec *codec.ProtoCodec
-var legacyAmino *codec.LegacyAmino
+var (
+	appCodec    *codec.ProtoCodec
+	legacyAmino *codec.LegacyAmino
+)
 
 const (
 	flagChainId       = "chain-id"

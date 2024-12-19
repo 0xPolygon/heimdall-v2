@@ -13,12 +13,15 @@ linters:
     - copyloopvar
     - decorder
     - durationcheck
+    - errcheck
     - errchkjson
     - errname
+    - errorlint
     # - exhaustive
     # - gocognit
+    - gci
     - goconst
-    - gofmt
+    - gofumpt
     - goimports
     # - gomnd
     #- gomoddirectives
@@ -29,6 +32,7 @@ linters:
     - nilerr
     - nilnil
     - noctx
+    - nolintlint
     #- nosprintfhostport
     - paralleltest
     - prealloc
@@ -39,12 +43,21 @@ linters:
     - tenv
     - thelper
     - tparallel
+    - typecheck
     - unconvert
     - unparam
+    - unused
     # - wsl
-    #- errorlint
 
 linters-settings:
+  gci:
+    sections:
+      - Standard
+      - Default
+      - Prefix(github.com/0xPolygon/heimdall-v2)
+    skip-generated: true
+    separate-by-group: true
+
   gofmt:
     simplify: true
 

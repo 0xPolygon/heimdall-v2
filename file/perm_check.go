@@ -13,12 +13,10 @@ import (
 func PermCheck(filePath string, validPerm os.FileMode) error {
 	// get path to keystore files
 	f, err := os.Stat(filePath)
-
 	if err != nil {
 
 		if errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("no file exist corresponding to this path: %s", filePath)
-
 		}
 
 		if !errors.Is(err, os.ErrExist) {

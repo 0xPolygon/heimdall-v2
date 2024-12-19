@@ -1247,7 +1247,8 @@ func (_m *IContractCaller) StakeFor(_a0 common.Address, _a1 *big.Int, _a2 *big.I
 func NewIContractCaller(t interface {
 	mock.TestingT
 	Cleanup(func())
-}) *IContractCaller {
+},
+) *IContractCaller {
 	mock := &IContractCaller{}
 	mock.Mock.Test(t)
 

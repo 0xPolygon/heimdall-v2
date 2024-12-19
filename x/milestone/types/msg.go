@@ -10,8 +10,10 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
 
-var _ sdk.Msg = &MsgMilestone{}
-var _ sdk.Msg = &MsgMilestoneTimeout{}
+var (
+	_ sdk.Msg = &MsgMilestone{}
+	_ sdk.Msg = &MsgMilestoneTimeout{}
+)
 
 // NewMsgMilestoneBlock creates new milestone message using mentioned arguments
 func NewMsgMilestoneBlock(

@@ -185,7 +185,6 @@ func (_Stakemanager *StakemanagerTransactorRaw) Transact(opts *bind.TransactOpts
 func (_Stakemanager *StakemanagerCaller) CHECKPOINTREWARD(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "CHECKPOINT_REWARD")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -193,7 +192,6 @@ func (_Stakemanager *StakemanagerCaller) CHECKPOINTREWARD(opts *bind.CallOpts) (
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // CHECKPOINTREWARD is a free data retrieval call binding the contract method 0x7d669752.
@@ -216,7 +214,6 @@ func (_Stakemanager *StakemanagerCallerSession) CHECKPOINTREWARD() (*big.Int, er
 func (_Stakemanager *StakemanagerCaller) NFTContract(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "NFTContract")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -224,7 +221,6 @@ func (_Stakemanager *StakemanagerCaller) NFTContract(opts *bind.CallOpts) (commo
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // NFTContract is a free data retrieval call binding the contract method 0x31c2273b.
@@ -247,7 +243,6 @@ func (_Stakemanager *StakemanagerCallerSession) NFTContract() (common.Address, e
 func (_Stakemanager *StakemanagerCaller) NFTCounter(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "NFTCounter")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -255,7 +250,6 @@ func (_Stakemanager *StakemanagerCaller) NFTCounter(opts *bind.CallOpts) (*big.I
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // NFTCounter is a free data retrieval call binding the contract method 0x5508d8e1.
@@ -278,7 +272,6 @@ func (_Stakemanager *StakemanagerCallerSession) NFTCounter() (*big.Int, error) {
 func (_Stakemanager *StakemanagerCaller) WITHDRAWALDELAY(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "WITHDRAWAL_DELAY")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -286,7 +279,6 @@ func (_Stakemanager *StakemanagerCaller) WITHDRAWALDELAY(opts *bind.CallOpts) (*
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // WITHDRAWALDELAY is a free data retrieval call binding the contract method 0x0ebb172a.
@@ -309,7 +301,6 @@ func (_Stakemanager *StakemanagerCallerSession) WITHDRAWALDELAY() (*big.Int, err
 func (_Stakemanager *StakemanagerCaller) AccountStateRoot(opts *bind.CallOpts) ([32]byte, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "accountStateRoot")
-
 	if err != nil {
 		return *new([32]byte), err
 	}
@@ -317,7 +308,6 @@ func (_Stakemanager *StakemanagerCaller) AccountStateRoot(opts *bind.CallOpts) (
 	out0 := *abi.ConvertType(out[0], new([32]byte)).(*[32]byte)
 
 	return out0, err
-
 }
 
 // AccountStateRoot is a free data retrieval call binding the contract method 0x17c2b910.
@@ -340,7 +330,6 @@ func (_Stakemanager *StakemanagerCallerSession) AccountStateRoot() ([32]byte, er
 func (_Stakemanager *StakemanagerCaller) AuctionPeriod(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "auctionPeriod")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -348,7 +337,6 @@ func (_Stakemanager *StakemanagerCaller) AuctionPeriod(opts *bind.CallOpts) (*bi
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // AuctionPeriod is a free data retrieval call binding the contract method 0x0cccfc58.
@@ -371,7 +359,6 @@ func (_Stakemanager *StakemanagerCallerSession) AuctionPeriod() (*big.Int, error
 func (_Stakemanager *StakemanagerCaller) CheckPointBlockInterval(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "checkPointBlockInterval")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -379,7 +366,6 @@ func (_Stakemanager *StakemanagerCaller) CheckPointBlockInterval(opts *bind.Call
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // CheckPointBlockInterval is a free data retrieval call binding the contract method 0x25316411.
@@ -402,7 +388,6 @@ func (_Stakemanager *StakemanagerCallerSession) CheckPointBlockInterval() (*big.
 func (_Stakemanager *StakemanagerCaller) CurrentEpoch(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "currentEpoch")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -410,7 +395,6 @@ func (_Stakemanager *StakemanagerCaller) CurrentEpoch(opts *bind.CallOpts) (*big
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // CurrentEpoch is a free data retrieval call binding the contract method 0x76671808.
@@ -433,7 +417,6 @@ func (_Stakemanager *StakemanagerCallerSession) CurrentEpoch() (*big.Int, error)
 func (_Stakemanager *StakemanagerCaller) CurrentValidatorSetSize(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "currentValidatorSetSize")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -441,7 +424,6 @@ func (_Stakemanager *StakemanagerCaller) CurrentValidatorSetSize(opts *bind.Call
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // CurrentValidatorSetSize is a free data retrieval call binding the contract method 0x7f952d95.
@@ -464,7 +446,6 @@ func (_Stakemanager *StakemanagerCallerSession) CurrentValidatorSetSize() (*big.
 func (_Stakemanager *StakemanagerCaller) CurrentValidatorSetTotalStake(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "currentValidatorSetTotalStake")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -472,7 +453,6 @@ func (_Stakemanager *StakemanagerCaller) CurrentValidatorSetTotalStake(opts *bin
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // CurrentValidatorSetTotalStake is a free data retrieval call binding the contract method 0xa4769071.
@@ -495,7 +475,6 @@ func (_Stakemanager *StakemanagerCallerSession) CurrentValidatorSetTotalStake() 
 func (_Stakemanager *StakemanagerCaller) DelegationEnabled(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "delegationEnabled")
-
 	if err != nil {
 		return *new(bool), err
 	}
@@ -503,7 +482,6 @@ func (_Stakemanager *StakemanagerCaller) DelegationEnabled(opts *bind.CallOpts) 
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
-
 }
 
 // DelegationEnabled is a free data retrieval call binding the contract method 0x54b8c601.
@@ -526,7 +504,6 @@ func (_Stakemanager *StakemanagerCallerSession) DelegationEnabled() (bool, error
 func (_Stakemanager *StakemanagerCaller) Dynasty(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "dynasty")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -534,7 +511,6 @@ func (_Stakemanager *StakemanagerCaller) Dynasty(opts *bind.CallOpts) (*big.Int,
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // Dynasty is a free data retrieval call binding the contract method 0x7060054d.
@@ -557,7 +533,6 @@ func (_Stakemanager *StakemanagerCallerSession) Dynasty() (*big.Int, error) {
 func (_Stakemanager *StakemanagerCaller) Epoch(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "epoch")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -565,7 +540,6 @@ func (_Stakemanager *StakemanagerCaller) Epoch(opts *bind.CallOpts) (*big.Int, e
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // Epoch is a free data retrieval call binding the contract method 0x900cf0cf.
@@ -588,7 +562,6 @@ func (_Stakemanager *StakemanagerCallerSession) Epoch() (*big.Int, error) {
 func (_Stakemanager *StakemanagerCaller) Factory(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "factory")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -596,7 +569,6 @@ func (_Stakemanager *StakemanagerCaller) Factory(opts *bind.CallOpts) (common.Ad
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // Factory is a free data retrieval call binding the contract method 0xc45a0155.
@@ -619,7 +591,6 @@ func (_Stakemanager *StakemanagerCallerSession) Factory() (common.Address, error
 func (_Stakemanager *StakemanagerCaller) GetCurrentValidatorSet(opts *bind.CallOpts) ([]*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "getCurrentValidatorSet")
-
 	if err != nil {
 		return *new([]*big.Int), err
 	}
@@ -627,7 +598,6 @@ func (_Stakemanager *StakemanagerCaller) GetCurrentValidatorSet(opts *bind.CallO
 	out0 := *abi.ConvertType(out[0], new([]*big.Int)).(*[]*big.Int)
 
 	return out0, err
-
 }
 
 // GetCurrentValidatorSet is a free data retrieval call binding the contract method 0x0209fdd0.
@@ -650,7 +620,6 @@ func (_Stakemanager *StakemanagerCallerSession) GetCurrentValidatorSet() ([]*big
 func (_Stakemanager *StakemanagerCaller) GetValidatorContract(opts *bind.CallOpts, validatorId *big.Int) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "getValidatorContract", validatorId)
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -658,7 +627,6 @@ func (_Stakemanager *StakemanagerCaller) GetValidatorContract(opts *bind.CallOpt
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // GetValidatorContract is a free data retrieval call binding the contract method 0x56342d8c.
@@ -681,7 +649,6 @@ func (_Stakemanager *StakemanagerCallerSession) GetValidatorContract(validatorId
 func (_Stakemanager *StakemanagerCaller) GetValidatorId(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "getValidatorId", user)
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -689,7 +656,6 @@ func (_Stakemanager *StakemanagerCaller) GetValidatorId(opts *bind.CallOpts, use
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // GetValidatorId is a free data retrieval call binding the contract method 0x174e6832.
@@ -712,7 +678,6 @@ func (_Stakemanager *StakemanagerCallerSession) GetValidatorId(user common.Addre
 func (_Stakemanager *StakemanagerCaller) Governance(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "governance")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -720,7 +685,6 @@ func (_Stakemanager *StakemanagerCaller) Governance(opts *bind.CallOpts) (common
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // Governance is a free data retrieval call binding the contract method 0x5aa6e675.
@@ -743,7 +707,6 @@ func (_Stakemanager *StakemanagerCallerSession) Governance() (common.Address, er
 func (_Stakemanager *StakemanagerCaller) IsOwner(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "isOwner")
-
 	if err != nil {
 		return *new(bool), err
 	}
@@ -751,7 +714,6 @@ func (_Stakemanager *StakemanagerCaller) IsOwner(opts *bind.CallOpts) (bool, err
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
-
 }
 
 // IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
@@ -774,7 +736,6 @@ func (_Stakemanager *StakemanagerCallerSession) IsOwner() (bool, error) {
 func (_Stakemanager *StakemanagerCaller) IsValidator(opts *bind.CallOpts, validatorId *big.Int) (bool, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "isValidator", validatorId)
-
 	if err != nil {
 		return *new(bool), err
 	}
@@ -782,7 +743,6 @@ func (_Stakemanager *StakemanagerCaller) IsValidator(opts *bind.CallOpts, valida
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
-
 }
 
 // IsValidator is a free data retrieval call binding the contract method 0x2649263a.
@@ -805,7 +765,6 @@ func (_Stakemanager *StakemanagerCallerSession) IsValidator(validatorId *big.Int
 func (_Stakemanager *StakemanagerCaller) LatestSignerUpdateEpoch(opts *bind.CallOpts, arg0 *big.Int) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "latestSignerUpdateEpoch", arg0)
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -813,7 +772,6 @@ func (_Stakemanager *StakemanagerCaller) LatestSignerUpdateEpoch(opts *bind.Call
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // LatestSignerUpdateEpoch is a free data retrieval call binding the contract method 0xd7f5549d.
@@ -836,7 +794,6 @@ func (_Stakemanager *StakemanagerCallerSession) LatestSignerUpdateEpoch(arg0 *bi
 func (_Stakemanager *StakemanagerCaller) Locked(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "locked")
-
 	if err != nil {
 		return *new(bool), err
 	}
@@ -844,7 +801,6 @@ func (_Stakemanager *StakemanagerCaller) Locked(opts *bind.CallOpts) (bool, erro
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
-
 }
 
 // Locked is a free data retrieval call binding the contract method 0xcf309012.
@@ -867,7 +823,6 @@ func (_Stakemanager *StakemanagerCallerSession) Locked() (bool, error) {
 func (_Stakemanager *StakemanagerCaller) Logger(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "logger")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -875,7 +830,6 @@ func (_Stakemanager *StakemanagerCaller) Logger(opts *bind.CallOpts) (common.Add
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // Logger is a free data retrieval call binding the contract method 0xf24ccbfe.
@@ -898,7 +852,6 @@ func (_Stakemanager *StakemanagerCallerSession) Logger() (common.Address, error)
 func (_Stakemanager *StakemanagerCaller) MinDeposit(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "minDeposit")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -906,7 +859,6 @@ func (_Stakemanager *StakemanagerCaller) MinDeposit(opts *bind.CallOpts) (*big.I
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // MinDeposit is a free data retrieval call binding the contract method 0x41b3d185.
@@ -929,7 +881,6 @@ func (_Stakemanager *StakemanagerCallerSession) MinDeposit() (*big.Int, error) {
 func (_Stakemanager *StakemanagerCaller) MinHeimdallFee(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "minHeimdallFee")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -937,7 +888,6 @@ func (_Stakemanager *StakemanagerCaller) MinHeimdallFee(opts *bind.CallOpts) (*b
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // MinHeimdallFee is a free data retrieval call binding the contract method 0xfba58f34.
@@ -960,7 +910,6 @@ func (_Stakemanager *StakemanagerCallerSession) MinHeimdallFee() (*big.Int, erro
 func (_Stakemanager *StakemanagerCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "owner")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -968,7 +917,6 @@ func (_Stakemanager *StakemanagerCaller) Owner(opts *bind.CallOpts) (common.Addr
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
@@ -991,7 +939,6 @@ func (_Stakemanager *StakemanagerCallerSession) Owner() (common.Address, error) 
 func (_Stakemanager *StakemanagerCaller) OwnerOf(opts *bind.CallOpts, tokenId *big.Int) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "ownerOf", tokenId)
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -999,7 +946,6 @@ func (_Stakemanager *StakemanagerCaller) OwnerOf(opts *bind.CallOpts, tokenId *b
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // OwnerOf is a free data retrieval call binding the contract method 0x6352211e.
@@ -1022,7 +968,6 @@ func (_Stakemanager *StakemanagerCallerSession) OwnerOf(tokenId *big.Int) (commo
 func (_Stakemanager *StakemanagerCaller) ProposerBonus(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "proposerBonus")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1030,7 +975,6 @@ func (_Stakemanager *StakemanagerCaller) ProposerBonus(opts *bind.CallOpts) (*bi
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // ProposerBonus is a free data retrieval call binding the contract method 0x34274586.
@@ -1053,7 +997,6 @@ func (_Stakemanager *StakemanagerCallerSession) ProposerBonus() (*big.Int, error
 func (_Stakemanager *StakemanagerCaller) PubToAddress(opts *bind.CallOpts, pub []byte) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "pubToAddress", pub)
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -1061,7 +1004,6 @@ func (_Stakemanager *StakemanagerCaller) PubToAddress(opts *bind.CallOpts, pub [
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // PubToAddress is a free data retrieval call binding the contract method 0xd0110274.
@@ -1084,7 +1026,6 @@ func (_Stakemanager *StakemanagerCallerSession) PubToAddress(pub []byte) (common
 func (_Stakemanager *StakemanagerCaller) Registry(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "registry")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -1092,7 +1033,6 @@ func (_Stakemanager *StakemanagerCaller) Registry(opts *bind.CallOpts) (common.A
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // Registry is a free data retrieval call binding the contract method 0x7b103999.
@@ -1115,7 +1055,6 @@ func (_Stakemanager *StakemanagerCallerSession) Registry() (common.Address, erro
 func (_Stakemanager *StakemanagerCaller) ReplacementCoolDown(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "replacementCoolDown")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1123,7 +1062,6 @@ func (_Stakemanager *StakemanagerCaller) ReplacementCoolDown(opts *bind.CallOpts
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // ReplacementCoolDown is a free data retrieval call binding the contract method 0x77939d10.
@@ -1146,7 +1084,6 @@ func (_Stakemanager *StakemanagerCallerSession) ReplacementCoolDown() (*big.Int,
 func (_Stakemanager *StakemanagerCaller) RootChain(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "rootChain")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -1154,7 +1091,6 @@ func (_Stakemanager *StakemanagerCaller) RootChain(opts *bind.CallOpts) (common.
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // RootChain is a free data retrieval call binding the contract method 0x987ab9db.
@@ -1177,7 +1113,6 @@ func (_Stakemanager *StakemanagerCallerSession) RootChain() (common.Address, err
 func (_Stakemanager *StakemanagerCaller) SignerToValidator(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "signerToValidator", arg0)
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1185,7 +1120,6 @@ func (_Stakemanager *StakemanagerCaller) SignerToValidator(opts *bind.CallOpts, 
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // SignerToValidator is a free data retrieval call binding the contract method 0x3862da0b.
@@ -1208,7 +1142,6 @@ func (_Stakemanager *StakemanagerCallerSession) SignerToValidator(arg0 common.Ad
 func (_Stakemanager *StakemanagerCaller) SignerUpdateLimit(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "signerUpdateLimit")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1216,7 +1149,6 @@ func (_Stakemanager *StakemanagerCaller) SignerUpdateLimit(opts *bind.CallOpts) 
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // SignerUpdateLimit is a free data retrieval call binding the contract method 0x4e3c83f1.
@@ -1239,7 +1171,6 @@ func (_Stakemanager *StakemanagerCallerSession) SignerUpdateLimit() (*big.Int, e
 func (_Stakemanager *StakemanagerCaller) SupportsHistory(opts *bind.CallOpts) (bool, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "supportsHistory")
-
 	if err != nil {
 		return *new(bool), err
 	}
@@ -1247,7 +1178,6 @@ func (_Stakemanager *StakemanagerCaller) SupportsHistory(opts *bind.CallOpts) (b
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
 
 	return out0, err
-
 }
 
 // SupportsHistory is a free data retrieval call binding the contract method 0x7033e4a6.
@@ -1270,7 +1200,6 @@ func (_Stakemanager *StakemanagerCallerSession) SupportsHistory() (bool, error) 
 func (_Stakemanager *StakemanagerCaller) Token(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "token")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -1278,7 +1207,6 @@ func (_Stakemanager *StakemanagerCaller) Token(opts *bind.CallOpts) (common.Addr
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // Token is a free data retrieval call binding the contract method 0xfc0c546a.
@@ -1301,7 +1229,6 @@ func (_Stakemanager *StakemanagerCallerSession) Token() (common.Address, error) 
 func (_Stakemanager *StakemanagerCaller) TotalHeimdallFee(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "totalHeimdallFee")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1309,7 +1236,6 @@ func (_Stakemanager *StakemanagerCaller) TotalHeimdallFee(opts *bind.CallOpts) (
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // TotalHeimdallFee is a free data retrieval call binding the contract method 0x9a8a6243.
@@ -1332,7 +1258,6 @@ func (_Stakemanager *StakemanagerCallerSession) TotalHeimdallFee() (*big.Int, er
 func (_Stakemanager *StakemanagerCaller) TotalRewards(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "totalRewards")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1340,7 +1265,6 @@ func (_Stakemanager *StakemanagerCaller) TotalRewards(opts *bind.CallOpts) (*big
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // TotalRewards is a free data retrieval call binding the contract method 0x0e15561a.
@@ -1363,7 +1287,6 @@ func (_Stakemanager *StakemanagerCallerSession) TotalRewards() (*big.Int, error)
 func (_Stakemanager *StakemanagerCaller) TotalRewardsLiquidated(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "totalRewardsLiquidated")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1371,7 +1294,6 @@ func (_Stakemanager *StakemanagerCaller) TotalRewardsLiquidated(opts *bind.CallO
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // TotalRewardsLiquidated is a free data retrieval call binding the contract method 0xcd6b8388.
@@ -1394,7 +1316,6 @@ func (_Stakemanager *StakemanagerCallerSession) TotalRewardsLiquidated() (*big.I
 func (_Stakemanager *StakemanagerCaller) TotalStaked(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "totalStaked")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1402,7 +1323,6 @@ func (_Stakemanager *StakemanagerCaller) TotalStaked(opts *bind.CallOpts) (*big.
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // TotalStaked is a free data retrieval call binding the contract method 0x817b1cd2.
@@ -1425,7 +1345,6 @@ func (_Stakemanager *StakemanagerCallerSession) TotalStaked() (*big.Int, error) 
 func (_Stakemanager *StakemanagerCaller) TotalStakedFor(opts *bind.CallOpts, user common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "totalStakedFor", user)
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1433,7 +1352,6 @@ func (_Stakemanager *StakemanagerCaller) TotalStakedFor(opts *bind.CallOpts, use
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // TotalStakedFor is a free data retrieval call binding the contract method 0x4b341aed.
@@ -1456,7 +1374,6 @@ func (_Stakemanager *StakemanagerCallerSession) TotalStakedFor(user common.Addre
 func (_Stakemanager *StakemanagerCaller) UserFeeExit(opts *bind.CallOpts, arg0 common.Address) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "userFeeExit", arg0)
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1464,7 +1381,6 @@ func (_Stakemanager *StakemanagerCaller) UserFeeExit(opts *bind.CallOpts, arg0 c
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // UserFeeExit is a free data retrieval call binding the contract method 0x78f84a44.
@@ -1488,7 +1404,8 @@ func (_Stakemanager *StakemanagerCaller) ValidatorAuction(opts *bind.CallOpts, a
 	Amount     *big.Int
 	StartEpoch *big.Int
 	User       common.Address
-}, error) {
+}, error,
+) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "validatorAuction", arg0)
 
@@ -1506,7 +1423,6 @@ func (_Stakemanager *StakemanagerCaller) ValidatorAuction(opts *bind.CallOpts, a
 	outstruct.User = *abi.ConvertType(out[2], new(common.Address)).(*common.Address)
 
 	return *outstruct, err
-
 }
 
 // ValidatorAuction is a free data retrieval call binding the contract method 0x5325e144.
@@ -1516,7 +1432,8 @@ func (_Stakemanager *StakemanagerSession) ValidatorAuction(arg0 *big.Int) (struc
 	Amount     *big.Int
 	StartEpoch *big.Int
 	User       common.Address
-}, error) {
+}, error,
+) {
 	return _Stakemanager.Contract.ValidatorAuction(&_Stakemanager.CallOpts, arg0)
 }
 
@@ -1527,7 +1444,8 @@ func (_Stakemanager *StakemanagerCallerSession) ValidatorAuction(arg0 *big.Int) 
 	Amount     *big.Int
 	StartEpoch *big.Int
 	User       common.Address
-}, error) {
+}, error,
+) {
 	return _Stakemanager.Contract.ValidatorAuction(&_Stakemanager.CallOpts, arg0)
 }
 
@@ -1537,7 +1455,6 @@ func (_Stakemanager *StakemanagerCallerSession) ValidatorAuction(arg0 *big.Int) 
 func (_Stakemanager *StakemanagerCaller) ValidatorStake(opts *bind.CallOpts, validatorId *big.Int) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "validatorStake", validatorId)
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1545,7 +1462,6 @@ func (_Stakemanager *StakemanagerCaller) ValidatorStake(opts *bind.CallOpts, val
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // ValidatorStake is a free data retrieval call binding the contract method 0xeceec1d3.
@@ -1568,7 +1484,8 @@ func (_Stakemanager *StakemanagerCallerSession) ValidatorStake(validatorId *big.
 func (_Stakemanager *StakemanagerCaller) ValidatorState(opts *bind.CallOpts, arg0 *big.Int) (struct {
 	Amount      *big.Int
 	StakerCount *big.Int
-}, error) {
+}, error,
+) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "validatorState", arg0)
 
@@ -1584,7 +1501,6 @@ func (_Stakemanager *StakemanagerCaller) ValidatorState(opts *bind.CallOpts, arg
 	outstruct.StakerCount = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
 
 	return *outstruct, err
-
 }
 
 // ValidatorState is a free data retrieval call binding the contract method 0x5c248855.
@@ -1593,7 +1509,8 @@ func (_Stakemanager *StakemanagerCaller) ValidatorState(opts *bind.CallOpts, arg
 func (_Stakemanager *StakemanagerSession) ValidatorState(arg0 *big.Int) (struct {
 	Amount      *big.Int
 	StakerCount *big.Int
-}, error) {
+}, error,
+) {
 	return _Stakemanager.Contract.ValidatorState(&_Stakemanager.CallOpts, arg0)
 }
 
@@ -1603,7 +1520,8 @@ func (_Stakemanager *StakemanagerSession) ValidatorState(arg0 *big.Int) (struct 
 func (_Stakemanager *StakemanagerCallerSession) ValidatorState(arg0 *big.Int) (struct {
 	Amount      *big.Int
 	StakerCount *big.Int
-}, error) {
+}, error,
+) {
 	return _Stakemanager.Contract.ValidatorState(&_Stakemanager.CallOpts, arg0)
 }
 
@@ -1613,7 +1531,6 @@ func (_Stakemanager *StakemanagerCallerSession) ValidatorState(arg0 *big.Int) (s
 func (_Stakemanager *StakemanagerCaller) ValidatorThreshold(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "validatorThreshold")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1621,7 +1538,6 @@ func (_Stakemanager *StakemanagerCaller) ValidatorThreshold(opts *bind.CallOpts)
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // ValidatorThreshold is a free data retrieval call binding the contract method 0x4fd101d7.
@@ -1650,7 +1566,8 @@ func (_Stakemanager *StakemanagerCaller) Validators(opts *bind.CallOpts, arg0 *b
 	Signer            common.Address
 	ContractAddress   common.Address
 	Status            uint8
-}, error) {
+}, error,
+) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "validators", arg0)
 
@@ -1678,7 +1595,6 @@ func (_Stakemanager *StakemanagerCaller) Validators(opts *bind.CallOpts, arg0 *b
 	outstruct.Status = *abi.ConvertType(out[7], new(uint8)).(*uint8)
 
 	return *outstruct, err
-
 }
 
 // Validators is a free data retrieval call binding the contract method 0x35aa2e44.
@@ -1693,7 +1609,8 @@ func (_Stakemanager *StakemanagerSession) Validators(arg0 *big.Int) (struct {
 	Signer            common.Address
 	ContractAddress   common.Address
 	Status            uint8
-}, error) {
+}, error,
+) {
 	return _Stakemanager.Contract.Validators(&_Stakemanager.CallOpts, arg0)
 }
 
@@ -1709,7 +1626,8 @@ func (_Stakemanager *StakemanagerCallerSession) Validators(arg0 *big.Int) (struc
 	Signer            common.Address
 	ContractAddress   common.Address
 	Status            uint8
-}, error) {
+}, error,
+) {
 	return _Stakemanager.Contract.Validators(&_Stakemanager.CallOpts, arg0)
 }
 
@@ -1719,7 +1637,6 @@ func (_Stakemanager *StakemanagerCallerSession) Validators(arg0 *big.Int) (struc
 func (_Stakemanager *StakemanagerCaller) VerifyConsensus(opts *bind.CallOpts, voteHash [32]byte, sigs []byte) (*big.Int, *big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "verifyConsensus", voteHash, sigs)
-
 	if err != nil {
 		return *new(*big.Int), *new(*big.Int), err
 	}
@@ -1728,7 +1645,6 @@ func (_Stakemanager *StakemanagerCaller) VerifyConsensus(opts *bind.CallOpts, vo
 	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
 
 	return out0, out1, err
-
 }
 
 // VerifyConsensus is a free data retrieval call binding the contract method 0xbbcfbbb0.
@@ -1751,7 +1667,6 @@ func (_Stakemanager *StakemanagerCallerSession) VerifyConsensus(voteHash [32]byt
 func (_Stakemanager *StakemanagerCaller) WithdrawalDelay(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Stakemanager.contract.Call(opts, &out, "withdrawalDelay")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -1759,7 +1674,6 @@ func (_Stakemanager *StakemanagerCaller) WithdrawalDelay(opts *bind.CallOpts) (*
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // WithdrawalDelay is a free data retrieval call binding the contract method 0xa7ab6961.
@@ -2568,7 +2482,6 @@ type StakemanagerOwnershipTransferred struct {
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_Stakemanager *StakemanagerFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*StakemanagerOwnershipTransferredIterator, error) {
-
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
 		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
@@ -2589,7 +2502,6 @@ func (_Stakemanager *StakemanagerFilterer) FilterOwnershipTransferred(opts *bind
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
 func (_Stakemanager *StakemanagerFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *StakemanagerOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
-
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
 		previousOwnerRule = append(previousOwnerRule, previousOwnerItem)
@@ -2721,7 +2633,6 @@ type StakemanagerRootChainChanged struct {
 //
 // Solidity: event RootChainChanged(address indexed previousRootChain, address indexed newRootChain)
 func (_Stakemanager *StakemanagerFilterer) FilterRootChainChanged(opts *bind.FilterOpts, previousRootChain []common.Address, newRootChain []common.Address) (*StakemanagerRootChainChangedIterator, error) {
-
 	var previousRootChainRule []interface{}
 	for _, previousRootChainItem := range previousRootChain {
 		previousRootChainRule = append(previousRootChainRule, previousRootChainItem)
@@ -2742,7 +2653,6 @@ func (_Stakemanager *StakemanagerFilterer) FilterRootChainChanged(opts *bind.Fil
 //
 // Solidity: event RootChainChanged(address indexed previousRootChain, address indexed newRootChain)
 func (_Stakemanager *StakemanagerFilterer) WatchRootChainChanged(opts *bind.WatchOpts, sink chan<- *StakemanagerRootChainChanged, previousRootChain []common.Address, newRootChain []common.Address) (event.Subscription, error) {
-
 	var previousRootChainRule []interface{}
 	for _, previousRootChainItem := range previousRootChain {
 		previousRootChainRule = append(previousRootChainRule, previousRootChainItem)

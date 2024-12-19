@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -22,9 +21,7 @@ type sideMsgServer struct {
 	Keeper
 }
 
-var (
-	msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
-)
+var msgEventRecord = sdk.MsgTypeURL(&types.MsgEventRecord{})
 
 // NewSideMsgServerImpl returns an implementation of the clerk SideMsgServer interface
 // for the provided Keeper.

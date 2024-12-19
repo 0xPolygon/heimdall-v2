@@ -260,7 +260,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 		currentValidatorSet.IncrementProposerPriority(1)
 	}
 
-	//If NoAck sender is not the valid proposer, return error
+	// If NoAck sender is not the valid proposer, return error
 	if !isProposer {
 		return nil, types.ErrInvalidNoAckProposer
 	}
@@ -296,14 +296,12 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	err = m.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
-
 	}
 
 	// get new proposer
 	vs, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
-
 	}
 
 	newProposer := vs.GetProposer()

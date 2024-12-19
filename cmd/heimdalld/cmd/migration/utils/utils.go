@@ -52,7 +52,7 @@ func SaveJSONToFile(data map[string]interface{}, filename string) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 	// #nosec G306 -- write file with 0644 permission
-	if err := os.WriteFile(filename, fileContent, 0644); err != nil {
+	if err := os.WriteFile(filename, fileContent, 0o644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 
@@ -264,7 +264,6 @@ func ParseUint(value interface{}) uint64 {
 
 // MigrateAuthAccountsToBankBalances converts the auth accounts to bank balances.
 func MigrateAuthAccountsToBankBalances(authAccounts []interface{}) ([]bankTypes.Balance, error) {
-
 	addressCoins := map[string]types.Coins{}
 
 	for i, account := range authAccounts {

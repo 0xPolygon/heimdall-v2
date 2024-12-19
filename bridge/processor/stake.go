@@ -66,7 +66,7 @@ func (sp *StakingProcessor) RegisterTasks() {
 }
 
 func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -155,7 +155,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 }
 
 func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -238,7 +238,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 }
 
 func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -316,7 +316,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 }
 
 func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -463,7 +463,7 @@ func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 		searchResult1, err1 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event1, "")
 		searchResult2, err2 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event2, "")
 		if err1 != nil && err2 != nil {
-			return 0, fmt.Errorf("%v %v", err1, err2)
+			return 0, fmt.Errorf("%w %w", err1, err2)
 		}
 
 		var totalCount uint64
