@@ -625,7 +625,7 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("checkpoints not found in checkpoint module")
 	}
 
-	// Sort checkpoints by start_block
+	// Sort checkpoints by timestamp
 	sort.Slice(checkpoints, func(i, j int) bool {
 		checkpointI := checkpoints[i].(map[string]interface{})
 		checkpointJ := checkpoints[j].(map[string]interface{})
