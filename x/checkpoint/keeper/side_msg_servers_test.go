@@ -33,7 +33,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 
 	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
-	header := testutil.GenRandCheckpoint(start, maxSize)
+	header := testutil.GenRandCheckpoint(start, maxSize, uint64(1))
 
 	borChainId := "1234"
 
@@ -135,7 +135,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 
 	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
 
-	header := testutil.GenRandCheckpoint(start, maxSize)
+	header := testutil.GenRandCheckpoint(start, maxSize, 1)
 	headerId := uint64(1)
 
 	s.Run("Success", func() {
@@ -204,7 +204,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
 
-	header := testutil.GenRandCheckpoint(start, maxSize)
+	require.NotNil(lastCheckpoint)
+
+	header := testutil.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
@@ -261,17 +263,15 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 
 	start := uint64(0)
 	maxSize := uint64(256)
+	checkpointNumber := uint64(1)
 
-	header := testutil.GenRandCheckpoint(start, maxSize)
+	header := testutil.GenRandCheckpoint(start, maxSize, checkpointNumber)
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
 	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 	stakeKeeper.EXPECT().IncrementAccum(gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
 	cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(cmTypes.DefaultParams(), nil)
-
-	// send ack
-	checkpointNumber := uint64(1)
 
 	s.Run("Failure", func() {
 		MsgCpAck := types.NewMsgCpAck(
@@ -352,8 +352,8 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 	})
 
 	s.Run("InvalidEndBlock", func() {
-		header2 := testutil.GenRandCheckpoint(header.EndBlock+1, maxSize)
 		checkpointNumber = checkpointNumber + 1
+		header2 := testutil.GenRandCheckpoint(header.EndBlock+1, maxSize, checkpointNumber)
 		msgCheckpoint := types.NewMsgCheckpointBlock(
 			header2.Proposer,
 			header2.StartBlock,
@@ -390,7 +390,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		latestCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
 
-		header5 := testutil.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
+		header5 := testutil.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize, latestCheckpoint.Id+1)
 		checkpointNumber = checkpointNumber + 1
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(
@@ -436,7 +436,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		latestCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
 
-		header6 := testutil.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize)
+		header6 := testutil.GenRandCheckpoint(latestCheckpoint.EndBlock+1, maxSize, latestCheckpoint.Id+1)
 		checkpointNumber = checkpointNumber + 1
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(

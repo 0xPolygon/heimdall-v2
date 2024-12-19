@@ -127,6 +127,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 // AddCheckpoint adds checkpoint into the db store
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
+	checkpoint.Id = checkpointNumber
 	err := k.checkpoints.Set(ctx, checkpointNumber, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in adding the checkpoint to the store", "error", err)
@@ -139,6 +140,14 @@ func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, che
 // SetCheckpointBuffer sets the checkpoint in buffer
 func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
+	if checkpoint.Id == 0 {
+		cp, err := k.GetLastCheckpoint(ctx)
+		if err != nil {
+			k.Logger(ctx).Error("error while fetching the last checkpoint", "err", err)
+			return err
+		}
+		checkpoint.Id = cp.Id + 1
+	}
 	err := k.bufferedCheckpoint.Set(ctx, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in setting the buffered checkpoint in the store", "error", err)
@@ -161,13 +170,13 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (type
 
 // GetLastCheckpoint gets last checkpoint, where its number is equal to the ack count
 func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkpoint, err error) {
-	acksCount, err := k.GetAckCount(ctx)
+	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching the ack count", "err", err)
 		return types.Checkpoint{}, err
 	}
 
-	checkpoint, err = k.checkpoints.Get(ctx, acksCount)
+	checkpoint, err = k.checkpoints.Get(ctx, ackCount)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching last checkpoint from store", "err", err)
 		return types.Checkpoint{}, err
@@ -253,7 +262,6 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) (checkpoints []types.Checkp
 
 	var checkpoint types.Checkpoint
 
-	// TODO HV2: https://polygon.atlassian.net/browse/POS-2764
 	for ; iterator.Valid(); iterator.Next() {
 		checkpoint, err = iterator.Value()
 		if err != nil {
@@ -309,7 +317,7 @@ func (k Keeper) SetCheckpointSignatures(ctx context.Context, checkpointSignature
 	return k.checkpointSignatures.Set(ctx, checkpointSignatures)
 }
 
-// GetCheckpointSignatures retrives the checkpoint signatures
+// GetCheckpointSignatures retrieves the checkpoint signatures
 func (k Keeper) GetCheckpointSignatures(ctx context.Context) (types.CheckpointSignatures, error) {
 	return k.checkpointSignatures.Get(ctx)
 }

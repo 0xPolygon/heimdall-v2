@@ -61,6 +61,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
+		headerNumber,
 		startBlock,
 		endBlock,
 		rootHash,
@@ -95,6 +96,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
+		1,
 		startBlock,
 		endBlock,
 		rootHash,
@@ -142,6 +144,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
+		headerNumber,
 		startBlock,
 		endBlock,
 		rootHash,
@@ -208,7 +211,7 @@ func (s *KeeperTestSuite) TestGetCheckpointList() {
 
 	var checkpoints []*types.Checkpoint
 	for i := 0; i < 5; i++ {
-		header := chSim.GenRandCheckpoint(start, maxSize)
+		header := chSim.GenRandCheckpoint(start, maxSize, uint64(i))
 		checkpoints = append(checkpoints, &header)
 	}
 

@@ -107,6 +107,7 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 
 	checkpoint := types.CreateCheckpoint(
+		headerBlockNumber,
 		startBlock,
 		endBlock,
 		rootHash,

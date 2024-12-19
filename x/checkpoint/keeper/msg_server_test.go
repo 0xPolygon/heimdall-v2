@@ -35,8 +35,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength)
+	header := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength, lastCheckpoint.Id+1)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
@@ -144,8 +146,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
@@ -203,8 +207,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
@@ -248,8 +254,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer
@@ -348,8 +356,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	header := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to header
 	header.Proposer = validatorSet.Proposer.Signer

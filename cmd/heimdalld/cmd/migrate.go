@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -625,6 +626,15 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("checkpoints not found in checkpoint module")
 	}
 
+	// Sort checkpoints by start_block
+	sort.Slice(checkpoints, func(i, j int) bool {
+		checkpointI := checkpoints[i].(map[string]interface{})
+		checkpointJ := checkpoints[j].(map[string]interface{})
+		startBlockI, _ := strconv.Atoi(checkpointI["start_block"].(string))
+		startBlockJ, _ := strconv.Atoi(checkpointJ["start_block"].(string))
+		return startBlockI < startBlockJ
+	})
+
 	for i, checkpoint := range checkpoints {
 		checkpointMap, ok := checkpoint.(map[string]interface{})
 		if !ok {
@@ -650,6 +660,35 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 		rootHashBase64 := base64.StdEncoding.EncodeToString(rootHashBytes)
 
 		checkpointMap["root_hash"] = rootHashBase64
+	}
+
+	// Iterate over ack_count and assign checkpoint id
+	ackCountStr, ok := checkpointData["ack_count"].(string)
+	if !ok {
+		return fmt.Errorf("ack_count not found or invalid in checkpoint module")
+	}
+
+	ackCount, err := strconv.Atoi(ackCountStr)
+	if err != nil {
+		return fmt.Errorf("failed to convert ack_count to integer: %w", err)
+	}
+
+	// ackCount should be equal to the number of checkpoints
+	if ackCount != len(checkpoints) {
+		return fmt.Errorf("ackCount (%d) does not match the number of checkpoints (%d)", ackCount, len(checkpoints))
+	}
+
+	for i := 0; i < len(checkpoints); i++ {
+		checkpointMap, ok := checkpoints[i].(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("invalid checkpoint format at index %d", i)
+		}
+		checkpointMap["id"] = strconv.Itoa(i + 1)
+	}
+
+	// assign id to bufferedCheckpoint if present
+	if bufferedCheckpoint != nil {
+		bufferedCheckpoint["id"] = strconv.Itoa(len(checkpoints) + 1)
 	}
 
 	logger.Info("Checkpoint module migration completed successfully")

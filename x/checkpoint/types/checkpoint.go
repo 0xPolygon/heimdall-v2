@@ -6,6 +6,7 @@ import (
 
 // CreateCheckpoint generate new checkpoint
 func CreateCheckpoint(
+	id uint64,
 	start uint64,
 	end uint64,
 	rootHash []byte,
@@ -14,6 +15,7 @@ func CreateCheckpoint(
 	timestamp uint64,
 ) Checkpoint {
 	return Checkpoint{
+		Id:         id,
 		StartBlock: start,
 		EndBlock:   end,
 		RootHash:   rootHash,
