@@ -51,6 +51,7 @@ func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context) *TxBroadcaster {
 		panic("Error converting address to string")
 	}
 
+	cliCtx.FromAddress = sdk.MustAccAddressFromHex(addressString)
 	account, err := util.GetAccount(cliCtx, addressString)
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
