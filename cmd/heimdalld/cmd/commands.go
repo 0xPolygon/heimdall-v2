@@ -34,6 +34,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/server/types"
@@ -133,6 +134,8 @@ func initRootCmd(
 	_ client.TxConfig,
 	basicManager module.BasicManager,
 	hApp *app.HeimdallApp,
+	keyring keyring.Keyring,
+	keyringDir string,
 ) {
 	cdc := codec.NewLegacyAmino()
 	ctx := server.NewDefaultContext()
@@ -172,7 +175,18 @@ func initRootCmd(
 				return fmt.Errorf("Fetch operation timed out")
 			}
 
-			fmt.Println("BRIDGE FLAG!!: ", viper.GetBool(helper.BridgeFlag))
+			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
+			if err != nil {
+				return err
+			}
+
+			// TODO HV2: maybe we should make heimdall chain id part of the chainmanager params
+			heimdallChainId := "heimdall-" + chainParam.ChainParams.BorChainId
+			clientCtx = clientCtx.
+				WithKeyring(keyring).
+				WithKeyringDir(keyringDir).
+				WithChainID(heimdallChainId)
+
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
 				bridgeCmd.AdjustBridgeDBValue(rootCmd)
