@@ -629,9 +629,9 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 	sort.Slice(checkpoints, func(i, j int) bool {
 		checkpointI := checkpoints[i].(map[string]interface{})
 		checkpointJ := checkpoints[j].(map[string]interface{})
-		startBlockI, _ := strconv.Atoi(checkpointI["start_block"].(string))
-		startBlockJ, _ := strconv.Atoi(checkpointJ["start_block"].(string))
-		return startBlockI < startBlockJ
+		timestampI, _ := strconv.Atoi(checkpointI["timestamp"].(string))
+		timestampJ, _ := strconv.Atoi(checkpointJ["timestamp"].(string))
+		return timestampI < timestampJ
 	})
 
 	for i, checkpoint := range checkpoints {
