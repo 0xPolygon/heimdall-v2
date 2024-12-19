@@ -16,7 +16,6 @@ func RandomBytes() []byte {
 }
 
 func RandDividendAccounts() []hmTypes.DividendAccount {
-
 	dividendAccs := make([]hmTypes.DividendAccount, 1)
 
 	dividendAccs[0] = hmTypes.DividendAccount{

@@ -54,9 +54,8 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
 	k.PanicIfSetupIsIncomplete()
 	validator, err = k.validators.Get(ctx, util.FormatAddress(address))
-
 	if err != nil {
-		return validator, fmt.Errorf("error while fetching the validator from the store %v", err)
+		return validator, fmt.Errorf("error while fetching the validator from the store %w", err)
 	}
 
 	return validator, nil
@@ -209,7 +208,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey [
 		return err
 	}
 
-	//update signer in prev validator
+	// update signer in prev validator
 	validator.Signer = newSigner
 	validator.PubKey = newPubKey
 	validator.VotingPower = validatorPower
@@ -416,7 +415,6 @@ func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string, e
 		sequences = append(sequences, sequence)
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

@@ -46,7 +46,6 @@ func genBorChainTxConfirmations(r *rand.Rand) uint64 {
 // genBorChainId returns a randomized bor chain id
 func genBorChainId(r *rand.Rand) string {
 	return strconv.Itoa(r.Intn(math.MaxInt32))
-
 }
 
 func genAddress(r *rand.Rand) string {
@@ -55,7 +54,6 @@ func genAddress(r *rand.Rand) string {
 
 // RandomizedGenState generates a random GenesisState for chainmanager
 func RandomizedGenState(simState *module.SimulationState) {
-
 	var (
 		mainChainTxConfirmations uint64
 		borChainTxConfirmations  uint64

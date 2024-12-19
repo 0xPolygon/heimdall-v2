@@ -35,7 +35,6 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 }
 
 func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
-
 	spans, err := q.k.GetAllSpans(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -136,7 +135,6 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 
 // GetBorParams returns the bor module parameters
 func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-
 	params, err := q.k.FetchParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -181,7 +179,6 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 			return q.k.GetSpan(ctx, id)
 		},
 	)
-
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}

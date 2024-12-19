@@ -46,7 +46,6 @@ func (sp *SpanProcessor) Start() error {
 
 // RegisterTasks - nil
 func (sp *SpanProcessor) RegisterTasks() {
-
 }
 
 // startPolling - polls heimdall and checks if new span needs to be proposed

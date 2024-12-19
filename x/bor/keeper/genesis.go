@@ -29,7 +29,6 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 			panic(fmt.Sprintf("error while updating last span during InitGenesis: %v", err))
 		}
 	}
-
 }
 
 // ExportGenesis returns a GenesisState for bor.

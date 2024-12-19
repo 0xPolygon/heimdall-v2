@@ -45,7 +45,6 @@ func (hl *HeimdallListener) Start() error {
 
 // ProcessHeader -
 func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {
-
 }
 
 // StartPolling - starts polling for heimdall events

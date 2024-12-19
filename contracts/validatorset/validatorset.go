@@ -185,7 +185,6 @@ func (_Validatorset *ValidatorsetTransactorRaw) Transact(opts *bind.TransactOpts
 func (_Validatorset *ValidatorsetCaller) CurrentSpanNumber(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Validatorset.contract.Call(opts, &out, "currentSpanNumber")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -193,7 +192,6 @@ func (_Validatorset *ValidatorsetCaller) CurrentSpanNumber(opts *bind.CallOpts) 
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // CurrentSpanNumber is a free data retrieval call binding the contract method 0x4dbc959f.
@@ -217,7 +215,8 @@ func (_Validatorset *ValidatorsetCaller) GetCurrentSpan(opts *bind.CallOpts) (st
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	var out []interface{}
 	err := _Validatorset.contract.Call(opts, &out, "getCurrentSpan")
 
@@ -235,7 +234,6 @@ func (_Validatorset *ValidatorsetCaller) GetCurrentSpan(opts *bind.CallOpts) (st
 	outstruct.EndBlock = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
 
 	return *outstruct, err
-
 }
 
 // GetCurrentSpan is a free data retrieval call binding the contract method 0xaf26aa96.
@@ -245,7 +243,8 @@ func (_Validatorset *ValidatorsetSession) GetCurrentSpan() (struct {
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	return _Validatorset.Contract.GetCurrentSpan(&_Validatorset.CallOpts)
 }
 
@@ -256,7 +255,8 @@ func (_Validatorset *ValidatorsetCallerSession) GetCurrentSpan() (struct {
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	return _Validatorset.Contract.GetCurrentSpan(&_Validatorset.CallOpts)
 }
 
@@ -266,7 +266,6 @@ func (_Validatorset *ValidatorsetCallerSession) GetCurrentSpan() (struct {
 func (_Validatorset *ValidatorsetCaller) GetInitialValidators(opts *bind.CallOpts) ([]common.Address, []*big.Int, error) {
 	var out []interface{}
 	err := _Validatorset.contract.Call(opts, &out, "getInitialValidators")
-
 	if err != nil {
 		return *new([]common.Address), *new([]*big.Int), err
 	}
@@ -275,7 +274,6 @@ func (_Validatorset *ValidatorsetCaller) GetInitialValidators(opts *bind.CallOpt
 	out1 := *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
 
 	return out0, out1, err
-
 }
 
 // GetInitialValidators is a free data retrieval call binding the contract method 0x65b3a1e2.
@@ -299,7 +297,8 @@ func (_Validatorset *ValidatorsetCaller) GetNextSpan(opts *bind.CallOpts) (struc
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	var out []interface{}
 	err := _Validatorset.contract.Call(opts, &out, "getNextSpan")
 
@@ -317,7 +316,6 @@ func (_Validatorset *ValidatorsetCaller) GetNextSpan(opts *bind.CallOpts) (struc
 	outstruct.EndBlock = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
 
 	return *outstruct, err
-
 }
 
 // GetNextSpan is a free data retrieval call binding the contract method 0x60c8614d.
@@ -327,7 +325,8 @@ func (_Validatorset *ValidatorsetSession) GetNextSpan() (struct {
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	return _Validatorset.Contract.GetNextSpan(&_Validatorset.CallOpts)
 }
 
@@ -338,7 +337,8 @@ func (_Validatorset *ValidatorsetCallerSession) GetNextSpan() (struct {
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	return _Validatorset.Contract.GetNextSpan(&_Validatorset.CallOpts)
 }
 
@@ -349,7 +349,8 @@ func (_Validatorset *ValidatorsetCaller) GetSpan(opts *bind.CallOpts, span *big.
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	var out []interface{}
 	err := _Validatorset.contract.Call(opts, &out, "getSpan", span)
 
@@ -367,7 +368,6 @@ func (_Validatorset *ValidatorsetCaller) GetSpan(opts *bind.CallOpts, span *big.
 	outstruct.EndBlock = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
 
 	return *outstruct, err
-
 }
 
 // GetSpan is a free data retrieval call binding the contract method 0x047a6c5b.
@@ -377,7 +377,8 @@ func (_Validatorset *ValidatorsetSession) GetSpan(span *big.Int) (struct {
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	return _Validatorset.Contract.GetSpan(&_Validatorset.CallOpts, span)
 }
 
@@ -388,7 +389,8 @@ func (_Validatorset *ValidatorsetCallerSession) GetSpan(span *big.Int) (struct {
 	Number     *big.Int
 	StartBlock *big.Int
 	EndBlock   *big.Int
-}, error) {
+}, error,
+) {
 	return _Validatorset.Contract.GetSpan(&_Validatorset.CallOpts, span)
 }
 
@@ -398,7 +400,6 @@ func (_Validatorset *ValidatorsetCallerSession) GetSpan(span *big.Int) (struct {
 func (_Validatorset *ValidatorsetCaller) GetValidators(opts *bind.CallOpts) ([]common.Address, []*big.Int, error) {
 	var out []interface{}
 	err := _Validatorset.contract.Call(opts, &out, "getValidators")
-
 	if err != nil {
 		return *new([]common.Address), *new([]*big.Int), err
 	}
@@ -407,7 +408,6 @@ func (_Validatorset *ValidatorsetCaller) GetValidators(opts *bind.CallOpts) ([]c
 	out1 := *abi.ConvertType(out[1], new([]*big.Int)).(*[]*big.Int)
 
 	return out0, out1, err
-
 }
 
 // GetValidators is a free data retrieval call binding the contract method 0xb7ab4db5.

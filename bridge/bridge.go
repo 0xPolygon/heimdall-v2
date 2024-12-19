@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	var logger = helper.Logger.With("module", "bridge/cmd/")
+	logger := helper.Logger.With("module", "bridge/cmd/")
 	rootCmd := cmd.BridgeCommands(viper.GetViper(), logger, "bridge-main")
 
 	// add heimdall flags

@@ -49,9 +49,7 @@ func NewKeeper(
 	cmKeeper types.ChainManagerKeeper,
 	topupKeeper types.TopupKeeper,
 	contractCaller helper.IContractCaller,
-
 ) Keeper {
-
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
 		panic(fmt.Errorf("invalid checkpoint authority address: %w", err))
@@ -287,7 +285,6 @@ func (k Keeper) GetAckCount(ctx context.Context) (uint64, error) {
 	}
 
 	res, err := k.ackCount.Get(ctx)
-
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching the ack count from the store", "err", err)
 		return uint64(0), err

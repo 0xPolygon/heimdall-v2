@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -17,9 +16,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-var (
-	topupMsgTypeURL = sdk.MsgTypeURL(&types.MsgTopupTx{})
-)
+var topupMsgTypeURL = sdk.MsgTypeURL(&types.MsgTopupTx{})
 
 type sideMsgServer struct {
 	k *Keeper

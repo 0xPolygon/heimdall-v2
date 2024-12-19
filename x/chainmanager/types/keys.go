@@ -13,6 +13,4 @@ const (
 	RouterKey = ModuleName
 )
 
-var (
-	ParamsKey = collections.NewPrefix(0) // ParamsKey is the key to store the params in the store
-)
+var ParamsKey = collections.NewPrefix(0) // ParamsKey is the key to store the params in the store

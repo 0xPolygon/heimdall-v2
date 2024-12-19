@@ -9,7 +9,6 @@ import (
 )
 
 func TestExponentialBackoff(t *testing.T) {
-
 	t.Run("success", func(t *testing.T) {
 		t.Parallel()
 
