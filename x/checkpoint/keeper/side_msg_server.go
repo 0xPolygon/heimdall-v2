@@ -339,7 +339,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// add checkpoint to store
-	if err = srv.AddCheckpoint(ctx, msg.Number, checkpointObj); err != nil {
+	checkpointObj.Id = msg.Number
+	if err = srv.AddCheckpoint(ctx, checkpointObj); err != nil {
 		logger.Error("error while adding checkpoint into store", "checkpointNumber", msg.Number)
 		return err
 	}

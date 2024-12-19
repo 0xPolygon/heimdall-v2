@@ -25,8 +25,8 @@ func CreateCheckpoint(
 	}
 }
 
-// SortHeaders sorts array of headers on the basis for timestamps
-func SortHeaders(headers []Checkpoint) []Checkpoint {
+// SortCheckpoints sorts array of checkpoints on the basis for timestamps
+func SortCheckpoints(headers []Checkpoint) []Checkpoint {
 	sort.Slice(headers, func(i, j int) bool {
 		return headers[i].Timestamp < headers[j].Timestamp
 	})

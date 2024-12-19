@@ -123,10 +123,9 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 }
 
 // AddCheckpoint adds checkpoint into the db store
-func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
+func (k *Keeper) AddCheckpoint(ctx context.Context, checkpoint types.Checkpoint) error {
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
-	checkpoint.Id = checkpointNumber
-	err := k.checkpoints.Set(ctx, checkpointNumber, checkpoint)
+	err := k.checkpoints.Set(ctx, checkpoint.Id, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in adding the checkpoint to the store", "error", err)
 		return err

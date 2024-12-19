@@ -162,27 +162,27 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	logger := m.Logger(ctx)
 
 	// get last checkpoint from buffer
-	headerBlock, err := m.GetCheckpointFromBuffer(ctx)
+	bufCheckpoint, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadAck, "unable to get checkpoint")
 	}
 
-	if msg.StartBlock != headerBlock.StartBlock {
-		logger.Error("invalid start block", "startExpected", headerBlock.StartBlock, "startReceived", msg.StartBlock)
-		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block", "startExpected", headerBlock.StartBlock, "startReceived", msg.StartBlock))
+	if msg.StartBlock != bufCheckpoint.StartBlock {
+		logger.Error("invalid start block", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
+		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock))
 	}
 
 	// return err if start and end match but contract root hash doesn't match
-	if msg.StartBlock == headerBlock.StartBlock &&
-		msg.EndBlock == headerBlock.EndBlock &&
-		!bytes.Equal(msg.RootHash, headerBlock.RootHash) {
+	if msg.StartBlock == bufCheckpoint.StartBlock &&
+		msg.EndBlock == bufCheckpoint.EndBlock &&
+		!bytes.Equal(msg.RootHash, bufCheckpoint.RootHash) {
 		logger.Error("Invalid ACK",
-			"startExpected", headerBlock.StartBlock,
+			"startExpected", bufCheckpoint.StartBlock,
 			"startReceived", msg.StartBlock,
-			"endExpected", headerBlock.EndBlock,
+			"endExpected", bufCheckpoint.EndBlock,
 			"endReceived", msg.StartBlock,
-			"rootExpected", common.Bytes2Hex(headerBlock.RootHash),
+			"rootExpected", common.Bytes2Hex(bufCheckpoint.RootHash),
 			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
 		return nil, types.ErrBadAck
