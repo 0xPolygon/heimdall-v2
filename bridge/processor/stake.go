@@ -120,9 +120,14 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator join
 		msg, err := stakingTypes.NewMsgValidatorJoin(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			event.ActivationEpoch.Uint64(),
 			math.NewIntFromBigInt(event.Amount),
@@ -204,9 +209,14 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator exit
 		msg, err := stakingTypes.NewMsgValidatorExit(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			event.DeactivationEpoch.Uint64(),
 			vLog.TxHash.Bytes(),
@@ -283,9 +293,14 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator update
 		msg, err := stakingTypes.NewMsgStakeUpdate(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			math.NewIntFromBigInt(event.NewAmount),
 			vLog.TxHash.Bytes(),
@@ -378,9 +393,14 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// signer change
 		msg, err := stakingTypes.NewMsgSignerUpdate(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			newSignerPubKey,
 			vLog.TxHash.Bytes(),

@@ -480,9 +480,15 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 
 	chainParams := checkpointContext.ChainmanagerParams.ChainParams
 
+	address, err := helper.GetAddressString()
+	if err != nil {
+		cp.Logger.Error("Error while converting address to string during checkpoint creation", "error", err)
+		return err
+	}
+
 	// create and send checkpoint message
 	msg := checkpointtypes.NewMsgCheckpointBlock(
-		string(helper.GetAddress()[:]),
+		address,
 		start,
 		end,
 		root,
@@ -729,9 +735,14 @@ func (cp *CheckpointProcessor) checkIfNoAckIsRequired(checkpointContext *Checkpo
 
 // proposeCheckpointNoAck - sends Checkpoint NoAck to heimdall
 func (cp *CheckpointProcessor) proposeCheckpointNoAck() (err error) {
+	address, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	// send NO ACK
 	msg := checkpointtypes.NewMsgCheckpointNoAck(
-		string(helper.GetAddress()[:]),
+		address,
 	)
 
 	// return broadcast to heimdall
