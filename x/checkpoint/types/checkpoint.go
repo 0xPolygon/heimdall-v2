@@ -6,6 +6,7 @@ import (
 
 // CreateCheckpoint generate new checkpoint
 func CreateCheckpoint(
+	id uint64,
 	start uint64,
 	end uint64,
 	rootHash []byte,
@@ -14,6 +15,7 @@ func CreateCheckpoint(
 	timestamp uint64,
 ) Checkpoint {
 	return Checkpoint{
+		Id:         id,
 		StartBlock: start,
 		EndBlock:   end,
 		RootHash:   rootHash,
@@ -23,11 +25,11 @@ func CreateCheckpoint(
 	}
 }
 
-// SortHeaders sorts array of headers on the basis for timestamps
-func SortHeaders(headers []Checkpoint) []Checkpoint {
-	sort.Slice(headers, func(i, j int) bool {
-		return headers[i].Timestamp < headers[j].Timestamp
+// SortCheckpoints sorts array of checkpoints on the basis for timestamps
+func SortCheckpoints(checkpoints []Checkpoint) []Checkpoint {
+	sort.Slice(checkpoints, func(i, j int) bool {
+		return checkpoints[i].Timestamp < checkpoints[j].Timestamp
 	})
 
-	return headers
+	return checkpoints
 }

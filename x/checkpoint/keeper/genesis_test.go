@@ -29,6 +29,7 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	borChainId := "1234"
 
 	bufferedCheckpoint := types.CreateCheckpoint(
+		uint64(ackCount+1),
 		startBlock,
 		endBlock,
 		rootHash,

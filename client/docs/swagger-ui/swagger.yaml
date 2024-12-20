@@ -1056,6 +1056,9 @@ paths:
               checkpoint:
                 type: object
                 properties:
+                  id:
+                    type: string
+                    format: uint64
                   proposer:
                     type: string
                   start_block:
@@ -1183,6 +1186,9 @@ paths:
               checkpoint:
                 type: object
                 properties:
+                  id:
+                    type: string
+                    format: uint64
                   proposer:
                     type: string
                   start_block:
@@ -1238,6 +1244,9 @@ paths:
                 items:
                   type: object
                   properties:
+                    id:
+                      type: string
+                      format: uint64
                     proposer:
                       type: string
                     start_block:
@@ -1382,6 +1391,9 @@ paths:
               buffer_checkpoint:
                 type: object
                 properties:
+                  id:
+                    type: string
+                    format: uint64
                   proposer:
                     type: string
                   start_block:
@@ -1612,6 +1624,9 @@ paths:
               checkpoint:
                 type: object
                 properties:
+                  id:
+                    type: string
+                    format: uint64
                   proposer:
                     type: string
                   start_block:
@@ -3895,6 +3910,9 @@ definitions:
   heimdallv2.checkpoint.Checkpoint:
     type: object
     properties:
+      id:
+        type: string
+        format: uint64
       proposer:
         type: string
       start_block:
@@ -3965,6 +3983,9 @@ definitions:
       checkpoint:
         type: object
         properties:
+          id:
+            type: string
+            format: uint64
           proposer:
             type: string
           start_block:
@@ -3987,6 +4008,9 @@ definitions:
       checkpoint:
         type: object
         properties:
+          id:
+            type: string
+            format: uint64
           proposer:
             type: string
           start_block:
@@ -4011,6 +4035,9 @@ definitions:
         items:
           type: object
           properties:
+            id:
+              type: string
+              format: uint64
             proposer:
               type: string
             start_block:
@@ -4065,6 +4092,9 @@ definitions:
       buffer_checkpoint:
         type: object
         properties:
+          id:
+            type: string
+            format: uint64
           proposer:
             type: string
           start_block:
@@ -4158,6 +4188,9 @@ definitions:
       checkpoint:
         type: object
         properties:
+          id:
+            type: string
+            format: uint64
           proposer:
             type: string
           start_block:

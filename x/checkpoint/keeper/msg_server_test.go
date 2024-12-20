@@ -35,20 +35,22 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength)
+	checkpoint := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength, lastCheckpoint.Id+1)
 
-	// add current proposer to header
-	header.Proposer = validatorSet.Proposer.Signer
+	// add current proposer to checkpoint
+	checkpoint.Proposer = validatorSet.Proposer.Signer
 
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 
 	s.Run("Success", func() {
 		msgCheckpoint := types.NewMsgCheckpointBlock(
-			header.Proposer,
-			header.StartBlock,
-			header.EndBlock,
-			header.RootHash,
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
 			accRootHash,
 			borChainId,
 		)
@@ -67,13 +69,13 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	})
 
 	s.Run("Invalid Proposer", func() {
-		header.Proposer = common.Address{}.String()
+		checkpoint.Proposer = common.Address{}.String()
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(
-			header.Proposer,
-			header.StartBlock,
-			header.EndBlock,
-			header.RootHash,
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
 			accRootHash,
 			borChainId,
 		)
@@ -85,12 +87,12 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	})
 
 	s.Run("Checkpoint not in continuity", func() {
-		headerId := uint64(1)
+		cpNumber := uint64(1)
 
-		err = keeper.AddCheckpoint(ctx, headerId, header)
+		err = keeper.AddCheckpoint(ctx, checkpoint)
 		require.NoError(err)
 
-		_, err = keeper.GetCheckpointByNumber(ctx, headerId)
+		_, err = keeper.GetCheckpointByNumber(ctx, cpNumber)
 		require.NoError(err)
 
 		err = keeper.IncrementAckCount(ctx)
@@ -105,10 +107,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		}
 
 		msgCheckpoint := types.NewMsgCheckpointBlock(
-			header.Proposer,
+			checkpoint.Proposer,
 			start,
 			start+256,
-			header.RootHash,
+			checkpoint.RootHash,
 			accRootHash,
 			borChainId,
 		)
@@ -144,20 +146,22 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
-	// add current proposer to header
-	header.Proposer = validatorSet.Proposer.Signer
+	// add current proposer to checkpoint
+	checkpoint.Proposer = validatorSet.Proposer.Signer
 
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
 	msgCheckpoint := types.NewMsgCheckpointBlock(
-		header.Proposer,
-		header.StartBlock,
-		header.EndBlock,
-		header.RootHash,
+		checkpoint.Proposer,
+		checkpoint.StartBlock,
+		checkpoint.EndBlock,
+		checkpoint.RootHash,
 		accRootHash,
 		borChainId,
 	)
@@ -166,7 +170,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.NoError(err)
 
-	err = keeper.SetCheckpointBuffer(ctx, header)
+	err = keeper.SetCheckpointBuffer(ctx, checkpoint)
 	require.NoError(err)
 
 	checkpointBuffer, err := keeper.GetCheckpointFromBuffer(ctx)
@@ -203,20 +207,22 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
-	// add current proposer to header
-	header.Proposer = validatorSet.Proposer.Signer
+	// add current proposer to checkpoint
+	checkpoint.Proposer = validatorSet.Proposer.Signer
 
 	accRootHash, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	require.NoError(err)
 
 	msgCheckpoint := types.NewMsgCheckpointBlock(
-		header.Proposer,
-		header.StartBlock,
-		header.EndBlock,
-		header.RootHash,
+		checkpoint.Proposer,
+		checkpoint.StartBlock,
+		checkpoint.EndBlock,
+		checkpoint.RootHash,
 		accRootHash,
 		borChainId,
 	)
@@ -225,7 +231,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.NoError(err)
 
-	err = keeper.SetCheckpointBuffer(ctx, header)
+	err = keeper.SetCheckpointBuffer(ctx, checkpoint)
 	require.NoError(err)
 
 	// send checkpoint to handler
@@ -248,22 +254,24 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
-	// add current proposer to header
-	header.Proposer = validatorSet.Proposer.Signer
+	// add current proposer to checkpoint
+	checkpoint.Proposer = validatorSet.Proposer.Signer
 
-	headerId := uint64(1)
+	cpNumber := uint64(1)
 
 	s.Run("No checkpoint in buffer", func() {
 		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
-			headerId,
-			header.Proposer,
-			header.StartBlock,
-			header.EndBlock,
-			header.RootHash,
+			cpNumber,
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
 			testutil.RandomBytes(),
 			uint64(1),
 		)
@@ -272,17 +280,17 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 		require.ErrorContains(err, types.ErrBadAck.Error())
 	})
 
-	err = keeper.SetCheckpointBuffer(ctx, header)
+	err = keeper.SetCheckpointBuffer(ctx, checkpoint)
 	require.NoError(err)
 
 	s.Run("Success", func() {
 		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
-			headerId,
-			header.Proposer,
-			header.StartBlock,
-			header.EndBlock,
-			header.RootHash,
+			cpNumber,
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
 			testutil.RandomBytes(),
 			uint64(1),
 		)
@@ -297,11 +305,11 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	s.Run("Invalid start", func() {
 		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
-			headerId,
-			header.Proposer,
+			cpNumber,
+			checkpoint.Proposer,
 			uint64(123),
-			header.EndBlock,
-			header.RootHash,
+			checkpoint.EndBlock,
+			checkpoint.RootHash,
 			testutil.RandomBytes(),
 			uint64(1),
 		)
@@ -313,10 +321,10 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	s.Run("Invalid RootHash", func() {
 		MsgCpAck := types.NewMsgCpAck(
 			common.Address{}.String(),
-			headerId,
-			header.Proposer,
-			header.StartBlock,
-			header.EndBlock,
+			cpNumber,
+			checkpoint.Proposer,
+			checkpoint.StartBlock,
+			checkpoint.EndBlock,
 			testutil.RandomBytes(),
 			testutil.RandomBytes(),
 			uint64(1),
@@ -347,13 +355,16 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
+	require.NotNil(lastCheckpoint)
+	require.NotNil(lastCheckpoint.Id)
 
-	header := chSim.GenRandCheckpoint(start, maxSize)
+	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
-	// add current proposer to header
-	header.Proposer = validatorSet.Proposer.Signer
+	// add current proposer to checkpoint
+	checkpoint.Proposer = validatorSet.Proposer.Signer
+	checkpoint.Id = uint64(1)
 
-	err = keeper.AddCheckpoint(ctx, uint64(1), header)
+	err = keeper.AddCheckpoint(ctx, checkpoint)
 	require.NoError(err)
 
 	ackCount, err := keeper.GetAckCount(ctx)
@@ -385,7 +396,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
 	msgNoAck = types.MsgCpNoAck{
-		From: header.Proposer,
+		From: checkpoint.Proposer,
 	}
 
 	_, err = msgServer.CheckpointNoAck(ctx, &msgNoAck)

@@ -27,17 +27,18 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 	// Add finalised checkpoints to state
 	if len(data.Checkpoints) != 0 {
-		// check if we are provided all the headers
+		// check if we are provided all the checkpoints
 		if int(data.AckCount) != len(data.Checkpoints) {
 			k.Logger(ctx).Error("incorrect state in state-dump", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)
 			panic(err)
 		}
-		// sort headers before loading to state
-		data.Checkpoints = types.SortHeaders(data.Checkpoints)
+		// sort checkpoints before loading to state
+		data.Checkpoints = types.SortCheckpoints(data.Checkpoints)
 		// load checkpoints to state
 		for i, checkpoint := range data.Checkpoints {
 			checkpointIndex := uint64(i) + 1
-			if err := k.AddCheckpoint(ctx, checkpointIndex, checkpoint); err != nil {
+			checkpoint.Id = checkpointIndex
+			if err := k.AddCheckpoint(ctx, checkpoint); err != nil {
 				k.Logger(ctx).Error("error while adding the checkpoint to store",
 					"checkpointIndex", checkpointIndex,
 					"checkpoint", checkpoint.String(),
@@ -94,6 +95,6 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		BufferedCheckpoint: &bufferedCheckpoint,
 		LastNoAck:          lastNoAck,
 		AckCount:           ackCount,
-		Checkpoints:        types.SortHeaders(checkpoints),
+		Checkpoints:        types.SortCheckpoints(checkpoints),
 	}
 }
