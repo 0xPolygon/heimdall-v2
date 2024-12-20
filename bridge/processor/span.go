@@ -112,9 +112,7 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 			return
 		}
 
-		addressBytes := helper.GetAddress()
-		ac := address.NewHexCodec()
-		addressString, err := ac.BytesToString(addressBytes)
+		addrString, err := helper.GetAddressString()
 		if err != nil {
 			sp.Logger.Info("error converting address to string", "err", err)
 			return
@@ -123,7 +121,7 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 		// broadcast to heimdall
 		msg := types.MsgProposeSpan{
 			SpanId:     nextSpanMsg.Id,
-			Proposer:   addressString,
+			Proposer:   addrString,
 			StartBlock: nextSpanMsg.StartBlock,
 			EndBlock:   nextSpanMsg.EndBlock,
 			ChainId:    nextSpanMsg.ChainId,

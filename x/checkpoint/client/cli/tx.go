@@ -35,7 +35,7 @@ func NewTxCmd() *cobra.Command {
 
 	txCmd.AddCommand(
 		SendCheckpointCmd(ac),
-		SendCheckpointAckCmd(ac),
+		SendCheckpointAckCmd(),
 	)
 
 	return txCmd
@@ -89,7 +89,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 			// get and check proposer
 			proposer := viper.GetString(FlagProposerAddress)
 			if proposer == "" {
-				proposer, err = ac.BytesToString(helper.GetAddress())
+				proposer, err = helper.GetAddressString()
 				if err != nil {
 					return fmt.Errorf("the proposer address is invalid: %w", err)
 				}
@@ -157,7 +157,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 }
 
 // SendCheckpointAckCmd returns a CLI command handler for creating a MsgCpAck transaction.
-func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
+func SendCheckpointAckCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-ack",
 		Short: "send acknowledgement for checkpoint in buffer",
@@ -170,7 +170,7 @@ func SendCheckpointAckCmd(ac address.Codec) *cobra.Command {
 			// get and check proposer
 			proposer := viper.GetString(FlagProposerAddress)
 			if proposer == "" {
-				proposer, err = ac.BytesToString(helper.GetAddress())
+				proposer, err = helper.GetAddressString()
 				if err != nil {
 					return fmt.Errorf("the proposer address is invalid: %w", err)
 				}

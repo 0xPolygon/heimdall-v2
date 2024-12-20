@@ -2,6 +2,7 @@ package helper
 
 import (
 	"fmt"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"io"
 	"log"
 	"os"
@@ -453,6 +454,17 @@ func GetPubKey() secp256k1.PubKey {
 // GetAddress returns address object
 func GetAddress() []byte {
 	return GetPubKey().Address()
+}
+
+// GetAddressString returns address object as string
+func GetAddressString() (string, error) {
+	address := GetAddress()
+	ac := addressCodec.NewHexCodec()
+	addressString, err := ac.BytesToString(address)
+	if err != nil {
+		return "", err
+	}
+	return addressString, nil
 }
 
 // GetValidChains returns all the valid chains

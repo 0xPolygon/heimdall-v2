@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
-	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -130,15 +129,13 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		}
 		tracing.EndSpan(maxStateSyncSizeCheckSpan)
 
-		address := helper.GetAddress()
-		ac := addressCodec.NewHexCodec()
-		addressString, err := ac.BytesToString(address)
+		address, err := helper.GetAddressString()
 		if err != nil {
 			return fmt.Errorf("error converting address to string: %w", err)
 		}
 
 		msg := clerkTypes.NewMsgEventRecord(
-			addressString,
+			address,
 			vLog.TxHash.String(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,

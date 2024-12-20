@@ -14,7 +14,6 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -481,9 +480,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 
 	chainParams := checkpointContext.ChainmanagerParams.ChainParams
 
-	address := helper.GetAddress()
-	ac := addressCodec.NewHexCodec()
-	addressString, err := ac.BytesToString(address)
+	address, err := helper.GetAddressString()
 	if err != nil {
 		cp.Logger.Error("Error while converting address to string during checkpoint creation", "error", err)
 		return err
@@ -491,7 +488,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 
 	// create and send checkpoint message
 	msg := checkpointtypes.NewMsgCheckpointBlock(
-		addressString,
+		address,
 		start,
 		end,
 		root,
@@ -738,16 +735,14 @@ func (cp *CheckpointProcessor) checkIfNoAckIsRequired(checkpointContext *Checkpo
 
 // proposeCheckpointNoAck - sends Checkpoint NoAck to heimdall
 func (cp *CheckpointProcessor) proposeCheckpointNoAck() (err error) {
-	address := helper.GetAddress()
-	ac := addressCodec.NewHexCodec()
-	addressString, err := ac.BytesToString(address)
+	address, err := helper.GetAddressString()
 	if err != nil {
 		return fmt.Errorf("error converting address to string: %w", err)
 	}
 
 	// send NO ACK
 	msg := checkpointtypes.NewMsgCheckpointNoAck(
-		addressString,
+		address,
 	)
 
 	// return broadcast to heimdall
