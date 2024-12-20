@@ -430,6 +430,25 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 	return account, nil
 }
 
+// GetAccountParamsURL return auth account params
+func GetAccountParamsURL(cdc codec.Codec) (*authtypes.Params, error) {
+	logger := Logger()
+
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(AccountParamsURL))
+	if err != nil {
+		logger.Error("Error fetching account params", "err", err)
+		return nil, err
+	}
+
+	var params authtypes.QueryParamsResponse
+	if err = cdc.UnmarshalJSON(response, &params); err != nil {
+		logger.Error("Error unmarshalling auth params", "url", AccountParamsURL, "err", err)
+		return nil, err
+	}
+
+	return &params.Params, nil
+}
+
 // GetChainmanagerParams return chain manager params
 func GetChainmanagerParams(cdc codec.Codec) (*chainmanagertypes.Params, error) {
 	logger := Logger()

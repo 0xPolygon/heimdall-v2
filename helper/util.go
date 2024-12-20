@@ -31,12 +31,14 @@ import (
 
 const APIBodyLimit = 128 * 1024 * 1024 // 128 MB
 
-//go:generate mockgen -destination=./mocks/i_client_mock.go -package=mocks . HTTPClient
+//go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
 
-var Client HTTPClient
+var (
+	Client HTTPClient
+)
 
 // GetFromAddress returns the from address from the context's name
 func GetFromAddress(cliCtx client.Context) string {
@@ -348,7 +350,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 	sigV2 := signing.SignatureV2{
 		PubKey: cosmosPrivKey.PubKey(),
 		Data: &signing.SingleSignatureData{
-			SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
+			SignMode:  txf.SignMode(),
 			Signature: nil,
 		},
 		Sequence: txf.Sequence(),
@@ -372,7 +374,7 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 		PubKey:        cosmosPrivKey.PubKey(),
 	}
 
-	sigV2, err = clienttx.SignWithPrivKey(clientCtx.CmdContext, signing.SignMode_SIGN_MODE_DIRECT, signerData, tx, cosmosPrivKey, clientCtx.TxConfig, txf.Sequence())
+	sigV2, err = clienttx.SignWithPrivKey(clientCtx.CmdContext, txf.SignMode(), signerData, tx, cosmosPrivKey, clientCtx.TxConfig, txf.Sequence())
 	if err != nil {
 		return nil, err
 	}

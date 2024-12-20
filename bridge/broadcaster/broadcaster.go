@@ -8,7 +8,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	cometTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
@@ -18,7 +17,6 @@ import (
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -69,26 +67,15 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "BroadcastToHeimdall", time.Now())
 
 	txCfg := tb.CliCtx.TxConfig
-
-	txBldr := txCfg.NewTxBuilder()
-	err := txBldr.SetMsgs(msg)
-	if err != nil {
-		return &sdk.TxResponse{}, err
-	}
-
 	signMode, err := authsign.APISignModeToInternal(txCfg.SignModeHandler().DefaultMode())
 	if err != nil {
 		return &sdk.TxResponse{}, err
 	}
 
-	err = txBldr.SetSignatures(helper.GetSignature(signMode, tb.lastSeqNo))
+	authParams, err := util.GetAccountParamsURL(tb.CliCtx.Codec)
 	if err != nil {
 		return &sdk.TxResponse{}, err
 	}
-	txBldr.SetMemo(viper.GetString("memo"))
-
-	txBldr.SetGasLimit(uint64(cometTypes.DefaultBlockParams().MaxGas))
-	txBldr.SetFeeAmount(ante.DefaultFeeWantedPerTx)
 
 	// create a factory
 	txf := clienttx.Factory{}.
@@ -98,7 +85,10 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 		WithSignMode(signMode).
 		WithAccountNumber(tb.accNum).
 		WithSequence(tb.lastSeqNo).
-		WithKeybase(tb.CliCtx.Keyring)
+		WithKeybase(tb.CliCtx.Keyring).
+		WithSignMode(signMode).
+		WithFees(ante.DefaultFeeWantedPerTx.String()).
+		WithGas(authParams.MaxTxGas)
 
 	// setting this to true to as the if block in BroadcastTx
 	// might cause a cancelled transaction.
