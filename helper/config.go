@@ -2,7 +2,6 @@ package helper
 
 import (
 	"fmt"
-	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"io"
 	"log"
 	"os"
@@ -16,6 +15,7 @@ import (
 	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
