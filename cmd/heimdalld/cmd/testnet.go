@@ -155,7 +155,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 
 				// write config file
-				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cfgz, 0600)
+				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cfgz, 0o600)
 				if err != nil {
 					return err
 				}
@@ -252,7 +252,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 					return err
 				}
 
-				if err := tempfile.WriteFileAtomic(filepath.Join(outDir, "signer-dump.json"), signerJSON, 0600); err != nil {
+				if err := tempfile.WriteFileAtomic(filepath.Join(outDir, "signer-dump.json"), signerJSON, 0o600); err != nil {
 					fmt.Println("Error writing signer-dump", err)
 					return err
 				}

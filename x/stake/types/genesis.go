@@ -9,7 +9,8 @@ import (
 // NewGenesisState creates a new GenesisState instance
 func NewGenesisState(validators []*Validator,
 	currentValSet ValidatorSet,
-	stakingSequences []string) *GenesisState {
+	stakingSequences []string,
+) *GenesisState {
 	return &GenesisState{
 		Validators:          validators,
 		CurrentValidatorSet: currentValSet,

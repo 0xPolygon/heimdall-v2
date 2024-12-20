@@ -112,7 +112,6 @@ func (s *KeeperTestSuite) TestAddNewSpan() {
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-
 			err := borKeeper.AddNewSpan(ctx, &tc.span)
 			require.NoError(err)
 
@@ -151,7 +150,6 @@ func (s *KeeperTestSuite) TestAddNewRawSpan() {
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-
 			err := borKeeper.AddNewRawSpan(ctx, &tc.span)
 			require.NoError(err)
 
@@ -303,7 +301,6 @@ func (s *KeeperTestSuite) TestUpdateLastSpan() {
 			resLastSpan, err = borKeeper.GetLastSpan(ctx)
 			require.NoError(err)
 			require.Equal(tc.expNewLastSpan, &resLastSpan)
-
 		})
 	}
 }
@@ -589,5 +586,4 @@ func (s *KeeperTestSuite) genTestValidators() (staketypes.ValidatorSet, []staket
 	}
 
 	return valSet, vals
-
 }

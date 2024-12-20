@@ -135,7 +135,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorJoin() {
 
 		result := sideHandler(ctx, msgValJoin)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
-
 	})
 
 	s.Run("No EventLog", func() {
@@ -498,7 +497,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 
 		result := sideHandler(ctx, msg)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should Fail")
-
 	})
 
 	s.Run("Invalid BlockNumber", func() {
@@ -1502,7 +1500,6 @@ func decodeEvent(t *testing.T, eventName string, receipt ethTypes.Receipt) error
 
 	var err error
 	contractCaller, err := helper.NewContractCaller()
-
 	if err != nil {
 		t.Error("Error creating contract caller")
 	}

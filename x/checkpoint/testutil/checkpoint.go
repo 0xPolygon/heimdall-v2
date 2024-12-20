@@ -9,13 +9,14 @@ import (
 )
 
 // GenRandCheckpoint returns a random checkpoint header
-func GenRandCheckpoint(start uint64, headerSize uint64) (headerBlock types.Checkpoint) {
+func GenRandCheckpoint(start, headerSize, id uint64) (headerBlock types.Checkpoint) {
 	end := start + headerSize
 	borChainID := "1234"
 	rootHash := RandomBytes()
 	proposer := common.Address{}.String()
 
 	headerBlock = types.CreateCheckpoint(
+		id,
 		start,
 		end,
 		rootHash,

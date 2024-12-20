@@ -65,6 +65,10 @@ func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger
 		return err
 	}
 
+	if err := verifyCheckpoints(hv1Genesis, hv2GenesisPath); err != nil {
+		return err
+	}
+
 	logger.Info("Migration verified successfully")
 
 	return nil
@@ -334,6 +338,94 @@ func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) e
 
 	if len(hv1Checkpoints) != len(hv2Checkpoints) {
 		return fmt.Errorf("mismatch in checkpoints count: expected %d, got %d", len(hv1Checkpoints), len(hv2Checkpoints))
+	}
+
+	return nil
+}
+
+// verifyCheckpoints verifies the checkpoints in the genesis files by comparing the data in both versions
+func verifyCheckpoints(hv1Genesis map[string]interface{}, hv2GenesisPath string) error {
+	hv2Genesis, err := utils.LoadJSONFromFile(hv2GenesisPath)
+	if err != nil {
+		return err
+	}
+
+	// ensure checkpoints data exist in both versions
+	hv1CheckpointData, ok := hv1Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("checkpoint module not found in v1 app_state")
+	}
+
+	hv2CheckpointData, ok := hv2Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("checkpoint module not found in v2 app_state")
+	}
+
+	// ensure checkpoints data is in the correct format for both versions
+	hv1Checkpoints, ok := hv1CheckpointData["checkpoints"].([]interface{})
+	if !ok {
+		return fmt.Errorf("checkpoints not found or invalid format in v1")
+	}
+
+	hv2Checkpoints, ok := hv2CheckpointData["checkpoints"].([]interface{})
+	if !ok {
+		return fmt.Errorf("checkpoints not found or invalid format in v2")
+	}
+
+	// ensure checkpoints count is the same in both versions
+	if len(hv1Checkpoints) != len(hv2Checkpoints) {
+		return fmt.Errorf("mismatch in checkpoints count: v1 has %d, v2 has %d", len(hv1Checkpoints), len(hv2Checkpoints))
+	}
+
+	// ensure ack_count is present in both versions
+	hv1AckCountStr, ok := hv1CheckpointData["ack_count"].(string)
+	if !ok {
+		return fmt.Errorf("ack_count not found or invalid in v1")
+	}
+
+	hv2AckCountStr, ok := hv2CheckpointData["ack_count"].(string)
+	if !ok {
+		return fmt.Errorf("ack_count not found or invalid in v2")
+	}
+
+	// ensure ack_count is the same in both versions
+	hv1AckCount, err := strconv.Atoi(hv1AckCountStr)
+	if err != nil {
+		return fmt.Errorf("failed to convert v1 ack_count to integer: %w", err)
+	}
+
+	hv2AckCount, err := strconv.Atoi(hv2AckCountStr)
+	if err != nil {
+		return fmt.Errorf("failed to convert v2 ack_count to integer: %w", err)
+	}
+
+	if hv1AckCount != hv2AckCount {
+		return fmt.Errorf("mismatch in ack_count: v1 has %d, v2 has %d", hv1AckCount, hv2AckCount)
+	}
+
+	// ensure checkpoints are ordered by growing start_block in both versions
+	for i := 1; i < len(hv1Checkpoints); i++ {
+		hv1StartBlockPrev, _ := strconv.Atoi(hv1Checkpoints[i-1].(map[string]interface{})["start_block"].(string))
+		hv1StartBlockCurr, _ := strconv.Atoi(hv1Checkpoints[i].(map[string]interface{})["start_block"].(string))
+		if hv1StartBlockPrev >= hv1StartBlockCurr {
+			return fmt.Errorf("checkpoints in v1 are not ordered by growing start_block at index %d", i)
+		}
+	}
+
+	for i := 1; i < len(hv2Checkpoints); i++ {
+		hv2StartBlockPrev, _ := strconv.Atoi(hv2Checkpoints[i-1].(map[string]interface{})["start_block"].(string))
+		hv2StartBlockCurr, _ := strconv.Atoi(hv2Checkpoints[i].(map[string]interface{})["start_block"].(string))
+		if hv2StartBlockPrev >= hv2StartBlockCurr {
+			return fmt.Errorf("checkpoints in v2 are not ordered by growing start_block at index %d", i)
+		}
+	}
+
+	// ensure IDs are sequential in v2 checkpoints
+	for i := 0; i < len(hv2Checkpoints); i++ {
+		id, _ := strconv.Atoi(hv2Checkpoints[i].(map[string]interface{})["id"].(string))
+		if id != i+1 {
+			return fmt.Errorf("checkpoints in v2 have non-sequential IDs at index %d", i)
+		}
 	}
 
 	return nil

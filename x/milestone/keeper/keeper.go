@@ -46,7 +46,6 @@ func NewKeeper(
 	stakingKeeper types.StakeKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
-
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
 		panic(fmt.Errorf("invalid milestone authority address: %w", err))

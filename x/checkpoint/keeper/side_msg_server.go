@@ -33,7 +33,6 @@ func NewSideMsgServerImpl(keeper *Keeper) sidetxs.SideMsgServer {
 
 // SideTxHandler returns a side handler for "checkpoint" type messages.
 func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
-
 	switch methodName {
 	case checkpointTypeUrl:
 		return srv.SideHandleMsgCheckpoint
@@ -46,7 +45,6 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 
 // PostTxHandler returns a post handler for "checkpoint" type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
-
 	switch methodName {
 	case checkpointTypeUrl:
 		return srv.PostHandleMsgCheckpoint
@@ -195,7 +193,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	}
 
 	// fetch last checkpoint from store
-	if lastCheckpoint, err := srv.GetLastCheckpoint(ctx); err == nil {
+	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
+	if err == nil {
 		// make sure new checkpoint is after tip
 		if lastCheckpoint.EndBlock > msg.StartBlock {
 			logger.Error("checkpoint already exists",
@@ -247,6 +246,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 	// add checkpoint to buffer with root hash and account hash
 	if err = srv.SetCheckpointBuffer(ctx, types.Checkpoint{
+		Id:         lastCheckpoint.Id + 1,
 		StartBlock: msg.StartBlock,
 		EndBlock:   msg.EndBlock,
 		RootHash:   msg.RootHash,
@@ -339,7 +339,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// add checkpoint to store
-	if err = srv.AddCheckpoint(ctx, msg.Number, checkpointObj); err != nil {
+	checkpointObj.Id = msg.Number
+	if err = srv.AddCheckpoint(ctx, checkpointObj); err != nil {
 		logger.Error("error while adding checkpoint into store", "checkpointNumber", msg.Number)
 		return err
 	}

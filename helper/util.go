@@ -31,14 +31,12 @@ import (
 
 const APIBodyLimit = 128 * 1024 * 1024 // 128 MB
 
-//go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
+//go:generate mockgen -destination=./mocks/i_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
 
-var (
-	Client HTTPClient
-)
+var Client HTTPClient
 
 // GetFromAddress returns the from address from the context's name
 func GetFromAddress(cliCtx client.Context) string {

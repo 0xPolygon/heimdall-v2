@@ -12,15 +12,16 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 message Checkpoint {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
-  string proposer = 1 [
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
+  string proposer = 2 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
-  uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
-  bytes root_hash = 4 [ (amino.dont_omitempty) = true ];
-  string bor_chain_id = 5 [ (amino.dont_omitempty) = true ];
-  uint64 timestamp = 6 [ (amino.dont_omitempty) = true ];
+  uint64 start_block = 3 [ (amino.dont_omitempty) = true ];
+  uint64 end_block = 4 [ (amino.dont_omitempty) = true ];
+  bytes root_hash = 5 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
+  uint64 timestamp = 7 [ (amino.dont_omitempty) = true ];
 }
 
 message Params {

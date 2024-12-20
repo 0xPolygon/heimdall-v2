@@ -117,7 +117,7 @@ const (
 	DefaultMumbaiTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
 	DefaultAmoyTestnetSeeds   = "eb57fffe96d74312963ced94a94cbaf8e0d8ec2e@54.217.171.196:26656,080dcdffcc453367684b61d8f3ce032f357b0f73@13.251.184.185:26656"
 
-	secretFilePerm = 0600
+	secretFilePerm = 0o600
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hardfork
 	MaxStateSyncSize = 30000
@@ -134,9 +134,7 @@ const (
 	MilestoneBufferTime   = 256 * time.Second
 )
 
-var (
-	DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
-)
+var DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
 
 var cdc = amino.NewCodec()
 
@@ -192,13 +190,17 @@ type CustomAppConfig struct {
 var conf CustomAppConfig
 
 // MainChainClient stores eth clie nt for Main chain Network
-var mainChainClient *ethclient.Client
-var mainRPCClient *rpc.Client
+var (
+	mainChainClient *ethclient.Client
+	mainRPCClient   *rpc.Client
+)
 
 // borClient stores eth/rpc client for Polygon Pos Network
-var borClient *ethclient.Client
-var borRPCClient *rpc.Client
-var borGRPCClient *borgrpc.BorGRPCClient
+var (
+	borClient     *ethclient.Client
+	borRPCClient  *rpc.Client
+	borGRPCClient *borgrpc.BorGRPCClient
+)
 
 // private key object
 var privKeyObject secp256k1.PrivKey
@@ -949,7 +951,7 @@ func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 
 func GetLogsWriter(logsWriterFile string) io.Writer {
 	if logsWriterFile != "" {
-		logWriter, err := os.OpenFile(logsWriterFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		logWriter, err := os.OpenFile(logsWriterFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 		if err != nil {
 			log.Fatalf("error opening log writer file: %v", err)
 		}

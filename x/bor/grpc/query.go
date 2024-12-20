@@ -11,13 +11,11 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
-
 	proto "github.com/maticnetwork/polyproto/bor"
 	protoutil "github.com/maticnetwork/polyproto/utils"
 )
 
 func (h *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endBlock uint64) (string, error) {
-
 	req := &proto.GetRootHashRequest{
 		StartBlockNumber: startBlock,
 		EndBlockNumber:   endBlock,
@@ -36,7 +34,6 @@ func (h *BorGRPCClient) GetRootHash(ctx context.Context, startBlock uint64, endB
 }
 
 func (h *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, endBlock uint64, rootHash string, milestoneId string) (bool, error) {
-
 	req := &proto.GetVoteOnHashRequest{
 		StartBlockNumber: startBlock,
 		EndBlockNumber:   endBlock,
@@ -57,7 +54,6 @@ func (h *BorGRPCClient) GetVoteOnHash(ctx context.Context, startBlock uint64, en
 }
 
 func (h *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*ethTypes.Header, error) {
-
 	if blockID > math.MaxInt64 {
 		return nil, fmt.Errorf("blockID too large: %d", blockID)
 	}
@@ -87,7 +83,6 @@ func (h *BorGRPCClient) HeaderByNumber(ctx context.Context, blockID int64) (*eth
 }
 
 func (h *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethTypes.Block, error) {
-
 	if blockID > math.MaxInt64 {
 		return nil, fmt.Errorf("blockID too large: %d", blockID)
 	}
@@ -116,7 +111,6 @@ func (h *BorGRPCClient) BlockByNumber(ctx context.Context, blockID int64) (*ethT
 }
 
 func (h *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
-
 	req := &proto.ReceiptRequest{
 		Hash: protoutil.ConvertHashToH256(txHash),
 	}
@@ -134,7 +128,6 @@ func (h *BorGRPCClient) TransactionReceipt(ctx context.Context, txHash common.Ha
 }
 
 func (h *BorGRPCClient) BorBlockReceipt(ctx context.Context, txHash common.Hash) (*ethTypes.Receipt, error) {
-
 	req := &proto.ReceiptRequest{
 		Hash: protoutil.ConvertHashToH256(txHash),
 	}

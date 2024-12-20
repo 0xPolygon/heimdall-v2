@@ -73,7 +73,6 @@ func (AppModule) RegisterInterfaces(registry codectypes.InterfaceRegistry) {
 type AppModule struct {
 	keeper keeper.Keeper
 	// contractCaller helper.contractCaller
-
 }
 
 // IsAppModule implements the appmodule.AppModule interface.

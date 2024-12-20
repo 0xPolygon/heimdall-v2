@@ -1,5 +1,5 @@
 // DONTCOVER
-// nolint
+//nolint
 package v034
 
 import (
@@ -12,9 +12,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-var (
-	_ ProposalContent = TextProposal{}
-)
+var _ ProposalContent = TextProposal{}
 
 const (
 	ModuleName = "gov"

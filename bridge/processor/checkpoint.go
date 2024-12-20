@@ -112,7 +112,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 // 2. check if checkpoint has to be proposed for given header block
 // 3. if so, propose checkpoint to heimdall.
 func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (err error) {
-	var header = types.Header{}
+	header := types.Header{}
 	if err := header.UnmarshalJSON([]byte(headerBlockStr)); err != nil {
 		cp.Logger.Error("Error while unmarshalling the header block", "error", err)
 		return err
@@ -260,7 +260,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		return err
 	}
 
-	var log = types.Log{}
+	log := types.Log{}
 	if err = json.Unmarshal([]byte(checkpointAckStr), &log); err != nil {
 		cp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -385,7 +385,6 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 		cp.Logger.Error("Error while fetching current header block object from rootchain", "error", err)
 		return nil, err
 	}
-
 	// find next start/end
 	var start, end uint64
 	start = currentEnd
@@ -681,12 +680,12 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 func (cp *CheckpointProcessor) getCheckpointSignatures() ([]checkpointtypes.CheckpointSignature, error) {
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.CheckpointSignaturesURL))
 	if err != nil {
-		return nil, fmt.Errorf("Error while sending request for checkpoint signatures: %v", err)
+		return nil, fmt.Errorf("Error while sending request for checkpoint signatures: %w", err)
 	}
 
 	var res checkpointtypes.QueryCheckpointSignaturesResponse
 	if err := json.Unmarshal(response, &res); err != nil {
-		return nil, fmt.Errorf("Error unmarshalling checkpoint signatures: %v", err)
+		return nil, fmt.Errorf("Error unmarshalling checkpoint signatures: %w", err)
 	}
 
 	return res.Signatures, nil
