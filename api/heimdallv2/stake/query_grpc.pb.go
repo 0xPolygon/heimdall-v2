@@ -25,6 +25,7 @@ const (
 	Query_GetValidatorStatusByAddress_FullMethodName = "/heimdallv2.stake.Query/GetValidatorStatusByAddress"
 	Query_GetTotalPower_FullMethodName               = "/heimdallv2.stake.Query/GetTotalPower"
 	Query_IsStakeTxOld_FullMethodName                = "/heimdallv2.stake.Query/IsStakeTxOld"
+	Query_GetProposersByTimes_FullMethodName         = "/heimdallv2.stake.Query/GetProposersByTimes"
 )
 
 // QueryClient is the client API for Query service.
@@ -44,6 +45,8 @@ type QueryClient interface {
 	GetTotalPower(ctx context.Context, in *QueryTotalPowerRequest, opts ...grpc.CallOption) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
+	// GetProposersByTimes queries for the proposers by Tendermint iterations
+	GetProposersByTimes(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error)
 }
 
 type queryClient struct {
@@ -108,6 +111,15 @@ func (c *queryClient) IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxReq
 	return out, nil
 }
 
+func (c *queryClient) GetProposersByTimes(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error) {
+	out := new(QueryProposersResponse)
+	err := c.cc.Invoke(ctx, Query_GetProposersByTimes_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -125,6 +137,8 @@ type QueryServer interface {
 	GetTotalPower(context.Context, *QueryTotalPowerRequest) (*QueryTotalPowerResponse, error)
 	// IsStakeTxOld queries for the staking sequence
 	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)
+	// GetProposersByTimes queries for the proposers by Tendermint iterations
+	GetProposersByTimes(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -149,6 +163,9 @@ func (UnimplementedQueryServer) GetTotalPower(context.Context, *QueryTotalPowerR
 }
 func (UnimplementedQueryServer) IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsStakeTxOld not implemented")
+}
+func (UnimplementedQueryServer) GetProposersByTimes(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProposersByTimes not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -271,6 +288,24 @@ func _Query_IsStakeTxOld_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetProposersByTimes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProposersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetProposersByTimes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetProposersByTimes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetProposersByTimes(ctx, req.(*QueryProposersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -301,6 +336,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsStakeTxOld",
 			Handler:    _Query_IsStakeTxOld_Handler,
+		},
+		{
+			MethodName: "GetProposersByTimes",
+			Handler:    _Query_GetProposersByTimes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -41,7 +41,7 @@ const (
 	CheckpointSignaturesURL = "/checkpoint/signatures"
 	MilestoneCountURL       = "/milestone/count"
 	ChainManagerParamsURL   = "/chainmanager/params"
-	ProposersURL            = "/stake/proposer/%v"
+	ProposersURL            = "/stake/proposers/%v"
 	MilestoneProposersURL   = "/milestone/proposer/%v"
 	BufferedCheckpointURL   = "/checkpoints/buffer"
 	LatestCheckpointURL     = "/checkpoints/latest"
@@ -158,8 +158,7 @@ func IsMilestoneProposer() (bool, error) {
 	logger := Logger()
 
 	var (
-		proposers []staketypes.Validator
-		count     = uint64(1)
+		count = uint64(1)
 	)
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
@@ -168,19 +167,20 @@ func IsMilestoneProposer() (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result, &proposers)
+	var response milestoneTypes.QueryMilestoneProposerResponse
+	err = json.Unmarshal(result, &response)
 	if err != nil {
 		logger.Error("error unmarshalling milestone proposer slice", "error", err)
 		return false, err
 	}
 
-	if len(proposers) == 0 {
+	if len(response.Proposers) == 0 {
 		logger.Error("length of proposer list is 0")
 		return false, errors.Errorf("Length of proposer list is 0")
 	}
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(proposers[0].Signer)
+	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false, err

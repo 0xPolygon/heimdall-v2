@@ -2371,6 +2371,78 @@ paths:
           format: uint64
       tags:
         - Query
+  /stake/proposers/{times}:
+    get:
+      summary: GetProposersByTimes queries for the proposers by Tendermint iterations
+      operationId: GetProposersByTimes
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              proposers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    val_id:
+                      type: string
+                      format: uint64
+                    start_epoch:
+                      type: string
+                      format: uint64
+                    end_epoch:
+                      type: string
+                      format: uint64
+                    nonce:
+                      type: string
+                      format: uint64
+                    voting_power:
+                      type: string
+                      format: int64
+                    pub_key:
+                      type: string
+                      format: byte
+                    signer:
+                      type: string
+                    last_updated:
+                      type: string
+                    jailed:
+                      type: boolean
+                    proposer_priority:
+                      type: string
+                      format: int64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: times
+          in: path
+          required: true
+          type: string
+          format: uint64
+      tags:
+        - Query
   /stake/signer/{val_address}:
     get:
       summary: GetSignerByAddress queries validator info for a given validator address
@@ -4667,6 +4739,41 @@ definitions:
           total_voting_power:
             type: string
             format: int64
+  heimdallv2.stake.QueryProposersResponse:
+    type: object
+    properties:
+      proposers:
+        type: array
+        items:
+          type: object
+          properties:
+            val_id:
+              type: string
+              format: uint64
+            start_epoch:
+              type: string
+              format: uint64
+            end_epoch:
+              type: string
+              format: uint64
+            nonce:
+              type: string
+              format: uint64
+            voting_power:
+              type: string
+              format: int64
+            pub_key:
+              type: string
+              format: byte
+            signer:
+              type: string
+            last_updated:
+              type: string
+            jailed:
+              type: boolean
+            proposer_priority:
+              type: string
+              format: int64
   heimdallv2.stake.QuerySignerResponse:
     type: object
     properties:
