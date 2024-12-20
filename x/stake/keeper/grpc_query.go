@@ -124,7 +124,6 @@ func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryPr
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	// get milestone validator set
 	validatorSet, err := q.k.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
