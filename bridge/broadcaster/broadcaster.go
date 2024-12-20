@@ -13,7 +13,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
-	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
@@ -44,15 +43,13 @@ func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context) *TxBroadcaster {
 	cliCtx.BroadcastMode = flags.BroadcastSync
 
 	// current address
-	address := helper.GetAddress()
-	ac := addressCodec.NewHexCodec()
-	addressString, err := ac.BytesToString(address)
+	address, err := helper.GetAddressString()
 	if err != nil {
 		panic("Error converting address to string")
 	}
 
-	cliCtx.FromAddress = sdk.MustAccAddressFromHex(addressString)
-	account, err := util.GetAccount(cliCtx, addressString)
+	cliCtx.FromAddress = sdk.MustAccAddressFromHex(address)
+	account, err := util.GetAccount(cliCtx, address)
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
 	}
@@ -144,17 +141,15 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 // Helper function to update account sequence
 func updateAccountSequence(tb *TxBroadcaster) error {
 	// current address
-	address := helper.GetAddress()
-	ac := addressCodec.NewHexCodec()
-	addressString, err := ac.BytesToString(address)
+	address, err := helper.GetAddressString()
 	if err != nil {
 		return fmt.Errorf("error converting address to string: %w", err)
 	}
 
 	// fetch from APIs
-	account, errAcc := util.GetAccount(tb.CliCtx, addressString)
+	account, errAcc := util.GetAccount(tb.CliCtx, address)
 	if errAcc != nil {
-		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
+		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, address)))
 		return errAcc
 	}
 

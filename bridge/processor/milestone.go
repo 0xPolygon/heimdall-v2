@@ -174,9 +174,14 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 
 	chainParams := milestoneContext.ChainmanagerParams.ChainParams
 
+	address, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	// create and send milestone message
 	msg := milestoneTypes.NewMsgMilestoneBlock(
-		string(helper.GetAddress()[:]),
+		address,
 		startNum,
 		endNum,
 		endHash[:],
@@ -260,9 +265,14 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 
 	mp.Logger.Info("✅ Creating and broadcasting milestone-timeout")
 
+	address, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	// create and send milestone message
 	msg := milestoneTypes.NewMsgMilestoneTimeout(
-		string(helper.GetAddress()[:]),
+		address,
 	)
 
 	// return broadcast to heimdall
