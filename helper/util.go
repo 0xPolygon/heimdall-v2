@@ -25,6 +25,7 @@ import (
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
@@ -231,10 +232,6 @@ func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
 func GetHeimdallServerEndpoint(endpoint string) string {
 	url, _ := strings.CutPrefix(conf.API.Address, "tcp")
 	addr := "http" + url + endpoint
-	// u, _ := url.Parse(addr)
-	// fmt.Println("PATH!!: ", u.Path)
-	// u.Path = path.Join(u.Path, endpoint)
-
 	return addr
 }
 
@@ -345,7 +342,47 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 		}
 	}
 
-	if err = clienttx.Sign(clientCtx.CmdContext, txf, clientCtx.FromName, tx, true); err != nil {
+	cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: GetPrivKey()}
+
+	// First round: we gather all the signer infos. We use the "set empty
+	// signature" hack to do that.
+	var sigsV2 []signing.SignatureV2
+	sigV2 := signing.SignatureV2{
+		PubKey: cosmosPrivKey.PubKey(),
+		Data: &signing.SingleSignatureData{
+			SignMode:  signing.SignMode_SIGN_MODE_DIRECT,
+			Signature: nil,
+		},
+		Sequence: txf.Sequence(),
+	}
+
+	sigsV2 = append(sigsV2, sigV2)
+	err = tx.SetSignatures(sigsV2...)
+	if err != nil {
+		return nil, err
+	}
+
+	addrStr := sdk.MustHexifyAddressBytes(cosmosPrivKey.PubKey().Address())
+
+	// Second round: all signer infos are set, so each signer can sign.
+	sigsV2 = []signing.SignatureV2{}
+	signerData := authsigning.SignerData{
+		Address:       addrStr,
+		ChainID:       txf.ChainID(),
+		AccountNumber: txf.AccountNumber(),
+		Sequence:      txf.Sequence(),
+		PubKey:        cosmosPrivKey.PubKey(),
+	}
+
+	sigV2, err = clienttx.SignWithPrivKey(clientCtx.CmdContext, signing.SignMode_SIGN_MODE_DIRECT, signerData, tx, cosmosPrivKey, clientCtx.TxConfig, txf.Sequence())
+	if err != nil {
+		return nil, err
+	}
+
+	sigsV2 = append(sigsV2, sigV2)
+
+	err = tx.SetSignatures(sigsV2...)
+	if err != nil {
 		return nil, err
 	}
 
