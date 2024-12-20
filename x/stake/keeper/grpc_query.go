@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -111,4 +112,37 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 	}
 
 	return &types.QueryStakeIsOldTxResponse{IsOld: true}, nil
+}
+
+// GetProposersByTimes queries for the proposers by Tendermint iterations
+func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryProposersRequest) (*types.QueryProposersResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.Times >= math.MaxInt64 {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// get milestone validator set
+	validatorSet, err := q.k.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	times := int(req.Times)
+	if times > len(validatorSet.Validators) {
+		times = len(validatorSet.Validators)
+	}
+
+	// init proposers
+	proposers := make([]types.Validator, times)
+
+	// get proposers
+	for index := 0; index < times; index++ {
+		proposers[index] = *(validatorSet.GetProposer())
+		validatorSet.IncrementProposerPriority(1)
+	}
+
+	return &types.QueryProposersResponse{Proposers: proposers}, nil
 }
