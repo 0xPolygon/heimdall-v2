@@ -95,10 +95,6 @@ func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLeng
 			return err
 		}
 
-		if result == 0 {
-			return fmt.Errorf("got nil result while fetching milestone count")
-		}
-
 		start := helper.GetMilestoneBorBlockHeight()
 
 		if result != 0 {
