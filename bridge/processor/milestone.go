@@ -8,6 +8,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/google/uuid"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -174,9 +175,16 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 
 	chainParams := milestoneContext.ChainmanagerParams.ChainParams
 
+	address := helper.GetAddress()
+	ac := addressCodec.NewHexCodec()
+	addressString, err := ac.BytesToString(address)
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	// create and send milestone message
 	msg := milestoneTypes.NewMsgMilestoneBlock(
-		string(helper.GetAddress()[:]),
+		addressString,
 		startNum,
 		endNum,
 		endHash[:],
@@ -260,9 +268,16 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 
 	mp.Logger.Info("✅ Creating and broadcasting milestone-timeout")
 
+	address := helper.GetAddress()
+	ac := addressCodec.NewHexCodec()
+	addressString, err := ac.BytesToString(address)
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	// create and send milestone message
 	msg := milestoneTypes.NewMsgMilestoneTimeout(
-		string(helper.GetAddress()[:]),
+		addressString,
 	)
 
 	// return broadcast to heimdall

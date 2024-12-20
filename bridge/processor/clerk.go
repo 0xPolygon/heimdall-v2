@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -14,7 +16,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/common/tracing"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -129,8 +130,15 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		}
 		tracing.EndSpan(maxStateSyncSizeCheckSpan)
 
+		address := helper.GetAddress()
+		ac := addressCodec.NewHexCodec()
+		addressString, err := ac.BytesToString(address)
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		msg := clerkTypes.NewMsgEventRecord(
-			addressUtil.FormatAddress(string(helper.GetAddress())),
+			addressString,
 			vLog.TxHash.String(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,

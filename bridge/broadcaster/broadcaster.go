@@ -153,7 +153,7 @@ func updateAccountSequence(tb *TxBroadcaster) error {
 	// fetch from APIs
 	account, errAcc := util.GetAccount(tb.CliCtx, addressString)
 	if errAcc != nil {
-		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
+		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, addressString)))
 		return errAcc
 	}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/RichardKnop/machinery/v1/tasks"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTx "github.com/cosmos/cosmos-sdk/x/auth/tx"
@@ -120,9 +121,16 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address := helper.GetAddress()
+		ac := addressCodec.NewHexCodec()
+		addressString, err := ac.BytesToString(address)
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator join
 		msg, err := stakingTypes.NewMsgValidatorJoin(
-			string(helper.GetAddress()[:]),
+			addressString,
 			event.ValidatorId.Uint64(),
 			event.ActivationEpoch.Uint64(),
 			math.NewIntFromBigInt(event.Amount),
@@ -204,9 +212,16 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address := helper.GetAddress()
+		ac := addressCodec.NewHexCodec()
+		addressString, err := ac.BytesToString(address)
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator exit
 		msg, err := stakingTypes.NewMsgValidatorExit(
-			string(helper.GetAddress()[:]),
+			addressString,
 			event.ValidatorId.Uint64(),
 			event.DeactivationEpoch.Uint64(),
 			vLog.TxHash.Bytes(),
@@ -283,9 +298,16 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address := helper.GetAddress()
+		ac := addressCodec.NewHexCodec()
+		addressString, err := ac.BytesToString(address)
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator update
 		msg, err := stakingTypes.NewMsgStakeUpdate(
-			string(helper.GetAddress()[:]),
+			addressString,
 			event.ValidatorId.Uint64(),
 			math.NewIntFromBigInt(event.NewAmount),
 			vLog.TxHash.Bytes(),
@@ -378,9 +400,16 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address := helper.GetAddress()
+		ac := addressCodec.NewHexCodec()
+		addressString, err := ac.BytesToString(address)
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// signer change
 		msg, err := stakingTypes.NewMsgSignerUpdate(
-			string(helper.GetAddress()[:]),
+			addressString,
 			event.ValidatorId.Uint64(),
 			newSignerPubKey,
 			vLog.TxHash.Bytes(),
