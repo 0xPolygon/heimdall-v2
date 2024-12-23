@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -59,10 +58,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	fmt.Println("LAST SPAN!!: ", lastSpan)
-
 	if req.SpanId != lastSpan.Id+1 {
-		fmt.Println("LAST SPAN ID!!: ", lastSpan.Id, req.SpanId, req)
 		return nil, status.Errorf(codes.InvalidArgument, "invalid span id")
 	}
 

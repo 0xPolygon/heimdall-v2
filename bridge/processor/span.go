@@ -75,11 +75,9 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	}
 
 	if lastSpan == nil {
-		fmt.Println("NIL LAST SPAN!!")
+		sp.Logger.Debug("Last span not found")
 		return
 	}
-
-	fmt.Println("LAST SPAN!!: ", lastSpan)
 
 	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.Id, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
 
@@ -152,26 +150,13 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
 	if err != nil {
 		sp.Logger.Error("Error while fetching latest span")
-		fmt.Println("ERROR WHILE FETCHING LAST SPAN: ", err)
 		return nil, err
 	}
 
 	var lastSpan types.QueryLatestSpanResponse
-	// if err = lastSpan.Unmarshal(result); err != nil {
-	// 	fmt.Println("ERROR HRE!!: ", err)
-	// 	return nil, err
-	// }
-
 	if err = sp.cliCtx.Codec.UnmarshalJSON(result, &lastSpan); err != nil {
-		fmt.Println("ERROR HERE: ", err)
+		sp.Logger.Error("Error unmarshalling span", "error", err)
 	}
-	// if err = proto.Unmarshal(result, &lastSpan); err != nil {
-	// 	sp.Logger.Error("Error unmarshalling span", "error", err)
-	// 	fmt.Println("ERROR WHILE UNMARSHALLING LAST SPAN: ", err)
-	// 	return nil, err
-	// }
-
-	fmt.Println("SPAN FETCGeD IN getLastSpan: ", lastSpan)
 	return &lastSpan.Span, nil
 }
 
@@ -215,9 +200,6 @@ func (sp *SpanProcessor) fetchNextSpanDetails(id uint64, start uint64) (*types.S
 		sp.Logger.Error("Error while fetching chainmanager params", "error", err)
 		return nil, err
 	}
-
-	fmt.Println("CONFIG PARAMS: ", configParams)
-	fmt.Println("FROM ADDR: ", helper.GetFromAddress(sp.cliCtx))
 
 	q := req.URL.Query()
 	q.Add("bor_chain_id", configParams.ChainParams.BorChainId)
