@@ -368,8 +368,8 @@ func NewHeimdallApp(
 	app.BasicManager.RegisterLegacyAminoCodec(legacyAmino)
 	app.BasicManager.RegisterInterfaces(interfaceRegistry)
 
-	sideTxCfg := sidetxs.NewSideTxConfigurator()
-	app.RegisterSideMsgServices(sideTxCfg)
+	app.sideTxCfg = sidetxs.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(app.sideTxCfg)
 
 	// Set the voteExtension methods to HeimdallApp
 	bApp.SetExtendVoteHandler(app.ExtendVoteHandler())
@@ -428,7 +428,7 @@ func NewHeimdallApp(
 	app.SetPreBlocker(app.PreBlocker)
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
-	app.setAnteHandler(txConfig, sideTxCfg)
+	app.setAnteHandler(txConfig, app.sideTxCfg)
 	app.setPostHandler()
 
 	// At startup, after all modules have been registered, check that all proto
