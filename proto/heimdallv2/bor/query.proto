@@ -34,7 +34,7 @@ service Query {
   // GetNextSpan queries the next span given a QueryNextSpanRequest.
   rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/prepare/{span_id}";
+    option (google.api.http).get = "/bor/span/prepare";
   }
 
   // GetSpanById retrieves a span by its id.
