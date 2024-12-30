@@ -23,12 +23,6 @@ service Query {
     option (google.api.http).get = "/bor/span/latest";
   }
 
-  // GetSpanById retrieves a span by its id.
-  rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/{id}";
-  }
-
   // GetNextSpanSeed queries the next span seed given a
   // QueryNextSpanSeedRequest.
   rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
@@ -41,6 +35,12 @@ service Query {
   rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/span/prepare/{span_id}";
+  }
+
+  // GetSpanById retrieves a span by its id.
+  rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/{id}";
   }
 
   // GetBorParams queries the parameters of x/bor module.
