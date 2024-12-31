@@ -61,6 +61,8 @@ message MsgWithdrawFeeTx {
 ## CLI Commands
 [//]: # (TODO HV2: populate and check the commands below)
 
+### Topup fee
+
 ```bash
 ```
 
