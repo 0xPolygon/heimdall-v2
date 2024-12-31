@@ -1,4 +1,5 @@
 [//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2780)
 
 # Checkpoint
 
@@ -100,7 +101,7 @@ string from = 1 [
 ## CLI Commands
 
 ### Send checkpoint
-
+[//]: # (TODO HV2: check the commands below, heimdalld based heimdall-cli does not have checkpoint module commands for tx)
 ```bash
 heimdallcli tx checkpoint send-checkpoint \
  --proposer=<proposer-address> \
@@ -131,6 +132,27 @@ heimdallcli tx checkpoint send-noack --chain-id <chain-id>
 ## REST APIs
 
 ### Post checkpoint ack
+[//]: # (TODO:HV2 no endpoint provided here)
+<!-- from swagger but gives method not implemented error
+
+curl -X 'POST' \
+  'localhost:1317/checkpoint/ack' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "base_req": {
+    "address": "string",
+    "chain_id": "string"
+  },
+  "end_block": "string",
+  "from": "string",
+  "header_block": "string",
+  "log_index": "string",
+  "proposer": "string",
+  "root_Hash": "string",
+  "start_block": "string",
+  "tx_hash": "string"
+}' -->
 
 ```bash
 curl -X POST ...

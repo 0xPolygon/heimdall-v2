@@ -1,4 +1,5 @@
 [//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2780)
 
 # Milestone module
 
@@ -90,4 +91,17 @@ string from = 1 [
 
 ## CLI Commands
 
+```bash
+./build/heimdalld query milestone get-count
+```
+
+```bash
+./build/heimdalld query milestone get-latest-milestone
+```
+
+```bash
+./build/heimdalld query milestone get-milestone-proposer <milestone-id>
+```
+
 ## REST APIs
+[//]: # (TODO HV2: populate the commands below)

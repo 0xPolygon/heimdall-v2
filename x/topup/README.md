@@ -1,4 +1,5 @@
 [//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2780)
 
 # Topup module
 
@@ -58,8 +59,7 @@ message MsgWithdrawFeeTx {
 ```
 
 ## CLI Commands
-
-### Topup fee
+[//]: # (TODO HV2: populate and check the commands below)
 
 ```bash
 ```
@@ -67,12 +67,13 @@ message MsgWithdrawFeeTx {
 ### Withdraw fee
 
 ```bash
+./build/heimdalld tx topup withdraw-fee <proposer> <amount≥
 ```
 
 To check reflected topup on account run following command
 
 ```bash
-heimdalld query auth account <validator-address> --trust-node
+./build/heimdalld query auth account <validator-address>
 ```
 
 ## REST APIs
