@@ -131,12 +131,66 @@ heimdallcli tx checkpoint send-noack --chain-id <chain-id>
 
 ## REST APIs
 
+### Get params
+
+```bash
+curl localhost:1317/checkpoints/params
+```
+
+### Get acknoledgement count
+
+```bash
+curl localhost:1317/checkpoints/count
+```
+
+### Get latest checkpoint
+
+```bash
+curl localhost:1317/checkpoints/latest
+```
+
+### Get checkpoint buffer
+
+```bash
+curl localhost:1317/checkpoints/buffer
+```
+
+### Get last no-ack
+
+```bash
+curl localhost:1317/checkpoints/last-no-ack
+```
+
+### Get next checkpoint
+
+```bash
+curl localhost:1317/checkpoints/prepare-next?bor_chain_id=<bor-chain-id>
+```
+
+### Get checkpoint list
+
+```bash
+curl localhost:1317/checkpoints/<number>
+```
+
+### Get current proposer
+
+```bash
+curl localhost:1317/checkpoint/proposers/current
+```
+
+### Get proposers
+
+```bash
+curl localhost:1317/checkpoint/proposers/<times>
+```
+
 ### Post checkpoint ack
 [//]: # (TODO:HV2 no endpoint provided here)
 <!-- from swagger but gives method not implemented error
 
 curl -X 'POST' \
-  'localhost:1317/checkpoint/ack' \
+  'localhost:1317/checkpoints/ack' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{

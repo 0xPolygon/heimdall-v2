@@ -136,7 +136,19 @@ curl -X GET "localhost:1317/clerk/event-record/<event-id>"
 ```
 
 ```bash
+curl -X GET "localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>"
+```
+
+```bash
 curl -X GET "localhost:1317/clerk/event-record/list?from-id=<from-id>&to-time=<time-in-unix>&limit=<limit>"
+```
+
+```bash
+curl +X GET "localhost:1317/clerk/time?from_time=<from-time>&to_time=<to-time>&page=<page>&limit=<limit>"
+```
+
+```bash
+curl +X GET "localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>"
 ```
 
 [//]: # (TODO HV2: check the endpoint below, isoldtx endpoints are currently giving memory errors)

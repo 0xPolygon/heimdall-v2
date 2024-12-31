@@ -152,6 +152,10 @@ curl localhost:1317/bor/span/<SPAN_ID>
 ```
 
 ```bash
+curl localhost:1317/bor/span/list
+```
+
+```bash
 curl localhost:1317/bor/span/latest
 ```
 

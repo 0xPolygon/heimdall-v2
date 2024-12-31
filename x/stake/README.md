@@ -165,3 +165,27 @@ curl -X 'GET' 'localhost:1317/stake/validator-set'
 ```bash
 curl -X 'GET'  'localhost:1317/stake/validator/<validator-id>' 
 ```
+
+### Get signer by address
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/signer/<validator-address>' 
+```
+
+### Get validator status by address
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/validator-status/<validator-address>' 
+```
+
+### Get total power
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/total-power' 
+```
+
+### Is stake transaction processed
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>' 
+```

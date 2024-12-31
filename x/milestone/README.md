@@ -104,4 +104,31 @@ string from = 1 [
 ```
 
 ## REST APIs
-[//]: # (TODO HV2: populate the commands below)
+
+```bash
+curl localhost:1317/milestone/params
+```
+
+```bash
+curl localhost:1317/milestone/count
+```
+
+```bash
+curl localhost:1317/milestone/latest
+```
+
+```bash
+curl localhost:1317/milestone/<number>
+```
+
+```bash
+curl localhost:1317/milestone/last-no-ack
+```
+
+```bash
+curl localhost:1317/milestone/no-ack/<id>
+```
+
+```bash
+curl localhost:1317/milestone/proposer/<times>
+```
