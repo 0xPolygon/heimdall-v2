@@ -173,6 +173,10 @@ func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkp
 		return types.Checkpoint{}, err
 	}
 
+	if ackCount == 0 {
+		return types.Checkpoint{}, types.ErrNoCheckpointFound
+	}
+
 	checkpoint, err = k.checkpoints.Get(ctx, ackCount)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching last checkpoint from store", "err", err)
