@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -156,7 +157,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 	if err != nil {
 		return err
 	}
-	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), string(endHash[:]))
+	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), hex.EncodeToString(endHash[:]))
 
 	mp.Logger.Info("End block hash", string(endHash[:]))
 
