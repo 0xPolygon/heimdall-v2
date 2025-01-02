@@ -124,8 +124,8 @@ func Logger() log.Logger {
 func IsProposer() (bool, error) {
 	logger := Logger()
 	var (
-		proposers []staketypes.Validator
-		count     = uint64(1)
+		response staketypes.QueryProposersResponse
+		count    = uint64(1)
 	)
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))))
@@ -134,14 +134,14 @@ func IsProposer() (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result, &proposers)
+	err = json.Unmarshal(result, &response)
 	if err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false, err
 	}
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(proposers[0].Signer)
+	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false, err
