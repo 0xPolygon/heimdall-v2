@@ -543,7 +543,7 @@ func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
 }
 
 // GetMilestoneCount return milestones count
-func GetMilestoneCount() (uint64, error) {
+func GetMilestoneCount(cdc codec.Codec) (uint64, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
@@ -553,7 +553,7 @@ func GetMilestoneCount() (uint64, error) {
 	}
 
 	var count milestoneTypes.QueryCountResponse
-	if err := json.Unmarshal(response, &count); err != nil {
+	if err := cdc.UnmarshalJSON(response, &count); err != nil {
 		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
 		return 0, err
 	}

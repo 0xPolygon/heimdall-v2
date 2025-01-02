@@ -90,7 +90,7 @@ func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLeng
 	}
 
 	if isProposer {
-		result, err := util.GetMilestoneCount()
+		result, err := util.GetMilestoneCount(mp.cliCtx.Codec)
 		if err != nil {
 			return err
 		}
