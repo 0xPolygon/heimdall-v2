@@ -83,14 +83,14 @@ func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLeng
 	}
 
 	// check whether the node is current milestone proposer or not
-	isProposer, err := util.IsMilestoneProposer()
+	isProposer, err := util.IsMilestoneProposer(mp.cliCtx.Codec)
 	if err != nil {
 		mp.Logger.Error("Error checking isProposer in HeaderBlock handler", "error", err)
 		return err
 	}
 
 	if isProposer {
-		result, err := util.GetMilestoneCount()
+		result, err := util.GetMilestoneCount(mp.cliCtx.Codec)
 		if err != nil {
 			return err
 		}

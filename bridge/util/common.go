@@ -121,11 +121,11 @@ func Logger() log.Logger {
 }
 
 // IsProposer checks if we are proposer
-func IsProposer() (bool, error) {
+func IsProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 	var (
-		proposers []staketypes.Validator
-		count     = uint64(1)
+		response staketypes.QueryProposersResponse
+		count    = uint64(1)
 	)
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))))
@@ -134,14 +134,13 @@ func IsProposer() (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result, &proposers)
-	if err != nil {
+	if err := cdc.UnmarshalJSON(result, &response); err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false, err
 	}
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(proposers[0].Signer)
+	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false, err
@@ -154,7 +153,7 @@ func IsProposer() (bool, error) {
 }
 
 // IsMilestoneProposer checks if we are the milestone proposer
-func IsMilestoneProposer() (bool, error) {
+func IsMilestoneProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
 	var (
@@ -168,8 +167,7 @@ func IsMilestoneProposer() (bool, error) {
 	}
 
 	var response milestoneTypes.QueryMilestoneProposerResponse
-	err = json.Unmarshal(result, &response)
-	if err != nil {
+	if err := cdc.UnmarshalJSON(result, &response); err != nil {
 		logger.Error("error unmarshalling milestone proposer slice", "error", err)
 		return false, err
 	}
@@ -545,7 +543,7 @@ func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
 }
 
 // GetMilestoneCount return milestones count
-func GetMilestoneCount() (uint64, error) {
+func GetMilestoneCount(cdc codec.Codec) (uint64, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
@@ -555,7 +553,7 @@ func GetMilestoneCount() (uint64, error) {
 	}
 
 	var count milestoneTypes.QueryCountResponse
-	if err := json.Unmarshal(response, &count); err != nil {
+	if err := cdc.UnmarshalJSON(response, &count); err != nil {
 		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
 		return 0, err
 	}
