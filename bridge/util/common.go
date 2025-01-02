@@ -87,8 +87,10 @@ const (
 	BridgeDBFlag = "bridge-db"
 )
 
-var logger log.Logger
-var loggerOnce sync.Once
+var (
+	logger     log.Logger
+	loggerOnce sync.Once
+)
 
 // Logger returns logger singleton instance
 func Logger() log.Logger {
@@ -156,9 +158,7 @@ func IsProposer(cdc codec.Codec) (bool, error) {
 func IsMilestoneProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
-	var (
-		count = uint64(1)
-	)
+	count := uint64(1)
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {

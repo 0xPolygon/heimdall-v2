@@ -228,28 +228,30 @@ func checkServerStatus(url string, resultChan chan<- string) {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	if err != nil {
+		panic(fmt.Sprintf("Error creating a new http request: %v", err))
+	}
+
+	for ; true; <-ticker.C {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Println("Error fetching the URL:", err)
+			continue
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				fmt.Println("Error fetching the URL:", err)
+				fmt.Println("Error reading response body:", err)
 				continue
 			}
-			defer resp.Body.Close()
 
-			if resp.StatusCode == http.StatusOK {
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					fmt.Println("Error reading response body:", err)
-					continue
-				}
-
-				resultChan <- string(body)
-				return
-			} else {
-				fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
-			}
+			resultChan <- string(body)
+			return
+		} else {
+			fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
 		}
 	}
 }

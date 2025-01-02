@@ -44,7 +44,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
 	_queueConnector.StartWorker()
 
-	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, clientCtx)
+	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, clientCtx) //nolint:contextcheck
 	_httpClient, err := rpchttp.New(helper.GetConfig().CometBFTRPCUrl, "/websocket")
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to server %v", err))

@@ -97,7 +97,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 	for {
 		select {
 		case <-ticker.C:
-			go cp.handleCheckpointNoAck()
+			go cp.handleCheckpointNoAck() //nolint:contextcheck
 		case <-ctx.Done():
 			cp.Logger.Info("No-ack Polling stopped")
 			ticker.Stop()

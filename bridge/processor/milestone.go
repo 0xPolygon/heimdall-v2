@@ -186,7 +186,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 	)
 
 	// broadcast to heimdall
-	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil) //nolint:contextcheck
 	if err != nil {
 		mp.Logger.Error("Error while broadcasting milestone to heimdall", "error", err)
 		return err
@@ -245,6 +245,7 @@ func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout(ctx context.Contex
 		// if i am the proposer and NoAck is required, then propose No-Ack
 		if isProposer {
 			// send Checkpoint No-Ack to heimdall
+			//nolint:contextcheck
 			if err = mp.createAndSendMilestoneTimeoutToHeimdall(); err != nil {
 				mp.Logger.Error("Error proposing Milestone-Timeout ", "error", err)
 				return

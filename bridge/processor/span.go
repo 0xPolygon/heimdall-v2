@@ -130,7 +130,7 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 		}
 
 		// return broadcast to heimdall
-		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil)
+		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
 		if err != nil {
 			sp.Logger.Error("Error while broadcasting span to heimdall", "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock, "error", err)
 			return
