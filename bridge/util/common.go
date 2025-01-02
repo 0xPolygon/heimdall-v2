@@ -121,7 +121,7 @@ func Logger() log.Logger {
 }
 
 // IsProposer checks if we are proposer
-func IsProposer() (bool, error) {
+func IsProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 	var (
 		response staketypes.QueryProposersResponse
@@ -134,8 +134,7 @@ func IsProposer() (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result, &response)
-	if err != nil {
+	if err := cdc.UnmarshalJSON(result, &response); err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false, err
 	}
@@ -154,7 +153,7 @@ func IsProposer() (bool, error) {
 }
 
 // IsMilestoneProposer checks if we are the milestone proposer
-func IsMilestoneProposer() (bool, error) {
+func IsMilestoneProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
 	var (
@@ -168,8 +167,7 @@ func IsMilestoneProposer() (bool, error) {
 	}
 
 	var response milestoneTypes.QueryMilestoneProposerResponse
-	err = json.Unmarshal(result, &response)
-	if err != nil {
+	if err := cdc.UnmarshalJSON(result, &response); err != nil {
 		logger.Error("error unmarshalling milestone proposer slice", "error", err)
 		return false, err
 	}
