@@ -28,7 +28,7 @@ type SpanProcessor struct {
 
 // Start starts new block subscription
 func (sp *SpanProcessor) Start() error {
-	sp.Logger.Info("STARTING BOR PROCESS!!")
+	sp.Logger.Info("starting bor process")
 
 	// create cancellable context
 	spanCtx, cancelSpanService := context.WithCancel(context.Background())
@@ -36,7 +36,7 @@ func (sp *SpanProcessor) Start() error {
 	sp.cancelSpanService = cancelSpanService
 
 	// start polling for span
-	sp.Logger.Info("START POLLING for span", "pollInterval", helper.GetConfig().SpanPollInterval)
+	sp.Logger.Info("start polling for span", "pollInterval", helper.GetConfig().SpanPollInterval)
 
 	go sp.startPolling(spanCtx, helper.GetConfig().SpanPollInterval)
 

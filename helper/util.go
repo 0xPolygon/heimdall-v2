@@ -262,7 +262,7 @@ func FetchFromAPI(URL string) ([]byte, error) {
 		return body, nil
 	}
 
-	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL, "ERROR", err, "RESP", resp.Status, "RESP MORE", resp)
+	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "url", URL)
 
 	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
 }

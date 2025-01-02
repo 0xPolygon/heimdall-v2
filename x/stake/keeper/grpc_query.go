@@ -121,7 +121,7 @@ func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryPr
 	}
 
 	if req.Times >= math.MaxInt64 {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "times exceeds MaxInt64")
 	}
 
 	validatorSet, err := q.k.GetValidatorSet(ctx)
