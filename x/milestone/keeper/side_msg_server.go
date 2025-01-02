@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"encoding/hex"
 	"errors"
 	"strconv"
 
@@ -99,6 +100,7 @@ func (srv *sideMsgServer) SideHandleMsgMilestone(ctx sdk.Context, msgI sdk.Msg) 
 
 	}
 
+	logger.Error("Will validate milestone", "hash", msg.Hash, "hashStr", hex.EncodeToString(msg.Hash), "hashCommon", common.Bytes2Hex(msg.Hash))
 	isValid, err := ValidateMilestone(msg.StartBlock, msg.EndBlock, msg.Hash, msg.MilestoneId, contractCaller, minMilestoneLength, borChainMilestoneTxConfirmations)
 	if err != nil || !isValid {
 		logger.Error("error validating milestone",
