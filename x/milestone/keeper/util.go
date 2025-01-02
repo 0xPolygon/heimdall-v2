@@ -26,7 +26,7 @@ func ValidateMilestone(start uint64, end uint64, hash []byte, milestoneID string
 	}
 
 	// Get the vote on hash of milestone from Bor
-	vote, err := contractCaller.GetVoteOnHash(start, end, common.Bytes2Hex(hash), milestoneID)
+	vote, err := contractCaller.GetVoteOnHash(start, end, "0x"+common.Bytes2Hex(hash), milestoneID)
 	if err != nil {
 		return false, err
 	}
