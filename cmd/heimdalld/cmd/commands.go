@@ -166,7 +166,7 @@ func initRootCmd(
 			resultChan := make(chan string)
 			timeout := time.After(60 * time.Second)
 
-			go checkServerStatus(helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
+			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
 
 			select {
 			case result := <-resultChan:
@@ -224,11 +224,11 @@ func initRootCmd(
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
 }
 
-func checkServerStatus(url string, resultChan chan<- string) {
+func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx.CmdContext, http.MethodGet, url, nil)
 	if err != nil {
 		panic(fmt.Sprintf("Error creating a new http request: %v", err))
 	}
