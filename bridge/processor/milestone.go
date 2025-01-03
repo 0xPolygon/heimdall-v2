@@ -83,25 +83,21 @@ func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLeng
 	}
 
 	// check whether the node is current milestone proposer or not
-	isProposer, err := util.IsMilestoneProposer()
+	isProposer, err := util.IsMilestoneProposer(mp.cliCtx.Codec)
 	if err != nil {
 		mp.Logger.Error("Error checking isProposer in HeaderBlock handler", "error", err)
 		return err
 	}
 
 	if isProposer {
-		result, err := util.GetMilestoneCount()
+		result, err := util.GetMilestoneCount(mp.cliCtx.Codec)
 		if err != nil {
 			return err
 		}
 
-		if result == nil {
-			return fmt.Errorf("got nil result while fetching milestone count")
-		}
-
 		start := helper.GetMilestoneBorBlockHeight()
 
-		if result.Count != 0 {
+		if result != 0 {
 			// fetch latest milestone
 			latestMilestone, err := util.GetLatestMilestone()
 			if err != nil {
@@ -160,7 +156,13 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 	if err != nil {
 		return err
 	}
-	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), string(endHash[:]))
+
+	addressString, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
+	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), addressString)
 
 	mp.Logger.Info("End block hash", string(endHash[:]))
 
@@ -190,7 +192,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 	)
 
 	// broadcast to heimdall
-	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil) //nolint:contextcheck
 	if err != nil {
 		mp.Logger.Error("Error while broadcasting milestone to heimdall", "error", err)
 		return err
@@ -249,6 +251,7 @@ func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout(ctx context.Contex
 		// if i am the proposer and NoAck is required, then propose No-Ack
 		if isProposer {
 			// send Checkpoint No-Ack to heimdall
+			//nolint:contextcheck
 			if err = mp.createAndSendMilestoneTimeoutToHeimdall(); err != nil {
 				mp.Logger.Error("Error proposing Milestone-Timeout ", "error", err)
 				return
@@ -320,7 +323,7 @@ func (mp *MilestoneProcessor) getCurrentChildBlock(ctx context.Context) (uint64,
 }
 
 func (mp *MilestoneProcessor) getMilestoneContext() (*MilestoneContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(mp.cliCtx.Codec)
 	if err != nil {
 		mp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

@@ -176,7 +176,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 //
 
 func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

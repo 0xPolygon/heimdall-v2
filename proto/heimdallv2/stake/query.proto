@@ -1,10 +1,10 @@
 syntax = "proto3";
 package heimdallv2.stake;
 
+import "amino/amino.proto";
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/query/v1/query.proto";
-import "amino/amino.proto";
 import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
@@ -43,6 +43,12 @@ service Query {
       returns (QueryStakeIsOldTxResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/is-old-tx";
+  }
+  // GetProposersByTimes queries for the proposers by Tendermint iterations
+  rpc GetProposersByTimes(QueryProposersRequest)
+      returns (QueryProposersResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/proposers/{times}";
   }
 }
 
@@ -92,4 +98,13 @@ message QueryStakeIsOldTxRequest {
 
 message QueryStakeIsOldTxResponse {
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProposersRequest {
+  uint64 times = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProposersResponse {
+  repeated heimdallv2.stake.Validator proposers = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

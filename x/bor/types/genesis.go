@@ -88,7 +88,7 @@ func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 		EndBlock:          0 + DefaultFirstSpanDuration - 1,
 		ValidatorSet:      valSet,
 		SelectedProducers: selectedProducers,
-		ChainId:           chainId,
+		BorChainId:        chainId,
 	}
 
 	firstSpan = append(firstSpan, newSpan)

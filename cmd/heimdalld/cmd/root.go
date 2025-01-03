@@ -120,11 +120,12 @@ func NewRootCmd() *cobra.Command {
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
 	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
 
-	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp)
+	initClientCtx, _ = config.ReadFromClientConfig(initClientCtx)
+
+	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp, initClientCtx.Keyring, initClientCtx.KeyringDir)
 
 	// add keyring to autocli opts
 	autoCliOpts := tempApp.AutoCliOpts()
-	initClientCtx, _ = config.ReadFromClientConfig(initClientCtx)
 	autoCliOpts.Keyring, _ = keyring.NewAutoCLIKeyring(initClientCtx.Keyring)
 	autoCliOpts.ClientCtx = initClientCtx
 

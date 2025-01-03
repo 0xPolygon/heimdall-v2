@@ -49,7 +49,7 @@ func NewKeeper(
 	authority string,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
-	caller helper.IContractCaller,
+	caller *helper.ContractCaller,
 ) Keeper {
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
@@ -93,6 +93,15 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 // GetAuthority returns x/bor module's authority
 func (k Keeper) GetAuthority() string {
 	return k.authority
+}
+
+func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
+	k.contractCaller = contractCaller
+}
+
+// GetSpanKey appends prefix to start block
+func GetSpanKey(id uint64) []byte {
+	return append(types.SpanPrefixKey, sdk.Uint64ToBigEndian(id)...)
 }
 
 // AddNewSpan adds new span for bor to store and updates last span
@@ -225,7 +234,7 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 		EndBlock:          endBlock,
 		ValidatorSet:      valSet,
 		SelectedProducers: newProducers,
-		ChainId:           borChainID,
+		BorChainId:        borChainID,
 	}
 
 	logger.Info("Freezing new span", "id", id, "span", newSpan)

@@ -147,8 +147,6 @@ func (processorService *ProcessorService) OnStart() error {
 		}(processor)
 	}
 
-	processorService.Logger.Info("all processors Started")
-
 	return nil
 }
 

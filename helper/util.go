@@ -10,9 +10,8 @@ import (
 	"math/big"
 	"math/bits"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
+	"strings"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto"
@@ -26,12 +25,13 @@ import (
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
+	authsigning "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 const APIBodyLimit = 128 * 1024 * 1024 // 128 MB
 
-//go:generate mockgen -destination=./mocks/i_client_mock.go -package=mocks . HTTPClient
+//go:generate mockgen -destination=./mocks/http_client_mock.go -package=mocks . HTTPClient
 type HTTPClient interface {
 	Get(string) (resp *http.Response, err error)
 }
@@ -42,7 +42,12 @@ var Client HTTPClient
 func GetFromAddress(cliCtx client.Context) string {
 	ac := address.NewHexCodec()
 	fromAddress := cliCtx.GetFromAddress()
-	addressString, err := ac.BytesToString(fromAddress.Bytes())
+	if !fromAddress.Empty() {
+		return fromAddress.String()
+	}
+
+	addr := GetAddress()
+	addressString, err := ac.BytesToString(addr)
 	if err != nil {
 		panic(err)
 	}
@@ -223,17 +228,19 @@ func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
 
 // GetHeimdallServerEndpoint returns heimdall server endpoint
 func GetHeimdallServerEndpoint(endpoint string) string {
-	u, _ := url.Parse(conf.API.Address)
-	u.Path = path.Join(u.Path, endpoint)
-
-	return u.String()
+	url, found := strings.CutPrefix(conf.API.Address, "tcp")
+	if !found {
+		return url + endpoint
+	}
+	addr := "http" + url + endpoint
+	return addr
 }
 
 // FetchFromAPI fetches data from any URL with limited read size
-func FetchFromAPI(URL string) (result []byte, err error) {
+func FetchFromAPI(URL string) ([]byte, error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
 	defer func() {
@@ -250,15 +257,15 @@ func FetchFromAPI(URL string) (result []byte, err error) {
 	if resp.StatusCode == 200 {
 		body, err := io.ReadAll(limitedBody)
 		if err != nil {
-			return result, err
+			return nil, err
 		}
 
 		return body, nil
 	}
 
-	Logger.Debug("Error while fetching data from URL", "status", resp.StatusCode, "URL", URL)
+	Logger.Info("Error while fetching data from URL", "status", resp.StatusCode, "url", URL)
 
-	return result, fmt.Errorf("error while fetching data from url: %s, status: %d", URL, resp.StatusCode)
+	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
 }
 
 // IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
@@ -336,7 +343,47 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 		}
 	}
 
-	if err = clienttx.Sign(clientCtx.CmdContext, txf, clientCtx.FromName, tx, true); err != nil {
+	cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: GetPrivKey()}
+
+	// First round: we gather all the signer infos. We use the "set empty
+	// signature" hack to do that.
+	var sigsV2 []signing.SignatureV2
+	sigV2 := signing.SignatureV2{
+		PubKey: cosmosPrivKey.PubKey(),
+		Data: &signing.SingleSignatureData{
+			SignMode:  txf.SignMode(),
+			Signature: nil,
+		},
+		Sequence: txf.Sequence(),
+	}
+
+	sigsV2 = append(sigsV2, sigV2)
+	err = tx.SetSignatures(sigsV2...)
+	if err != nil {
+		return nil, err
+	}
+
+	addrStr := sdk.MustHexifyAddressBytes(cosmosPrivKey.PubKey().Address())
+
+	// Second round: all signer infos are set, so each signer can sign.
+	sigsV2 = []signing.SignatureV2{}
+	signerData := authsigning.SignerData{
+		Address:       addrStr,
+		ChainID:       txf.ChainID(),
+		AccountNumber: txf.AccountNumber(),
+		Sequence:      txf.Sequence(),
+		PubKey:        cosmosPrivKey.PubKey(),
+	}
+
+	sigV2, err = clienttx.SignWithPrivKey(clientCtx.CmdContext, txf.SignMode(), signerData, tx, cosmosPrivKey, clientCtx.TxConfig, txf.Sequence())
+	if err != nil {
+		return nil, err
+	}
+
+	sigsV2 = append(sigsV2, sigV2)
+
+	err = tx.SetSignatures(sigsV2...)
+	if err != nil {
 		return nil, err
 	}
 

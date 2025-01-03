@@ -97,7 +97,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 	for {
 		select {
 		case <-ticker.C:
-			go cp.handleCheckpointNoAck()
+			go cp.handleCheckpointNoAck() //nolint:contextcheck
 		case <-ctx.Done():
 			cp.Logger.Info("No-ack Polling stopped")
 			ticker.Stop()
@@ -120,7 +120,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 
 	cp.Logger.Info("Processing new header", "headerNumber", header.Number)
 
-	isProposer, err := util.IsProposer()
+	isProposer, err := util.IsProposer(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error checking isProposer in HeaderBlock handler", "error", err)
 		return err
@@ -811,7 +811,7 @@ func (cp *CheckpointProcessor) Stop() {
 //
 
 func (cp *CheckpointProcessor) getCheckpointContext() (*CheckpointContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +34,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/server/types"
@@ -52,6 +54,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/app"
 	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 )
@@ -131,6 +134,8 @@ func initRootCmd(
 	_ client.TxConfig,
 	basicManager module.BasicManager,
 	hApp *app.HeimdallApp,
+	keyring keyring.Keyring,
+	keyringDir string,
 ) {
 	cdc := codec.NewLegacyAmino()
 	ctx := server.NewDefaultContext()
@@ -152,21 +157,41 @@ func initRootCmd(
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
 			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
 			startCmd.Flags().Bool(helper.AllProcessesFlag, false, "Enable all bridge processes")
-			startCmd.Flags().Bool(helper.OnlyProcessesFlag, false, "Enable only the specified bridge process(es)")
+			startCmd.Flags().StringSlice(helper.OnlyProcessesFlag, []string{}, "Enable only the specified bridge process(es)")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
 			// wait for rest server to start
-			if err := g.Wait(); err != nil {
-				return fmt.Errorf("error waiting for goroutines: %w", err)
+			resultChan := make(chan string)
+			timeout := time.After(60 * time.Second)
+
+			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
+
+			select {
+			case result := <-resultChan:
+				fmt.Println("Fetch successful, received data:", result)
+			case <-timeout:
+				return fmt.Errorf("Fetch operation timed out")
 			}
+
+			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
+			if err != nil {
+				return err
+			}
+
+			// TODO HV2: maybe we should make heimdall chain id part of the chainmanager params
+			heimdallChainId := "heimdall-" + chainParam.ChainParams.BorChainId
+			clientCtx = clientCtx.
+				WithKeyring(keyring).
+				WithKeyringDir(keyringDir).
+				WithChainID(heimdallChainId)
 
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
 				bridgeCmd.AdjustBridgeDBValue(rootCmd)
 				g.Go(func() error {
-					return bridgeCmd.StartBridgeWithCtx(ctx)
+					return bridgeCmd.StartBridgeWithCtx(ctx, clientCtx)
 				})
 			}
 
@@ -197,6 +222,38 @@ func initRootCmd(
 	rootCmd.AddCommand(showPrivateKeyCmd())
 	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
+}
+
+func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	req, err := http.NewRequestWithContext(ctx.CmdContext, http.MethodGet, url, nil)
+	if err != nil {
+		panic(fmt.Sprintf("Error creating a new http request: %v", err))
+	}
+
+	for ; true; <-ticker.C {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Println("Error fetching the URL:", err)
+			continue
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println("Error reading response body:", err)
+				continue
+			}
+
+			resultChan <- string(body)
+			return
+		} else {
+			fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
+		}
+	}
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
@@ -283,6 +340,7 @@ func newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
+	helper.InitHeimdallConfig("")
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	return app.NewHeimdallApp(

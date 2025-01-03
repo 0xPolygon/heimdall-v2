@@ -66,7 +66,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		return nil, status.Errorf(codes.InvalidArgument, "invalid start block")
 	}
 
-	if req.BorChainId != lastSpan.ChainId {
+	if req.BorChainId != lastSpan.BorChainId {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid chain id")
 	}
 
@@ -108,7 +108,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		EndBlock:          req.StartBlock + params.SpanDuration - 1,
 		ValidatorSet:      validatorSet,
 		SelectedProducers: selectedProducers,
-		ChainId:           req.BorChainId,
+		BorChainId:        req.BorChainId,
 	}
 
 	return &types.QueryNextSpanResponse{Span: *nextSpan}, nil

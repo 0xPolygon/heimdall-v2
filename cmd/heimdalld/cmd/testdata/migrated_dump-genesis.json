@@ -65,7 +65,7 @@
       },
       "spans": [
         {
-          "chain_id": "15005",
+          "bor_chain_id": "15005",
           "end_block": "255",
           "id": "0",
           "selected_producers": [
@@ -113,7 +113,7 @@
           }
         },
         {
-          "chain_id": "15005",
+          "bor_chain_id": "15005",
           "end_block": "6655",
           "id": "1",
           "selected_producers": [
@@ -161,7 +161,7 @@
           }
         },
         {
-          "chain_id": "15005",
+          "bor_chain_id": "15005",
           "end_block": "13055",
           "id": "2",
           "selected_producers": [
@@ -209,7 +209,7 @@
           }
         },
         {
-          "chain_id": "15005",
+          "bor_chain_id": "15005",
           "end_block": "19455",
           "id": "3",
           "selected_producers": [
@@ -257,7 +257,7 @@
           }
         },
         {
-          "chain_id": "15005",
+          "bor_chain_id": "15005",
           "end_block": "25855",
           "id": "4",
           "selected_producers": [

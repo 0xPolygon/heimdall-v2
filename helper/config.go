@@ -80,7 +80,8 @@ const (
 
 	// DefaultAmqpURL represents default AMQP url
 	DefaultAmqpURL           = "amqp://guest:guest@localhost:5672/"
-	DefaultHeimdallServerURL = "http://0.0.0.0:1317"
+	DefaultHeimdallServerURL = "tcp://localhost:1317"
+	DefaultGRPCServerURL     = "http://0.0.0.0:1318"
 
 	DefaultCometBFTNodeURL = "http://0.0.0.0:26657"
 

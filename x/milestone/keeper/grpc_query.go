@@ -95,7 +95,7 @@ func (q queryServer) GetMilestoneProposerByTimes(ctx context.Context, req *types
 	}
 
 	if req.Times >= math.MaxInt64 {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "times exceeds MaxInt64")
 	}
 
 	// get milestone validator set

@@ -34,7 +34,7 @@ const (
 
 // StartBridgeWithCtx starts bridge service and is able to shutdow gracefully
 // returns service errors, if any
-func StartBridgeWithCtx(shutdownCtx context.Context) error {
+func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) error {
 	// create codec
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
@@ -44,7 +44,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context) error {
 	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
 	_queueConnector.StartWorker()
 
-	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
+	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, clientCtx, nil) //nolint:contextcheck
 	_httpClient, err := rpchttp.New(helper.GetConfig().CometBFTRPCUrl, "/websocket")
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to server %v", err))
@@ -64,9 +64,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context) error {
 		return err
 	}
 
-	// cli context
-	cliCtx := client.Context{}.WithCodec(cdc)
-	cliCtx.BroadcastMode = flags.BroadcastAsync
+	clientCtx.BroadcastMode = flags.BroadcastAsync
 
 	// start bridge services only when node fully synced
 	loop := true
@@ -75,7 +73,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context) error {
 		case <-shutdownCtx.Done():
 			return nil
 		case <-time.After(waitDuration):
-			if !util.IsCatchingUp(cliCtx) {
+			if !util.IsCatchingUp(clientCtx) {
 				logger.Info("Node up to date, starting bridge services")
 
 				loop = false
@@ -148,7 +146,7 @@ func StartBridge(isStandAlone bool) {
 	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
 	_queueConnector.StartWorker()
 
-	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
+	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{}, nil)
 	_httpClient, err := rpchttp.New(helper.GetConfig().CometBFTRPCUrl, "/websocket")
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to server %v", err))

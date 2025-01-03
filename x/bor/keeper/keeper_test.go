@@ -71,9 +71,10 @@ func (s *KeeperTestSuite) SetupTest() {
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.chainManagerKeeper,
 		s.stakeKeeper,
-		&s.contractCaller,
+		nil,
 	)
 
+	s.borKeeper.SetContractCaller(&s.contractCaller)
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
@@ -320,7 +321,7 @@ func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 			EndBlock:          256,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 		{
 			Id:                1,
@@ -328,7 +329,7 @@ func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 			EndBlock:          6656,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 		{
 			Id:                2,
@@ -336,7 +337,7 @@ func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 			EndBlock:          16656,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 		{
 			Id:                3,
@@ -344,7 +345,7 @@ func (s *KeeperTestSuite) TestFetchNextSpanSeed() {
 			EndBlock:          26656,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		},
 	}
 
@@ -465,7 +466,7 @@ func (s *KeeperTestSuite) TestProposeSpanOne() {
 		EndBlock:          256,
 		ValidatorSet:      valSet,
 		SelectedProducers: vals,
-		ChainId:           "test-chain",
+		BorChainId:        "test-chain",
 	})
 	require.NoError(err)
 
@@ -560,7 +561,7 @@ func (s *KeeperTestSuite) genTestSpans(num uint64) []*types.Span {
 			EndBlock:          endBlock,
 			ValidatorSet:      valSet,
 			SelectedProducers: vals,
-			ChainId:           "test-chain",
+			BorChainId:        "test-chain",
 		}
 		spans = append(spans, &span)
 	}
