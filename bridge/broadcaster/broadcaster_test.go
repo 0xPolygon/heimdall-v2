@@ -52,6 +52,7 @@ var (
 	dummyCometBFTNodeUrl    = "http://localhost:26657"
 	dummyHeimdallServerUrl  = "https://dummy-heimdall-api-testnet.polygon.technology"
 	getAccountUrl           = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/accounts/" + heimdallAddress
+	getAuthParamsUrl        = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/params"
 	getAccountResponse      = fmt.Sprintf(`
 	{
 		"address": "%s",
@@ -69,6 +70,20 @@ var (
 		"sequence": "1"
 	  }
 	  `, address.String())
+
+	getAccountParamsResponse = `
+	{
+		"params": {
+			"max_memo_characters": 256,
+    		"tx_sig_limit": 7,
+    		"tx_size_cost_per_byte": 10,
+    		"sig_verify_cost_ed25519": 590,
+    		"sig_verify_cost_secp256k1": 1000,
+    		"max_tx_gas": 1000000,
+    		"tx_fees": "1000000000000000"
+		}
+	}
+	`
 
 	msgs = []sdk.Msg{
 		checkpointTypes.NewMsgCheckpointBlock(
@@ -108,7 +123,10 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	encodingConfig := moduletestutil.MakeTestEncodingConfig()
 	txConfig := encodingConfig.TxConfig
 
-	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec(), client.Context{})
+	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec(), client.Context{}, func(address string) sdk.AccountI {
+		return authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 1, 0)
+	})
+
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.TxConfig = txConfig
 	txBroadcaster.CliCtx.FromAddress = heimdallAddressBytes
@@ -227,14 +245,24 @@ func updateMockData(t *testing.T) *gomock.Controller {
 	mockCtrl := gomock.NewController(t)
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
-	res := prepareResponse(getAccountUpdatedResponse)
+	accRes := prepareResponse(getAccountUpdatedResponse)
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
 			log.Fatalf("failed to close response body: %v", err)
 		}
-	}(res.Body)
-	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
+	}(accRes.Body)
+
+	authParams := prepareResponse(getAccountParamsResponse)
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatalf("failed to close response body: %v", err)
+		}
+	}(authParams.Body)
+
+	mockHttpClient.EXPECT().Get(getAccountUrl).Return(accRes, nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(getAuthParamsUrl).Return(authParams, nil).AnyTimes()
 	helper.Client = mockHttpClient
 	return mockCtrl
 }

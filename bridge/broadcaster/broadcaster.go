@@ -36,7 +36,7 @@ type TxBroadcaster struct {
 }
 
 // NewTxBroadcaster creates a new instance of TxBroadcaster
-func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context) *TxBroadcaster {
+func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context, accRetriever func(address string) sdk.AccountI) *TxBroadcaster {
 	cliCtx = cliCtx.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastSync
 
@@ -47,9 +47,15 @@ func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context) *TxBroadcaster {
 	}
 
 	cliCtx.FromAddress = sdk.MustAccAddressFromHex(address)
-	account, err := util.GetAccount(cliCtx, address)
-	if err != nil {
-		panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
+
+	var account sdk.AccountI
+	if accRetriever != nil {
+		account = accRetriever(address)
+	} else {
+		account, err = util.GetAccount(cliCtx, address)
+		if err != nil {
+			panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
+		}
 	}
 
 	return &TxBroadcaster{

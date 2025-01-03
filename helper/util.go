@@ -228,7 +228,10 @@ func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
 
 // GetHeimdallServerEndpoint returns heimdall server endpoint
 func GetHeimdallServerEndpoint(endpoint string) string {
-	url, _ := strings.CutPrefix(conf.API.Address, "tcp")
+	url, found := strings.CutPrefix(conf.API.Address, "tcp")
+	if !found {
+		return url + endpoint
+	}
 	addr := "http" + url + endpoint
 	return addr
 }

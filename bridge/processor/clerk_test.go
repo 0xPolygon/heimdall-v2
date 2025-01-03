@@ -268,7 +268,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	}
 	helper.SetTestConfig(customAppConf)
 
-	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{})
+	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{}, nil)
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.SkipConfirm = true
 
