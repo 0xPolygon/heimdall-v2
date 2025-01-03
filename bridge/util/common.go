@@ -524,7 +524,7 @@ func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
 }
 
 // GetLatestMilestone return last successful milestone
-func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
+func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
@@ -534,7 +534,7 @@ func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
 	}
 
 	var milestoneResp milestoneTypes.QueryLatestMilestoneResponse
-	if err = json.Unmarshal(response, &milestoneResp); err != nil {
+	if err = cdc.Unmarshal(response, &milestoneResp); err != nil {
 		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
 		return nil, err
 	}

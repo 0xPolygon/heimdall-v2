@@ -99,7 +99,7 @@ func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLeng
 
 		if result != 0 {
 			// fetch latest milestone
-			latestMilestone, err := util.GetLatestMilestone()
+			latestMilestone, err := util.GetLatestMilestone(mp.cliCtx.Codec)
 			if err != nil {
 				return err
 			}
@@ -294,7 +294,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 }
 
 func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired(ctx context.Context) (bool, error) {
-	latestMilestone, err := util.GetLatestMilestone()
+	latestMilestone, err := util.GetLatestMilestone(mp.cliCtx.Codec)
 	if err != nil || latestMilestone == nil {
 		return false, err
 	}
