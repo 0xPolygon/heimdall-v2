@@ -534,7 +534,7 @@ func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
 	}
 
 	var milestoneResp milestoneTypes.QueryLatestMilestoneResponse
-	if err = cdc.Unmarshal(response, &milestoneResp); err != nil {
+	if err = cdc.UnmarshalJSON(response, &milestoneResp); err != nil {
 		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
 		return nil, err
 	}
