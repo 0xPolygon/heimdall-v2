@@ -8,6 +8,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -164,12 +165,12 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 
 	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), addressString)
 
-	mp.Logger.Info("End block hash", string(endHash[:]))
+	mp.Logger.Info("End block hash", common.Bytes2Hex(endHash[:]))
 
 	mp.Logger.Info("✅ Creating and broadcasting new milestone",
 		"start", startNum,
 		"end", endNum,
-		"hash", string(endHash[:]),
+		"hash", common.Bytes2Hex(endHash[:]),
 		"milestoneId", milestoneId,
 		"milestoneLength", milestoneLength,
 	)
