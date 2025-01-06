@@ -467,7 +467,7 @@ func GetChainmanagerParams(cdc codec.Codec) (*chainmanagertypes.Params, error) {
 }
 
 // GetCheckpointParams return checkpoint params
-func GetCheckpointParams() (*checkpointTypes.Params, error) {
+func GetCheckpointParams(cdc codec.Codec) (*checkpointTypes.Params, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CheckpointParamsURL))
@@ -477,7 +477,7 @@ func GetCheckpointParams() (*checkpointTypes.Params, error) {
 	}
 
 	var params checkpointTypes.QueryParamsResponse
-	if err := json.Unmarshal(response, &params); err != nil {
+	if err := cdc.UnmarshalJSON(response, &params); err != nil {
 		logger.Error("Error unmarshalling Checkpoint params", "url", CheckpointParamsURL)
 		return nil, err
 	}
