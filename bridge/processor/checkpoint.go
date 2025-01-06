@@ -817,7 +817,7 @@ func (cp *CheckpointProcessor) getCheckpointContext() (*CheckpointContext, error
 		return nil, err
 	}
 
-	checkpointParams, err := util.GetCheckpointParams()
+	checkpointParams, err := util.GetCheckpointParams(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error while fetching checkpoint params", "error", err)
 		return nil, err
