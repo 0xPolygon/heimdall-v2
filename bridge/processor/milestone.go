@@ -8,6 +8,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -99,7 +100,7 @@ func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLeng
 
 		if result != 0 {
 			// fetch latest milestone
-			latestMilestone, err := util.GetLatestMilestone()
+			latestMilestone, err := util.GetLatestMilestone(mp.cliCtx.Codec)
 			if err != nil {
 				return err
 			}
@@ -164,12 +165,12 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 
 	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), addressString)
 
-	mp.Logger.Info("End block hash", string(endHash[:]))
+	mp.Logger.Info("End block hash", common.Bytes2Hex(endHash[:]))
 
 	mp.Logger.Info("✅ Creating and broadcasting new milestone",
 		"start", startNum,
 		"end", endNum,
-		"hash", string(endHash[:]),
+		"hash", common.Bytes2Hex(endHash[:]),
 		"milestoneId", milestoneId,
 		"milestoneLength", milestoneLength,
 	)
@@ -294,7 +295,7 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 }
 
 func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired(ctx context.Context) (bool, error) {
-	latestMilestone, err := util.GetLatestMilestone()
+	latestMilestone, err := util.GetLatestMilestone(mp.cliCtx.Codec)
 	if err != nil || latestMilestone == nil {
 		return false, err
 	}
