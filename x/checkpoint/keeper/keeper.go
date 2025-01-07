@@ -198,10 +198,20 @@ func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) error {
 
 // GetCheckpointFromBuffer gets the buffered checkpoint from store
 func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint, error) {
-	checkpoint, err := k.bufferedCheckpoint.Get(ctx)
+	var checkpoint types.Checkpoint
+
+	exists, err := k.bufferedCheckpoint.Has(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching the buffered checkpoint from store", "err", err)
-		return types.Checkpoint{}, err
+		k.Logger(ctx).Error("error while checking for existence of the buffered checkpoint in store", "err", err)
+		return checkpoint, err
+	}
+
+	if exists {
+		checkpoint, err := k.bufferedCheckpoint.Get(ctx)
+		if err != nil {
+			k.Logger(ctx).Error("error while fetching the buffered checkpoint from store", "err", err)
+			return checkpoint, err
+		}
 	}
 
 	return checkpoint, nil
