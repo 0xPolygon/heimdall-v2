@@ -486,7 +486,7 @@ func GetCheckpointParams(cdc codec.Codec) (*checkpointTypes.Params, error) {
 }
 
 // GetBufferedCheckpoint return checkpoint from buffer
-func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
+func GetBufferedCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(BufferedCheckpointURL))
@@ -496,7 +496,7 @@ func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
 	}
 
 	var checkpoint checkpointTypes.QueryCheckpointBufferResponse
-	if err := json.Unmarshal(response, &checkpoint); err != nil {
+	if err := cdc.UnmarshalJSON(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling buffered checkpoint", "url", BufferedCheckpointURL, "err", err)
 		return nil, err
 	}
@@ -505,7 +505,7 @@ func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
 }
 
 // GetLatestCheckpoint return last successful checkpoint
-func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
+func GetLatestCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestCheckpointURL))
@@ -515,7 +515,7 @@ func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
 	}
 
 	var checkpoint checkpointTypes.QueryCheckpointLatestResponse
-	if err = json.Unmarshal(response, &checkpoint); err != nil {
+	if err = cdc.UnmarshalJSON(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling latest checkpoint", "url", LatestCheckpointURL, "err", err)
 		return nil, err
 	}
