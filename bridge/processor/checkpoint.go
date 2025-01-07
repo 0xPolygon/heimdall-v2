@@ -27,6 +27,7 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	topuptypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // CheckpointProcessor - processor for checkpoint queue.
@@ -40,11 +41,6 @@ type CheckpointProcessor struct {
 
 	// Rootchain abi
 	rootchainAbi *abi.ABI
-}
-
-// Result represents single req result
-type Result struct {
-	Result uint64 `json:"result"`
 }
 
 // CheckpointContext represents checkpoint context
@@ -189,13 +185,13 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 	cp.Logger.Info("Received sendCheckpointToRootchain request", "eventBytes", eventBytes, "blockHeight", blockHeight)
 
 	var event sdk.StringEvent
-	if err := json.Unmarshal([]byte(eventBytes), &event); err != nil {
+	if err := cp.cliCtx.Codec.UnmarshalJSON([]byte(eventBytes), &event); err != nil {
 		cp.Logger.Error("Error unmarshalling event from heimdall", "error", err)
 		return err
 	}
 
 	// var tx = sdk.TxResponse{}
-	// if err := json.Unmarshal([]byte(txBytes), &tx); err != nil {
+	// if err := cp.cliCtx.Codec.UnmarshalJSON([]byte(txBytes), &tx); err != nil {
 	// 	cp.Logger.Error("Error unmarshalling txResponse", "error", err)
 	// 	return err
 	// }
@@ -620,23 +616,24 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 }
 
 // fetchDividendAccountRoot - fetches dividend accountroothash
-func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash []byte, err error) {
+func (cp *CheckpointProcessor) fetchDividendAccountRoot() ([]byte, error) {
 	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
 	if err != nil {
 		cp.Logger.Error("Error Fetching accountroothash from HeimdallServer ", "error", err)
-		return accountroothash, err
+		return []byte{}, err
 	}
 
 	cp.Logger.Info("Divident account root fetched")
 
-	if err = json.Unmarshal(response, &accountroothash); err != nil {
+	var accountRootHashObject topuptypes.QueryDividendAccountRootHashResponse
+	if err = cp.cliCtx.Codec.UnmarshalJSON(response, &accountRootHashObject); err != nil {
 		cp.Logger.Error("Error unmarshalling accountroothash received from Heimdall Server", "error", err)
-		return accountroothash, err
+		return accountRootHashObject.AccountRootHash, err
 	}
 
-	return accountroothash, nil
+	return accountRootHashObject.AccountRootHash, nil
 }
 
 // fetchLatestCheckpointTime - get latest checkpoint time from rootchain
@@ -674,13 +671,13 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 		return 0
 	}
 
-	var noAckObject Result
-	if err := json.Unmarshal(response, &noAckObject); err != nil {
+	var noAckObject checkpointtypes.QueryLastNoAckResponse
+	if err := cp.cliCtx.Codec.UnmarshalJSON(response, &noAckObject); err != nil {
 		cp.Logger.Error("Error unmarshalling no-ack data ", "error", err)
 		return 0
 	}
 
-	return noAckObject.Result
+	return noAckObject.LastNoAckId
 }
 
 func (cp *CheckpointProcessor) getCheckpointSignatures() ([]checkpointtypes.CheckpointSignature, error) {
@@ -690,7 +687,7 @@ func (cp *CheckpointProcessor) getCheckpointSignatures() ([]checkpointtypes.Chec
 	}
 
 	var res checkpointtypes.QueryCheckpointSignaturesResponse
-	if err := json.Unmarshal(response, &res); err != nil {
+	if err := cp.cliCtx.Codec.UnmarshalJSON(response, &res); err != nil {
 		return nil, fmt.Errorf("Error unmarshalling checkpoint signatures: %w", err)
 	}
 
