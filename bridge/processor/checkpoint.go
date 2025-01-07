@@ -458,7 +458,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		return err
 	}
 
-	cp.Logger.Info("Root hash calculated", "rootHash", root)
+	cp.Logger.Info("Root hash calculated", "rootHash", common.Bytes2Hex(root))
 
 	var accountRootHash []byte
 	// get DividendAccountRoot from heimdall
@@ -470,7 +470,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	cp.Logger.Info("✅ Creating and broadcasting new checkpoint",
 		"start", start,
 		"end", end,
-		"root", root,
+		"root", common.Bytes2Hex(root),
 		"accountRoot", accountRootHash,
 	)
 

@@ -34,10 +34,3 @@ message ValidatorSet {
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
   int64 total_voting_power = 3 [ (amino.dont_omitempty) = true ];
 }
-
-message Validators {
-  option (gogoproto.equal) = true;
-  option (gogoproto.goproto_getters) = false;
-  repeated Validator validators = 1
-      [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
-}

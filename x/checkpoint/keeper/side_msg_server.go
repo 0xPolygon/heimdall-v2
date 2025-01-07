@@ -261,7 +261,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	logger.Debug("new checkpoint into buffer stored",
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
-		"rootHash", msg.RootHash,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
 	)
 
 	// TX bytes
