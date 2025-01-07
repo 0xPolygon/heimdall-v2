@@ -159,7 +159,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 		timeStamp := uint64(time.Now().Unix())
 		checkpointBufferTime := uint64(checkpointContext.CheckpointParams.CheckpointBufferTime.Seconds())
 
-		bufferedCheckpoint, err := util.GetBufferedCheckpoint()
+		bufferedCheckpoint, err := util.GetBufferedCheckpoint(cp.cliCtx.Codec)
 		if err != nil {
 			cp.Logger.Debug("No buffered checkpoint", "bufferedCheckpoint", bufferedCheckpoint)
 		}
@@ -286,7 +286,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		)
 
 		// fetch latest checkpoint
-		latestCheckpoint, err := util.GetLatestCheckpoint()
+		latestCheckpoint, err := util.GetLatestCheckpoint(cp.cliCtx.Codec)
 		// event checkpoint is older than or equal to latest checkpoint
 		if err == nil && latestCheckpoint != nil && latestCheckpoint.EndBlock >= event.End.Uint64() {
 			cp.Logger.Debug("Checkpoint ack is already submitted", "start", event.Start, "end", event.End)
