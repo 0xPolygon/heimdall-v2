@@ -207,7 +207,7 @@ func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint,
 	}
 
 	if exists {
-		checkpoint, err := k.bufferedCheckpoint.Get(ctx)
+		checkpoint, err = k.bufferedCheckpoint.Get(ctx)
 		if err != nil {
 			k.Logger(ctx).Error("error while fetching the buffered checkpoint from store", "err", err)
 			return checkpoint, err
