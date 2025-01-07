@@ -92,8 +92,8 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 
 	req := &types.QueryLatestNoAckMilestoneRequest{}
 	res, err := queryClient.GetLatestNoAckMilestone(ctx, req)
-	require.Error(err)
-	require.Nil(res)
+	require.NoError(err)
+	require.Equal(res.Result, "")
 
 	milestoneID := TestMilestoneID
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)

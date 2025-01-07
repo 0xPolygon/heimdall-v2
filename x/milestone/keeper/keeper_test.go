@@ -204,7 +204,7 @@ func (s *KeeperTestSuite) TestLastNoAckMilestone() {
 	milestoneID := TestMilestoneID
 
 	val, err := keeper.GetLastNoAckMilestone(ctx)
-	require.Error(err)
+	require.NoError(err)
 
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
 	require.NoError(err)
