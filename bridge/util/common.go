@@ -191,7 +191,7 @@ func IsMilestoneProposer(cdc codec.Codec) (bool, error) {
 }
 
 // IsInProposerList checks if we are in the current proposers list
-func IsInProposerList(count uint64) (bool, error) {
+func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
@@ -203,8 +203,8 @@ func IsInProposerList(count uint64) (bool, error) {
 	}
 
 	// unmarshall data from buffer
-	var proposers []staketypes.Validator
-	if err := json.Unmarshal(response, &proposers); err != nil {
+	var proposers staketypes.Validators
+	if err := cdc.UnmarshalJSON(response, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -213,8 +213,8 @@ func IsInProposerList(count uint64) (bool, error) {
 
 	ac := addressCodec.NewHexCodec()
 
-	for i := 1; i <= int(count) && i < len(proposers); i++ {
-		signerBytes, err := ac.StringToBytes(proposers[i].Signer)
+	for i := 1; i <= int(count) && i < len(proposers.Validators); i++ {
+		signerBytes, err := ac.StringToBytes(proposers.Validators[i].Signer)
 		if err != nil {
 			logger.Error("Error converting signer string to bytes", "error", err)
 			return false, err

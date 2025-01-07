@@ -339,7 +339,7 @@ func (cp *CheckpointProcessor) handleCheckpointNoAck() {
 	if isNoAckRequired {
 		var isProposer bool
 
-		if isProposer, err = util.IsInProposerList(count); err != nil {
+		if isProposer, err = util.IsInProposerList(count, cp.cliCtx.Codec); err != nil {
 			cp.Logger.Error("Error checking IsInProposerList while proposing Checkpoint No-Ack ", "error", err)
 			return
 		}
@@ -458,7 +458,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		return err
 	}
 
-	cp.Logger.Info("Root hash calculated", "rootHash", string(root[:]))
+	cp.Logger.Info("Root hash calculated", "rootHash", root)
 
 	var accountRootHash []byte
 	// get DividendAccountRoot from heimdall
@@ -470,7 +470,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	cp.Logger.Info("✅ Creating and broadcasting new checkpoint",
 		"start", start,
 		"end", end,
-		"root", string(root[:]),
+		"root", root,
 		"accountRoot", accountRootHash,
 	)
 
