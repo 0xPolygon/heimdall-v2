@@ -203,7 +203,7 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	}
 
 	// unmarshall data from buffer
-	var proposers staketypes.Validators
+	var proposers checkpointTypes.QueryProposerResponse
 	if err := cdc.UnmarshalJSON(response, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
@@ -213,8 +213,8 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 
 	ac := addressCodec.NewHexCodec()
 
-	for i := 1; i <= int(count) && i < len(proposers.Validators); i++ {
-		signerBytes, err := ac.StringToBytes(proposers.Validators[i].Signer)
+	for i := 1; i <= int(count) && i < len(proposers.Proposers); i++ {
+		signerBytes, err := ac.StringToBytes(proposers.Proposers[i].Signer)
 		if err != nil {
 			logger.Error("Error converting signer string to bytes", "error", err)
 			return false, err
