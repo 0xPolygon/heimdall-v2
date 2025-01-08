@@ -37,7 +37,7 @@ func (hl *HeimdallListener) Start() error {
 		pollInterval = helper.GetConfig().CheckpointPollInterval
 	}
 
-	hl.Logger.Info("Start polling for events", "pollInterval", pollInterval)
+	hl.Logger.Error("Start polling for events", "pollInterval", pollInterval)
 	hl.StartPolling(headerCtx, pollInterval, nil)
 
 	return nil

@@ -6,6 +6,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
@@ -29,7 +30,7 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, h
 	// creating listener object
 	listenerService := &ListenerService{}
 
-	listenerService.BaseService = *common.NewBaseService(helper.Logger, listenerServiceStr, listenerService)
+	listenerService.BaseService = *common.NewBaseService(util.Logger().With("service", "listener"), listenerServiceStr, listenerService)
 
 	rootchainListener := NewRootChainListener()
 	rootchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootchainListener)
@@ -54,13 +55,15 @@ func (listenerService *ListenerService) OnStart() error {
 	} // Always call the overridden method.
 
 	// start chain listeners
+	listenerService.Logger.Error("Starting listener service - startin listeners")
 	for _, listener := range listenerService.listeners {
+		listenerService.Logger.Error("Starting listener service - startin listeners", "listener", listener)
 		if err := listener.Start(); err != nil {
 			listenerService.Logger.Error("OnStart | Start", "Error", err)
 		}
 	}
 
-	listenerService.Logger.Info("all listeners Started")
+	listenerService.Logger.Error("all listeners Started")
 
 	return nil
 }
