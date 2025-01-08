@@ -57,13 +57,15 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 		listener.NewListenerService(cdc, _queueConnector, _httpClient),
 		processor.NewProcessorService(cdc, _queueConnector, _httpClient, _txBroadcaster),
 	)
-
+	logger.Error("StartBridgeWithCtx 1")
 	// Start http client
 	err = _httpClient.Start()
 	if err != nil {
+		logger.Error("StartBridgeWithCtx 2")
 		logger.Error("Error connecting to server: %v", err)
 		return err
 	}
+	logger.Error("StartBridgeWithCtx 3")
 
 	clientCtx.BroadcastMode = flags.BroadcastAsync
 
@@ -75,24 +77,24 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 			return nil
 		case <-time.After(waitDuration):
 			if !util.IsCatchingUp(clientCtx) {
-				logger.Info("Node up to date, starting bridge services")
+				logger.Error("Node up to date, starting bridge services")
 
 				loop = false
 			} else {
-				logger.Info("Waiting for heimdall to be synced")
+				logger.Error("Waiting for heimdall to be synced")
 			}
 		}
 	}
-
+	logger.Error("StartBridgeWithCtx 4")
 	// start services
 	var g errgroup.Group
 
 	for _, service := range services {
 		// loop variable must be captured
 		srv := service
-
+		logger.Error("StartBridgeWithCtx 5")
 		g.Go(func() error {
-			logger.Info("Starting service", "service", srv.String())
+			logger.Error("Starting service", "service", srv.String())
 			if err := srv.Start(); err != nil {
 				logger.Error("GetStartCmd | serv.Start", "Error", err)
 				return err
