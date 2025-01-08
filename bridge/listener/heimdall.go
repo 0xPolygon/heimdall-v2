@@ -65,7 +65,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 				hl.Logger.Error("Error fetching from and toBlock, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
 			} else if fromBlock < toBlock {
 
-				hl.Logger.Info("Fetching new events between", "fromBlock", fromBlock, "toBlock", toBlock)
+				hl.Logger.Error("Fetching new events between", "fromBlock", fromBlock, "toBlock", toBlock)
 
 				// Querying and processing Begin events
 				for i := fromBlock; i <= toBlock; i++ {
