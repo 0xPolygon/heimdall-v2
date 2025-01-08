@@ -48,6 +48,7 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, h
 
 // OnStart starts new block subscription
 func (listenerService *ListenerService) OnStart() error {
+	listenerService.Logger.Error("Starting listener service")
 	if err := listenerService.BaseService.OnStart(); err != nil {
 		listenerService.Logger.Error("OnStart | OnStart", "Error", err)
 	} // Always call the overridden method.

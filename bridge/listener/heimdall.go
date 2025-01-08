@@ -25,7 +25,7 @@ type HeimdallListener struct {
 
 // Start starts new block subscription
 func (hl *HeimdallListener) Start() error {
-	hl.Logger.Info("Starting heimdall listener")
+	hl.Logger.Error("Starting heimdall listener")
 
 	// create cancellable context
 	headerCtx, cancelHeaderProcess := context.WithCancel(context.Background())
