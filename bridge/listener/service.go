@@ -29,7 +29,7 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, h
 	// creating listener object
 	listenerService := &ListenerService{}
 
-	listenerService.BaseService = *common.NewBaseService(nil, listenerServiceStr, listenerService)
+	listenerService.BaseService = *common.NewBaseService(helper.Logger, listenerServiceStr, listenerService)
 
 	rootchainListener := NewRootChainListener()
 	rootchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootchainListener)

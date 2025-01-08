@@ -49,6 +49,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to server %v", err))
 	}
+	logger.Error("StartBridgeWithCtx")
 
 	// selected services to start
 	var services []common.Service
@@ -91,6 +92,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 		srv := service
 
 		g.Go(func() error {
+			logger.Info("Starting service", "service", srv.String())
 			if err := srv.Start(); err != nil {
 				logger.Error("GetStartCmd | serv.Start", "Error", err)
 				return err
