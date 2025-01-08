@@ -182,7 +182,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 // 2. check if this checkpoint has to be submitted to rootchain
 // 3. if so, create and broadcast checkpoint transaction to rootchain
 func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, blockHeight int64) error {
-	cp.Logger.Info("Received sendCheckpointToRootchain request", "eventBytes", eventBytes, "blockHeight", blockHeight)
+	cp.Logger.Error("Received sendCheckpointToRootchain request", "eventBytes", eventBytes, "blockHeight", blockHeight)
 
 	var event sdk.StringEvent
 	if err := cp.cliCtx.Codec.UnmarshalJSON([]byte(eventBytes), &event); err != nil {
@@ -196,7 +196,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 	// 	return err
 	// }
 
-	cp.Logger.Info("processing checkpoint confirmation event", "eventtype", event.Type)
+	cp.Logger.Error("processing checkpoint confirmation event", "eventtype", event.Type)
 
 	isCurrentProposer, err := util.IsCurrentProposer()
 	if err != nil {
@@ -242,7 +242,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 		}
 	}
 
-	cp.Logger.Info("I am not the current proposer or checkpoint already sent. Ignoring", "eventType", event.Type)
+	cp.Logger.Error("I am not the current proposer or checkpoint already sent. Ignoring", "eventType", event.Type)
 
 	return nil
 }

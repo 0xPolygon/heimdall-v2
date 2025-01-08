@@ -73,6 +73,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 					if err != nil {
 						hl.Logger.Error("Error fetching begin block events", "error", err)
 					}
+					hl.Logger.Debug("BeginBlockEvents", "events", events)
 					for _, event := range events {
 						hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(i))
 					}
@@ -131,7 +132,7 @@ func (hl *HeimdallListener) fetchFromAndToBlock() (uint64, uint64, error) {
 
 // ProcessBlockEvent - process Blockevents (BeginBlock, EndBlock events) from heimdall.
 func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
-	hl.Logger.Info("Received block event from Heimdall", "eventType", event.Type)
+	hl.Logger.Error("Received block event from Heimdall", "eventType", event.Type)
 
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
