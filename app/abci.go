@@ -298,7 +298,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
-
+	logger.Error("PreBlocker", "height", req.Height)
 	panicOnVoteExtensionsDisabled(ctx, req.Height+1)
 
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
@@ -367,10 +367,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
+	logger.Error("Approved txs", "txs", fmt.Sprintf("%+v", approvedTxs))
+	logger.Error("Majority non-rp vote extension", "majorityExt", fmt.Sprintf("%+v", majorityExt))
+
 	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
 	if checkpointTxHash != "" {
 		logger.Error("Checkpoint tx found", "txHash", checkpointTxHash)
-		logger.Error("Approved txs", "txs", fmt.Sprintf("%+v", approvedTxs))
 	}
 	if approvedTxsMap[checkpointTxHash] {
 		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
