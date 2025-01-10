@@ -214,6 +214,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 					logger.Error("ExtendVoteHandler: checkpointMsg", "checkpointMsg", checkpointMsg)
 					nonRpVoteExt = checkpointMsg.GetSideSignBytes()
+					logger.Error("ExtendVoteHandler: nonRpVoteExt", "nonRpVoteExt", common.Bytes2Hex(nonRpVoteExt), "len", len(nonRpVoteExt))
 				}
 
 				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response

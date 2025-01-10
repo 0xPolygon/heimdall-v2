@@ -400,6 +400,7 @@ func ValidateNonRpVoteExtensions(
 		return err
 	}
 
+	logger.Error("MAJORITY NON-RP VOTE EXTENSION", "EXTENSION", common.Bytes2Hex(majorityExt), "len", len(majorityExt))
 	if err := ValidateNonRpVoteExtension(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
 	}
