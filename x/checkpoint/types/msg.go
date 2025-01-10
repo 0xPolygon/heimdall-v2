@@ -229,7 +229,5 @@ func (msg MsgCpNoAck) ValidateBasic(ac address.Codec) error {
 }
 
 func IsCheckpointMsg(msg proto.Message) bool {
-	return sdk.MsgTypeURL(msg) == checkpointTypeUrl
+	return sdk.MsgTypeURL(msg) == sdk.MsgTypeURL(&MsgCheckpoint{})
 }
-
-var checkpointTypeUrl = sdk.MsgTypeURL(&MsgCheckpoint{})
