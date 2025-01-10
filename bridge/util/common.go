@@ -315,7 +315,7 @@ func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
 }
 
 // IsCurrentProposer checks if we are current proposer
-func IsCurrentProposer() (bool, error) {
+func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
 	var response checkpointTypes.QueryCurrentProposerResponse
@@ -326,7 +326,7 @@ func IsCurrentProposer() (bool, error) {
 		return false, err
 	}
 
-	if err = json.Unmarshal(result, &response); err != nil {
+	if err = cdc.UnmarshalJSON(result, &response); err != nil {
 		logger.Error("error unmarshalling current proposer response", "error", err)
 		return false, err
 	}
