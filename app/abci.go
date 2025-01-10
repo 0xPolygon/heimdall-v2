@@ -368,8 +368,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
+	if checkpointTxHash != "" {
+		logger.Error("Checkpoint tx found", "txHash", checkpointTxHash)
+		logger.Error("Approved txs", "txs", fmt.Sprintf("%+v", approvedTxs))
+	}
 	if approvedTxsMap[checkpointTxHash] {
 		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+		logger.Error("Will set checkpoint signatures", "signatures", fmt.Sprintf("%+v", signatures))
 		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
 			logger.Error("Error occurred while setting checkpoint signatures", "error", err)
 			return nil, err

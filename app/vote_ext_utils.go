@@ -617,9 +617,11 @@ func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logge
 					continue
 				}
 
+				logger.Error("Checkpoint msg is found", "checkpointMsg", checkpointMsg)
 				signBytes := checkpointMsg.GetSideSignBytes()
 
 				if bytes.Equal(signBytes, extension) {
+					logger.Error("Checkpoint msg side sign bytes match with extension")
 					var txBytes cometTypes.Tx = rawTx
 					return common.Bytes2Hex(txBytes.Hash())
 				}
