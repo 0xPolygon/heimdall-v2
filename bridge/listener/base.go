@@ -80,7 +80,7 @@ type blockHeader struct {
 
 // NewBaseListener creates a new BaseListener.
 func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
-	logger := log.NewNopLogger().With("service", "listener", "module", name)
+	logger := util.Logger().With("service", "listener", "module", name)
 
 	contractCaller, err := helper.NewContractCaller()
 	if err != nil {
