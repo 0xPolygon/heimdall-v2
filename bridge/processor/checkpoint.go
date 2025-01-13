@@ -198,7 +198,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 
 	cp.Logger.Info("processing checkpoint confirmation event", "eventtype", event.Type)
 
-	isCurrentProposer, err := util.IsCurrentProposer()
+	isCurrentProposer, err := util.IsCurrentProposer(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error checking isCurrentProposer in CheckpointConfirmation handler", "error", err)
 		return err
