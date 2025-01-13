@@ -90,6 +90,13 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, http
 
 	cliCtx := client.Context{}.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastAsync
+	cmt := helper.GetConfig().CometBFTRPCUrl
+	rpc, err := client.NewClientFromNode(cmt)
+	if err != nil {
+		logger.Error("Error while creating rpc client", "error", err)
+		panic(err)
+	}
+	cliCtx = cliCtx.WithClient(rpc)
 
 	// creating syncer object
 	return &BaseListener{

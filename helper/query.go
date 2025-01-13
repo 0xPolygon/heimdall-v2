@@ -24,7 +24,15 @@ func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
 		return nil, err
 	}
 
-	return node.Status(cliCtx.CmdContext)
+	ctx := cliCtx.CmdContext
+
+	if ctx == nil {
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		ctx = ctxWithTimeout
+	}
+
+	return node.Status(ctx)
 }
 
 // QueryTxWithProof query tx with proof from node
@@ -34,7 +42,15 @@ func QueryTxWithProof(cliCtx cosmosContext.Context, hash []byte) (*ctypes.Result
 		return nil, err
 	}
 
-	return node.Tx(cliCtx.CmdContext, hash, true)
+	ctx := cliCtx.CmdContext
+
+	if ctx == nil {
+		ctxWithTimeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		ctx = ctxWithTimeout
+	}
+
+	return node.Tx(ctx, hash, true)
 }
 
 // GetBeginBlockEvents get block through per height
