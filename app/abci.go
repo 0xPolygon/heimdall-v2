@@ -397,6 +397,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 					// Create a new context based off of the existing context with a cache wrapped
 					// multi-store in case message processing fails.
 					postHandlerCtx, msCache := app.cacheTxContext(ctx)
+					postHandlerCtx = postHandlerCtx.WithTxBytes(txBytes.Hash())
 					if err := postHandler(postHandlerCtx, msg, sidetxs.Vote_VOTE_YES); err == nil {
 						msCache.Write()
 					}
