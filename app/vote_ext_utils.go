@@ -400,7 +400,7 @@ func ValidateNonRpVoteExtensions(
 		return err
 	}
 
-	if err := ValidateNonRpVoteExtension(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+	if err := ValidateNonRpVoteExtension(ctx, height-1, majorityExt.extensionData, majorityExt.extension, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
 	}
 
@@ -416,6 +416,7 @@ func ValidateNonRpVoteExtensions(
 func ValidateNonRpVoteExtension(
 	ctx sdk.Context,
 	height int64,
+	extensionData []byte,
 	extension []byte,
 	chainManagerKeeper chainManagerKeeper.Keeper,
 	checkpointKeeper checkpointKeeper.Keeper,
@@ -427,14 +428,19 @@ func ValidateNonRpVoteExtension(
 		return err
 	}
 
-	if bytes.Equal(extension, dummyExt) {
+	if bytes.Equal(extensionData, dummyExt) {
 		// This is dummy vote extension, we have nothing else to check
 		return nil
 	}
 
 	// Check if valid checkpoint data
-	if err := validateCheckpointMsgData(ctx, extension, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+	if err := validateCheckpointMsgData(ctx, extensionData, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
 		return fmt.Errorf("failed to validate checkpoint msg data: %w", err)
+	}
+
+	// Check if extension is produced by extension data
+	if !bytes.Equal(extension, packDataForSigning(extensionData)) {
+		return errors.New("extension data and extension do not match")
 	}
 
 	return nil
@@ -479,17 +485,22 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 	return nil
 }
 
+type majorityVoteExt struct {
+	extensionData []byte
+	extension     []byte
+}
+
 // getMajorityNonRpVoteExtension returns the non-rp vote extension with atleast 2/3 voting power
-func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) ([]byte, error) {
+func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) (majorityVoteExt, error) {
 	// Fetch validatorSet from previous block
 	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
 	if err != nil {
-		return nil, err
+		return majorityVoteExt{}, err
 	}
 
 	ac := address.HexCodec{}
 
-	hashToExt := make(map[string][]byte)
+	hashToExt := make(map[string]majorityVoteExt)
 	hashToVotingPower := make(map[string]int64)
 
 	for _, vote := range extVoteInfo {
@@ -498,20 +509,33 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 			continue
 		}
 
-		hash := common.BytesToHash(crypto.Keccak256(vote.NonRpVoteExtension)).String()
-		hashToExt[hash] = vote.NonRpVoteExtension
+		consolidatedSideTxResponse := new(sidetxs.ConsolidatedSideTxResponse)
+		if err = consolidatedSideTxResponse.Unmarshal(vote.VoteExtension); err != nil {
+			return majorityVoteExt{}, fmt.Errorf("error while unmarshalling vote extension: %w", err)
+		}
+
+		var buf bytes.Buffer
+		buf.Write(consolidatedSideTxResponse.NonRpVoteData)
+		buf.Write([]byte{0xDE, 0xAD, 0xBE, 0xEF})
+		buf.Write(vote.NonRpVoteExtension)
+
+		hash := common.BytesToHash(crypto.Keccak256(buf.Bytes())).String()
+		hashToExt[hash] = majorityVoteExt{
+			extensionData: consolidatedSideTxResponse.NonRpVoteData,
+			extension:     vote.NonRpVoteExtension,
+		}
 		if _, ok := hashToVotingPower[hash]; !ok {
 			hashToVotingPower[hash] = 0
 		}
 
 		valAddr, err := ac.BytesToString(vote.Validator.Address)
 		if err != nil {
-			return nil, err
+			return majorityVoteExt{}, err
 		}
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			return nil, fmt.Errorf("failed to get validator %s", valAddr)
+			return majorityVoteExt{}, fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		hashToVotingPower[hash] += validator.VotingPower
@@ -651,3 +675,11 @@ type txDecoder interface {
 }
 
 var dummyNonRpVoteExtension = []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t")
+
+func packDataForSigning(extension []byte) []byte {
+	prefix := []byte{0x01}
+	var buf bytes.Buffer
+	buf.Write(prefix)
+	buf.Write(extension)
+	return crypto.Keccak256(buf.Bytes())
+}

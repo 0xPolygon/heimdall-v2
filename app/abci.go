@@ -230,6 +230,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
 			BlockHash:       req.Hash,
+			NonRpVoteData:   nonRpVoteExt,
 		}
 
 		bz, err = consolidatedSideTxRes.Marshal()
@@ -238,12 +239,14 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		dataForSigning := packDataForSigning(nonRpVoteExt)
+
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, consolidatedSideTxRes.NonRpVoteData, dataForSigning, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
 			return nil, err
 		}
 
-		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
+		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: dataForSigning}, nil
 	}
 }
 
@@ -286,7 +289,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, consolidatedSideTxResponse.NonRpVoteData, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -367,9 +370,9 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
+	checkpointTxHash := findCheckpointTx(txs, majorityExt.extensionData, app, logger)
 	if approvedTxsMap[checkpointTxHash] {
-		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+		signatures := getCheckpointSignatures(majorityExt.extension, extVoteInfo)
 		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
 			logger.Error("Error occurred while setting checkpoint signatures", "error", err)
 			return nil, err
