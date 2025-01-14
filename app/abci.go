@@ -175,6 +175,8 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
+		nonRpVoteData := nonRpVoteExt
+
 		txs := req.Txs[1:]
 
 		// decode txs and execute side txs
@@ -210,7 +212,8 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 						continue
 					}
 
-					nonRpVoteExt = checkpointMsg.GetSideSignBytes()
+					nonRpVoteData = checkpointMsg.GetSideSignBytes()
+					nonRpVoteExt = packDataForSigning(nonRpVoteData)
 				}
 
 				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response
@@ -230,7 +233,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
 			BlockHash:       req.Hash,
-			NonRpVoteData:   nonRpVoteExt,
+			NonRpVoteData:   nonRpVoteData,
 		}
 
 		bz, err = consolidatedSideTxRes.Marshal()
@@ -239,14 +242,12 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
-		dataForSigning := packDataForSigning(nonRpVoteExt)
-
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, consolidatedSideTxRes.NonRpVoteData, dataForSigning, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, consolidatedSideTxRes.NonRpVoteData, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
 			return nil, err
 		}
 
-		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: dataForSigning}, nil
+		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
 	}
 }
 
