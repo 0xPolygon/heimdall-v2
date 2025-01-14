@@ -223,13 +223,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		}
 
-		if req.Height == 5 {
-			checkpointMsg := types.NewMsgCheckpointBlock("0x762893B6B6525C52Fa6B91C211Ee0D718561bF65", 1, 2, []byte("rootHash"), []byte("accountRootHash"), "1122")
-			nonRpVoteExt = packExtensionWithVote(checkpointMsg.GetSideSignBytes())
-
-			logger.Error("ExtendVoteHandler: checkpointMsg", "nonRpVoteExt", common.Bytes2Hex(nonRpVoteExt))
-		}
-
 		// prepare the response with votes, block height and block hash
 		consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
