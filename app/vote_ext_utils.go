@@ -433,14 +433,14 @@ func ValidateNonRpVoteExtension(
 		return nil
 	}
 
-	// Check if valid checkpoint data
-	if err := validateCheckpointMsgData(ctx, extensionData, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
-		return fmt.Errorf("failed to validate checkpoint msg data: %w", err)
-	}
-
 	// Check if extension is produced by extension data
 	if !bytes.Equal(extension, packDataForSigning(extensionData)) {
 		return errors.New("extension data and extension do not match")
+	}
+
+	// Check if valid checkpoint data
+	if err := validateCheckpointMsgData(ctx, extensionData, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+		return fmt.Errorf("failed to validate checkpoint msg data: %w", err)
 	}
 
 	return nil
