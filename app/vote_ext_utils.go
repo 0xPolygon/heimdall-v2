@@ -428,7 +428,7 @@ func ValidateNonRpVoteExtension(
 		return err
 	}
 
-	if bytes.Equal(extensionData, dummyExt) {
+	if bytes.Equal(extension, dummyExt) {
 		// This is dummy vote extension, we have nothing else to check
 		return nil
 	}
