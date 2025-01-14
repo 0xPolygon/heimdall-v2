@@ -498,11 +498,6 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 			continue
 		}
 
-		consolidatedSideTxResponse := new(sidetxs.ConsolidatedSideTxResponse)
-		if err = consolidatedSideTxResponse.Unmarshal(vote.VoteExtension); err != nil {
-			return nil, fmt.Errorf("error while unmarshalling vote extension: %w", err)
-		}
-
 		hash := common.BytesToHash(crypto.Keccak256(vote.NonRpVoteExtension)).String()
 		hashToExt[hash] = vote.NonRpVoteExtension
 		if _, ok := hashToVotingPower[hash]; !ok {
