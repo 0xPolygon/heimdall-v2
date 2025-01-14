@@ -198,7 +198,7 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 
 	cp.Logger.Info("processing checkpoint confirmation event", "eventtype", event.Type)
 
-	isCurrentProposer, err := util.IsCurrentProposer()
+	isCurrentProposer, err := util.IsCurrentProposer(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error checking isCurrentProposer in CheckpointConfirmation handler", "error", err)
 		return err
@@ -510,7 +510,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 // createAndSendCheckpointToRootchain prepares the data required for rootchain checkpoint submission
 // and sends a transaction to rootchain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
-	cp.Logger.Info("Preparing checkpoint to be pushed on chain", "height", height, "txHash", string(txHash[:]), "start", start, "end", end)
+	cp.Logger.Info("Preparing checkpoint to be pushed on chain", "height", height, "txHash", common.Bytes2Hex(txHash), "start", start, "end", end)
 	// proof
 	tx, err := helper.QueryTxWithProof(cp.cliCtx, txHash)
 	if err != nil {

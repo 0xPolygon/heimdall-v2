@@ -315,26 +315,26 @@ func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
 }
 
 // IsCurrentProposer checks if we are current proposer
-func IsCurrentProposer() (bool, error) {
+func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
-	var proposer staketypes.Validator
+	var response checkpointTypes.QueryCurrentProposerResponse
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentProposerURL))
 	if err != nil {
-		logger.Error("Error fetching proposers", "error", err)
+		logger.Error("Error fetching current proposer", "error", err)
 		return false, err
 	}
 
-	if err = json.Unmarshal(result, &proposer); err != nil {
-		logger.Error("error unmarshalling validator", "error", err)
+	if err = cdc.UnmarshalJSON(result, &response); err != nil {
+		logger.Error("error unmarshalling current proposer response", "error", err)
 		return false, err
 	}
 
-	logger.Debug("Current proposer fetched", "validator", proposer.String())
+	logger.Debug("Current proposer fetched", "validator", response.Validator.String())
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(proposer.Signer)
+	signerBytes, err := ac.StringToBytes(response.Validator.Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false, err
