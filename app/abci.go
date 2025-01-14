@@ -175,8 +175,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
-		nonRpVoteData := nonRpVoteExt
-
 		txs := req.Txs[1:]
 
 		// decode txs and execute side txs
@@ -203,8 +201,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				// execute the side handler to collect the votes from the validators
 				res := sideHandler(ctx, msg)
 
-				// We want to explicitly allow which side msg data to sign and only if the vote is YES.
-				// This prevents DoS via submitting invalid side txs and signing of arbitrary data.
 				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
 					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
 					if !ok {
@@ -212,8 +208,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 						continue
 					}
 
-					nonRpVoteData = checkpointMsg.GetSideSignBytes()
-					nonRpVoteExt = packDataForSigning(nonRpVoteData)
+					nonRpVoteExt = packExtensionWithVote(checkpointMsg.GetSideSignBytes())
 				}
 
 				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response
@@ -228,12 +223,18 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		}
 
+		if req.Height == 5 {
+			checkpointMsg := types.NewMsgCheckpointBlock("0x762893B6B6525C52Fa6B91C211Ee0D718561bF65", 1, 2, []byte("rootHash"), []byte("accountRootHash"), "1122")
+			nonRpVoteExt = packExtensionWithVote(checkpointMsg.GetSideSignBytes())
+
+			logger.Error("ExtendVoteHandler: checkpointMsg", "nonRpVoteExt", common.Bytes2Hex(nonRpVoteExt))
+		}
+
 		// prepare the response with votes, block height and block hash
 		consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
 			Height:          req.Height,
 			BlockHash:       req.Hash,
-			NonRpVoteData:   nonRpVoteData,
 		}
 
 		bz, err = consolidatedSideTxRes.Marshal()
@@ -242,7 +243,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, consolidatedSideTxRes.NonRpVoteData, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
 			return nil, err
 		}
@@ -290,7 +291,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, consolidatedSideTxResponse.NonRpVoteData, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -371,9 +372,9 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	checkpointTxHash := findCheckpointTx(txs, majorityExt.extensionData, app, logger)
+	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
 	if approvedTxsMap[checkpointTxHash] {
-		signatures := getCheckpointSignatures(majorityExt.extension, extVoteInfo)
+		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
 		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
 			logger.Error("Error occurred while setting checkpoint signatures", "error", err)
 			return nil, err
