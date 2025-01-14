@@ -365,7 +365,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
+	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip first byte because its the vote
 	if approvedTxsMap[checkpointTxHash] {
 		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
 		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
