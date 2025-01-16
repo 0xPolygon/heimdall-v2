@@ -356,7 +356,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	logger.Debug("checkpoint buffer flushed after receiving checkpoint ack")
 
-	// update ack count in staking module
+	// update ack count module
 	err = srv.IncrementAckCount(ctx)
 	if err != nil {
 		logger.Error("error while updating the ack count", "err", err)

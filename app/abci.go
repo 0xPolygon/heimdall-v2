@@ -201,8 +201,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				// execute the side handler to collect the votes from the validators
 				res := sideHandler(ctx, msg)
 
-				// We want to explicitly allow which side msg data to sign and only if the vote is YES.
-				// This prevents DoS via submitting invalid side txs and signing of arbitrary data.
 				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
 					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
 					if !ok {
@@ -210,7 +208,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 						continue
 					}
 
-					nonRpVoteExt = checkpointMsg.GetSideSignBytes()
+					nonRpVoteExt = packExtensionWithVote(checkpointMsg.GetSideSignBytes())
 				}
 
 				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response
@@ -367,7 +365,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	checkpointTxHash := findCheckpointTx(txs, majorityExt, app, logger)
+	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip first byte because its the vote
 	if approvedTxsMap[checkpointTxHash] {
 		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
 		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
