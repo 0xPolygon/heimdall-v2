@@ -262,6 +262,7 @@ func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCh
 
 // GetCheckpointSignatures queries for the last checkpoint signatures
 func (q queryServer) GetCheckpointSignatures(ctx context.Context, _ *types.QueryCheckpointSignaturesRequest) (*types.QueryCheckpointSignaturesResponse, error) {
+
 	checkpointSignatures, err := q.k.GetCheckpointSignatures(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
