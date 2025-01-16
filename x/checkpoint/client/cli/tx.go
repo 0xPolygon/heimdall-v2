@@ -16,7 +16,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var logger = helper.Logger.With("module", "checkpoint/client/cli")
@@ -24,7 +23,7 @@ var logger = helper.Logger.With("module", "checkpoint/client/cli")
 // NewTxCmd returns a root CLI command handler for all x/checkpoint transaction commands.
 func NewTxCmd() *cobra.Command {
 	txCmd := &cobra.Command{
-		Use:                        types.ModuleName,
+		Use:                        checkpointTypes.ModuleName,
 		Short:                      "Stake transaction subcommands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
