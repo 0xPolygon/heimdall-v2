@@ -995,7 +995,7 @@ paths:
           format: uint64
       tags:
         - Query
-  /checkpoint/signatures:
+  /checkpoint/signatures/{tx_hash}:
     get:
       summary: GetCheckpointSignatures queries signatures for latest checkpoint
       operationId: GetCheckpointSignatures
@@ -1043,8 +1043,8 @@ paths:
                       format: byte
       parameters:
         - name: tx_hash
-          in: query
-          required: false
+          in: path
+          required: true
           type: string
       tags:
         - Query
