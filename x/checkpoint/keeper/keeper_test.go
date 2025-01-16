@@ -134,6 +134,7 @@ func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {
 	require.NoError(err)
 	require.False(res)
 
-	_, err = keeper.GetCheckpointFromBuffer(ctx)
-	require.NotNil(err)
+	resp, err := keeper.GetCheckpointFromBuffer(ctx)
+	require.NoError(err)
+	require.Equal(types.Checkpoint{}, resp)
 }
