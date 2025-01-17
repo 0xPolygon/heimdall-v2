@@ -296,7 +296,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
-	// skip handler if stakeUpdate is not approved
+	// skip handler if ACK is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping stake update since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")

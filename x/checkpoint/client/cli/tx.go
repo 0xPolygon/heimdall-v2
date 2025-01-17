@@ -2,17 +2,24 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strconv"
 
 	"cosmossdk.io/core/address"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
+	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -223,7 +230,55 @@ func SendCheckpointAckCmd() *cobra.Command {
 
 			msg := checkpointTypes.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
+			// create tx factory
+			txf, err := MakeTxFactory(clientCtx, proposer)
+			if err != nil {
+				logger.Error("Error creating tx factory", "Error", err)
+				return err
+			}
+
+			// setting this to true to as the if block in BroadcastTx
+			// might cause a cancelled transaction.
+			clientCtx.SkipConfirm = true
+
+			account, err := util.GetAccount(clientCtx, proposer)
+			if err != nil {
+				logger.Error("Error fetching account", "address", proposer, "err", err)
+				return err
+			}
+
+			clientCtx = clientCtx.WithFromAddress(account.GetAddress())
+			from := clientCtx.GetFromAddress()
+
+			authqueryClient := authtypes.NewQueryClient(clientCtx)
+
+			_, err = authqueryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: from.String()})
+			if err != nil {
+				logger.Error("Error fetching account", "Error", err)
+				return err
+			}
+
+			// err = txf.AccountRetriever().EnsureExists(clientCtx, from)
+			_, err = txf.AccountRetriever().GetAccount(clientCtx, from)
+			if err != nil {
+				logger.Error("Error ensuring account exists", "Error", err)
+				return err
+			}
+
+			// err = tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), &msg)
+			txResponse, err := helper.BroadcastTx(clientCtx, txf, &msg)
+			if err != nil {
+				logger.Error("Error broadcasting tx", "Error", err)
+				return err
+			}
+
+			// Now check if the transaction response is not okay
+			if txResponse.Code != abci.CodeTypeOK {
+				logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
+				return fmt.Errorf("broadcast succeeded but received non-ok response code: %d", txResponse.Code)
+			}
+
+			return err
 		},
 	}
 
@@ -231,6 +286,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 	cmd.Flags().String(FlagHeaderNumber, "", "--header=<header-index>")
 	cmd.Flags().StringP(FlagCheckpointTxHash, "t", "", "--txhash=<checkpoint-txhash>")
 	cmd.Flags().String(FlagCheckpointLogIndex, "", "--log-index=<log-index>")
+	cmd.Flags().String(flags.FlagChainID, "", "--chain-id=<chain-id>")
 
 	if err := cmd.MarkFlagRequired(FlagHeaderNumber); err != nil {
 		logger.Error("SendCheckpointACKTx | MarkFlagRequired | FlagHeaderNumber", "Error", err)
@@ -245,4 +301,41 @@ func SendCheckpointAckCmd() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func MakeTxFactory(clictx client.Context, address string) (tx.Factory, error) {
+	account, err := util.GetAccount(clictx, address)
+	if err != nil {
+		logger.Error("Error fetching account", "address", address, "err", err)
+		return tx.Factory{}, err
+	}
+
+	accNum := account.GetAccountNumber()
+	accSeq := account.GetSequence()
+
+	signMode, err := authsign.APISignModeToInternal(clictx.TxConfig.SignModeHandler().DefaultMode())
+	if err != nil {
+		logger.Error("Error getting sign mode", "err", err)
+		return tx.Factory{}, err
+	}
+
+	authParams, err := util.GetAccountParamsURL(clictx.Codec)
+	if err != nil {
+		logger.Error("Error getting account params", "err", err)
+		return tx.Factory{}, err
+	}
+
+	txf := tx.Factory{}.
+		WithTxConfig(clictx.TxConfig).
+		WithAccountRetriever(clictx.AccountRetriever).
+		WithChainID(clictx.ChainID).
+		WithSignMode(signMode).
+		WithAccountNumber(accNum).
+		WithSequence(accSeq).
+		WithKeybase(clictx.Keyring).
+		WithSignMode(signMode).
+		WithFees(ante.DefaultFeeWantedPerTx.String()).
+		WithGas(authParams.MaxTxGas)
+
+	return txf, nil
 }
