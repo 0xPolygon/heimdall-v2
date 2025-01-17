@@ -116,6 +116,8 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
+	helper.InitHeimdallConfig("")
+
 	// adding heimdall configuration flags to root command
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
 	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
