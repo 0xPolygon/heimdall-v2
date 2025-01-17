@@ -85,7 +85,7 @@ type IContractCaller interface {
 	CurrentSpanNumber(validatorSet *validatorset.Validatorset) (Number *big.Int)
 	GetSpanDetails(id *big.Int, validatorSet *validatorset.Validatorset) (*big.Int, *big.Int, *big.Int, error)
 	CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int)
-	CheckIfBlocksExist(end uint64) bool
+	CheckIfBlocksExist(end uint64) (bool, error)
 	GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error)
 	GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error)
 	GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error)
@@ -884,20 +884,20 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 }
 
 // CheckIfBlocksExist - check if the given block exists on local chain
-func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
+func (c *ContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	block := c.GetBlockByNumber(ctx, end)
+	block, err := c.GetBlockByNumber(ctx, end)
 	if block == nil {
-		return false
+		return false, err
 	}
 
-	return end == block.NumberU64()
+	return end == block.NumberU64(), err
 }
 
 // GetBlockByNumber returns blocks by number from child chain (bor)
-func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) *ethTypes.Block {
+func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) (*ethTypes.Block, error) {
 	var block *ethTypes.Block
 	var err error
 
@@ -909,10 +909,10 @@ func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint6
 
 	if err != nil {
 		Logger.Error("Unable to fetch block by number from child chain", "block", block, "err", err)
-		return nil
+		return nil, err
 	}
 
-	return block
+	return block, nil
 }
 
 //
