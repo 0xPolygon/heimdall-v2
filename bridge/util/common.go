@@ -228,7 +228,7 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 }
 
 // IsInMilestoneProposerList checks if we are in the current milestone proposers list
-func IsInMilestoneProposerList(count uint64) (bool, error) {
+func IsInMilestoneProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
@@ -239,9 +239,8 @@ func IsInMilestoneProposerList(count uint64) (bool, error) {
 		return false, err
 	}
 
-	// unmarshall data from buffer
-	var proposers []staketypes.Validator
-	if err := json.Unmarshal(response, &proposers); err != nil {
+	var milestoneProposers milestoneTypes.QueryMilestoneProposerResponse
+	if err := cdc.UnmarshalJSON(response, &milestoneProposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -250,8 +249,8 @@ func IsInMilestoneProposerList(count uint64) (bool, error) {
 
 	ac := addressCodec.NewHexCodec()
 
-	for i := 1; i <= int(count) && i < len(proposers); i++ {
-		signerBytes, err := ac.StringToBytes(proposers[i].Signer)
+	for _, proposer := range milestoneProposers.Proposers {
+		signerBytes, err := ac.StringToBytes(proposer.Signer)
 		if err != nil {
 			logger.Error("Error converting signer string to bytes", "error", err)
 			return false, err
@@ -266,7 +265,7 @@ func IsInMilestoneProposerList(count uint64) (bool, error) {
 
 // CalculateTaskDelay calculates delay required for current validator to propose the tx
 // It solves for multiple validators sending same transaction.
-func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
+func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration) {
 	logger := Logger()
 
 	defer LogElapsedTimeForStateSyncedEvent(event, "CalculateTaskDelay", time.Now())
@@ -275,7 +274,7 @@ func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
 	valPosition := 0
 	isCurrentValidator := false
 
-	validatorSet, err := GetValidatorSet()
+	validatorSet, err := GetValidatorSet(cdc)
 	if err != nil {
 		logger.Error("Error getting current validatorset data ", "error", err)
 		return false, 0
@@ -349,10 +348,8 @@ func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 }
 
 // IsEventSender checks if the validatorID belongs to the event sender
-func IsEventSender(validatorID uint64) bool {
+func IsEventSender(validatorID uint64, cdc codec.Codec) bool {
 	logger := Logger()
-
-	var validator staketypes.Validator
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
@@ -360,15 +357,16 @@ func IsEventSender(validatorID uint64) bool {
 		return false
 	}
 
-	if err = json.Unmarshal(result, &validator); err != nil {
-		logger.Error("error unmarshalling proposer slice", "error", err)
+	var validatorResponse staketypes.QueryValidatorResponse
+	if err = cdc.UnmarshalJSON(result, &validatorResponse); err != nil {
+		logger.Error("Error unmarshalling validator data", "error", err)
 		return false
 	}
 
-	logger.Debug("Current event sender received", "validator", validator.String())
+	logger.Debug("Current event sender received", "validator", validatorResponse.Validator.String())
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(validator.Signer)
+	signerBytes, err := ac.StringToBytes(validatorResponse.Validator.Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false
@@ -573,10 +571,8 @@ func AppendPrefix(signerPubKey []byte) []byte {
 }
 
 // GetValidatorNonce fetches validator nonce and height
-func GetValidatorNonce(validatorID uint64) (uint64, error) {
+func GetValidatorNonce(validatorID uint64, cdc codec.Codec) (uint64, error) {
 	logger := Logger()
-
-	var validator staketypes.Validator
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
@@ -584,18 +580,19 @@ func GetValidatorNonce(validatorID uint64) (uint64, error) {
 		return 0, err
 	}
 
-	if err = json.Unmarshal(result, &validator); err != nil {
-		logger.Error("error unmarshalling validator data", "error", err)
+	var validatorResponse staketypes.QueryValidatorResponse
+	if err = cdc.UnmarshalJSON(result, &validatorResponse); err != nil {
+		logger.Error("Error unmarshalling validator data ", "error", err)
 		return 0, err
 	}
 
-	logger.Debug("Validator data received ", "validator", validator.String())
+	logger.Debug("Validator data received ", "validator", validatorResponse.Validator.String())
 
-	return validator.Nonce, nil
+	return validatorResponse.Validator.Nonce, nil
 }
 
 // GetValidatorSet fetches the current validator set
-func GetValidatorSet() (*staketypes.ValidatorSet, error) {
+func GetValidatorSet(cdc codec.Codec) (*staketypes.ValidatorSet, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
@@ -604,17 +601,17 @@ func GetValidatorSet() (*staketypes.ValidatorSet, error) {
 		return nil, err
 	}
 
-	var validatorSet staketypes.ValidatorSet
-	if err = json.Unmarshal(response, &validatorSet); err != nil {
-		logger.Error("Error unmarshalling current validatorset data ", "error", err)
+	var validatorSetResponse staketypes.QueryCurrentValidatorSetResponse
+	if err = cdc.UnmarshalJSON(response, &validatorSetResponse); err != nil {
+		logger.Error("Error unmarshalling validator set data ", "error", err)
 		return nil, err
 	}
 
-	return &validatorSet, nil
+	return &validatorSetResponse.ValidatorSet, nil
 }
 
 // GetClerkEventRecord return last successful checkpoint
-func GetClerkEventRecord(stateId int64) (*clerktypes.EventRecord, error) {
+func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
@@ -623,13 +620,13 @@ func GetClerkEventRecord(stateId int64) (*clerktypes.EventRecord, error) {
 		return nil, err
 	}
 
-	var eventRecord clerktypes.EventRecord
-	if err = json.Unmarshal(response, &eventRecord); err != nil {
+	var eventRecordResponse clerktypes.RecordResponse
+	if err = cdc.UnmarshalJSON(response, &eventRecordResponse); err != nil {
 		logger.Error("Error unmarshalling event record", "error", err)
 		return nil, err
 	}
 
-	return &eventRecord, nil
+	return &eventRecordResponse.Record, nil
 }
 
 func GetUnconfirmedTxnCount(event interface{}) int {

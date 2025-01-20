@@ -244,7 +244,7 @@ func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout(ctx context.Contex
 		var isProposer bool
 
 		// check if the node is the proposer list or not.
-		if isProposer, err = util.IsInMilestoneProposerList(10); err != nil {
+		if isProposer, err = util.IsInMilestoneProposerList(10, mp.cliCtx.Codec); err != nil {
 			mp.Logger.Error("Error checking IsInMilestoneProposerList while proposing Milestone Timeout ", "error", err)
 			return
 		}
