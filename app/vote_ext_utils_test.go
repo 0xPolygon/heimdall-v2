@@ -26,7 +26,9 @@ import (
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
-	hApp, _, _, validatorPrivKeys := SetupApp(t, 1)
+	setupAppResult := SetupApp(t, 1)
+	hApp := setupAppResult.App
+	validatorPrivKeys := setupAppResult.ValidatorKeys
 	ctx := hApp.BaseApp.NewContext(true)
 	vals := hApp.StakeKeeper.GetAllValidators(ctx)
 	valAddr := common.FromHex(vals[0].Signer)
@@ -542,6 +544,7 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 }
 
 func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey) abci.ExtendedVoteInfo {
+	t.Helper()
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
 		SideTxResponses: []sidetxs.SideTxResponse{

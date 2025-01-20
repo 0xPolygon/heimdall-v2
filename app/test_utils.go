@@ -40,14 +40,28 @@ const (
 	ValAddr3           = "0x000000000000000000000000000000000003dEaD"
 )
 
-func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger, []cmtcrypto.PrivKey) {
+type SetupAppResult struct {
+	App           *HeimdallApp
+	DB            *dbm.MemDB
+	Logger        log.Logger
+	ValidatorKeys []cmtcrypto.PrivKey
+}
+
+func SetupApp(t *testing.T, numOfVals uint64) SetupAppResult {
 	t.Helper()
 
 	// generate validators, accounts and balances
 	validatorPrivKeys, validators, accounts, balances := generateValidators(t, numOfVals)
 
 	// setup app with validator set and respective accounts
-	return setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
+	app, db, logger, privKeys := setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
+
+	return SetupAppResult{
+		App:           app,
+		DB:            db,
+		Logger:        logger,
+		ValidatorKeys: privKeys,
+	}
 }
 
 func generateValidators(t *testing.T, numOfVals uint64) ([]cmtcrypto.PrivKey, []*stakeTypes.Validator, []authtypes.GenesisAccount, []banktypes.Balance) {
