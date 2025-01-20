@@ -48,7 +48,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			name: "ves disabled with non-empty vote extension",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 0),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0], vals[0].PubKey),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
@@ -58,7 +58,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			name: "function executed and signature verified successfully",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 1),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0], vals[0].PubKey),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
@@ -541,7 +541,7 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 	}
 }
 
-func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey, pubKey cmtcrypto.PubKey) abci.ExtendedVoteInfo {
+func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey) abci.ExtendedVoteInfo {
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
 		SideTxResponses: []sidetxs.SideTxResponse{
@@ -556,9 +556,7 @@ func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashByte
 
 	// marshal it into Protobuf bytes
 	voteExtensionBytes, err := voteExtensionProto.Marshal()
-	if err != nil {
-		fmt.Printf("failed to marshal voteExtensionProto: %v", err)
-	}
+	require.NoErrorf(t, err, "failed to marshal voteExtensionProto: %v", err)
 
 	cve := cmtTypes.CanonicalVoteExtension{
 		Extension: voteExtensionBytes,
@@ -576,15 +574,11 @@ func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashByte
 		return buf.Bytes(), nil
 	}
 	extSignBytes, err := marshalDelimitedFn(&cve)
-	if err != nil {
-		fmt.Printf("failed to encode CanonicalVoteExtension: %v", err)
-	}
+	require.NoErrorf(t, err, "failed to encode CanonicalVoteExtension: %v", err)
 
 	// Sign the vote extension
 	signature, err := privKey.Sign(extSignBytes)
-	if err != nil {
-		fmt.Printf("failed to sign extSignBytes: %v", err)
-	}
+	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
 
 	return abci.ExtendedVoteInfo{
 		BlockIdFlag:        flag,
