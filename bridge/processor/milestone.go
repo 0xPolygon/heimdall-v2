@@ -140,7 +140,8 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 	latestNum := block.Number.Uint64()
 
 	if latestNum < startNum+milestoneLength+blocksConfirmation-1 {
-		return fmt.Errorf("less than milestoneLength  start=%v latest block=%v milestonelength=%v borchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation)
+		mp.Logger.Debug(fmt.Sprintf("less than milestoneLength  start=%v latest block=%v milestonelength=%v borchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation))
+		return nil
 	}
 
 	endNum := latestNum - blocksConfirmation
