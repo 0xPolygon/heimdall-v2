@@ -40,19 +40,20 @@ const (
 	ValAddr3           = "0x000000000000000000000000000000000003dEaD"
 )
 
-func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger) {
+func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger, []cmtcrypto.PrivKey) {
 	t.Helper()
 
 	// generate validators, accounts and balances
-	validators, accounts, balances := generateValidators(t, numOfVals)
+	validatorPrivKeys, validators, accounts, balances := generateValidators(t, numOfVals)
 
 	// setup app with validator set and respective accounts
-	return setupAppWithValidatorSet(t, validators, accounts, balances)
+	return setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
 }
 
-func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator, []authtypes.GenesisAccount, []banktypes.Balance) {
+func generateValidators(t *testing.T, numOfVals uint64) ([]cmtcrypto.PrivKey, []*stakeTypes.Validator, []authtypes.GenesisAccount, []banktypes.Balance) {
 	t.Helper()
 
+	validatorPrivKeys := make([]cmtcrypto.PrivKey, 0, numOfVals)
 	validators := make([]*stakeTypes.Validator, 0, numOfVals)
 	accounts := make([]authtypes.GenesisAccount, 0, numOfVals)
 	balances := make([]banktypes.Balance, 0, numOfVals)
@@ -69,6 +70,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator
 		// create validator set
 		val, _ := stakeTypes.NewValidator(i, 0, 0, i, 100, pk, pubKey.Address().String())
 
+		validatorPrivKeys = append(validatorPrivKeys, privKey)
 		validators = append(validators, val)
 
 		senderPubKey := secp256k1.GenPrivKey().PubKey()
@@ -82,10 +84,10 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator
 		balances = append(balances, balance)
 	}
 
-	return validators, accounts, balances
+	return validatorPrivKeys, validators, accounts, balances
 }
 
-func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger) {
+func setupAppWithValidatorSet(t *testing.T, validatorPrivKeys []cmtcrypto.PrivKey, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger, []cmtcrypto.PrivKey) {
 	t.Helper()
 
 	db := dbm.NewMemDB()
@@ -130,7 +132,7 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	_, err = app.Commit()
 	require.NoError(t, err)
 
-	return app, db, logger
+	return app, db, logger, validatorPrivKeys
 }
 
 func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {

@@ -25,14 +25,14 @@ import (
 )
 
 func TestHeimdallAppExport(t *testing.T) {
-	app, _, _ := SetupApp(t, 1)
+	app, _, _, _ := SetupApp(t, 1)
 
 	_, err := app.ExportAppStateAndValidators(false, []string{}, []string{})
 	require.NoError(t, err)
 }
 
 func TestRunMigrations(t *testing.T) {
-	hApp, _, _ := SetupApp(t, 1)
+	hApp, _, _, _ := SetupApp(t, 1)
 	configurator := module.NewConfigurator(hApp.appCodec, hApp.MsgServiceRouter(), hApp.GRPCQueryRouter())
 
 	testCases := []struct {
@@ -134,7 +134,7 @@ func TestRunMigrations(t *testing.T) {
 }
 
 func TestInitGenesisOnMigration(t *testing.T) {
-	app, _, _ := SetupApp(t, 1)
+	app, _, _, _ := SetupApp(t, 1)
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 
 	// Create a mock module. This module will serve as the new module we're
@@ -171,7 +171,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 func TestValidateGenesis(t *testing.T) {
 	t.Parallel()
 
-	hApp, _, _ := SetupApp(t, 1)
+	hApp, _, _, _ := SetupApp(t, 1)
 
 	// not valid app state
 	require.Panics(t, func() {
