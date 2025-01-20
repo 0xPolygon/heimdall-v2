@@ -47,7 +47,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := sideHandler(ctx, msgMilestone)
@@ -69,7 +69,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(false, nil)
 
 		result := sideHandler(ctx, msgMilestone)
@@ -92,7 +92,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := sideHandler(ctx, msgMilestone)
@@ -114,7 +114,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
 		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := sideHandler(ctx, msgMilestone)
