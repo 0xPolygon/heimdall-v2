@@ -515,11 +515,11 @@ func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if !tt.panics {
 				require.NotPanics(t, func() {
-					panicOnVoteExtensionsDisabled(ctx, tt.height)
+					checkIfVoteExtensionsDisabled(ctx, tt.height)
 				}, "panicOnVoteExtensionsDisabled panicked unexpectedly")
 			} else {
 				require.Panics(t, func() {
-					panicOnVoteExtensionsDisabled(ctx, tt.height)
+					checkIfVoteExtensionsDisabled(ctx, tt.height)
 				}, "panicOnVoteExtensionsDisabled did not panic, but it should have")
 			}
 		})

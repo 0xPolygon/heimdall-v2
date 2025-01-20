@@ -152,7 +152,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
 
 		// check if VEs are enabled
-		panicOnVoteExtensionsDisabled(ctx, req.Height)
+		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
+			return nil, err
+		}
 
 		// prepare the side tx responses
 		sideTxRes := make([]sidetxs.SideTxResponse, 0)
@@ -221,7 +223,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				}
 				sideTxRes = append(sideTxRes, ve)
 			}
-
 		}
 
 		// prepare the response with votes, block height and block hash
@@ -256,7 +257,9 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 
 		// check if VEs are enabled
-		panicOnVoteExtensionsDisabled(ctx, req.Height)
+		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
+			return nil, err
+		}
 
 		ac := address.NewHexCodec()
 		valAddr, err := ac.BytesToString(req.ValidatorAddress)
@@ -303,7 +306,9 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 
-	panicOnVoteExtensionsDisabled(ctx, req.Height+1)
+	if err := checkIfVoteExtensionsDisabled(ctx, req.Height+1); err != nil {
+		return nil, err
+	}
 
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
 	extCommitInfo := new(abci.ExtendedCommitInfo)
