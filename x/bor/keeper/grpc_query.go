@@ -4,7 +4,9 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/types/query"
+	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -100,6 +102,20 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 	}
 
 	selectedProducers = types.SortValidatorByAddress(selectedProducers)
+
+	var addressCodec = address.HexCodec{}
+
+	for _, v := range selectedProducers {
+		addrBytes, _ := addressCodec.StringToBytes(v.Signer)
+		checksummedAddress := common.BytesToAddress(addrBytes).Hex()
+		v.Signer = checksummedAddress
+	}
+
+	for _, va := range validatorSet.Validators {
+		addrBytes, _ := addressCodec.StringToBytes(va.Signer)
+		checksummedAddress := common.BytesToAddress(addrBytes).Hex()
+		va.Signer = checksummedAddress
+	}
 
 	// create next span
 	nextSpan := &types.Span{
