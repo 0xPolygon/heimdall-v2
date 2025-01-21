@@ -105,16 +105,16 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 
 	var addressCodec = address.HexCodec{}
 
-	for _, v := range selectedProducers {
-		addrBytes, _ := addressCodec.StringToBytes(v.Signer)
+	for idx := range selectedProducers {
+		addrBytes, _ := addressCodec.StringToBytes(selectedProducers[idx].Signer)
 		checksummedAddress := common.BytesToAddress(addrBytes).Hex()
-		v.Signer = checksummedAddress
+		selectedProducers[idx].Signer = checksummedAddress
 	}
 
-	for _, va := range validatorSet.Validators {
-		addrBytes, _ := addressCodec.StringToBytes(va.Signer)
+	for idx := range validatorSet.Validators {
+		addrBytes, _ := addressCodec.StringToBytes(validatorSet.Validators[idx].Signer)
 		checksummedAddress := common.BytesToAddress(addrBytes).Hex()
-		va.Signer = checksummedAddress
+		validatorSet.Validators[idx].Signer = checksummedAddress
 	}
 
 	// create next span

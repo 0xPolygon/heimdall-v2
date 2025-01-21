@@ -229,16 +229,16 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 
 	var addressCodec = address.HexCodec{}
 
-	for _, v := range newProducers {
-		addrBytes, _ := addressCodec.StringToBytes(v.Signer)
+	for idx := range newProducers {
+		addrBytes, _ := addressCodec.StringToBytes(newProducers[idx].Signer)
 		checksummedAddress := common.BytesToAddress(addrBytes).Hex()
-		v.Signer = checksummedAddress
+		newProducers[idx].Signer = checksummedAddress
 	}
 
-	for _, va := range valSet.Validators {
-		addrBytes, _ := addressCodec.StringToBytes(va.Signer)
+	for idx := range valSet.Validators {
+		addrBytes, _ := addressCodec.StringToBytes(valSet.Validators[idx].Signer)
 		checksummedAddress := common.BytesToAddress(addrBytes).Hex()
-		va.Signer = checksummedAddress
+		valSet.Validators[idx].Signer = checksummedAddress
 	}
 
 	// generate new span
