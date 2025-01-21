@@ -184,13 +184,13 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return err
 	}
 
-	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
+	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.MustAccAddressFromHex(user), topupAmount)
 	if err != nil {
 		logger.Error("error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, "error", err)
 		return err
 	}
 
-	err = s.k.BankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
+	err = s.k.BankKeeper.SendCoins(ctx, sdk.MustAccAddressFromHex(user), sdk.MustAccAddressFromHex(msg.Proposer), ante.DefaultFeeWantedPerTx)
 	if err != nil {
 		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
 		return err
