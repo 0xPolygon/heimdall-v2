@@ -237,8 +237,6 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 }
 
-// TODO HV2: https://polygon.atlassian.net/browse/POS-2765
-
 func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 	ctx, require, keeper, postHandler, t := s.ctx, s.Require(), s.keeper, s.postHandler, s.T()
 
@@ -264,6 +262,7 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 			}
 			return sdk.NewCoin(authTypes.FeeToken, math.NewInt(0))
 		}).AnyTimes()
+
 	t.Run("no result", func(t *testing.T) {
 		balances = make(map[string]sdk.Coins)
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
@@ -307,35 +306,7 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 		topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), types.ModuleName, topupAmount).
-			DoAndReturn(func(_ context.Context, moduleName string, amt sdk.Coins) error {
-				balances[moduleName] = balances[moduleName].Add(amt...)
-				return nil
-			}).
-			Times(1)
-
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), types.ModuleName, addr1, topupAmount).
-			DoAndReturn(func(_ context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-				newBalance, isNeg := balances[senderModule].SafeSub(amt...)
-				if isNeg {
-					return fmt.Errorf("not enough balance")
-				}
-				balances[senderModule] = newBalance
-				balances[recipientAddr.String()] = balances[recipientAddr.String()].Add(amt...)
-				return nil
-			}).
-			Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), addr1, addr1, ante.DefaultFeeWantedPerTx).
-			DoAndReturn(func(_ context.Context, fromAddr, toAddr sdk.AccAddress, amt sdk.Coins) error {
-				newBalance, isNeg := balances[fromAddr.String()].SafeSub(amt...)
-				if isNeg {
-					return fmt.Errorf("not enough balance")
-				}
-				balances[fromAddr.String()] = newBalance
-				balances[toAddr.String()] = balances[toAddr.String()].Add(amt...)
-				return nil
-			}).
-			Times(1)
+		s.trackMockBalances(addr1, addr1, topupAmount, balances)
 
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
@@ -374,35 +345,7 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 		topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), types.ModuleName, topupAmount).
-			DoAndReturn(func(_ context.Context, moduleName string, amt sdk.Coins) error {
-				balances[moduleName] = balances[moduleName].Add(amt...)
-				return nil
-			}).
-			Times(1)
-
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), types.ModuleName, addr3, topupAmount).
-			DoAndReturn(func(_ context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-				newBalance, isNeg := balances[senderModule].SafeSub(amt...)
-				if isNeg {
-					return fmt.Errorf("not enough balance")
-				}
-				balances[senderModule] = newBalance
-				balances[recipientAddr.String()] = balances[recipientAddr.String()].Add(amt...)
-				return nil
-			}).
-			Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), addr3, addr2, ante.DefaultFeeWantedPerTx).
-			DoAndReturn(func(_ context.Context, fromAddr, toAddr sdk.AccAddress, amt sdk.Coins) error {
-				newBalance, isNeg := balances[fromAddr.String()].SafeSub(amt...)
-				if isNeg {
-					return fmt.Errorf("not enough balance")
-				}
-				balances[fromAddr.String()] = newBalance
-				balances[toAddr.String()] = balances[toAddr.String()].Add(amt...)
-				return nil
-			}).
-			Times(1)
+		s.trackMockBalances(addr2, addr3, topupAmount, balances)
 
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
@@ -445,35 +388,7 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 		topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), types.ModuleName, topupAmount).
-			DoAndReturn(func(_ context.Context, moduleName string, amt sdk.Coins) error {
-				balances[moduleName] = balances[moduleName].Add(amt...)
-				return nil
-			}).
-			Times(1)
-
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), types.ModuleName, addr1, topupAmount).
-			DoAndReturn(func(_ context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
-				newBalance, isNeg := balances[senderModule].SafeSub(amt...)
-				if isNeg {
-					return fmt.Errorf("not enough balance")
-				}
-				balances[senderModule] = newBalance
-				balances[recipientAddr.String()] = balances[recipientAddr.String()].Add(amt...)
-				return nil
-			}).
-			Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), addr1, addr1, ante.DefaultFeeWantedPerTx).
-			DoAndReturn(func(_ context.Context, fromAddr, toAddr sdk.AccAddress, amt sdk.Coins) error {
-				newBalance, isNeg := balances[fromAddr.String()].SafeSub(amt...)
-				if isNeg {
-					return fmt.Errorf("not enough balance")
-				}
-				balances[fromAddr.String()] = newBalance
-				balances[toAddr.String()] = balances[toAddr.String()].Add(amt...)
-				return nil
-			}).
-			Times(1)
+		s.trackMockBalances(addr1, addr1, topupAmount, balances)
 
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
@@ -491,4 +406,39 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		bal = keeper.BankKeeper.GetBalance(ctx, addr1, authTypes.FeeToken)
 		require.Equal(topupAmount.AmountOf(authTypes.FeeToken), bal.Amount)
 	})
+}
+
+// trackMockBalances tracks the balances of the proposer and recipient of the topup tx
+func (s *KeeperTestSuite) trackMockBalances(proposerAddr, recipientAddr sdk.AccAddress, topupAmount sdk.Coins, balances map[string]sdk.Coins) {
+	s.T().Helper()
+	s.keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), types.ModuleName, topupAmount).
+		DoAndReturn(func(_ context.Context, moduleName string, amt sdk.Coins) error {
+			balances[moduleName] = balances[moduleName].Add(amt...)
+			return nil
+		}).
+		Times(1)
+
+	s.keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), types.ModuleName, recipientAddr, topupAmount).
+		DoAndReturn(func(_ context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+			newBalance, isNeg := balances[senderModule].SafeSub(amt...)
+			if isNeg {
+				return fmt.Errorf("not enough balance")
+			}
+			balances[senderModule] = newBalance
+			balances[recipientAddr.String()] = balances[recipientAddr.String()].Add(amt...)
+			return nil
+		}).
+		Times(1)
+
+	s.keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), recipientAddr, proposerAddr, ante.DefaultFeeWantedPerTx).
+		DoAndReturn(func(_ context.Context, fromAddr, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			newBalance, isNeg := balances[fromAddr.String()].SafeSub(amt...)
+			if isNeg {
+				return fmt.Errorf("not enough balance")
+			}
+			balances[fromAddr.String()] = newBalance
+			balances[toAddr.String()] = balances[toAddr.String()].Add(amt...)
+			return nil
+		}).
+		Times(1)
 }
