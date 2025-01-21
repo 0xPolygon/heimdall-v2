@@ -124,6 +124,12 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 
 // AddCheckpoint adds checkpoint into the db store
 func (k *Keeper) AddCheckpoint(ctx context.Context, checkpoint types.Checkpoint) error {
+	exists, _ := k.checkpoints.Has(ctx, checkpoint.Id)
+	if exists {
+		k.Logger(ctx).Error("checkpoint already exists", "checkpoint id", checkpoint.Id)
+		return types.ErrAlreadyExists
+	}
+
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
 	err := k.checkpoints.Set(ctx, checkpoint.Id, checkpoint)
 	if err != nil {
