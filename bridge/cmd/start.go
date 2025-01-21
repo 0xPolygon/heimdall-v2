@@ -10,17 +10,12 @@ import (
 	"time"
 
 	"cosmossdk.io/x/tx/signing"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/cosmos/cosmos-sdk/codec/types"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/gogoproto/proto"
@@ -34,6 +29,10 @@ import (
 	"github.com/0xPolygon/heimdall-v2/bridge/queue"
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const (
@@ -44,7 +43,7 @@ const (
 // returns service errors, if any
 func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) error {
 	// create codec
-	interfaceRegistry, err := types.NewInterfaceRegistryWithOptions(types.InterfaceRegistryOptions{
+	interfaceRegistry, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
 		ProtoFiles: proto.HybridResolver,
 		SigningOptions: signing.Options{
 			AddressCodec:          address.HexCodec{},
@@ -99,7 +98,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 		case <-shutdownCtx.Done():
 			return nil
 		case <-time.After(waitDuration):
-			if !util.IsCatchingUp(clientCtx) {
+			if !util.IsCatchingUp(clientCtx, shutdownCtx) {
 				logger.Info("Node up to date, starting bridge services")
 
 				loop = false
@@ -231,7 +230,7 @@ func StartBridge(isStandAlone bool) {
 
 	// start bridge services only when node fully synced
 	for {
-		if !util.IsCatchingUp(cliCtx) {
+		if !util.IsCatchingUp(cliCtx, context.Background()) {
 			logger.Info("Node upto date, starting bridge services")
 			break
 		} else {

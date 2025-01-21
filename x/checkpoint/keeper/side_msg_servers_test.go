@@ -65,8 +65,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
 	})
 
 	s.Run("No rootHash", func() {
@@ -92,8 +93,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
 	})
 
 	s.Run("invalid rootHash", func() {
@@ -119,8 +121,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
 	})
 }
 
@@ -228,8 +231,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
 	})
 
 	s.Run("Success", func() {
@@ -289,8 +293,16 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
+
+		latestCheckpoint, err := keeper.GetLastCheckpoint(ctx)
 		require.Error(err)
+		require.Equal(types.Checkpoint{}, latestCheckpoint)
+
+		ackCount, _ := keeper.GetAckCount(ctx)
+		require.Equal(uint64(0), ackCount)
 	})
 
 	s.Run("Success", func() {
@@ -323,8 +335,15 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
+
+		ackCount, _ := keeper.GetAckCount(ctx)
+		require.Equal(uint64(1), ackCount)
+
+		_, err = keeper.GetLastCheckpoint(ctx)
+		require.Nil(err)
 	})
 
 	s.Run("Replay", func() {
@@ -345,8 +364,15 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
+
+		ackCount, _ := keeper.GetAckCount(ctx)
+		require.Equal(uint64(1), ackCount)
+
+		_, err = keeper.GetLastCheckpoint(ctx)
+		require.Nil(err)
 	})
 
 	s.Run("InvalidEndBlock", func() {
@@ -380,8 +406,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
 	})
 
 	s.Run("BufferCheckpoint more than Ack", func() {
@@ -421,8 +448,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
 
 		latestCheckpoint, err = keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)
@@ -467,8 +495,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		res, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.NoError(err)
+		require.Equal(types.Checkpoint{}, res)
 
 		latestCheckpoint, err = keeper.GetLastCheckpoint(ctx)
 		require.Nil(err)

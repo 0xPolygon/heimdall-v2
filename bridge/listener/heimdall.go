@@ -60,7 +60,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 	for {
 		select {
 		case <-ticker.C:
-			fromBlock, toBlock, err := hl.fetchFromAndToBlock()
+			fromBlock, toBlock, err := hl.fetchFromAndToBlock(ctx)
 			if err != nil {
 				hl.Logger.Error("Error fetching from and toBlock, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
 			} else if fromBlock < toBlock {
@@ -93,12 +93,12 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 	}
 }
 
-func (hl *HeimdallListener) fetchFromAndToBlock() (uint64, uint64, error) {
+func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, uint64, error) {
 	// toBlock - get latest blockheight from heimdall node
 	fromBlock := uint64(0)
 	toBlock := uint64(0)
 
-	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx)
+	nodeStatus, err := helper.GetNodeStatus(hl.cliCtx, ctx)
 	if err != nil {
 		hl.Logger.Error("Error while fetching heimdall node status", "error", err)
 		return fromBlock, toBlock, err

@@ -18,7 +18,7 @@ const (
 )
 
 // GetNodeStatus returns node status
-func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
+func GetNodeStatus(cliCtx cosmosContext.Context, _ context.Context) (*ctypes.ResultStatus, error) {
 	node, err := cliCtx.GetNode()
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func GetNodeStatus(cliCtx cosmosContext.Context) (*ctypes.ResultStatus, error) {
 		ctx = ctxWithTimeout
 	}
 
-	return node.Status(ctx)
+	return node.Status(ctx) //nolint:contextcheck
 }
 
 // QueryTxWithProof query tx with proof from node
