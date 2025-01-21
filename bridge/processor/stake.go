@@ -431,7 +431,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 }
 
 func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64) (bool, uint64, error) {
-	currentNonce, err := util.GetValidatorNonce(validatorId)
+	currentNonce, err := util.GetValidatorNonce(validatorId, sp.cliCtx.Codec)
 	if err != nil {
 		sp.Logger.Error("Failed to fetch validator nonce and height data from API", "validatorId", validatorId)
 		return false, 0, err

@@ -11,6 +11,9 @@ import (
 
 	"cosmossdk.io/x/tx/signing"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	common "github.com/cometbft/cometbft/libs/service"
 	rpchttp "github.com/cometbft/cometbft/rpc/client/http"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -54,7 +57,14 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
 	checkpointTypes.RegisterInterfaces(interfaceRegistry)
+	milestoneTypes.RegisterInterfaces(interfaceRegistry)
+	clerkTypes.RegisterInterfaces(interfaceRegistry)
+	stakeTypes.RegisterInterfaces(interfaceRegistry)
 	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	if clientCtx.Codec == nil {
+		clientCtx = clientCtx.WithCodec(cdc)
+	}
 
 	// queue connector & http client
 	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)

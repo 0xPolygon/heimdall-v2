@@ -45,7 +45,7 @@ func (rl *RootChainListener) handleNewHeaderBlockLog(vLog types.Log, selectedEve
 		rl.Logger.Error("Failed to marshal log", "Error", err)
 	}
 
-	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent); isCurrentValidator {
+	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendCheckpointAckToHeimdall", selectedEvent.Name, logBytes, delay, selectedEvent)
 	}
 }
@@ -70,7 +70,7 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 	if bytes.Equal(event.SignerPubkey, pubKey[1:]) {
 		delay := util.TaskDelayBetweenEachVal
 		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event); isCurrentValidator {
+	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		delay = delay + util.TaskDelayBetweenEachVal
 		rl.SendTaskWithDelay("sendValidatorJoinToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
@@ -87,9 +87,9 @@ func (rl *RootChainListener) handleStakeUpdateLog(vLog types.Log, selectedEvent 
 		rl.Logger.Error("Error while parsing event", "name", selectedEvent.Name, "error", err)
 	}
 
-	if util.IsEventSender(event.ValidatorId.Uint64()) {
+	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
 		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event); isCurrentValidator {
+	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendStakeUpdateToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
@@ -109,7 +109,7 @@ func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent
 
 	if bytes.Equal(event.SignerPubkey, pubKey[1:]) && util.IsPubKeyFirstByteValid(pubKey[0:1]) {
 		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event); isCurrentValidator {
+	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
@@ -125,9 +125,9 @@ func (rl *RootChainListener) handleUnstakeInitLog(vLog types.Log, selectedEvent 
 		rl.Logger.Error("Error while parsing event", "name", selectedEvent.Name, "error", err)
 	}
 
-	if util.IsEventSender(event.ValidatorId.Uint64()) {
+	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
 		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event); isCurrentValidator {
+	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendUnstakeInitToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
@@ -145,7 +145,7 @@ func (rl *RootChainListener) handleStateSyncedLog(vLog types.Log, selectedEvent 
 
 	rl.Logger.Info("StateSyncedEvent: detected", "stateSyncId", event.Id)
 
-	if isCurrentValidator, delay := util.CalculateTaskDelay(event); isCurrentValidator {
+	if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendStateSyncedToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
@@ -163,7 +163,7 @@ func (rl *RootChainListener) handleTopUpFeeLog(vLog types.Log, selectedEvent *ab
 
 	if bytes.Equal(event.User.Bytes(), helper.GetAddress()) {
 		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event); isCurrentValidator {
+	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendTopUpFeeToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }
@@ -174,7 +174,7 @@ func (rl *RootChainListener) handleSlashedLog(vLog types.Log, selectedEvent *abi
 		rl.Logger.Error("Failed to marshal log", "Error", err)
 	}
 
-	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent); isCurrentValidator {
+	if isCurrentValidator, delay := util.CalculateTaskDelay(selectedEvent, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendTickAckToHeimdall", selectedEvent.Name, logBytes, delay, selectedEvent)
 	}
 }
@@ -190,9 +190,9 @@ func (rl *RootChainListener) handleUnJailedLog(vLog types.Log, selectedEvent *ab
 		rl.Logger.Error("Error while parsing event", "name", selectedEvent.Name, "error", err)
 	}
 
-	if util.IsEventSender(event.ValidatorId.Uint64()) {
+	if util.IsEventSender(event.ValidatorId.Uint64(), rl.cliCtx.Codec) {
 		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, 0, event)
-	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event); isCurrentValidator {
+	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendUnjailToHeimdall", selectedEvent.Name, logBytes, delay, event)
 	}
 }

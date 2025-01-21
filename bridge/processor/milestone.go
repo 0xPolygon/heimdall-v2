@@ -140,7 +140,8 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Conte
 	latestNum := block.Number.Uint64()
 
 	if latestNum < startNum+milestoneLength+blocksConfirmation-1 {
-		return fmt.Errorf("less than milestoneLength  start=%v latest block=%v milestonelength=%v borchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation)
+		mp.Logger.Debug(fmt.Sprintf("less than milestoneLength  start=%v latest block=%v milestonelength=%v borchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation))
+		return nil
 	}
 
 	endNum := latestNum - blocksConfirmation
@@ -244,7 +245,7 @@ func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout(ctx context.Contex
 		var isProposer bool
 
 		// check if the node is the proposer list or not.
-		if isProposer, err = util.IsInMilestoneProposerList(10); err != nil {
+		if isProposer, err = util.IsInMilestoneProposerList(10, mp.cliCtx.Codec); err != nil {
 			mp.Logger.Error("Error checking IsInMilestoneProposerList while proposing Milestone Timeout ", "error", err)
 			return
 		}
