@@ -112,11 +112,11 @@ func NewRootCmd() *cobra.Command {
 			customAppTemplate, customAppConfig := initAppConfig()
 			customCMTConfig := initCometBFTConfig()
 
+			helper.InitHeimdallConfig("")
+
 			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
 		},
 	}
-
-	helper.InitHeimdallConfig("")
 
 	// adding heimdall configuration flags to root command
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
