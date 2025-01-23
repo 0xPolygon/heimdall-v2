@@ -47,7 +47,7 @@ func NewRootCmd() *cobra.Command {
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 
 	// TODO HV2: https://polygon.atlassian.net/browse/POS-2762
-	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, false, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
@@ -114,9 +114,14 @@ func NewRootCmd() *cobra.Command {
 
 			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
 		},
-	}
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+			// set the default command outputs
+			cmd.SetOut(cmd.OutOrStdout())
+			cmd.SetErr(cmd.ErrOrStderr())
 
-	helper.InitHeimdallConfig("")
+			helper.InitHeimdallConfig("")
+		},
+	}
 
 	// adding heimdall configuration flags to root command
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")

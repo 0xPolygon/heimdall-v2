@@ -365,7 +365,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	privVal := privval.LoadFilePV(filepath.Join(configDir, "priv_validator_key.json"), filepath.Join(configDir, "priv_validator_key.json"))
-	fmt.Println(privVal)
 	privKeyObject = privVal.Key.PrivKey.Bytes()
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
