@@ -47,7 +47,7 @@ func NewRootCmd() *cobra.Command {
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 
 	// TODO HV2: https://polygon.atlassian.net/browse/POS-2762
-	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, false, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
