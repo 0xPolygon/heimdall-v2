@@ -433,7 +433,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /bor/span/prepare/{span_id}:
+  /bor/span/prepare:
     get:
       summary: GetNextSpan queries the next span given a QueryNextSpanRequest.
       operationId: GetNextSpan
@@ -581,8 +581,8 @@ paths:
                       format: byte
       parameters:
         - name: span_id
-          in: path
-          required: true
+          in: query
+          required: false
           type: string
           format: uint64
         - name: start_block

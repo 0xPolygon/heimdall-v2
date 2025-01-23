@@ -73,6 +73,13 @@ func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.QueueConnector, htt
 
 	cliCtx := client.Context{}.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastSync
+	cmt := helper.GetConfig().CometBFTRPCUrl
+	rpc, err := client.NewClientFromNode(cmt)
+	if err != nil {
+		logger.Error("Error while creating rpc client", "error", err)
+		panic(err)
+	}
+	cliCtx = cliCtx.WithClient(rpc)
 
 	contractCaller, err := helper.NewContractCaller()
 	if err != nil {

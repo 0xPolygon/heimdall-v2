@@ -138,7 +138,7 @@ func convertTo32(input []byte) (output [32]byte, err error) {
 		return output, fmt.Errorf("input length %d exceeds 32 bytes", l)
 	}
 	if l == 0 {
-		return output, fmt.Errorf("input length is zero")
+		return output, nil
 	}
 
 	copy(output[32-l:], input[:])

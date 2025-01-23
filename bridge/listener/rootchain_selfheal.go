@@ -72,7 +72,7 @@ func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
 // processStakeUpdate checks if validators are in sync, otherwise syncs them by broadcasting missing events
 func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 	// Fetch all heimdall validators
-	validatorSet, err := util.GetValidatorSet()
+	validatorSet, err := util.GetValidatorSet(rl.cliCtx.Codec)
 	if err != nil {
 		rl.Logger.Error("Error getting heimdall validators", "error", err)
 		return
@@ -88,7 +88,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 		go func(id uint64) {
 			defer wg.Done()
 
-			nonce, err := util.GetValidatorNonce(id)
+			nonce, err := util.GetValidatorNonce(id, rl.cliCtx.Codec)
 			if err != nil {
 				rl.Logger.Error("Error getting nonce for validator from heimdall", "error", err, "id", id)
 				return
@@ -160,7 +160,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 	}
 
 	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
-		if _, err = util.GetClerkEventRecord(i); err == nil {
+		if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
 			rl.Logger.Info("State found on heimdall", "id", i)
 			continue
 		}
@@ -197,7 +197,7 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 			var statusCheck int
 			for statusCheck = 0; statusCheck < 15; statusCheck++ {
-				if _, err = util.GetClerkEventRecord(i); err == nil {
+				if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
 					rl.Logger.Info("State found on heimdall", "id", i)
 					break
 				}

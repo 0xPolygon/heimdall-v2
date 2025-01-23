@@ -27,6 +27,7 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointtypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	topuptypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // CheckpointProcessor - processor for checkpoint queue.
@@ -40,11 +41,6 @@ type CheckpointProcessor struct {
 
 	// Rootchain abi
 	rootchainAbi *abi.ABI
-}
-
-// Result represents single req result
-type Result struct {
-	Result uint64 `json:"result"`
 }
 
 // CheckpointContext represents checkpoint context
@@ -159,7 +155,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 		timeStamp := uint64(time.Now().Unix())
 		checkpointBufferTime := uint64(checkpointContext.CheckpointParams.CheckpointBufferTime.Seconds())
 
-		bufferedCheckpoint, err := util.GetBufferedCheckpoint()
+		bufferedCheckpoint, err := util.GetBufferedCheckpoint(cp.cliCtx.Codec)
 		if err != nil {
 			cp.Logger.Debug("No buffered checkpoint", "bufferedCheckpoint", bufferedCheckpoint)
 		}
@@ -189,20 +185,20 @@ func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, bloc
 	cp.Logger.Info("Received sendCheckpointToRootchain request", "eventBytes", eventBytes, "blockHeight", blockHeight)
 
 	var event sdk.StringEvent
-	if err := json.Unmarshal([]byte(eventBytes), &event); err != nil {
+	if err := cp.cliCtx.Codec.UnmarshalJSON([]byte(eventBytes), &event); err != nil {
 		cp.Logger.Error("Error unmarshalling event from heimdall", "error", err)
 		return err
 	}
 
 	// var tx = sdk.TxResponse{}
-	// if err := json.Unmarshal([]byte(txBytes), &tx); err != nil {
+	// if err := cp.cliCtx.Codec.UnmarshalJSON([]byte(txBytes), &tx); err != nil {
 	// 	cp.Logger.Error("Error unmarshalling txResponse", "error", err)
 	// 	return err
 	// }
 
 	cp.Logger.Info("processing checkpoint confirmation event", "eventtype", event.Type)
 
-	isCurrentProposer, err := util.IsCurrentProposer()
+	isCurrentProposer, err := util.IsCurrentProposer(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error checking isCurrentProposer in CheckpointConfirmation handler", "error", err)
 		return err
@@ -286,7 +282,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		)
 
 		// fetch latest checkpoint
-		latestCheckpoint, err := util.GetLatestCheckpoint()
+		latestCheckpoint, err := util.GetLatestCheckpoint(cp.cliCtx.Codec)
 		// event checkpoint is older than or equal to latest checkpoint
 		if err == nil && latestCheckpoint != nil && latestCheckpoint.EndBlock >= event.End.Uint64() {
 			cp.Logger.Debug("Checkpoint ack is already submitted", "start", event.Start, "end", event.End)
@@ -343,7 +339,7 @@ func (cp *CheckpointProcessor) handleCheckpointNoAck() {
 	if isNoAckRequired {
 		var isProposer bool
 
-		if isProposer, err = util.IsInProposerList(count); err != nil {
+		if isProposer, err = util.IsInProposerList(count, cp.cliCtx.Codec); err != nil {
 			cp.Logger.Error("Error checking IsInProposerList while proposing Checkpoint No-Ack ", "error", err)
 			return
 		}
@@ -462,7 +458,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		return err
 	}
 
-	cp.Logger.Info("Root hash calculated", "rootHash", string(root[:]))
+	cp.Logger.Info("Root hash calculated", "rootHash", common.Bytes2Hex(root))
 
 	var accountRootHash []byte
 	// get DividendAccountRoot from heimdall
@@ -474,7 +470,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 	cp.Logger.Info("✅ Creating and broadcasting new checkpoint",
 		"start", start,
 		"end", end,
-		"root", string(root[:]),
+		"root", common.Bytes2Hex(root),
 		"accountRoot", accountRootHash,
 	)
 
@@ -514,7 +510,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 // createAndSendCheckpointToRootchain prepares the data required for rootchain checkpoint submission
 // and sends a transaction to rootchain
 func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointContext *CheckpointContext, start uint64, end uint64, height int64, txHash []byte) error {
-	cp.Logger.Info("Preparing checkpoint to be pushed on chain", "height", height, "txHash", string(txHash[:]), "start", start, "end", end)
+	cp.Logger.Info("Preparing checkpoint to be pushed on chain", "height", height, "txHash", common.Bytes2Hex(txHash), "start", start, "end", end)
 	// proof
 	tx, err := helper.QueryTxWithProof(cp.cliCtx, txHash)
 	if err != nil {
@@ -620,23 +616,24 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 }
 
 // fetchDividendAccountRoot - fetches dividend accountroothash
-func (cp *CheckpointProcessor) fetchDividendAccountRoot() (accountroothash []byte, err error) {
+func (cp *CheckpointProcessor) fetchDividendAccountRoot() ([]byte, error) {
 	cp.Logger.Info("Sending Rest call to Get Dividend AccountRootHash")
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.DividendAccountRootURL))
 	if err != nil {
 		cp.Logger.Error("Error Fetching accountroothash from HeimdallServer ", "error", err)
-		return accountroothash, err
+		return []byte{}, err
 	}
 
 	cp.Logger.Info("Divident account root fetched")
 
-	if err = json.Unmarshal(response, &accountroothash); err != nil {
+	var accountRootHashObject topuptypes.QueryDividendAccountRootHashResponse
+	if err = cp.cliCtx.Codec.UnmarshalJSON(response, &accountRootHashObject); err != nil {
 		cp.Logger.Error("Error unmarshalling accountroothash received from Heimdall Server", "error", err)
-		return accountroothash, err
+		return accountRootHashObject.AccountRootHash, err
 	}
 
-	return accountroothash, nil
+	return accountRootHashObject.AccountRootHash, nil
 }
 
 // fetchLatestCheckpointTime - get latest checkpoint time from rootchain
@@ -674,13 +671,13 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 		return 0
 	}
 
-	var noAckObject Result
-	if err := json.Unmarshal(response, &noAckObject); err != nil {
+	var noAckObject checkpointtypes.QueryLastNoAckResponse
+	if err := cp.cliCtx.Codec.UnmarshalJSON(response, &noAckObject); err != nil {
 		cp.Logger.Error("Error unmarshalling no-ack data ", "error", err)
 		return 0
 	}
 
-	return noAckObject.Result
+	return noAckObject.LastNoAckId
 }
 
 func (cp *CheckpointProcessor) getCheckpointSignatures() ([]checkpointtypes.CheckpointSignature, error) {
@@ -690,7 +687,7 @@ func (cp *CheckpointProcessor) getCheckpointSignatures() ([]checkpointtypes.Chec
 	}
 
 	var res checkpointtypes.QueryCheckpointSignaturesResponse
-	if err := json.Unmarshal(response, &res); err != nil {
+	if err := cp.cliCtx.Codec.UnmarshalJSON(response, &res); err != nil {
 		return nil, fmt.Errorf("Error unmarshalling checkpoint signatures: %w", err)
 	}
 
@@ -817,7 +814,7 @@ func (cp *CheckpointProcessor) getCheckpointContext() (*CheckpointContext, error
 		return nil, err
 	}
 
-	checkpointParams, err := util.GetCheckpointParams()
+	checkpointParams, err := util.GetCheckpointParams(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error while fetching checkpoint params", "error", err)
 		return nil, err

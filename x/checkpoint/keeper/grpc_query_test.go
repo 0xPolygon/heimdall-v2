@@ -86,8 +86,8 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	req := &types.QueryCheckpointBufferRequest{}
 
 	res, err := queryClient.GetCheckpointBuffer(ctx, req)
-	require.NotNil(err)
-	require.Nil(res)
+	require.Nil(err)
+	require.Equal(types.Checkpoint{}, res.Checkpoint)
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)

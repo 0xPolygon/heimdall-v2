@@ -261,7 +261,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	logger.Debug("new checkpoint into buffer stored",
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
-		"rootHash", msg.RootHash,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
 	)
 
 	// TX bytes
@@ -296,7 +296,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return err
 	}
 
-	// skip handler if stakeUpdate is not approved
+	// skip handler if ACK is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping stake update since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
@@ -356,7 +356,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 
 	logger.Debug("checkpoint buffer flushed after receiving checkpoint ack")
 
-	// update ack count in staking module
+	// update ack count module
 	err = srv.IncrementAckCount(ctx)
 	if err != nil {
 		logger.Error("error while updating the ack count", "err", err)

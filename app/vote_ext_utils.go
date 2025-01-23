@@ -534,7 +534,7 @@ func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.Exte
 
 // validateCheckpointMsgData validates the extension is valid checkpoint
 func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKeeper chainManagerKeeper.Keeper, checkpointKeeper checkpointKeeper.Keeper, contractCaller helper.IContractCaller) error {
-	checkpointMsg, err := checkpointTypes.UnpackCheckpointSideSignBytes(extension)
+	checkpointMsg, err := checkpointTypes.UnpackCheckpointSideSignBytes(extension[1:]) // skip the first byte which is the vote
 	if err != nil {
 		return fmt.Errorf("failed to unpack checkpoint side sign bytes: %w", err)
 	}
@@ -638,7 +638,7 @@ func getCheckpointSignatures(extension []byte, extVoteInfo []abciTypes.ExtendedV
 		if bytes.Equal(vote.NonRpVoteExtension, extension) {
 			result.Signatures = append(result.Signatures, checkpointTypes.CheckpointSignature{
 				ValidatorAddress: vote.Validator.Address,
-				Signature:        vote.ExtensionSignature,
+				Signature:        vote.NonRpExtensionSignature,
 			})
 		}
 	}
@@ -650,3 +650,11 @@ type txDecoder interface {
 }
 
 var dummyNonRpVoteExtension = []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t")
+
+func packExtensionWithVote(extension []byte) []byte {
+	yesVote := []byte{0x01}
+	var buf bytes.Buffer
+	buf.Write(yesVote)
+	buf.Write(extension)
+	return buf.Bytes()
+}

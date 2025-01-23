@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -151,6 +152,10 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 
 func BenchmarkCalculateTaskDelay(b *testing.B) {
 	b.Skip("to be enabled")
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	clerkTypes.RegisterInterfaces(interfaceRegistry)
+	cdc := codec.NewProtoCodec(interfaceRegistry)
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
@@ -171,7 +176,7 @@ func BenchmarkCalculateTaskDelay(b *testing.B) {
 			// when
 			b.StartTimer()
 
-			isCurrentValidator, timeDuration := util.CalculateTaskDelay(nil)
+			isCurrentValidator, timeDuration := util.CalculateTaskDelay(nil, cdc)
 
 			b.StopTimer()
 

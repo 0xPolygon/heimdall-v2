@@ -64,8 +64,9 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 		require.NoError(err)
 		require.False(doExist)
 
-		_, err = keeper.GetCheckpointFromBuffer(ctx)
-		require.Error(err)
+		resp, err := keeper.GetCheckpointFromBuffer(ctx)
+		require.Nil(err)
+		require.Equal(types.Checkpoint{}, resp)
 	})
 
 	s.Run("Invalid Proposer", func() {
@@ -277,7 +278,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
-		require.ErrorContains(err, types.ErrBadAck.Error())
+		require.NoError(err)
 	})
 
 	err = keeper.SetCheckpointBuffer(ctx, checkpoint)

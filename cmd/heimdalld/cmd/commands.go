@@ -203,7 +203,7 @@ func initRootCmd(
 	rootCmd.AddCommand(
 		server.StatusCommand(),
 		queryCommand(),
-		txCommand(),
+		txCommand(hApp.BasicManager),
 		keys.Commands(),
 	)
 
@@ -308,7 +308,7 @@ func queryCommand() *cobra.Command {
 	return cmd
 }
 
-func txCommand() *cobra.Command {
+func txCommand(bm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
@@ -316,6 +316,9 @@ func txCommand() *cobra.Command {
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
+
+	// add modules' tx commands
+	bm.AddTxCommands(cmd)
 
 	cmd.AddCommand(
 		authcmd.GetSignCommand(),
