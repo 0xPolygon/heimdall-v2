@@ -112,9 +112,14 @@ func NewRootCmd() *cobra.Command {
 			customAppTemplate, customAppConfig := initAppConfig()
 			customCMTConfig := initCometBFTConfig()
 
-			helper.InitHeimdallConfig("")
-
 			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+		},
+		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
+			// set the default command outputs
+			cmd.SetOut(cmd.OutOrStdout())
+			cmd.SetErr(cmd.ErrOrStderr())
+
+			helper.InitHeimdallConfig("")
 		},
 	}
 

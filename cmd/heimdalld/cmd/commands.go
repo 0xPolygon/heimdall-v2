@@ -160,6 +160,8 @@ func initRootCmd(
 			startCmd.Flags().StringSlice(helper.OnlyProcessesFlag, []string{}, "Enable only the specified bridge process(es)")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
+			helper.InitHeimdallConfig("")
+
 			// wait for rest server to start
 			resultChan := make(chan string)
 			timeout := time.After(60 * time.Second)
@@ -341,6 +343,7 @@ func newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
+	helper.InitHeimdallConfig("")
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	return app.NewHeimdallApp(
