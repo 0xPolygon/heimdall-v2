@@ -538,7 +538,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 	// side-tx data
 	sideTxData := sideMsg.GetSideSignBytes()
 
-	signatures, err := cp.getCheckpointSignatures()
+	signatures, err := cp.getCheckpointSignatures(common.Bytes2Hex(txHash))
 	if err != nil {
 		cp.Logger.Error("Error fetching checkpoint signatures", "error", err)
 		return err
@@ -680,8 +680,8 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 	return noAckObject.LastNoAckId
 }
 
-func (cp *CheckpointProcessor) getCheckpointSignatures() ([]checkpointtypes.CheckpointSignature, error) {
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.CheckpointSignaturesURL))
+func (cp *CheckpointProcessor) getCheckpointSignatures(txHash string) ([]checkpointtypes.CheckpointSignature, error) {
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.CheckpointSignaturesURL, txHash)))
 	if err != nil {
 		return nil, fmt.Errorf("Error while sending request for checkpoint signatures: %w", err)
 	}

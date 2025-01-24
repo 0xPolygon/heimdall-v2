@@ -84,7 +84,7 @@ service Query {
   rpc GetCheckpointSignatures(QueryCheckpointSignaturesRequest)
       returns (QueryCheckpointSignaturesResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoint/signatures";
+    option (google.api.http).get = "/checkpoint/signatures/{tx_hash}";
   }
 
   // GetCheckpoint queries for the checkpoint based on the number
@@ -96,7 +96,9 @@ service Query {
 
 // QueryCheckpointSignaturesRequest is request type for
 // QueryCheckpointSignatures RPC method
-message QueryCheckpointSignaturesRequest {}
+message QueryCheckpointSignaturesRequest {
+  string tx_hash = 1 [ (amino.dont_omitempty) = true ];
+}
 
 // QueryCheckpointSignaturesResponse is response type for
 // QueryCheckpointSignatures RPC method

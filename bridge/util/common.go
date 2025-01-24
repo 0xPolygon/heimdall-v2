@@ -38,7 +38,7 @@ const (
 	AccountParamsURL        = "/cosmos/auth/v1beta1/params"
 	LastNoAckURL            = "/checkpoints/last-no-ack"
 	CheckpointParamsURL     = "/checkpoints/params"
-	CheckpointSignaturesURL = "/checkpoint/signatures"
+	CheckpointSignaturesURL = "/checkpoint/signatures/%v"
 	MilestoneCountURL       = "/milestone/count"
 	ChainManagerParamsURL   = "/chainmanager/params"
 	ProposersURL            = "/stake/proposers/%v"
