@@ -22,6 +22,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 // Processor defines a block header listener for Rootchain, Borchain, Heimdall
@@ -123,8 +125,8 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "isOldTx", time.Now())
 
 	queryParam := map[string]interface{}{
-		"txhash":   txHash,
-		"logindex": logIndex,
+		"tx_hash":   txHash,
+		"log_index": logIndex,
 	}
 
 	// define the endpoint based on the type of event
@@ -154,13 +156,31 @@ func (bp *BaseProcessor) isOldTx(_ client.Context, txHash string, logIndex uint6
 		return false, err
 	}
 
-	var status bool
-	if err := json.Unmarshal(res, &status); err != nil {
-		bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
-		return false, err
+	switch eventType {
+	case util.StakingEvent:
+		var response staketypes.QueryStakeIsOldTxResponse
+		if err := bp.cliCtx.Codec.UnmarshalJSON(res, &response); err != nil {
+			bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
+			return false, err
+		}
+		return response.IsOld, nil
+	case util.TopupEvent:
+		var response topupTypes.QueryIsTopupTxOldResponse
+		if err := bp.cliCtx.Codec.UnmarshalJSON(res, &response); err != nil {
+			bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
+			return false, err
+		}
+		return response.IsOld, nil
+	case util.ClerkEvent:
+		var response clerkTypes.IsClerkTxOldResponse
+		if err := bp.cliCtx.Codec.UnmarshalJSON(res, &response); err != nil {
+			bp.Logger.Error("Error unmarshalling tx status received from Heimdall Server", "error", err)
+			return false, err
+		}
+		return response.IsOld, nil
 	}
 
-	return status, nil
+	return false, nil
 }
 
 // checkTxAgainstMempool checks if the transaction is already in the mempool or not
