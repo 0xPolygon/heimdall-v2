@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
@@ -129,7 +130,7 @@ func (v *Validator) MinimalVal() MinimalVal {
 	return MinimalVal{
 		ID:          v.ValId,
 		VotingPower: uint64(v.VotingPower),
-		Signer:      v.Signer,
+		Signer:      common.HexToAddress(v.Signer),
 	}
 }
 
@@ -161,9 +162,9 @@ func (v Validator) CmtConsPublicKey() (cmtprotocrypto.PublicKey, error) {
 // MinimalVal is the minimal validator representation
 // Used to send validator information to bor validator contract
 type MinimalVal struct {
-	ID          uint64 `json:"ID"`
-	VotingPower uint64 `json:"power"` // TODO add 10^-18 here so that we don't overflow easily
-	Signer      string `json:"signer"`
+	ID          uint64         `json:"ID"`
+	VotingPower uint64         `json:"power"` // TODO add 10^-18 here so that we don't overflow easily
+	Signer      common.Address `json:"signer"`
 }
 
 // Following functions are implemented to support cosmos validator interface

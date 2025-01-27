@@ -24,7 +24,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -611,7 +610,7 @@ func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logge
 		messages := tx.GetMsgs()
 		for _, msg := range messages {
 			if checkpointTypes.IsCheckpointMsg(msg) {
-				checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+				checkpointMsg, ok := msg.(*checkpointTypes.MsgCheckpoint)
 				if !ok {
 					logger.Error("type mismatch for MsgCheckpoint")
 					continue
