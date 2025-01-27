@@ -192,7 +192,12 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	fmt.Println("PSP - msg.LogIndex", msg.LogIndex)
 	fmt.Println("PSP - msg.BlockNumber", msg.BlockNumber)
 
-	// s.k.BankKeeper.ak.HasAccount(ctx, sdk.AccAddress(user))
+	hasUserAccount := s.k.AccountKeeper.HasAccount(ctx, sdk.AccAddress(user))
+	if !hasUserAccount {
+		fmt.Println("PSP - user account not found, creating a new one now")
+		newUserAccount := s.k.AccountKeeper.NewAccountWithAddress(ctx, sdk.AccAddress(user))
+		s.k.AccountKeeper.SetAccount(ctx, newUserAccount)
+	}
 
 	err = s.k.BankKeeper.MintCoins(ctx, types.ModuleName, topupAmount)
 	if err != nil {
@@ -206,7 +211,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return err
 	}
 
-	hasUserAccount := s.k.AccountKeeper.HasAccount(ctx, sdk.AccAddress(user))
+	hasUserAccount = s.k.AccountKeeper.HasAccount(ctx, sdk.AccAddress(user))
 	if !hasUserAccount {
 		fmt.Println("PSP - user account not found", "user", user)
 		return errors.New("user account not found")
