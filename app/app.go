@@ -273,6 +273,7 @@ func NewHeimdallApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
 		app.BankKeeper,
+		app.AccountKeeper,
 		app.ChainManagerKeeper,
 		&app.caller,
 	)

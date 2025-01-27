@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -49,15 +50,17 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 
 // SideHandleTopupTx handles the side tx for a validator's topup tx
 func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
-	logger := s.k.Logger(ctx)
+	// logger := s.k.Logger(ctx)
+
+	fmt.Println("PSP - SideHandleTopupTx msg received")
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
-		logger.Error("type mismatch for MsgTopupTx")
+		fmt.Println("PSP - type mismatch for MsgTopupTx")
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("validating external call for topup msg",
+	fmt.Println("PSP - validating external call for topup msg",
 		"txHash", string(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -65,7 +68,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 
 	// check feasibility of topup tx based on msg fee
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
-		logger.Error("default fee exceeds amount to topup", "user", msg.User,
+		fmt.Println("PSP - default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
 		return sidetxs.Vote_VOTE_NO
 	}
@@ -79,37 +82,38 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	// get main tx receipt
 	receipt, err := s.k.contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
+		fmt.Println("PSP - error fetching receipt from txHash for topup msg")
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// get event log for topup
 	eventLog, err := s.k.contractCaller.DecodeValidatorTopupFeesEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		logger.Error("error fetching log from txHash for DecodeValidatorTopupFeesEvent")
+		fmt.Println("PSP - error fetching log from txHash for DecodeValidatorTopupFeesEvent")
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		logger.Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		fmt.Println("PSP - blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	ac := address.NewHexCodec()
 	msgAddrBytes, err := ac.StringToBytes(msg.User)
 	if err != nil {
-		logger.Error("error converting msg.User to bytes", "error", err)
+		fmt.Println("PSP - error converting msg.User to bytes", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	eventLogBytes, err := ac.StringToBytes(eventLog.User.String())
 	if err != nil {
-		logger.Error("error converting eventLog.User to bytes", "error", err)
+		fmt.Println("PSP - error converting eventLog.User to bytes", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if !bytes.Equal(eventLogBytes, msgAddrBytes) {
-		logger.Error(
-			"user address from contract event log does not match with user from topup message",
+		fmt.Println(
+			"PSP - user address from contract event log does not match with user from topup message",
 			"eventUser", eventLog.User.String(),
 			"msgUser", msg.User,
 		)
@@ -118,29 +122,31 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	if eventLog.Fee.Cmp(msg.Fee.BigInt()) != 0 {
-		logger.Error("fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
+		fmt.Println("PSP - fee in message doesn't match fee in event logs", "msgFee", msg.Fee, "eventFee", eventLog.Fee)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	logger.Debug("Successfully validated external call for topup msg")
+	fmt.Println("PSP - Successfully validated external call for topup msg")
 
 	return sidetxs.Vote_VOTE_YES
 }
 
 // PostHandleTopupTx handles the post side tx for a validator's topup tx
 func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
-	logger := s.k.Logger(ctx)
+	// logger := s.k.Logger(ctx)
+
+	fmt.Println("PSP - PostHandleTopupTx msg received")
 
 	msg, ok := msgI.(*types.MsgTopupTx)
 	if !ok {
 		err := errors.New("type mismatch for MsgTopupTx")
-		logger.Error(err.Error())
+		fmt.Println("PSP - mismatch for MsgTopupTx", err.Error())
 		return err
 	}
 
 	// skip handler if topup is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		logger.Debug("skipping new topup tx since side-tx didn't get yes votes")
+		fmt.Println("PSP - skipping new topup tx since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -151,7 +157,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 
 	exists, err := s.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
-		logger.Error("error while fetching older topup sequence",
+		fmt.Println("PSP - error while fetching older topup sequence",
 			"sequence", sequence.String(),
 			"logIndex", msg.LogIndex,
 			"blockNumber", msg.BlockNumber,
@@ -159,7 +165,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return err
 	}
 	if exists {
-		logger.Error("older tx found",
+		fmt.Println("PSP - older tx found",
 			"sequence", sequence.String(),
 			"logIndex", msg.LogIndex,
 			"blockNumber", msg.BlockNumber,
@@ -167,7 +173,7 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return errors.New("older tx found")
 	}
 
-	logger.Debug("persisting topup state", "sideTxResult", sideTxResult)
+	fmt.Println("PSP - persisting topup state", "sideTxResult", sideTxResult)
 
 	// create topup event
 	user := msg.User
@@ -178,30 +184,52 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	   BankKeeper.MintCoins + BankKeeper.SendCoinsFromModuleToAccount + BankKeeper.SendCoins
 	*/
 
+	fmt.Println("PSP - minting coins to x/topup module", "topupAmount", topupAmount.String())
+	fmt.Println("PSP - msg.Proposer", msg.Proposer, sdk.AccAddress(msg.Proposer))
+	fmt.Println("PSP - msg.User", msg.User, sdk.AccAddress(msg.User))
+	fmt.Println("PSP - msg.Fee", msg.Fee.String())
+	fmt.Println("PSP - msg.TxHash", msg.TxHash)
+	fmt.Println("PSP - msg.LogIndex", msg.LogIndex)
+	fmt.Println("PSP - msg.BlockNumber", msg.BlockNumber)
+
+	// s.k.BankKeeper.ak.HasAccount(ctx, sdk.AccAddress(user))
+
 	err = s.k.BankKeeper.MintCoins(ctx, types.ModuleName, topupAmount)
 	if err != nil {
-		logger.Error("error while minting coins to x/topup module", "topupAmount", topupAmount, "error", err)
+		fmt.Println("PSP - error while minting coins to x/topup module", "topupAmount", topupAmount, "error", err)
 		return err
 	}
 
 	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
 	if err != nil {
-		logger.Error("error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, "error", err)
+		fmt.Println("PSP - error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, "error", err)
 		return err
+	}
+
+	hasUserAccount := s.k.AccountKeeper.HasAccount(ctx, sdk.AccAddress(user))
+	if !hasUserAccount {
+		fmt.Println("PSP - user account not found", "user", user)
+		return errors.New("user account not found")
+	}
+
+	userAccount := s.k.AccountKeeper.GetAccount(ctx, sdk.AccAddress(user))
+	if userAccount == nil {
+		fmt.Println("PSP - user account is nil", "user", user)
+		return errors.New("user account is nil")
 	}
 
 	err = s.k.BankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
 	if err != nil {
-		logger.Error("error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
+		fmt.Println("PSP - error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
 		return err
 	}
 
-	logger.Debug("persisted topup state for", "user", user, "topupAmount", topupAmount.String())
+	fmt.Println("PSP - persisted topup state for", "user", user, "topupAmount", topupAmount.String())
 
 	// save topup
 	err = s.k.SetTopupSequence(ctx, sequence.String())
 	if err != nil {
-		logger.Error("error while saving topup sequence", "sequence", sequence.String(), "error", err)
+		fmt.Println("PSP - error while saving topup sequence", "sequence", sequence.String(), "error", err)
 		return err
 	}
 
@@ -219,6 +247,8 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			sdk.NewAttribute(types.AttributeKeyTopupAmount, msg.Fee.String()),
 		),
 	})
+
+	fmt.Println("PSP - PostHandleTopupTx event created for HandleTopupTx")
 
 	return nil
 }

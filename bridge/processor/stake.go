@@ -156,6 +156,8 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 
 	}
 
+	fmt.Println("PSP - sendValidatorJoinToHeimdall done")
+
 	return nil
 }
 

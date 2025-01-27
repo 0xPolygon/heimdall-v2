@@ -64,6 +64,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
 	defer ctrl.Finish()
 	bankKeeper := testutil.NewMockBankKeeper(ctrl)
+	accountKeeper := testutil.NewMockAccountKeeper(ctrl)
 	chainKeeper := testutil.NewMockChainKeeper(ctrl)
 
 	s.contractCaller = mocks.IContractCaller{}
@@ -72,6 +73,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		encCfg.Codec,
 		storeService,
 		bankKeeper,
+		accountKeeper,
 		chainKeeper,
 		&s.contractCaller,
 	)

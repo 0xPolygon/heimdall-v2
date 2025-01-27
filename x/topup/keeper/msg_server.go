@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"cosmossdk.io/errors"
@@ -28,7 +29,9 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 
 	txHash := common.BytesToHash(msg.TxHash)
 
-	logger.Debug("HandleTopupTx msg received",
+	fmt.Println("PSP - HandleTopupTx msg received")
+
+	logger.Info("PSP - HandleTopupTx msg received",
 		"proposer", msg.Proposer,
 		"user", msg.User,
 		"fee", msg.Fee.String(),
@@ -43,14 +46,14 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 
 	// check if send is enabled for default denom
 	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, sdk.DefaultBondDenom) {
-		logger.Error("send not enabled")
+		logger.Error("PSP - send not enabled")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"send for denom %s is not enabled in bank keeper", sdk.DefaultBondDenom)
 	}
 
 	// check feasibility of topup tx based on msg fee
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
-		logger.Error("default fee exceeds amount to topup", "user", msg.User,
+		logger.Error("PSP - default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
 		return nil, errors.Wrapf(sdkerrors.ErrInsufficientFunds, "default fee exceeds amount to topup")
 	}
@@ -65,10 +68,11 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 	// check if incoming tx already exists
 	exists, err := m.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
+		fmt.Println("PSP - error while checking if tx exists")
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
 	if exists {
-		logger.Error("older tx found",
+		logger.Error("PSP - older tx found",
 			"sequence", sequence.String(),
 			"logIndex", msg.LogIndex,
 			"blockNumber", msg.BlockNumber,
@@ -88,7 +92,7 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		),
 	})
 
-	logger.Debug("event created for HandleTopupTx")
+	logger.Info("PSP - event created for HandleTopupTx")
 
 	return &types.MsgTopupTxResponse{}, nil
 }

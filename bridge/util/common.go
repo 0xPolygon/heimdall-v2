@@ -416,6 +416,7 @@ func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
 	queryClient := authtypes.NewQueryClient(cliCtx)
 	res, err := queryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: address})
 	if err != nil {
+		fmt.Println("PSP Error fetching account", address, err)
 		return nil, err
 	}
 
