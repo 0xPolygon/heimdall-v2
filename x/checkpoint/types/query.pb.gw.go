@@ -289,6 +289,24 @@ func request_Query_GetCheckpointSignatures_0(ctx context.Context, marshaler runt
 	var protoReq QueryCheckpointSignaturesRequest
 	var metadata runtime.ServerMetadata
 
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["tx_hash"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tx_hash")
+	}
+
+	protoReq.TxHash, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tx_hash", err)
+	}
+
 	msg, err := client.GetCheckpointSignatures(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
@@ -297,6 +315,24 @@ func request_Query_GetCheckpointSignatures_0(ctx context.Context, marshaler runt
 func local_request_Query_GetCheckpointSignatures_0(ctx context.Context, marshaler runtime.Marshaler, server QueryServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq QueryCheckpointSignaturesRequest
 	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["tx_hash"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "tx_hash")
+	}
+
+	protoReq.TxHash, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "tx_hash", err)
+	}
 
 	msg, err := server.GetCheckpointSignatures(ctx, &protoReq)
 	return msg, metadata, err
@@ -944,7 +980,7 @@ var (
 
 	pattern_Query_GetCheckpointList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"checkpoints", "list"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetCheckpointSignatures_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"checkpoint", "signatures"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetCheckpointSignatures_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"checkpoint", "signatures", "tx_hash"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetCheckpoint_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"checkpoints", "number"}, "", runtime.AssumeColonVerbOpt(false)))
 )

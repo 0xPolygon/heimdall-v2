@@ -12,6 +12,7 @@ import (
 type BankKeeper interface {
 	GetSupply(ctx context.Context, denom string) sdk.Coin
 	HasSupply(ctx context.Context, denom string) bool
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	IsSendEnabledDenom(ctx context.Context, denom string) bool
 	SpendableCoin(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error

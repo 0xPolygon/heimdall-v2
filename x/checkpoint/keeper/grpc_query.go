@@ -261,7 +261,24 @@ func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCh
 }
 
 // GetCheckpointSignatures queries for the last checkpoint signatures
-func (q queryServer) GetCheckpointSignatures(ctx context.Context, _ *types.QueryCheckpointSignaturesRequest) (*types.QueryCheckpointSignaturesResponse, error) {
+func (q queryServer) GetCheckpointSignatures(ctx context.Context, req *types.QueryCheckpointSignaturesRequest) (*types.QueryCheckpointSignaturesResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.TxHash == "" {
+		return nil, status.Error(codes.InvalidArgument, "tx hash cannot be empty")
+	}
+
+	txHash, err := q.k.GetCheckpointSignaturesTxHash(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if req.TxHash != txHash {
+		return nil, status.Error(codes.NotFound, "checkpoint signatures not set for the given tx hash")
+	}
+
 	checkpointSignatures, err := q.k.GetCheckpointSignatures(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

@@ -205,9 +205,15 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return err
 	}
 
-	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.AccAddress(user), topupAmount)
+	err = s.k.BankKeeper.SendCoinsFromModuleToAccount(ctx, types.ModuleName, sdk.MustAccAddressFromHex(user), topupAmount)
 	if err != nil {
 		fmt.Println("PSP - error while sending coins from x/topup module to user", "user", user, "topupAmount", topupAmount, "error", err)
+		return err
+	}
+
+	err = s.k.BankKeeper.SendCoins(ctx, sdk.MustAccAddressFromHex(user), sdk.MustAccAddressFromHex(msg.Proposer), ante.DefaultFeeWantedPerTx)
+	if err != nil {
+		fmt.Println("PSP - error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
 		return err
 	}
 
@@ -221,12 +227,6 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	if userAccount == nil {
 		fmt.Println("PSP - user account is nil", "user", user)
 		return errors.New("user account is nil")
-	}
-
-	err = s.k.BankKeeper.SendCoins(ctx, sdk.AccAddress(user), sdk.AccAddress(msg.Proposer), ante.DefaultFeeWantedPerTx)
-	if err != nil {
-		fmt.Println("PSP - error while sending coins from user to proposer", "user", user, "proposer", msg.Proposer, "topupAmount", topupAmount, "error", err)
-		return err
 	}
 
 	fmt.Println("PSP - persisted topup state for", "user", user, "topupAmount", topupAmount.String())

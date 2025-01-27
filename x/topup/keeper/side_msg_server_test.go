@@ -1,6 +1,8 @@
 package keeper_test
 
 import (
+	"context"
+	"fmt"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -10,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
@@ -234,8 +237,6 @@ func (s *KeeperTestSuite) TestSideHandleTopupTx() {
 	})
 }
 
-// TODO HV2: https://polygon.atlassian.net/browse/POS-2765
-
 func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 	ctx, require, keeper, postHandler, t := s.ctx, s.Require(), s.keeper, s.postHandler, s.T()
 
@@ -249,7 +250,21 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 	blockNumber := rand.Uint64()
 	hash := []byte(TxHash)
 
+	var balances map[string]sdk.Coins
+
+	keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().GetBalance(gomock.Any(), gomock.Any(), authTypes.FeeToken).
+		DoAndReturn(func(_ sdk.Context, addr sdk.AccAddress, _ string) sdk.Coin {
+			balances := balances[addr.String()]
+			for _, balance := range balances {
+				if balance.Denom == authTypes.FeeToken {
+					return balance
+				}
+			}
+			return sdk.NewCoin(authTypes.FeeToken, math.NewInt(0))
+		}).AnyTimes()
+
 	t.Run("no result", func(t *testing.T) {
+		balances = make(map[string]sdk.Coins)
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
 
@@ -273,6 +288,7 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 	})
 
 	t.Run("yes result", func(t *testing.T) {
+		balances = make(map[string]sdk.Coins)
 		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 		require.NoError(err)
 
@@ -288,19 +304,23 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		bn := new(big.Int).SetUint64(msg.BlockNumber)
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+		topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		s.trackMockBalances(addr1, addr1, topupAmount, balances)
 
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.True(ok)
+
+		bal := keeper.BankKeeper.GetBalance(ctx, addr1, authTypes.FeeToken)
+		require.Equal(topupAmount.AmountOf(authTypes.FeeToken), bal.Amount)
+
 	})
 
 	t.Run("yes result with proposer", func(t *testing.T) {
+		balances = make(map[string]sdk.Coins)
 		logIndex = rand.Uint64()
 		blockNumber = rand.Uint64()
 
@@ -323,10 +343,9 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		bn := new(big.Int).SetUint64(msg.BlockNumber)
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+		topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		s.trackMockBalances(addr2, addr3, topupAmount, balances)
 
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
@@ -334,9 +353,18 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.True(ok)
+
+		expBal1, isNeg := topupAmount.SafeSub(ante.DefaultFeeWantedPerTx...)
+		require.False(isNeg)
+		bal1 := keeper.BankKeeper.GetBalance(ctx, addr3, authTypes.FeeToken)
+		require.Equal(expBal1.AmountOf(authTypes.FeeToken), bal1.Amount)
+
+		bal2 := keeper.BankKeeper.GetBalance(ctx, addr2, authTypes.FeeToken)
+		require.Equal(ante.DefaultFeeWantedPerTx.AmountOf(authTypes.FeeToken), bal2.Amount)
 	})
 
 	t.Run("replay", func(t *testing.T) {
+		balances = make(map[string]sdk.Coins)
 		logIndex = rand.Uint64()
 		blockNumber = rand.Uint64()
 		txHash := "0x000000000000000000000000000000000000000000000000000000000002dead"
@@ -358,10 +386,9 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		bn := new(big.Int).SetUint64(msg.BlockNumber)
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
+		topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		s.trackMockBalances(addr1, addr1, topupAmount, balances)
 
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
@@ -370,10 +397,48 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 		require.NoError(err)
 		require.True(ok)
 
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		bal := keeper.BankKeeper.GetBalance(ctx, addr1, authTypes.FeeToken)
+		require.Equal(topupAmount.AmountOf(authTypes.FeeToken), bal.Amount)
 
 		// replay
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
+
+		bal = keeper.BankKeeper.GetBalance(ctx, addr1, authTypes.FeeToken)
+		require.Equal(topupAmount.AmountOf(authTypes.FeeToken), bal.Amount)
 	})
+}
+
+// trackMockBalances tracks the balances of the proposer and recipient of the topup tx
+func (s *KeeperTestSuite) trackMockBalances(proposerAddr, recipientAddr sdk.AccAddress, topupAmount sdk.Coins, balances map[string]sdk.Coins) {
+	s.T().Helper()
+	s.keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().MintCoins(gomock.Any(), types.ModuleName, topupAmount).
+		DoAndReturn(func(_ context.Context, moduleName string, amt sdk.Coins) error {
+			balances[moduleName] = balances[moduleName].Add(amt...)
+			return nil
+		}).
+		Times(1)
+
+	s.keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromModuleToAccount(gomock.Any(), types.ModuleName, recipientAddr, topupAmount).
+		DoAndReturn(func(_ context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+			newBalance, isNeg := balances[senderModule].SafeSub(amt...)
+			if isNeg {
+				return fmt.Errorf("not enough balance")
+			}
+			balances[senderModule] = newBalance
+			balances[recipientAddr.String()] = balances[recipientAddr.String()].Add(amt...)
+			return nil
+		}).
+		Times(1)
+
+	s.keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoins(gomock.Any(), recipientAddr, proposerAddr, ante.DefaultFeeWantedPerTx).
+		DoAndReturn(func(_ context.Context, fromAddr, toAddr sdk.AccAddress, amt sdk.Coins) error {
+			newBalance, isNeg := balances[fromAddr.String()].SafeSub(amt...)
+			if isNeg {
+				return fmt.Errorf("not enough balance")
+			}
+			balances[fromAddr.String()] = newBalance
+			balances[toAddr.String()] = balances[toAddr.String()].Add(amt...)
+			return nil
+		}).
+		Times(1)
 }

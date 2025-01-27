@@ -37,7 +37,8 @@ type Keeper struct {
 	lastNoAck          collections.Item[uint64]
 	ackCount           collections.Item[uint64]
 
-	checkpointSignatures collections.Item[types.CheckpointSignatures]
+	checkpointSignatures       collections.Item[types.CheckpointSignatures]
+	checkpointSignaturesTxHash collections.Item[string]
 }
 
 // NewKeeper creates a new checkpoint Keeper instance
@@ -71,12 +72,13 @@ func NewKeeper(
 		topupKeeper:     topupKeeper,
 		IContractCaller: contractCaller,
 
-		bufferedCheckpoint:   collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
-		checkpoints:          collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
-		params:               collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
-		lastNoAck:            collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
-		ackCount:             collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
-		checkpointSignatures: collections.NewItem(sb, types.CheckpointSignaturesPrefixKey, "checkpoint_signatures", codec.CollValue[types.CheckpointSignatures](cdc)),
+		bufferedCheckpoint:         collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
+		checkpoints:                collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
+		params:                     collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		lastNoAck:                  collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
+		ackCount:                   collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
+		checkpointSignatures:       collections.NewItem(sb, types.CheckpointSignaturesPrefixKey, "checkpoint_signatures", codec.CollValue[types.CheckpointSignatures](cdc)),
+		checkpointSignaturesTxHash: collections.NewItem(sb, types.CheckpointSignaturesTxHashPrefixKey, "checkpoint_signatures_tx_hash", collections.StringValue),
 	}
 
 	// build the schema and set it in the keeper
@@ -336,4 +338,14 @@ func (k Keeper) SetCheckpointSignatures(ctx context.Context, checkpointSignature
 // GetCheckpointSignatures retrieves the checkpoint signatures
 func (k Keeper) GetCheckpointSignatures(ctx context.Context) (types.CheckpointSignatures, error) {
 	return k.checkpointSignatures.Get(ctx)
+}
+
+// SetCheckpointSignaturesTxHash stores the checkpoint signatures tx hash
+func (k Keeper) SetCheckpointSignaturesTxHash(ctx context.Context, txHash string) error {
+	return k.checkpointSignaturesTxHash.Set(ctx, txHash)
+}
+
+// GetCheckpointSignaturesTxHash retrieves the checkpoint signatures tx hash
+func (k Keeper) GetCheckpointSignaturesTxHash(ctx context.Context) (string, error) {
+	return k.checkpointSignaturesTxHash.Get(ctx)
 }
