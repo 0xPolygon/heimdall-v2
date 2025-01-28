@@ -6,12 +6,17 @@ import (
 
 	"cosmossdk.io/core/address"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
 
@@ -52,8 +57,22 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			// get proposer
 			proposer := viper.GetString(FlagProposerAddress)
 			if proposer == "" {
-				proposer = clientCtx.GetFromAddress().String()
+				helper.InitHeimdallConfig("")
+				proposer = helper.GetFromAddress(clientCtx)
 			}
+
+			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
+			if err != nil {
+				return err
+			}
+
+			clientCtx, err = config.ReadFromClientConfig(clientCtx)
+			if err != nil {
+				return fmt.Errorf("couldn't create client config: %w", err)
+			}
+
+			heimdallChainId := "heimdall-" + chainParam.ChainParams.BorChainId
+			clientCtx = clientCtx.WithFromAddress(sdk.MustAccAddressFromHex(proposer)).WithChainID(heimdallChainId).WithKeyring(clientCtx.Keyring)
 
 			_, err = ac.StringToBytes(proposer)
 			if err != nil {
@@ -116,6 +135,8 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 	if err := cmd.MarkFlagRequired(FlagStartBlock); err != nil {
 		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagStartBlock Error: %v", err)
 	}
+
+	flags.AddTxFlagsToCmd(cmd)
 
 	return cmd
 }
