@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
+	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -33,6 +34,7 @@ import (
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
 const (
@@ -55,10 +57,12 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 	}
 
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	authTypes.RegisterInterfaces(interfaceRegistry)
 	checkpointTypes.RegisterInterfaces(interfaceRegistry)
 	milestoneTypes.RegisterInterfaces(interfaceRegistry)
 	clerkTypes.RegisterInterfaces(interfaceRegistry)
 	stakeTypes.RegisterInterfaces(interfaceRegistry)
+	topupTypes.RegisterInterfaces(interfaceRegistry)
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	if clientCtx.Codec == nil {
@@ -165,13 +169,27 @@ func StartBridge(isStandAlone bool) {
 	// create codec
 	interfaceRegistry := codectypes.NewInterfaceRegistry()
 	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	authTypes.RegisterInterfaces(interfaceRegistry)
+	checkpointTypes.RegisterInterfaces(interfaceRegistry)
+	milestoneTypes.RegisterInterfaces(interfaceRegistry)
+	clerkTypes.RegisterInterfaces(interfaceRegistry)
+	stakeTypes.RegisterInterfaces(interfaceRegistry)
+	topupTypes.RegisterInterfaces(interfaceRegistry)
 	cdc := codec.NewProtoCodec(interfaceRegistry)
+
+	// cli context
+	cliCtx := client.Context{}.WithCodec(cdc)
+	cliCtx.BroadcastMode = flags.BroadcastAsync
+
+	if cliCtx.Codec == nil {
+		cliCtx = cliCtx.WithCodec(cdc)
+	}
 
 	// queue connector & http client
 	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
 	_queueConnector.StartWorker()
 
-	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{}, nil)
+	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, cliCtx, nil)
 	_httpClient, err := rpchttp.New(helper.GetConfig().CometBFTRPCUrl, "/websocket")
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to server %v", err))
@@ -223,10 +241,6 @@ func StartBridge(isStandAlone bool) {
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to server %v", err))
 	}
-
-	// cli context
-	cliCtx := client.Context{}.WithCodec(cdc)
-	cliCtx.BroadcastMode = flags.BroadcastAsync
 
 	// start bridge services only when node fully synced
 	for {
