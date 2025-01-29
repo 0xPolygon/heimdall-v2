@@ -72,13 +72,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 			totalTxBytes += len(proposedTx)
 			txs = append(txs, proposedTx)
-
-			// check if there are less than 1 txs in the request
-			if len(txs) < 1 {
-				logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
-				return nil, fmt.Errorf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress)
-			}
 		}
+
+		// check if there are less than 1 txs in the request
+		if len(txs) < 1 {
+			logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
+			return nil, fmt.Errorf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress)
+		}
+
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
@@ -99,7 +100,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := req.Txs[0]
 		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
-			logger.Error("Error occurred while decoding ExtendedCommitInfo", "error", err)
+			logger.Error("Error occurred while decoding ExtendedCommitInfo", "height", req.Height, "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 

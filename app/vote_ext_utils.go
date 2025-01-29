@@ -322,6 +322,7 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 
 // checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
+// Returning error will result in CometBFT panic.
 func checkIfVoteExtensionsDisabled(ctx sdk.Context, height int64) error {
 	// voteExtensionsEnableHeight is the height from which the vote extensions are enabled, and it's (v1_last_height +1)
 	voteExtensionsEnableHeight := retrieveVoteExtensionsEnableHeight(ctx)
