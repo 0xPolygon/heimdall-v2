@@ -366,13 +366,15 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 
 // SideHandleMsgValidatorExit handles side msg validator exit
 func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
+	fmt.Println("PSP - in SideHandleMsgValidatorExit")
 	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
-		s.k.Logger(ctx).Error("type mismatch for MsgValidatorExit")
+		s.k.Logger(ctx).Error("PSP - type mismatch for MsgValidatorExit")
+		fmt.Println("PSP - type mismatch for MsgValidatorExit")
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ validating external call for validator exit msg",
+	s.k.Logger(ctx).Info("PSP - ✅ validating external call for validator exit msg",
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -383,7 +385,8 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	// chainManager params
 	params, err := s.k.cmKeeper.GetParams(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in fetching params from store", "err", err)
+		s.k.Logger(ctx).Error("PSP - error in fetching params from store", "err", err)
+		fmt.Println("PSP - error in fetching params from store", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -392,39 +395,46 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	// get main tx receipt
 	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
+		s.k.Logger(ctx).Error("PSP - error in getting event receipt from ethereum ", "err", err)
+		fmt.Println("PSP - error in getting event receipt from ethereum ", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// decode validator exit
 	eventLog, err := contractCaller.DecodeValidatorExitEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		s.k.Logger(ctx).Error("error fetching log from txHash", "err", err)
+		s.k.Logger(ctx).Error("PSP - error fetching log from txHash", "err", err)
+		fmt.Println("PSP - error fetching log from txHash", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		s.k.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		s.k.Logger(ctx).Error("PSP - blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		fmt.Println("PSP - blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64())
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
-		s.k.Logger(ctx).Error("id in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
+		s.k.Logger(ctx).Error("PSP - id in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
+		fmt.Println("PSP - id in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.DeactivationEpoch.Uint64() != msg.DeactivationEpoch {
-		s.k.Logger(ctx).Error("deactivationEpoch in message doesn't match with deactivationEpoch in log", "msgDeactivationEpoch", msg.DeactivationEpoch, "deactivationEpochFromTx", eventLog.DeactivationEpoch.Uint64)
+		s.k.Logger(ctx).Error("PSP - deactivationEpoch in message doesn't match with deactivationEpoch in log", "msgDeactivationEpoch", msg.DeactivationEpoch, "deactivationEpochFromTx", eventLog.DeactivationEpoch.Uint64)
+		fmt.Println("PSP - deactivationEpoch in message doesn't match with deactivationEpoch in log", "msgDeactivationEpoch", msg.DeactivationEpoch, "deactivationEpochFromTx", eventLog.DeactivationEpoch.Uint64())
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
-		s.k.Logger(ctx).Error("nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
+		s.k.Logger(ctx).Error("PSP - nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
+		fmt.Println("PSP - nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for validator exit msg")
+	s.k.Logger(ctx).Info("PSP - ✅ successfully validated external call for validator exit msg")
+	fmt.Println("PSP - ✅ SideHandleMsgValidatorExit DONE")
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -739,16 +749,19 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 // PostHandleMsgValidatorExit handles msg validator exit
 func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	fmt.Println("PSP - in PostHandleMsgValidatorExit")
 	msg, ok := msgI.(*types.MsgValidatorExit)
 	if !ok {
 		err := errors.New("type mismatch for MsgValidatorExit")
+		fmt.Println("PSP - type mismatch for MsgValidatorExit")
 		s.k.Logger(ctx).Error(err.Error())
 		return err
 	}
 
 	// skip handler if validator exit is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping validator exit since side-tx didn't get yes votes")
+		s.k.Logger(ctx).Info("PSP - skipping validator exit since side-tx didn't get yes votes")
+		fmt.Println("PSP - skipping validator exit since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -759,15 +772,17 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	// check if incoming tx is older
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return errors.New("Older invalid tx found")
+		s.k.Logger(ctx).Error("PSP - Older invalid tx found", "sequence", sequence.String())
+		fmt.Println("PSP - Older invalid tx found", "sequence", sequence.String())
+		return errors.New("older invalid tx found")
 	}
 
-	s.k.Logger(ctx).Debug("persisting validator exit", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Info("PSP - persisting validator exit", "sideTxResult", sideTxResult)
 
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		s.k.Logger(ctx).Error("fetching of validator from store failed", "validatorID", msg.ValId)
+		s.k.Logger(ctx).Error("PSP - fetching of validator from store failed", "validatorID", msg.ValId)
+		fmt.Println("PSP - fetching of validator from store failed", "validatorID", msg.ValId)
 		return err
 	}
 
@@ -777,14 +792,16 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 
 	// add deactivation time for validator
 	if err := s.k.AddValidator(ctx, validator); err != nil {
-		s.k.Logger(ctx).Error("error while setting deactivation epoch to validator", "error", err, "validatorID", validator.ValId)
+		s.k.Logger(ctx).Error("PSP - error while setting deactivation epoch to validator", "error", err, "validatorID", validator.ValId)
+		fmt.Println("PSP - error while setting deactivation epoch to validator", "error", err, "validatorID", validator.ValId)
 		return err
 	}
 
 	// save staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
+		s.k.Logger(ctx).Error("PSP - unable to set the sequence", "error", err)
+		fmt.Println("PSP - unable to set the sequence", "error", err)
 		return err
 	}
 
@@ -800,6 +817,8 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
+
+	fmt.Println("PSP - PostHandleMsgValidatorExit DONE")
 
 	return nil
 }

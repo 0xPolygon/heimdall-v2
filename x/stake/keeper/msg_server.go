@@ -231,7 +231,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 // ValidatorExit defines a method for exiting the validator from the validator set
 func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExit) (*types.MsgValidatorExitResponse, error) {
-	m.k.Logger(ctx).Debug("✅ Validating validator exit msg",
+	m.k.Logger(ctx).Info("PSP - ✅ Validating validator exit msg",
 		"validatorID", msg.ValId,
 		"deactivationEpoch", msg.DeactivationEpoch,
 		"txHash", msg.TxHash,
@@ -239,16 +239,20 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		"blockNumber", msg.BlockNumber,
 	)
 
+	fmt.Println("PSP - in ValidatorExit handler")
+
 	validator, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		m.k.Logger(ctx).Error("failed to fetch validator from store", "validatorID", msg.ValId, "error", err)
+		m.k.Logger(ctx).Error("PSP - failed to fetch validator from store", "validatorID", msg.ValId, "error", err)
+		fmt.Println("PSP - failed to fetch validator from store")
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
 	}
 
-	m.k.Logger(ctx).Debug("validator in store", "validator", validator)
+	m.k.Logger(ctx).Info("PSP - validator in store", "validator", validator)
 	// check if validator deactivation period is set
 	if validator.EndEpoch != 0 {
-		m.k.Logger(ctx).Error("validator already unbonded")
+		m.k.Logger(ctx).Error("PSP - validator already unbonded")
+		fmt.Println("PSP - validator already unbonded")
 		return nil, errorsmod.Wrap(types.ErrValUnbonded, "validator already unbonded")
 	}
 
@@ -259,13 +263,15 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 
 	// check if incoming tx is older
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
+		m.k.Logger(ctx).Error("PSP - older invalid tx found", "sequence", sequence.String())
+		fmt.Println("PSP - older invalid tx found")
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
 	}
 
 	// check nonce validity
 	if msg.Nonce != validator.Nonce+1 {
-		m.k.Logger(ctx).Error("incorrect validator nonce")
+		m.k.Logger(ctx).Error("PSP - incorrect validator nonce")
+		fmt.Println("PSP - incorrect validator nonce")
 		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "incorrect validator nonce")
 	}
 
@@ -278,6 +284,8 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
+
+	fmt.Println("PSP - ValidatorExit handler DONE")
 
 	return &types.MsgValidatorExitResponse{}, nil
 }
