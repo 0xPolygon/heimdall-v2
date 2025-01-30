@@ -278,13 +278,14 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 
 // SideHandleMsgSignerUpdate handles signer update message
 func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg) (result sidetxs.Vote) {
+	fmt.Println("PSP - in SideHandleMsgSignerUpdate")
 	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
-		s.k.Logger(ctx).Error("type mismatch for MsgSignerUpdate")
+		s.k.Logger(ctx).Error("PSP - type mismatch for MsgSignerUpdate")
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ Validating External call for signer update msg",
+	s.k.Logger(ctx).Info("PSP - ✅ Validating External call for signer update msg",
 		"txHash", common.Bytes2Hex(msg.TxHash),
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
@@ -293,7 +294,7 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	// chainManager params
 	params, err := s.k.cmKeeper.GetParams(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in fetching params from store", "err", err)
+		s.k.Logger(ctx).Error("PSP - error in fetching params from store", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -301,34 +302,34 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	contractCaller := s.k.contractCaller
 	receipt, err := contractCaller.GetConfirmedTxReceipt(common.BytesToHash(msg.TxHash), params.MainChainTxConfirmations)
 	if err != nil || receipt == nil {
-		s.k.Logger(ctx).Error("error in getting event receipt from ethereum ", "err", err)
+		s.k.Logger(ctx).Error("PSP - error in getting event receipt from ethereum ", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	chainParams := params.ChainParams
 	eventLog, err := contractCaller.DecodeSignerUpdateEvent(chainParams.StakingInfoAddress, receipt, msg.LogIndex)
 	if err != nil || eventLog == nil {
-		s.k.Logger(ctx).Error("error fetching log from txHash", "err", err)
+		s.k.Logger(ctx).Error("PSP - error fetching log from txHash", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if receipt.BlockNumber.Uint64() != msg.BlockNumber {
-		s.k.Logger(ctx).Error("blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
+		s.k.Logger(ctx).Error("PSP - blockNumber in message doesn't match blockNumber in receipt", "msgBlockNumber", msg.BlockNumber, "receiptBlockNumber", receipt.BlockNumber.Uint64)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if eventLog.ValidatorId.Uint64() != msg.ValId {
-		s.k.Logger(ctx).Error("id in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
+		s.k.Logger(ctx).Error("PSP - id in message doesn't match with id in log", "msgId", msg.ValId, "validatorIdFromTx", eventLog.ValidatorId)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if !helper.IsPubKeyFirstByteValid(msg.NewSignerPubKey[0:1]) {
-		s.k.Logger(ctx).Error("public key first byte mismatch", "expected", "0x04", "received", msg.NewSignerPubKey[0:1])
+		s.k.Logger(ctx).Error("PSP - public key first byte mismatch", "expected", "0x04", "received", msg.NewSignerPubKey[0:1])
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	if !bytes.Equal(eventLog.SignerPubkey, msg.NewSignerPubKey[1:]) {
-		s.k.Logger(ctx).Error("newSigner pubKey in txHash and msg don't match", "msgPubKey", common.Bytes2Hex(msg.NewSignerPubKey), "pubKeyTx", eventLog.SignerPubkey[:])
+		s.k.Logger(ctx).Error("PSP - newSigner pubKey in txHash and msg don't match", "msgPubKey", common.Bytes2Hex(msg.NewSignerPubKey), "pubKeyTx", eventLog.SignerPubkey[:])
 		return sidetxs.Vote_VOTE_NO
 	}
 
@@ -338,28 +339,30 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 	ac := addrCodec.NewHexCodec()
 	signerBytes, err := ac.StringToBytes(newSigner.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting signer address to bytes", "err", err)
+		s.k.Logger(ctx).Error("PSP - error in converting signer address to bytes", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 	eventLogSignerBytes, err := ac.StringToBytes(eventLog.NewSigner.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting event log signer address to bytes", "err", err)
+		s.k.Logger(ctx).Error("PSP - error in converting event log signer address to bytes", "err", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check signer corresponding to pubKey matches signer from event
 	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
-		s.k.Logger(ctx).Error("signer address does not match event log signer address", "validator", newSigner.String(), "mainChainValidator", eventLog.NewSigner.Hex())
+		s.k.Logger(ctx).Error("PSP - signer address does not match event log signer address", "validator", newSigner.String(), "mainChainValidator", eventLog.NewSigner.Hex())
 		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check nonce
 	if eventLog.Nonce.Uint64() != msg.Nonce {
-		s.k.Logger(ctx).Error("nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
+		s.k.Logger(ctx).Error("PSP - nonce in message doesn't match with nonce in log", "msgNonce", msg.Nonce, "nonceFromTx", eventLog.Nonce)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	s.k.Logger(ctx).Debug("✅ successfully validated external call for signer update msg")
+	s.k.Logger(ctx).Info("PSP - ✅ successfully validated external call for signer update msg")
+
+	fmt.Println("PSP - SideHandleMsgSignerUpdate DONE")
 
 	return sidetxs.Vote_VOTE_YES
 }
@@ -611,6 +614,7 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 
 // PostHandleMsgSignerUpdate handles signer update message
 func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	fmt.Println("PSP - in PostHandleMsgSignerUpdate")
 	msg, ok := msgI.(*types.MsgSignerUpdate)
 	if !ok {
 		err := errors.New("type mismatch for MsgSignerUpdate")
@@ -620,7 +624,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	// Skip handler if signer update is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
-		s.k.Logger(ctx).Debug("skipping signer update since side-tx didn't get yes votes")
+		s.k.Logger(ctx).Info("PSP - skipping signer update since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
 	}
 
@@ -631,16 +635,16 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	// check if incoming tx is older
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
 		s.k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return errors.New("Older invalid tx found")
+		return errors.New("older invalid tx found")
 	}
 
-	s.k.Logger(ctx).Debug("persisting signer update", "sideTxResult", sideTxResult)
+	s.k.Logger(ctx).Info("PSP - persisting signer update", "sideTxResult", sideTxResult)
 
 	// Generate PubKey from PubKey in message and signer
 	newPubKey := secp256k1.PubKey{Key: msg.NewSignerPubKey}
 
 	if newPubKey.Type() != types.Secp256k1Type {
-		s.k.Logger(ctx).Error("public key is invalid")
+		s.k.Logger(ctx).Error("PSP - public key is invalid")
 		return errors.New("public key is invalid")
 	}
 
@@ -649,7 +653,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	// pull validator from store
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		s.k.Logger(ctx).Error("fetching of validator from store failed", "validatorId", msg.ValId)
+		s.k.Logger(ctx).Error("PSP - fetching of validator from store failed", "validatorId", msg.ValId)
 		return err
 	}
 
@@ -663,19 +667,19 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		validator.Signer = newSigner
 		validator.PubKey = newPubKey.Bytes()
 
-		s.k.Logger(ctx).Debug("updating new signer", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
+		s.k.Logger(ctx).Info("PSP - updating new signer", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
 
 	} else {
-		s.k.Logger(ctx).Error("no signer change", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
+		s.k.Logger(ctx).Error("PSP - no signer change", "newSigner", newSigner, "oldSigner", oldValidator.Signer, "validatorID", msg.ValId)
 		return errors.New("no signer change")
 	}
 
-	s.k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
+	s.k.Logger(ctx).Info("PSP - removing old validator", "validator", oldValidator.String())
 
 	// remove the old validator from validator set
 	oldValidator.EndEpoch, err = s.k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to get ack count", "error", err)
+		s.k.Logger(ctx).Error("PSP - unable to get ack count", "error", err)
 		return err
 	}
 
@@ -686,35 +690,35 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	// save old validator
 	if err := s.k.AddValidator(ctx, *oldValidator); err != nil {
-		s.k.Logger(ctx).Error("unable to update signer", "validatorId", validator.ValId, "error", err)
+		s.k.Logger(ctx).Error("PSP - unable to update signer", "validatorId", validator.ValId, "error", err)
 		return err
 	}
 
 	// adding new validator
-	s.k.Logger(ctx).Debug("adding new validator", "validator", validator.String())
+	s.k.Logger(ctx).Info("PSP - adding new validator", "validator", validator.String())
 	err = s.k.AddValidator(ctx, validator)
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to update signer", "validatorID", validator.ValId, "error", err)
+		s.k.Logger(ctx).Error("PSP - unable to update signer", "validatorID", validator.ValId, "error", err)
 		return err
 	}
 
 	// save staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
 	if err != nil {
-		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
+		s.k.Logger(ctx).Error("PSP - unable to set the sequence", "error", err)
 		return err
 	}
 
 	// Move heimdall fee to new signer
 	oldAccAddress, err := addrCodec.NewHexCodec().StringToBytes(oldValidator.Signer)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting hex address to bytes", "error", err)
+		s.k.Logger(ctx).Error("PSP - error in converting hex address to bytes", "error", err)
 		return err
 	}
 
 	newAccAddress, err := addrCodec.NewHexCodec().StringToBytes(validator.Signer)
 	if err != nil {
-		s.k.Logger(ctx).Error("error in converting hex address to bytes", "error", err)
+		s.k.Logger(ctx).Error("PSP - error in converting hex address to bytes", "error", err)
 		return err
 	}
 
@@ -722,11 +726,11 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	polTokensBalance := coins.Amount.Abs()
 	if !polTokensBalance.IsZero() {
-		s.k.Logger(ctx).Info("Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
+		s.k.Logger(ctx).Info("PSP - Transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
 
 		polCoins := sdk.Coins{coins}
 		if err := s.k.bankKeeper.SendCoins(ctx, oldAccAddress, newAccAddress, polCoins); err != nil {
-			s.k.Logger(ctx).Info("Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
+			s.k.Logger(ctx).Info("PSP - Error while transferring fee", "from", oldValidator.Signer, "to", validator.Signer, "balance", polTokensBalance.String())
 			return err
 		}
 	}
@@ -743,6 +747,8 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
+
+	fmt.Println("PSP - PostHandleMsgSignerUpdate DONE")
 
 	return nil
 }

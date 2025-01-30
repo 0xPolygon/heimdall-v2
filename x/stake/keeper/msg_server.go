@@ -159,7 +159,8 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 
 // SignerUpdate defines a method for updating the validator's signer
 func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate) (*types.MsgSignerUpdateResponse, error) {
-	m.k.Logger(ctx).Debug("✅ Validating signer update msg",
+	fmt.Println("PSP - in SignerUpdate handler")
+	m.k.Logger(ctx).Info("PSP - ✅ Validating signer update msg",
 		"validatorID", msg.ValId,
 		"NewSignerPubKey", common.Bytes2Hex(msg.NewSignerPubKey),
 		"txHash", msg.TxHash,
@@ -177,14 +178,14 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	newSigner, err := addrCodec.NewHexCodec().BytesToString(pk.Address())
 	if err != nil {
-		m.k.Logger(ctx).Error("new signer is invalid", "error", err, "newSigner", newSigner)
+		m.k.Logger(ctx).Error("PSP - new signer is invalid", "error", err, "newSigner", newSigner)
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "new signer is invalid")
 	}
 
 	// pull validator from store
 	validator, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
-		m.k.Logger(ctx).Error("Fetching of validator from store failed", "validatorId", msg.ValId, "error", err)
+		m.k.Logger(ctx).Error("PSP - Fetching of validator from store failed", "validatorId", msg.ValId, "error", err)
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "Fetching of validator from store failed")
 	}
 
@@ -198,21 +199,21 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	// check if incoming tx is older
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
+		m.k.Logger(ctx).Error("PSP - older invalid tx found", "sequence", sequence.String())
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
 	}
 
 	// check if new signer address is same as existing signer
 	if newSigner == oldSigner {
 		// No signer change
-		m.k.Logger(ctx).Error("new signer is the same as old signer")
+		m.k.Logger(ctx).Error("PSP - new signer is the same as old signer")
 		return nil, errorsmod.Wrap(types.ErrNoSignerChange, "newSigner same as oldSigner")
 
 	}
 
 	// check nonce validity
 	if msg.Nonce != validator.Nonce+1 {
-		m.k.Logger(ctx).Error("incorrect validator nonce")
+		m.k.Logger(ctx).Error("PSP - incorrect validator nonce")
 		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "incorrect validator nonce")
 	}
 
@@ -225,6 +226,8 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
 		),
 	})
+
+	fmt.Println("PSP - SignerUpdate handler DONE")
 
 	return &types.MsgSignerUpdateResponse{}, nil
 }

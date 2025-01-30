@@ -334,15 +334,16 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 }
 
 func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logBytes string) error {
+	fmt.Println("PSP - in sendSignerChangeToHeimdall")
 	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
-		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
+		sp.Logger.Error("PSP - Error while unmarshalling event from rootchain", "error", err)
 		return err
 	}
 
 	event := new(stakinginfo.StakinginfoSignerChange)
 	if err := helper.UnpackLog(sp.stakingInfoAbi, event, eventName, &vLog); err != nil {
-		sp.Logger.Error("Error while parsing event", "name", eventName, "error", err)
+		sp.Logger.Error("PSP - Error while parsing event", "name", eventName, "error", err)
 	} else {
 		newSignerPubKey := event.SignerPubkey
 		if len(newSignerPubKey) == 64 {
@@ -350,12 +351,12 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		}
 
 		if !util.IsPubKeyFirstByteValid(newSignerPubKey) {
-			sp.Logger.Error("Invalid signer pubkey", "event", eventName, "newSignerPubKey", newSignerPubKey)
+			sp.Logger.Error("PSP - Invalid signer pubkey", "event", eventName, "newSignerPubKey", newSignerPubKey)
 			return fmt.Errorf("invalid signer pubkey")
 		}
 
 		if isOld, err := sp.isOldTx(sp.cliCtx, vLog.TxHash.String(), uint64(vLog.Index), util.StakingEvent, event); isOld {
-			sp.Logger.Info("Ignoring task to send unstakeinit to heimdall as already processed",
+			sp.Logger.Info("PSP - Ignoring task to send unstakeinit to heimdall as already processed",
 				"event", eventName,
 				"validatorID", event.ValidatorId,
 				"nonce", event.Nonce,
@@ -368,23 +369,23 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			)
 			return nil
 		} else if err != nil {
-			sp.Logger.Error("Error while checking if tx is old", "error", err)
+			sp.Logger.Error("PSP - Error while checking if tx is old", "error", err)
 			return err
 		}
 
 		validNonce, nonceDelay, err := sp.checkValidNonce(event.ValidatorId.Uint64(), event.Nonce.Uint64())
 		if err != nil {
-			sp.Logger.Error("Error while validating nonce for the validator", "error", err)
+			sp.Logger.Error("PSP - Error while validating nonce for the validator", "error", err)
 			return err
 		}
 
 		if !validNonce {
-			sp.Logger.Info("Ignoring task to send signer-change to heimdall as nonce is out of order")
+			sp.Logger.Info("PSP - Ignoring task to send signer-change to heimdall as nonce is out of order")
 			return tasks.NewErrRetryTaskLater("Nonce out of order", defaultDelayDuration*time.Duration(nonceDelay))
 		}
 
 		sp.Logger.Info(
-			"✅ Received task to send signer-change to heimdall",
+			"PSP - ✅ Received task to send signer-change to heimdall",
 			"event", eventName,
 			"validatorID", event.ValidatorId,
 			"nonce", event.Nonce,
@@ -398,6 +399,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 
 		address, err := helper.GetAddressString()
 		if err != nil {
+			sp.Logger.Error("PSP - Error converting address to string", "error", err)
 			return fmt.Errorf("error converting address to string: %w", err)
 		}
 
@@ -412,14 +414,14 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			event.Nonce.Uint64(),
 		)
 		if err != nil {
-			sp.Logger.Error("Error while creating new MsgSignerUpdate", "error", err)
+			sp.Logger.Error("PSP - Error while creating new MsgSignerUpdate", "error", err)
 			return err
 		}
 
 		// return broadcast to heimdall
 		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
 		if err != nil {
-			sp.Logger.Error("Error while broadcasting signerChainge to heimdall", "msg", msg, "validatorId", event.ValidatorId.Uint64(), "error", err)
+			sp.Logger.Error("PSP - Error while broadcasting signerChainge to heimdall", "msg", msg, "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
 
@@ -429,6 +431,8 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		}
 
 	}
+
+	fmt.Println("PSP - sendSignerChangeToHeimdall DONE")
 
 	return nil
 }
