@@ -52,26 +52,32 @@ func NewProcessorService(
 	// initialize checkpoint processor
 	checkpointProcessor := NewCheckpointProcessor(&contractCaller.RootChainABI)
 	checkpointProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "checkpoint", checkpointProcessor)
+	checkpointProcessor.cliCtx = txBroadcaster.CliCtx
 
 	// initialize checkpoint processor
 	milestoneProcessor := &MilestoneProcessor{}
 	milestoneProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "milestone", milestoneProcessor)
+	milestoneProcessor.cliCtx = txBroadcaster.CliCtx
 
 	// initialize fee processor
 	feeProcessor := NewFeeProcessor(&contractCaller.StakingInfoABI)
 	feeProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "fee", feeProcessor)
+	feeProcessor.cliCtx = txBroadcaster.CliCtx
 
 	// initialize staking processor
 	stakingProcessor := NewStakingProcessor(&contractCaller.StakingInfoABI)
 	stakingProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "staking", stakingProcessor)
+	stakingProcessor.cliCtx = txBroadcaster.CliCtx
 
 	// initialize clerk processor
 	clerkProcessor := NewClerkProcessor(&contractCaller.StateSenderABI)
 	clerkProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "clerk", clerkProcessor)
+	clerkProcessor.cliCtx = txBroadcaster.CliCtx
 
 	// initialize span processor
 	spanProcessor := &SpanProcessor{}
 	spanProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "span", spanProcessor)
+	spanProcessor.cliCtx = txBroadcaster.CliCtx
 
 	// HV2 - not adding slashing
 	/*
