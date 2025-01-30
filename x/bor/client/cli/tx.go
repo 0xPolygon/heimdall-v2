@@ -6,7 +6,6 @@ import (
 
 	"cosmossdk.io/core/address"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
@@ -66,13 +65,9 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 				return err
 			}
 
-			clientCtx, err = config.ReadFromClientConfig(clientCtx)
-			if err != nil {
-				return fmt.Errorf("couldn't create client config: %w", err)
-			}
-
+			// TODO HV2: maybe we should make heimdall chain id part of the chainmanager params
 			heimdallChainId := "heimdall-" + chainParam.ChainParams.BorChainId
-			clientCtx = clientCtx.WithFromAddress(sdk.MustAccAddressFromHex(proposer)).WithChainID(heimdallChainId).WithKeyring(clientCtx.Keyring)
+			clientCtx = clientCtx.WithFromAddress(sdk.MustAccAddressFromHex(proposer)).WithChainID(heimdallChainId)
 
 			_, err = ac.StringToBytes(proposer)
 			if err != nil {
