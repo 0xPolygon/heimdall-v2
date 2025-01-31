@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -75,9 +76,11 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	)
 
 	if err != nil {
+		panic("PANIK!!")
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
 
+	fmt.Println("RES: ", res)
 	records := make([]types.EventRecord, len(res))
 	for _, r := range res {
 		records = append(records, *r)
