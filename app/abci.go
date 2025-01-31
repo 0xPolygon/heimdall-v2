@@ -67,7 +67,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
 				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
-				return nil, err
+				continue
 			}
 
 			totalTxBytes += len(proposedTx)
@@ -116,7 +116,12 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
-			logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
+			// We could reject proposal if we fail to query bor, we follow RFC 105 (https://github.com/cometbft/cometbft/blob/main/docs/references/rfc/rfc-105-non-det-process-proposal.md)
+			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
+				logger.Error("Failed to query bor, rejecting proposal", "error", err)
+			} else {
+				logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
+			}
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
@@ -138,7 +143,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			if err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
-				return nil, err
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 		}
 
