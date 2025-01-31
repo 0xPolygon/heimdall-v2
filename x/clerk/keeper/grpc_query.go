@@ -63,6 +63,7 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	fmt.Println("REQ: ", request)
 	if isPaginationEmpty(*request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
