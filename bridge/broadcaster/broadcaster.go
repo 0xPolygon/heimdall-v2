@@ -115,7 +115,7 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*s
 
 	// Now check if the transaction response is not okay
 	if txResponse.Code != abci.CodeTypeOK {
-		tb.logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code)
+		tb.logger.Error("Transaction response returned a non-ok code", "txResponseCode", txResponse.Code, "last sequence number", tb.lastSeqNo)
 
 		// Handle fetching account and updating seqNo
 		if handleAccountUpdateErr := updateAccountSequence(tb); handleAccountUpdateErr != nil {
