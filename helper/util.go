@@ -375,6 +375,8 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 		PubKey:        cosmosPrivKey.PubKey(),
 	}
 
+	Logger.Info("SIGNER DATA", "signerData", signerData, "privKey", cosmosPrivKey)
+
 	sigV2, err = clienttx.SignWithPrivKey(clientCtx.CmdContext, txf.SignMode(), signerData, tx, cosmosPrivKey, clientCtx.TxConfig, txf.Sequence())
 	if err != nil {
 		return nil, err
