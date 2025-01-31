@@ -3,6 +3,7 @@ package heimdallv2.clerk;
 
 import "amino/amino.proto";
 import "cosmos/query/v1/query.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
@@ -62,18 +63,13 @@ message RecordListResponse {
 }
 
 message RecordListWithTimeRequest {
-  google.protobuf.Timestamp from_time = 1 [
-    (gogoproto.stdtime) = true,
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
+  uint64 from_id = 1 [ (amino.dont_omitempty) = true ];
   google.protobuf.Timestamp to_time = 2 [
     (gogoproto.stdtime) = true,
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
-  uint64 page = 3 [ (amino.dont_omitempty) = true ];
-  uint64 limit = 4 [ (amino.dont_omitempty) = true ];
+  cosmos.base.query.v1beta1.PageRequest pagination = 3;
 }
 
 message RecordListWithTimeResponse {
