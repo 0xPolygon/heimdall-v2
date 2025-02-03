@@ -189,7 +189,7 @@ func StartBridge(isStandAlone bool) {
 	_queueConnector := queue.NewQueueConnector(helper.GetConfig().AmqpURL)
 	_queueConnector.StartWorker()
 
-	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, cliCtx, nil)
+	_txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{}, nil)
 	_httpClient, err := rpchttp.New(helper.GetConfig().CometBFTRPCUrl, "/websocket")
 	if err != nil {
 		panic(fmt.Sprintf("Error connecting to server %v", err))
