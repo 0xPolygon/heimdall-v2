@@ -311,6 +311,7 @@
         "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "15005",
+          "heimdall_chain_id": "heimdall-15005",
           "pol_token_address": "0x675c1bd77f573aaf2df04ee7180a21a110d3d4fa",
           "root_chain_address": "0xa1a6f9ff932eba930db4a638e06ae0ae3c8fa2d1",
           "slash_manager_address": "0x0000000000000000000000000000000000000000",

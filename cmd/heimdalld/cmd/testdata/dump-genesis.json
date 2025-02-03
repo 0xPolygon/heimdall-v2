@@ -331,6 +331,7 @@
         "maticchain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "15005",
+          "heimdall_chain_id": "heimdall-15005",
           "matic_token_address": "0x675c1bd77f573aaf2df04ee7180a21a110d3d4fa",
           "staking_manager_address": "0xe8f5a17fba3b9294961aa0ab965eabad9a45ff1b",
           "slash_manager_address": "0x0000000000000000000000000000000000000000",

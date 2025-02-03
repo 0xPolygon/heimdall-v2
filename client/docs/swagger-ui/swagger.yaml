@@ -813,6 +813,8 @@ paths:
                     properties:
                       bor_chain_id:
                         type: string
+                      heimdall_chain_id:
+                        type: string
                       pol_token_address:
                         type: string
                       staking_manager_address:
@@ -3905,6 +3907,8 @@ definitions:
     properties:
       bor_chain_id:
         type: string
+      heimdall_chain_id:
+        type: string
       pol_token_address:
         type: string
       staking_manager_address:
@@ -3928,6 +3932,8 @@ definitions:
         type: object
         properties:
           bor_chain_id:
+            type: string
+          heimdall_chain_id:
             type: string
           pol_token_address:
             type: string
@@ -3961,6 +3967,8 @@ definitions:
             type: object
             properties:
               bor_chain_id:
+                type: string
+              heimdall_chain_id:
                 type: string
               pol_token_address:
                 type: string

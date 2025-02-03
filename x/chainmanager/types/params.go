@@ -24,6 +24,7 @@ func DefaultParams() Params {
 		BorChainTxConfirmations:  DefaultBorChainTxConfirmations,
 		ChainParams: ChainParams{
 			BorChainId:           helper.DefaultBorChainID,
+			HeimdallChainId:      helper.DefaultHeimdallChainID,
 			StateReceiverAddress: DefaultStateReceiverAddress,
 			ValidatorSetAddress:  DefaultValidatorSetAddress,
 		},

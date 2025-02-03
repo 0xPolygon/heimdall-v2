@@ -65,6 +65,7 @@ func (s *KeeperTestSuite) TestParamsGetterSetter() {
 	expParams.BorChainTxConfirmations = 256
 	expParams.MainChainTxConfirmations = 512
 	expParams.ChainParams.BorChainId = "1337"
+	expParams.ChainParams.HeimdallChainId = "heimdall-1337"
 	require.NoError(cmKeeper.SetParams(ctx, expParams))
 	resParams, err = cmKeeper.GetParams(ctx)
 	require.NoError(err)

@@ -297,6 +297,7 @@
         "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "137",
+          "heimdall_chain_id": "heimdall-137",
           "matic_token_address": "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0",
           "staking_manager_address": "0x88F65097BA6E10F25E93bf41987f9416BBB303eB",
           "slash_manager_address": "0xbfAEa5DCcbA49DB25A9F9DD0E4245Ba7b1858aB4",
