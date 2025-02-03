@@ -3,6 +3,7 @@ package processor
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"cosmossdk.io/math"
@@ -97,7 +98,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		}
 
 		// if account doesn't exist Retry with delay for topup to process first.
-		if _, err := util.GetAccount(sp.cliCtx, event.Signer.String()); err != nil {
+		if _, err := util.GetAccount(sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
 			sp.Logger.Info(
 				"Heimdall Account doesn't exist. Retrying validator-join after 10 seconds",
 				"event", eventName,
@@ -476,33 +477,22 @@ func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	}
 
 	for msg, action := range stakingTxnMsgMap {
-		event1 := fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg)
-
-		event2 := fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId)
-
-		searchResult1, err1 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event1, "")
-		searchResult2, err2 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event2, "")
-		if err1 != nil && err2 != nil {
-			return 0, fmt.Errorf("%w %w", err1, err2)
+		events := []string{
+			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg),
+			fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId),
 		}
 
-		var totalCount uint64
+		// XXX: implement ANY
+		query := strings.Join(events, " AND ")
 
-		// Check if searchResult1 is not nil before accessing TotalCount
-		if searchResult1 != nil {
-			totalCount += searchResult1.TotalCount
+		searchTxResult, err := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, query, "")
+		if err != nil {
+			return 0, fmt.Errorf("failed to search for txs: %w", err)
 		}
 
-		// Check if searchResult2 is not nil before accessing TotalCount
-		if searchResult2 != nil {
-			totalCount += searchResult2.TotalCount
+		if searchTxResult.TotalCount != 0 {
+			return int(searchTxResult.TotalCount), nil
 		}
-
-		// Only return if totalCount is non-zero
-		if totalCount != 0 {
-			return int(totalCount), nil
-		}
-
 	}
 
 	return 0, nil
