@@ -6,14 +6,17 @@ import (
 
 	"cosmossdk.io/core/address"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/0xPolygon/heimdall-v2/common/cli"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
+
+var logger = helper.Logger.With("module", "bor/client/cli")
 
 // NewTxCmd returns a root CLI command handler for all x/bor transaction commands.
 func NewTxCmd() *cobra.Command {
@@ -100,7 +103,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			seed := common.HexToHash(nextSpanSeedResponse.Seed)
 			msg := types.NewMsgProposeSpan(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes(), nextSpanSeedResponse.SeedAuthor)
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
 		},
 	}
 

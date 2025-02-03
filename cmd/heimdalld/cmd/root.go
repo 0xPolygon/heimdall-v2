@@ -5,6 +5,7 @@ import (
 	"path"
 
 	"cosmossdk.io/log"
+	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -111,6 +112,10 @@ func NewRootCmd() *cobra.Command {
 
 			customAppTemplate, customAppConfig := initAppConfig()
 			customCMTConfig := initCometBFTConfig()
+
+			if cmd.Name() != commands.InitFilesCmd.Name() && cmd.Name() != testnetCmdName {
+				helper.InitHeimdallConfig("")
+			}
 
 			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
 		},
