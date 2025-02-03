@@ -7,13 +7,13 @@ import (
 	"cosmossdk.io/core/address"
 	sdkmath "cosmossdk.io/math"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/0xPolygon/heimdall-v2/common/cli"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
@@ -141,7 +141,7 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 				return err
 			}
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
 		},
 	}
 
@@ -229,7 +229,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 				return err
 			}
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
 		},
 	}
 
