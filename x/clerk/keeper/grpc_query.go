@@ -64,14 +64,14 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	}
 
 	fmt.Println("REQ: ", request)
-	if isPaginationEmpty(*request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
+	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
 
 	res, _, err := query.CollectionPaginate(
 		ctx,
 		q.k.RecordsWithID,
-		request.Pagination, func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
+		&request.Pagination, func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
 			return q.k.GetEventRecord(ctx, id)
 		},
 	)

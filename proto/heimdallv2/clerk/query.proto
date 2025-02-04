@@ -69,7 +69,8 @@ message RecordListWithTimeRequest {
     (gogoproto.nullable) = false,
     (amino.dont_omitempty) = true
   ];
-  cosmos.base.query.v1beta1.PageRequest pagination = 3;
+  cosmos.base.query.v1beta1.PageRequest pagination = 3
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
 }
 
 message RecordListWithTimeResponse {
