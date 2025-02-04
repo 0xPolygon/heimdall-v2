@@ -180,12 +180,10 @@ func initRootCmd(
 				return err
 			}
 
-			// TODO HV2: maybe we should make heimdall chain id part of the chainmanager params
-			heimdallChainId := "heimdall-" + chainParam.ChainParams.BorChainId
 			clientCtx = clientCtx.
 				WithKeyring(keyring).
 				WithKeyringDir(keyringDir).
-				WithChainID(heimdallChainId)
+				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {

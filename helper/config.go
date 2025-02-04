@@ -105,7 +105,8 @@ const (
 
 	DefaultMainchainMaxGasPrice = 400000000000 // 400 Gwei
 
-	DefaultBorChainID = "15001"
+	DefaultBorChainID      = "15001"
+	DefaultHeimdallChainID = "heimdall-15001"
 
 	DefaultLogsType = "json"
 	DefaultChain    = MainChain
