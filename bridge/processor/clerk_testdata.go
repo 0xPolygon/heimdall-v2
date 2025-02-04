@@ -11,10 +11,9 @@ const (
 	{
 	"height": "0",
 	"result": {
-		"main_chain_tx_confirmations": 6,
-		"bor_chain_tx_confirmations": 10,
 		"chain_params": {
 			"bor_chain_id": "80001",
+			"heimdall_chain_id": "heimdall-80001",
 			"pol_token_address": "0x499d11E0b6eAC7c0593d8Fb292DCBbF815Fb29Ae",
 			"staking_manager_address": "0x4864d89DCE4e24b2eDF64735E014a7E4154bfA7A",
 			"slash_manager_address": "0x93D8f8A1A88498b258ceb69dD82311962374269C",
@@ -23,7 +22,9 @@ const (
 			"state_sender_address": "0xEAa852323826C71cd7920C3b4c007184234c3945",
 			"state_receiver_address": "0x0000000000000000000000000000000000001001",
 			"validator_set_address": "0x0000000000000000000000000000000000001000"
-			}
+			},
+		"main_chain_tx_confirmations": "6",
+		"bor_chain_tx_confirmations": "10"
 		}
 	}`
 

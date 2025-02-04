@@ -501,6 +501,18 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		panic(err)
 	}
 
+	// Get chainManagerGenesisState
+	chainManagerGenesis := genesisState[chainmanagertypes.ModuleName]
+	var chainManagerGenesisState chainmanagertypes.GenesisState
+	app.appCodec.MustUnmarshalJSON(chainManagerGenesis, &chainManagerGenesisState)
+
+	// Set the heimdall_chain_id in the chainManagerGenesisState to the root chain_id to avoid any mismatch
+	chainManagerGenesisState.Params.ChainParams.HeimdallChainId = req.ChainId
+
+	// Marshal the updated chainManagerGenesisState back into genesisState
+	chainManagerGenesis = app.appCodec.MustMarshalJSON(&chainManagerGenesisState)
+	genesisState[chainmanagertypes.ModuleName] = chainManagerGenesis
+
 	// check fee collector module account
 	if moduleAcc := app.AccountKeeper.GetModuleAccount(ctx, authtypes.FeeCollectorName); moduleAcc == nil {
 		panic(fmt.Sprintf("%s module account has not been set", authtypes.FeeCollectorName))

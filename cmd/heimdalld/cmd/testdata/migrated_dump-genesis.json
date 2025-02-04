@@ -308,10 +308,9 @@
     },
     "chainmanager": {
       "params": {
-        "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "15005",
-          "heimdall_chain_id": "heimdall-15005",
+          "heimdall_chain_id": "heimdall-sCCAH4",
           "pol_token_address": "0x675c1bd77f573aaf2df04ee7180a21a110d3d4fa",
           "root_chain_address": "0xa1a6f9ff932eba930db4a638e06ae0ae3c8fa2d1",
           "slash_manager_address": "0x0000000000000000000000000000000000000000",
@@ -321,7 +320,8 @@
           "state_sender_address": "0x3463e6b634e4d358b6c7212de3b1527b95bbc90c",
           "validator_set_address": "0x0000000000000000000000000000000000001000"
         },
-        "main_chain_tx_confirmations": "6"
+        "main_chain_tx_confirmations": "6",
+        "bor_chain_tx_confirmations": "10"
       }
     },
     "checkpoint": {

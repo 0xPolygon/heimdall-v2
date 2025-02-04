@@ -293,8 +293,6 @@
     },
     "chainmanager": {
       "params": {
-        "main_chain_tx_confirmations": "6",
-        "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "137",
           "heimdall_chain_id": "heimdall-137",
@@ -306,7 +304,9 @@
           "state_sender_address": "0x28e4F3a7f651294B9564800b2D01f35189A5bFbE",
           "state_receiver_address": "0x0000000000000000000000000000000000001001",
           "validator_set_address": "0x0000000000000000000000000000000000001000"
-        }
+        },
+        "main_chain_tx_confirmations": "6",
+        "bor_chain_tx_confirmations": "10"
       }
     },
     "checkpoint": {
