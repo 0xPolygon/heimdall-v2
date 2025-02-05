@@ -19,6 +19,7 @@ import (
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
@@ -1016,4 +1017,31 @@ func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
 		panic("pub key is not of type secp256k1.PrivKey")
 	}
 	pubKeyObject = pubKey
+}
+
+// GetLogLevel returns the zerolog level based on the configured log level string
+func GetLogLevel() zerolog.Level {
+	logLevel := strings.ToLower(viper.GetString(LogLevel))
+
+	switch logLevel {
+	case "trace":
+		return zerolog.TraceLevel
+	case "debug":
+		return zerolog.DebugLevel
+	case "info":
+		return zerolog.InfoLevel
+	case "warn", "warning":
+		return zerolog.WarnLevel
+	case "error":
+		return zerolog.ErrorLevel
+	case "fatal":
+		return zerolog.FatalLevel
+	case "panic":
+		return zerolog.PanicLevel
+	case "disabled":
+		return zerolog.Disabled
+	default:
+		// Default to info level if invalid or not specified
+		return zerolog.InfoLevel
+	}
 }

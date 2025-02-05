@@ -19,6 +19,7 @@ import (
 
 	heimdallApp "github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -37,7 +38,7 @@ func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger
 	appOptions := make(simtestutil.AppOptionsMap)
 	appOptions[flags.FlagHome] = heimdallApp.DefaultNodeHome
 
-	app := heimdallApp.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, appOptions)
+	app := heimdallApp.NewHeimdallApp(log.NewLogger(os.Stderr, log.LevelOption(helper.GetLogLevel())), db, nil, true, appOptions)
 
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 
