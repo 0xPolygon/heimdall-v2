@@ -576,13 +576,15 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 				return err
 			}
 
-			valset, err := stakeInstance.GetCurrentValidatorSet(nil)
+			totalStake, err := stakeInstance.CurrentValidatorSetTotalStake(nil)
 			if err != nil {
-				cp.Logger.Error("Error while fetching current validator set", "error", err)
+				cp.Logger.Error("Error while fetching current validator set total stake", "error", err)
 				return err
 			}
 
-			cp.Logger.Error("Current L1 Validator Set", "valset", valset)
+			totalValsetSize, err := stakeInstance.CurrentValidatorSetSize(nil)
+
+			cp.Logger.Error("Total stake and validator set size", "totalStake", totalStake.String(), "totalValsetSize", totalValsetSize.String())
 
 			return err
 		}
