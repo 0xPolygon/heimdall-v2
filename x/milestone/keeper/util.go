@@ -21,7 +21,11 @@ func ValidateMilestone(start uint64, end uint64, hash []byte, milestoneID string
 	}
 
 	// Check if blocks+confirmations  exist locally
-	if !contractCaller.CheckIfBlocksExist(end + confirmations) {
+	exists, err := contractCaller.CheckIfBlocksExist(end + confirmations)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
 		return false, errors.New(fmt.Sprint("end block number with confirmation is not available in bor chain", "EndBlock", end, "confirmation", confirmations))
 	}
 

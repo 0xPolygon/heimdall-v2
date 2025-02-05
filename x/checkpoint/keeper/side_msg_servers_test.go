@@ -55,7 +55,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
 		contractCaller.On("GetRootHash", checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return(checkpoint.RootHash, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
@@ -83,7 +83,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
 		contractCaller.On("GetRootHash", checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return(nil, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)
@@ -111,7 +111,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
 			borChainId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true)
+		contractCaller.On("CheckIfBlocksExist", checkpoint.EndBlock+borChainTxConfirmations).Return(true, nil)
 		contractCaller.On("GetRootHash", checkpoint.StartBlock, checkpoint.EndBlock, uint64(1024)).Return([]byte{1}, nil)
 
 		result := sideHandler(ctx, msgCheckpoint)

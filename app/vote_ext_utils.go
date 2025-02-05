@@ -35,7 +35,9 @@ import (
 // It returns an error in case the validation fails
 func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
 	// check if VEs are enabled
-	panicOnVoteExtensionsDisabled(ctx, reqHeight+1)
+	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
+		return err
+	}
 
 	// check if reqHeight is the initial height
 	if reqHeight <= retrieveVoteExtensionsEnableHeight(ctx) {
@@ -318,17 +320,19 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	return nil, nil
 }
 
-// panicOnVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
+// checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
-func panicOnVoteExtensionsDisabled(ctx sdk.Context, height int64) {
+// Returning error will result in CometBFT panic.
+func checkIfVoteExtensionsDisabled(ctx sdk.Context, height int64) error {
 	// voteExtensionsEnableHeight is the height from which the vote extensions are enabled, and it's (v1_last_height +1)
 	voteExtensionsEnableHeight := retrieveVoteExtensionsEnableHeight(ctx)
 	if voteExtensionsEnableHeight == 0 {
-		panic("VoteExtensions are disabled: VoteExtensionsEnableHeight is set to 0")
+		return errors.New("VoteExtensions are disabled: VoteExtensionsEnableHeight is set to 0")
 	}
 	if height < voteExtensionsEnableHeight {
-		panic(fmt.Sprintf("vote extensions are disabled: current height is %d, and VoteExtensionsEnableHeight is set to %d", height, voteExtensionsEnableHeight))
+		return fmt.Errorf("vote extensions are disabled: current height is %d, and VoteExtensionsEnableHeight is set to %d", height, voteExtensionsEnableHeight)
 	}
+	return nil
 }
 
 func isVoteValid(v sidetxs.Vote) bool {

@@ -44,7 +44,8 @@ func TestValidateVoteExtensions(t *testing.T) {
 		extVoteInfo []abci.ExtendedVoteInfo
 		round       int32
 		keeper      stakeKeeper.Keeper
-		shouldPanic bool
+		shouldError bool
+		expectedErr string
 	}{
 		{
 			name: "ves disabled with non-empty vote extension",
@@ -54,7 +55,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
-			shouldPanic: true,
+			shouldError: true,
 		},
 		{
 			name: "function executed and signature verified successfully",
@@ -64,17 +65,15 @@ func TestValidateVoteExtensions(t *testing.T) {
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
-			shouldPanic: false,
+			shouldError: false,
+			expectedErr: "failed to verify validator",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.shouldPanic {
-				require.Panics(t, func() {
-					err := ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
-					fmt.Printf("err: %v\n", err)
-				})
+			if tt.shouldError {
+				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper))
 			} else {
 				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
 				require.NoError(t, err)
@@ -495,7 +494,7 @@ func TestIsBlockIDFlagValid(t *testing.T) {
 	require.False(t, isBlockIdFlagValid(-1))
 }
 
-func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
+func TestCheckIfVoteExtensionsDisabled(t *testing.T) {
 	VoteExtEnableHeight := 1
 	key := storetypes.NewKVStoreKey("testStoreKey")
 	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
@@ -504,7 +503,7 @@ func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
 	tests := []struct {
 		name   string
 		height int64
-		panics bool
+		errors bool
 	}{
 		{"height is less than VoteExtensionsEnableHeight", int64(VoteExtEnableHeight) - 1, true},
 		{"height is equal to VoteExtensionsEnableHeight", int64(VoteExtEnableHeight), false},
@@ -513,14 +512,14 @@ func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if !tt.panics {
-				require.NotPanics(t, func() {
-					panicOnVoteExtensionsDisabled(ctx, tt.height)
-				}, "panicOnVoteExtensionsDisabled panicked unexpectedly")
+			if !tt.errors {
+				require.NoError(t,
+					checkIfVoteExtensionsDisabled(ctx, tt.height),
+					"checkIfVoteExtensionsDisabled returned error unexpectedly")
 			} else {
-				require.Panics(t, func() {
-					panicOnVoteExtensionsDisabled(ctx, tt.height)
-				}, "panicOnVoteExtensionsDisabled did not panic, but it should have")
+				require.Error(t,
+					checkIfVoteExtensionsDisabled(ctx, tt.height),
+					"checkIfVoteExtensionsDisabled did not returned error, but it should have")
 			}
 		})
 	}
