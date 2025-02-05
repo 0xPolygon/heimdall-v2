@@ -11,7 +11,6 @@ import (
 
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
 	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
@@ -999,7 +998,7 @@ func InitTestHeimdallConfig(chain string) {
 
 	SetTestConfig(customAppConf)
 
-	privKeyObject = cmtcrypto.GenPrivKey()
+	privKeyObject = secp256k1.GenPrivKey()
 	pubKeyObject = privKeyObject.PubKey().(secp256k1.PubKey)
 }
 
@@ -1030,7 +1029,7 @@ func GetLogLevel() zerolog.Level {
 		return zerolog.DebugLevel
 	case "info":
 		return zerolog.InfoLevel
-	case "warn", "warning":
+	case "warn":
 		return zerolog.WarnLevel
 	case "error":
 		return zerolog.ErrorLevel
