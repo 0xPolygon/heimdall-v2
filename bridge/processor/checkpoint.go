@@ -569,6 +569,21 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootchain(checkpointCont
 
 		if err := cp.contractCaller.SendCheckpoint(sideTxData, sigs, common.HexToAddress(rootChainAddress), rootChainInstance); err != nil {
 			cp.Logger.Info("Error submitting checkpoint to rootchain", "error", err)
+
+			stakeInstance, err := cp.contractCaller.GetStakeManagerInstance(chainParams.StakingManagerAddress)
+			if err != nil {
+				cp.Logger.Error("Error while fetching stake manager instance", "error", err)
+				return err
+			}
+
+			valset, err := stakeInstance.GetCurrentValidatorSet(nil)
+			if err != nil {
+				cp.Logger.Error("Error while fetching current validator set", "error", err)
+				return err
+			}
+
+			cp.Logger.Error("Current L1 Validator Set", "valset", valset)
+
 			return err
 		}
 	}
