@@ -101,7 +101,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	t.Parallel()
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNodeUrl)
-	viper.Set("log_level", "info")
+	viper.Set("helper.LogLevel", "info")
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()

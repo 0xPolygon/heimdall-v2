@@ -15,7 +15,7 @@ func TestHeimdallConfig(t *testing.T) {
 	// cli context
 	cometBFTNode := "tcp://localhost:26657"
 	viper.Set(CometBFTNodeFlag, cometBFTNode)
-	viper.Set("log_level", "info")
+	viper.Set("helper.LogLevel", "info")
 
 	InitTestHeimdallConfig("")
 

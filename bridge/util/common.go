@@ -98,7 +98,7 @@ func Logger() log.Logger {
 		defaultLevel := "info"
 		logsWriter := helper.GetLogsWriter(helper.GetConfig().LogsWriterFile)
 		logger = log.NewTMLogger(log.NewSyncWriter(logsWriter))
-		option, err := log.AllowLevel(viper.GetString("log_level"))
+		option, err := log.AllowLevel(viper.GetString(helper.LogLevel))
 		if err != nil {
 			// cosmos sdk is using different style of log format
 			// and levels don't map well, config.toml
@@ -114,7 +114,7 @@ func Logger() log.Logger {
 		logger = log.NewFilter(logger, option)
 
 		// set no-op logger if log level is not debug for machinery
-		if viper.GetString("log_level") != "debug" {
+		if viper.GetString(helper.LogLevel) != "debug" {
 			mLog.SetDebug(NoopLogger{})
 		}
 	})

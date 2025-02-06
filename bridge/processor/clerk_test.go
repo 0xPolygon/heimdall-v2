@@ -259,7 +259,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
-	viper.Set("log_level", "debug")
+	viper.Set("helper.LogLevel", "debug")
 	helper.InitTestHeimdallConfig("")
 
 	srvconf := serverconfig.DefaultConfig()
@@ -296,7 +296,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
-	viper.Set("log_level", "debug")
+	viper.Set("helper.LogLevel", "debug")
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
