@@ -78,9 +78,11 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
 
-	records := make([]types.EventRecord, len(res))
+	records := make([]types.EventRecord, 0, len(res))
 	for _, r := range res {
-		records = append(records, *r)
+		if r.Id >= request.FromId && r.RecordTime.Before(request.ToTime) {
+			records = append(records, *r)
+		}
 	}
 
 	return &types.RecordListWithTimeResponse{EventRecords: records}, nil
