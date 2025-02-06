@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -63,7 +62,6 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	fmt.Println("REQ: ", request)
 	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
 		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
@@ -77,11 +75,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	)
 
 	if err != nil {
-		panic("PANIK!!")
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
 
-	fmt.Println("RES: ", res)
 	records := make([]types.EventRecord, len(res))
 	for _, r := range res {
 		records = append(records, *r)
