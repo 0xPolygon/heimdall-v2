@@ -289,6 +289,8 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 			return nil
 		}
 
+		return nil
+
 		// create msg checkpoint ack message
 		msg := checkpointtypes.NewMsgCpAck(
 			helper.GetFromAddress(cp.cliCtx),
@@ -481,6 +483,8 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		cp.Logger.Error("Error while converting address to string during checkpoint creation", "error", err)
 		return err
 	}
+
+	return nil
 
 	// create and send checkpoint message
 	msg := checkpointtypes.NewMsgCheckpointBlock(
