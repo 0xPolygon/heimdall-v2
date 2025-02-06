@@ -89,7 +89,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: checkpoint.Msg_ServiceDesc.ServiceName,
+			Service:              checkpoint.Msg_ServiceDesc.ServiceName,
+			EnhanceCustomCommand: true,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "CheckpointNoAck",
@@ -98,6 +99,14 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
 						{ProtoField: "from"},
 					},
+				},
+				{
+					RpcMethod: "CheckpointAck",
+					Skip:      true,
+				},
+				{
+					RpcMethod: "Checkpoint",
+					Skip:      true,
 				},
 			},
 		},
