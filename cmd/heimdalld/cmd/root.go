@@ -1,6 +1,7 @@
 package heimdalld
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -39,6 +40,7 @@ type EncodingConfig struct {
 // main function.
 func NewRootCmd() *cobra.Command {
 	dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
+	fmt.Printf("dataDir: %s\n", dataDir)
 	db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, dataDir)
 	if err != nil {
 		panic(err)
