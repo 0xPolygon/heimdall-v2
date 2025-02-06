@@ -10,7 +10,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -130,7 +129,6 @@ func NewRootCmd() *cobra.Command {
 
 	// add keyring to autocli opts
 	autoCliOpts := tempApp.AutoCliOpts()
-	autoCliOpts.Keyring, _ = keyring.NewAutoCLIKeyring(initClientCtx.Keyring)
 	autoCliOpts.ClientCtx = initClientCtx
 
 	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {

@@ -4,7 +4,7 @@ go 1.23.2
 
 require (
 	cosmossdk.io/api v0.7.5
-	cosmossdk.io/client/v2 v2.0.0-beta.4.0.20240918122632-1879050ca719
+	cosmossdk.io/client/v2 v2.0.0-beta.6
 	cosmossdk.io/collections v0.4.0
 	cosmossdk.io/core v0.11.1
 	cosmossdk.io/errors v1.0.1
@@ -278,7 +278,7 @@ require (
 // HV2 related packages
 replace (
 	cosmossdk.io/api => github.com/0xPolygon/cosmos-sdk/api v0.7.5
-	cosmossdk.io/client/v2 => github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.1
+	cosmossdk.io/client/v2 => github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.6
 	cosmossdk.io/collections => github.com/0xPolygon/cosmos-sdk/collections v0.4.0
 	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.3-0.20241126102051-89dc71d02611
 	cosmossdk.io/errors => github.com/0xPolygon/cosmos-sdk/errors v1.0.0-beta.7.0.20241126102051-89dc71d02611
