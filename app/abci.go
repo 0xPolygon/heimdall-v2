@@ -2,21 +2,33 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
+	"github.com/0xPolygon/heimdall-v2/engine"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
+
+type HeimdallMetadata struct {
+	MarshaledLocalLastCommit  []byte `json:"marshaledLocalLastCommit"`
+	MarshaledExecutionPayload []byte `json:"marshaledExecutionPayload"`
+}
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
@@ -37,15 +49,87 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// prepare the proposal with the vote extensions and the validators set's votes
 		var txs [][]byte
-		bz, err := req.LocalLastCommit.Marshal()
+		marshaledLocalLastCommit, err := req.LocalLastCommit.Marshal()
 		if err != nil {
 			logger.Error("Error occurred while marshaling the LocalLastCommit in prepare proposal", "error", err)
 			return nil, err
 		}
-		txs = append(txs, bz)
+		// txs = append(txs, bz)
+
+		// check if there are less than 1 txs in the request
+		// if len(txs) < 1 {
+		// 	logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
+		// 	return nil, fmt.Errorf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress)
+		// }
+
+		// Engine API
+		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1)) // change this to a keeper
+		if err != nil {
+			return nil, err
+		}
+
+		state := engine.ForkChoiceState{
+			HeadHash:           latestBlock.Hash(),
+			SafeBlockHash:      latestBlock.Hash(),
+			FinalizedBlockHash: common.Hash{},
+		}
+
+		// The engine complains when the withdrawals are empty
+		withdrawals := []*engine.Withdrawal{ // need to undestand
+			{
+				Index:     "0x0",
+				Validator: "0x0",
+				Address:   common.Address{}.Hex(),
+				Amount:    "0x0",
+			},
+		}
+
+		addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
+		attrs := engine.PayloadAttributes{
+			Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
+			PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
+			SuggestedFeeRecipient: addr,
+			Withdrawals:           withdrawals,
+		}
+
+		choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(&state, &attrs)
+		if err != nil {
+			return nil, err
+		}
+
+		payloadId := choice.PayloadId
+		status := choice.PayloadStatus
+
+		if status.Status != "VALID" {
+			logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
+			return nil, errors.New(status.ValidationError)
+		}
+
+		payload, err := app.caller.BorEngineClient.GetPayloadV2(payloadId)
+		if err != nil {
+			return nil, err
+		}
+
+		// this is where we could filter/reorder transactions, or mark them for filtering so consensus could be checked
+
+		marshaledExecutionPayload, err := json.Marshal(payload.ExecutionPayload)
+		if err != nil {
+			return nil, err
+		}
+
+		metadata := HeimdallMetadata{
+			MarshaledLocalLastCommit:  marshaledLocalLastCommit,
+			MarshaledExecutionPayload: marshaledExecutionPayload,
+		}
+		marshaledMetadata, err := json.Marshal(metadata)
+		if err != nil {
+			return nil, err
+		}
+
+		txs = append(txs, marshaledMetadata)
 
 		// init totalTxBytes with the actual size of the marshaled vote info in bytes
-		totalTxBytes := len(bz)
+		totalTxBytes := len(marshaledLocalLastCommit)
 		for _, proposedTx := range req.Txs {
 
 			// check if the total tx bytes exceed the max tx bytes of the request
@@ -74,12 +158,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			txs = append(txs, proposedTx)
 		}
 
-		// check if there are less than 1 txs in the request
-		if len(txs) < 1 {
-			logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
-			return nil, fmt.Errorf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress)
-		}
-
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
@@ -96,9 +174,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		var metadata HeimdallMetadata
+		err := json.Unmarshal(req.Txs[0], &metadata)
+		if err != nil {
+			logger.Error("failed to decode metadata, cannot proceed", "error", err)
+			return nil, err
+		}
+
 		// extract the ExtendedCommitInfo from the txs (it is encoded at the beginning, index 0)
 		extCommitInfo := new(abci.ExtendedCommitInfo)
-		extendedCommitTx := req.Txs[0]
+		extendedCommitTx := metadata.MarshaledLocalLastCommit
 		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
 			logger.Error("Error occurred while decoding ExtendedCommitInfo", "height", req.Height, "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
@@ -162,6 +247,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
+		var metadata HeimdallMetadata
+		err := json.Unmarshal(req.Txs[0], &metadata)
+		if err != nil {
+			logger.Error("failed to decode metadata, cannot proceed", "error", err)
+			return nil, err
+		}
+
 		// prepare the side tx responses
 		sideTxRes := make([]sidetxs.SideTxResponse, 0)
 
@@ -169,7 +261,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 
 		// check whether ExtendedVoteInfo is encoded at the beginning
-		bz := req.Txs[0]
+		bz := metadata.MarshaledLocalLastCommit
 		if err := extCommitInfo.Unmarshal(bz); err != nil {
 			logger.Error("Error occurred while decoding ExtendedCommitInfo", "error", err)
 			// abnormal behavior since the block got >2/3 pre-votes, so the special tx should have been added
@@ -325,9 +417,69 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, fmt.Errorf("no txs found in the pre-blocker at height %d", req.Height)
 	}
 
-	bz := req.Txs[0]
+	var metadata HeimdallMetadata
+	err := json.Unmarshal(req.Txs[0], &metadata)
+	if err != nil {
+		logger.Error("failed to decode metadata, cannot proceed", "error", err)
+		return nil, err
+	}
+
+	bz := metadata.MarshaledLocalLastCommit
 	if err := extCommitInfo.Unmarshal(bz); err != nil {
 		logger.Error("Error occurred while unmarshalling ExtendedCommitInfo", "error", err)
+		return nil, err
+	}
+
+	// Engine API
+	var executionPayload engine.ExecutionPayload
+	err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
+	if err != nil {
+		logger.Error("failed to decode execution payload, cannot proceed", "error", err)
+		return nil, err
+	}
+
+	payload, err := app.retryUntilNewPayload(executionPayload)
+	if err != nil {
+		logger.Error("failed to validate execution payload on execution client, cannot proceed", "error", err)
+		return nil, err
+	}
+
+	if payload.Status != "VALID" {
+		logger.Error("execution payload is not valid, cannot proceed", "error", err)
+		return nil, err
+	}
+
+	state := engine.ForkChoiceState{
+		HeadHash:           common.HexToHash(payload.LatestValidHash),
+		SafeBlockHash:      common.HexToHash(payload.LatestValidHash),
+		FinalizedBlockHash: common.HexToHash(executionPayload.ParentHash), // latestHash from the Proposal stage
+	}
+
+	// The engine complains when the withdrawals are empty
+	withdrawals := []*engine.Withdrawal{
+		{
+			Index:     "0x0",
+			Validator: "0x0",
+			Address:   common.Address{}.Hex(),
+			Amount:    "0x0",
+		},
+	}
+
+	attrs := engine.PayloadAttributes{
+		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
+		PrevRandao:            common.Hash{},
+		SuggestedFeeRecipient: common.HexToAddress(executionPayload.FeeRecipient),
+		Withdrawals:           withdrawals,
+	}
+
+	var choice *engine.ForkchoiceUpdatedResponse
+	choice, err = app.retryUntilForkchoiceUpdated(&state, &attrs)
+	if err != nil {
+		infoLog := "fork choice failed, cannot proceed"
+		logger.Error(infoLog, err.Error())
+		if choice != nil && choice.PayloadStatus.Status != "VALID" {
+			infoLog = fmt.Sprintf("%s: %s", infoLog, choice.PayloadStatus.ValidationError)
+		}
 		return nil, err
 	}
 
@@ -434,4 +586,40 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	return app.ModuleManager.PreBlock(ctx)
+}
+
+func (app *HeimdallApp) retryUntilNewPayload(payload engine.ExecutionPayload) (response *engine.NewPayloadResponse, err error) {
+	forever := backoff.NewExponentialBackOff()
+	err = backoff.Retry(func() error {
+		response, err = app.caller.BorEngineClient.NewPayloadV2(payload)
+		if forever.NextBackOff() > 1*time.Minute {
+			forever.Reset()
+		}
+		if err != nil {
+			return err
+		}
+		return nil
+	}, forever)
+	if err != nil {
+		return nil, err // should not happen, retries forever
+	}
+	return response, nil
+}
+
+func (app *HeimdallApp) retryUntilForkchoiceUpdated(state *engine.ForkChoiceState, attrs *engine.PayloadAttributes) (response *engine.ForkchoiceUpdatedResponse, err error) {
+	forever := backoff.NewExponentialBackOff()
+	err = backoff.Retry(func() error {
+		response, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(state, attrs)
+		if forever.NextBackOff() > 1*time.Minute {
+			forever.Reset()
+		}
+		if err != nil {
+			return err
+		}
+		return nil
+	}, forever)
+	if err != nil {
+		return nil, err // should not happen, retries forever
+	}
+	return response, nil
 }

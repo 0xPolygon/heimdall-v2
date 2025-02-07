@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
 
+	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/file"
 	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 )
@@ -148,6 +149,8 @@ func init() {
 type CustomConfig struct {
 	EthRPCUrl      string `mapstructure:"eth_rpc_url"`       // RPC endpoint for main chain
 	BorRPCUrl      string `mapstructure:"bor_rpc_url"`       // RPC endpoint for bor chain
+	BorEngineUrl   string `mapstructure:"bor_engine_url"`    // Engine url from bor chain
+	BorEngineJWT   string `mapstructure:"bor_engine_jwt"`    // Engine JWT from bor chain
 	BorGRPCFlag    bool   `mapstructure:"bor_grpc_flag"`     // gRPC flag for bor chain
 	BorGRPCUrl     string `mapstructure:"bor_grpc_url"`      // gRPC endpoint for bor chain
 	CometBFTRPCUrl string `mapstructure:"comet_bft_rpc_url"` // cometbft node url
@@ -199,9 +202,10 @@ var (
 
 // borClient stores eth/rpc client for Polygon Pos Network
 var (
-	borClient     *ethclient.Client
-	borRPCClient  *rpc.Client
-	borGRPCClient *borgrpc.BorGRPCClient
+	borClient       *ethclient.Client
+	borRPCClient    *rpc.Client
+	borGRPCClient   *borgrpc.BorGRPCClient
+	borEngineClient *engine.EngineClient
 )
 
 // private key object
@@ -254,7 +258,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		return
 	}
 
-	if strings.Compare(conf.Custom.BorRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorGRPCUrl, "") != 0 {
+	if strings.Compare(conf.Custom.BorRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorGRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorEngineUrl, "") != 0 {
 		return
 	}
 
@@ -359,6 +363,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
+	if borEngineClient, err = engine.NewEngineClient(conf.Custom.BorEngineUrl, conf.Custom.BorEngineJWT); err != nil {
+		log.Fatal(err)
+	}
+
 	// load pv file, unmarshall and set to privKeyObject
 	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
 	if err != nil {
@@ -440,6 +448,11 @@ func GetBorClient() *ethclient.Client {
 // GetBorRPCClient returns bor RPC client
 func GetBorRPCClient() *rpc.Client {
 	return borRPCClient
+}
+
+// GetBorClient returns bor eth client
+func GetEngine() *engine.EngineClient {
+	return borEngineClient
 }
 
 // GetPrivKey returns priv key object
