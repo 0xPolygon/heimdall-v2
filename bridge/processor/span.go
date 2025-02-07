@@ -139,6 +139,7 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 			SeedAuthor: seedAuthor,
 		}
 
+		return
 		// return broadcast to heimdall
 		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
 		if err != nil {
