@@ -6,6 +6,7 @@ import (
 
 	"cosmossdk.io/core/address"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
@@ -111,6 +112,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 	cmd.Flags().String(FlagSpanId, "", "--span-id=<span-id>")
 	cmd.Flags().String(FlagBorChainId, "", "--bor-chain-id=<bor-chain-id>")
 	cmd.Flags().String(FlagStartBlock, "", "--start-block=<start-block-number>")
+	cmd.Flags().String(flags.FlagChainID, "", "--chain-id=<chain-id>")
 
 	if err := cmd.MarkFlagRequired(FlagBorChainId); err != nil {
 		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagBorChainId Error: %v", err)
