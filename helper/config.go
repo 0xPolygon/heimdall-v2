@@ -9,16 +9,15 @@ import (
 	"strings"
 	"time"
 
+	logger "cosmossdk.io/log"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
@@ -141,7 +140,7 @@ var DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
 var cdc = amino.NewCodec()
 
 func init() {
-	Logger = logger.NewTMLogger(logger.NewSyncWriter(os.Stdout))
+	Logger = logger.NewLogger(os.Stdout)
 }
 
 // CustomConfig represents heimdall config
@@ -307,10 +306,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	// perform check for json logging
 	if conf.Custom.LogsType == "json" {
-		Logger = logger.NewTMJSONLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
+		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.OutputJSONOption())
 	} else {
 		// default fallback
-		Logger = logger.NewTMLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
+		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile))
 	}
 
 	// perform checks for timeout
@@ -1016,31 +1015,4 @@ func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
 		panic("pub key is not of type secp256k1.PrivKey")
 	}
 	pubKeyObject = pubKey
-}
-
-// GetLogLevel returns the zerolog level based on the configured log level string
-func GetLogLevel() zerolog.Level {
-	logLevel := strings.ToLower(viper.GetString(LogLevel))
-
-	switch logLevel {
-	case "trace":
-		return zerolog.TraceLevel
-	case "debug":
-		return zerolog.DebugLevel
-	case "info":
-		return zerolog.InfoLevel
-	case "warn":
-		return zerolog.WarnLevel
-	case "error":
-		return zerolog.ErrorLevel
-	case "fatal":
-		return zerolog.FatalLevel
-	case "panic":
-		return zerolog.PanicLevel
-	case "disabled":
-		return zerolog.Disabled
-	default:
-		// Default to info level if invalid or not specified
-		return zerolog.InfoLevel
-	}
 }
