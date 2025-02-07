@@ -44,6 +44,18 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Get milestone proposer",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "times"}},
 				},
+				{
+					RpcMethod:      "GetLatestNoAckMilestone",
+					Use:            "get-latest-no-ack-milestone",
+					Short:          "Get latest no ack milestone",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
+				},
+				{
+					RpcMethod:      "GetNoAckMilestoneById",
+					Use:            "get-no-ack-milestone-by-id",
+					Short:          "Get no ack milestone by id",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}},
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
