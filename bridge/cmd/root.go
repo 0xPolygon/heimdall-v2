@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	cometbftLogger "github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
@@ -53,13 +53,13 @@ var rootCmd = &cobra.Command{
 }
 
 // BridgeCommands returns command for bridge service
-func BridgeCommands(v *viper.Viper, loggerInstance cometbftLogger.Logger, caller string) *cobra.Command {
+func BridgeCommands(v *viper.Viper, loggerInstance log.Logger, caller string) *cobra.Command {
 	DecorateWithBridgeRootFlags(rootCmd, v, loggerInstance, caller)
 	return rootCmd
 }
 
 // DecorateWithBridgeRootFlags is called when bridge flags needs to be added to command
-func DecorateWithBridgeRootFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance cometbftLogger.Logger, caller string) {
+func DecorateWithBridgeRootFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance log.Logger, caller string) {
 	cmd.PersistentFlags().StringP(helper.CometBFTNodeFlag, "n", helper.DefaultCometBFTNode, "Node to connect to")
 
 	if err := v.BindPFlag(helper.CometBFTNodeFlag, cmd.PersistentFlags().Lookup(helper.CometBFTNodeFlag)); err != nil {

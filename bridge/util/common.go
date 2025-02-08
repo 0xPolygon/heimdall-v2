@@ -12,14 +12,15 @@ import (
 	"sync"
 	"time"
 
+	"cosmossdk.io/log"
 	mLog "github.com/RichardKnop/machinery/v1/log"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
@@ -95,23 +96,8 @@ var (
 // Logger returns logger singleton instance
 func Logger() log.Logger {
 	loggerOnce.Do(func() {
-		defaultLevel := "info"
 		logsWriter := helper.GetLogsWriter(helper.GetConfig().LogsWriterFile)
-		logger = log.NewTMLogger(log.NewSyncWriter(logsWriter))
-		option, err := log.AllowLevel(viper.GetString(helper.LogLevel))
-		if err != nil {
-			// cosmos sdk is using different style of log format
-			// and levels don't map well, config.toml
-			// see: https://github.com/cosmos/cosmos-sdk/pull/8072
-			logger.Error("Unable to parse logging level", "Error", err)
-			logger.Info("Using default log level")
-			option, err = log.AllowLevel(defaultLevel)
-			if err != nil {
-				logger.Error("failed to allow default log level", "Level", defaultLevel, "Error", err)
-			}
-		}
-
-		logger = log.NewFilter(logger, option)
+		logger = log.NewLogger(logsWriter, log.LevelOption(zerolog.InfoLevel))
 
 		// set no-op logger if log level is not debug for machinery
 		if viper.GetString(helper.LogLevel) != "debug" {
