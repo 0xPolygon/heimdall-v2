@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 
+	"cosmossdk.io/log"
 	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -17,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -46,7 +48,7 @@ func NewRootCmd() *cobra.Command {
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 
 	// TODO HV2: https://polygon.atlassian.net/browse/POS-2762
-	tempApp := app.NewHeimdallApp(logger, db, nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stdout, log.LevelOption(zerolog.InfoLevel)), db, nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
