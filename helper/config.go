@@ -18,6 +18,7 @@ import (
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
@@ -140,7 +141,7 @@ var DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
 var cdc = amino.NewCodec()
 
 func init() {
-	Logger = logger.NewLogger(os.Stdout)
+	Logger = logger.NewLogger(os.Stdout, logger.LevelOption(zerolog.InfoLevel))
 }
 
 // CustomConfig represents heimdall config

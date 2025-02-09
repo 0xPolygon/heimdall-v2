@@ -9,19 +9,15 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"sync"
 	"time"
 
 	"cosmossdk.io/log"
-	mLog "github.com/RichardKnop/machinery/v1/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
-	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -88,24 +84,9 @@ const (
 	BridgeDBFlag = "bridge-db"
 )
 
-var (
-	logger     log.Logger
-	loggerOnce sync.Once
-)
-
 // Logger returns logger singleton instance
 func Logger() log.Logger {
-	loggerOnce.Do(func() {
-		logsWriter := helper.GetLogsWriter(helper.GetConfig().LogsWriterFile)
-		logger = log.NewLogger(logsWriter, log.LevelOption(zerolog.InfoLevel))
-
-		// set no-op logger if log level is not debug for machinery
-		if viper.GetString(helper.LogLevel) != "debug" {
-			mLog.SetDebug(NoopLogger{})
-		}
-	})
-
-	return logger
+	return helper.Logger.With("module", "bridge")
 }
 
 // IsProposer checks if we are proposer
