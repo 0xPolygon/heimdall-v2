@@ -237,8 +237,9 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				return err
 			}
 
+			time := cmttime.Now()
 			for i := 0; i < totalValidators; i++ {
-				if err = genutil.ExportGenesisFileWithTime(genFiles[i], chainID, nil, appStateJSON, cmttime.Now()); err != nil {
+				if err = genutil.ExportGenesisFileWithTime(genFiles[i], chainID, nil, appStateJSON, time); err != nil {
 					return err
 				}
 			}
