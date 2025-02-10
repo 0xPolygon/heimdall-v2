@@ -55,17 +55,18 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: stake.Msg_ServiceDesc.ServiceName,
+			Service:              stake.Msg_ServiceDesc.ServiceName,
+			EnhanceCustomCommand: true,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
 					RpcMethod: "StakeUpdate",
-					Use:       "stake-update [valAddress] [valId] [txHash] [amount] [logIndex] [blockNumber] [nonce]",
+					Use:       "stake-update [valAddress] [valId] [amount] [txHash] [logIndex] [blockNumber] [nonce]",
 					Short:     "Update stake for a validator",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "val_address"},
-						{ProtoField: "val_dd"},
+						{ProtoField: "from"},
+						{ProtoField: "val_id"},
+						{ProtoField: "new_amount"},
 						{ProtoField: "tx_hash"},
-						{ProtoField: "amount"},
 						{ProtoField: "log_index"},
 						{ProtoField: "block_number"},
 						{ProtoField: "nonce"},
@@ -73,13 +74,13 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "ValidatorExit",
-					Use:       "validator-exit [valAddress] [valId] [txHash] [deactivationEpoch] [logIndex] [blockNumber] [nonce]",
+					Use:       "validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]",
 					Short:     "Exit validator",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "val_address"},
+						{ProtoField: "from"},
 						{ProtoField: "val_id"},
-						{ProtoField: "tx_hash"},
 						{ProtoField: "deactivation_epoch"},
+						{ProtoField: "tx_hash"},
 						{ProtoField: "log_index"},
 						{ProtoField: "block_number"},
 						{ProtoField: "nonce"},

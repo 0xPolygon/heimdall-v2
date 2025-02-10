@@ -252,8 +252,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	var err error
 
 	if strings.Compare(homeDir, "") == 0 {
-		Logger.Error("home directory is mentioned")
-		return
+		panic("home directory is not specified")
 	}
 
 	if strings.Compare(conf.Custom.BorRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorGRPCUrl, "") != 0 {
