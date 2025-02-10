@@ -85,10 +85,15 @@ func MakeTxFactory(clictx client.Context, address string, logger log.Logger) (tx
 		return tx.Factory{}, err
 	}
 
+	chainParam, err := util.GetChainmanagerParams(clictx.Codec)
+	if err != nil {
+		return tx.Factory{}, err
+	}
+
 	txf := tx.Factory{}.
 		WithTxConfig(clictx.TxConfig).
 		WithAccountRetriever(clictx.AccountRetriever).
-		WithChainID(clictx.ChainID).
+		WithChainID(chainParam.ChainParams.HeimdallChainId).
 		WithSignMode(signMode).
 		WithAccountNumber(accNum).
 		WithSequence(accSeq).
