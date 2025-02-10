@@ -126,12 +126,18 @@ func NewRootCmd() *cobra.Command {
 			}
 			serverCtx.Logger = logger.With(log.ModuleKey, "server")
 
-			// Set log_level value from serverCtx.Viper to viper
-			viper.Set(helper.LogLevel, serverCtx.Viper.GetString(helper.LogLevel))
+			// Get log_level from from serverCtx.Viper
+			logLevelStr := serverCtx.Viper.GetString(helper.LogLevel)
+
+			// Set log_level value to viper
+			viper.Set(helper.LogLevel, logLevelStr)
 
 			// Overwrite default heimdall logger
-			logLvl, _ := zerolog.ParseLevel(serverCtx.Viper.GetString(helper.LogLevel))
-			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLvl))
+			logLevel, err := zerolog.ParseLevel(logLevelStr)
+			if err != nil {
+				return err
+			}
+			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel))
 
 			// Set server context
 			return server.SetCmdServerContext(cmd, serverCtx)
