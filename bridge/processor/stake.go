@@ -121,6 +121,22 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		fmt.Println("PSP throwing error on purpose")
+		fmt.Println("PSP - event", eventName)
+		fmt.Println("PSP - validatorID", event.ValidatorId)
+		fmt.Println("PSP - activationEpoch", event.ActivationEpoch)
+		fmt.Println("PSP - nonce", event.Nonce)
+		fmt.Println("PSP - amount", event.Amount)
+		fmt.Println("PSP - totalAmount", event.Total)
+		fmt.Println("PSP - SignerPubkey", string(signerPubKey[:]))
+		fmt.Println("PSP - txHash", vLog.TxHash.String())
+		fmt.Println("PSP - logIndex", uint64(vLog.Index))
+		fmt.Println("PSP - blockNumber", vLog.BlockNumber)
+
+		if true {
+			return fmt.Errorf("PSP error on purpose")
+		}
+
 		address, err := helper.GetAddressString()
 		if err != nil {
 			return fmt.Errorf("error converting address to string: %w", err)
@@ -210,6 +226,21 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		fmt.Println("PSP throwing error on purpose")
+		fmt.Println("PSP - event", eventName)
+		fmt.Println("PSP - validator", event.User)
+		fmt.Println("PSP - validatorID", event.ValidatorId)
+		fmt.Println("PSP - nonce", event.Nonce)
+		fmt.Println("PSP - deactivatonEpoch", event.DeactivationEpoch)
+		fmt.Println("PSP - amount", event.Amount)
+		fmt.Println("PSP - txHash", vLog.TxHash.String())
+		fmt.Println("PSP - logIndex", uint64(vLog.Index))
+		fmt.Println("PSP - blockNumber", vLog.BlockNumber)
+
+		if true {
+			return fmt.Errorf("PSP error on purpose")
+		}
+
 		address, err := helper.GetAddressString()
 		if err != nil {
 			return fmt.Errorf("error converting address to string: %w", err)
@@ -293,6 +324,19 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 			"logIndex", uint64(vLog.Index),
 			"blockNumber", vLog.BlockNumber,
 		)
+
+		fmt.Println("PSP throwing error on purpose")
+		fmt.Println("PSP - event", eventName)
+		fmt.Println("PSP - validatorID", event.ValidatorId)
+		fmt.Println("PSP - nonce", event.Nonce)
+		fmt.Println("PSP - newAmount", event.NewAmount)
+		fmt.Println("PSP - txHash", vLog.TxHash.String())
+		fmt.Println("PSP - logIndex", uint64(vLog.Index))
+		fmt.Println("PSP - blockNumber", vLog.BlockNumber)
+
+		if true {
+			return fmt.Errorf("PSP error on purpose")
+		}
 
 		address, err := helper.GetAddressString()
 		if err != nil {
@@ -393,6 +437,21 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			"logIndex", uint64(vLog.Index),
 			"blockNumber", vLog.BlockNumber,
 		)
+
+		fmt.Println("PSP throwing error on purpose")
+		fmt.Println("PSP - event", eventName)
+		fmt.Println("PSP - validatorID", event.ValidatorId)
+		fmt.Println("PSP - nonce", event.Nonce)
+		fmt.Println("PSP - NewSignerPubkey", string(newSignerPubKey[:]))
+		fmt.Println("PSP - oldSigner", event.OldSigner.Hex())
+		fmt.Println("PSP - newSigner", event.NewSigner.Hex())
+		fmt.Println("PSP - txHash", vLog.TxHash.String())
+		fmt.Println("PSP - logIndex", uint64(vLog.Index))
+		fmt.Println("PSP - blockNumber", vLog.BlockNumber)
+
+		if true {
+			return fmt.Errorf("PSP error on purpose")
+		}
 
 		address, err := helper.GetAddressString()
 		if err != nil {
