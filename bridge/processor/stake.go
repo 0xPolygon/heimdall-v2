@@ -14,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -89,7 +90,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 				"nonce", event.Nonce,
 				"amount", event.Amount,
 				"totalAmount", event.Total,
-				"SignerPubkey", string(signerPubKey[:]),
+				"SignerPubkey", common.Bytes2Hex(signerPubKey),
 				"txHash", vLog.TxHash.String(),
 				"logIndex", uint64(vLog.Index),
 				"blockNumber", vLog.BlockNumber,
@@ -115,7 +116,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			"nonce", event.Nonce,
 			"amount", event.Amount,
 			"totalAmount", event.Total,
-			"SignerPubkey", string(signerPubKey[:]),
+			"SignerPubkey", common.Bytes2Hex(signerPubKey),
 			"txHash", vLog.TxHash.String(),
 			"logIndex", uint64(vLog.Index),
 			"blockNumber", vLog.BlockNumber,
@@ -128,7 +129,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		fmt.Println("PSP - nonce", event.Nonce)
 		fmt.Println("PSP - amount", event.Amount)
 		fmt.Println("PSP - totalAmount", event.Total)
-		fmt.Println("PSP - SignerPubkey", string(signerPubKey[:]))
+		fmt.Println("PSP - SignerPubkey", common.Bytes2Hex(signerPubKey))
 		fmt.Println("PSP - txHash", vLog.TxHash.String())
 		fmt.Println("PSP - logIndex", uint64(vLog.Index))
 		fmt.Println("PSP - blockNumber", vLog.BlockNumber)
