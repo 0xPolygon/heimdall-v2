@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -39,7 +40,7 @@ func NewRootCmd() *cobra.Command {
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 
 	// TODO HV2: https://polygon.atlassian.net/browse/POS-2762
-	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	tempApp := app.NewHeimdallApp(logger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
@@ -108,7 +109,33 @@ func NewRootCmd() *cobra.Command {
 				helper.InitHeimdallConfig("")
 			}
 
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+			serverCtx, err := server.InterceptConfigsAndCreateContext(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+			if err != nil {
+				return err
+			}
+
+			// Overwrite default server logger
+			logger, err := server.CreateSDKLogger(serverCtx, cmd.OutOrStdout())
+			if err != nil {
+				return err
+			}
+			serverCtx.Logger = logger.With(log.ModuleKey, "server")
+
+			// Get log_level from from serverCtx.Viper
+			logLevelStr := serverCtx.Viper.GetString(helper.LogLevel)
+
+			// Set log_level value to viper
+			viper.Set(helper.LogLevel, logLevelStr)
+
+			// Overwrite default heimdall logger
+			logLevel, err := zerolog.ParseLevel(logLevelStr)
+			if err != nil {
+				return err
+			}
+			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel))
+
+			// Set server context
+			return server.SetCmdServerContext(cmd, serverCtx)
 		},
 		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 			// set the default command outputs

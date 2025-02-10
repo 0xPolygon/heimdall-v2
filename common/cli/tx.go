@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"cosmossdk.io/log"
 	abci "github.com/cometbft/cometbft/abci/types"
-	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -17,7 +17,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger logger.Logger) error {
+func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger log.Logger) error {
 	// create tx factory
 	txf, err := MakeTxFactory(clientCtx, sender, logger)
 	if err != nil {
@@ -63,7 +63,7 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	return nil
 }
 
-func MakeTxFactory(clictx client.Context, address string, logger logger.Logger) (tx.Factory, error) {
+func MakeTxFactory(clictx client.Context, address string, logger log.Logger) (tx.Factory, error) {
 	account, err := util.GetAccount(clictx, address)
 	if err != nil {
 		logger.Error("Error fetching account", "address", address, "err", err)

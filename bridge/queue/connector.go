@@ -1,9 +1,9 @@
 package queue
 
 import (
+	"cosmossdk.io/log"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/streadway/amqp"
 )
 

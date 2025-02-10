@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
-	logger "github.com/cometbft/cometbft/libs/log"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
@@ -24,7 +22,7 @@ import (
 
 // VerifyMigration verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
 // and verifying balances, validators, bor spans, clerk events, and checkpoints
-func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger) error {
+func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
 	logger.Info("Verifying migration")
 
 	hv1Genesis, err := utils.LoadJSONFromFile(hv1GenesisPath)
@@ -37,7 +35,7 @@ func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger
 	appOptions := make(simtestutil.AppOptionsMap)
 	appOptions[flags.FlagHome] = heimdallApp.DefaultNodeHome
 
-	app := heimdallApp.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, appOptions)
+	app := heimdallApp.NewHeimdallApp(logger, db, nil, true, appOptions)
 
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 

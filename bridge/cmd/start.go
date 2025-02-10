@@ -282,13 +282,6 @@ func GetStartCmd() *cobra.Command {
 		},
 	}
 
-	// log level
-	startCmd.Flags().String(helper.LogLevel, "info", "Log level for bridge")
-
-	if err := viper.BindPFlag(helper.LogLevel, startCmd.Flags().Lookup(helper.LogLevel)); err != nil {
-		logger.Error("GetStartCmd | BindPFlag | logLevel", "Error", err)
-	}
-
 	startCmd.Flags().Bool("all", false, "Start all bridge services")
 
 	if err := viper.BindPFlag("all", startCmd.Flags().Lookup("all")); err != nil {
