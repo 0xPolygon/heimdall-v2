@@ -5,7 +5,8 @@ import (
 	"path"
 
 	"cosmossdk.io/log"
-
+	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cometbft/cometbft/libs/cli"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -22,9 +23,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/0xPolygon/heimdall-v2/app"
-	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 var logger = helper.Logger.With("module", "cmd/heimdalld")
