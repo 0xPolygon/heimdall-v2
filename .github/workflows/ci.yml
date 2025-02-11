@@ -65,13 +65,21 @@ jobs:
     env:
       GIT_TERMINAL_PROMPT: 1
       GOPRIVATE: github.com/0xPolygon/heimdall-v2
-      GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout heimdall-v2
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: heimdall-v2
+
+      - name: Checkout matic-cli
+        uses: actions/checkout@v4
+        with:
+          repository: maticnetwork/matic-cli
+          ref: raneet10/heimdallv2-test
+          path: matic-cli
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
@@ -82,7 +90,7 @@ jobs:
           sudo ln -sf /usr/bin/python2 /usr/bin/python
 
       - name: Configure git
-        run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/.insteadOf https://github.com/
+        run: git config --global url.https://$GH_TOKEN@github.com/.insteadOf https://github.com/
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -100,14 +108,6 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
-
-      - name: Checkout matic-cli
-        uses: actions/checkout@v3
-        with:
-          repository: maticnetwork/matic-cli
-          ref: raneet10/heimdallv2-test
-          path: matic-cli
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Install Node 18.19.0
         uses: actions/setup-node@v3
