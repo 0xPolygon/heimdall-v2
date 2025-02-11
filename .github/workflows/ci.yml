@@ -65,21 +65,21 @@ jobs:
     env:
       GIT_TERMINAL_PROMPT: 1
       GOPRIVATE: github.com/0xPolygon/heimdall-v2
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
 
     steps:
       - name: Checkout heimdall-v2
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           path: heimdall-v2
 
       - name: Checkout matic-cli
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           repository: maticnetwork/matic-cli
           ref: raneet10/heimdallv2-test
           path: matic-cli
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
@@ -90,7 +90,7 @@ jobs:
           sudo ln -sf /usr/bin/python2 /usr/bin/python
 
       - name: Configure git
-        run: git config --global url.https://$GH_TOKEN@github.com/.insteadOf https://github.com/
+        run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/.insteadOf https://github.com/
 
       - name: Install Go
         uses: actions/setup-go@v5
