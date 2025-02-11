@@ -13,7 +13,11 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
-const maxRecordListLimitPerPage = 1000
+const (
+	defaultPageLimit          = 1
+	defaultRecordListLimit    = 50
+	maxRecordListLimitPerPage = 1000
+)
 
 var _ types.QueryServer = queryServer{}
 
@@ -44,6 +48,14 @@ func (q queryServer) GetRecordById(ctx context.Context, request *types.RecordReq
 func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordListRequest) (*types.RecordListResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if request.Page == 0 {
+		request.Page = defaultPageLimit
+	}
+
+	if request.Limit == 0 {
+		request.Limit = defaultRecordListLimit
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
