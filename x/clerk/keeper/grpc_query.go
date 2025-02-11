@@ -85,7 +85,6 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 			return q.k.GetEventRecord(ctx, id)
 		},
 	)
-
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}
