@@ -79,7 +79,7 @@ jobs:
           repository: maticnetwork/matic-cli
           ref: raneet10/heimdallv2-test
           path: matic-cli
-          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
