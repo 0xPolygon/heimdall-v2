@@ -33,7 +33,6 @@ jobs:
       - name: "Build binaries"
         run: make heimdalld
 
-
   test:
     name: test
     runs-on: ubuntu-latest
@@ -52,3 +51,115 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
           file: ./cover.out
+
+  e2e-tests:
+    if: (github.event.action != 'closed' || github.event.pull_request.merged == true)
+    strategy:
+      matrix:
+        os: [ubuntu-20.04] # list of os: https://github.com/actions/virtual-environments
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout heimdall-v2
+        uses: actions/checkout@v3
+        with:
+          path: heimdall-v2
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.2
+
+      - name: Checkout matic-cli
+        uses: actions/checkout@v3
+        with:
+          repository: maticnetwork/matic-cli
+          ref: raneet10/heimdallv2-test
+          path: matic-cli
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies on Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential python2 jq curl
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+          sudo ln -sf /usr/bin/python2 /usr/bin/python
+
+      - name: Install solc
+        run: |
+          # Install solc-select via pip3 and use it to install & select 0.5.11
+          pip3 install solc-select
+          solc-select use 0.5.17 --always-install
+          solc --version
+
+      - name: Install Node 18.19.0
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18.19.0"
+          cache: "npm"
+          cache-dependency-path: |
+            matic-cli/package-lock.json
+            matic-cli/devnet/code/contracts/package-lock.json
+            matic-cli/devnet/code/genesis-contracts/package-lock.json
+            matic-cli/devnet/code/genesis-contracts/matic-contracts/package-lock.json
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Check Foundry and Anvil version
+        run: |
+          forge --version
+          anvil --version
+
+      - name: Bootstrap devnet
+        run: |
+          cd matic-cli
+          npm install --prefer-offline --no-audit --progress=false
+          mkdir devnet
+          cd devnet
+          ../bin/matic-cli.js setup devnet -c ../../heimdall-v2/.github/matic-cli-config.yml
+
+      - name: Launch devnet
+        run: |
+          cd matic-cli/devnet
+          bash ../docker_devnet.sh
+          cd -
+          timeout 2m bash heimdall-v2/integration-tests/bor_health.sh
+
+      - name: Run smoke tests
+        run: |
+          echo "Funding ganache accounts..."
+          timeout 10m bash heimdall-v2/integration-tests/fund_ganache_accounts.sh
+          echo "Deposit 100 matic for each account to bor network"
+          cd matic-cli/devnet/code/contracts
+          npm run truffle exec scripts/deposit.js -- --network development $(jq -r .root.tokens.MaticToken contractAddresses.json) 100000000000000000000
+          cd -
+          timeout 60m bash heimdall-v2/integration-tests/smoke_test.sh
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: logs_${{ github.run_id }}
+          path: |
+            matic-cli/devnet/logs
+
+      - name: Package code and chain data
+        if: always()
+        run: |
+          cd matic-cli/devnet
+          docker compose down --remove-orphans
+          cd -
+          mkdir -p ${{ github.run_id }}/matic-cli
+          sudo mv heimdall-v2 ${{ github.run_id }}
+          sudo mv matic-cli/devnet ${{ github.run_id }}/matic-cli
+          sudo tar czf code.tar.gz ${{ github.run_id }}
+
+      - name: Upload code and chain data
+        if: always()
+        uses: actions/upload-artifact@v4.4.0
+        with:
+          name: code_${{ github.run_id }}
+          path: code.tar.gz

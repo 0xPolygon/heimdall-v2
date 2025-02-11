@@ -33,6 +33,11 @@ BUILD_FLAGS := -ldflags '$(ldflags)'
 clean:
 	rm -rf build
 
+build: clean
+	mkdir -p build
+	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
+	@echo "====================================================\n==================Build Successful==================\n===================================================="
+
 heimdalld: clean
 	mkdir -p build
 	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
@@ -157,6 +162,7 @@ help:
 	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
 	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
 	@echo "  clean               	- Delete build folder."
+	@echo "  build               	- Compiles the Heimdall binaries."
 	@echo "  heimdalld              - Compiles the Heimdall binaries."
 	@echo "  test               	- Run the tests."
 	@echo "  mock                	- Generate mocks."
