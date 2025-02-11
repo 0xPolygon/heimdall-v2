@@ -22,25 +22,25 @@ genesisContractsBranch: master
 
 # Heimdall
 heimdallChainId: heimdall-15005
-heimdallDockerBuildContext: '../../heimdall-v2'
+heimdallDockerBuildContext: "../../heimdall-v2"
 
 # Bor
 borChainId: 15005
 
 sprintSize:
-  - '64'
+  - "64"
 blockNumber:
-  - '0'
+  - "0"
 blockTime:
-  - '2'
+  - "2"
 sprintSizeBlockNumber:
-  - '0'
+  - "0"
 
 numOfBorValidators: 3
 numOfBorSentries: 0
 numOfBorArchiveNodes: 0
 
-borDockerBuildContext: 'https://github.com/maticnetwork/bor.git#develop'
+borDockerBuildContext: "https://github.com/maticnetwork/bor.git#develop"
 devnetBorFlags: config,config,config
 
 # Erigon
@@ -49,4 +49,4 @@ numOfErigonSentries: 0
 numOfErigonArchiveNodes: 0
 
 # Anvil
-mnemonic: 'clock radar mass judge dismiss just intact mind resemble fringe diary casino'
+mnemonic: "clock radar mass judge dismiss just intact mind resemble fringe diary casino"

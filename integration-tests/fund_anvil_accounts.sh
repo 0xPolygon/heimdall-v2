@@ -1,10 +1,8 @@
 #!/bin/bash
 
-# TODO-HV2: test this script once app is ready, and integrate into CI
-
 host='localhost'
 
-echo "Transferring 1 ETH from ganache account[0] to all others..."
+echo "Transferring 1 ETH from anvil account[0] to all others..."
 
 signersFile="matic-cli/devnet/devnet/signer-dump.json"
 signersDump=$(jq . $signersFile)

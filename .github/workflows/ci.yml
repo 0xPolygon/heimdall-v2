@@ -53,29 +53,25 @@ jobs:
           file: ./cover.out
 
   e2e-tests:
+    name: e2e-tests
+
     if: (github.event.action != 'closed' || github.event.pull_request.merged == true)
     strategy:
       matrix:
-        os: [ubuntu-20.04] # list of os: https://github.com/actions/virtual-environments
+        os: [ubuntu-20.04]
+
     runs-on: ${{ matrix.os }}
+
+    env:
+      GIT_TERMINAL_PROMPT: 1
+      GOPRIVATE: github.com/0xPolygon/heimdall-v2
+      GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
     steps:
       - name: Checkout heimdall-v2
         uses: actions/checkout@v3
         with:
           path: heimdall-v2
-
-      - name: Install Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 1.23.2
-
-      - name: Checkout matic-cli
-        uses: actions/checkout@v3
-        with:
-          repository: maticnetwork/matic-cli
-          ref: raneet10/heimdallv2-test
-          path: matic-cli
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies on Linux
         if: runner.os == 'Linux'
@@ -84,6 +80,14 @@ jobs:
           sudo apt install -y build-essential python2 jq curl
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
           sudo ln -sf /usr/bin/python2 /usr/bin/python
+
+      - name: Configure git
+        run: git config --global url.https://$GH_ACCESS_TOKEN@github.com/.insteadOf https://github.com/
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.23.2
 
       - name: Install solc
         run: |
@@ -108,10 +112,13 @@ jobs:
         with:
           version: stable
 
-      - name: Check Foundry and Anvil version
-        run: |
-          forge --version
-          anvil --version
+      - name: Checkout matic-cli
+        uses: actions/checkout@v3
+        with:
+          repository: maticnetwork/matic-cli
+          ref: raneet10/heimdallv2-test
+          path: matic-cli
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Bootstrap devnet
         run: |
@@ -130,11 +137,15 @@ jobs:
 
       - name: Run smoke tests
         run: |
-          echo "Funding ganache accounts..."
-          timeout 10m bash heimdall-v2/integration-tests/fund_ganache_accounts.sh
+          echo "Funding anvil accounts..."
+          timeout 10m bash heimdall-v2/integration-tests/fund_anvil_accounts.sh
           echo "Deposit 100 matic for each account to bor network"
-          cd matic-cli/devnet/code/contracts
-          npm run truffle exec scripts/deposit.js -- --network development $(jq -r .root.tokens.MaticToken contractAddresses.json) 100000000000000000000
+          cd matic-cli/devnet/code/pos-contracts
+          CONTRACT_ADDRESS=$(jq -r .root.tokens.MaticToken contractAddresses.json)
+          SCRIPT_ADDRESS=$(jq -r '.[0].address' signer-dump.json)
+          SCRIPT_PRIVATE_KEY=$(jq -r '.[0].priv_key' signer-dump.json)
+          cd ../code/pos-contracts
+          forge script scripts/matic-cli-scripts/Deposit.s.sol:MaticDeposit --rpc-url http://localhost:9545 --private-key $SCRIPT_PRIVATE_KEY --broadcast --sig "run(address,address,uint256)" $SCRIPT_ADDRESS $CONTRACT_ADDRESS 100000000000000000000
           cd -
           timeout 60m bash heimdall-v2/integration-tests/smoke_test.sh
 
