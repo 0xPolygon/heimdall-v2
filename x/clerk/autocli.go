@@ -33,13 +33,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "GetRecordListWithTime",
-					Use:       "record-list-with-time [from-time] [to-time] [page] [limit]",
+					Use:       "record-list-with-time [from-id] [to-time]",
 					Short:     "Query record list by time range, page and limit.",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "from_time"},
+						{ProtoField: "from_id"},
 						{ProtoField: "to_time"},
-						{ProtoField: "page"},
-						{ProtoField: "limit"},
 					},
 				},
 				{
