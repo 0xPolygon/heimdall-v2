@@ -207,7 +207,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("the provided transaction hash is empty, and the field is required")
 			}
 
-			pubKeyStr := viper.GetString(FlagSignerPubKey)
+			pubKeyStr := viper.GetString(FlagNewSignerPubKey)
 			if pubKeyStr == "" {
 				return fmt.Errorf("the provided PubKey is empty, and the field is required")
 			}
@@ -250,7 +250,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 	}
 
 	if err := cmd.MarkFlagRequired(FlagNewSignerPubKey); err != nil {
-		logger.Error("SendValidatorUpdateTx | MarkFlagRequired | FlagNewSignerPubkey", "Error", err)
+		logger.Error("SendValidatorUpdateTx | MarkFlagRequired | FlagNewSignerPubKey", "Error", err)
 	}
 
 	if err := cmd.MarkFlagRequired(FlagLogIndex); err != nil {

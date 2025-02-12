@@ -63,7 +63,7 @@ func (rl *RootChainListener) handleStakedLog(vLog types.Log, selectedEvent *abi.
 		rl.Logger.Error("Error while parsing event", "name", selectedEvent.Name, "error", err)
 	}
 
-	if !util.IsPubKeyFirstByteValid(pubKey[0:1]) {
+	if !helper.IsPubKeyFirstByteValid(pubKey[0:1]) {
 		rl.Logger.Error("public key first byte mismatch", "expected", "0x04", "received", pubKey[0:1])
 	}
 
@@ -107,7 +107,7 @@ func (rl *RootChainListener) handleSignerChangeLog(vLog types.Log, selectedEvent
 		rl.Logger.Error("Error while parsing event", "name", selectedEvent.Name, "error", err)
 	}
 
-	if bytes.Equal(event.SignerPubkey, pubKey[1:]) && util.IsPubKeyFirstByteValid(pubKey[0:1]) {
+	if bytes.Equal(event.SignerPubkey, pubKey[1:]) && helper.IsPubKeyFirstByteValid(pubKey[0:1]) {
 		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, 0, event)
 	} else if isCurrentValidator, delay := util.CalculateTaskDelay(event, rl.cliCtx.Codec); isCurrentValidator {
 		rl.SendTaskWithDelay("sendSignerChangeToHeimdall", selectedEvent.Name, logBytes, delay, event)
