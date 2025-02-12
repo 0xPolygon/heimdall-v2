@@ -75,9 +75,16 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 			}
 
 			pubKeyBytes := common.FromHex(pubKeyStr)
+
+			// Check if the length is 64 (missing prefix) and prepend `04`
+			if len(pubKeyBytes) == 64 {
+				pubKeyBytes = append([]byte{0x04}, pubKeyBytes...)
+			}
+
 			if len(pubKeyBytes) != 65 {
 				return fmt.Errorf("the provided PubKey length is invalid")
 			}
+
 			pubKey := secp256k1.PubKey{
 				Key: pubKeyBytes,
 			}
@@ -213,9 +220,16 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 			}
 
 			pubKeyBytes := common.FromHex(pubKeyStr)
+
+			// Check if the length is 64 (missing prefix) and prepend `04`
+			if len(pubKeyBytes) == 64 {
+				pubKeyBytes = append([]byte{0x04}, pubKeyBytes...)
+			}
+
 			if len(pubKeyBytes) != 65 {
 				return fmt.Errorf("the provided PubKey length is invalid")
 			}
+
 			pubKey := secp256k1.PubKey{
 				Key: pubKeyBytes,
 			}
