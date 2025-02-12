@@ -81,10 +81,14 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 			return fmt.Errorf("received empty vote extension signature at height %d from validator %s", reqHeight, valAddrStr)
 		}
 
-		consolidatedSideTxResponse := new(sidetxs.ConsolidatedSideTxResponse)
-		if err = consolidatedSideTxResponse.Unmarshal(vote.VoteExtension); err != nil {
+		voteExtension := new(sidetxs.VoteExtension)
+		if err = voteExtension.Unmarshal(vote.VoteExtension); err != nil {
 			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
+
+		// TODO: Add some basic check for the voteExtension.MilestoneProposition
+
+		consolidatedSideTxResponse := voteExtension.ConsolidatedSideTxResponse
 
 		if consolidatedSideTxResponse.Height != reqHeight-1 {
 			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, consolidatedSideTxResponse.Height)
