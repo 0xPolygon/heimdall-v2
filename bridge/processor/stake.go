@@ -348,7 +348,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			newSignerPubKey = util.AppendPrefix(newSignerPubKey)
 		}
 
-		if !util.IsPubKeyFirstByteValid(newSignerPubKey) {
+		if !helper.IsPubKeyFirstByteValid(newSignerPubKey) {
 			sp.Logger.Error("Invalid signer pubkey", "event", eventName, "newSignerPubKey", newSignerPubKey)
 			return fmt.Errorf("invalid signer pubkey")
 		}
