@@ -29,22 +29,43 @@ ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
 
 BUILD_FLAGS := -ldflags '$(ldflags)'
 
+###############################################################################
+###	                      Build, Test and Clean								###
+###############################################################################
+
 .PHONY: clean
 clean:
 	rm -rf build
 
-heimdalld: clean
+.PHONY: build
+build: clean
 	mkdir -p build
 	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
+	@echo "====================================================\n==================Build Successful==================\n===================================================="
+
+.PHONY: build-arm
+build-arm: clean
+	mkdir -p build
+	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
+	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdallcli ./cmd/heimdallcli
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
 
 test:
 	go test ./...
 
+
+###############################################################################
+###	                      Checks and Linters								###
+###############################################################################
+
+.PHONY: vulncheck
+vulncheck:
+	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.61.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.63.4
 
 .PHONY: lint
 lint:
@@ -102,12 +123,12 @@ mock:
 ###                                docker                                   ###
 ###############################################################################
 
-build-docker: # TODO-HV2: check this command once we have a proper docker build
+build-docker:
 	@echo Fetching latest tag: $(LATEST_GIT_TAG)
 	git checkout $(LATEST_GIT_TAG)
 	docker build -t "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)" -f Dockerfile .
 
-push-docker: # TODO-HV2: check this command once we have a proper docker push
+push-docker:
 	@echo Pushing docker tag image: $(LATEST_GIT_TAG)
 	docker push "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)"
 
@@ -115,7 +136,7 @@ push-docker: # TODO-HV2: check this command once we have a proper docker push
 ###                                release                                  ###
 ###############################################################################
 
-.PHONY: release-dry-run # TODO-HV2: check this command once we have a proper release process
+.PHONY: release-dry-run
 release-dry-run:
 	@docker run \
 		--platform linux/amd64 \
@@ -133,7 +154,7 @@ release-dry-run:
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate --skip-publish
 
-.PHONY: release # TODO-HV2: check this command once we have a proper release process
+.PHONY: release
 release:
 	@docker run \
 		--rm \
@@ -150,6 +171,9 @@ release:
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate
 
+###############################################################################
+###	                      			Help									###
+###############################################################################
 
 .PHONY: help
 help:
@@ -157,7 +181,8 @@ help:
 	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
 	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
 	@echo "  clean               	- Delete build folder."
-	@echo "  heimdalld              - Compiles the Heimdall binaries."
+	@echo "  build              	- Compiles the Heimdall binaries."
+	@echo "  build-arm           	- Compiles the Heimdall binaries for ARM64 architecture."
 	@echo "  test               	- Run the tests."
 	@echo "  mock                	- Generate mocks."
 	@echo "  proto-all           	- Format, lint and generate proto files."

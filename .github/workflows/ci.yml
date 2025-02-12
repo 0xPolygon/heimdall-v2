@@ -15,7 +15,7 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -28,17 +28,17 @@ jobs:
         run: make lint-deps
 
       - name: "Run linter"
-        run: make lint #NEW_FROM_REV=origin/develop TODO: Uncomment this line when we all linters are fixed first time
+        run: make lint NEW_FROM_REV=origin/develop
 
       - name: "Build binaries"
-        run: make heimdalld
+        run: make build
 
 
   test:
     name: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install Go
         uses: actions/setup-go@v5
