@@ -66,6 +66,10 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 	callMsg.From = fromAddress
 
 	gasLimit, err := client.EstimateGas(context.Background(), callMsg)
+	if err != nil {
+		Logger.Error("unable to estimate gas", "error", err)
+		return
+	}
 
 	chainId, err := client.ChainID(context.Background())
 	if err != nil {
@@ -155,7 +159,6 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 		acceptDelegation,
 		signerPubKey,
 	)
-
 	if err != nil {
 		Logger.Error("error while submitting stake", "error", err)
 		return err

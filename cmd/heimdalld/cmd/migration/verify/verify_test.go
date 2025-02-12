@@ -4,8 +4,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
 func TestVerifyMigration(t *testing.T) {

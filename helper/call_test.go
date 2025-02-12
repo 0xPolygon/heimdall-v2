@@ -2,7 +2,6 @@ package helper
 
 import (
 	"encoding/hex"
-	"os"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -31,7 +30,7 @@ func TestCheckpointSigs(t *testing.T) {
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
 	viper.Set("log_level", "info")
-	InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	InitTestHeimdallConfig("")
 
 	contractCallerObj, err := NewContractCaller()
 	if err != nil {
@@ -66,7 +65,6 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 	for i := 0; i < len(sigInput); i += sigLength {
 		signature := sigInput[i : i+sigLength]
 
-		// TODO HV2: Note that RecoverPubKey is not actively used in cosmos-sdk. Double check if it is required.
 		pKey, err := signing.RecoverPubKey(voteBytes, signature)
 		if err != nil {
 			return nil, err
@@ -81,7 +79,6 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 // TestPopulateABIs tests that package level ABIs cache works as expected
 // by not invoking json methods after contracts ABIs' init
 func TestPopulateABIs(t *testing.T) {
-
 	t.Log("ABIs map should be empty and all ABIs not found")
 	assert.True(t, len(ContractsABIsMap) == 0)
 	_, found := ContractsABIsMap[rootchain.RootchainMetaData.ABI]

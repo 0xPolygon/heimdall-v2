@@ -2,23 +2,31 @@ package app
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"sort"
 
 	"cosmossdk.io/log"
-	"cosmossdk.io/math"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
+	cmtCrypto "github.com/cometbft/cometbft/crypto"
 	cryptoenc "github.com/cometbft/cometbft/crypto/encoding"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
+	cometTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // ValidateVoteExtensions verifies the vote extension correctness
@@ -26,12 +34,13 @@ import (
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
 func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
-
 	// check if VEs are enabled
-	panicOnVoteExtensionsDisabled(ctx, reqHeight+1)
+	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
+		return err
+	}
 
 	// check if reqHeight is the initial height
-	if reqHeight == retrieveVoteExtensionsEnableHeight(ctx) {
+	if reqHeight <= retrieveVoteExtensionsEnableHeight(ctx) {
 		if len(extVoteInfo) != 0 {
 			return fmt.Errorf("non-empty VEs received at initial height %d", reqHeight)
 		}
@@ -39,25 +48,18 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 	}
 
 	// Fetch validatorSet from previous block
-	validatorSet, err := stakeKeeper.GetPreviousBlockValidatorSet(ctx)
+	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
 	if err != nil {
 		return err
 	}
-	if len(validatorSet.Validators) == 0 {
-		return errors.New("no validators found in validator set")
-	}
 
-	var totalVotingPower = validatorSet.GetTotalVotingPower()
-	sumVP := math.NewInt(0)
+	totalVotingPower := validatorSet.GetTotalVotingPower()
+	sumVP := int64(0)
 
 	// Map to track seen validator addresses
 	seenValidators := make(map[string]struct{})
 
 	ac := address.HexCodec{}
-	proposerAdd, err := ac.BytesToString(proposerAddress)
-	if err != nil {
-		return err
-	}
 
 	for _, vote := range extVoteInfo {
 
@@ -70,8 +72,13 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 			continue
 		}
 
+		valAddrStr, err := ac.BytesToString(vote.Validator.Address)
+		if err != nil {
+			return fmt.Errorf("validator address %v is not valid", vote.Validator.Address)
+		}
+
 		if len(vote.ExtensionSignature) == 0 {
-			return fmt.Errorf("received empty vote extension signature at height %d from validator %s", reqHeight, proposerAdd)
+			return fmt.Errorf("received empty vote extension signature at height %d from validator %s", reqHeight, valAddrStr)
 		}
 
 		consolidatedSideTxResponse := new(sidetxs.ConsolidatedSideTxResponse)
@@ -85,12 +92,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 
 		txHash, err := validateSideTxResponses(consolidatedSideTxResponse.SideTxResponses)
 		if err != nil {
-			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", proposerAdd, common.Bytes2Hex(txHash), err)
-		}
-
-		valAddrStr, err := ac.BytesToString(vote.Validator.Address)
-		if err != nil {
-			return fmt.Errorf("validator address %v is not valid", vote.Validator.Address)
+			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", valAddrStr, common.Bytes2Hex(txHash), err)
 		}
 
 		// Check for duplicate votes by the same validator
@@ -100,19 +102,14 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 		// Add validator address to the map
 		seenValidators[valAddrStr] = struct{}{}
 
-		validator, err := stakeKeeper.GetValidatorInfo(ctx, valAddrStr)
-		if err != nil {
-			return fmt.Errorf("failed to get validator %s: %w", valAddrStr, err)
+		_, validator := validatorSet.GetByAddress(valAddrStr)
+		if validator == nil {
+			return fmt.Errorf("failed to get validator %s", valAddrStr)
 		}
 
-		cmtPubKeyProto, err := validator.CmtConsPublicKey()
+		cmtPubKey, err := getValidatorPublicKey(validator)
 		if err != nil {
-			return fmt.Errorf("failed to get validator %s public key: %w", valAddrStr, err)
-		}
-
-		cmtPubKey, err := cryptoenc.PubKeyFromProto(cmtPubKeyProto)
-		if err != nil {
-			return fmt.Errorf("failed to convert validator %s public key: %w", valAddrStr, err)
+			return err
 		}
 
 		cve := cmtTypes.CanonicalVoteExtension{
@@ -140,14 +137,13 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 			return fmt.Errorf("failed to verify validator %X vote extension signature", valAddrStr)
 		}
 
-		sumVP = sumVP.Add(math.NewInt(validator.VotingPower))
-
+		sumVP += validator.VotingPower
 	}
 
 	// Ensure we have at least 2/3 voting power for the submitted vote extensions in each side tx
 	majorityVP := totalVotingPower * 2 / 3
-	if sumVP.Int64() <= majorityVP {
-		return fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", sumVP.Int64(), majorityVP)
+	if sumVP <= majorityVP {
+		return fmt.Errorf("insufficient cumulative voting power received to verify vote extensions; got: %d, expected: >=%d", sumVP, majorityVP)
 	}
 
 	return nil
@@ -273,8 +269,6 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 		for _, res := range ve.SideTxResponses {
 			txHashStr := common.Bytes2Hex(res.TxHash)
 
-			// TODO HV2: (once slashing is enabled) we should slash in case a validator maliciously adds conflicting votes
-			//  Given that we also check for duplicate votes during VerifyVoteExtensionHandler, is this redundant ?
 			if _, hasVoted := validatorToTxMap[addr][txHashStr]; hasVoted {
 				logger.Error("multiple votes received for side tx",
 					"txHash", txHashStr, "validatorAddress", addr)
@@ -326,17 +320,19 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	return nil, nil
 }
 
-// panicOnVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
+// checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
-func panicOnVoteExtensionsDisabled(ctx sdk.Context, height int64) {
+// Returning error will result in CometBFT panic.
+func checkIfVoteExtensionsDisabled(ctx sdk.Context, height int64) error {
 	// voteExtensionsEnableHeight is the height from which the vote extensions are enabled, and it's (v1_last_height +1)
 	voteExtensionsEnableHeight := retrieveVoteExtensionsEnableHeight(ctx)
 	if voteExtensionsEnableHeight == 0 {
-		panic("VoteExtensions are disabled: VoteExtensionsEnableHeight is set to 0")
+		return errors.New("VoteExtensions are disabled: VoteExtensionsEnableHeight is set to 0")
 	}
 	if height < voteExtensionsEnableHeight {
-		panic(fmt.Sprintf("vote extensions are disabled: current height is %d, and VoteExtensionsEnableHeight is set to %d", height, voteExtensionsEnableHeight))
+		return fmt.Errorf("vote extensions are disabled: current height is %d, and VoteExtensionsEnableHeight is set to %d", height, voteExtensionsEnableHeight)
 	}
+	return nil
 }
 
 func isVoteValid(v sidetxs.Vote) bool {
@@ -351,4 +347,318 @@ func isBlockIdFlagValid(flag cmtTypes.BlockIDFlag) bool {
 func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	consensusParams := ctx.ConsensusParams()
 	return consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
+}
+
+// getDummyNonRpVoteExtension returns a dummy non-rp vote extension for given height and chain id
+func getDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
+	var buf bytes.Buffer
+
+	writtenBytes, err := buf.Write(dummyNonRpVoteExtension)
+	if err != nil {
+		return nil, err
+	}
+	if writtenBytes != len(dummyNonRpVoteExtension) {
+		return nil, errors.New("failed to write dummy vote extension")
+	}
+	if err := buf.WriteByte('|'); err != nil {
+		return nil, err
+	}
+
+	if err := binary.Write(&buf, binary.BigEndian, height); err != nil {
+		return nil, err
+	}
+	if err := buf.WriteByte('|'); err != nil {
+		return nil, err
+	}
+
+	writtenBytes, err = buf.WriteString(chainID)
+	if err != nil {
+		return nil, err
+	}
+	if writtenBytes != len(chainID) {
+		return nil, errors.New("failed to write chainID")
+	}
+
+	return buf.Bytes(), nil
+}
+
+// ValidateNonRpVoteExtensions validates the non-rp vote extensions
+func ValidateNonRpVoteExtensions(
+	ctx sdk.Context,
+	height int64,
+	extVoteInfo []abciTypes.ExtendedVoteInfo,
+	stakeKeeper stakeKeeper.Keeper,
+	chainManagerKeeper chainManagerKeeper.Keeper,
+	checkpointKeeper checkpointKeeper.Keeper,
+	contractCaller helper.IContractCaller,
+	logger log.Logger,
+) error {
+	if height <= retrieveVoteExtensionsEnableHeight(ctx) {
+		return nil
+	}
+
+	// Check if there are 2/3 voting power for one same extension
+	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, stakeKeeper, logger)
+	if err != nil {
+		return err
+	}
+
+	if err := ValidateNonRpVoteExtension(ctx, height-1, majorityExt, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+		return fmt.Errorf("failed to validate majority non rp vote extension: %w", err)
+	}
+
+	// Check the signatures
+	if err := checkNonRpVoteExtensionsSignatures(ctx, extVoteInfo, stakeKeeper); err != nil {
+		return fmt.Errorf("failed to check non rp vote extensions signatures: %w", err)
+	}
+
+	return nil
+}
+
+// ValidateNonRpVoteExtension validates the non-rp vote extension
+func ValidateNonRpVoteExtension(
+	ctx sdk.Context,
+	height int64,
+	extension []byte,
+	chainManagerKeeper chainManagerKeeper.Keeper,
+	checkpointKeeper checkpointKeeper.Keeper,
+	contractCaller helper.IContractCaller,
+) error {
+	// Check if its dummy vote non rp extension
+	dummyExt, err := getDummyNonRpVoteExtension(height, ctx.ChainID())
+	if err != nil {
+		return err
+	}
+
+	if bytes.Equal(extension, dummyExt) {
+		// This is dummy vote extension, we have nothing else to check
+		return nil
+	}
+
+	// Check if valid checkpoint data
+	if err := validateCheckpointMsgData(ctx, extension, chainManagerKeeper, checkpointKeeper, contractCaller); err != nil {
+		return fmt.Errorf("failed to validate checkpoint msg data: %w", err)
+	}
+
+	return nil
+}
+
+// checkNonRpVoteExtensionsSignatures checks the signatures of the non-rp vote extensions
+func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper) error {
+	// Fetch validatorSet from previous block
+	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
+	if err != nil {
+		return err
+	}
+
+	ac := address.HexCodec{}
+
+	for _, vote := range extVoteInfo {
+		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
+		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
+			continue
+		}
+
+		valAddr, err := ac.BytesToString(vote.Validator.Address)
+		if err != nil {
+			return err
+		}
+
+		_, validator := validatorSet.GetByAddress(valAddr)
+		if validator == nil {
+			return fmt.Errorf("failed to get validator %s", valAddr)
+		}
+
+		cmtPubKey, err := getValidatorPublicKey(validator)
+		if err != nil {
+			return err
+		}
+
+		if !cmtPubKey.VerifySignature(vote.NonRpVoteExtension, vote.NonRpExtensionSignature) {
+			return fmt.Errorf("failed to verify validator %X vote extension signature", valAddr)
+		}
+	}
+
+	return nil
+}
+
+// getMajorityNonRpVoteExtension returns the non-rp vote extension with atleast 2/3 voting power
+func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) ([]byte, error) {
+	// Fetch validatorSet from previous block
+	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)
+	if err != nil {
+		return nil, err
+	}
+
+	ac := address.HexCodec{}
+
+	hashToExt := make(map[string][]byte)
+	hashToVotingPower := make(map[string]int64)
+
+	for _, vote := range extVoteInfo {
+		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
+		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
+			continue
+		}
+
+		hash := common.BytesToHash(crypto.Keccak256(vote.NonRpVoteExtension)).String()
+		hashToExt[hash] = vote.NonRpVoteExtension
+		if _, ok := hashToVotingPower[hash]; !ok {
+			hashToVotingPower[hash] = 0
+		}
+
+		valAddr, err := ac.BytesToString(vote.Validator.Address)
+		if err != nil {
+			return nil, err
+		}
+
+		_, validator := validatorSet.GetByAddress(valAddr)
+		if validator == nil {
+			return nil, fmt.Errorf("failed to get validator %s", valAddr)
+		}
+
+		hashToVotingPower[hash] += validator.VotingPower
+	}
+
+	if len(hashToVotingPower) > 1 {
+		logger.Error("MULTIPLE NON-RP VOTE EXTENSIONS DETECTED, THERE SHOULD BE ONLY ONE - POSSIBLE MALICIOUS ACTIVITY")
+	}
+
+	var maxVotingPower int64
+	var maxHash string
+	for hash, votingPower := range hashToVotingPower {
+		if votingPower > maxVotingPower {
+			maxVotingPower = votingPower
+			maxHash = hash
+		}
+	}
+
+	return hashToExt[maxHash], nil
+}
+
+// validateCheckpointMsgData validates the extension is valid checkpoint
+func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKeeper chainManagerKeeper.Keeper, checkpointKeeper checkpointKeeper.Keeper, contractCaller helper.IContractCaller) error {
+	checkpointMsg, err := checkpointTypes.UnpackCheckpointSideSignBytes(extension[1:]) // skip the first byte which is the vote
+	if err != nil {
+		return fmt.Errorf("failed to unpack checkpoint side sign bytes: %w", err)
+	}
+
+	chainParams, err := chainManagerKeeper.GetParams(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get chain manager params: %w", err)
+	}
+
+	borChainTxConfirmations := chainParams.BorChainTxConfirmations
+
+	params, err := checkpointKeeper.GetParams(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get checkpoint params: %w", err)
+	}
+
+	isValid, err := checkpointTypes.IsValidCheckpoint(
+		checkpointMsg.StartBlock,
+		checkpointMsg.EndBlock,
+		checkpointMsg.RootHash,
+		params.MaxCheckpointLength,
+		contractCaller,
+		borChainTxConfirmations)
+	if err != nil {
+		return fmt.Errorf("failed to validate checkpoint msg: %w", err)
+	}
+
+	if !isValid {
+		return errors.New("invalid checkpoint msg data")
+	}
+
+	return nil
+}
+
+// getPreviousBlockValidatorSet returns the validator set from the previous block
+func getPreviousBlockValidatorSet(ctx sdk.Context, stakeKeeper stakeKeeper.Keeper) (*stakeTypes.ValidatorSet, error) {
+	// Fetch validatorSet from previous block
+	validatorSet, err := stakeKeeper.GetPreviousBlockValidatorSet(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(validatorSet.Validators) == 0 {
+		return nil, errors.New("no validators found in validator set")
+	}
+	return &validatorSet, nil
+}
+
+// getValidatorPublicKey returns the public key of the validator given
+func getValidatorPublicKey(validator *stakeTypes.Validator) (cmtCrypto.PubKey, error) {
+	cmtPubKeyProto, err := validator.CmtConsPublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get validator %s public key: %w", validator.Signer, err)
+	}
+
+	cmtPubKey, err := cryptoenc.PubKeyFromProto(cmtPubKeyProto)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert validator %s public key: %w", validator.Signer, err)
+	}
+
+	return cmtPubKey, nil
+}
+
+// FindCheckpointTx finds the checkpoint tx from the given txs that generated the given extension
+// If no such tx is found empty string is returned
+func findCheckpointTx(txs [][]byte, extension []byte, txDecoder txDecoder, logger log.Logger) string {
+	for _, rawTx := range txs {
+		tx, err := txDecoder.TxDecode(rawTx)
+		if err != nil {
+			logger.Error("failed to decode tx", "error", err)
+			continue
+		}
+
+		messages := tx.GetMsgs()
+		for _, msg := range messages {
+			if checkpointTypes.IsCheckpointMsg(msg) {
+				checkpointMsg, ok := msg.(*checkpointTypes.MsgCheckpoint)
+				if !ok {
+					logger.Error("type mismatch for MsgCheckpoint")
+					continue
+				}
+
+				signBytes := checkpointMsg.GetSideSignBytes()
+
+				if bytes.Equal(signBytes, extension) {
+					var txBytes cometTypes.Tx = rawTx
+					return common.Bytes2Hex(txBytes.Hash())
+				}
+			}
+		}
+	}
+
+	return ""
+}
+
+// getCheckpointSignatures returns the checkpoint signatures from the given extVoteInfo
+func getCheckpointSignatures(extension []byte, extVoteInfo []abciTypes.ExtendedVoteInfo) checkpointTypes.CheckpointSignatures {
+	result := checkpointTypes.CheckpointSignatures{
+		Signatures: make([]checkpointTypes.CheckpointSignature, 0),
+	}
+	for _, vote := range extVoteInfo {
+		if bytes.Equal(vote.NonRpVoteExtension, extension) {
+			result.Signatures = append(result.Signatures, checkpointTypes.CheckpointSignature{
+				ValidatorAddress: vote.Validator.Address,
+				Signature:        vote.NonRpExtensionSignature,
+			})
+		}
+	}
+	return result
+}
+
+type txDecoder interface {
+	TxDecode(txBytes []byte) (sdk.Tx, error)
+}
+
+var dummyNonRpVoteExtension = []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t")
+
+func packExtensionWithVote(extension []byte) []byte {
+	yesVote := []byte{0x01}
+	var buf bytes.Buffer
+	buf.Write(yesVote)
+	buf.Write(extension)
+	return buf.Bytes()
 }

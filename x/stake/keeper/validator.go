@@ -54,9 +54,8 @@ func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string
 func (k *Keeper) GetValidatorInfo(ctx context.Context, address string) (validator types.Validator, err error) {
 	k.PanicIfSetupIsIncomplete()
 	validator, err = k.validators.Get(ctx, util.FormatAddress(address))
-
 	if err != nil {
-		return validator, errors.New(fmt.Sprintf("error while fetching the validator from the store %v", err))
+		return validator, fmt.Errorf("error while fetching the validator from the store %w", err)
 	}
 
 	return validator, nil
@@ -209,7 +208,7 @@ func (k *Keeper) UpdateSigner(ctx context.Context, newSigner string, newPubKey [
 		return err
 	}
 
-	//update signer in prev validator
+	// update signer in prev validator
 	validator.Signer = newSigner
 	validator.PubKey = newPubKey
 	validator.VotingPower = validatorPower
@@ -416,7 +415,6 @@ func (k *Keeper) GetStakingSequences(ctx context.Context) (sequences []string, e
 		sequences = append(sequences, sequence)
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +481,6 @@ func (k *Keeper) GetValIdFromAddress(ctx context.Context, address string) (uint6
 // IterateCurrentValidatorsAndApplyFn iterate through current validators
 func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(validator types.Validator) bool) error {
 	k.PanicIfSetupIsIncomplete()
-	// TODO HV2: this function is imported from v1, we need to check how the `stop` function behaves
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error in fetching the validator set from database", "error", err)
@@ -598,14 +595,12 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 			return nil, err
 		}
 
-		// TODO HV2: this was missed during migration, and added within POS-2600. Double check.
 		currentValidatorSet.IncrementProposerPriority(1)
 
 		// convert updates from map to array
 		for _, v := range setUpdates {
 			cmtProtoPk, err := v.CmtConsPublicKey()
 			if err != nil {
-				// TODO HV2 Should we panic at this condition?
 				panic(err)
 			}
 

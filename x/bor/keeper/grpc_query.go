@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 const maxSpanListLimitPerPage = 1000
@@ -34,14 +35,13 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 }
 
 func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
-
 	spans, err := q.k.GetAllSpans(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if len(spans) == 0 {
-		return nil, nil
+		return nil, status.Error(codes.NotFound, "no spans found")
 	}
 
 	latestSpan := spans[len(spans)-1]
@@ -66,7 +66,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		return nil, status.Errorf(codes.InvalidArgument, "invalid start block")
 	}
 
-	if req.BorChainId != lastSpan.ChainId {
+	if req.BorChainId != lastSpan.BorChainId {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid chain id")
 	}
 
@@ -82,13 +82,19 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	// Convert []*Validator to []staketypes.Validator
+	validators := make([]staketypes.Validator, len(validatorSet.Validators))
+	for i, v := range validatorSet.Validators {
+		validators[i] = *v
+	}
+
 	// fetch next selected block producers
-	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
+	nextSpanSeed, _, err := q.k.FetchNextSpanSeed(ctx, req.SpanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	selectedProducers, err := q.k.SelectNextProducers(ctx, nextSpanSeed)
+	selectedProducers, err := q.k.SelectNextProducers(ctx, nextSpanSeed, validators)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -102,27 +108,33 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 		EndBlock:          req.StartBlock + params.SpanDuration - 1,
 		ValidatorSet:      validatorSet,
 		SelectedProducers: selectedProducers,
-		ChainId:           req.BorChainId,
+		BorChainId:        req.BorChainId,
 	}
 
 	return &types.QueryNextSpanResponse{Span: *nextSpan}, nil
 }
 
 // GetNextSpanSeed returns the next span seed
-func (q queryServer) GetNextSpanSeed(ctx context.Context, _ *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
+func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSpanSeedRequest) (*types.QueryNextSpanSeedResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+	spanId := req.GetId()
 
 	// fetch next span seed
-	nextSpanSeed, err := q.k.FetchNextSpanSeed(ctx)
+	nextSpanSeed, nextSpanSeedAuthor, err := q.k.FetchNextSpanSeed(ctx, spanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &types.QueryNextSpanSeedResponse{Seed: nextSpanSeed.String()}, nil
+	return &types.QueryNextSpanSeedResponse{
+		Seed:       nextSpanSeed.String(),
+		SeedAuthor: nextSpanSeedAuthor.Hex(),
+	}, nil
 }
 
-// GetParams returns the bor module parameters
-func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-
+// GetBorParams returns the bor module parameters
+func (q queryServer) GetBorParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	params, err := q.k.FetchParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -167,7 +179,6 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 			return q.k.GetSpan(ctx, id)
 		},
 	)
-
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
 	}

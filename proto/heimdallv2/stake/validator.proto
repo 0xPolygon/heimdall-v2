@@ -1,18 +1,15 @@
 syntax = "proto3";
 package heimdallv2.stake;
 
-import "gogoproto/gogo.proto";
-
-import "cosmos_proto/cosmos.proto";
 import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
-// Validators define the validator structure
 message Validator {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
-
   uint64 val_id = 1 [ (amino.dont_omitempty) = true ];
   uint64 start_epoch = 2 [ (amino.dont_omitempty) = true ];
   uint64 end_epoch = 3 [ (amino.dont_omitempty) = true ];
@@ -28,18 +25,12 @@ message Validator {
   int64 proposer_priority = 10 [ (amino.dont_omitempty) = true ];
 }
 
-// ValidatorSet defines the set of validator
 message ValidatorSet {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = false;
-
   repeated Validator validators = 1
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
-
   Validator proposer = 2
       [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
-
-  // total voting power denotes the total power of all the active validators in
-  // the validator set
   int64 total_voting_power = 3 [ (amino.dont_omitempty) = true ];
 }

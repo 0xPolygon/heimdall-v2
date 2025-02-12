@@ -7,29 +7,32 @@ run:
 
 linters:
   enable:
-    - goconst
-    - goimports
-    - misspell
-    - unconvert
     - bodyclose
     - containedctx
     - contextcheck
+    - copyloopvar
     - decorder
     - durationcheck
+    - errcheck
     - errchkjson
     - errname
+    - errorlint
     # - exhaustive
-    - copyloopvar
     # - gocognit
-    - gofmt
+    - gci
+    - goconst
+    - gofumpt
+    - goimports
     # - gomnd
     #- gomoddirectives
     - gosec
     - makezero
+    - misspell
     #- nestif
     - nilerr
     - nilnil
     - noctx
+    - nolintlint
     #- nosprintfhostport
     - paralleltest
     - prealloc
@@ -40,12 +43,21 @@ linters:
     - tenv
     - thelper
     - tparallel
+    - typecheck
     - unconvert
     - unparam
+    - unused
     # - wsl
-    #- errorlint
 
 linters-settings:
+  gci:
+    sections:
+      - Standard
+      - Default
+      - Prefix(github.com/0xPolygon/heimdall-v2)
+    skip-generated: true
+    separate-by-group: true
+
   gofmt:
     simplify: true
 
@@ -145,4 +157,3 @@ issues:
     - ".*\\.pulsar\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
-  new-from-rev: ${GOLANGCI_LINT_NEW_FROM_REV}

@@ -36,6 +36,9 @@ type Keeper struct {
 	params             collections.Item[types.Params]
 	lastNoAck          collections.Item[uint64]
 	ackCount           collections.Item[uint64]
+
+	checkpointSignatures       collections.Item[types.CheckpointSignatures]
+	checkpointSignaturesTxHash collections.Item[string]
 }
 
 // NewKeeper creates a new checkpoint Keeper instance
@@ -47,9 +50,7 @@ func NewKeeper(
 	cmKeeper types.ChainManagerKeeper,
 	topupKeeper types.TopupKeeper,
 	contractCaller helper.IContractCaller,
-
 ) Keeper {
-
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
 		panic(fmt.Errorf("invalid checkpoint authority address: %w", err))
@@ -71,11 +72,13 @@ func NewKeeper(
 		topupKeeper:     topupKeeper,
 		IContractCaller: contractCaller,
 
-		bufferedCheckpoint: collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
-		checkpoints:        collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
-		params:             collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
-		lastNoAck:          collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
-		ackCount:           collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
+		bufferedCheckpoint:         collections.NewItem(sb, types.BufferedCheckpointPrefixKey, "buffered_checkpoint", codec.CollValue[types.Checkpoint](cdc)),
+		checkpoints:                collections.NewMap(sb, types.CheckpointMapPrefixKey, "checkpoints", collections.Uint64Key, codec.CollValue[types.Checkpoint](cdc)),
+		params:                     collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		lastNoAck:                  collections.NewItem(sb, types.LastNoAckPrefixKey, "last_no_ack", collections.Uint64Value),
+		ackCount:                   collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
+		checkpointSignatures:       collections.NewItem(sb, types.CheckpointSignaturesPrefixKey, "checkpoint_signatures", codec.CollValue[types.CheckpointSignatures](cdc)),
+		checkpointSignaturesTxHash: collections.NewItem(sb, types.CheckpointSignaturesTxHashPrefixKey, "checkpoint_signatures_tx_hash", collections.StringValue),
 	}
 
 	// build the schema and set it in the keeper
@@ -122,9 +125,15 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 }
 
 // AddCheckpoint adds checkpoint into the db store
-func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, checkpoint types.Checkpoint) error {
+func (k *Keeper) AddCheckpoint(ctx context.Context, checkpoint types.Checkpoint) error {
+	exists, _ := k.checkpoints.Has(ctx, checkpoint.Id)
+	if exists {
+		k.Logger(ctx).Error("checkpoint already exists", "checkpoint id", checkpoint.Id)
+		return types.ErrAlreadyExists
+	}
+
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
-	err := k.checkpoints.Set(ctx, checkpointNumber, checkpoint)
+	err := k.checkpoints.Set(ctx, checkpoint.Id, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in adding the checkpoint to the store", "error", err)
 		return err
@@ -136,6 +145,14 @@ func (k *Keeper) AddCheckpoint(ctx context.Context, checkpointNumber uint64, che
 // SetCheckpointBuffer sets the checkpoint in buffer
 func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
+	if checkpoint.Id == 0 {
+		cp, err := k.GetLastCheckpoint(ctx)
+		if err != nil {
+			k.Logger(ctx).Error("error while fetching the last checkpoint", "err", err)
+			return err
+		}
+		checkpoint.Id = cp.Id + 1
+	}
 	err := k.bufferedCheckpoint.Set(ctx, checkpoint)
 	if err != nil {
 		k.Logger(ctx).Error("error in setting the buffered checkpoint in the store", "error", err)
@@ -158,13 +175,17 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (type
 
 // GetLastCheckpoint gets last checkpoint, where its number is equal to the ack count
 func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkpoint, err error) {
-	acksCount, err := k.GetAckCount(ctx)
+	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching the ack count", "err", err)
 		return types.Checkpoint{}, err
 	}
 
-	checkpoint, err = k.checkpoints.Get(ctx, acksCount)
+	if ackCount == 0 {
+		return types.Checkpoint{}, types.ErrNoCheckpointFound
+	}
+
+	checkpoint, err = k.checkpoints.Get(ctx, ackCount)
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching last checkpoint from store", "err", err)
 		return types.Checkpoint{}, err
@@ -185,10 +206,20 @@ func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) error {
 
 // GetCheckpointFromBuffer gets the buffered checkpoint from store
 func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint, error) {
-	checkpoint, err := k.bufferedCheckpoint.Get(ctx)
+	var checkpoint types.Checkpoint
+
+	exists, err := k.bufferedCheckpoint.Has(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching the buffered checkpoint from store", "err", err)
-		return types.Checkpoint{}, err
+		k.Logger(ctx).Error("error while checking for existence of the buffered checkpoint in store", "err", err)
+		return checkpoint, err
+	}
+
+	if exists {
+		checkpoint, err = k.bufferedCheckpoint.Get(ctx)
+		if err != nil {
+			k.Logger(ctx).Error("error while fetching the buffered checkpoint from store", "err", err)
+			return checkpoint, err
+		}
 	}
 
 	return checkpoint, nil
@@ -250,10 +281,6 @@ func (k *Keeper) GetCheckpoints(ctx context.Context) (checkpoints []types.Checkp
 
 	var checkpoint types.Checkpoint
 
-	// TODO HV2: double check once APIs are up and running, but https://github.com/maticnetwork/heimdall/pull/1183
-	//  should not be needed because the iterator.Key() used to iterate over the checkpoints collection is a uint64,
-	//  the checkpoint number itself, and not a []byte as it used to be in v1
-
 	for ; iterator.Valid(); iterator.Next() {
 		checkpoint, err = iterator.Value()
 		if err != nil {
@@ -279,7 +306,6 @@ func (k Keeper) GetAckCount(ctx context.Context) (uint64, error) {
 	}
 
 	res, err := k.ackCount.Get(ctx)
-
 	if err != nil {
 		k.Logger(ctx).Error("error while fetching the ack count from the store", "err", err)
 		return uint64(0), err
@@ -298,8 +324,28 @@ func (k Keeper) IncrementAckCount(ctx context.Context) error {
 	// get current ACK Count
 	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
-		return nil
+		return fmt.Errorf("error while fetching the ack count: %w", err)
 	}
 
 	return k.ackCount.Set(ctx, ackCount+1)
+}
+
+// SetCheckpointSignatures stores the checkpoint signatures
+func (k Keeper) SetCheckpointSignatures(ctx context.Context, checkpointSignatures types.CheckpointSignatures) error {
+	return k.checkpointSignatures.Set(ctx, checkpointSignatures)
+}
+
+// GetCheckpointSignatures retrieves the checkpoint signatures
+func (k Keeper) GetCheckpointSignatures(ctx context.Context) (types.CheckpointSignatures, error) {
+	return k.checkpointSignatures.Get(ctx)
+}
+
+// SetCheckpointSignaturesTxHash stores the checkpoint signatures tx hash
+func (k Keeper) SetCheckpointSignaturesTxHash(ctx context.Context, txHash string) error {
+	return k.checkpointSignaturesTxHash.Set(ctx, txHash)
+}
+
+// GetCheckpointSignaturesTxHash retrieves the checkpoint signatures tx hash
+func (k Keeper) GetCheckpointSignaturesTxHash(ctx context.Context) (string, error) {
+	return k.checkpointSignaturesTxHash.Get(ctx)
 }

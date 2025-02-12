@@ -31,7 +31,6 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// TODO HV2 - this function was heavily modified, review carefully
 // testnetCmd initialises files required to start heimdall testnet
 func testnetCmd(_ *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
@@ -156,7 +155,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 
 				// write config file
-				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cfgz, 0600)
+				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cfgz, 0o600)
 				if err != nil {
 					return err
 				}
@@ -168,7 +167,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			for i := 0; i < totalValidators; i++ {
 				accTokens := sdk.TokensFromConsensusPower(1000, sdk.DefaultPowerReduction)
 				coins := sdk.Coins{
-					sdk.NewCoin("matic", accTokens),
+					sdk.NewCoin("pol", accTokens),
 				}
 				addr, err := sdk.AccAddressFromHex(valPubKeys[i].Address().String())
 				if err != nil {
@@ -238,15 +237,15 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				return err
 			}
 
+			time := cmttime.Now()
 			for i := 0; i < totalValidators; i++ {
-				if err = genutil.ExportGenesisFileWithTime(config.GenesisFile(), chainID, nil, appStateJSON, cmttime.Now()); err != nil {
+				if err = genutil.ExportGenesisFileWithTime(genFiles[i], chainID, nil, appStateJSON, time); err != nil {
 					return err
 				}
 			}
 
 			// dump signer information in a json file
 			// this is required when setting up node dirs for devnet
-			// TODO move to const string flag
 			dump := viper.GetBool("signer-dump")
 			if dump {
 				signerJSON, err := json.MarshalIndent(signers, "", "  ")
@@ -254,7 +253,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 					return err
 				}
 
-				if err := tempfile.WriteFileAtomic(filepath.Join(outDir, "signer-dump.json"), signerJSON, 0600); err != nil {
+				if err := tempfile.WriteFileAtomic(filepath.Join(outDir, "signer-dump.json"), signerJSON, 0o600); err != nil {
 					fmt.Println("Error writing signer-dump", err)
 					return err
 				}

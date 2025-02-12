@@ -24,8 +24,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// AccountProof embeds user and account info for the the
-// QueryAccountProofResponse
 type AccountProof struct {
 	Address      string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
 	AccountProof []byte `protobuf:"bytes,2,opt,name=account_proof,json=accountProof,proto3" json:"account_proof,omitempty"`

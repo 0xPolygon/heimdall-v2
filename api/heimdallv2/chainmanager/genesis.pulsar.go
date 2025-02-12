@@ -462,7 +462,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// GenesisState is the chainmanager state that must be provided at genesis
 type GenesisState struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

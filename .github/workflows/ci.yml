@@ -1,8 +1,5 @@
 name: CI
 
-env:
-  GOLANGCI_LINT_NEW_FROM_REV: origin/develop
-
 on:
   push:
     branches:
@@ -19,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Install Go
         uses: actions/setup-go@v5
@@ -29,7 +28,7 @@ jobs:
         run: make lint-deps
 
       - name: "Run linter"
-        run: make lint
+        run: make lint #NEW_FROM_REV=origin/develop TODO: Uncomment this line when we all linters are fixed first time
 
       - name: "Build binaries"
         run: make heimdalld
@@ -45,12 +44,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23.x
-
-      - name: "Build binaries"
-        run: make heimdalld
-        
-      - name: "Initialize Heimdalld"
-        run: ./build/heimdalld init ci
 
       - name: "Run tests"
         run: make test

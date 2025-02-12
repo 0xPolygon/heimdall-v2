@@ -2,6 +2,7 @@ package bor
 
 import (
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
+
 	"github.com/0xPolygon/heimdall-v2/api/heimdallv2/bor"
 )
 
@@ -30,8 +31,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 				},
 				{
 					RpcMethod: "GetNextSpanSeed",
-					Use:       "next-span-seed",
+					Use:       "next-span-seed [id]",
 					Short:     "Query next bor span seed",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
+						{ProtoField: "id"},
+					},
 				},
 				{
 					RpcMethod: "GetNextSpan",
@@ -44,7 +48,7 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					},
 				},
 				{
-					RpcMethod: "GetParams",
+					RpcMethod: "GetBorParams",
 					Use:       "params",
 					Short:     "Query bor params",
 				},

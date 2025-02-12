@@ -61,7 +61,7 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 
 			_, err = ac.StringToBytes(proposer)
 			if err != nil {
-				return fmt.Errorf("the proposer address is invalid: %v", err)
+				return fmt.Errorf("the proposer address is invalid: %w", err)
 			}
 
 			txHash := viper.GetString(FlagTxHash)
@@ -95,7 +95,7 @@ func NewValidatorJoinCmd(ac address.Codec) *cobra.Command {
 
 			// fetch params
 			queryClient := chainmanagerTypes.NewQueryClient(clientCtx)
-			cmParams, err := queryClient.GetParams(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
+			cmParams, err := queryClient.GetChainManagerParams(cmd.Context(), &chainmanagerTypes.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}
@@ -199,7 +199,7 @@ func NewSignerUpdateCmd(ac address.Codec) *cobra.Command {
 
 			_, err = ac.StringToBytes(proposer)
 			if err != nil {
-				return fmt.Errorf("the proposer address is invalid: %v", err)
+				return fmt.Errorf("the proposer address is invalid: %w", err)
 			}
 
 			txHash := viper.GetString(FlagTxHash)

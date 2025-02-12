@@ -3,6 +3,7 @@ package processor
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"cosmossdk.io/math"
@@ -66,7 +67,7 @@ func (sp *StakingProcessor) RegisterTasks() {
 }
 
 func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -97,7 +98,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		}
 
 		// if account doesn't exist Retry with delay for topup to process first.
-		if _, err := util.GetAccount(sp.cliCtx, event.Signer.String()); err != nil {
+		if _, err := util.GetAccount(sp.cliCtx, sdk.MustAccAddressFromHex(event.Signer.Hex()).String()); err != nil {
 			sp.Logger.Info(
 				"Heimdall Account doesn't exist. Retrying validator-join after 10 seconds",
 				"event", eventName,
@@ -120,9 +121,14 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator join
 		msg, err := stakingTypes.NewMsgValidatorJoin(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			event.ActivationEpoch.Uint64(),
 			math.NewIntFromBigInt(event.Amount),
@@ -155,7 +161,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 }
 
 func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -204,9 +210,14 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator exit
 		msg, err := stakingTypes.NewMsgValidatorExit(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			event.DeactivationEpoch.Uint64(),
 			vLog.TxHash.Bytes(),
@@ -238,7 +249,7 @@ func (sp *StakingProcessor) sendUnstakeInitToHeimdall(eventName string, logBytes
 }
 
 func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -283,9 +294,14 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// msg validator update
 		msg, err := stakingTypes.NewMsgStakeUpdate(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			math.NewIntFromBigInt(event.NewAmount),
 			vLog.TxHash.Bytes(),
@@ -316,7 +332,7 @@ func (sp *StakingProcessor) sendStakeUpdateToHeimdall(eventName string, logBytes
 }
 
 func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logBytes string) error {
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		sp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -378,9 +394,14 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			"blockNumber", vLog.BlockNumber,
 		)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		// signer change
 		msg, err := stakingTypes.NewMsgSignerUpdate(
-			string(helper.GetAddress()[:]),
+			address,
 			event.ValidatorId.Uint64(),
 			newSignerPubKey,
 			vLog.TxHash.Bytes(),
@@ -411,7 +432,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 }
 
 func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64) (bool, uint64, error) {
-	currentNonce, err := util.GetValidatorNonce(validatorId)
+	currentNonce, err := util.GetValidatorNonce(validatorId, sp.cliCtx.Codec)
 	if err != nil {
 		sp.Logger.Error("Failed to fetch validator nonce and height data from API", "validatorId", validatorId)
 		return false, 0, err
@@ -442,7 +463,6 @@ func (sp *StakingProcessor) checkValidNonce(validatorId uint64, txnNonce uint64)
 	return true, 0, nil
 }
 
-// TODO HV2 - this function was modified a bit, please review carefully
 func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	const (
 		defaultPage  = 1
@@ -457,33 +477,22 @@ func queryTxCount(cliCtx client.Context, validatorId uint64) (int, error) {
 	}
 
 	for msg, action := range stakingTxnMsgMap {
-		event1 := fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg)
-
-		event2 := fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId)
-
-		searchResult1, err1 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event1, "")
-		searchResult2, err2 := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, event2, "")
-		if err1 != nil && err2 != nil {
-			return 0, fmt.Errorf("%v %v", err1, err2)
+		events := []string{
+			fmt.Sprintf("%s.%s='%s'", sdk.EventTypeMessage, sdk.AttributeKeyAction, msg),
+			fmt.Sprintf("%s.%s=%d", action, "validator-id", validatorId),
 		}
 
-		var totalCount uint64
+		// XXX: implement ANY
+		query := strings.Join(events, " AND ")
 
-		// Check if searchResult1 is not nil before accessing TotalCount
-		if searchResult1 != nil {
-			totalCount += searchResult1.TotalCount
+		searchTxResult, err := authTx.QueryTxsByEvents(cliCtx, defaultPage, defaultLimit, query, "")
+		if err != nil {
+			return 0, fmt.Errorf("failed to search for txs: %w", err)
 		}
 
-		// Check if searchResult2 is not nil before accessing TotalCount
-		if searchResult2 != nil {
-			totalCount += searchResult2.TotalCount
+		if searchTxResult.TotalCount != 0 {
+			return int(searchTxResult.TotalCount), nil
 		}
-
-		// Only return if totalCount is non-zero
-		if totalCount != 0 {
-			return int(totalCount), nil
-		}
-
 	}
 
 	return 0, nil

@@ -11,7 +11,7 @@ RUN apt-get update -y && apt-get upgrade -y \
 WORKDIR ${HEIMDALL_DIR}
 COPY . .
 
-RUN make install
+RUN make heimdalld && cp build/heimdalld /usr/local/bin/
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 

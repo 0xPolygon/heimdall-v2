@@ -8,8 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -56,7 +58,8 @@ type IContractCaller interface {
 	SendCheckpoint(signedData []byte, sigs [][3]*big.Int, rootChainAddress common.Address, rootChainInstance *rootchain.Rootchain) (err error)
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
-	GetBorChainBlock(*big.Int) (*ethTypes.Header, error)
+	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
+	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
@@ -82,7 +85,7 @@ type IContractCaller interface {
 	CurrentSpanNumber(validatorSet *validatorset.Validatorset) (Number *big.Int)
 	GetSpanDetails(id *big.Int, validatorSet *validatorset.Validatorset) (*big.Int, *big.Int, *big.Int, error)
 	CurrentStateCounter(stateSenderInstance *statesender.Statesender) (Number *big.Int)
-	CheckIfBlocksExist(end uint64) bool
+	CheckIfBlocksExist(end uint64) (bool, error)
 	GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error)
 	GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error)
 	GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error)
@@ -437,9 +440,8 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 
 // GetValidatorInfo get validator info
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
-
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
-	if err != nil && &stakerDetails != nil {
+	if err != nil {
 		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
 		return
 	}
@@ -504,8 +506,8 @@ func (c *ContractCaller) GetMainChainBlockTime(ctx context.Context, blockNum uin
 }
 
 // GetBorChainBlock returns bor chain block header
-func (c *ContractCaller) GetBorChainBlock(blockNum *big.Int) (header *ethTypes.Header, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
+func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int) (header *ethTypes.Header, err error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
 	var latestBlock *ethTypes.Header
@@ -527,6 +529,25 @@ func (c *ContractCaller) GetBorChainBlock(blockNum *big.Int) (header *ethTypes.H
 	}
 
 	return latestBlock, nil
+}
+
+// GetBorChainBlockAuthor returns the producer of the bor block
+func (c *ContractCaller) GetBorChainBlockAuthor(blockNum *big.Int) (*common.Address, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
+	defer cancel()
+
+	var author *common.Address
+	err := c.BorChainClient.Client().CallContext(ctx, &author, "bor_getAuthor", toBlockNumArg(blockNum))
+	if err != nil {
+		Logger.Error("Unable to connect to bor chain", "error", err)
+		return nil, err
+	}
+
+	if author == nil {
+		return nil, ethereum.NotFound
+	}
+
+	return author, nil
 }
 
 // GetBlockNumberFromTxHash gets block number of transaction
@@ -652,9 +673,7 @@ func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string,
 
 // DecodeValidatorTopupFeesEvent represents topUp for fees tokens
 func (c *ContractCaller) DecodeValidatorTopupFeesEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoTopUpFee, error) {
-	var (
-		event = new(stakinginfo.StakinginfoTopUpFee)
-	)
+	event := new(stakinginfo.StakinginfoTopUpFee)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -692,9 +711,7 @@ func (c *ContractCaller) DecodeValidatorJoinEvent(contractAddressString string, 
 
 // DecodeValidatorStakeUpdateEvent represents validator stake update event
 func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoStakeUpdate, error) {
-	var (
-		event = new(stakinginfo.StakinginfoStakeUpdate)
-	)
+	event := new(stakinginfo.StakinginfoStakeUpdate)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -709,14 +726,11 @@ func (c *ContractCaller) DecodeValidatorStakeUpdateEvent(contractAddressString s
 	}
 
 	return nil, errors.New("event not found")
-
 }
 
 // DecodeValidatorExitEvent represents validator stake unStake event
 func (c *ContractCaller) DecodeValidatorExitEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnstakeInit, error) {
-	var (
-		event = new(stakinginfo.StakinginfoUnstakeInit)
-	)
+	event := new(stakinginfo.StakinginfoUnstakeInit)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -731,14 +745,11 @@ func (c *ContractCaller) DecodeValidatorExitEvent(contractAddressString string, 
 	}
 
 	return nil, errors.New("event not found")
-
 }
 
 // DecodeSignerUpdateEvent represents sig update event
 func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSignerChange, error) {
-	var (
-		event = new(stakinginfo.StakinginfoSignerChange)
-	)
+	event := new(stakinginfo.StakinginfoSignerChange)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -757,9 +768,7 @@ func (c *ContractCaller) DecodeSignerUpdateEvent(contractAddressString string, r
 
 // DecodeStateSyncedEvent decode state sync data
 func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*statesender.StatesenderStateSynced, error) {
-	var (
-		event = new(statesender.StatesenderStateSynced)
-	)
+	event := new(statesender.StatesenderStateSynced)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -780,9 +789,7 @@ func (c *ContractCaller) DecodeStateSyncedEvent(contractAddressString string, re
 
 // DecodeSlashedEvent represents tick ack on contract
 func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoSlashed, error) {
-	var (
-		event = new(stakinginfo.StakinginfoSlashed)
-	)
+	event := new(stakinginfo.StakinginfoSlashed)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -801,9 +808,7 @@ func (c *ContractCaller) DecodeSlashedEvent(contractAddressString string, receip
 
 // DecodeUnJailedEvent represents unJail on contract
 func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*stakinginfo.StakinginfoUnJailed, error) {
-	var (
-		event = new(stakinginfo.StakinginfoUnJailed)
-	)
+	event := new(stakinginfo.StakinginfoUnJailed)
 
 	contractAddress := common.HexToAddress(contractAddressString)
 
@@ -827,7 +832,6 @@ func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, recei
 // CurrentAccountStateRoot get current account root from on chain
 func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error) {
 	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(nil)
-
 	if err != nil {
 		Logger.Error("unable to get current account state root", "error", err)
 
@@ -862,10 +866,10 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 	error,
 ) {
 	d, err := validatorSetInstance.GetSpan(nil, id)
-	if &d != nil {
-		return d.Number, d.StartBlock, d.EndBlock, err
+	if err != nil {
+		return nil, nil, nil, errors.New("unable to get span details")
 	}
-	return nil, nil, nil, errors.New("unable to get span details")
+	return d.Number, d.StartBlock, d.EndBlock, err
 }
 
 // CurrentStateCounter get state counter
@@ -880,20 +884,20 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 }
 
 // CheckIfBlocksExist - check if the given block exists on local chain
-func (c *ContractCaller) CheckIfBlocksExist(end uint64) bool {
+func (c *ContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
 
-	block := c.GetBlockByNumber(ctx, end)
+	block, err := c.GetBlockByNumber(ctx, end)
 	if block == nil {
-		return false
+		return false, err
 	}
 
-	return end == block.NumberU64()
+	return end == block.NumberU64(), err
 }
 
 // GetBlockByNumber returns blocks by number from child chain (bor)
-func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) *ethTypes.Block {
+func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) (*ethTypes.Block, error) {
 	var block *ethTypes.Block
 	var err error
 
@@ -905,10 +909,10 @@ func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint6
 
 	if err != nil {
 		Logger.Error("Unable to fetch block by number from child chain", "block", block, "err", err)
-		return nil
+		return nil, err
 	}
 
-	return block
+	return block, nil
 }
 
 //
@@ -973,9 +977,11 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 
 	var err error
 
-	contractsABIs := [8]string{rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
+	contractsABIs := [8]string{
+		rootchain.RootchainMetaData.ABI, stakinginfo.StakinginfoMetaData.ABI, validatorset.ValidatorsetMetaData.ABI,
 		statereceiver.StatereceiverMetaData.ABI, statesender.StatesenderMetaData.ABI, stakemanager.StakemanagerMetaData.ABI,
-		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI}
+		slashmanager.SlashmanagerMetaData.ABI, erc20.Erc20MetaData.ABI,
+	}
 
 	// iterate over supported ABIs
 	for _, contractABI := range contractsABIs {
@@ -992,7 +998,6 @@ func populateABIs(contractCallerObj *ContractCaller) error {
 				return err
 			} else {
 				ContractsABIsMap[contractABI] = ccAbi
-				Logger.Debug("ABI initialized successfully")
 			}
 		} else {
 			// use cached abi
@@ -1030,4 +1035,20 @@ func chooseContractCallerABI(contractCallerObj *ContractCaller, abi string) (*ab
 // getABI returns the contract's ABI struct from on its JSON representation
 func getABI(data string) (abi.ABI, error) {
 	return abi.JSON(strings.NewReader(data))
+}
+
+// copied from bor/ethclient package
+func toBlockNumArg(number *big.Int) string {
+	if number == nil {
+		return "latest"
+	}
+	if number.Sign() >= 0 {
+		return hexutil.EncodeBig(number)
+	}
+	// It's negative.
+	if number.IsInt64() {
+		return rpc.BlockNumber(number.Int64()).String()
+	}
+	// It's negative and large, which is invalid.
+	return fmt.Sprintf("<invalid %d>", number)
 }

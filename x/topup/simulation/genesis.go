@@ -4,12 +4,12 @@ import (
 	"math/big"
 	"math/rand"
 	"strconv"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/ethereum/go-ethereum/common/math"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/types"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
@@ -23,12 +23,13 @@ func genSequenceNumber(r *rand.Rand) string {
 
 // RandomizeGenState returns a simulated topup genesis
 func RandomizeGenState(simState *module.SimulationState) {
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	minAccounts := 1
-	maxAccounts := 50
-	numAccounts := rand.Intn(maxAccounts-minAccounts) + minAccounts
-	accounts := simulation.RandomAccounts(r1, numAccounts)
+	minAccounts := int64(1)
+	maxAccounts := int64(50)
+	numAccounts, err := helper.SecureRandomInt(minAccounts, maxAccounts)
+	if err != nil {
+		panic(err)
+	}
+	accounts := simulation.RandomAccounts(simState.Rand, int(numAccounts))
 
 	var (
 		sequences        = make([]string, numAccounts)
@@ -36,7 +37,7 @@ func RandomizeGenState(simState *module.SimulationState) {
 		sequenceNumber   string
 	)
 
-	for i := 0; i < numAccounts; i++ {
+	for i := 0; i < int(numAccounts); i++ {
 
 		simState.AppParams.GetOrGenerate(SequenceNumber, &sequenceNumber, simState.Rand, func(r *rand.Rand) {
 			sequenceNumber = genSequenceNumber(r)

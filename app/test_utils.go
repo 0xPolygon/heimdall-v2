@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
+	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -19,7 +19,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/cosmos-sdk/types/simulation"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -41,19 +40,34 @@ const (
 	ValAddr3           = "0x000000000000000000000000000000000003dEaD"
 )
 
-func SetupApp(t *testing.T, numOfVals uint64) (*HeimdallApp, *dbm.MemDB, log.Logger) {
+type SetupAppResult struct {
+	App           *HeimdallApp
+	DB            *dbm.MemDB
+	Logger        log.Logger
+	ValidatorKeys []cmtcrypto.PrivKey
+}
+
+func SetupApp(t *testing.T, numOfVals uint64) SetupAppResult {
 	t.Helper()
 
 	// generate validators, accounts and balances
-	validators, accounts, balances := generateValidators(t, numOfVals)
+	validatorPrivKeys, validators, accounts, balances := generateValidators(t, numOfVals)
 
 	// setup app with validator set and respective accounts
-	return setupAppWithValidatorSet(t, validators, accounts, balances)
+	app, db, logger, privKeys := setupAppWithValidatorSet(t, validatorPrivKeys, validators, accounts, balances)
+
+	return SetupAppResult{
+		App:           app,
+		DB:            db,
+		Logger:        logger,
+		ValidatorKeys: privKeys,
+	}
 }
 
-func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator, []authtypes.GenesisAccount, []banktypes.Balance) {
+func generateValidators(t *testing.T, numOfVals uint64) ([]cmtcrypto.PrivKey, []*stakeTypes.Validator, []authtypes.GenesisAccount, []banktypes.Balance) {
 	t.Helper()
 
+	validatorPrivKeys := make([]cmtcrypto.PrivKey, 0, numOfVals)
 	validators := make([]*stakeTypes.Validator, 0, numOfVals)
 	accounts := make([]authtypes.GenesisAccount, 0, numOfVals)
 	balances := make([]banktypes.Balance, 0, numOfVals)
@@ -70,6 +84,7 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator
 		// create validator set
 		val, _ := stakeTypes.NewValidator(i, 0, 0, i, 100, pk, pubKey.Address().String())
 
+		validatorPrivKeys = append(validatorPrivKeys, privKey)
 		validators = append(validators, val)
 
 		senderPubKey := secp256k1.GenPrivKey().PubKey()
@@ -83,10 +98,10 @@ func generateValidators(t *testing.T, numOfVals uint64) ([]*stakeTypes.Validator
 		balances = append(balances, balance)
 	}
 
-	return validators, accounts, balances
+	return validatorPrivKeys, validators, accounts, balances
 }
 
-func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger) {
+func setupAppWithValidatorSet(t *testing.T, validatorPrivKeys []cmtcrypto.PrivKey, validators []*stakeTypes.Validator, accounts []authtypes.GenesisAccount, balances []banktypes.Balance, testOpts ...*helper.TestOpts) (*HeimdallApp, *dbm.MemDB, log.Logger, []cmtcrypto.PrivKey) {
 	t.Helper()
 
 	db := dbm.NewMemDB()
@@ -121,16 +136,50 @@ func setupAppWithValidatorSet(t *testing.T, validators []*stakeTypes.Validator, 
 	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
-	RequestFinalizeBlock(t, app, VoteExtBlockHeight)
+	vals := []stakeTypes.Validator{}
+	for _, val := range validators {
+		vals = append(vals, *val)
+	}
+
+	requestFinalizeBlock(t, app, VoteExtBlockHeight, vals)
 
 	_, err = app.Commit()
 	require.NoError(t, err)
 
-	return app, db, logger
+	return app, db, logger, validatorPrivKeys
 }
 
 func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
+	t.Helper()
+	validators := app.StakeKeeper.GetCurrentValidators(app.NewContext(true))
+	requestFinalizeBlock(t, app, height, validators)
+}
+
+func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validators []stakeTypes.Validator) {
+	t.Helper()
+	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
+	require.NoError(t, err)
+	consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
+		SideTxResponses: []sidetxs.SideTxResponse{},
+		Height:          height - 1,
+	}
+
+	txResExt, err := consolidatedSideTxRes.Marshal()
+	require.NoError(t, err)
+
 	extCommitInfo := new(abci.ExtendedCommitInfo)
+	extCommitInfo.Votes = make([]abci.ExtendedVoteInfo, 0)
+	for _, validator := range validators {
+		extCommitInfo.Votes = append(extCommitInfo.Votes, abci.ExtendedVoteInfo{
+			VoteExtension:      txResExt,
+			NonRpVoteExtension: dummyExt,
+			BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
+			Validator: abci.Validator{
+				Address: common.Hex2Bytes(validator.Signer),
+				Power:   validator.VotingPower,
+			},
+		})
+	}
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
@@ -141,6 +190,7 @@ func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 }
 
 func RequestFinalizeBlockWithTxs(t *testing.T, app *HeimdallApp, height int64, txs ...[]byte) *abci.ResponseFinalizeBlock {
+	t.Helper()
 	extCommitInfo := new(abci.ExtendedCommitInfo)
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
@@ -190,7 +240,6 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 
 	validators := make([]*stakeTypes.Validator, 0, len(valSet.Validators))
 	seqs := make([]string, 0, len(valSet.Validators))
-	r := rand.New(rand.NewSource(time.Now().UnixMilli()))
 
 	for i, val := range valSet.Validators {
 
@@ -206,7 +255,14 @@ func GenesisStateWithValSet(codec codec.Codec, genesisState map[string]json.RawM
 		}
 
 		validators = append(validators, &validator)
-		seqs = append(seqs, strconv.Itoa(simulation.RandIntBetween(r, 1, 1000000)))
+
+		// Generate a secure random integer between 1 and 1,000,000
+		n, err := helper.SecureRandomInt(1, 1000000)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate secure random number: %w", err)
+		}
+
+		seqs = append(seqs, strconv.FormatInt(n, 10))
 	}
 
 	// set validators and delegations

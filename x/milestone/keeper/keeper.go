@@ -46,7 +46,6 @@ func NewKeeper(
 	stakingKeeper types.StakeKeeper,
 	contractCaller helper.IContractCaller,
 ) Keeper {
-
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
 		panic(fmt.Errorf("invalid milestone authority address: %w", err))
@@ -279,9 +278,19 @@ func (k *Keeper) SetNoAckMilestone(ctx context.Context, milestoneId string) erro
 
 // GetLastNoAckMilestone returns the last no-ack milestone
 func (k *Keeper) GetLastNoAckMilestone(ctx context.Context) (string, error) {
+	doExist, err := k.lastNoAckID.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the existence of last no ack milestone in store", "err", err)
+		return "", err
+	}
+
+	if !doExist {
+		return "", nil
+	}
+
 	milestoneID, err := k.lastNoAckID.Get(ctx)
 	if err != nil {
-		k.Logger(ctx).Error("error while fetching block number from store", "err", err)
+		k.Logger(ctx).Error("error while fetching last no ack milestone from store", "err", err)
 		return "", err
 	}
 

@@ -185,7 +185,6 @@ func (_Statereceiver *StatereceiverTransactorRaw) Transact(opts *bind.TransactOp
 func (_Statereceiver *StatereceiverCaller) SYSTEMADDRESS(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
 	err := _Statereceiver.contract.Call(opts, &out, "SYSTEM_ADDRESS")
-
 	if err != nil {
 		return *new(common.Address), err
 	}
@@ -193,7 +192,6 @@ func (_Statereceiver *StatereceiverCaller) SYSTEMADDRESS(opts *bind.CallOpts) (c
 	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
 
 	return out0, err
-
 }
 
 // SYSTEMADDRESS is a free data retrieval call binding the contract method 0x3434735f.
@@ -216,7 +214,6 @@ func (_Statereceiver *StatereceiverCallerSession) SYSTEMADDRESS() (common.Addres
 func (_Statereceiver *StatereceiverCaller) LastStateId(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _Statereceiver.contract.Call(opts, &out, "lastStateId")
-
 	if err != nil {
 		return *new(*big.Int), err
 	}
@@ -224,7 +221,6 @@ func (_Statereceiver *StatereceiverCaller) LastStateId(opts *bind.CallOpts) (*bi
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
-
 }
 
 // LastStateId is a free data retrieval call binding the contract method 0x5407ca67.

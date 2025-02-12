@@ -47,8 +47,6 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 	return &genesisState
 }
 
-// TODO HV2: delete this function if not needed
-
 // SetGenesisStateToAppState sets x/bor GenesisState into raw application
 // genesis state.
 func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, currentValSet staketypes.ValidatorSet) (map[string]json.RawMessage, error) {
@@ -90,7 +88,7 @@ func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 		EndBlock:          0 + DefaultFirstSpanDuration - 1,
 		ValidatorSet:      valSet,
 		SelectedProducers: selectedProducers,
-		ChainId:           chainId,
+		BorChainId:        chainId,
 	}
 
 	firstSpan = append(firstSpan, newSpan)

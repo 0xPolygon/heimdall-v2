@@ -16,6 +16,7 @@ func NewMsgProposeSpan(
 	endBlock uint64,
 	chainId string,
 	seed []byte,
+	seedAuthor string,
 ) *MsgProposeSpan {
 	return &MsgProposeSpan{
 		SpanId:     spanID,
@@ -24,6 +25,7 @@ func NewMsgProposeSpan(
 		EndBlock:   endBlock,
 		ChainId:    chainId,
 		Seed:       seed,
+		SeedAuthor: seedAuthor,
 	}
 }
 

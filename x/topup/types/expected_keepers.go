@@ -10,6 +10,7 @@ import (
 
 // BankKeeper defines the bank keeper contract used by x/topup module
 type BankKeeper interface {
+	GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	IsSendEnabledDenom(ctx context.Context, denom string) bool
 	SpendableCoin(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin
 	SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error

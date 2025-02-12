@@ -119,7 +119,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	ctx = ctx.WithBlockHeight(int64(4))
 
 	s.Run("Previous milestone is still in voting phase", func() {
-
 		msgMilestone := types.NewMsgMilestoneBlock(
 			header.Proposer,
 			start,
@@ -138,7 +137,6 @@ func (s *KeeperTestSuite) TestHandleMsgMilestone() {
 	ctx = ctx.WithBlockHeight(int64(6))
 
 	s.Run("Milestone not in continuity", func() {
-
 		err := keeper.AddMilestone(ctx, header)
 		require.NoError(err)
 
@@ -392,7 +390,7 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				require.Equal(authtypes.NewModuleAddress(govtypes.ModuleName).String(), keeper.GetAuthority())
 				require.NoError(err)
 
-				res, err := queryClient.GetParams(ctx, &types.QueryParamsRequest{})
+				res, err := queryClient.GetMilestoneParams(ctx, &types.QueryParamsRequest{})
 				require.NoError(err)
 				require.Equal(params, res.Params)
 			}

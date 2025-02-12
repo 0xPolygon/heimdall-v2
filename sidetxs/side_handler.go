@@ -12,7 +12,7 @@ import (
 type SideTxHandler func(ctx sdk.Context, msg sdk.Msg) Vote
 
 // PostTxHandler defines the core of the state transition function of an application after side-tx execution
-type PostTxHandler func(ctx sdk.Context, msg sdk.Msg, sideTxResult Vote)
+type PostTxHandler func(ctx sdk.Context, msg sdk.Msg, sideTxResult Vote) error
 
 // SideMsgServer defines the interface to implement the sidetxs and post handlers.
 type SideMsgServer interface {
@@ -26,8 +26,8 @@ type SideMsgServer interface {
 func CommonRegisterSideMsgServer(
 	sideCfg SideTxConfigurator,
 	srv SideMsgServer,
-	serviceDesc grpc.ServiceDesc) {
-
+	serviceDesc grpc.ServiceDesc,
+) {
 	for _, service := range serviceDesc.Methods {
 
 		var requestTypeName string

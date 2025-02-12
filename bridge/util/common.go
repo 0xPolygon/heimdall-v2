@@ -2,20 +2,25 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
+	mLog "github.com/RichardKnop/machinery/v1/log"
 	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/codec"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -29,28 +34,30 @@ import (
 type BridgeEvent string
 
 const (
-	AccountDetailsURL      = "/cosmos/auth/v1beta1/accounts/%v"
-	LastNoAckURL           = "/checkpoints/last-no-ack"
-	CheckpointParamsURL    = "/checkpoints/params"
-	MilestoneCountURL      = "/milestone/count"
-	ChainManagerParamsURL  = "/chainmanager/params"
-	ProposersURL           = "/stake/proposer/%v"
-	MilestoneProposersURL  = "/milestone/proposer/%v"
-	BufferedCheckpointURL  = "/checkpoints/buffer"
-	LatestCheckpointURL    = "/checkpoints/latest"
-	LatestMilestoneURL     = "/milestone/latest"
-	CountCheckpointURL     = "/checkpoints/count"
-	CurrentProposerURL     = "/checkpoint/proposers/current"
-	LatestSpanURL          = "/bor/span/latest"
-	NextSpanInfoURL        = "/bor/span/prepare"
-	NextSpanSeedURL        = "/bor/span/seed"
-	DividendAccountRootURL = "/topup/dividend-account-root"
-	ValidatorURL           = "/stake/validator/%v"
-	CurrentValidatorSetURL = "/stake/validator-set"
-	StakingTxStatusURL     = "/stake/is-old-tx"
-	TopupTxStatusURL       = "/topup/isoldtx"
-	ClerkTxStatusURL       = "/clerk/isoldtx"
-	ClerkEventRecordURL    = "/clerk/event-record/%d"
+	AccountDetailsURL       = "/cosmos/auth/v1beta1/accounts/%v"
+	AccountParamsURL        = "/cosmos/auth/v1beta1/params"
+	LastNoAckURL            = "/checkpoints/last-no-ack"
+	CheckpointParamsURL     = "/checkpoints/params"
+	CheckpointSignaturesURL = "/checkpoint/signatures/%v"
+	MilestoneCountURL       = "/milestone/count"
+	ChainManagerParamsURL   = "/chainmanager/params"
+	ProposersURL            = "/stake/proposers/%v"
+	MilestoneProposersURL   = "/milestone/proposer/%v"
+	BufferedCheckpointURL   = "/checkpoints/buffer"
+	LatestCheckpointURL     = "/checkpoints/latest"
+	LatestMilestoneURL      = "/milestone/latest"
+	CountCheckpointURL      = "/checkpoints/count"
+	CurrentProposerURL      = "/checkpoint/proposers/current"
+	LatestSpanURL           = "/bor/span/latest"
+	NextSpanInfoURL         = "/bor/span/prepare"
+	NextSpanSeedURL         = "/bor/span/seed/%v"
+	DividendAccountRootURL  = "/topup/dividend-account-root"
+	ValidatorURL            = "/stake/validator/%v"
+	CurrentValidatorSetURL  = "/stake/validator-set"
+	StakingTxStatusURL      = "/stake/is-old-tx"
+	TopupTxStatusURL        = "/topup/isoldtx"
+	ClerkTxStatusURL        = "/clerk/isoldtx"
+	ClerkEventRecordURL     = "/clerk/event-record/%d"
 	/* HV2 - not adding slashing
 	LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
 	TickSlashInfoListURL    = "/slashing/tick_slash_infos"
@@ -80,17 +87,47 @@ const (
 	BridgeDBFlag = "bridge-db"
 )
 
+var (
+	logger     log.Logger
+	loggerOnce sync.Once
+)
+
 // Logger returns logger singleton instance
 func Logger() log.Logger {
-	return log.NewNopLogger().With("module", "bridge")
+	loggerOnce.Do(func() {
+		defaultLevel := "info"
+		logsWriter := helper.GetLogsWriter(helper.GetConfig().LogsWriterFile)
+		logger = log.NewTMLogger(log.NewSyncWriter(logsWriter))
+		option, err := log.AllowLevel(viper.GetString("log_level"))
+		if err != nil {
+			// cosmos sdk is using different style of log format
+			// and levels don't map well, config.toml
+			// see: https://github.com/cosmos/cosmos-sdk/pull/8072
+			logger.Error("Unable to parse logging level", "Error", err)
+			logger.Info("Using default log level")
+			option, err = log.AllowLevel(defaultLevel)
+			if err != nil {
+				logger.Error("failed to allow default log level", "Level", defaultLevel, "Error", err)
+			}
+		}
+
+		logger = log.NewFilter(logger, option)
+
+		// set no-op logger if log level is not debug for machinery
+		if viper.GetString("log_level") != "debug" {
+			mLog.SetDebug(NoopLogger{})
+		}
+	})
+
+	return logger
 }
 
 // IsProposer checks if we are proposer
-func IsProposer() (bool, error) {
+func IsProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 	var (
-		proposers []staketypes.Validator
-		count     = uint64(1)
+		response staketypes.QueryProposersResponse
+		count    = uint64(1)
 	)
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ProposersURL, strconv.FormatUint(count, 10))))
@@ -99,14 +136,13 @@ func IsProposer() (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result, &proposers)
-	if err != nil {
+	if err := cdc.UnmarshalJSON(result, &response); err != nil {
 		logger.Error("error unmarshalling proposer slice", "error", err)
 		return false, err
 	}
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(proposers[0].Signer)
+	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false, err
@@ -119,13 +155,10 @@ func IsProposer() (bool, error) {
 }
 
 // IsMilestoneProposer checks if we are the milestone proposer
-func IsMilestoneProposer() (bool, error) {
+func IsMilestoneProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
-	var (
-		proposers []staketypes.Validator
-		count     = uint64(1)
-	)
+	count := uint64(1)
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
 	if err != nil {
@@ -133,19 +166,19 @@ func IsMilestoneProposer() (bool, error) {
 		return false, err
 	}
 
-	err = json.Unmarshal(result, &proposers)
-	if err != nil {
+	var response milestoneTypes.QueryMilestoneProposerResponse
+	if err := cdc.UnmarshalJSON(result, &response); err != nil {
 		logger.Error("error unmarshalling milestone proposer slice", "error", err)
 		return false, err
 	}
 
-	if len(proposers) == 0 {
+	if len(response.Proposers) == 0 {
 		logger.Error("length of proposer list is 0")
 		return false, errors.Errorf("Length of proposer list is 0")
 	}
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(proposers[0].Signer)
+	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false, err
@@ -158,7 +191,7 @@ func IsMilestoneProposer() (bool, error) {
 }
 
 // IsInProposerList checks if we are in the current proposers list
-func IsInProposerList(count uint64) (bool, error) {
+func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count+1, 10))
@@ -170,8 +203,8 @@ func IsInProposerList(count uint64) (bool, error) {
 	}
 
 	// unmarshall data from buffer
-	var proposers []staketypes.Validator
-	if err := json.Unmarshal(response, &proposers); err != nil {
+	var proposers checkpointTypes.QueryProposerResponse
+	if err := cdc.UnmarshalJSON(response, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -180,8 +213,8 @@ func IsInProposerList(count uint64) (bool, error) {
 
 	ac := addressCodec.NewHexCodec()
 
-	for i := 1; i <= int(count) && i < len(proposers); i++ {
-		signerBytes, err := ac.StringToBytes(proposers[i].Signer)
+	for i := 1; i <= int(count) && i < len(proposers.Proposers); i++ {
+		signerBytes, err := ac.StringToBytes(proposers.Proposers[i].Signer)
 		if err != nil {
 			logger.Error("Error converting signer string to bytes", "error", err)
 			return false, err
@@ -195,7 +228,7 @@ func IsInProposerList(count uint64) (bool, error) {
 }
 
 // IsInMilestoneProposerList checks if we are in the current milestone proposers list
-func IsInMilestoneProposerList(count uint64) (bool, error) {
+func IsInMilestoneProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
 	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
@@ -206,9 +239,8 @@ func IsInMilestoneProposerList(count uint64) (bool, error) {
 		return false, err
 	}
 
-	// unmarshall data from buffer
-	var proposers []staketypes.Validator
-	if err := json.Unmarshal(response, &proposers); err != nil {
+	var milestoneProposers milestoneTypes.QueryMilestoneProposerResponse
+	if err := cdc.UnmarshalJSON(response, &milestoneProposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
 	}
@@ -217,8 +249,8 @@ func IsInMilestoneProposerList(count uint64) (bool, error) {
 
 	ac := addressCodec.NewHexCodec()
 
-	for i := 1; i <= int(count) && i < len(proposers); i++ {
-		signerBytes, err := ac.StringToBytes(proposers[i].Signer)
+	for _, proposer := range milestoneProposers.Proposers {
+		signerBytes, err := ac.StringToBytes(proposer.Signer)
 		if err != nil {
 			logger.Error("Error converting signer string to bytes", "error", err)
 			return false, err
@@ -233,7 +265,7 @@ func IsInMilestoneProposerList(count uint64) (bool, error) {
 
 // CalculateTaskDelay calculates delay required for current validator to propose the tx
 // It solves for multiple validators sending same transaction.
-func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
+func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration) {
 	logger := Logger()
 
 	defer LogElapsedTimeForStateSyncedEvent(event, "CalculateTaskDelay", time.Now())
@@ -242,7 +274,7 @@ func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
 	valPosition := 0
 	isCurrentValidator := false
 
-	validatorSet, err := GetValidatorSet()
+	validatorSet, err := GetValidatorSet(cdc)
 	if err != nil {
 		logger.Error("Error getting current validatorset data ", "error", err)
 		return false, 0
@@ -282,26 +314,26 @@ func CalculateTaskDelay(event interface{}) (bool, time.Duration) {
 }
 
 // IsCurrentProposer checks if we are current proposer
-func IsCurrentProposer() (bool, error) {
+func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
-	var proposer staketypes.Validator
+	var response checkpointTypes.QueryCurrentProposerResponse
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentProposerURL))
 	if err != nil {
-		logger.Error("Error fetching proposers", "error", err)
+		logger.Error("Error fetching current proposer", "error", err)
 		return false, err
 	}
 
-	if err = json.Unmarshal(result, &proposer); err != nil {
-		logger.Error("error unmarshalling validator", "error", err)
+	if err = cdc.UnmarshalJSON(result, &response); err != nil {
+		logger.Error("error unmarshalling current proposer response", "error", err)
 		return false, err
 	}
 
-	logger.Debug("Current proposer fetched", "validator", proposer.String())
+	logger.Debug("Current proposer fetched", "validator", response.Validator.String())
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(proposer.Signer)
+	signerBytes, err := ac.StringToBytes(response.Validator.Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false, err
@@ -316,10 +348,8 @@ func IsCurrentProposer() (bool, error) {
 }
 
 // IsEventSender checks if the validatorID belongs to the event sender
-func IsEventSender(validatorID uint64) bool {
+func IsEventSender(validatorID uint64, cdc codec.Codec) bool {
 	logger := Logger()
-
-	var validator staketypes.Validator
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
@@ -327,15 +357,16 @@ func IsEventSender(validatorID uint64) bool {
 		return false
 	}
 
-	if err = json.Unmarshal(result, &validator); err != nil {
-		logger.Error("error unmarshalling proposer slice", "error", err)
+	var validatorResponse staketypes.QueryValidatorResponse
+	if err = cdc.UnmarshalJSON(result, &validatorResponse); err != nil {
+		logger.Error("Error unmarshalling validator data", "error", err)
 		return false
 	}
 
-	logger.Debug("Current event sender received", "validator", validator.String())
+	logger.Debug("Current event sender received", "validator", validatorResponse.Validator.String())
 
 	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(validator.Signer)
+	signerBytes, err := ac.StringToBytes(validatorResponse.Validator.Signer)
 	if err != nil {
 		logger.Error("Error converting signer string to bytes", "error", err)
 		return false
@@ -363,8 +394,8 @@ func CreateURLWithQuery(uri string, param map[string]interface{}) (string, error
 
 // IsCatchingUp checks if the heimdall node you are connected to is fully synced or not
 // returns true when synced
-func IsCatchingUp(cliCtx client.Context) bool {
-	resp, err := helper.GetNodeStatus(cliCtx)
+func IsCatchingUp(cliCtx client.Context, ctx context.Context) bool {
+	resp, err := helper.GetNodeStatus(cliCtx, ctx)
 	if err != nil {
 		return true
 	}
@@ -374,27 +405,48 @@ func IsCatchingUp(cliCtx client.Context) bool {
 
 // GetAccount returns heimdall auth account
 func GetAccount(cliCtx client.Context, address string) (sdk.AccountI, error) {
-	logger := Logger()
+	var account sdk.AccountI
+	cmt := helper.GetConfig().CometBFTRPCUrl
+	rpc, err := client.NewClientFromNode(cmt)
+	if err != nil {
+		panic(err)
+	}
+	cliCtx = cliCtx.WithClient(rpc)
 
-	serverEndpoint := helper.GetHeimdallServerEndpoint(fmt.Sprintf(AccountDetailsURL, address))
-
-	// call account rest api
-	response, err := helper.FetchFromAPI(serverEndpoint)
+	queryClient := authtypes.NewQueryClient(cliCtx)
+	res, err := queryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: address})
 	if err != nil {
 		return nil, err
 	}
 
-	var account authtypes.BaseAccount
-	if err = cliCtx.Codec.UnmarshalJSON(response, &account); err != nil {
-		logger.Error("Error unmarshalling account details", "url", serverEndpoint)
+	if err := cliCtx.InterfaceRegistry.UnpackAny(res.Account, &account); err != nil {
 		return nil, err
 	}
 
-	return &account, nil
+	return account, nil
+}
+
+// GetAccountParamsURL return auth account params
+func GetAccountParamsURL(cdc codec.Codec) (*authtypes.Params, error) {
+	logger := Logger()
+
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(AccountParamsURL))
+	if err != nil {
+		logger.Error("Error fetching account params", "err", err)
+		return nil, err
+	}
+
+	var params authtypes.QueryParamsResponse
+	if err = cdc.UnmarshalJSON(response, &params); err != nil {
+		logger.Error("Error unmarshalling auth params", "url", AccountParamsURL, "err", err)
+		return nil, err
+	}
+
+	return &params.Params, nil
 }
 
 // GetChainmanagerParams return chain manager params
-func GetChainmanagerParams() (*chainmanagertypes.Params, error) {
+func GetChainmanagerParams(cdc codec.Codec) (*chainmanagertypes.Params, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(ChainManagerParamsURL))
@@ -403,17 +455,17 @@ func GetChainmanagerParams() (*chainmanagertypes.Params, error) {
 		return nil, err
 	}
 
-	var params chainmanagertypes.Params
-	if err = json.Unmarshal(response, &params); err != nil {
+	var params chainmanagertypes.QueryParamsResponse
+	if err = cdc.UnmarshalJSON(response, &params); err != nil {
 		logger.Error("Error unmarshalling chainmanager params", "url", ChainManagerParamsURL, "err", err)
 		return nil, err
 	}
 
-	return &params, nil
+	return &params.Params, nil
 }
 
 // GetCheckpointParams return checkpoint params
-func GetCheckpointParams() (*checkpointTypes.Params, error) {
+func GetCheckpointParams(cdc codec.Codec) (*checkpointTypes.Params, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CheckpointParamsURL))
@@ -422,17 +474,17 @@ func GetCheckpointParams() (*checkpointTypes.Params, error) {
 		return nil, err
 	}
 
-	var params checkpointTypes.Params
-	if err := json.Unmarshal(response, &params); err != nil {
+	var params checkpointTypes.QueryParamsResponse
+	if err := cdc.UnmarshalJSON(response, &params); err != nil {
 		logger.Error("Error unmarshalling Checkpoint params", "url", CheckpointParamsURL)
 		return nil, err
 	}
 
-	return &params, nil
+	return &params.Params, nil
 }
 
 // GetBufferedCheckpoint return checkpoint from buffer
-func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
+func GetBufferedCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(BufferedCheckpointURL))
@@ -441,17 +493,17 @@ func GetBufferedCheckpoint() (*checkpointTypes.Checkpoint, error) {
 		return nil, err
 	}
 
-	var checkpoint checkpointTypes.Checkpoint
-	if err := json.Unmarshal(response, &checkpoint); err != nil {
+	var checkpoint checkpointTypes.QueryCheckpointBufferResponse
+	if err := cdc.UnmarshalJSON(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling buffered checkpoint", "url", BufferedCheckpointURL, "err", err)
 		return nil, err
 	}
 
-	return &checkpoint, nil
+	return &checkpoint.Checkpoint, nil
 }
 
 // GetLatestCheckpoint return last successful checkpoint
-func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
+func GetLatestCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestCheckpointURL))
@@ -460,17 +512,17 @@ func GetLatestCheckpoint() (*checkpointTypes.Checkpoint, error) {
 		return nil, err
 	}
 
-	var checkpoint checkpointTypes.Checkpoint
-	if err = json.Unmarshal(response, &checkpoint); err != nil {
+	var checkpoint checkpointTypes.QueryCheckpointLatestResponse
+	if err = cdc.UnmarshalJSON(response, &checkpoint); err != nil {
 		logger.Error("Error unmarshalling latest checkpoint", "url", LatestCheckpointURL, "err", err)
 		return nil, err
 	}
 
-	return &checkpoint, nil
+	return &checkpoint.Checkpoint, nil
 }
 
 // GetLatestMilestone return last successful milestone
-func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
+func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
@@ -479,32 +531,32 @@ func GetLatestMilestone() (*milestoneTypes.Milestone, error) {
 		return nil, err
 	}
 
-	var milestone milestoneTypes.Milestone
-	if err = json.Unmarshal(response, &milestone); err != nil {
+	var milestoneResp milestoneTypes.QueryLatestMilestoneResponse
+	if err = cdc.UnmarshalJSON(response, &milestoneResp); err != nil {
 		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
 		return nil, err
 	}
 
-	return &milestone, nil
+	return &milestoneResp.Milestone, nil
 }
 
 // GetMilestoneCount return milestones count
-func GetMilestoneCount() (*milestoneTypes.MilestoneCount, error) {
+func GetMilestoneCount(cdc codec.Codec) (uint64, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
 	if err != nil {
 		logger.Error("Error fetching Milestone count", "err", err)
-		return nil, err
+		return 0, err
 	}
 
-	var count milestoneTypes.MilestoneCount
-	if err := json.Unmarshal(response, &count); err != nil {
+	var count milestoneTypes.QueryCountResponse
+	if err := cdc.UnmarshalJSON(response, &count); err != nil {
 		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
-		return nil, err
+		return 0, err
 	}
 
-	return &count, nil
+	return count.Count, nil
 }
 
 // AppendPrefix returns PublicKey in uncompressed format
@@ -519,10 +571,8 @@ func AppendPrefix(signerPubKey []byte) []byte {
 }
 
 // GetValidatorNonce fetches validator nonce and height
-func GetValidatorNonce(validatorID uint64) (uint64, error) {
+func GetValidatorNonce(validatorID uint64, cdc codec.Codec) (uint64, error) {
 	logger := Logger()
-
-	var validator staketypes.Validator
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ValidatorURL, strconv.FormatUint(validatorID, 10))))
 	if err != nil {
@@ -530,18 +580,19 @@ func GetValidatorNonce(validatorID uint64) (uint64, error) {
 		return 0, err
 	}
 
-	if err = json.Unmarshal(result, &validator); err != nil {
-		logger.Error("error unmarshalling validator data", "error", err)
+	var validatorResponse staketypes.QueryValidatorResponse
+	if err = cdc.UnmarshalJSON(result, &validatorResponse); err != nil {
+		logger.Error("Error unmarshalling validator data ", "error", err)
 		return 0, err
 	}
 
-	logger.Debug("Validator data received ", "validator", validator.String())
+	logger.Debug("Validator data received ", "validator", validatorResponse.Validator.String())
 
-	return validator.Nonce, nil
+	return validatorResponse.Validator.Nonce, nil
 }
 
 // GetValidatorSet fetches the current validator set
-func GetValidatorSet() (*staketypes.ValidatorSet, error) {
+func GetValidatorSet(cdc codec.Codec) (*staketypes.ValidatorSet, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
@@ -550,17 +601,17 @@ func GetValidatorSet() (*staketypes.ValidatorSet, error) {
 		return nil, err
 	}
 
-	var validatorSet staketypes.ValidatorSet
-	if err = json.Unmarshal(response, &validatorSet); err != nil {
-		logger.Error("Error unmarshalling current validatorset data ", "error", err)
+	var validatorSetResponse staketypes.QueryCurrentValidatorSetResponse
+	if err = cdc.UnmarshalJSON(response, &validatorSetResponse); err != nil {
+		logger.Error("Error unmarshalling validator set data ", "error", err)
 		return nil, err
 	}
 
-	return &validatorSet, nil
+	return &validatorSetResponse.ValidatorSet, nil
 }
 
 // GetClerkEventRecord return last successful checkpoint
-func GetClerkEventRecord(stateId int64) (*clerktypes.EventRecord, error) {
+func GetClerkEventRecord(stateId int64, cdc codec.Codec) (*clerktypes.EventRecord, error) {
 	logger := Logger()
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(ClerkEventRecordURL, stateId)))
@@ -569,13 +620,13 @@ func GetClerkEventRecord(stateId int64) (*clerktypes.EventRecord, error) {
 		return nil, err
 	}
 
-	var eventRecord clerktypes.EventRecord
-	if err = json.Unmarshal(response, &eventRecord); err != nil {
+	var eventRecordResponse clerktypes.RecordResponse
+	if err = cdc.UnmarshalJSON(response, &eventRecordResponse); err != nil {
 		logger.Error("Error unmarshalling event record", "error", err)
 		return nil, err
 	}
 
-	return &eventRecord, nil
+	return &eventRecordResponse.Record, nil
 }
 
 func GetUnconfirmedTxnCount(event interface{}) int {

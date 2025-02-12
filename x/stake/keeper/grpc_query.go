@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -42,7 +43,6 @@ func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySig
 	}
 
 	validator, err := q.k.GetValidatorInfo(ctx, req.ValAddress)
-
 	if err != nil {
 		return nil, status.Errorf(codes.NotFound, "error in getting validator corresponding to the given address %s", req.ValAddress)
 	}
@@ -57,7 +57,6 @@ func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValid
 	}
 
 	validator, err := q.k.GetValidatorFromValID(ctx, req.Id)
-
 	if err != nil {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given id %d", req.Id))
 	}
@@ -113,4 +112,36 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 	}
 
 	return &types.QueryStakeIsOldTxResponse{IsOld: true}, nil
+}
+
+// GetProposersByTimes queries for the proposers by Tendermint iterations
+func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryProposersRequest) (*types.QueryProposersResponse, error) {
+	if req == nil {
+		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.Times >= math.MaxInt64 {
+		return nil, status.Error(codes.InvalidArgument, "times exceeds MaxInt64")
+	}
+
+	validatorSet, err := q.k.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	times := int(req.Times)
+	if times > len(validatorSet.Validators) {
+		times = len(validatorSet.Validators)
+	}
+
+	// init proposers
+	proposers := make([]types.Validator, times)
+
+	// get proposers
+	for index := 0; index < times; index++ {
+		proposers[index] = *(validatorSet.GetProposer())
+		validatorSet.IncrementProposerPriority(1)
+	}
+
+	return &types.QueryProposersResponse{Proposers: proposers}, nil
 }

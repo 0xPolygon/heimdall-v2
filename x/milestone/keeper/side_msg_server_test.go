@@ -47,15 +47,14 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
+		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_YES, "Side tx handler should succeed")
 
 		milestoneReceived, _ := keeper.GetLastMilestone(ctx)
 		require.Nil(milestoneReceived, "Should not store state")
-
 	})
 
 	s.Run("No Hash", func() {
@@ -70,8 +69,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(false, nil)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
+		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(false, nil)
 
 		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
@@ -93,8 +92,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
+		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
@@ -115,8 +114,8 @@ func (s *KeeperTestSuite) TestSideHandleMsgMilestone() {
 			milestone.MilestoneId,
 		)
 
-		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true)
-		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
+		contractCaller.On("CheckIfBlocksExist", milestone.EndBlock+params.MilestoneTxConfirmations).Return(true, nil)
+		contractCaller.On("GetVoteOnHash", milestone.StartBlock, milestone.EndBlock, "0x"+common.Bytes2Hex(milestone.Hash), milestone.MilestoneId).Return(true, nil)
 
 		result := sideHandler(ctx, msgMilestone)
 		require.Equal(result, sidetxs.Vote_VOTE_NO, "Side tx handler should fail")
@@ -286,7 +285,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgMilestone() {
 		IsNoAckMilestone, err := keeper.HasNoAckMilestone(ctx, milestoneId)
 		require.NoError(err)
 		require.True(IsNoAckMilestone)
-
 	})
 
 	milestoneId = "00004"

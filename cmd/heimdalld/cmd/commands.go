@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,13 +34,13 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/server/types"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	cosmosversion "github.com/cosmos/cosmos-sdk/version"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -53,6 +54,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/app"
 	bridgeCmd "github.com/0xPolygon/heimdall-v2/bridge/cmd"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 )
@@ -67,25 +69,8 @@ const (
 	flagNodeHostPrefix   = "node-host-prefix"
 )
 
-// CometBFT full-node start flags
 const (
-	flagAddress      = "address"
-	flagTraceStore   = "trace-store"
-	flagPruning      = "pruning"
-	flagCPUProfile   = "cpu-profile"
-	FlagMinGasPrices = "minimum-gas-prices"
-	FlagHaltHeight   = "halt-height"
-	FlagHaltTime     = "halt-time"
-)
-
-// Open Collector Flags
-var (
-	FlagOpenTracing           = "open-tracing"
-	FlagOpenCollectorEndpoint = "open-collector-endpoint"
-)
-
-const (
-	nodeDirPerm = 0755
+	nodeDirPerm = 0o755
 )
 
 var tempDir = func() string {
@@ -108,10 +93,6 @@ type ValidatorAccountFormatter struct {
 	Address string `json:"address,omitempty" yaml:"address"`
 	PrivKey string `json:"priv_key,omitempty" yaml:"priv_key"`
 	PubKey  string `json:"pub_key,omitempty" yaml:"pub_key"`
-}
-
-func CryptoKeyToPubKey(key crypto.PubKey) secp256k1.PubKey {
-	return helper.GetPubObjects(key)
 }
 
 // GetSignerInfo returns signer information
@@ -153,6 +134,8 @@ func initRootCmd(
 	_ client.TxConfig,
 	basicManager module.BasicManager,
 	hApp *app.HeimdallApp,
+	keyring keyring.Keyring,
+	keyringDir string,
 ) {
 	cdc := codec.NewLegacyAmino()
 	ctx := server.NewDefaultContext()
@@ -162,8 +145,6 @@ func initRootCmd(
 
 	rootCmd.AddCommand(
 		genutilcli.InitCmd(basicManager, app.DefaultNodeHome),
-		// TODO HV2 - check this (Testnet Command)
-		// NewTestnetCmd(basicManager, banktypes.GenesisBalancesIterator{}),
 		debug.Cmd(),
 		confixcmd.ConfigCommand(),
 		pruning.Cmd(newApp, app.DefaultNodeHome),
@@ -176,19 +157,39 @@ func initRootCmd(
 			startCmd.Flags().Bool(helper.RestServerFlag, true, "Enable the REST server")
 			startCmd.Flags().Bool(helper.BridgeFlag, false, "Enable the bridge server")
 			startCmd.Flags().Bool(helper.AllProcessesFlag, false, "Enable all bridge processes")
-			startCmd.Flags().Bool(helper.OnlyProcessesFlag, false, "Enable only the specified bridge process(es)")
+			startCmd.Flags().StringSlice(helper.OnlyProcessesFlag, []string{}, "Enable only the specified bridge process(es)")
 		},
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
 			// wait for rest server to start
-			g.Wait()
+			resultChan := make(chan string)
+			timeout := time.After(60 * time.Second)
+
+			go checkServerStatus(clientCtx, helper.GetHeimdallServerEndpoint(util.AccountParamsURL), resultChan)
+
+			select {
+			case result := <-resultChan:
+				fmt.Println("Fetch successful, received data:", result)
+			case <-timeout:
+				return fmt.Errorf("Fetch operation timed out")
+			}
+
+			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
+			if err != nil {
+				return err
+			}
+
+			clientCtx = clientCtx.
+				WithKeyring(keyring).
+				WithKeyringDir(keyringDir).
+				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
 			// start bridge
 			if viper.GetBool(helper.BridgeFlag) {
 				bridgeCmd.AdjustBridgeDBValue(rootCmd)
 				g.Go(func() error {
-					return bridgeCmd.StartBridgeWithCtx(ctx)
+					return bridgeCmd.StartBridgeWithCtx(ctx, clientCtx)
 				})
 			}
 
@@ -196,31 +197,17 @@ func initRootCmd(
 		},
 	})
 
-	cometbftCmd := &cobra.Command{
-		Use:   "cometbft",
-		Short: "CometBFT subcommands",
-	}
-
-	cometbftCmd.AddCommand(
-		server.ShowNodeIDCmd(),
-		server.ShowValidatorCmd(),
-		server.ShowAddressCmd(),
-		server.VersionCmd(),
-	)
-
 	// add keybase, auxiliary RPC, query, genesis, and tx child commands
 	rootCmd.AddCommand(
 		server.StatusCommand(),
-		// TODO HV2: enable this? Removed from app and not present in v1
-		// genesisCommand(txConfig, basicManager),
 		queryCommand(),
-		txCommand(),
+		txCommand(hApp.BasicManager),
 		keys.Commands(),
-		cometbftCmd,
 	)
 
 	// add custom commands
 	rootCmd.AddCommand(
+		testnetCmd(ctx, cdc, hApp.BasicManager),
 		generateKeystore(),
 		importKeyStore(),
 		generateValidatorKey(),
@@ -233,19 +220,38 @@ func initRootCmd(
 	rootCmd.AddCommand(showPrivateKeyCmd())
 	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
+}
 
-	// TODO HV2 - I guess we are safe to remove this, as `genutilcli.InitCmd(basicManager, app.DefaultNodeHome)`
-	// already does the same thing
-	// commenting it out for now, will remove it later (after testing)
-	// rootCmd.AddCommand(initCmd(ctx, cdc, hApp.BasicManager))
+func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
 
-	rootCmd.AddCommand(testnetCmd(ctx, cdc, hApp.BasicManager))
+	req, err := http.NewRequestWithContext(ctx.CmdContext, http.MethodGet, url, nil)
+	if err != nil {
+		panic(fmt.Sprintf("Error creating a new http request: %v", err))
+	}
 
-	// pruning cmd
-	pruning.Cmd(newApp, app.DefaultNodeHome)
+	for ; true; <-ticker.C {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Println("Error fetching the URL:", err)
+			continue
+		}
+		defer resp.Body.Close()
 
-	// snapshot cmd
-	snapshot.Cmd(newApp)
+		if resp.StatusCode == http.StatusOK {
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println("Error reading response body:", err)
+				continue
+			}
+
+			resultChan <- string(body)
+			return
+		} else {
+			fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
+		}
+	}
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
@@ -273,19 +279,8 @@ func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome stri
 		startCmd,
 		cometCmd,
 		server.ExportCmd(appExport, defaultNodeHome),
-		cosmosversion.NewVersionCommand(),
 		server.NewRollbackCmd(appCreator, defaultNodeHome),
 	)
-}
-
-// genesisCommand builds genesis-related `heimdalld genesis` command. Users may provide application specific commands as a parameter
-func genesisCommand(txConfig client.TxConfig, basicManager module.BasicManager, cmds ...*cobra.Command) *cobra.Command {
-	cmd := genutilcli.Commands(txConfig, basicManager, app.DefaultNodeHome)
-
-	for _, subCmd := range cmds {
-		cmd.AddCommand(subCmd)
-	}
-	return cmd
 }
 
 func queryCommand() *cobra.Command {
@@ -311,7 +306,7 @@ func queryCommand() *cobra.Command {
 	return cmd
 }
 
-func txCommand() *cobra.Command {
+func txCommand(bm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:                        "tx",
 		Short:                      "Transactions subcommands",
@@ -319,6 +314,9 @@ func txCommand() *cobra.Command {
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
+
+	// add modules' tx commands
+	bm.AddTxCommands(cmd)
 
 	cmd.AddCommand(
 		authcmd.GetSignCommand(),
@@ -343,6 +341,7 @@ func newApp(
 	traceStore io.Writer,
 	appOpts servertypes.AppOptions,
 ) servertypes.Application {
+	helper.InitHeimdallConfig("")
 	baseappOptions := server.DefaultBaseappOptions(appOpts)
 
 	return app.NewHeimdallApp(
@@ -358,8 +357,8 @@ func appExport(
 	db dbm.DB,
 	traceStore io.Writer,
 	height int64,
-	forZeroHeight bool,
-	jailAllowedAddrs []string,
+	_ bool,
+	_ []string,
 	appOpts servertypes.AppOptions,
 	modulesToExport []string,
 ) (servertypes.ExportedApp, error) {
@@ -390,7 +389,7 @@ func appExport(
 		hApp = app.NewHeimdallApp(logger, db, traceStore, true, appOpts)
 	}
 
-	return hApp.ExportAppStateAndValidators(forZeroHeight, jailAllowedAddrs, modulesToExport)
+	return hApp.ExportAppStateAndValidators(false, nil, modulesToExport)
 }
 
 // generateKeystore generate keystore file from private key
@@ -459,7 +458,7 @@ func generateValidatorKey() *cobra.Command {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0600)
+			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
 			if err != nil {
 				return err
 			}
@@ -478,7 +477,6 @@ func importValidatorKey() *cobra.Command {
 		Use:   "import-validator-key <private-key-file>",
 		Short: "Import private key from a private key stored in file (without 0x prefix)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			pk, err := ethcrypto.LoadECDSA(args[0])
 			if err != nil {
 				return err
@@ -502,7 +500,7 @@ func importValidatorKey() *cobra.Command {
 				return err
 			}
 
-			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0600)
+			err = os.WriteFile("priv_validator_key.json", jsonBytes, 0o600)
 			if err != nil {
 				return err
 			}
@@ -562,16 +560,6 @@ func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 				return err
 			}
 
-			// TODO HV2 - verify if this is correct to comment and use `hApp.BasicManager.ValidateGenesis` instead
-			/*
-				// verify genesis
-				for _, b := range hApp.ModuleBasics {
-					m := b.(hmModule.HeimdallModuleBasic)
-					if err := m.VerifyGenesis(genesisState); err != nil {
-						return err
-					}
-				}
-			*/
 			clientCtx := client.GetClientContextFromCmd(cmd)
 			cliCdc := clientCtx.Codec
 
@@ -686,12 +674,12 @@ func InitializeNodeValidatorFiles(
 	nodeID = string(nodeKey.ID())
 
 	pvKeyFile := config.PrivValidatorKeyFile()
-	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0777); err != nil {
+	if err := cmtos.EnsureDir(filepath.Dir(pvKeyFile), 0o777); err != nil {
 		return nodeID, valPubKey, privKey, err
 	}
 
 	pvStateFile := config.PrivValidatorStateFile()
-	if err := cmtos.EnsureDir(filepath.Dir(pvStateFile), 0777); err != nil {
+	if err := cmtos.EnsureDir(filepath.Dir(pvStateFile), 0o777); err != nil {
 		return nodeID, valPubKey, privKey, err
 	}
 
@@ -738,26 +726,8 @@ func createKeyStore(pk *ecdsa.PrivateKey) error {
 	}
 
 	// Then write the new keyfile in place of the old one.
-	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0600); err != nil {
+	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0o600); err != nil {
 		return err
 	}
 	return nil
-
 }
-
-// TODO HV2 - check if we need this
-/*
-func getGenesisAccount(address []byte) authTypes.GenesisAccount {
-	acc := authTypes.NewBaseAccountWithAddress(sdk.AccAddress(address))
-
-	genesisBalance, _ := big.NewInt(0).SetString("1000000000000000000000", 10)
-
-	if err := acc.SetCoins(sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: math.NewIntFromBigInt(genesisBalance)}}); err != nil {
-		logger.Error("getgenesisaccount | setcoins", "error", err)
-	}
-
-	result, _ := authTypes.NewGenesisAccountI(&acc)
-
-	return result
-}
-*/

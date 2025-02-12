@@ -7,7 +7,9 @@ import (
 
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
+
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/libs/protoio"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -15,6 +17,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/stretchr/testify/require"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
@@ -23,8 +26,9 @@ import (
 )
 
 func TestValidateVoteExtensions(t *testing.T) {
-	// TODO HV2: find a way to extend these tests (see https://github.com/0xPolygon/heimdall-v2/pull/60/#discussion_r1768825790)
-	hApp, _, _ := SetupApp(t, 1)
+	setupAppResult := SetupApp(t, 1)
+	hApp := setupAppResult.App
+	validatorPrivKeys := setupAppResult.ValidatorKeys
 	ctx := hApp.BaseApp.NewContext(true)
 	vals := hApp.StakeKeeper.GetAllValidators(ctx)
 	valAddr := common.FromHex(vals[0].Signer)
@@ -40,47 +44,39 @@ func TestValidateVoteExtensions(t *testing.T) {
 		extVoteInfo []abci.ExtendedVoteInfo
 		round       int32
 		keeper      stakeKeeper.Keeper
-		shouldPanic bool
+		shouldError bool
 		expectedErr string
 	}{
 		{
 			name: "ves disabled with non-empty vote extension",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 0),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
-			shouldPanic: true,
+			shouldError: true,
 		},
 		{
-			name: "function executed correctly, but failing on signature verification",
+			name: "function executed and signature verified successfully",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 1),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
-			shouldPanic: false,
+			shouldError: false,
 			expectedErr: "failed to verify validator",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.shouldPanic {
-				require.Panics(t, func() {
-					err := ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
-					fmt.Printf("err: %v\n", err)
-				})
+			if tt.shouldError {
+				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper))
 			} else {
 				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
-				if tt.expectedErr != "" {
-					require.Error(t, err)
-					require.Contains(t, err.Error(), tt.expectedErr)
-				} else {
-					require.NoError(t, err)
-				}
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -498,7 +494,7 @@ func TestIsBlockIDFlagValid(t *testing.T) {
 	require.False(t, isBlockIdFlagValid(-1))
 }
 
-func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
+func TestCheckIfVoteExtensionsDisabled(t *testing.T) {
 	VoteExtEnableHeight := 1
 	key := storetypes.NewKVStoreKey("testStoreKey")
 	testCtx := cosmostestutil.DefaultContextWithDB(t, key, storetypes.NewTransientStoreKey("transient_test"))
@@ -507,7 +503,7 @@ func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
 	tests := []struct {
 		name   string
 		height int64
-		panics bool
+		errors bool
 	}{
 		{"height is less than VoteExtensionsEnableHeight", int64(VoteExtEnableHeight) - 1, true},
 		{"height is equal to VoteExtensionsEnableHeight", int64(VoteExtEnableHeight), false},
@@ -516,15 +512,14 @@ func TestPanicOnVoteExtensionsDisabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			if !tt.panics {
-				require.NotPanics(t, func() {
-					panicOnVoteExtensionsDisabled(ctx, tt.height)
-				}, "panicOnVoteExtensionsDisabled panicked unexpectedly")
+			if !tt.errors {
+				require.NoError(t,
+					checkIfVoteExtensionsDisabled(ctx, tt.height),
+					"checkIfVoteExtensionsDisabled returned error unexpectedly")
 			} else {
-				require.Panics(t, func() {
-					panicOnVoteExtensionsDisabled(ctx, tt.height)
-				}, "panicOnVoteExtensionsDisabled did not panic, but it should have")
+				require.Error(t,
+					checkIfVoteExtensionsDisabled(ctx, tt.height),
+					"checkIfVoteExtensionsDisabled did not returned error, but it should have")
 			}
 		})
 	}
@@ -547,7 +542,8 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 	}
 }
 
-func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator) abci.ExtendedVoteInfo {
+func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey) abci.ExtendedVoteInfo {
+	t.Helper()
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
 		SideTxResponses: []sidetxs.SideTxResponse{
@@ -561,7 +557,8 @@ func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashByte
 	}
 
 	// marshal it into Protobuf bytes
-	voteExtensionBytes, _ := voteExtensionProto.Marshal()
+	voteExtensionBytes, err := voteExtensionProto.Marshal()
+	require.NoErrorf(t, err, "failed to marshal voteExtensionProto: %v", err)
 
 	cve := cmtTypes.CanonicalVoteExtension{
 		Extension: voteExtensionBytes,
@@ -579,14 +576,16 @@ func setupExtendedVoteInfo(flag cmtTypes.BlockIDFlag, txHashBytes, blockHashByte
 		return buf.Bytes(), nil
 	}
 	extSignBytes, err := marshalDelimitedFn(&cve)
-	if err != nil {
-		fmt.Printf("failed to encode CanonicalVoteExtension: %v", err)
-	}
+	require.NoErrorf(t, err, "failed to encode CanonicalVoteExtension: %v", err)
+
+	// Sign the vote extension
+	signature, err := privKey.Sign(extSignBytes)
+	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
 
 	return abci.ExtendedVoteInfo{
 		BlockIdFlag:        flag,
 		VoteExtension:      voteExtensionBytes,
-		ExtensionSignature: extSignBytes,
+		ExtensionSignature: signature,
 		Validator:          validator,
 	}
 }

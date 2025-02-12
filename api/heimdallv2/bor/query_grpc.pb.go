@@ -19,24 +19,31 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_GetSpanById_FullMethodName     = "/heimdallv2.bor.Query/GetSpanById"
 	Query_GetSpanList_FullMethodName     = "/heimdallv2.bor.Query/GetSpanList"
 	Query_GetLatestSpan_FullMethodName   = "/heimdallv2.bor.Query/GetLatestSpan"
 	Query_GetNextSpanSeed_FullMethodName = "/heimdallv2.bor.Query/GetNextSpanSeed"
 	Query_GetNextSpan_FullMethodName     = "/heimdallv2.bor.Query/GetNextSpan"
-	Query_GetParams_FullMethodName       = "/heimdallv2.bor.Query/GetParams"
+	Query_GetSpanById_FullMethodName     = "/heimdallv2.bor.Query/GetSpanById"
+	Query_GetBorParams_FullMethodName    = "/heimdallv2.bor.Query/GetBorParams"
 )
 
 // QueryClient is the client API for Query service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
-	GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error)
+	// GetSpanList queries a list of spans.
 	GetSpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error)
+	// GetLatestSpan queries the latest span.
 	GetLatestSpan(ctx context.Context, in *QueryLatestSpanRequest, opts ...grpc.CallOption) (*QueryLatestSpanResponse, error)
+	// GetNextSpanSeed queries the next span seed given a
+	// QueryNextSpanSeedRequest.
 	GetNextSpanSeed(ctx context.Context, in *QueryNextSpanSeedRequest, opts ...grpc.CallOption) (*QueryNextSpanSeedResponse, error)
+	// GetNextSpan queries the next span given a QueryNextSpanRequest.
 	GetNextSpan(ctx context.Context, in *QueryNextSpanRequest, opts ...grpc.CallOption) (*QueryNextSpanResponse, error)
-	GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// GetSpanById retrieves a span by its id.
+	GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error)
+	// GetBorParams queries the parameters of x/bor module.
+	GetBorParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 }
 
 type queryClient struct {
@@ -45,15 +52,6 @@ type queryClient struct {
 
 func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 	return &queryClient{cc}
-}
-
-func (c *queryClient) GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error) {
-	out := new(QuerySpanByIdResponse)
-	err := c.cc.Invoke(ctx, Query_GetSpanById_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *queryClient) GetSpanList(ctx context.Context, in *QuerySpanListRequest, opts ...grpc.CallOption) (*QuerySpanListResponse, error) {
@@ -92,9 +90,18 @@ func (c *queryClient) GetNextSpan(ctx context.Context, in *QueryNextSpanRequest,
 	return out, nil
 }
 
-func (c *queryClient) GetParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
+func (c *queryClient) GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error) {
+	out := new(QuerySpanByIdResponse)
+	err := c.cc.Invoke(ctx, Query_GetSpanById_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetBorParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
 	out := new(QueryParamsResponse)
-	err := c.cc.Invoke(ctx, Query_GetParams_FullMethodName, in, out, opts...)
+	err := c.cc.Invoke(ctx, Query_GetBorParams_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -105,12 +112,19 @@ func (c *queryClient) GetParams(ctx context.Context, in *QueryParamsRequest, opt
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
-	GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error)
+	// GetSpanList queries a list of spans.
 	GetSpanList(context.Context, *QuerySpanListRequest) (*QuerySpanListResponse, error)
+	// GetLatestSpan queries the latest span.
 	GetLatestSpan(context.Context, *QueryLatestSpanRequest) (*QueryLatestSpanResponse, error)
+	// GetNextSpanSeed queries the next span seed given a
+	// QueryNextSpanSeedRequest.
 	GetNextSpanSeed(context.Context, *QueryNextSpanSeedRequest) (*QueryNextSpanSeedResponse, error)
+	// GetNextSpan queries the next span given a QueryNextSpanRequest.
 	GetNextSpan(context.Context, *QueryNextSpanRequest) (*QueryNextSpanResponse, error)
-	GetParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// GetSpanById retrieves a span by its id.
+	GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error)
+	// GetBorParams queries the parameters of x/bor module.
+	GetBorParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -118,9 +132,6 @@ type QueryServer interface {
 type UnimplementedQueryServer struct {
 }
 
-func (UnimplementedQueryServer) GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSpanById not implemented")
-}
 func (UnimplementedQueryServer) GetSpanList(context.Context, *QuerySpanListRequest) (*QuerySpanListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSpanList not implemented")
 }
@@ -133,8 +144,11 @@ func (UnimplementedQueryServer) GetNextSpanSeed(context.Context, *QueryNextSpanS
 func (UnimplementedQueryServer) GetNextSpan(context.Context, *QueryNextSpanRequest) (*QueryNextSpanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetNextSpan not implemented")
 }
-func (UnimplementedQueryServer) GetParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetParams not implemented")
+func (UnimplementedQueryServer) GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSpanById not implemented")
+}
+func (UnimplementedQueryServer) GetBorParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBorParams not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -147,24 +161,6 @@ type UnsafeQueryServer interface {
 
 func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
 	s.RegisterService(&Query_ServiceDesc, srv)
-}
-
-func _Query_GetSpanById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QuerySpanByIdRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).GetSpanById(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Query_GetSpanById_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetSpanById(ctx, req.(*QuerySpanByIdRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_GetSpanList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -239,20 +235,38 @@ func _Query_GetNextSpan_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Query_GetParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Query_GetSpanById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QuerySpanByIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetSpanById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetSpanById_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetSpanById(ctx, req.(*QuerySpanByIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetBorParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryParamsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(QueryServer).GetParams(ctx, in)
+		return srv.(QueryServer).GetBorParams(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Query_GetParams_FullMethodName,
+		FullMethod: Query_GetBorParams_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetParams(ctx, req.(*QueryParamsRequest))
+		return srv.(QueryServer).GetBorParams(ctx, req.(*QueryParamsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -264,10 +278,6 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "heimdallv2.bor.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "GetSpanById",
-			Handler:    _Query_GetSpanById_Handler,
-		},
 		{
 			MethodName: "GetSpanList",
 			Handler:    _Query_GetSpanList_Handler,
@@ -285,8 +295,12 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Query_GetNextSpan_Handler,
 		},
 		{
-			MethodName: "GetParams",
-			Handler:    _Query_GetParams_Handler,
+			MethodName: "GetSpanById",
+			Handler:    _Query_GetSpanById_Handler,
+		},
+		{
+			MethodName: "GetBorParams",
+			Handler:    _Query_GetBorParams_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

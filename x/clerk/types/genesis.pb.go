@@ -24,7 +24,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// GenesisState defines the clerk module's genesis state.
 type GenesisState struct {
 	EventRecords    []EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records"`
 	RecordSequences []string      `protobuf:"bytes,2,rep,name=record_sequences,json=recordSequences,proto3" json:"record_sequences,omitempty"`

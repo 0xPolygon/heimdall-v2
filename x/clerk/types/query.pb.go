@@ -6,7 +6,7 @@ package types
 import (
 	context "context"
 	fmt "fmt"
-	_ "github.com/cosmos/cosmos-sdk/types/query"
+	query "github.com/cosmos/cosmos-sdk/types/query"
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
@@ -79,7 +79,6 @@ func (m *RecordRequest) GetRecordId() uint64 {
 	return 0
 }
 
-// RecordResponse defines the params for RecordListRequest.
 type RecordResponse struct {
 	Record EventRecord `protobuf:"bytes,1,opt,name=record,proto3" json:"record"`
 }
@@ -176,7 +175,6 @@ func (m *RecordListRequest) GetLimit() uint64 {
 	return 0
 }
 
-// RecordListResponse defines the params for RecordListRequest
 type RecordListResponse struct {
 	EventRecords []EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records"`
 }
@@ -222,10 +220,9 @@ func (m *RecordListResponse) GetEventRecords() []EventRecord {
 }
 
 type RecordListWithTimeRequest struct {
-	FromTime time.Time `protobuf:"bytes,1,opt,name=from_time,json=fromTime,proto3,stdtime" json:"from_time"`
-	ToTime   time.Time `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3,stdtime" json:"to_time"`
-	Page     uint64    `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
-	Limit    uint64    `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	FromId     uint64            `protobuf:"varint,1,opt,name=from_id,json=fromId,proto3" json:"from_id,omitempty"`
+	ToTime     time.Time         `protobuf:"bytes,2,opt,name=to_time,json=toTime,proto3,stdtime" json:"to_time"`
+	Pagination query.PageRequest `protobuf:"bytes,3,opt,name=pagination,proto3" json:"pagination"`
 }
 
 func (m *RecordListWithTimeRequest) Reset()         { *m = RecordListWithTimeRequest{} }
@@ -261,11 +258,11 @@ func (m *RecordListWithTimeRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RecordListWithTimeRequest proto.InternalMessageInfo
 
-func (m *RecordListWithTimeRequest) GetFromTime() time.Time {
+func (m *RecordListWithTimeRequest) GetFromId() uint64 {
 	if m != nil {
-		return m.FromTime
+		return m.FromId
 	}
-	return time.Time{}
+	return 0
 }
 
 func (m *RecordListWithTimeRequest) GetToTime() time.Time {
@@ -275,22 +272,13 @@ func (m *RecordListWithTimeRequest) GetToTime() time.Time {
 	return time.Time{}
 }
 
-func (m *RecordListWithTimeRequest) GetPage() uint64 {
+func (m *RecordListWithTimeRequest) GetPagination() query.PageRequest {
 	if m != nil {
-		return m.Page
+		return m.Pagination
 	}
-	return 0
+	return query.PageRequest{}
 }
 
-func (m *RecordListWithTimeRequest) GetLimit() uint64 {
-	if m != nil {
-		return m.Limit
-	}
-	return 0
-}
-
-// RecordListWithTimeResponse defines the params for querying
-// RecordListWithTimeRequest
 type RecordListWithTimeResponse struct {
 	EventRecords []EventRecord `protobuf:"bytes,1,rep,name=event_records,json=eventRecords,proto3" json:"event_records"`
 }
@@ -431,6 +419,50 @@ func (m *RecordSequenceResponse) GetSequence() uint64 {
 	return 0
 }
 
+type IsClerkTxOldResponse struct {
+	IsOld bool `protobuf:"varint,1,opt,name=is_old,json=isOld,proto3" json:"is_old,omitempty"`
+}
+
+func (m *IsClerkTxOldResponse) Reset()         { *m = IsClerkTxOldResponse{} }
+func (m *IsClerkTxOldResponse) String() string { return proto.CompactTextString(m) }
+func (*IsClerkTxOldResponse) ProtoMessage()    {}
+func (*IsClerkTxOldResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_9015e8f88cd9cb1b, []int{8}
+}
+func (m *IsClerkTxOldResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *IsClerkTxOldResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_IsClerkTxOldResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *IsClerkTxOldResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_IsClerkTxOldResponse.Merge(m, src)
+}
+func (m *IsClerkTxOldResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *IsClerkTxOldResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_IsClerkTxOldResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_IsClerkTxOldResponse proto.InternalMessageInfo
+
+func (m *IsClerkTxOldResponse) GetIsOld() bool {
+	if m != nil {
+		return m.IsOld
+	}
+	return false
+}
+
 func init() {
 	proto.RegisterType((*RecordRequest)(nil), "heimdallv2.clerk.RecordRequest")
 	proto.RegisterType((*RecordResponse)(nil), "heimdallv2.clerk.RecordResponse")
@@ -440,55 +472,62 @@ func init() {
 	proto.RegisterType((*RecordListWithTimeResponse)(nil), "heimdallv2.clerk.RecordListWithTimeResponse")
 	proto.RegisterType((*RecordSequenceRequest)(nil), "heimdallv2.clerk.RecordSequenceRequest")
 	proto.RegisterType((*RecordSequenceResponse)(nil), "heimdallv2.clerk.RecordSequenceResponse")
+	proto.RegisterType((*IsClerkTxOldResponse)(nil), "heimdallv2.clerk.IsClerkTxOldResponse")
 }
 
 func init() { proto.RegisterFile("heimdallv2/clerk/query.proto", fileDescriptor_9015e8f88cd9cb1b) }
 
 var fileDescriptor_9015e8f88cd9cb1b = []byte{
-	// 678 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x93, 0x4f, 0x4f, 0x13, 0x4f,
-	0x18, 0xc7, 0xbb, 0x50, 0x0a, 0x1d, 0x7e, 0xfd, 0x69, 0x27, 0x62, 0xca, 0x82, 0x5b, 0x58, 0x35,
-	0x12, 0x85, 0x1d, 0x2d, 0x47, 0x2f, 0xa6, 0x89, 0x0a, 0x51, 0x13, 0xad, 0x24, 0x26, 0x7a, 0x68,
-	0x96, 0x76, 0xd8, 0x4e, 0xd8, 0xdd, 0x29, 0x9d, 0x69, 0xd3, 0xc6, 0x98, 0xa8, 0xf1, 0xe0, 0xc1,
-	0x03, 0x89, 0x6f, 0xc1, 0x83, 0x47, 0x5f, 0x06, 0x47, 0x12, 0x2f, 0x9e, 0xc4, 0x80, 0x89, 0x6f,
-	0xc3, 0xcc, 0x3f, 0xb6, 0x2d, 0x7f, 0x94, 0x83, 0x97, 0x66, 0xfb, 0xfc, 0xfd, 0xcc, 0xf7, 0x79,
-	0x1e, 0x30, 0xdb, 0xc0, 0x24, 0xaa, 0xfb, 0x61, 0xd8, 0x29, 0xa1, 0x5a, 0x88, 0x5b, 0x9b, 0x68,
-	0xab, 0x8d, 0x5b, 0x3d, 0xaf, 0xd9, 0xa2, 0x9c, 0xc2, 0xf3, 0x89, 0xd7, 0x93, 0x5e, 0x7b, 0xa6,
-	0x46, 0x59, 0x44, 0x99, 0x8a, 0x42, 0x9d, 0x5b, 0xfd, 0xe1, 0xf6, 0x85, 0x80, 0x06, 0x54, 0x7e,
-	0x22, 0xf1, 0xa5, 0xad, 0xb3, 0x01, 0xa5, 0x41, 0x88, 0x91, 0xdf, 0x24, 0xc8, 0x8f, 0x63, 0xca,
-	0x7d, 0x4e, 0x68, 0xcc, 0xb4, 0xb7, 0xa8, 0xbd, 0xf2, 0xdf, 0x7a, 0x7b, 0x03, 0x71, 0x12, 0x61,
-	0xc6, 0xfd, 0xa8, 0x69, 0xd2, 0x8f, 0x10, 0xca, 0x5f, 0xed, 0xcd, 0xfb, 0x11, 0x89, 0x29, 0x92,
-	0xbf, 0xca, 0xe4, 0x2e, 0x83, 0x5c, 0x05, 0xd7, 0x68, 0xab, 0x5e, 0xc1, 0x5b, 0x6d, 0xcc, 0x38,
-	0x74, 0x41, 0xb6, 0x25, 0x0d, 0x55, 0x52, 0x2f, 0x58, 0x73, 0xd6, 0x42, 0xba, 0x3c, 0xf6, 0xf9,
-	0xd7, 0x97, 0xeb, 0x56, 0x65, 0x42, 0xd9, 0x57, 0xeb, 0x6e, 0x05, 0xfc, 0x6f, 0x92, 0x58, 0x93,
-	0xc6, 0x0c, 0xc3, 0x3b, 0x20, 0xa3, 0xbc, 0x32, 0x65, 0xb2, 0x74, 0xc9, 0x1b, 0x16, 0xc3, 0xbb,
-	0xdb, 0xc1, 0x31, 0x57, 0x69, 0xe5, 0xec, 0xce, 0xf7, 0x62, 0x4a, 0x55, 0xd5, 0x79, 0xee, 0x03,
-	0x90, 0x57, 0xce, 0x87, 0x84, 0x71, 0x03, 0x33, 0x0d, 0xd2, 0x4d, 0x3f, 0xc0, 0x83, 0x1c, 0xd2,
-	0x04, 0x67, 0xc0, 0x58, 0x48, 0x22, 0xc2, 0x0b, 0x23, 0xfd, 0x3e, 0x65, 0x73, 0x6b, 0x00, 0xf6,
-	0x17, 0xd3, 0x90, 0x8f, 0x40, 0x0e, 0x0b, 0x88, 0xaa, 0x6a, 0xc9, 0x0a, 0xd6, 0xdc, 0xe8, 0x99,
-	0x58, 0xff, 0xc3, 0x89, 0x9d, 0xb9, 0x7b, 0x16, 0x98, 0x4e, 0xba, 0x3c, 0x23, 0xbc, 0xb1, 0x46,
-	0x22, 0x6c, 0xd0, 0xef, 0x81, 0xec, 0x46, 0x8b, 0x46, 0x55, 0x31, 0x21, 0x2d, 0x8a, 0xed, 0xa9,
-	0xf1, 0x79, 0x66, 0x7c, 0xde, 0x9a, 0x19, 0x5f, 0x39, 0x27, 0xba, 0x6c, 0xef, 0x15, 0x2d, 0xad,
-	0xb5, 0xc8, 0x15, 0x5e, 0x58, 0x06, 0xe3, 0x9c, 0xaa, 0x2a, 0x23, 0x67, 0xad, 0x92, 0xe1, 0x54,
-	0xd6, 0x30, 0x32, 0x8e, 0x9e, 0x22, 0x63, 0xfa, 0x18, 0x19, 0x37, 0x81, 0x7d, 0xdc, 0x03, 0xff,
-	0x8d, 0x9c, 0x2f, 0xc0, 0x94, 0xfa, 0x7c, 0x2a, 0x14, 0x8c, 0x6b, 0x87, 0x4a, 0x3a, 0x60, 0x9c,
-	0x77, 0xab, 0x0d, 0x9f, 0x35, 0xa4, 0x8e, 0x59, 0x03, 0x99, 0xe1, 0xdd, 0x15, 0x9f, 0x35, 0xc4,
-	0xc6, 0x86, 0x34, 0xa8, 0x92, 0xb8, 0x8e, 0xbb, 0x83, 0xdb, 0x30, 0x11, 0xd2, 0x60, 0x55, 0x98,
-	0xdd, 0xdb, 0xe0, 0xe2, 0x70, 0x71, 0xfd, 0x8a, 0x79, 0x30, 0xc1, 0xb4, 0x6d, 0x68, 0xdd, 0x8d,
-	0xb9, 0xf4, 0x29, 0x0d, 0xc6, 0x9e, 0x88, 0xcb, 0x85, 0xaf, 0x2d, 0x90, 0xbb, 0x8f, 0xcd, 0x53,
-	0x7a, 0xab, 0x75, 0x58, 0x3c, 0xfa, 0xda, 0x81, 0x7b, 0xb2, 0xe7, 0x4e, 0x0e, 0x50, 0x04, 0xee,
-	0xe2, 0x7b, 0xd1, 0xef, 0xed, 0xd7, 0x9f, 0x1f, 0x47, 0xe6, 0x61, 0x51, 0x9f, 0xad, 0x94, 0x66,
-	0x49, 0x29, 0x8b, 0x5e, 0x1e, 0x5e, 0xe4, 0x2b, 0xf8, 0xa6, 0x1f, 0x41, 0xcc, 0x05, 0x5e, 0x3e,
-	0xa9, 0x43, 0xdf, 0x25, 0xd9, 0x57, 0x4e, 0x0f, 0xd2, 0x28, 0x57, 0x13, 0x14, 0x1b, 0x16, 0x8e,
-	0x43, 0x09, 0x45, 0xc7, 0x0f, 0x16, 0x98, 0x1a, 0x60, 0x30, 0xbb, 0x01, 0x6f, 0x9c, 0xd6, 0x66,
-	0xe8, 0x44, 0xec, 0xc5, 0xbf, 0x0b, 0xd6, 0x6c, 0x85, 0x84, 0x2d, 0x07, 0x27, 0x35, 0x9b, 0xb8,
-	0x0b, 0xf8, 0xce, 0x02, 0xf9, 0x43, 0x1c, 0x33, 0x60, 0x78, 0xed, 0xa4, 0xea, 0x43, 0xfb, 0x65,
-	0x2f, 0xfc, 0x39, 0x50, 0x23, 0xcc, 0x26, 0x08, 0x79, 0x78, 0x4e, 0x23, 0x98, 0x35, 0x29, 0xaf,
-	0xec, 0xec, 0x3b, 0xd6, 0xee, 0xbe, 0x63, 0xfd, 0xd8, 0x77, 0xac, 0xed, 0x03, 0x27, 0xb5, 0x7b,
-	0xe0, 0xa4, 0xbe, 0x1d, 0x38, 0xa9, 0xe7, 0x5e, 0x40, 0x78, 0xa3, 0xbd, 0xee, 0xd5, 0x68, 0x84,
-	0x6e, 0x76, 0x1f, 0xd3, 0xb0, 0x17, 0xd0, 0x18, 0x99, 0xae, 0x4b, 0x9d, 0x12, 0xea, 0x9a, 0xf7,
-	0xf4, 0x9a, 0x98, 0xad, 0x67, 0xe4, 0x69, 0x2f, 0xff, 0x0e, 0x00, 0x00, 0xff, 0xff, 0xd5, 0x5d,
-	0x05, 0xa0, 0x70, 0x06, 0x00, 0x00,
+	// 775 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0x4f, 0x4f, 0x13, 0x4d,
+	0x1c, 0xee, 0x02, 0x2d, 0x65, 0xa0, 0xbc, 0x74, 0x02, 0x6f, 0xca, 0xd2, 0xb7, 0x85, 0x7d, 0xdf,
+	0x17, 0x09, 0xc2, 0xae, 0x14, 0x6f, 0x5e, 0x4c, 0x8d, 0x91, 0x46, 0x0d, 0x50, 0x49, 0x4c, 0xf4,
+	0xd0, 0x6c, 0xbb, 0xc3, 0x76, 0xc2, 0xee, 0x4e, 0xe9, 0x4c, 0x9b, 0x36, 0x6a, 0xa2, 0xc6, 0x83,
+	0x07, 0x0f, 0x24, 0x7e, 0x03, 0x4f, 0x1e, 0xfd, 0x18, 0x1c, 0x89, 0x5e, 0x3c, 0xa9, 0x01, 0x13,
+	0xbf, 0x86, 0x99, 0x9d, 0xd9, 0xee, 0xd2, 0x02, 0xe2, 0xc1, 0x4b, 0xb3, 0xfd, 0xfd, 0x7b, 0x9e,
+	0xdf, 0xf3, 0x7b, 0x76, 0x41, 0xb6, 0x8e, 0xb0, 0x6b, 0x99, 0x8e, 0xd3, 0x2e, 0x18, 0x35, 0x07,
+	0x35, 0xf7, 0x8c, 0xfd, 0x16, 0x6a, 0x76, 0xf5, 0x46, 0x93, 0x30, 0x02, 0xa7, 0xc2, 0xac, 0xee,
+	0x67, 0xd5, 0xb4, 0xe9, 0x62, 0x8f, 0x18, 0xfe, 0xaf, 0x28, 0x52, 0xe7, 0x6a, 0x84, 0xba, 0x84,
+	0x8a, 0x46, 0xa3, 0xbd, 0x16, 0x9d, 0xa0, 0x2e, 0xcb, 0x64, 0xd5, 0xa4, 0xa8, 0x57, 0x51, 0x45,
+	0xcc, 0x5c, 0x33, 0x1a, 0xa6, 0x8d, 0x3d, 0x93, 0x61, 0xe2, 0xc9, 0xda, 0x69, 0x9b, 0xd8, 0xc4,
+	0x7f, 0x34, 0xf8, 0x93, 0x8c, 0x66, 0x6d, 0x42, 0x6c, 0x07, 0x19, 0x66, 0x03, 0x1b, 0xa6, 0xe7,
+	0x11, 0xe6, 0xb7, 0x50, 0x99, 0xcd, 0xcb, 0xac, 0xff, 0xaf, 0xda, 0xda, 0x35, 0x18, 0x76, 0x11,
+	0x65, 0xa6, 0xdb, 0x08, 0xda, 0x07, 0x16, 0xf4, 0x7f, 0x45, 0x56, 0x5b, 0x07, 0xa9, 0x32, 0xaa,
+	0x91, 0xa6, 0x55, 0x46, 0xfb, 0x2d, 0x44, 0x19, 0xd4, 0xc0, 0x58, 0xd3, 0x0f, 0x54, 0xb0, 0x95,
+	0x51, 0xe6, 0x95, 0xa5, 0x91, 0x62, 0xfc, 0xfd, 0x8f, 0x0f, 0xcb, 0x4a, 0x39, 0x29, 0xe2, 0x25,
+	0x4b, 0x2b, 0x83, 0xc9, 0xa0, 0x89, 0x36, 0x88, 0x47, 0x11, 0xbc, 0x09, 0x12, 0x22, 0xeb, 0xb7,
+	0x8c, 0x17, 0xfe, 0xd1, 0xfb, 0x85, 0xd3, 0x6f, 0xb7, 0x91, 0xc7, 0x44, 0x5b, 0x71, 0xec, 0xf0,
+	0x4b, 0x3e, 0x26, 0xa6, 0xca, 0x3e, 0xed, 0x2e, 0x48, 0x8b, 0xe4, 0x3d, 0x4c, 0x59, 0x40, 0x66,
+	0x16, 0x8c, 0x34, 0x4c, 0x1b, 0x9d, 0xe6, 0xe1, 0x87, 0xe0, 0x1c, 0x88, 0x3b, 0xd8, 0xc5, 0x2c,
+	0x33, 0x14, 0xcd, 0x89, 0x98, 0x56, 0x03, 0x30, 0x3a, 0x4c, 0x92, 0xbc, 0x0f, 0x52, 0x88, 0x93,
+	0xa8, 0x08, 0x48, 0x9a, 0x51, 0xe6, 0x87, 0x7f, 0x8b, 0xeb, 0x04, 0x0a, 0xe3, 0x54, 0xfb, 0xa8,
+	0x80, 0xd9, 0x10, 0xe5, 0x21, 0x66, 0xf5, 0x1d, 0xec, 0xa2, 0x80, 0x7a, 0x0e, 0x8c, 0xee, 0x36,
+	0x89, 0x3b, 0xa0, 0x62, 0x82, 0x47, 0x4b, 0x16, 0x2c, 0x82, 0x51, 0x46, 0x2a, 0xfc, 0x58, 0xfe,
+	0x06, 0xe3, 0x05, 0x55, 0x17, 0x97, 0xd4, 0x83, 0x4b, 0xea, 0x3b, 0xc1, 0x25, 0x8b, 0x29, 0xce,
+	0xe1, 0xe0, 0x6b, 0x5e, 0x91, 0x33, 0x18, 0xe1, 0x39, 0xb8, 0x0d, 0x40, 0xe8, 0xa1, 0xcc, 0xb0,
+	0x3f, 0x66, 0x51, 0x17, 0x86, 0xd3, 0xb9, 0xe1, 0x74, 0xe1, 0x44, 0x69, 0x38, 0x7d, 0xcb, 0xb4,
+	0x03, 0x7e, 0xd1, 0xb5, 0x22, 0x43, 0xb4, 0x3d, 0xa0, 0x9e, 0xb5, 0xd3, 0x9f, 0x51, 0xf0, 0x31,
+	0x98, 0x11, 0x8f, 0x0f, 0x38, 0x29, 0xaf, 0x16, 0x15, 0x8f, 0x75, 0x2a, 0x75, 0x93, 0xd6, 0x7d,
+	0xf1, 0xc6, 0x7a, 0xe2, 0xb1, 0xce, 0x86, 0x49, 0xeb, 0xdc, 0xa4, 0x0e, 0xb1, 0x2b, 0xd8, 0xb3,
+	0x50, 0xe7, 0xb4, 0x01, 0x92, 0x0e, 0xb1, 0x4b, 0x3c, 0xac, 0xdd, 0x00, 0x7f, 0xf7, 0x0f, 0x97,
+	0x5b, 0x2c, 0x80, 0x24, 0x95, 0xb1, 0x3e, 0x87, 0x07, 0x61, 0xed, 0x3a, 0x98, 0x2e, 0xd1, 0x5b,
+	0x7c, 0x93, 0x9d, 0xce, 0xa6, 0x13, 0xfa, 0x3c, 0x0b, 0x12, 0x98, 0x56, 0x88, 0x23, 0x8e, 0x9a,
+	0xec, 0xd9, 0x0e, 0xd3, 0x4d, 0xc7, 0x2a, 0xbc, 0x8b, 0x83, 0xf8, 0x36, 0x57, 0x1c, 0xbe, 0x50,
+	0x40, 0xea, 0x0e, 0x62, 0xa1, 0x94, 0xf0, 0xdf, 0x41, 0x8d, 0x06, 0xfc, 0xae, 0xfe, 0x77, 0x71,
+	0x91, 0x20, 0xa1, 0xfd, 0xff, 0x9a, 0x83, 0xbe, 0xfc, 0xf4, 0xfd, 0xed, 0x90, 0x0a, 0x33, 0xf2,
+	0xa5, 0xf6, 0x85, 0x5d, 0x15, 0x77, 0x31, 0x1c, 0x8e, 0xf8, 0x3c, 0xca, 0xa1, 0xd8, 0x2d, 0x59,
+	0x30, 0x7f, 0xde, 0xf8, 0x00, 0x7f, 0xfe, 0xfc, 0x02, 0x89, 0xbd, 0x12, 0x62, 0x2f, 0xc0, 0xfc,
+	0x59, 0xd8, 0x4f, 0x7a, 0x9f, 0x8f, 0x67, 0xf0, 0x8d, 0x02, 0x66, 0x4e, 0xc9, 0x10, 0x38, 0x0a,
+	0x5e, 0xbd, 0x68, 0xd3, 0xbe, 0x77, 0x49, 0x5d, 0xb9, 0x5c, 0xb1, 0xa4, 0x98, 0x09, 0x29, 0xa6,
+	0xe0, 0xb8, 0xa4, 0xc8, 0x5f, 0x34, 0xf8, 0x4a, 0x01, 0xe9, 0x1e, 0x9d, 0xc0, 0x16, 0xf0, 0xca,
+	0x79, 0xd3, 0xfb, 0x5c, 0xa9, 0x2e, 0xfd, 0xba, 0x50, 0x52, 0xc8, 0x86, 0x14, 0xd2, 0xf0, 0x2f,
+	0x49, 0x21, 0x30, 0x17, 0x7c, 0x0a, 0x26, 0xa2, 0xe6, 0xba, 0x3c, 0x81, 0xc5, 0xc1, 0xc2, 0xb3,
+	0x5c, 0xaa, 0xcd, 0x85, 0xf0, 0x53, 0x70, 0x52, 0xc2, 0x63, 0x4a, 0x1c, 0x8b, 0x75, 0x8a, 0x1b,
+	0x87, 0xc7, 0x39, 0xe5, 0xe8, 0x38, 0xa7, 0x7c, 0x3b, 0xce, 0x29, 0x07, 0x27, 0xb9, 0xd8, 0xd1,
+	0x49, 0x2e, 0xf6, 0xf9, 0x24, 0x17, 0x7b, 0xa4, 0xdb, 0x98, 0xd5, 0x5b, 0x55, 0xbd, 0x46, 0x5c,
+	0xe3, 0x5a, 0x67, 0x8b, 0x38, 0x5d, 0x9b, 0x78, 0x46, 0x00, 0xb9, 0xda, 0x2e, 0x18, 0x9d, 0x40,
+	0xcd, 0x6e, 0x03, 0xd1, 0x6a, 0xc2, 0xff, 0x52, 0xad, 0xff, 0x0c, 0x00, 0x00, 0xff, 0xff, 0xac,
+	0xe3, 0xaa, 0xf9, 0x43, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -503,10 +542,17 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type QueryClient interface {
-	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+	// GetRecordList queries a list of records
 	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
+	// GetRecordById retrieves a record by its id
+	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
+	// GetRecordListWithTime queries a list of records with time
 	GetRecordListWithTime(ctx context.Context, in *RecordListWithTimeRequest, opts ...grpc.CallOption) (*RecordListWithTimeResponse, error)
+	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*RecordSequenceResponse, error)
+	// IsClerkTxOld queries for a specific clerk tx to check its status (old
+	// means already submitted)
+	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
 }
 
 type queryClient struct {
@@ -517,18 +563,18 @@ func NewQueryClient(cc grpc1.ClientConn) QueryClient {
 	return &queryClient{cc}
 }
 
-func (c *queryClient) GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
-	out := new(RecordResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.Query/GetRecordById", in, out, opts...)
+func (c *queryClient) GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error) {
+	out := new(RecordListResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.Query/GetRecordList", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *queryClient) GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error) {
-	out := new(RecordListResponse)
-	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.Query/GetRecordList", in, out, opts...)
+func (c *queryClient) GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error) {
+	out := new(RecordResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.Query/GetRecordById", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -553,23 +599,39 @@ func (c *queryClient) GetRecordSequence(ctx context.Context, in *RecordSequenceR
 	return out, nil
 }
 
+func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error) {
+	out := new(IsClerkTxOldResponse)
+	err := c.cc.Invoke(ctx, "/heimdallv2.clerk.Query/IsClerkTxOld", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 type QueryServer interface {
-	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
+	// GetRecordList queries a list of records
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
+	// GetRecordById retrieves a record by its id
+	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
+	// GetRecordListWithTime queries a list of records with time
 	GetRecordListWithTime(context.Context, *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error)
+	// GetRecordSequence queries the sequence of the record
 	GetRecordSequence(context.Context, *RecordSequenceRequest) (*RecordSequenceResponse, error)
+	// IsClerkTxOld queries for a specific clerk tx to check its status (old
+	// means already submitted)
+	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
 }
 
 // UnimplementedQueryServer can be embedded to have forward compatible implementations.
 type UnimplementedQueryServer struct {
 }
 
-func (*UnimplementedQueryServer) GetRecordById(ctx context.Context, req *RecordRequest) (*RecordResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetRecordById not implemented")
-}
 func (*UnimplementedQueryServer) GetRecordList(ctx context.Context, req *RecordListRequest) (*RecordListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordList not implemented")
+}
+func (*UnimplementedQueryServer) GetRecordById(ctx context.Context, req *RecordRequest) (*RecordResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRecordById not implemented")
 }
 func (*UnimplementedQueryServer) GetRecordListWithTime(ctx context.Context, req *RecordListWithTimeRequest) (*RecordListWithTimeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordListWithTime not implemented")
@@ -577,27 +639,12 @@ func (*UnimplementedQueryServer) GetRecordListWithTime(ctx context.Context, req 
 func (*UnimplementedQueryServer) GetRecordSequence(ctx context.Context, req *RecordSequenceRequest) (*RecordSequenceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordSequence not implemented")
 }
+func (*UnimplementedQueryServer) IsClerkTxOld(ctx context.Context, req *RecordSequenceRequest) (*IsClerkTxOldResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsClerkTxOld not implemented")
+}
 
 func RegisterQueryServer(s grpc1.Server, srv QueryServer) {
 	s.RegisterService(&_Query_serviceDesc, srv)
-}
-
-func _Query_GetRecordById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RecordRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(QueryServer).GetRecordById(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/heimdallv2.clerk.Query/GetRecordById",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(QueryServer).GetRecordById(ctx, req.(*RecordRequest))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_GetRecordList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -614,6 +661,24 @@ func _Query_GetRecordList_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).GetRecordList(ctx, req.(*RecordListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetRecordById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetRecordById(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/heimdallv2.clerk.Query/GetRecordById",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetRecordById(ctx, req.(*RecordRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -654,17 +719,35 @@ func _Query_GetRecordSequence_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_IsClerkTxOld_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordSequenceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).IsClerkTxOld(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/heimdallv2.clerk.Query/IsClerkTxOld",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).IsClerkTxOld(ctx, req.(*RecordSequenceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Query_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "heimdallv2.clerk.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetRecordById",
-			Handler:    _Query_GetRecordById_Handler,
-		},
-		{
 			MethodName: "GetRecordList",
 			Handler:    _Query_GetRecordList_Handler,
+		},
+		{
+			MethodName: "GetRecordById",
+			Handler:    _Query_GetRecordById_Handler,
 		},
 		{
 			MethodName: "GetRecordListWithTime",
@@ -673,6 +756,10 @@ var _Query_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRecordSequence",
 			Handler:    _Query_GetRecordSequence_Handler,
+		},
+		{
+			MethodName: "IsClerkTxOld",
+			Handler:    _Query_IsClerkTxOld_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -830,32 +917,29 @@ func (m *RecordListWithTimeRequest) MarshalToSizedBuffer(dAtA []byte) (int, erro
 	_ = i
 	var l int
 	_ = l
-	if m.Limit != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Limit))
-		i--
-		dAtA[i] = 0x20
+	{
+		size, err := m.Pagination.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintQuery(dAtA, i, uint64(size))
 	}
-	if m.Page != 0 {
-		i = encodeVarintQuery(dAtA, i, uint64(m.Page))
-		i--
-		dAtA[i] = 0x18
-	}
-	n2, err2 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.ToTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ToTime):])
-	if err2 != nil {
-		return 0, err2
-	}
-	i -= n2
-	i = encodeVarintQuery(dAtA, i, uint64(n2))
 	i--
-	dAtA[i] = 0x12
-	n3, err3 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.FromTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.FromTime):])
+	dAtA[i] = 0x1a
+	n3, err3 := github_com_cosmos_gogoproto_types.StdTimeMarshalTo(m.ToTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ToTime):])
 	if err3 != nil {
 		return 0, err3
 	}
 	i -= n3
 	i = encodeVarintQuery(dAtA, i, uint64(n3))
 	i--
-	dAtA[i] = 0xa
+	dAtA[i] = 0x12
+	if m.FromId != 0 {
+		i = encodeVarintQuery(dAtA, i, uint64(m.FromId))
+		i--
+		dAtA[i] = 0x8
+	}
 	return len(dAtA) - i, nil
 }
 
@@ -959,6 +1043,39 @@ func (m *RecordSequenceResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
+func (m *IsClerkTxOldResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *IsClerkTxOldResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *IsClerkTxOldResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.IsOld {
+		i--
+		if m.IsOld {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintQuery(dAtA []byte, offset int, v uint64) int {
 	offset -= sovQuery(v)
 	base := offset
@@ -1029,16 +1146,13 @@ func (m *RecordListWithTimeRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.FromTime)
-	n += 1 + l + sovQuery(uint64(l))
+	if m.FromId != 0 {
+		n += 1 + sovQuery(uint64(m.FromId))
+	}
 	l = github_com_cosmos_gogoproto_types.SizeOfStdTime(m.ToTime)
 	n += 1 + l + sovQuery(uint64(l))
-	if m.Page != 0 {
-		n += 1 + sovQuery(uint64(m.Page))
-	}
-	if m.Limit != 0 {
-		n += 1 + sovQuery(uint64(m.Limit))
-	}
+	l = m.Pagination.Size()
+	n += 1 + l + sovQuery(uint64(l))
 	return n
 }
 
@@ -1081,6 +1195,18 @@ func (m *RecordSequenceResponse) Size() (n int) {
 	_ = l
 	if m.Sequence != 0 {
 		n += 1 + sovQuery(uint64(m.Sequence))
+	}
+	return n
+}
+
+func (m *IsClerkTxOldResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.IsOld {
+		n += 2
 	}
 	return n
 }
@@ -1445,10 +1571,10 @@ func (m *RecordListWithTimeRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FromTime", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FromId", wireType)
 			}
-			var msglen int
+			m.FromId = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowQuery
@@ -1458,25 +1584,11 @@ func (m *RecordListWithTimeRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.FromId |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthQuery
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthQuery
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_cosmos_gogoproto_types.StdTimeUnmarshal(&m.FromTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ToTime", wireType)
@@ -1511,10 +1623,10 @@ func (m *RecordListWithTimeRequest) Unmarshal(dAtA []byte) error {
 			}
 			iNdEx = postIndex
 		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Page", wireType)
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Pagination", wireType)
 			}
-			m.Page = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowQuery
@@ -1524,30 +1636,25 @@ func (m *RecordListWithTimeRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Page |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Limit", wireType)
+			if msglen < 0 {
+				return ErrInvalidLengthQuery
 			}
-			m.Limit = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowQuery
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Limit |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQuery
 			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.Pagination.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])
@@ -1802,6 +1909,76 @@ func (m *RecordSequenceResponse) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQuery(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthQuery
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *IsClerkTxOldResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQuery
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: IsClerkTxOldResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: IsClerkTxOldResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field IsOld", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQuery
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.IsOld = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQuery(dAtA[iNdEx:])

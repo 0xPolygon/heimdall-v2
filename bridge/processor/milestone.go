@@ -8,6 +8,7 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -49,7 +50,6 @@ func (mp *MilestoneProcessor) Start() error {
 
 // RegisterTasks - nil
 func (mp *MilestoneProcessor) RegisterTasks() {
-
 }
 
 // startPolling - polls heimdall and checks if new milestone needs to be proposed
@@ -61,7 +61,7 @@ func (mp *MilestoneProcessor) startPolling(ctx context.Context, milestoneLength 
 	for {
 		select {
 		case <-ticker.C:
-			err := mp.checkAndPropose(milestoneLength)
+			err := mp.checkAndPropose(ctx, milestoneLength)
 			if err != nil {
 				mp.Logger.Error("Error in proposing the milestone", "error", err)
 			}
@@ -76,35 +76,31 @@ func (mp *MilestoneProcessor) startPolling(ctx context.Context, milestoneLength 
 // 1. check if i am the proposer for next milestone
 // 2. check if milestone has to be proposed
 // 3. if so, propose milestone to heimdall.
-func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error) {
+func (mp *MilestoneProcessor) checkAndPropose(ctx context.Context, milestoneLength uint64) (err error) {
 	// fetch milestone context
 	milestoneContext, err := mp.getMilestoneContext()
 	if err != nil {
 		return err
 	}
 
-	//check whether the node is current milestone proposer or not
-	isProposer, err := util.IsMilestoneProposer()
+	// check whether the node is current milestone proposer or not
+	isProposer, err := util.IsMilestoneProposer(mp.cliCtx.Codec)
 	if err != nil {
 		mp.Logger.Error("Error checking isProposer in HeaderBlock handler", "error", err)
 		return err
 	}
 
 	if isProposer {
-		result, err := util.GetMilestoneCount()
+		result, err := util.GetMilestoneCount(mp.cliCtx.Codec)
 		if err != nil {
 			return err
 		}
 
-		if result == nil {
-			return fmt.Errorf("got nil result while fetching milestone count")
-		}
+		start := helper.GetMilestoneBorBlockHeight()
 
-		var start = helper.GetMilestoneBorBlockHeight()
-
-		if result.Count != 0 {
+		if result != 0 {
 			// fetch latest milestone
-			latestMilestone, err := util.GetLatestMilestone()
+			latestMilestone, err := util.GetLatestMilestone(mp.cliCtx.Codec)
 			if err != nil {
 				return err
 			}
@@ -113,12 +109,12 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 				return errors.New("got nil result while fetching latest milestone")
 			}
 
-			//start block number should be continuous to the end block of lasted stored milestone
+			// start block number should be continuous to the end block of lasted stored milestone
 			start = latestMilestone.EndBlock + 1
 		}
 
-		//send the milestone to heimdall chain
-		if err := mp.createAndSendMilestoneToHeimdall(milestoneContext, start, milestoneLength); err != nil {
+		// send the milestone to heimdall chain
+		if err := mp.createAndSendMilestoneToHeimdall(ctx, milestoneContext, start, milestoneLength); err != nil {
 			mp.Logger.Error("Error sending milestone to heimdall", "error", err)
 			return err
 		}
@@ -130,13 +126,13 @@ func (mp *MilestoneProcessor) checkAndPropose(milestoneLength uint64) (err error
 }
 
 // sendMilestoneToHeimdall - creates milestone msg and broadcasts to heimdall
-func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext *MilestoneContext, startNum uint64, milestoneLength uint64) error {
+func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(ctx context.Context, milestoneContext *MilestoneContext, startNum uint64, milestoneLength uint64) error {
 	mp.Logger.Debug("Initiating milestone to Heimdall", "start", startNum, "milestoneLength", milestoneLength)
 
 	blocksConfirmation := helper.BorChainMilestoneConfirmation
 
 	// Get latest bor block
-	block, err := mp.contractCaller.GetBorChainBlock(nil)
+	block, err := mp.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -144,13 +140,14 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	latestNum := block.Number.Uint64()
 
 	if latestNum < startNum+milestoneLength+blocksConfirmation-1 {
-		return fmt.Errorf("less than milestoneLength  start=%v latest block=%v milestonelength=%v borchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation)
+		mp.Logger.Debug(fmt.Sprintf("less than milestoneLength  start=%v latest block=%v milestonelength=%v borchainconfirmation=%v", startNum, latestNum, milestoneLength, blocksConfirmation))
+		return nil
 	}
 
 	endNum := latestNum - blocksConfirmation
 
-	//fetch the endBlock+1 number instead of endBlock so that we can directly get the hash of endBlock using parent hash
-	block, err = mp.contractCaller.GetBorChainBlock(big.NewInt(int64(endNum + 1)))
+	// fetch the endBlock+1 number instead of endBlock so that we can directly get the hash of endBlock using parent hash
+	block, err = mp.contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(endNum+1)))
 	if err != nil {
 		return fmt.Errorf("error while fetching %d block %w", endNum+1, err)
 	}
@@ -161,23 +158,34 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 	if err != nil {
 		return err
 	}
-	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), string(endHash[:]))
 
-	mp.Logger.Info("End block hash", string(endHash[:]))
+	addressString, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
+	milestoneId := fmt.Sprintf("%s - %s", newRandUuid.String(), addressString)
+
+	mp.Logger.Info("End block hash", common.Bytes2Hex(endHash[:]))
 
 	mp.Logger.Info("✅ Creating and broadcasting new milestone",
 		"start", startNum,
 		"end", endNum,
-		"hash", string(endHash[:]),
+		"hash", common.Bytes2Hex(endHash[:]),
 		"milestoneId", milestoneId,
 		"milestoneLength", milestoneLength,
 	)
 
 	chainParams := milestoneContext.ChainmanagerParams.ChainParams
 
+	address, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	// create and send milestone message
 	msg := milestoneTypes.NewMsgMilestoneBlock(
-		string(helper.GetAddress()[:]),
+		address,
 		startNum,
 		endNum,
 		endHash[:],
@@ -185,8 +193,8 @@ func (mp *MilestoneProcessor) createAndSendMilestoneToHeimdall(milestoneContext 
 		milestoneId,
 	)
 
-	//broadcast to heimdall
-	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil)
+	// broadcast to heimdall
+	txRes, err := mp.txBroadcaster.BroadcastToHeimdall(msg, nil) //nolint:contextcheck
 	if err != nil {
 		mp.Logger.Error("Error while broadcasting milestone to heimdall", "error", err)
 		return err
@@ -209,7 +217,7 @@ func (mp *MilestoneProcessor) startPollingMilestoneTimeout(ctx context.Context, 
 	for {
 		select {
 		case <-ticker.C:
-			err := mp.checkAndProposeMilestoneTimeout()
+			err := mp.checkAndProposeMilestoneTimeout(ctx)
 			if err != nil {
 				mp.Logger.Error("Error in proposing the MilestoneTimeout msg", "error", err)
 			}
@@ -226,8 +234,8 @@ func (mp *MilestoneProcessor) startPollingMilestoneTimeout(ctx context.Context, 
 // 1. check if i am the proposer for next milestone
 // 2. check if milestone has to be proposed
 // 3. if so, propose milestone to heimdall.
-func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout() (err error) {
-	isMilestoneTimeoutRequired, err := mp.checkIfMilestoneTimeoutIsRequired()
+func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout(ctx context.Context) (err error) {
+	isMilestoneTimeoutRequired, err := mp.checkIfMilestoneTimeoutIsRequired(ctx)
 	if err != nil {
 		mp.Logger.Debug("Error checking sMilestoneTimeoutRequired while proposing Milestone Timeout ", "error", err)
 		return
@@ -236,8 +244,8 @@ func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout() (err error) {
 	if isMilestoneTimeoutRequired {
 		var isProposer bool
 
-		//check if the node is the proposer list or not.
-		if isProposer, err = util.IsInMilestoneProposerList(10); err != nil {
+		// check if the node is the proposer list or not.
+		if isProposer, err = util.IsInMilestoneProposerList(10, mp.cliCtx.Codec); err != nil {
 			mp.Logger.Error("Error checking IsInMilestoneProposerList while proposing Milestone Timeout ", "error", err)
 			return
 		}
@@ -245,6 +253,7 @@ func (mp *MilestoneProcessor) checkAndProposeMilestoneTimeout() (err error) {
 		// if i am the proposer and NoAck is required, then propose No-Ack
 		if isProposer {
 			// send Checkpoint No-Ack to heimdall
+			//nolint:contextcheck
 			if err = mp.createAndSendMilestoneTimeoutToHeimdall(); err != nil {
 				mp.Logger.Error("Error proposing Milestone-Timeout ", "error", err)
 				return
@@ -261,9 +270,14 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 
 	mp.Logger.Info("✅ Creating and broadcasting milestone-timeout")
 
+	address, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
 	// create and send milestone message
 	msg := milestoneTypes.NewMsgMilestoneTimeout(
-		string(helper.GetAddress()[:]),
+		address,
 	)
 
 	// return broadcast to heimdall
@@ -281,15 +295,14 @@ func (mp *MilestoneProcessor) createAndSendMilestoneTimeoutToHeimdall() error {
 	return nil
 }
 
-func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) {
-	latestMilestone, err := util.GetLatestMilestone()
+func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired(ctx context.Context) (bool, error) {
+	latestMilestone, err := util.GetLatestMilestone(mp.cliCtx.Codec)
 	if err != nil || latestMilestone == nil {
 		return false, err
 	}
 
 	lastMilestoneEndBlock := latestMilestone.EndBlock
-	currentChildBlockNumber, err := mp.getCurrentChildBlock()
-
+	currentChildBlockNumber, err := mp.getCurrentChildBlock(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -302,8 +315,8 @@ func (mp *MilestoneProcessor) checkIfMilestoneTimeoutIsRequired() (bool, error) 
 }
 
 // getCurrentChildBlock gets the current child block
-func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
-	childBlock, err := mp.contractCaller.GetBorChainBlock(nil)
+func (mp *MilestoneProcessor) getCurrentChildBlock(ctx context.Context) (uint64, error) {
+	childBlock, err := mp.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -312,7 +325,7 @@ func (mp *MilestoneProcessor) getCurrentChildBlock() (uint64, error) {
 }
 
 func (mp *MilestoneProcessor) getMilestoneContext() (*MilestoneContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(mp.cliCtx.Codec)
 	if err != nil {
 		mp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

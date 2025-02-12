@@ -134,7 +134,6 @@ func (m *MsgValidatorJoin) GetNonce() uint64 {
 	return 0
 }
 
-// MsgValidatorJoinResponse defines the Msg/ValidatorJoin response type.
 type MsgValidatorJoinResponse struct {
 }
 
@@ -171,19 +170,14 @@ func (m *MsgValidatorJoinResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgValidatorJoinResponse proto.InternalMessageInfo
 
-// MsgStakeUpdate defines a message for performing a stake update
 type MsgStakeUpdate struct {
-	From      string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
-	ValId     uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
-	NewAmount cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3,customtype=cosmossdk.io/math.Int" json:"new_amount"`
-	TxHash    []byte                `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
-	// TODO HV2: the following fields are repeated frequently in the messages.
-	//
-	//	Consider wrapping them in a separate proto message (see
-	//	https://polygon.atlassian.net/browse/POS-2615)
-	LogIndex    uint64 `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
-	BlockNumber uint64 `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
-	Nonce       uint64 `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
+	From        string                `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
+	ValId       uint64                `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
+	NewAmount   cosmossdk_io_math.Int `protobuf:"bytes,3,opt,name=new_amount,json=newAmount,proto3,customtype=cosmossdk.io/math.Int" json:"new_amount"`
+	TxHash      []byte                `protobuf:"bytes,4,opt,name=tx_hash,json=txHash,proto3" json:"tx_hash,omitempty"`
+	LogIndex    uint64                `protobuf:"varint,5,opt,name=log_index,json=logIndex,proto3" json:"log_index,omitempty"`
+	BlockNumber uint64                `protobuf:"varint,6,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	Nonce       uint64                `protobuf:"varint,7,opt,name=nonce,proto3" json:"nonce,omitempty"`
 }
 
 func (m *MsgStakeUpdate) Reset()         { *m = MsgStakeUpdate{} }
@@ -261,7 +255,6 @@ func (m *MsgStakeUpdate) GetNonce() uint64 {
 	return 0
 }
 
-// MsgStakeUpdateResponse defines the Msg/StakeUpdate response type.
 type MsgStakeUpdateResponse struct {
 }
 
@@ -298,8 +291,6 @@ func (m *MsgStakeUpdateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgStakeUpdateResponse proto.InternalMessageInfo
 
-// MsgSignerUpdate defines a message for updating signer of the existing
-// validator
 type MsgSignerUpdate struct {
 	From            string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId           uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
@@ -392,7 +383,6 @@ func (m *MsgSignerUpdate) GetNonce() uint64 {
 	return 0
 }
 
-// MsgSignerUpdateResponse defines the Msg/SignerUpdate response type.
 type MsgSignerUpdateResponse struct {
 }
 
@@ -429,7 +419,6 @@ func (m *MsgSignerUpdateResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSignerUpdateResponse proto.InternalMessageInfo
 
-// MsgValidatorExit defines a message for exiting the validator
 type MsgValidatorExit struct {
 	From              string `protobuf:"bytes,1,opt,name=from,proto3" json:"from,omitempty"`
 	ValId             uint64 `protobuf:"varint,2,opt,name=val_id,json=valId,proto3" json:"val_id,omitempty"`
@@ -522,7 +511,6 @@ func (m *MsgValidatorExit) GetNonce() uint64 {
 	return 0
 }
 
-// MsgValidatorExitResponse defines the Msg/ValidatorExit response type.
 type MsgValidatorExitResponse struct {
 }
 

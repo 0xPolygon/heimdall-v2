@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -14,7 +15,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
-	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/common/tracing"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -66,7 +66,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 
 	start := time.Now()
 
-	var vLog = types.Log{}
+	vLog := types.Log{}
 	if err := json.Unmarshal([]byte(logBytes), &vLog); err != nil {
 		cp.Logger.Error("Error while unmarshalling event from rootchain", "error", err)
 		return err
@@ -129,8 +129,13 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 		}
 		tracing.EndSpan(maxStateSyncSizeCheckSpan)
 
+		address, err := helper.GetAddressString()
+		if err != nil {
+			return fmt.Errorf("error converting address to string: %w", err)
+		}
+
 		msg := clerkTypes.NewMsgEventRecord(
-			addressUtil.FormatAddress(string(helper.GetAddress())),
+			address,
 			vLog.TxHash.String(),
 			uint64(vLog.Index),
 			vLog.BlockNumber,
@@ -171,7 +176,7 @@ func (cp *ClerkProcessor) sendStateSyncedToHeimdall(eventName string, logBytes s
 //
 
 func (cp *ClerkProcessor) getClerkContext() (*ClerkContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(cp.cliCtx.Codec)
 	if err != nil {
 		cp.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

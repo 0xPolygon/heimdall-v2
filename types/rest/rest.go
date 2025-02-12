@@ -102,30 +102,6 @@ func (br BaseReq) ValidateBasic(w http.ResponseWriter) bool {
 	return true
 }
 
-// TODO HV2: This should not be needed due to autocli. If that's the case, delete this, the other unused functions, and the APIBodyLimit constant
-/*
-// ReadRESTReq reads and unmarshalls a Request's body to the BaseReq struct.
-// Writes an error response to ResponseWriter and returns true if errors occurred.
-func ReadRESTReq(w http.ResponseWriter, r *http.Request, cdc codec.Codec, req interface{}) bool {
-	// Limit the number of bytes read from the request body
-	limitedBody := http.MaxBytesReader(w, r.Body, APIBodyLimit)
-
-	body, err := io.ReadAll(limitedBody)
-	if err != nil {
-		WriteErrorResponse(w, http.StatusBadRequest, err.Error())
-		return false
-	}
-
-	err = cdc.UnmarshalJSON(body, req)
-	if err != nil {
-		WriteErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("failed to decode JSON payload: %s", err))
-		return false
-	}
-
-	return true
-}
-*/
-
 // ErrorResponse defines the attributes of a JSON error response.
 type ErrorResponse struct {
 	Code  int    `json:"code,omitempty"`
@@ -195,54 +171,6 @@ func ReturnNotFoundIfNoContent(w http.ResponseWriter, data []byte, message strin
 
 	return true
 }
-
-// TODO HV2: This should not be needed due to autocli. If that's the case, delete this, the other unused functions, and the APIBodyLimit constant
-/*
-// PostProcessResponse performs post-processing for a REST response. The result
-// returned to clients will contain two fields, the height at which the resource
-// was queried at and the original result.
-func PostProcessResponse(w http.ResponseWriter, cliCtx client.Context, resp interface{}) {
-	var result []byte
-
-	if cliCtx.Height < 0 {
-		WriteErrorResponse(w, http.StatusInternalServerError, fmt.Errorf("negative height in response").Error())
-		return
-	}
-
-	switch data := resp.(type) {
-	case []byte:
-		result = data
-	default:
-		var err error
-		result, err = cliCtx.Codec.MarshalJSON(data)
-
-		if err != nil {
-			WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-	}
-
-	wrappedResp := NewResponse(cliCtx.Height, result)
-
-	var (
-		output []byte
-		err    error
-	)
-
-	output, err = cliCtx.Codec.MarshalJSON(wrappedResp)
-
-	if err != nil {
-		WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(output)
-	if err != nil {
-		WriteErrorResponse(w, http.StatusInternalServerError, err.Error())
-	}
-}
-*/
 
 // ParseHTTPArgsWithLimit parses the request's URL and returns a slice containing
 // all arguments pairs. It separates page and limit used for pagination where a

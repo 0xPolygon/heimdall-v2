@@ -229,7 +229,7 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 
 // getRootChainContext returns the root chain context
 func (rl *RootChainListener) getRootChainContext() (*RootChainListenerContext, error) {
-	chainmanagerParams, err := util.GetChainmanagerParams()
+	chainmanagerParams, err := util.GetChainmanagerParams(rl.cliCtx.Codec)
 	if err != nil {
 		rl.Logger.Error("Error while fetching chain manager params", "error", err)
 		return nil, err

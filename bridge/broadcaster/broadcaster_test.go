@@ -39,7 +39,6 @@ import (
 	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 var (
@@ -53,6 +52,7 @@ var (
 	dummyCometBFTNodeUrl    = "http://localhost:26657"
 	dummyHeimdallServerUrl  = "https://dummy-heimdall-api-testnet.polygon.technology"
 	getAccountUrl           = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/accounts/" + heimdallAddress
+	getAuthParamsUrl        = dummyHeimdallServerUrl + "/cosmos/auth/v1beta1/params"
 	getAccountResponse      = fmt.Sprintf(`
 	{
 		"address": "%s",
@@ -71,6 +71,20 @@ var (
 	  }
 	  `, address.String())
 
+	getAccountParamsResponse = `
+	{
+		"params": {
+			"max_memo_characters": 256,
+    		"tx_sig_limit": 7,
+    		"tx_size_cost_per_byte": 10,
+    		"sig_verify_cost_ed25519": 590,
+    		"sig_verify_cost_secp256k1": 1000,
+    		"max_tx_gas": 1000000,
+    		"tx_fees": "1000000000000000"
+		}
+	}
+	`
+
 	msgs = []sdk.Msg{
 		checkpointTypes.NewMsgCheckpointBlock(
 			heimdallAddress,
@@ -79,25 +93,6 @@ var (
 			[]byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e"),
 			[]byte("0xd10b5c16c25efe0b0f5b3d75038834223934ae8c2ec2b63a62bbe42aa21e2d2d"),
 			"borChainID",
-		),
-		milestoneTypes.NewMsgMilestoneBlock(
-			heimdallAddress,
-			0,
-			63,
-			[]byte("0x5bd83f679c8ce7c48d6fa52ce41532fcacfbbd99d5dab415585f397bf44a0b6e"),
-			"testBorChainID",
-			"testMilestoneID",
-		),
-		milestoneTypes.NewMsgMilestoneTimeout(
-			heimdallAddress,
-		),
-		borTypes.NewMsgProposeSpan(
-			1,
-			heimdallAddress,
-			0,
-			63,
-			"testBorChainID",
-			[]byte("randseed"),
 		),
 	}
 )
@@ -123,13 +118,15 @@ func TestBroadcastToHeimdall(t *testing.T) {
 	mockCtrl := prepareMockData(t)
 	defer mockCtrl.Finish()
 
-	testOpts := helper.NewTestOpts(nil, testChainId)
 	heimdallApp, sdkCtx, _ := createTestApp(t)
 
 	encodingConfig := moduletestutil.MakeTestEncodingConfig()
 	txConfig := encodingConfig.TxConfig
 
-	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec())
+	txBroadcaster := NewTxBroadcaster(heimdallApp.AppCodec(), client.Context{}, func(address string) sdk.AccountI {
+		return authTypes.NewBaseAccount(heimdallAddressBytes, cosmosPrivKey.PubKey(), 1, 0)
+	})
+
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.TxConfig = txConfig
 	txBroadcaster.CliCtx.FromAddress = heimdallAddressBytes
@@ -190,7 +187,7 @@ func TestBroadcastToHeimdall(t *testing.T) {
 				shouldFailSimulate = false
 			}
 
-			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil, testOpts)
+			txRes, err := txBroadcaster.BroadcastToHeimdall(tc.msg, nil)
 			if tc.expErr {
 				require.Error(t, err)
 			} else {
@@ -204,7 +201,9 @@ func TestBroadcastToHeimdall(t *testing.T) {
 }
 
 func createTestApp(t *testing.T) (*app.HeimdallApp, sdk.Context, client.Context) {
-	hApp, _, _ := app.SetupApp(t, 1)
+	t.Helper()
+	setupAppResult := app.SetupApp(t, 1)
+	hApp := setupAppResult.App
 	ctx := hApp.BaseApp.NewContext(true)
 	hApp.BankKeeper.SetSendEnabled(ctx, "", true)
 	err := hApp.CheckpointKeeper.SetParams(ctx, checkpointTypes.DefaultParams())
@@ -247,14 +246,24 @@ func updateMockData(t *testing.T) *gomock.Controller {
 	mockCtrl := gomock.NewController(t)
 
 	mockHttpClient := helperMocks.NewMockHTTPClient(mockCtrl)
-	res := prepareResponse(getAccountUpdatedResponse)
+	accRes := prepareResponse(getAccountUpdatedResponse)
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
 			log.Fatalf("failed to close response body: %v", err)
 		}
-	}(res.Body)
-	mockHttpClient.EXPECT().Get(getAccountUrl).Return(res, nil).AnyTimes()
+	}(accRes.Body)
+
+	authParams := prepareResponse(getAccountParamsResponse)
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			log.Fatalf("failed to close response body: %v", err)
+		}
+	}(authParams.Body)
+
+	mockHttpClient.EXPECT().Get(getAccountUrl).Return(accRes, nil).AnyTimes()
+	mockHttpClient.EXPECT().Get(getAuthParamsUrl).Return(authParams, nil).AnyTimes()
 	helper.Client = mockHttpClient
 	return mockCtrl
 }

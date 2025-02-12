@@ -15,9 +15,15 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: checkpoint.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod:      "GetParams",
+					RpcMethod:      "GetCheckpointParams",
 					Use:            "get-params",
 					Short:          "Get checkpoint params",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
+				},
+				{
+					RpcMethod:      "GetCheckpointOverview",
+					Use:            "get-overview",
+					Short:          "Get checkpoint overview",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
@@ -31,7 +37,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "get-checkpoint [number]",
 					Short:     "Get checkpoint based on its number",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "number"}},
+						{ProtoField: "number"},
+					},
 				},
 				{
 					RpcMethod:      "GetCheckpointLatest",
@@ -56,7 +63,8 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:       "get-next-checkpoint",
 					Short:     "Get the next checkpoint",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "bor_chain_id"}},
+						{ProtoField: "bor_chain_id"},
+					},
 				},
 				{
 					RpcMethod:      "GetCurrentProposer",

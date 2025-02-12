@@ -4,13 +4,9 @@ import (
 	errorsmod "cosmossdk.io/errors"
 )
 
-// TODO HV2: remove unused constants and consolidate errors
-
 var (
 	ErrInvalidMsg              = errorsmod.Register(ModuleName, 2, "invalid message")
-	ErrCheckpointBufferFound   = errorsmod.Register(ModuleName, 3, "checkpoint not found in buffer")
 	ErrNoCheckpointFound       = errorsmod.Register(ModuleName, 4, "checkpoint not found")
-	ErrCheckpointAlreadyExists = errorsmod.Register(ModuleName, 5, "checkpoint already exists")
 	ErrOldCheckpoint           = errorsmod.Register(ModuleName, 6, "checkpoint already received for given start and end blocks")
 	ErrDiscontinuousCheckpoint = errorsmod.Register(ModuleName, 7, "checkpoint is not in continuity")
 	ErrBadBlockDetails         = errorsmod.Register(ModuleName, 8, "checkpoint not found in buffer")
@@ -22,4 +18,5 @@ var (
 	ErrCheckpointParams        = errorsmod.Register(ModuleName, 14, "checkpoint params not found")
 	ErrBufferFlush             = errorsmod.Register(ModuleName, 15, "flushing buffer failed")
 	ErrAccountHash             = errorsmod.Register(ModuleName, 16, "error while fetching account root hash")
+	ErrAlreadyExists           = errorsmod.Register(ModuleName, 17, "checkpoint already exists")
 )

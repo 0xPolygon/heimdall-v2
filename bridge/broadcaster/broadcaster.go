@@ -8,18 +8,15 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/libs/log"
-	cometTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec"
-	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	authsign "github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -39,21 +36,26 @@ type TxBroadcaster struct {
 }
 
 // NewTxBroadcaster creates a new instance of TxBroadcaster
-func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
-	cliCtx := client.Context{}.WithCodec(cdc)
+func NewTxBroadcaster(cdc codec.Codec, cliCtx client.Context, accRetriever func(address string) sdk.AccountI) *TxBroadcaster {
+	cliCtx = cliCtx.WithCodec(cdc)
 	cliCtx.BroadcastMode = flags.BroadcastSync
 
 	// current address
-	address := helper.GetAddress()
-	ac := addressCodec.NewHexCodec()
-	addressString, err := ac.BytesToString(address)
+	address, err := helper.GetAddressString()
 	if err != nil {
 		panic("Error converting address to string")
 	}
 
-	account, err := util.GetAccount(cliCtx, addressString)
-	if err != nil {
-		panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
+	cliCtx.FromAddress = sdk.MustAccAddressFromHex(address)
+
+	var account sdk.AccountI
+	if accRetriever != nil {
+		account = accRetriever(address)
+	} else {
+		account, err = util.GetAccount(cliCtx, address)
+		if err != nil {
+			panic(fmt.Sprintf("Error connecting to rest-server, please start server before bridge. Error: %v", err))
+		}
 	}
 
 	return &TxBroadcaster{
@@ -64,36 +66,22 @@ func NewTxBroadcaster(cdc codec.Codec) *TxBroadcaster {
 	}
 }
 
-// TODO HV2: check usage testOpts (in v1 they are used because BuildAndBroadcastMsgs is invoked)
-
 // BroadcastToHeimdall broadcast to heimdall
-func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, testOpts ...*helper.TestOpts) (*sdk.TxResponse, error) {
+func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}) (*sdk.TxResponse, error) {
 	tb.heimdallMutex.Lock()
 	defer tb.heimdallMutex.Unlock()
 	defer util.LogElapsedTimeForStateSyncedEvent(event, "BroadcastToHeimdall", time.Now())
 
 	txCfg := tb.CliCtx.TxConfig
-
-	txBldr := txCfg.NewTxBuilder()
-	err := txBldr.SetMsgs(msg)
-	if err != nil {
-		return &sdk.TxResponse{}, err
-	}
-
 	signMode, err := authsign.APISignModeToInternal(txCfg.SignModeHandler().DefaultMode())
 	if err != nil {
 		return &sdk.TxResponse{}, err
 	}
 
-	err = txBldr.SetSignatures(helper.GetSignature(signMode, tb.lastSeqNo))
+	authParams, err := util.GetAccountParamsURL(tb.CliCtx.Codec)
 	if err != nil {
 		return &sdk.TxResponse{}, err
 	}
-	txBldr.SetMemo(viper.GetString("memo"))
-
-	txBldr.SetGasLimit(uint64(cometTypes.DefaultBlockParams().MaxGas))
-	// TODO HV2 - should we keep this limit?
-	txBldr.SetFeeAmount(ante.DefaultFeeWantedPerTx)
 
 	// create a factory
 	txf := clienttx.Factory{}.
@@ -103,14 +91,16 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 		WithSignMode(signMode).
 		WithAccountNumber(tb.accNum).
 		WithSequence(tb.lastSeqNo).
-		WithKeybase(tb.CliCtx.Keyring)
+		WithKeybase(tb.CliCtx.Keyring).
+		WithSignMode(signMode).
+		WithFees(ante.DefaultFeeWantedPerTx.String()).
+		WithGas(authParams.MaxTxGas)
 
 	// setting this to true to as the if block in BroadcastTx
 	// might cause a cancelled transaction.
 	tb.CliCtx.SkipConfirm = true
 
 	txResponse, err := helper.BroadcastTx(tb.CliCtx, txf, msg)
-
 	// Check for an error from broadcasting the transaction
 	if err != nil {
 		tb.logger.Error("Error while broadcasting the heimdall transaction", "error", err)
@@ -147,17 +137,15 @@ func (tb *TxBroadcaster) BroadcastToHeimdall(msg sdk.Msg, event interface{}, tes
 // Helper function to update account sequence
 func updateAccountSequence(tb *TxBroadcaster) error {
 	// current address
-	address := helper.GetAddress()
-	ac := addressCodec.NewHexCodec()
-	addressString, err := ac.BytesToString(address)
+	address, err := helper.GetAddressString()
 	if err != nil {
-		return fmt.Errorf("error converting address to string: %v", err)
+		return fmt.Errorf("error converting address to string: %w", err)
 	}
 
 	// fetch from APIs
-	account, errAcc := util.GetAccount(tb.CliCtx, addressString)
+	account, errAcc := util.GetAccount(tb.CliCtx, address)
 	if errAcc != nil {
-		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, helper.GetAddress())))
+		tb.logger.Error("Error fetching account from rest-api", "url", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.AccountDetailsURL, address)))
 		return errAcc
 	}
 
@@ -177,7 +165,6 @@ func (tb *TxBroadcaster) BroadcastToBorChain(msg ethereum.CallMsg) error {
 
 	// get auth
 	auth, err := helper.GenerateAuthObj(borClient, *msg.To, msg.Data)
-
 	if err != nil {
 		tb.logger.Error("Error generating auth object", "error", err)
 		return err

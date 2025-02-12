@@ -13,9 +13,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
-
-// Note: returning any error in ABCI functions will cause cometBFT to panic
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
@@ -25,6 +26,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
 			return nil, err
+		}
+
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
+			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
+			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
+				return nil, err
+			}
 		}
 
 		// prepare the proposal with the vote extensions and the validators set's votes
@@ -59,18 +67,19 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			_, err = app.PrepareProposalVerifyTx(tx)
 			if err != nil {
 				logger.Error("RunTx returned an error in PrepareProposal", "error", err)
-				return nil, err
+				continue
 			}
 
 			totalTxBytes += len(proposedTx)
 			txs = append(txs, proposedTx)
-
-			// check if there are less than 1 txs in the request
-			if len(txs) < 1 {
-				logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
-				return nil, fmt.Errorf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress)
-			}
 		}
+
+		// check if there are less than 1 txs in the request
+		if len(txs) < 1 {
+			logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
+			return nil, fmt.Errorf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress)
+		}
+
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
@@ -91,9 +100,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := req.Txs[0]
 		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
-			// returning an error here would cause consensus to panic. Reject the proposal instead if a proposer
-			// deliberately does not include ExtendedVoteInfo at the beginning of the txs slice
-			logger.Error("Error occurred while decoding ExtendedCommitInfo", "error", err)
+			logger.Error("Error occurred while decoding ExtendedCommitInfo", "height", req.Height, "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
@@ -105,6 +112,16 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		// validate the vote extensions
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
+			// We could reject proposal if we fail to query bor, we follow RFC 105 (https://github.com/cometbft/cometbft/blob/main/docs/references/rfc/rfc-105-non-det-process-proposal.md)
+			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
+				logger.Error("Failed to query bor, rejecting proposal", "error", err)
+			} else {
+				logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
+			}
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
@@ -126,7 +143,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			if err != nil {
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
-				return nil, err
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 		}
 
@@ -141,7 +158,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
 
 		// check if VEs are enabled
-		panicOnVoteExtensionsDisabled(ctx, req.Height)
+		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
+			return nil, err
+		}
 
 		// prepare the side tx responses
 		sideTxRes := make([]sidetxs.SideTxResponse, 0)
@@ -154,19 +173,27 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		if err := extCommitInfo.Unmarshal(bz); err != nil {
 			logger.Error("Error occurred while decoding ExtendedCommitInfo", "error", err)
 			// abnormal behavior since the block got >2/3 pre-votes, so the special tx should have been added
-			panic("error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
+			return nil, errors.New("error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
 		}
+
+		dummyVoteExt, err := getDummyNonRpVoteExtension(req.Height, ctx.ChainID())
+		if err != nil {
+			logger.Error("Error occurred while getting dummy vote extension", "error", err)
+			return nil, err
+		}
+
+		nonRpVoteExt := dummyVoteExt
 
 		txs := req.Txs[1:]
 
 		// decode txs and execute side txs
 		for _, rawTx := range txs {
 			// create a cache wrapped context for stateless execution
-			ctx, _ = app.cacheTxContext(ctx, rawTx)
+			ctx, _ = app.cacheTxContext(ctx)
 			tx, err := app.TxDecode(rawTx)
 			if err != nil {
 				// This tx comes from a block that has already been pre-voted by >2/3 of the voting power, so this should never happen
-				panic(fmt.Errorf("error occurred while decoding tx bytes in ExtendVoteHandler. Error: %w", err))
+				return nil, fmt.Errorf("error occurred while decoding tx bytes in ExtendVoteHandler. Error: %w", err)
 			}
 
 			// messages represent the side txs (operations performed by modules using the VEs mechanism)
@@ -183,6 +210,16 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				// execute the side handler to collect the votes from the validators
 				res := sideHandler(ctx, msg)
 
+				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
+					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+					if !ok {
+						logger.Error("ExtendVoteHandler: type mismatch for MsgCheckpoint")
+						continue
+					}
+
+					nonRpVoteExt = packExtensionWithVote(checkpointMsg.GetSideSignBytes())
+				}
+
 				// add the side handler results (YES/NO/UNSPECIFIED votes) to the side tx response
 				txHash := cmtTypes.Tx(rawTx).Hash()
 				logger.Debug("Adding vote extension", "txHash", txHash, "blockHeight", req.Height, "blockHash", req.Hash, "vote", res)
@@ -192,7 +229,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				}
 				sideTxRes = append(sideTxRes, ve)
 			}
-
 		}
 
 		// prepare the response with votes, block height and block hash
@@ -202,13 +238,21 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			BlockHash:       req.Hash,
 		}
 
-		bz, err := consolidatedSideTxRes.Marshal()
+		bz, err = consolidatedSideTxRes.Marshal()
 		if err != nil {
 			logger.Error("Error occurred while marshalling the ConsolidatedSideTxResponse in ExtendVoteHandler", "error", err)
 			return nil, err
 		}
 
-		return &abci.ResponseExtendVote{VoteExtension: bz}, nil
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
+			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
+				return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: dummyVoteExt}, nil
+			}
+			return nil, err
+		}
+
+		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
 	}
 }
 
@@ -219,7 +263,9 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 
 		// check if VEs are enabled
-		panicOnVoteExtensionsDisabled(ctx, req.Height)
+		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
+			return nil, err
+		}
 
 		ac := address.NewHexCodec()
 		valAddr, err := ac.BytesToString(req.ValidatorAddress)
@@ -251,6 +297,13 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
+			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
+				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
+			}
+		}
+
 		return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_ACCEPT}, nil
 	}
 }
@@ -259,7 +312,9 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 
-	panicOnVoteExtensionsDisabled(ctx, req.Height+1)
+	if err := checkIfVoteExtensionsDisabled(ctx, req.Height+1); err != nil {
+		return nil, err
+	}
 
 	// Extract ExtendedVoteInfo encoded at the beginning of txs bytes
 	extCommitInfo := new(abci.ExtendedCommitInfo)
@@ -267,7 +322,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	// req.Txs must have non-zero length
 	if len(req.Txs) == 0 {
 		logger.Error("Unexpected behavior, no txs found in the pre-blocker", "height", req.Height)
-		panic(fmt.Sprintf("no txs found in the pre-blocker at height %d", req.Height))
+		return nil, fmt.Errorf("no txs found in the pre-blocker at height %d", req.Height)
 	}
 
 	bz := req.Txs[0]
@@ -278,7 +333,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	extVoteInfo := extCommitInfo.Votes
 
-	if req.Height == retrieveVoteExtensionsEnableHeight(ctx) {
+	if req.Height <= retrieveVoteExtensionsEnableHeight(ctx) {
 		if len(extVoteInfo) != 0 {
 			logger.Error("Unexpected behavior, non-empty VEs found in the initial height's pre-blocker", "height", req.Height)
 			return nil, errors.New("non-empty VEs found in the initial height's pre-blocker")
@@ -314,9 +369,33 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	// execute side txs
+	approvedTxsMap := make(map[string]bool)
+	for _, tx := range approvedTxs {
+		approvedTxsMap[common.Bytes2Hex(tx)] = true
+	}
+
 	txs := lastBlockTxs.Txs
 
+	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, app.StakeKeeper, logger)
+	if err != nil {
+		logger.Error("Error occurred while getting majority non-rp vote extension", "error", err)
+		return nil, err
+	}
+
+	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip first byte because its the vote
+	if approvedTxsMap[checkpointTxHash] {
+		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
+		if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {
+			logger.Error("Error occurred while setting checkpoint signatures tx hash", "error", err)
+			return nil, err
+		}
+		if err := app.CheckpointKeeper.SetCheckpointSignatures(ctx, signatures); err != nil {
+			logger.Error("Error occurred while setting checkpoint signatures", "error", err)
+			return nil, err
+		}
+	}
+
+	// execute side txs
 	for _, rawTx := range txs {
 		decodedTx, err := app.TxDecode(rawTx)
 		if err != nil {
@@ -326,26 +405,31 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		var txBytes cmtTypes.Tx = rawTx
 
-		for _, approvedTx := range approvedTxs {
+		if approvedTxsMap[common.Bytes2Hex(txBytes.Hash())] {
 
-			if bytes.Equal(approvedTx, txBytes.Hash()) {
+			// execute post handler for the approved side tx
+			msgs := decodedTx.GetMsgs()
+			executedPostHandlers := 0
+			for _, msg := range msgs {
+				postHandler := app.sideTxCfg.GetPostHandler(msg)
+				if postHandler != nil {
+					// Create a new context based off of the existing context with a cache wrapped
+					// multi-store in case message processing fails.
+					postHandlerCtx, msCache := app.cacheTxContext(ctx)
+					postHandlerCtx = postHandlerCtx.WithTxBytes(txBytes.Hash())
+					if err := postHandler(postHandlerCtx, msg, sidetxs.Vote_VOTE_YES); err == nil {
+						msCache.Write()
+					}
 
-				// execute post handler for the approved side tx
-				msgs := decodedTx.GetMsgs()
-				executedPostHandlers := 0
-				for _, msg := range msgs {
-					postHandler := app.sideTxCfg.GetPostHandler(msg)
-					if postHandler != nil {
-						postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
-						executedPostHandlers++
-					}
-					// make sure only one post handler is executed
-					if executedPostHandlers > 0 {
-						break
-					}
+					executedPostHandlers++
 				}
 
+				// make sure only one post handler is executed
+				if executedPostHandlers > 0 {
+					break
+				}
 			}
+
 		}
 	}
 

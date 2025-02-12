@@ -18,7 +18,9 @@ const (
 	MainChainTxConfirmations = "main_chain_tx_confirmations"
 	BorChainTxConfirmations  = "bor_chain_tx_confirmations"
 
-	BorChainID            = "bor_chain_id"
+	BorChainID      = "bor_chain_id"
+	HeimdallChainID = "heimdall_chain_id"
+	// #nosec G101 -- suppress gosec warning
 	PolTokenAddress       = "pol_token_address"
 	StakingManagerAddress = "staking_manager_address"
 	SlashManagerAddress   = "slash_manager_address"
@@ -45,7 +47,11 @@ func genBorChainTxConfirmations(r *rand.Rand) uint64 {
 // genBorChainId returns a randomized bor chain id
 func genBorChainId(r *rand.Rand) string {
 	return strconv.Itoa(r.Intn(math.MaxInt32))
+}
 
+// genHeimdallChainId returns a randomized heimdall chain id
+func genHeimdallChainId(borChainId string) string {
+	return "heimdall-" + borChainId
 }
 
 func genAddress(r *rand.Rand) string {
@@ -54,11 +60,11 @@ func genAddress(r *rand.Rand) string {
 
 // RandomizedGenState generates a random GenesisState for chainmanager
 func RandomizedGenState(simState *module.SimulationState) {
-
 	var (
 		mainChainTxConfirmations uint64
 		borChainTxConfirmations  uint64
 		borChainID               string
+		heimdallChainID          string
 		polTokenAddress          string
 		stakingManagerAddress    string
 		slashManagerAddress      string
@@ -79,6 +85,10 @@ func RandomizedGenState(simState *module.SimulationState) {
 
 	simState.AppParams.GetOrGenerate(BorChainID, &borChainID, simState.Rand, func(r *rand.Rand) {
 		borChainID = genBorChainId(r)
+	})
+
+	simState.AppParams.GetOrGenerate(heimdallChainID, &heimdallChainID, simState.Rand, func(_ *rand.Rand) {
+		heimdallChainID = genHeimdallChainId(borChainID)
 	})
 
 	simState.AppParams.GetOrGenerate(PolTokenAddress, &polTokenAddress, simState.Rand, func(r *rand.Rand) {
@@ -115,6 +125,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 
 	chainParams := types.ChainParams{
 		BorChainId:            borChainID,
+		HeimdallChainId:       heimdallChainID,
 		PolTokenAddress:       polTokenAddress,
 		StakingManagerAddress: stakingManagerAddress,
 		SlashManagerAddress:   slashManagerAddress,

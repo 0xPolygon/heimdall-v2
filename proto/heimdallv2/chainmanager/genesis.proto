@@ -7,7 +7,6 @@ import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/chainmanager/types";
 
-// GenesisState is the chainmanager state that must be provided at genesis
 message GenesisState {
   Params params = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];

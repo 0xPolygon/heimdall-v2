@@ -9,11 +9,13 @@ DOCKER := $(shell which docker)
 
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME).git
-GOLANG_CROSS_VERSION  ?= v1.21.0
+GOLANG_CROSS_VERSION  ?= v1.23.2
 
 # Fetch git latest tag
 LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))
 VERSION := $(shell git describe --tags | sed 's/^v//')
+CMT_VERSION := $(shell go list -m github.com/cometbft/cometbft | sed 's:.* ::')
+COSMOS_VERSION := $(shell go list -m github.com/cosmos/cosmos-sdk | sed 's:.* ::')
 COMMIT := $(shell git log -1 --format='%H')
 
 ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
@@ -22,8 +24,8 @@ ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
 		  -X github.com/0xPolygon/heimdall-v2/version.Commit=$(COMMIT) \
 		  -X github.com/cosmos/cosmos-sdk/version.Name=heimdall \
 		  -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld \
-		  -X github.com/cosmos/cosmos-sdk/version.Version=$(VERSION) \
-		  -X github.com/cosmos/cosmos-sdk/version.Commit=$(COMMIT)
+		  -X github.com/cosmos/cosmos-sdk/version.Version=$(COSMOS_VERSION) \
+		  -X github.com/cometbft/cometbft/version.TMCoreSemVer=$(CMT_VERSION)
 
 BUILD_FLAGS := -ldflags '$(ldflags)'
 
@@ -46,7 +48,12 @@ lint-deps:
 
 .PHONY: lint
 lint:
-	@./build/bin/golangci-lint run --config ./.golangci.yml
+	@if [ -n "$(NEW_FROM_REV)" ]; then \
+		echo "NEW_FROM_REV is set to: $(NEW_FROM_REV)"; \
+	else \
+		echo "NEW_FROM_REV is not set"; \
+	fi
+	@./build/bin/golangci-lint run --config ./.golangci.yml $(if $(NEW_FROM_REV),--new-from-rev $(NEW_FROM_REV))
 
 
 ###############################################################################
@@ -57,7 +64,7 @@ protoVer=0.14.0
 protoImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
 protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace --workdir /workspace $(protoImageName)
 
-proto-all: proto-format proto-lint proto-gen
+proto-all: proto-format proto-lint proto-gen proto-swagger-gen
 
 proto-gen:
 	@echo "Generating Protobuf files"
@@ -72,20 +79,23 @@ proto-lint:
 proto-check-breaking:
 	@$(protoImage) buf breaking --against "$(HTTPS_GIT)#branch=develop"
 
+proto-swagger-gen:
+	@echo "Generating Protobuf Swagger"
+	@$(protoImage) sh ./scripts/protoc-swagger-gen.sh
+
 .PHONY: proto-all proto-gen proto-format proto-lint proto-check-breaking
 
 mock:
-	# TODO HV2: enrich the mockgen command with all other modules' mocks
 	go install github.com/golang/mock/mockgen@latest
+	mockgen -source=x/bor/types/expected_keepers.go -destination=x/bor/testutil/expected_keepers_mocks.go  -package=testutil
 	mockgen -source=x/checkpoint/types/expected_keepers.go -destination=x/checkpoint/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/clerk/types/expected_keepers.go -destination=x/clerk/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/milestone/types/expected_keepers.go -destination=x/milestone/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/stake/types/expected_keepers.go -destination=x/stake/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
-	mockgen -source=x/bor/types/expected_keepers.go -destination=x/bor/testutil/expected_keepers_mocks.go  -package=testutil
-	mockgen -destination=helper/mocks/mock_http_client.go.go -package=mocks --source=./helper/util.go HTTPClient
+	mockgen -destination=helper/mocks/i_http_client.go -package=mocks --source=./helper/util.go HTTPClient
 	go install github.com/vektra/mockery/v2/...@latest
-	cd helper && mockery --name IContractCaller  --output ./mocks --filename=mock_contract_caller.go
+	mockery --name IContractCaller --dir ./helper  --output ./helper/mocks --filename=i_contract_caller.go
 
 
 ###############################################################################
@@ -95,11 +105,11 @@ mock:
 build-docker: # TODO-HV2: check this command once we have a proper docker build
 	@echo Fetching latest tag: $(LATEST_GIT_TAG)
 	git checkout $(LATEST_GIT_TAG)
-	docker build -t "0xpolygon/heimdall:$(LATEST_GIT_TAG)" -f Dockerfile .
+	docker build -t "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)" -f Dockerfile .
 
 push-docker: # TODO-HV2: check this command once we have a proper docker push
 	@echo Pushing docker tag image: $(LATEST_GIT_TAG)
-	docker push "0xpolygon/heimdall:$(LATEST_GIT_TAG)"
+	docker push "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)"
 
 ###############################################################################
 ###                                release                                  ###

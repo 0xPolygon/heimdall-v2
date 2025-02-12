@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+	"github.com/ethereum/go-ethereum/common"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
@@ -187,8 +188,14 @@ func (s *KeeperTestSuite) TestGRPCVerifyAccountProof_Success() {
 	err := tk.SetDividendAccount(ctx, dividendAccount)
 	require.NoError(err)
 
-	// TODO HV2: double check this
-	AccountHashProof := "44ad89ba62b98ff34f51403ac22759b55759460c0bb5521eb4b6ee3cff49cf83"
+	// Retrieve all dividend accounts to create the proof
+	dividendAccounts, err := tk.GetAllDividendAccounts(ctx)
+	require.NoError(err)
+
+	// Dynamically generate the proof for the given account
+	proofBytes, _, err := hTypes.GetAccountProof(dividendAccounts, AccountHash)
+	require.NoError(err)
+	AccountHashProof := common.Bytes2Hex(proofBytes)
 
 	req := &types.QueryVerifyAccountProofRequest{
 		Address: AccountHash,

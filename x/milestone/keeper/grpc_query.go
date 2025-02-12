@@ -24,8 +24,8 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
-// GetParams returns the milestones params
-func (q queryServer) GetParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+// GetMilestoneParams returns the milestones params
+func (q queryServer) GetMilestoneParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -95,7 +95,7 @@ func (q queryServer) GetMilestoneProposerByTimes(ctx context.Context, req *types
 	}
 
 	if req.Times >= math.MaxInt64 {
-		return nil, status.Error(codes.InvalidArgument, "empty request")
+		return nil, status.Error(codes.InvalidArgument, "times exceeds MaxInt64")
 	}
 
 	// get milestone validator set

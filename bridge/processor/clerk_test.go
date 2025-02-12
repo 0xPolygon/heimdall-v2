@@ -7,12 +7,13 @@ import (
 	"io"
 	"math/big"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -151,6 +152,10 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 
 func BenchmarkCalculateTaskDelay(b *testing.B) {
 	b.Skip("to be enabled")
+	interfaceRegistry := codectypes.NewInterfaceRegistry()
+	cryptocodec.RegisterInterfaces(interfaceRegistry)
+	clerkTypes.RegisterInterfaces(interfaceRegistry)
+	cdc := codec.NewProtoCodec(interfaceRegistry)
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
@@ -171,7 +176,7 @@ func BenchmarkCalculateTaskDelay(b *testing.B) {
 			// when
 			b.StartTimer()
 
-			isCurrentValidator, timeDuration := util.CalculateTaskDelay(nil)
+			isCurrentValidator, timeDuration := util.CalculateTaskDelay(nil, cdc)
 
 			b.StopTimer()
 
@@ -255,7 +260,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
 	viper.Set("log_level", "debug")
-	helper.InitHeimdallConfig(os.ExpandEnv("$HOME/var/lib/heimdall"))
+	helper.InitTestHeimdallConfig("")
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
@@ -268,7 +273,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	}
 	helper.SetTestConfig(customAppConf)
 
-	txBroadcaster := broadcaster.NewTxBroadcaster(cdc)
+	txBroadcaster := broadcaster.NewTxBroadcaster(cdc, client.Context{}, nil)
 	txBroadcaster.CliCtx.Simulate = true
 	txBroadcaster.CliCtx.SkipConfirm = true
 
@@ -389,8 +394,8 @@ func getTestServer() (*machinery.Server, error) {
 	})
 }
 
-func generateRandNumber(max int64) uint64 {
-	nBig, err := rand.Int(rand.Reader, big.NewInt(max))
+func generateRandNumber(maxValue int64) uint64 {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(maxValue))
 	if err != nil {
 		return 1
 	}

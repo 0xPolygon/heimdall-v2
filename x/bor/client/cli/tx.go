@@ -57,7 +57,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 
 			_, err = ac.StringToBytes(proposer)
 			if err != nil {
-				return fmt.Errorf("proposer address is invalid: %v", err)
+				return fmt.Errorf("proposer address is invalid: %w", err)
 			}
 
 			// get start block
@@ -84,19 +84,21 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 
 			// fetch params
 			queryClient := types.NewQueryClient(clientCtx)
-			res, err := queryClient.GetParams(cmd.Context(), &types.QueryParamsRequest{})
+			res, err := queryClient.GetBorParams(cmd.Context(), &types.QueryParamsRequest{})
 			if err != nil {
 				return err
 			}
 			spanDuration := res.Params.SpanDuration
 
 			// fetch next span seed
-			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{})
+			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{
+				Id: spanID,
+			})
 			if err != nil {
 				return err
 			}
 			seed := common.HexToHash(nextSpanSeedResponse.Seed)
-			msg := types.NewMsgProposeSpan(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes())
+			msg := types.NewMsgProposeSpan(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes(), nextSpanSeedResponse.SeedAuthor)
 
 			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
 		},

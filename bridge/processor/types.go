@@ -24,12 +24,6 @@ func (c ContractCheckpoint) String() string {
 		c.newStart, c.newEnd, c.currentHeaderBlock.start, c.currentHeaderBlock.end, c.currentHeaderBlock.number)
 }
 
-// HeimdallCheckpoint heimdall checkpoint
-type HeimdallCheckpoint struct {
-	start uint64
-	end   uint64
-}
-
 // NewContractCheckpoint creates contract checkpoint
 func NewContractCheckpoint(_newStart uint64, _newEnd uint64, _currentHeaderBlock *HeaderBlock) *ContractCheckpoint {
 	return &ContractCheckpoint{

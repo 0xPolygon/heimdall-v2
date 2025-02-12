@@ -21,7 +21,7 @@ func (s *KeeperTestSuite) TestQueryParams() {
 	req := &types.QueryParamsRequest{}
 	defaultParams := types.DefaultParams()
 
-	res, err := queryClient.GetParams(ctx, req)
+	res, err := queryClient.GetCheckpointParams(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 	require.True(defaultParams.Equal(res.Params))
@@ -53,7 +53,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	require.NotNil(err)
 	require.Nil(res)
 
-	headerNumber := uint64(1)
+	cpNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(255)
 	rootHash := testutil.RandomBytes()
@@ -61,6 +61,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
+		cpNumber,
 		startBlock,
 		endBlock,
 		rootHash,
@@ -69,7 +70,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 		timestamp,
 	)
 
-	err = keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+	err = keeper.AddCheckpoint(ctx, checkpointBlock)
 	require.NoError(err)
 
 	res, err = queryClient.GetCheckpoint(ctx, req)
@@ -85,8 +86,8 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	req := &types.QueryCheckpointBufferRequest{}
 
 	res, err := queryClient.GetCheckpointBuffer(ctx, req)
-	require.NotNil(err)
-	require.Nil(res)
+	require.Nil(err)
+	require.Equal(types.Checkpoint{}, res.Checkpoint)
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)
@@ -95,6 +96,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
+		1,
 		startBlock,
 		endBlock,
 		rootHash,
@@ -134,7 +136,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
 	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
 
-	headerNumber := uint64(1)
+	cpNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
 	rootHash := testutil.RandomBytes()
@@ -142,6 +144,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	timestamp := uint64(time.Now().Unix())
 
 	checkpointBlock := types.CreateCheckpoint(
+		cpNumber,
 		startBlock,
 		endBlock,
 		rootHash,
@@ -151,7 +154,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	)
 
 	contractCaller.On("GetRootHash", checkpointBlock.StartBlock, checkpointBlock.EndBlock, uint64(1024)).Return(checkpointBlock.RootHash, nil)
-	err := keeper.AddCheckpoint(ctx, headerNumber, checkpointBlock)
+	err := keeper.AddCheckpoint(ctx, checkpointBlock)
 	require.NoError(err)
 
 	req := types.QueryNextCheckpointRequest{BorChainId: BorChainID}
@@ -208,14 +211,15 @@ func (s *KeeperTestSuite) TestGetCheckpointList() {
 
 	var checkpoints []*types.Checkpoint
 	for i := 0; i < 5; i++ {
-		header := chSim.GenRandCheckpoint(start, maxSize)
-		checkpoints = append(checkpoints, &header)
+		checkpoint := chSim.GenRandCheckpoint(start, maxSize, uint64(i))
+		checkpoints = append(checkpoints, &checkpoint)
 	}
 
 	expCheckpoints := make([]types.Checkpoint, 0, len(checkpoints))
 	for i, cp := range checkpoints {
 		expCheckpoints = append(expCheckpoints, *cp)
-		err := keeper.AddCheckpoint(ctx, uint64(i), *cp)
+		cp.Id = uint64(i)
+		err := keeper.AddCheckpoint(ctx, *cp)
 		require.NoError(err)
 	}
 

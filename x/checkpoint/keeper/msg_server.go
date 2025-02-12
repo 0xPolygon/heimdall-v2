@@ -92,7 +92,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	dividendAccounts, err := m.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
 		logger.Error("error while fetching dividends accounts", "error", err)
-		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("error while fetching dividends accounts"))
+		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "error while fetching dividends accounts")
 	}
 
 	logger.Debug("dividendAccounts of all validators", "dividendAccountsLength", len(dividendAccounts))
@@ -101,7 +101,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 	accountRoot, err := hmTypes.GetAccountRootHash(dividendAccounts)
 	if err != nil {
 		logger.Error("error while fetching account root hash", "error", err)
-		return nil, errorsmod.Wrap(types.ErrAccountHash, fmt.Sprint("error while fetching account root hash"))
+		return nil, errorsmod.Wrap(types.ErrAccountHash, "error while fetching account root hash")
 	}
 
 	logger.Debug("Validator account root hash generated", "accountRootHash", common.Bytes2Hex(accountRoot))
@@ -113,19 +113,19 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			"hash", common.Bytes2Hex(accountRoot),
 			"msgHash", msg.AccountRootHash,
 		)
-		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("accountRootHash of current state doesn't match from msg"))
+		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "accountRootHash of current state doesn't match from msg")
 	}
 
 	// Check proposer in message
 	validatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
 	if validatorSet.Proposer == nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("no proposer stored in validator set"))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "no proposer stored in validator set")
 	}
 
 	msgProposer := util.FormatAddress(msg.Proposer)
@@ -138,7 +138,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 			"msgProposer", msg.Proposer,
 		)
 
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprint("invalid proposer in msg"))
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "invalid proposer in msg")
 	}
 
 	// Emit event for checkpoint
@@ -162,27 +162,27 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	logger := m.Logger(ctx)
 
 	// get last checkpoint from buffer
-	headerBlock, err := m.GetCheckpointFromBuffer(ctx)
+	bufCheckpoint, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
-		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("unable to get checkpoint"))
+		return nil, errorsmod.Wrap(types.ErrBadAck, "unable to get checkpoint")
 	}
 
-	if msg.StartBlock != headerBlock.StartBlock {
-		logger.Error("invalid start block", "startExpected", headerBlock.StartBlock, "startReceived", msg.StartBlock)
-		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block", "startExpected", headerBlock.StartBlock, "startReceived", msg.StartBlock))
+	if msg.StartBlock != bufCheckpoint.StartBlock {
+		logger.Error("invalid start block", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock)
+		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock))
 	}
 
 	// return err if start and end match but contract root hash doesn't match
-	if msg.StartBlock == headerBlock.StartBlock &&
-		msg.EndBlock == headerBlock.EndBlock &&
-		!bytes.Equal(msg.RootHash, headerBlock.RootHash) {
+	if msg.StartBlock == bufCheckpoint.StartBlock &&
+		msg.EndBlock == bufCheckpoint.EndBlock &&
+		!bytes.Equal(msg.RootHash, bufCheckpoint.RootHash) {
 		logger.Error("Invalid ACK",
-			"startExpected", headerBlock.StartBlock,
+			"startExpected", bufCheckpoint.StartBlock,
 			"startReceived", msg.StartBlock,
-			"endExpected", headerBlock.EndBlock,
+			"endExpected", bufCheckpoint.EndBlock,
 			"endReceived", msg.StartBlock,
-			"rootExpected", common.Bytes2Hex(headerBlock.RootHash),
+			"rootExpected", common.Bytes2Hex(bufCheckpoint.RootHash),
 			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
 		return nil, types.ErrBadAck
@@ -260,7 +260,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 		currentValidatorSet.IncrementProposerPriority(1)
 	}
 
-	//If NoAck sender is not the valid proposer, return error
+	// If NoAck sender is not the valid proposer, return error
 	if !isProposer {
 		return nil, types.ErrInvalidNoAckProposer
 	}
@@ -296,14 +296,12 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 	err = m.stakeKeeper.IncrementAccum(ctx, 1)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
-
 	}
 
 	// get new proposer
 	vs, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")
-
 	}
 
 	newProposer := vs.GetProposer()

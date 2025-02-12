@@ -18,7 +18,7 @@ func (s *KeeperTestSuite) TestQueryParams() {
 	req := &types.QueryParamsRequest{}
 	defaultParams := types.DefaultParams()
 
-	res, err := queryClient.GetParams(ctx, req)
+	res, err := queryClient.GetMilestoneParams(ctx, req)
 	require.NoError(err)
 	require.NotNil(res)
 
@@ -57,7 +57,7 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	resByNum, err := queryClient.GetMilestoneByNumber(ctx, reqByNumber)
 
 	require.Error(err)
-	require.Nil(res)
+	require.Nil(resByNum)
 
 	res, err = queryClient.GetLatestMilestone(ctx, reqLatest)
 
@@ -92,7 +92,8 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 
 	req := &types.QueryLatestNoAckMilestoneRequest{}
 	res, err := queryClient.GetLatestNoAckMilestone(ctx, req)
-	require.Nil(res)
+	require.NoError(err)
+	require.Equal(res.Result, "")
 
 	milestoneID := TestMilestoneID
 	err = keeper.SetNoAckMilestone(ctx, milestoneID)
@@ -114,6 +115,7 @@ func (s *KeeperTestSuite) TestQueryLastNoAckMilestone() {
 
 	require.Equal(res.Result, milestoneID)
 }
+
 func (s *KeeperTestSuite) TestQueryNoAckMilestoneByID() {
 	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient
 
