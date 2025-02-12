@@ -14,6 +14,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authTx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -89,7 +90,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 				"nonce", event.Nonce,
 				"amount", event.Amount,
 				"totalAmount", event.Total,
-				"SignerPubkey", string(signerPubKey[:]),
+				"SignerPubkey", common.Bytes2Hex(signerPubKey),
 				"txHash", vLog.TxHash.String(),
 				"logIndex", uint64(vLog.Index),
 				"blockNumber", vLog.BlockNumber,
@@ -115,7 +116,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 			"nonce", event.Nonce,
 			"amount", event.Amount,
 			"totalAmount", event.Total,
-			"SignerPubkey", string(signerPubKey[:]),
+			"SignerPubkey", common.Bytes2Hex(signerPubKey),
 			"txHash", vLog.TxHash.String(),
 			"logIndex", uint64(vLog.Index),
 			"blockNumber", vLog.BlockNumber,
@@ -357,7 +358,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 				"event", eventName,
 				"validatorID", event.ValidatorId,
 				"nonce", event.Nonce,
-				"NewSignerPubkey", string(newSignerPubKey[:]),
+				"NewSignerPubkey", common.Bytes2Hex(newSignerPubKey),
 				"oldSigner", event.OldSigner.Hex(),
 				"newSigner", event.NewSigner.Hex(),
 				"txHash", vLog.TxHash.String(),
@@ -386,7 +387,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			"event", eventName,
 			"validatorID", event.ValidatorId,
 			"nonce", event.Nonce,
-			"NewSignerPubkey", string(newSignerPubKey[:]),
+			"NewSignerPubkey", common.Bytes2Hex(newSignerPubKey),
 			"oldSigner", event.OldSigner.Hex(),
 			"newSigner", event.NewSigner.Hex(),
 			"txHash", vLog.TxHash.String(),
