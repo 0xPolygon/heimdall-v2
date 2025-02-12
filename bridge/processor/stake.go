@@ -431,7 +431,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 			"event", eventName,
 			"validatorID", event.ValidatorId,
 			"nonce", event.Nonce,
-			"NewSignerPubkey", string(newSignerPubKey[:]),
+			"NewSignerPubkey", common.Bytes2Hex(newSignerPubKey),
 			"oldSigner", event.OldSigner.Hex(),
 			"newSigner", event.NewSigner.Hex(),
 			"txHash", vLog.TxHash.String(),
@@ -443,7 +443,7 @@ func (sp *StakingProcessor) sendSignerChangeToHeimdall(eventName string, logByte
 		fmt.Println("PSP - event", eventName)
 		fmt.Println("PSP - validatorID", event.ValidatorId)
 		fmt.Println("PSP - nonce", event.Nonce)
-		fmt.Println("PSP - NewSignerPubkey", string(newSignerPubKey[:]))
+		fmt.Println("PSP - NewSignerPubkey", common.Bytes2Hex(newSignerPubKey))
 		fmt.Println("PSP - oldSigner", event.OldSigner.Hex())
 		fmt.Println("PSP - newSigner", event.NewSigner.Hex())
 		fmt.Println("PSP - txHash", vLog.TxHash.String())
