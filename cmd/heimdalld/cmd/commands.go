@@ -20,7 +20,6 @@ import (
 	cmtcfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/libs/cli"
 	cmtos "github.com/cometbft/cometbft/libs/os"
 	"github.com/cometbft/cometbft/p2p"
 	"github.com/cometbft/cometbft/privval"
@@ -549,7 +548,7 @@ func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			config := ctx.Config
-			config.SetRoot(viper.GetString(cli.HomeFlag))
+			config.SetRoot(viper.GetString(flags.FlagHome))
 			helper.InitHeimdallConfig("")
 
 			// Loading genesis doc

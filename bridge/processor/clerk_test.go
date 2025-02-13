@@ -14,6 +14,7 @@ import (
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -259,7 +260,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
-	viper.Set(helper.LogLevel, "debug")
+	viper.Set(flags.FlagLogLevel, "debug")
 	helper.InitTestHeimdallConfig("")
 
 	srvconf := serverconfig.DefaultConfig()
@@ -296,7 +297,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
-	viper.Set(helper.LogLevel, "debug")
+	viper.Set(flags.FlagLogLevel, "debug")
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
