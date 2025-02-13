@@ -232,6 +232,24 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			}
 		}
 
+		// Engine API - Validate block
+		var executionPayload engine.ExecutionPayload
+		err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
+		if err != nil {
+			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
+			return nil, err
+		}
+		payload, err := app.retryUntilNewPayload(executionPayload)
+		if err != nil {
+			logger.Error("failed to validate execution payload on execution client, cannot proceed", "error", err)
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
+		if payload.Status != "VALID" {
+			logger.Error("execution payload is not valid, cannot proceed", "error", err)
+			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+		}
+
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}
 }
@@ -438,20 +456,9 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	payload, err := app.retryUntilNewPayload(executionPayload)
-	if err != nil {
-		logger.Error("failed to validate execution payload on execution client, cannot proceed", "error", err)
-		return nil, err
-	}
-
-	if payload.Status != "VALID" {
-		logger.Error("execution payload is not valid, cannot proceed", "error", err)
-		return nil, err
-	}
-
 	state := engine.ForkChoiceState{
-		HeadHash:           common.HexToHash(payload.LatestValidHash),
-		SafeBlockHash:      common.HexToHash(payload.LatestValidHash),
+		HeadHash:           common.HexToHash(executionPayload.BlockHash),
+		SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
 		FinalizedBlockHash: common.HexToHash(executionPayload.ParentHash), // latestHash from the Proposal stage
 	}
 
