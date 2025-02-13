@@ -125,9 +125,9 @@ func initAppConfig() (string, interface{}) {
 
 	customAppTemplate := serverconfig.DefaultConfigTemplate + helper.DefaultConfigTemplate
 
-	stringConfgValue := viper.GetViper().GetString(helper.ChainFlag)
-	if stringConfgValue != "" {
-		customAppConfig.Custom.Chain = stringConfgValue
+	stringConfigValue := viper.GetViper().GetString(helper.ChainFlag)
+	if stringConfigValue != "" {
+		customAppConfig.Custom.Chain = stringConfigValue
 	}
 
 	return customAppTemplate, customAppConfig
