@@ -236,7 +236,7 @@ func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string
 func migrateStakeModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating stake module...")
 
-	// TODO HV2: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initilization we should call GetTotalVotingPower
+	// TODO HV2: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initialization we should call GetTotalVotingPower
 	// because it gets calculated if its zero
 	if err := utils.RenameProperty(genesisData, "app_state", "staking", "stake"); err != nil {
 		return fmt.Errorf("failed to rename staking module: %w", err)
