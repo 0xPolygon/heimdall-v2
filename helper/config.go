@@ -14,6 +14,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -30,7 +31,6 @@ import (
 const (
 	CometBFTNodeFlag       = "node"
 	WithHeimdallConfigFlag = "app"
-	HomeFlag               = "home"
 	RestServerFlag         = "rest-server"
 	BridgeFlag             = "bridge"
 	AllProcessesFlag       = "all"
@@ -237,7 +237,7 @@ var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigr
 func InitHeimdallConfig(homeDir string) {
 	if strings.Compare(homeDir, "") == 0 {
 		// get home dir from viper
-		homeDir = viper.GetString(HomeFlag)
+		homeDir = viper.GetString(flags.FlagHome)
 	}
 
 	// get heimdall config filepath from viper/cobra flag

@@ -26,7 +26,7 @@ func NewTxCmd() *cobra.Command {
 	txCmd := &cobra.Command{
 		Use:                        checkpointTypes.ModuleName,
 		Short:                      "Checkpoint module commands",
-		DisableFlagParsing:         true,
+		DisableFlagParsing:         false,
 		SuggestionsMinimumDistance: 2,
 		RunE:                       client.ValidateCmd,
 	}
