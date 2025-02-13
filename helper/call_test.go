@@ -29,7 +29,7 @@ func TestCheckpointSigs(t *testing.T) {
 	t.Parallel()
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
-	viper.Set("log_level", "info")
+	viper.Set(LogLevel, "info")
 	InitTestHeimdallConfig("")
 
 	contractCallerObj, err := NewContractCaller()

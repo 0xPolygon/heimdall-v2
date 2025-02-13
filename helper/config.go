@@ -9,16 +9,16 @@ import (
 	"strings"
 	"time"
 
+	logger "cosmossdk.io/log"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
-	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
 	cmTypes "github.com/cometbft/cometbft/types"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
@@ -141,7 +141,7 @@ var DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
 var cdc = amino.NewCodec()
 
 func init() {
-	Logger = logger.NewTMLogger(logger.NewSyncWriter(os.Stdout))
+	Logger = logger.NewLogger(os.Stdout, logger.LevelOption(zerolog.InfoLevel))
 }
 
 // CustomConfig represents heimdall config
@@ -249,9 +249,10 @@ func InitHeimdallConfig(homeDir string) {
 
 // InitHeimdallConfigWith initializes passed heimdall/tendermint config files
 func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
+	var err error
+
 	if strings.Compare(homeDir, "") == 0 {
-		Logger.Error("home directory is mentioned")
-		return
+		panic("home directory is not specified")
 	}
 
 	if strings.Compare(conf.Custom.BorRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorGRPCUrl, "") != 0 {
@@ -272,12 +273,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// Handle errors reading the config file
-	if err := heimdallViper.ReadInConfig(); err != nil {
+	if err = heimdallViper.ReadInConfig(); err != nil {
 		log.Fatal(err)
 	}
 
 	// unmarshal configuration from the standard configuration file
-	if err := heimdallViper.UnmarshalExact(&conf); err != nil {
+	if err = heimdallViper.UnmarshalExact(&conf); err != nil {
 		log.Fatalln("unable to unmarshall config", "Error", err)
 	}
 
@@ -286,7 +287,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		heimdallViperFromFlag := viper.New()
 		heimdallViperFromFlag.SetConfigFile(heimdallConfigFileFromFlag) // set flag config file explicitly
 
-		err := heimdallViperFromFlag.ReadInConfig()
+		err = heimdallViperFromFlag.ReadInConfig()
 		if err != nil { // Handle errors reading the config file sybmitted as a flag
 			log.Fatalln("unable to read config file submitted via flag", "Error", err)
 		}
@@ -301,16 +302,22 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// update configuration data with submitted flags
-	if err := conf.UpdateWithFlags(viper.GetViper(), Logger); err != nil {
+	if err = conf.UpdateWithFlags(viper.GetViper(), Logger); err != nil {
 		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
 	// perform check for json logging
+	logLevelStr := viper.GetString(LogLevel)
+	logLevel, err := zerolog.ParseLevel(logLevelStr)
+	if err != nil {
+		// Default to info in case of error
+		logLevel = zerolog.InfoLevel
+	}
 	if conf.Custom.LogsType == "json" {
-		Logger = logger.NewTMJSONLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
+		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel), logger.OutputJSONOption())
 	} else {
 		// default fallback
-		Logger = logger.NewTMLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
+		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel))
 	}
 
 	// perform checks for timeout
@@ -344,7 +351,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		conf.Custom.SHMaxDepthDuration = DefaultSHMaxDepthDuration
 	}
 
-	var err error
 	if mainRPCClient, err = rpc.Dial(conf.Custom.EthRPCUrl); err != nil {
 		log.Fatalln("Unable to dial via ethClient", "URL", conf.Custom.EthRPCUrl, "chain", "eth", "error", err)
 	}
@@ -998,7 +1004,7 @@ func InitTestHeimdallConfig(chain string) {
 
 	SetTestConfig(customAppConf)
 
-	privKeyObject = cmtcrypto.GenPrivKey()
+	privKeyObject = secp256k1.GenPrivKey()
 	pubKeyObject = privKeyObject.PubKey().(secp256k1.PubKey)
 }
 
