@@ -54,13 +54,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			logger.Error("Error occurred while marshaling the LocalLastCommit in prepare proposal", "error", err)
 			return nil, err
 		}
-		// txs = append(txs, bz)
-
-		// check if there are less than 1 txs in the request
-		// if len(txs) < 1 {
-		// 	logger.Error(fmt.Sprintf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress))
-		// 	return nil, fmt.Errorf("unexpected behaviour, less than 1 txs proposed by %s", req.ProposerAddress)
-		// }
 
 		// Engine API
 		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1)) // change this to a keeper
