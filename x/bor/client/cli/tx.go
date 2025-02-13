@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"cosmossdk.io/core/address"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	codec "github.com/cosmos/cosmos-sdk/codec/address"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,17 +28,15 @@ func NewTxCmd() *cobra.Command {
 		RunE:                       client.ValidateCmd,
 	}
 
-	ac := codec.NewHexCodec()
-
 	txCmd.AddCommand(
-		NewSpanProposalCmd(ac),
+		NewSpanProposalCmd(),
 	)
 
 	return txCmd
 }
 
 // NewSpanProposalCmd returns a CLI command handler for creating a MsgSpanProposal transaction.
-func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
+func NewSpanProposalCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "propose-span",
 		Short: "send propose span tx",
@@ -59,7 +56,8 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 				proposer = clientCtx.GetFromAddress().String()
 			}
 
-			_, err = ac.StringToBytes(proposer)
+			addressCodec := addresscodec.NewHexCodec()
+			_, err = addressCodec.StringToBytes(proposer)
 			if err != nil {
 				return fmt.Errorf("proposer address is invalid: %w", err)
 			}

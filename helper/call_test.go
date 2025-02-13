@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +30,7 @@ func TestCheckpointSigs(t *testing.T) {
 	t.Parallel()
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
-	viper.Set(LogLevel, "info")
+	viper.Set(flags.FlagLogLevel, "info")
 	InitTestHeimdallConfig("")
 
 	contractCallerObj, err := NewContractCaller()

@@ -8,6 +8,7 @@ import (
 	db "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/server"
@@ -122,10 +123,10 @@ func NewRootCmd() *cobra.Command {
 			serverCtx.Logger = logger.With(log.ModuleKey, "server")
 
 			// Get log_level from from serverCtx.Viper
-			logLevelStr := serverCtx.Viper.GetString(helper.LogLevel)
+			logLevelStr := serverCtx.Viper.GetString(flags.FlagLogLevel)
 
 			// Set log_level value to viper
-			viper.Set(helper.LogLevel, logLevelStr)
+			viper.Set(flags.FlagLogLevel, logLevelStr)
 
 			// Overwrite default heimdall logger
 			logLevel, err := zerolog.ParseLevel(logLevelStr)
