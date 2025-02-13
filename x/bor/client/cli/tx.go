@@ -6,14 +6,18 @@ import (
 
 	"cosmossdk.io/core/address"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	codec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/0xPolygon/heimdall-v2/common/cli"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 )
+
+var logger = helper.Logger.With("module", "bor/client/cli")
 
 // NewTxCmd returns a root CLI command handler for all x/bor transaction commands.
 func NewTxCmd() *cobra.Command {
@@ -100,7 +104,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 			seed := common.HexToHash(nextSpanSeedResponse.Seed)
 			msg := types.NewMsgProposeSpan(spanID, proposer, startBlock, startBlock+spanDuration-1, borChainID, seed.Bytes(), nextSpanSeedResponse.SeedAuthor)
 
-			return tx.GenerateOrBroadcastTxCLI(clientCtx, cmd.Flags(), msg)
+			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
 		},
 	}
 
@@ -108,6 +112,7 @@ func NewSpanProposalCmd(ac address.Codec) *cobra.Command {
 	cmd.Flags().String(FlagSpanId, "", "--span-id=<span-id>")
 	cmd.Flags().String(FlagBorChainId, "", "--bor-chain-id=<bor-chain-id>")
 	cmd.Flags().String(FlagStartBlock, "", "--start-block=<start-block-number>")
+	cmd.Flags().String(flags.FlagChainID, "", "--chain-id=<chain-id>")
 
 	if err := cmd.MarkFlagRequired(FlagBorChainId); err != nil {
 		fmt.Printf("PostSendProposeSpanTx | MarkFlagRequired | FlagBorChainId Error: %v", err)

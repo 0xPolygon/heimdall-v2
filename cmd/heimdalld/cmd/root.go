@@ -2,22 +2,21 @@ package heimdalld
 
 import (
 	"os"
-	"path"
 
 	"cosmossdk.io/log"
-	"github.com/cometbft/cometbft/libs/cli"
-	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cometbft/cometbft/cmd/cometbft/commands"
+	db "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	"github.com/cosmos/cosmos-sdk/x/auth/tx"
 	txmodule "github.com/cosmos/cosmos-sdk/x/auth/tx/config"
 	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
@@ -37,17 +36,11 @@ type EncodingConfig struct {
 // NewRootCmd creates a new root command for heimdalld. It is called once in the
 // main function.
 func NewRootCmd() *cobra.Command {
-	dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
-	db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, dataDir)
-	if err != nil {
-		panic(err)
-	}
-
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
 	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
 
 	// TODO HV2: https://polygon.atlassian.net/browse/POS-2762
-	tempApp := app.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
+	tempApp := app.NewHeimdallApp(logger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
 		InterfaceRegistry: tempApp.InterfaceRegistry(),
 		Codec:             tempApp.AppCodec(),
@@ -112,7 +105,37 @@ func NewRootCmd() *cobra.Command {
 			customAppTemplate, customAppConfig := initAppConfig()
 			customCMTConfig := initCometBFTConfig()
 
-			return server.InterceptConfigsPreRunHandler(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+			if cmd.Name() != commands.InitFilesCmd.Name() && cmd.Name() != testnetCmdName {
+				helper.InitHeimdallConfig("")
+			}
+
+			serverCtx, err := server.InterceptConfigsAndCreateContext(cmd, customAppTemplate, customAppConfig, customCMTConfig)
+			if err != nil {
+				return err
+			}
+
+			// Overwrite default server logger
+			logger, err := server.CreateSDKLogger(serverCtx, cmd.OutOrStdout())
+			if err != nil {
+				return err
+			}
+			serverCtx.Logger = logger.With(log.ModuleKey, "server")
+
+			// Get log_level from from serverCtx.Viper
+			logLevelStr := serverCtx.Viper.GetString(helper.LogLevel)
+
+			// Set log_level value to viper
+			viper.Set(helper.LogLevel, logLevelStr)
+
+			// Overwrite default heimdall logger
+			logLevel, err := zerolog.ParseLevel(logLevelStr)
+			if err != nil {
+				return err
+			}
+			helper.Logger = log.NewLogger(cmd.OutOrStdout(), log.LevelOption(logLevel))
+
+			// Set server context
+			return server.SetCmdServerContext(cmd, serverCtx)
 		},
 		PersistentPreRun: func(cmd *cobra.Command, _ []string) {
 			// set the default command outputs
@@ -133,7 +156,6 @@ func NewRootCmd() *cobra.Command {
 
 	// add keyring to autocli opts
 	autoCliOpts := tempApp.AutoCliOpts()
-	autoCliOpts.Keyring, _ = keyring.NewAutoCLIKeyring(initClientCtx.Keyring)
 	autoCliOpts.ClientCtx = initClientCtx
 
 	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {

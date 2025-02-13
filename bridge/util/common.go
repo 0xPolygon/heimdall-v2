@@ -9,18 +9,15 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"sync"
 	"time"
 
-	mLog "github.com/RichardKnop/machinery/v1/log"
-	"github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -87,39 +84,9 @@ const (
 	BridgeDBFlag = "bridge-db"
 )
 
-var (
-	logger     log.Logger
-	loggerOnce sync.Once
-)
-
 // Logger returns logger singleton instance
 func Logger() log.Logger {
-	loggerOnce.Do(func() {
-		defaultLevel := "info"
-		logsWriter := helper.GetLogsWriter(helper.GetConfig().LogsWriterFile)
-		logger = log.NewTMLogger(log.NewSyncWriter(logsWriter))
-		option, err := log.AllowLevel(viper.GetString("log_level"))
-		if err != nil {
-			// cosmos sdk is using different style of log format
-			// and levels don't map well, config.toml
-			// see: https://github.com/cosmos/cosmos-sdk/pull/8072
-			logger.Error("Unable to parse logging level", "Error", err)
-			logger.Info("Using default log level")
-			option, err = log.AllowLevel(defaultLevel)
-			if err != nil {
-				logger.Error("failed to allow default log level", "Level", defaultLevel, "Error", err)
-			}
-		}
-
-		logger = log.NewFilter(logger, option)
-
-		// set no-op logger if log level is not debug for machinery
-		if viper.GetString("log_level") != "debug" {
-			mLog.SetDebug(NoopLogger{})
-		}
-	})
-
-	return logger
+	return helper.Logger.With("module", "bridge")
 }
 
 // IsProposer checks if we are proposer

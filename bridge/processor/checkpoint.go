@@ -471,7 +471,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		"start", start,
 		"end", end,
 		"root", common.Bytes2Hex(root),
-		"accountRoot", accountRootHash,
+		"accountRoot", common.Bytes2Hex(accountRootHash),
 	)
 
 	chainParams := checkpointContext.ChainmanagerParams.ChainParams
