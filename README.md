@@ -17,5 +17,7 @@ Convert the base64 encoded key to hex encoded key:
 Import the hex encoded key to your keyring:  
 `heimdalld keys import-hex <KEY-NAME> <PRIVATE KEY HEX ENCODED> --home <HOME_DIR_PATH>`
 
+When you first import a key into the keyring you will be asked for password, you will be prompt for that password each time you sign transaction.
+
 When you `tx` command just specify in `--from` argument the key name you set above. Example:  
 `heimdalld tx gov vote 1 yes --from mykey`
