@@ -29,7 +29,6 @@ jobs:
           NUMERIC_VERSION=$( echo ${{ env.GIT_TAG }} | sed 's/[^0-9.]//g' ) 
           echo "VERSION=$NUMERIC_VERSION" >> $GITHUB_ENV
 
-
       - name: Making directory structure for yaml
         run: mkdir -p packaging/deb/heimdalld/var/lib/heimdall/config
       - name: making directory structure for the systemd
@@ -49,7 +48,7 @@ jobs:
           echo "Maintainer: devops@polygon.technology" >> packaging/deb/heimdalld/DEBIAN/control
           echo "Description: heimdall profile package" >> packaging/deb/heimdalld/DEBIAN/control
 
-#### Sentry Profiles ####
+      #### Sentry Profiles ####
       - name: Setting up ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
         run: cp -rp packaging/deb/heimdalld packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}
         env:
@@ -105,7 +104,7 @@ jobs:
           NODE: sentry
           NETWORK: mainnet
 
-### Validator Profiles ###
+      ### Validator Profiles ###
       - name: Prepping heimdall ${{ env.NODE }} on ${{ env.NETWORK }} on ${{ env.ARCH }}
         run: cp -rp packaging/deb/heimdalld packaging/deb/heimdall-${{ env.NETWORK }}-${{ env.NODE }}-config_${{ env.GIT_TAG }}-${{ env.ARCH }}
         env:
@@ -175,7 +174,6 @@ jobs:
           ARCH: all
           NODE: sentry
           NETWORK: mainnet
-
 
       ############ Check and Upload ##########################
       - name: Confirming package built

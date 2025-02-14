@@ -47,7 +47,6 @@ build: clean
 build-arm: clean
 	mkdir -p build
 	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
-	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdallcli ./cmd/heimdallcli
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
 
 test:
@@ -152,13 +151,14 @@ release-dry-run:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		--rm-dist --skip-validate --skip-publish
+		--clean --skip=validate,publish
 
 .PHONY: release
 release:
 	@docker run \
 		--rm \
 		--privileged \
+		-e main=./cmd/heimdalld \
 		-e CGO_ENABLED=1 \
 		-e GITHUB_TOKEN \
 		-e DOCKER_USERNAME \
@@ -169,7 +169,7 @@ release:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		--rm-dist --skip-validate
+		--clean --skip=validate
 
 ###############################################################################
 ###	                      			Help									###
