@@ -28,7 +28,8 @@ builds:
       - -X github.com/cosmos/cosmos-sdk/version.Name=heimdall
       - -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld
       - -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}}
-      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.CosmosVersion}}
+      - -X github.com/cometbft/cometbft/version.TMCoreSemVer={{.CmtVersion}}
 
   - <<: *xbuildd
     id: heimdalld-darwin-arm64
@@ -59,7 +60,8 @@ builds:
       - -X github.com/cosmos/cosmos-sdk/version.Name=heimdall
       - -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld
       - -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}}
-      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.CosmosVersion}}
+      - -X github.com/cometbft/cometbft/version.TMCoreSemVer={{.CmtVersion}}
 
   - <<: *xbuildd
     id: heimdalld-linux-arm64
@@ -80,7 +82,8 @@ builds:
       - -X github.com/cosmos/cosmos-sdk/version.Name=heimdall
       - -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld
       - -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}}
-      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
+      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.CosmosVersion}}
+      - -X github.com/cometbft/cometbft/version.TMCoreSemVer={{.CmtVersion}}
 
 nfpms:
   - vendor: 0xPolygon
