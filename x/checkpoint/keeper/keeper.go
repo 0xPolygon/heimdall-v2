@@ -39,6 +39,7 @@ type Keeper struct {
 
 	checkpointSignatures       collections.Item[types.CheckpointSignatures]
 	checkpointSignaturesTxHash collections.Item[string]
+	executionStateMetadata     collections.Item[types.ExecutionStateMetadata]
 }
 
 // NewKeeper creates a new checkpoint Keeper instance
@@ -79,6 +80,7 @@ func NewKeeper(
 		ackCount:                   collections.NewItem(sb, types.AckCountPrefixKey, "ack_count", collections.Uint64Value),
 		checkpointSignatures:       collections.NewItem(sb, types.CheckpointSignaturesPrefixKey, "checkpoint_signatures", codec.CollValue[types.CheckpointSignatures](cdc)),
 		checkpointSignaturesTxHash: collections.NewItem(sb, types.CheckpointSignaturesTxHashPrefixKey, "checkpoint_signatures_tx_hash", collections.StringValue),
+		executionStateMetadata:     collections.NewItem(sb, types.ExecutionStateMetadataPrefixKey, "execution_state_metadata", codec.CollValue[types.ExecutionStateMetadata](cdc)),
 	}
 
 	// build the schema and set it in the keeper
@@ -348,4 +350,14 @@ func (k Keeper) SetCheckpointSignaturesTxHash(ctx context.Context, txHash string
 // GetCheckpointSignaturesTxHash retrieves the checkpoint signatures tx hash
 func (k Keeper) GetCheckpointSignaturesTxHash(ctx context.Context) (string, error) {
 	return k.checkpointSignaturesTxHash.Get(ctx)
+}
+
+// SetExecutionStateMetadata stores the execution state metadata
+func (k Keeper) SetExecutionStateMetadata(ctx context.Context, metadata types.ExecutionStateMetadata) error {
+	return k.executionStateMetadata.Set(ctx, metadata)
+}
+
+// GetExecutionStateMetadata retrieves the execution state metadata
+func (k Keeper) GetExecutionStateMetadata(ctx context.Context) (types.ExecutionStateMetadata, error) {
+	return k.executionStateMetadata.Get(ctx)
 }

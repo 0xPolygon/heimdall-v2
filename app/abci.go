@@ -483,6 +483,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
+	if err := app.CheckpointKeeper.SetExecutionStateMetadata(ctx, checkpointTypes.ExecutionStateMetadata{
+		FinalBlockHash: common.Hex2Bytes(executionPayload.BlockHash),
+	}); err != nil {
+		logger.Error("Error occurred while setting execution state metadata", "error", err)
+		return nil, err
+	}
+
 	extVoteInfo := extCommitInfo.Votes
 
 	if req.Height <= retrieveVoteExtensionsEnableHeight(ctx) {
