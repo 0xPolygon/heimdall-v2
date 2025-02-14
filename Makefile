@@ -47,7 +47,6 @@ build: clean
 build-arm: clean
 	mkdir -p build
 	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
-	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdallcli ./cmd/heimdallcli
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
 
 test:
