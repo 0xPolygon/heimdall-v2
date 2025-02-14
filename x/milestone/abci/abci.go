@@ -1,7 +1,6 @@
 package abci
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/big"
 
@@ -31,8 +30,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	}
 
 	return &sidetxs.MilestoneProposition{
-		BlockHash:   header.Hash().Bytes(),
-		BlockNumber: milestone.EndBlock + 1,
+		BlockHash: header.Hash().Bytes(),
 	}, nil
 }
 
@@ -59,14 +57,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 			continue
 		}
 
-		blockNumberBytes := make([]byte, 8)
-		binary.BigEndian.PutUint64(blockNumberBytes, voteExtension.MilestoneProposition.BlockNumber)
-
-		hash := common.BytesToHash(crypto.Keccak256(
-			voteExtension.MilestoneProposition.BlockHash,
-			[]byte{'|'},
-			blockNumberBytes,
-		)).String()
+		hash := common.BytesToHash(voteExtension.MilestoneProposition.BlockHash).String()
 		hashToProp[hash] = voteExtension.MilestoneProposition
 		if _, ok := hashToVotingPower[hash]; !ok {
 			hashToVotingPower[hash] = 0
