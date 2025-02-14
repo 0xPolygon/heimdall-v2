@@ -387,7 +387,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, errors.New("no validators found")
 	}
 
-	majorityMilestone, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validators, extVoteInfo, logger)
+	majorityMilestone, aggregatedProposers, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validators, extVoteInfo, logger)
 	if err != nil {
 		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
 		return nil, err
@@ -400,14 +400,32 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
+		hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
+		if err != nil {
+			logger.Error("Error occurred while checking for the last milestone", "error", err)
+			return nil, err
+		}
+
+		startBlock := uint64(0)
+
+		if hasMilestone {
+			lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
+			if err != nil {
+				logger.Error("Error occurred while fetching the last milestone", "error", err)
+				return nil, err
+			}
+
+			startBlock = lastMilestone.EndBlock + 1
+		}
+
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
-			Proposer:    "0x0000000000000000000000000000000000000000", // TODO: Here we maybe put aggregated hash of all addresses that proposed the milestone
+			Proposer:    common.Bytes2Hex(aggregatedProposers),
 			Hash:        majorityMilestone.BlockHash,
-			StartBlock:  majorityMilestone.BlockNumber,
-			EndBlock:    majorityMilestone.BlockNumber,
+			StartBlock:  startBlock,
+			EndBlock:    startBlock,
 			BorChainId:  params.ChainParams.BorChainId,
-			MilestoneId: "0x0000000000000000000000000000000000000000", // TODO: This should be also deterministically generated, maybe the same like proposer
+			MilestoneId: common.Bytes2Hex(aggregatedProposers),
 			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
 		}); err != nil {
 			logger.Error("Error occurred while adding milestone", "error", err)
