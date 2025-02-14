@@ -1,11 +1,14 @@
-schedule:
-  - cron: '0 0 * * *'
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight (UTC)
+
 jobs:
   stale:
     runs-on: ubuntu-latest
     permissions:
-      issues: write
-      pull-requests: write
+      issues: write # Grants write permission to issues
+      pull-requests: write # Grants write permission to pull requests
+
     steps:
       - uses: actions/stale@v5
         with:
