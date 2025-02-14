@@ -247,12 +247,15 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			MilestoneProposition:       nil,
 		}
 
-		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller)
-		if err != nil {
-			logger.Error("Error occurred while generating milestone proposition", "error", err)
-			// We still want to participate in the consensus even if we fail to generate the milestone proposition
-		} else if milestoneProp != nil {
-			vt.MilestoneProposition = milestoneProp
+		// TODO: Temporary fix, propose milestone every other block to avoid double proposing of same bor hash
+		if req.Height%2 == 0 {
+			milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller)
+			if err != nil {
+				logger.Error("Error occurred while generating milestone proposition", "error", err)
+				// We still want to participate in the consensus even if we fail to generate the milestone proposition
+			} else if milestoneProp != nil {
+				vt.MilestoneProposition = milestoneProp
+			}
 		}
 
 		bz, err = vt.Marshal()
