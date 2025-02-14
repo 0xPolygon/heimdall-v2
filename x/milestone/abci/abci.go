@@ -19,12 +19,23 @@ import (
 )
 
 func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller) (*sidetxs.MilestoneProposition, error) {
-	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
+	hasMilestone, err := milestoneKeeper.HasMilestone(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(milestone.EndBlock+1))
+	propStartBlock := uint64(0)
+
+	if hasMilestone {
+		milestone, err := milestoneKeeper.GetLastMilestone(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		propStartBlock = milestone.EndBlock + 1
+	}
+
+	header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(propStartBlock))
 	if err != nil {
 		return nil, err
 	}
