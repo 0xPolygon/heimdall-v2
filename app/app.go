@@ -523,6 +523,11 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		return &abci.ResponseInitChain{}, err
 	}
 
+	moduleAccTopUp := app.AccountKeeper.GetModuleAccount(ctx, topupTypes.ModuleName)
+	if moduleAccTopUp == nil {
+		panic(fmt.Sprintf("%s module account has not been set", topupTypes.ModuleName))
+	}
+
 	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 	checkpointState := checkpointTypes.GetGenesisStateFromAppState(app.appCodec, genesisState)
 
