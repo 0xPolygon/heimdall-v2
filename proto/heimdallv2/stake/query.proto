@@ -1,0 +1,110 @@
+syntax = "proto3";
+package heimdallv2.stake;
+
+import "amino/amino.proto";
+import "cosmos/query/v1/query.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "heimdallv2/stake/validator.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
+
+service Query {
+  // GetCurrentValidatorSet queries for the current validator set
+  rpc GetCurrentValidatorSet(QueryCurrentValidatorSetRequest)
+      returns (QueryCurrentValidatorSetResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/validator-set";
+  }
+  // GetSignerByAddress queries validator info for a given validator address
+  rpc GetSignerByAddress(QuerySignerRequest) returns (QuerySignerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/signer/{val_address}";
+  }
+  // GetValidatorById queries validator info for a given validator id
+  rpc GetValidatorById(QueryValidatorRequest) returns (QueryValidatorResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/validator/{id}";
+  }
+  // GetValidatorStatusByAddress queries validator status for given validator
+  // val_address
+  rpc GetValidatorStatusByAddress(QueryValidatorStatusRequest)
+      returns (QueryValidatorStatusResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/validator-status/{val_address}";
+  }
+  // GetTotalPower queries the total power of a validator set
+  rpc GetTotalPower(QueryTotalPowerRequest) returns (QueryTotalPowerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/total-power";
+  }
+  // IsStakeTxOld queries for the staking sequence
+  rpc IsStakeTxOld(QueryStakeIsOldTxRequest)
+      returns (QueryStakeIsOldTxResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/is-old-tx";
+  }
+  // GetProposersByTimes queries for the proposers by Tendermint iterations
+  rpc GetProposersByTimes(QueryProposersRequest)
+      returns (QueryProposersResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/stake/proposers/{times}";
+  }
+}
+
+message QueryCurrentValidatorSetRequest {}
+
+message QueryCurrentValidatorSetResponse {
+  ValidatorSet validator_set = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QuerySignerRequest {
+  string val_address = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QuerySignerResponse {
+  Validator validator = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryValidatorRequest {
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryValidatorResponse {
+  Validator validator = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryTotalPowerRequest {}
+
+message QueryTotalPowerResponse {
+  int64 total_power = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryValidatorStatusRequest {
+  string val_address = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryValidatorStatusResponse {
+  bool is_old = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryStakeIsOldTxRequest {
+  string tx_hash = 1 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 2 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryStakeIsOldTxResponse {
+  bool is_old = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProposersRequest {
+  uint64 times = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProposersResponse {
+  repeated heimdallv2.stake.Validator proposers = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

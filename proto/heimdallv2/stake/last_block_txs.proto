@@ -1,0 +1,10 @@
+syntax = "proto3";
+package heimdallv2.stake;
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
+
+import "amino/amino.proto";
+
+message LastBlockTxs {
+  repeated bytes txs = 1 [ (amino.dont_omitempty) = true ];
+}

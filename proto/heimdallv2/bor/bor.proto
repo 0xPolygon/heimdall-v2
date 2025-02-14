@@ -1,0 +1,26 @@
+syntax = "proto3";
+package heimdallv2.bor;
+
+import "gogoproto/gogo.proto";
+import "heimdallv2/stake/validator.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
+
+message Span {
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
+  uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+  uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+  heimdallv2.stake.ValidatorSet validator_set = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  repeated heimdallv2.stake.Validator selected_producers = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
+}
+
+message Params {
+  option (gogoproto.equal) = true;
+  uint64 sprint_duration = 1 [ (amino.dont_omitempty) = true ];
+  uint64 span_duration = 2 [ (amino.dont_omitempty) = true ];
+  uint64 producer_count = 3 [ (amino.dont_omitempty) = true ];
+}

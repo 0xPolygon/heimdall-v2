@@ -1,45 +1,38 @@
 # This file configures github.com/golangci/golangci-lint.
 
 run:
-  go: '1.21'
+  go: '1.23.6'
   timeout: 20m
   tests: true
-  # default is true. Enables skipping of directories:
-  #   vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
-  skip-dirs-use-default: true
-  skip-dirs:
-    - slashing
-    - gov
-    - params
-  skip-files:
-    - gen_.*.go
-    - .*_gen.go
 
 linters:
   enable:
-    - goconst
-    - goimports
-    - misspell
-    - unconvert
     - bodyclose
     - containedctx
     - contextcheck
+    - copyloopvar
     - decorder
     - durationcheck
+    - errcheck
     - errchkjson
     - errname
+    - errorlint
     # - exhaustive
-    - exportloopref
     # - gocognit
-    - gofmt
+    - gci
+    - goconst
+    - gofumpt
+    - goimports
     # - gomnd
     #- gomoddirectives
     - gosec
     - makezero
+    - misspell
     #- nestif
     - nilerr
     - nilnil
     - noctx
+    - nolintlint
     #- nosprintfhostport
     - paralleltest
     - prealloc
@@ -50,15 +43,26 @@ linters:
     - tenv
     - thelper
     - tparallel
+    - typecheck
     - unconvert
     - unparam
+    - unused
     # - wsl
-    #- errorlint
 
 linters-settings:
+  gci:
+    sections:
+      - Standard
+      - Default
+      - Prefix(github.com/0xPolygon/heimdall-v2)
+    skip-generated: true
+
   gofmt:
     simplify: true
-    auto-fix: false
+
+  gosec:
+    excludes:
+      - G115  # TODO: overflow errors ignored. to review later
 
   goconst:
     min-len: 3 # minimum length of string constant
@@ -130,7 +134,6 @@ linters-settings:
       - fieldalignment
       - shadow
       - unsafeptr
-    check-shadowing: true
     enable-all: true
     settings:
       printf:
@@ -144,9 +147,13 @@ linters-settings:
           - (github.com/ethereum/go-ethereum/log.Logger).Crit
 
 issues:
-  exclude-rules:
-    # Exclude some linters from running on tests files.
+  exclude-generated: strict
+  exclude-dirs:
+    - "api/"
+  exclude-files:
+    - ".*_test\\.go"
+    - ".*\\.pb\\.go"
+    - ".*\\.pulsar\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
-  #new: true
-  new-from-rev: origin/main
+  new-from-rev: origin/develop

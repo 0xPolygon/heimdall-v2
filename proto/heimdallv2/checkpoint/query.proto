@@ -1,0 +1,199 @@
+syntax = "proto3";
+package heimdallv2.checkpoint;
+
+import "amino/amino.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/query/v1/query.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "heimdallv2/checkpoint/checkpoint.proto";
+import "heimdallv2/checkpoint/checkpoint_signatures.proto";
+import "heimdallv2/checkpoint/tx.proto";
+import "heimdallv2/stake/validator.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
+
+service Query {
+  // GetCheckpointParams queries for the x/checkpoint params
+  rpc GetCheckpointParams(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/params";
+  }
+
+  // GetChekpointOverview queries for the checkpoint overview
+  rpc GetCheckpointOverview(QueryCheckpointOverviewRequest)
+      returns (QueryCheckpointOverviewResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/overview";
+  }
+
+  // GetAckCount queries for the ack count
+  rpc GetAckCount(QueryAckCountRequest) returns (QueryAckCountResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/count";
+  }
+
+  // GetCheckpointLatest queries for the latest checkpoint
+  rpc GetCheckpointLatest(QueryCheckpointLatestRequest)
+      returns (QueryCheckpointLatestResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/latest";
+  }
+
+  // GetCheckpointBuffer queries for the checkpoint in the buffer
+  rpc GetCheckpointBuffer(QueryCheckpointBufferRequest)
+      returns (QueryCheckpointBufferResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/buffer";
+  }
+
+  // GetLastNoAck queries for the last last-no-ack
+  rpc GetLastNoAck(QueryLastNoAckRequest) returns (QueryLastNoAckResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/last-no-ack";
+  }
+
+  // GetNextCheckpoint queries for the next checkpoint
+  rpc GetNextCheckpoint(QueryNextCheckpointRequest)
+      returns (QueryNextCheckpointResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/prepare-next";
+  }
+
+  // GetCurrentProposer queries validator info for the current proposer
+  rpc GetCurrentProposer(QueryCurrentProposerRequest)
+      returns (QueryCurrentProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoint/proposers/current";
+  }
+
+  // GetProposers queries for the proposers
+  rpc GetProposers(QueryProposerRequest) returns (QueryProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoint/proposers/{times}";
+  }
+
+  // GetCheckpointList queries for the list of checkpoints
+  rpc GetCheckpointList(QueryCheckpointListRequest)
+      returns (QueryCheckpointListResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/list";
+  }
+
+  // GetCheckpointSignatures queries signatures for latest checkpoint
+  rpc GetCheckpointSignatures(QueryCheckpointSignaturesRequest)
+      returns (QueryCheckpointSignaturesResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoint/signatures/{tx_hash}";
+  }
+
+  // GetCheckpoint queries for the checkpoint based on the number
+  rpc GetCheckpoint(QueryCheckpointRequest) returns (QueryCheckpointResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoints/{number}";
+  }
+}
+
+// QueryCheckpointSignaturesRequest is request type for
+// QueryCheckpointSignatures RPC method
+message QueryCheckpointSignaturesRequest {
+  string tx_hash = 1 [ (amino.dont_omitempty) = true ];
+}
+
+// QueryCheckpointSignaturesResponse is response type for
+// QueryCheckpointSignatures RPC method
+message QueryCheckpointSignaturesResponse {
+  repeated CheckpointSignature signatures = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryAckCountRequest {}
+
+message QueryAckCountResponse {
+  uint64 ack_count = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryLastNoAckRequest {}
+
+message QueryLastNoAckResponse {
+  uint64 last_no_ack_id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointBufferRequest {}
+
+message QueryCheckpointBufferResponse {
+  Checkpoint checkpoint = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointRequest {
+  uint64 number = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointResponse {
+  Checkpoint checkpoint = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointLatestRequest {}
+
+message QueryCheckpointLatestResponse {
+  Checkpoint checkpoint = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryNextCheckpointRequest {
+  string bor_chain_id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryNextCheckpointResponse {
+  MsgCheckpoint checkpoint = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCurrentProposerRequest {}
+
+message QueryCurrentProposerResponse {
+  heimdallv2.stake.Validator validator = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryProposerRequest {
+  uint64 times = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProposerResponse {
+  repeated heimdallv2.stake.Validator proposers = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointListRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointListResponse {
+  repeated Checkpoint checkpoint_list = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCheckpointOverviewRequest {}
+
+message QueryCheckpointOverviewResponse {
+  uint64 ack_count = 1 [ (amino.dont_omitempty) = true ];
+  uint64 last_no_ack_id = 2 [ (amino.dont_omitempty) = true ];
+  Checkpoint buffer_checkpoint = 3
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  uint64 validator_count = 4 [ (amino.dont_omitempty) = true ];
+  heimdallv2.stake.ValidatorSet validator_set = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

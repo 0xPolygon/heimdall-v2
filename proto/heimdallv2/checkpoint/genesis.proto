@@ -1,0 +1,19 @@
+syntax = "proto3";
+package heimdallv2.checkpoint;
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
+
+import "gogoproto/gogo.proto";
+import "amino/amino.proto";
+import "heimdallv2/checkpoint/checkpoint.proto";
+
+message GenesisState {
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  Checkpoint buffered_checkpoint = 2
+      [ (gogoproto.nullable) = true, (amino.dont_omitempty) = true ];
+  uint64 last_no_ack = 3 [ (amino.dont_omitempty) = true ];
+  uint64 ack_count = 4 [ (amino.dont_omitempty) = true ];
+  repeated Checkpoint checkpoints = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

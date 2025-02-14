@@ -1,0 +1,14 @@
+syntax = "proto3";
+package heimdallv2.topup;
+
+import "gogoproto/gogo.proto";
+import "heimdallv2/types/dividend_account.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/topup/types";
+
+message GenesisState {
+  repeated string topup_sequences = 1 [ (amino.dont_omitempty) = true ];
+  repeated heimdallv2.types.DividendAccount dividend_accounts = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

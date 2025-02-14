@@ -1,0 +1,15 @@
+syntax = "proto3";
+package heimdallv2.bor;
+
+import "gogoproto/gogo.proto";
+import "heimdallv2/bor/bor.proto";
+import "amino/amino.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
+
+message GenesisState {
+  Params params = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  repeated Span spans = 2
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}

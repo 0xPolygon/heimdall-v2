@@ -1,0 +1,103 @@
+syntax = "proto3";
+package heimdallv2.bor;
+
+import "amino/amino.proto";
+import "cosmos/base/query/v1beta1/pagination.proto";
+import "cosmos/query/v1/query.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+import "heimdallv2/bor/bor.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/bor/types";
+
+service Query {
+  // GetSpanList queries a list of spans.
+  rpc GetSpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/list";
+  }
+
+  // GetLatestSpan queries the latest span.
+  rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/latest";
+  }
+
+  // GetNextSpanSeed queries the next span seed given a
+  // QueryNextSpanSeedRequest.
+  rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
+      returns (QueryNextSpanSeedResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/seed/{id}";
+  }
+
+  // GetNextSpan queries the next span given a QueryNextSpanRequest.
+  rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/prepare";
+  }
+
+  // GetSpanById retrieves a span by its id.
+  rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/span/{id}";
+  }
+
+  // GetBorParams queries the parameters of x/bor module.
+  rpc GetBorParams(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/params";
+  }
+}
+
+message QuerySpanByIdRequest {
+  string id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QuerySpanByIdResponse {
+  Span span = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QuerySpanListRequest {
+  cosmos.base.query.v1beta1.PageRequest pagination = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}
+
+message QuerySpanListResponse {
+  repeated Span span_list = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  cosmos.base.query.v1beta1.PageResponse pagination = 2
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}
+
+message QueryLatestSpanRequest {}
+
+message QueryLatestSpanResponse {
+  Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}
+
+message QueryNextSpanSeedRequest {
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryNextSpanSeedResponse {
+  string seed = 1 [ (amino.dont_omitempty) = true ];
+  string seed_author = 2 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryNextSpanRequest {
+  uint64 span_id = 1 [ (amino.dont_omitempty) = true ];
+  uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 3 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryNextSpanResponse {
+  Span span = 1 [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}

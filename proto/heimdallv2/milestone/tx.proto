@@ -1,0 +1,68 @@
+syntax = "proto3";
+package heimdallv2.milestone;
+
+import "amino/amino.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
+import "heimdallv2/milestone/milestone.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
+
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+  // Milestone defines a method for sending a milestone which
+  // finalizes a range of bor blocks
+  rpc Milestone(MsgMilestone) returns (MsgMilestoneResponse);
+  // MilestoneTimeout defines a method to indicate that no milestone
+  // was proposed within the timeout period
+  rpc MilestoneTimeout(MsgMilestoneTimeout)
+      returns (MsgMilestoneTimeoutResponse);
+  // UpdateParams defines an operation for updating the x/milestone module
+  // parameters.
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
+}
+
+message MsgMilestone {
+  option (amino.name) = "heimdallv2/milestone/MsgMilestone";
+  option (cosmos.msg.v1.signer) = "proposer";
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+  string proposer = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 start_block = 2 [ (amino.dont_omitempty) = true ];
+  uint64 end_block = 3 [ (amino.dont_omitempty) = true ];
+  bytes hash = 4 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 5 [ (amino.dont_omitempty) = true ];
+  string milestone_id = 6 [ (amino.dont_omitempty) = true ];
+}
+
+message MsgMilestoneResponse {}
+
+message MsgMilestoneTimeout {
+  option (cosmos.msg.v1.signer) = "from";
+  option (amino.name) = "heimdallv2/milestone/MsgTimeout";
+  option (gogoproto.equal) = true;
+  option (gogoproto.goproto_getters) = true;
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+}
+
+message MsgMilestoneTimeoutResponse {}
+
+message MsgUpdateParams {
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name) = "heimdallv2/milestone/MsgUpdateParams";
+  string authority = 1 [
+    (cosmos_proto.scalar) = "cosmos.AddressString",
+    (amino.dont_omitempty) = true
+  ];
+  Params params = 2
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message MsgUpdateParamsResponse {}
