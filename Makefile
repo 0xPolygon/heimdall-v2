@@ -158,6 +158,7 @@ release:
 	@docker run \
 		--rm \
 		--privileged \
+		-e main=./cmd/heimdalld \
 		-e CGO_ENABLED=1 \
 		-e GITHUB_TOKEN \
 		-e DOCKER_USERNAME \

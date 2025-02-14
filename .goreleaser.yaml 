@@ -1,2 +1,0 @@
-builds:
-  - main: './cmd/heimdalld/main.go'
