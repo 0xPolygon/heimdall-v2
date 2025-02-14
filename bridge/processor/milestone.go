@@ -32,18 +32,18 @@ type MilestoneContext struct {
 
 // Start starts new block subscription
 func (mp *MilestoneProcessor) Start() error {
-	mp.Logger.Info("Starting")
+	// mp.Logger.Info("Starting")
 
-	// create cancellable context
-	milestoneCtx, cancelMilestoneService := context.WithCancel(context.Background())
+	// // create cancellable context
+	// milestoneCtx, cancelMilestoneService := context.WithCancel(context.Background())
 
-	mp.cancelMilestoneService = cancelMilestoneService
+	// mp.cancelMilestoneService = cancelMilestoneService
 
-	// start polling for milestone
-	mp.Logger.Info("Start polling for milestone", "milestoneLength", helper.MilestoneLength, "pollInterval", helper.GetConfig().MilestonePollInterval)
+	// // start polling for milestone
+	// mp.Logger.Info("Start polling for milestone", "milestoneLength", helper.MilestoneLength, "pollInterval", helper.GetConfig().MilestonePollInterval)
 
-	go mp.startPolling(milestoneCtx, helper.MilestoneLength, helper.GetConfig().MilestonePollInterval)
-	go mp.startPollingMilestoneTimeout(milestoneCtx, 2*helper.GetConfig().MilestonePollInterval)
+	// go mp.startPolling(milestoneCtx, helper.MilestoneLength, helper.GetConfig().MilestonePollInterval)
+	// go mp.startPollingMilestoneTimeout(milestoneCtx, 2*helper.GetConfig().MilestonePollInterval)
 
 	return nil
 }
