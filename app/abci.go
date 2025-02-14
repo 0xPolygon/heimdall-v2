@@ -387,7 +387,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, errors.New("no validators found")
 	}
 
-	majorityMilestone, aggregatedProposers, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validators, extVoteInfo, logger)
+	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validators, extVoteInfo, logger)
 	if err != nil {
 		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
 		return nil, err
@@ -420,7 +420,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
-			Proposer:    common.Bytes2Hex(aggregatedProposers),
+			Proposer:    proposer,
 			Hash:        majorityMilestone.BlockHash,
 			StartBlock:  startBlock,
 			EndBlock:    startBlock,
