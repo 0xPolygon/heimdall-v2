@@ -3,6 +3,7 @@ package abci
 import (
 	"fmt"
 	"math/big"
+	"sort"
 
 	"cosmossdk.io/log"
 
@@ -45,12 +46,14 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	}, nil
 }
 
-func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger) (*sidetxs.MilestoneProposition, []byte, error) {
+func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger) (*sidetxs.MilestoneProposition, []byte, string, error) {
 	ac := address.HexCodec{}
 
 	hashToProp := make(map[string]*sidetxs.MilestoneProposition)
 	hashToVotingPower := make(map[string]int64)
 	hashToAggregatedProposersHash := make(map[string][]byte)
+	hashVoters := make(map[string][]string)
+	valAddressToVotingPower := make(map[string]int64)
 	totalVotingPower := validatorSet.GetTotalVotingPower()
 
 	for _, vote := range extVoteInfo {
@@ -61,7 +64,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 
 		voteExtension := new(sidetxs.VoteExtension)
 		if err := voteExtension.Unmarshal(vote.VoteExtension); err != nil {
-			return nil, nil, fmt.Errorf("error while unmarshalling vote extension: %w", err)
+			return nil, nil, "", fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
 
 		if voteExtension.MilestoneProposition == nil {
@@ -76,12 +79,12 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 
 		valAddr, err := ac.BytesToString(vote.Validator.Address)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, "", err
 		}
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			return nil, nil, fmt.Errorf("failed to get validator %s", valAddr)
+			return nil, nil, "", fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		hashToVotingPower[hash] += validator.VotingPower
@@ -95,6 +98,14 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 			[]byte{'|'},
 			vote.Validator.Address,
 		)
+
+		if _, ok := hashVoters[hash]; !ok {
+			hashVoters[hash] = []string{}
+		}
+
+		hashVoters[hash] = append(hashVoters[hash], valAddr)
+
+		valAddressToVotingPower[valAddr] = validator.VotingPower
 	}
 
 	var maxVotingPower int64
@@ -109,10 +120,20 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 	// If we have at least 2/3 voting power for one milestone proposition, we return it
 	majorityVP := totalVotingPower * 2 / 3
 	if maxVotingPower >= majorityVP {
-		return hashToProp[maxHash], hashToAggregatedProposersHash[maxHash], nil
+
+		voters := hashVoters[maxHash]
+		sort.SliceStable(voters, func(i, j int) bool {
+			return valAddressToVotingPower[voters[i]] > valAddressToVotingPower[voters[j]]
+		})
+
+		if len(voters) == 0 {
+			return nil, nil, "", fmt.Errorf("no voters found for majority milestone proposition")
+		}
+
+		return hashToProp[maxHash], hashToAggregatedProposersHash[maxHash], voters[0], nil
 	}
 
 	logger.Info("No majority milestone proposition found", "maxVotingPower", maxVotingPower, "majorityVP", majorityVP, "milestonePropositions", hashToProp)
 
-	return nil, nil, nil
+	return nil, nil, "", nil
 }
