@@ -1,2 +1,2 @@
 builds:
-  - main: ./cmd/heimdalld/
+  - main: './cmd/heimdalld/main.go'
