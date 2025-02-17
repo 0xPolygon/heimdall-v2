@@ -2,6 +2,7 @@
 
 # ignore build
 build
+engine-api-poc/build
 logs
 *.log
 

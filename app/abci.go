@@ -34,6 +34,7 @@ type HeimdallMetadata struct {
 func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
+		start := time.Now()
 
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
@@ -151,6 +152,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			txs = append(txs, proposedTx)
 		}
 
+		duration := time.Since(start)
+		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
+		logger.Info("🕒 PrepareProposal:" + formatted)
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
@@ -160,6 +164,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
+		start := time.Now()
 
 		// check if there are any txs in the request
 		if len(req.Txs) < 1 {
@@ -243,6 +248,9 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		duration := time.Since(start)
+		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
+		logger.Info("🕒 ProcessProposal:" + formatted)
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}
 }
@@ -252,6 +260,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		logger := app.Logger()
 		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
+		start := time.Now()
 
 		// check if VEs are enabled
 		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
@@ -355,6 +364,9 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
+		duration := time.Since(start)
+		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
+		logger.Info("🕒 ExtendVote:" + formatted)
 		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
 	}
 }
@@ -364,6 +376,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 	return func(ctx sdk.Context, req *abci.RequestVerifyVoteExtension) (*abci.ResponseVerifyVoteExtension, error) {
 		logger := app.Logger()
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
+		start := time.Now()
 
 		// check if VEs are enabled
 		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
@@ -407,6 +420,9 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			}
 		}
 
+		duration := time.Since(start)
+		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
+		logger.Info("🕒 VerifyVote:" + formatted)
 		return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_ACCEPT}, nil
 	}
 }
@@ -414,6 +430,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
+	start := time.Now()
 
 	if err := checkIfVoteExtensionsDisabled(ctx, req.Height+1); err != nil {
 		return nil, err
@@ -584,7 +601,9 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		}
 	}
-
+	duration := time.Since(start)
+	formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
+	logger.Info("🕒 PreBlocker:" + formatted)
 	return app.ModuleManager.PreBlock(ctx)
 }
 

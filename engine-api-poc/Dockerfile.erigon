@@ -1,0 +1,10 @@
+# Use root to ensure permission changes work
+FROM public.ecr.aws/alluvial/thorax/erigon:v2.52.5
+
+USER root
+COPY ./engine-api-poc/init-erigon-script.sh .
+COPY ./engine-api-poc/genesis.json .
+
+# Ensure correct ownership and permissions
+RUN chown root:root ./init-erigon-script.sh && chmod +x ./init-erigon-script.sh
+

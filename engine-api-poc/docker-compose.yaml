@@ -1,0 +1,278 @@
+# This is an example compose file for starting up geimdall-v2 required components
+# to run standalone without Bor for development and testing purposes.
+# Do not use this for production.
+version: "3"
+
+x-heimdalld-image: &heimdalld-image
+  image: heimdalld:local
+  build:
+    context: ../
+    dockerfile: ./engine-api-poc/Dockerfile.heimdalld
+  networks:
+    - heimdalld-localnet
+  restart: on-failure
+
+x-erigon-image: &erigon-image
+  image: erigon:local
+  build:
+    context: ../
+    dockerfile: ./engine-api-poc/Dockerfile.erigon
+  env_file:
+    - ./.env
+  networks:
+    - heimdalld-localnet
+  restart: on-failure
+
+services:
+  heimdalld-init:
+    <<: *heimdalld-image
+    entrypoint: ["./engine-api-poc/init-heimdalld-script.sh"]
+    volumes:
+      - ./build:/data
+  erigon-init:
+    <<: *erigon-image
+    entrypoint: ["./init-erigon-script.sh"]
+    volumes:
+      - ./build/erigon-0:/data/erigon-0
+      - ./build/erigon-1:/data/erigon-1
+      - ./build/erigon-2:/data/erigon-2
+      - ./build/erigon-3:/data/erigon-3
+      - ./build/erigon-4:/data/erigon-4
+  erigon-0:
+    <<: *erigon-image
+    entrypoint: ["erigon"]
+    command: [
+        "--verbosity", "debug",
+        "--log.console.verbosity", "debug",
+        "--chain", "holesky",
+        "--datadir", "/erigon",
+        "--port", "30303",
+        "--http",
+        "--http.addr", "0.0.0.0",
+        "--http.vhosts", "any",
+        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+        "--authrpc.addr", "0.0.0.0",
+        "--authrpc.vhosts", "any",
+        "--nodekeyhex", $ERIGON_NODE_PK_0,
+    ]
+    healthcheck:
+      test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./build/erigon-0:/erigon
+
+  erigon-1:
+    <<: *erigon-image
+    entrypoint: ["erigon"]
+    command: [
+        "--verbosity", "debug",
+        "--log.console.verbosity", "debug",
+        "--chain", "holesky",
+        "--datadir", "/erigon",
+        "--port", "30303",
+        "--http",
+        "--http.addr", "0.0.0.0",
+        "--http.vhosts", "any",
+        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+        "--authrpc.addr", "0.0.0.0",
+        "--authrpc.vhosts", "any",
+        "--nodekeyhex", $ERIGON_NODE_PK_1,
+        "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303"
+    ]
+    healthcheck:
+      test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./build/erigon-1:/erigon
+
+  erigon-2:
+      <<: *erigon-image
+      entrypoint: ["erigon"]
+      command: [
+        "--verbosity", "debug",
+        "--log.console.verbosity", "debug",
+        "--chain", "holesky",
+        "--datadir", "/erigon",
+        "--port", "30303",
+        "--http",
+        "--http.addr", "0.0.0.0",
+        "--http.vhosts", "any",
+        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+        "--authrpc.addr", "0.0.0.0",
+        "--authrpc.vhosts", "any",
+        "--nodekeyhex", $ERIGON_NODE_PK_2,
+        "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
+      ]
+      healthcheck:
+        test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      volumes:
+        - ./build/erigon-2:/erigon
+
+  erigon-3:
+      <<: *erigon-image
+      entrypoint: ["erigon"]
+      command: [
+        "--verbosity", "debug",
+        "--log.console.verbosity", "debug",
+        "--chain", "holesky",
+        "--datadir", "/erigon",
+        "--port", "30303",
+        "--http",
+        "--http.addr", "0.0.0.0",
+        "--http.vhosts", "any",
+        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+        "--authrpc.addr", "0.0.0.0",
+        "--authrpc.vhosts", "any",
+        "--nodekeyhex", $ERIGON_NODE_PK_3,
+        "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
+      ]
+      healthcheck:
+        test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      volumes:
+        - ./build/erigon-3:/erigon
+
+  erigon-4:
+      <<: *erigon-image
+      entrypoint: ["erigon"]
+      command: [
+        "--verbosity", "debug",
+        "--log.console.verbosity", "debug",
+        "--chain", "holesky",
+        "--datadir", "/erigon",
+        "--port", "30303",
+        "--http",
+        "--http.addr", "0.0.0.0",
+        "--http.vhosts", "any",
+        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+        "--authrpc.addr", "0.0.0.0",
+        "--authrpc.vhosts", "any",
+        "--nodekeyhex", $ERIGON_NODE_PK_4,
+        "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
+      ]
+      healthcheck:
+        test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      volumes:
+        - ./build/erigon-4:/erigon
+  node0:
+    <<: *heimdalld-image
+    entrypoint: ["heimdalld"]
+    command: [
+      "start",
+      "--home", "/data",
+      "--bor_engine_jwt", "/erigon/jwt.hex",
+      "--bor_engine_url" ,"http://erigon-0:8551",
+      "--bor_rpc_url" ,"http://erigon-0:8545",
+    ]
+    depends_on:
+      erigon-0:
+        condition: service_healthy
+    volumes:
+      - ./build/node0/heimdalld:/data
+      - ./build/erigon-0:/erigon
+    networks:
+      heimdalld-localnet:
+        ipv4_address: 172.18.0.7
+
+
+  node1:
+    <<: *heimdalld-image
+    entrypoint: ["heimdalld"]
+    command: [
+      "start",
+      "--home", "/data",
+      "--bor_engine_jwt", "/erigon/jwt.hex",
+      "--bor_engine_url" ,"http://erigon-1:8551",
+      "--bor_rpc_url" ,"http://erigon-1:8545",
+    ]
+    depends_on:
+      erigon-1:
+        condition: service_healthy
+    volumes:
+      - ./build/node1/heimdalld:/data
+      - ./build/erigon-1:/erigon
+    networks:
+      heimdalld-localnet:
+        ipv4_address: 172.18.0.8
+
+  node2:
+    <<: *heimdalld-image
+    entrypoint: ["heimdalld"]
+    command: [
+      "start",
+      "--home", "/data",
+      "--bor_engine_jwt", "/erigon/jwt.hex",
+      "--bor_engine_url" ,"http://erigon-2:8551",
+      "--bor_rpc_url" ,"http://erigon-2:8545",
+    ]
+    depends_on:
+      erigon-2:
+        condition: service_healthy
+    volumes:
+      - ./build/node2/heimdalld:/data
+      - ./build/erigon-2:/erigon
+    networks:
+      heimdalld-localnet:
+        ipv4_address: 172.18.0.9
+
+  node3:
+    <<: *heimdalld-image
+    entrypoint: ["heimdalld"]
+    command: [
+      "start",
+      "--home", "/data",
+      "--bor_engine_jwt", "/erigon/jwt.hex",
+      "--bor_engine_url" ,"http://erigon-3:8551",
+      "--bor_rpc_url" ,"http://erigon-3:8545",
+    ]
+    depends_on:
+      erigon-3:
+        condition: service_healthy
+    volumes:
+      - ./build/node3/heimdalld:/data
+      - ./build/erigon-3:/erigon
+    networks:
+      heimdalld-localnet:
+        ipv4_address: 172.18.0.10
+
+  node4:
+    <<: *heimdalld-image
+    entrypoint: ["heimdalld"]
+    command: [
+      "start",
+      "--home", "/data",
+      "--bor_engine_jwt", "/erigon/jwt.hex",
+      "--bor_engine_url" ,"http://erigon-4:8551",
+      "--bor_rpc_url" ,"http://erigon-4:8545",
+    ]
+    depends_on:
+      erigon-4:
+        condition: service_healthy
+    volumes:
+      - ./build/node4/heimdalld:/data
+      - ./build/erigon-4:/erigon
+    networks:
+      heimdalld-localnet:
+        ipv4_address: 172.18.0.11
+
+
+networks:
+  heimdalld-localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
+

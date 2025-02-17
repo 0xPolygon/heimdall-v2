@@ -150,6 +150,25 @@ release:
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
 		--rm-dist --skip-validate
 
+###############################################################################
+###                                Engine API POC                           ###
+###############################################################################
+
+engine-api-poc-init-heimdall: 
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up --build heimdalld-init
+.PHONY: engine-api-poc-init
+
+engine-api-poc-init-erigon: 
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up erigon-init
+.PHONY: engine-api-poc-init
+
+engine-api-poc-run-erigon: ## run erigon nodes using docker
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up -d erigon-0 erigon-1 erigon-2 erigon-3 erigon-4
+.PHONY: engine-api-poc-run-erigon
+
+engine-api-poc-run-heimdall: ## run erigon nodes using docker
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up -d  node0 node1 node2 node3 node4
+.PHONY: engine-api-poc-run-heimdall
 
 .PHONY: help
 help:

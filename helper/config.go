@@ -51,6 +51,9 @@ const (
 	BorGRPCUrlFlag  = "bor_grpc_url"
 	BorGRPCFlagFlag = "bor_grpc_flag"
 
+	BorEngineUrlFlag = "bor_engine_url"
+	BorEngineJwtFlag = "bor_engine_jwt"
+
 	CometBFTNodeURLFlag          = "comet_bft_rpc_url"
 	HeimdallServerURLFlag        = "heimdall_rest_server"
 	GRPCServerURLFlag            = "grpc_server"
@@ -559,6 +562,28 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorGRPCFlagFlag), "Error", err)
 	}
 
+	// add BorEngineUrlFlag flag
+	cmd.PersistentFlags().String(
+		BorEngineUrlFlag,
+		"",
+		"Set engine endpoint for bor chain",
+	)
+
+	if err := v.BindPFlag(BorEngineUrlFlag, cmd.PersistentFlags().Lookup(BorEngineUrlFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorEngineUrlFlag), "Error", err)
+	}
+
+	// add BorEngineJwtFlag flag
+	cmd.PersistentFlags().String(
+		BorEngineJwtFlag,
+		"",
+		"Set engine jwt for bor chain",
+	)
+
+	if err := v.BindPFlag(BorEngineJwtFlag, cmd.PersistentFlags().Lookup(BorEngineJwtFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, BorEngineJwtFlag), "Error", err)
+	}
+
 	// add CometBFTNodeURLFlag flag
 	cmd.PersistentFlags().String(
 		CometBFTNodeURLFlag,
@@ -750,6 +775,18 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 	stringConfgValue = v.GetString(BorGRPCUrlFlag)
 	if stringConfgValue != "" {
 		c.Custom.BorGRPCUrl = stringConfgValue
+	}
+
+	// get endpoint for bor engine from viper/cobra
+	stringConfgValue = v.GetString(BorEngineUrlFlag)
+	if stringConfgValue != "" {
+		c.Custom.BorEngineUrl = stringConfgValue
+	}
+
+	// get endpoint for bor engine jwt from viper/cobra
+	stringConfgValue = v.GetString(BorEngineJwtFlag)
+	if stringConfgValue != "" {
+		c.Custom.BorEngineJWT = stringConfgValue
 	}
 
 	// get endpoint for cometBFT from viper/cobra
