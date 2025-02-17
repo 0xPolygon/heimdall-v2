@@ -154,21 +154,26 @@ release:
 ###                                Engine API POC                           ###
 ###############################################################################
 
-engine-api-poc-init-heimdall: 
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up --build heimdalld-init
+engine-api-poc-build: 
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml build heimdalld-init erigon-init
+.PHONY: engine-api-poc-build
+
+engine-api-poc-init: 
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up heimdalld-init erigon-init
 .PHONY: engine-api-poc-init
 
-engine-api-poc-init-erigon: 
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up erigon-init
-.PHONY: engine-api-poc-init
-
-engine-api-poc-run-erigon: ## run erigon nodes using docker
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up -d erigon-0 erigon-1 erigon-2 erigon-3 erigon-4
-.PHONY: engine-api-poc-run-erigon
-
-engine-api-poc-run-heimdall: ## run erigon nodes using docker
+engine-api-poc-start:
 	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up -d  node0 node1 node2 node3 node4
-.PHONY: engine-api-poc-run-heimdall
+.PHONY: engine-api-poc-start
+
+engine-api-poc-stop:
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml  stop
+.PHONY: engine-api-poc-stop
+
+engine-api-poc-destroy:
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml  down --remove-orphans
+	ARCH=$(ARCH) rm -rf ./engine-api-poc/build
+.PHONY: engine-api-poc-stop
 
 .PHONY: help
 help:
