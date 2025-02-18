@@ -46,7 +46,7 @@ One can run the following query commands from the chainmanager module :
 ### CLI commands
 
 ```bash
-heimdalld query chainmanager params
+./build/heimdalld query chainmanager params
 ```
 
 ### REST endpoints

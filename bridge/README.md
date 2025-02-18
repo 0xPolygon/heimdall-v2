@@ -1,4 +1,5 @@
 [//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2780)
 
 # Bridge
 
@@ -12,8 +13,7 @@
 - [Common Issues (FAQ)](#common-issues-faq)
 
 ## Overview
-
-Bridge module is responsible for listening to multiple chains and processing the events emitted by them.It converts the emitted data into heimdall messages and send them to the heimdall chain. There are `listener` and `processor` components in the bridge module which are responsible for listening and processing the events respectively as per their module. For example `listener/rootchain.go` is responsible for listening to events coming from rootchain OR L1 i.e Ethereum chain in our case and `listener/borchain.go` is responsible for listening to events coming from borchain
+Bridge module is responsible for listening to multiple chains and processing the events emitted by them.It converts the emitted data into heimdall messages and send them to the heimdall chain. There are `listener` and `processor` components in the bridge module which are responsible for listening and processing the events respectively as per their module. For example `listener/rootchain.go` is responsible for listening to events coming from rootchain OR L1 i.e Ethereum chain in our case and `listener/polygonposchain.go` is responsible for listening to events coming from borchain
 
 In order to process the events emitted by the chains, bridge module uses `processor` component, which is responsible for processing the events emitted by the chains. For example `processor/clerk.go` is responsible for processing the events related to clerk module, `processor/staking.go` is responsible for processing the events related to staking module and so on.
 
@@ -46,13 +46,13 @@ To start bridge as a validator you just have to add `--bridge` command to your h
 To run all the service :
 
 ```bash
-./heimdalld start --bridge --all
+./build/heimdalld start --bridge --all
 ```
 
 To use specific services :
 
 ```bash
-./heimdalld start --bridge --only=clerk,staking
+./build/heimdalld start --bridge --only clerk,staking
 ```
 
 ## Reset
@@ -61,6 +61,7 @@ To use specific services :
 
 If you want to reset the bridge server data, you can use the following command:
 
+[//]: # (TODO HV2: unknown command "unsafe-reset-all" for "heimdalld")
 ```bash
 ./heimdalld unsafe-reset-all
 ```

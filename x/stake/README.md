@@ -1,4 +1,5 @@
 [//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2780)
 
 # Stake module
 
@@ -121,7 +122,7 @@ uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 ```
 
 ## CLI Commands
-
+[//]: # (TODO:HV2 methods/commands not available in the heimdalld based heimdall-cli. Only `send-ack` and `send-checkopoint` are available)
 ### Validator join
 
 ```bash
@@ -151,15 +152,40 @@ heimdallcli tx stake signer-update \
 ```
 
 ## REST APIs
+[//]: # (TODO:HV2 check the endpoints below)
 
 ### Get validators set
 
 ```bash
-curl -X GET ...
+curl -X 'GET' 'localhost:1317/stake/validator-set'
 ```
 
 ### Get validator details
 
 ```bash
-curl -X GET ...
+curl -X 'GET'  'localhost:1317/stake/validator/<validator-id>' 
+```
+
+### Get signer by address
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/signer/<validator-address>' 
+```
+
+### Get validator status by address
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/validator-status/<validator-address>' 
+```
+
+### Get total power
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/total-power' 
+```
+
+### Is stake transaction processed
+
+```bash
+curl -X 'GET'  'localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>' 
 ```
