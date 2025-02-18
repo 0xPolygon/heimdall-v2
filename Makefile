@@ -175,6 +175,14 @@ engine-api-poc-destroy:
 	ARCH=$(ARCH) rm -rf ./engine-api-poc/build
 .PHONY: engine-api-poc-stop
 
+engine-api-poc-test:
+	ARCH=$(ARCH) bash ./engine-api-poc/run_test.sh
+.PHONY: engine-api-poc-test
+
+engine-api-poc-install-test:
+	ARCH=$(ARCH) npm install -g pandoras-box
+.PHONY: engine-api-poc-test
+
 .PHONY: help
 help:
 	@echo "Available targets:"

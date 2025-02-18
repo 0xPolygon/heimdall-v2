@@ -62,6 +62,8 @@ services:
       retries: 5
     volumes:
       - ./build/erigon-0:/erigon
+    ports:
+      - "8545:8545"
 
   erigon-1:
     <<: *erigon-image
@@ -88,84 +90,95 @@ services:
       retries: 5
     volumes:
       - ./build/erigon-1:/erigon
+    ports:
+      - "9545:8545"
+
 
   erigon-2:
-      <<: *erigon-image
-      entrypoint: ["erigon"]
-      command: [
-        "--verbosity", "debug",
-        "--log.console.verbosity", "debug",
-        "--chain", "holesky",
-        "--datadir", "/erigon",
-        "--port", "30303",
-        "--http",
-        "--http.addr", "0.0.0.0",
-        "--http.vhosts", "any",
-        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
-        "--authrpc.addr", "0.0.0.0",
-        "--authrpc.vhosts", "any",
-        "--nodekeyhex", $ERIGON_NODE_PK_2,
-        "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
-      ]
-      healthcheck:
-        test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
-        interval: 10s
-        timeout: 5s
-        retries: 5
-      volumes:
-        - ./build/erigon-2:/erigon
+    <<: *erigon-image
+    entrypoint: ["erigon"]
+    command: [
+      "--verbosity", "debug",
+      "--log.console.verbosity", "debug",
+      "--chain", "holesky",
+      "--datadir", "/erigon",
+      "--port", "30303",
+      "--http",
+      "--http.addr", "0.0.0.0",
+      "--http.vhosts", "any",
+      "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+      "--authrpc.addr", "0.0.0.0",
+      "--authrpc.vhosts", "any",
+      "--nodekeyhex", $ERIGON_NODE_PK_2,
+      "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
+    ]
+    healthcheck:
+      test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./build/erigon-2:/erigon
+    ports:
+      - "10545:8545"
+    
 
   erigon-3:
-      <<: *erigon-image
-      entrypoint: ["erigon"]
-      command: [
-        "--verbosity", "debug",
-        "--log.console.verbosity", "debug",
-        "--chain", "holesky",
-        "--datadir", "/erigon",
-        "--port", "30303",
-        "--http",
-        "--http.addr", "0.0.0.0",
-        "--http.vhosts", "any",
-        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
-        "--authrpc.addr", "0.0.0.0",
-        "--authrpc.vhosts", "any",
-        "--nodekeyhex", $ERIGON_NODE_PK_3,
-        "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
-      ]
-      healthcheck:
-        test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
-        interval: 10s
-        timeout: 5s
-        retries: 5
-      volumes:
-        - ./build/erigon-3:/erigon
+    <<: *erigon-image
+    entrypoint: ["erigon"]
+    command: [
+      "--verbosity", "debug",
+      "--log.console.verbosity", "debug",
+      "--chain", "holesky",
+      "--datadir", "/erigon",
+      "--port", "30303",
+      "--http",
+      "--http.addr", "0.0.0.0",
+      "--http.vhosts", "any",
+      "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+      "--authrpc.addr", "0.0.0.0",
+      "--authrpc.vhosts", "any",
+      "--nodekeyhex", $ERIGON_NODE_PK_3,
+      "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
+    ]
+    healthcheck:
+      test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./build/erigon-3:/erigon
+    ports:
+      - "11545:8545"
 
   erigon-4:
-      <<: *erigon-image
-      entrypoint: ["erigon"]
-      command: [
-        "--verbosity", "debug",
-        "--log.console.verbosity", "debug",
-        "--chain", "holesky",
-        "--datadir", "/erigon",
-        "--port", "30303",
-        "--http",
-        "--http.addr", "0.0.0.0",
-        "--http.vhosts", "any",
-        "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
-        "--authrpc.addr", "0.0.0.0",
-        "--authrpc.vhosts", "any",
-        "--nodekeyhex", $ERIGON_NODE_PK_4,
-        "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
-      ]
-      healthcheck:
-        test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
-        interval: 10s
-        timeout: 5s
-        retries: 5
-      volumes:
-        - ./build/erigon-4:/erigon
+    <<: *erigon-image
+    entrypoint: ["erigon"]
+    command: [
+      "--verbosity", "debug",
+      "--log.console.verbosity", "debug",
+      "--chain", "holesky",
+      "--datadir", "/erigon",
+      "--port", "30303",
+      "--http",
+      "--http.addr", "0.0.0.0",
+      "--http.vhosts", "any",
+      "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+      "--authrpc.addr", "0.0.0.0",
+      "--authrpc.vhosts", "any",
+      "--nodekeyhex", $ERIGON_NODE_PK_4,
+      "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
+    ]
+    healthcheck:
+      test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./build/erigon-4:/erigon
+    ports:
+      - "12545:8545"
+
   node0:
     <<: *heimdalld-image
     entrypoint: ["heimdalld"]
