@@ -1,4 +1,3 @@
-# TODO-HV2: check this file once we have a proper build
 FROM golang:latest
 
 ARG HEIMDALL_DIR=/var/lib/heimdall

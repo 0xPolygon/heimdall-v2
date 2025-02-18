@@ -92,35 +92,40 @@ Only when there is a majority of `YES` votes, The event will be processed by `Po
 
 A validator can leverage the CLI to add an event to the state in case it's missing and not processed by the bridge, The CLI command is :
 
+[//]: # (TODO HV2: verify the command below)
 ```bash
-heimdallcli tx clerk record 
-    --id <event-id>
-    --contract <contract-address>
-    --data <event-data>
-    --tx-hash <tx-hash>
-    --log-index <log-index>
-    --block-number <L1-block-number>
-    --bor-chain-id <bor-chain-id>
-    --chain-id <heimdall-chain-id>
+./build/heimdalld tx clerk handle-msg-event-record \
+    <from-address> \
+    <tx-hash> \
+    <log-index> \
+    <block-number> \
+    <contract-address> \
+    <event-data> \
+    <event-id> \
+    <heimdall-chain-id>
 ```
 
 ## Query commands
 
 One can run the following query commands from the clerk module :
 
-* `record` - Query for a specific event record.
-* `list` - Query a list of event records.
-* `isoldtx` - Query if the event record is already processed.
+* `record` - Query for a specific event record by its ID.
+* `record-list` - Query a list of event records by page and limit.
+* `is-old-tx` - Query if the event record is already processed.
 
 
 ### CLI commands
 
 ```bash
-heimdallcli query clerk record --id <event-id>
+./build/heimdalld query clerk record <event-id>
 ```
 
 ```bash
-heimdallcli query clerk is-old-tx --tx-hash <tx-hash> --log-index <log-index>
+./build/heimdalld query clerk record-list <page> <limit>
+```
+
+```bash
+./build/heimdalld query clerk is-old-tx <tx-hash> <log-index>
 ```
 
 ### REST endpoints
@@ -130,8 +135,22 @@ curl -X GET "localhost:1317/clerk/event-record/<event-id>"
 ```
 
 ```bash
+curl -X GET "localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>"
+```
+
+```bash
 curl -X GET "localhost:1317/clerk/event-record/list?from-id=<from-id>&to-time=<time-in-unix>&limit=<limit>"
 ```
+
+```bash
+curl +X GET "localhost:1317/clerk/time?from_time=<from-time>&to_time=<to-time>&page=<page>&limit=<limit>"
+```
+
+```bash
+curl +X GET "localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>"
+```
+
+[//]: # (TODO HV2: check the endpoint below, isoldtx endpoints are currently giving memory errors)
 
 ```bash
 curl -X GET "localhost:1317/clerk/isoldtx?tx-hash=<tx-hash>&log-index=<log-index>"

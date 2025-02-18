@@ -58,6 +58,7 @@ message MsgWithdrawFeeTx {
 ```
 
 ## CLI Commands
+[//]: # (TODO HV2: populate and check the commands below)
 
 ### Topup fee
 
@@ -67,15 +68,52 @@ message MsgWithdrawFeeTx {
 ### Withdraw fee
 
 ```bash
+./build/heimdalld tx topup withdraw-fee <proposer> <amount≥
 ```
 
 To check reflected topup on account run following command
 
 ```bash
-heimdalld query auth account <validator-address> --trust-node
+./build/heimdalld query auth account <validator-address>
 ```
 
 ## REST APIs
+
+### Is topup processed
+
+```bash
+curl -X GET "localhost:1317/clerk/isoldtx?tx-hash=<transaction-hash>&log-index=<log-index>"
+```
+
+### Get topup transaction sequence
+
+```bash
+curl -X GET "localhost:1317/topup/sequence?tx-hash=<transaction-hash>&log-index=<log-index>"
+```
+
+### Get dividend account by address
+
+```bash
+curl -X GET "localhost:1317/topup/dividend-account/<address>"
+```
+
+### Get dividend account root hash
+    
+```bash
+curl -X GET "localhost:1317/topup/dividend-account-root"
+```
+
+### Get account proof by address
+
+```bash
+curl -X GET "localhost:1317/topup/account-proof/<address>"
+```
+
+### Verify account proof
+
+```bash
+curl -X GET "localhost:1317/topup/account-proof/<address>/verify"
+```
 
 ### Topup fee
 

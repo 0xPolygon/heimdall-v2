@@ -104,7 +104,7 @@ return k.AddNewSpan(ctx, newSpan)
 A validator can leverage the CLI to propose a span like so :
 
 ```bash
-heimdallcli tx bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+./build/heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
 ## Query commands
@@ -121,33 +121,37 @@ One can run the following query commands from the bor module :
 ### CLI commands
 
 ```bash
-heimdallcli query bor span --span-id=<SPAN_ID>
+./build/heimdalld query bor span-by-id <SPAN_ID>
 ```
 
 ```bash
-heimdallcli query bor latest-span
+./build/heimdalld query bor latest-span
 ```
 
 ```bash
-heimdallcli query bor params
+./build/heimdalld query bor params
 ```
 
 ```bash
-heimdallcli query bor spanlist --page=<PAGE_NUM> --limit=<LIMIT>
+./build/heimdalld query bor span-list
 ```
 
 ```bash
-heimdallcli query bor next-span-seed
+./build/heimdalld query bor next-span-seed
 ```
 
 ```bash
-heimdallcli query bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+./build/heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
 ### REST endpoints
 
 ```bash
 curl localhost:1317/bor/span/<SPAN_ID>
+```
+
+```bash
+curl localhost:1317/bor/span/list
 ```
 
 ```bash
