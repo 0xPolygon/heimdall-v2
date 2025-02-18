@@ -90,4 +90,44 @@ string from = 1 [
 
 ## CLI Commands
 
+```bash
+./build/heimdalld query milestone get-count
+```
+
+```bash
+./build/heimdalld query milestone get-latest-milestone
+```
+
+```bash
+./build/heimdalld query milestone get-milestone-proposer <milestone-id>
+```
+
 ## REST APIs
+
+```bash
+curl localhost:1317/milestone/params
+```
+
+```bash
+curl localhost:1317/milestone/count
+```
+
+```bash
+curl localhost:1317/milestone/latest
+```
+
+```bash
+curl localhost:1317/milestone/<number>
+```
+
+```bash
+curl localhost:1317/milestone/last-no-ack
+```
+
+```bash
+curl localhost:1317/milestone/no-ack/<id>
+```
+
+```bash
+curl localhost:1317/milestone/proposer/<times>
+```
