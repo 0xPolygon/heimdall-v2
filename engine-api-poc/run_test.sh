@@ -9,9 +9,8 @@ mnemonics=(
 )
 
 folder="./engine-api-poc/test-output"
-if [ ! -d "$folder" ]; then
-  mkdir "$folder"
-fi
+rm -rf "$folder"
+mkdir "$folder"
 
 echo "Starting pandoras-box processes..."
 
@@ -29,7 +28,7 @@ for iteration in {1..10}; do
     # Run pandoras-box, writing its output to a temporary file
     pandoras-box -url "http://localhost:${port}" \
       -m "$mnemonic" \
-      -t 100 -b 500 -o "$temp_file" > /dev/null 2>&1 &
+      -t 200 -b 50 -o "$temp_file" > /dev/null 2>&1 &
     
     pid=$!
     echo "Started pandoras-box on port $port with PID: $pid"
