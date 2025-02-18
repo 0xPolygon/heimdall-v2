@@ -2,7 +2,7 @@
 
 [//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
 
-Validator node for Polygon PoS networks, using a fork of [cometBFT](https://github.com/0xPolygon/cometBFT) and [cosmos-sdk](https://github.com/0xPolygon/cosmos-sdk).
+Consensus client of Polygon PoS chain, using a forks of [cometBFT](https://github.com/0xPolygon/cometBFT) and [cosmos-sdk](https://github.com/0xPolygon/cosmos-sdk).
 
 ## Pre-requisites
 
