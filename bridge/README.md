@@ -1,5 +1,4 @@
 [//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2780)
 
 # Bridge
 
@@ -52,12 +51,12 @@ To run all the service :
 To use specific services :
 
 ```bash
-./build/heimdalld start --bridge --only clerk,staking
+./build/heimdalld start --bridge --only clerk,stake
 ```
 
 ## Reset
 
-> :warning: Do this only when you are advised so and you understand the impact of this command. 
+> :warning: Do this only when you are advised so, and you understand the impact of this command. 
 
 If you want to reset the bridge server data, you can use the following command:
 

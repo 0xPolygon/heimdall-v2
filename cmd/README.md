@@ -1,4 +1,7 @@
-# CMD
+[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
+
+# cmd
+
 
 The `cmd` package is responsible for starting the heimdall application and provides the CLI framework (based on [cobra](https://github.com/spf13/cobra)).
 
