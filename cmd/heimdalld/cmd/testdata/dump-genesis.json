@@ -339,8 +339,8 @@
           "state_receiver_address": "0x0000000000000000000000000000000000001001",
           "validator_set_address": "0x0000000000000000000000000000000000001000"
         },
-        "main_chain_tx_confirmations": "6",
-        "bor_chain_tx_confirmations": "10"
+        "mainchain_tx_confirmations": "6",
+        "maticchain_tx_confirmations": "10"
       }
     },
     "checkpoint": {

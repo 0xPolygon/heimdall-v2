@@ -324,14 +324,14 @@ func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) e
 		return fmt.Errorf("mismatch in clerk events count: expected %d, got %d", len(hv1ClerkEvents), len(hv2ClerkEvents))
 	}
 
-	hv1Checkpoints, ok := hv1Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})["checkpoints"].([]interface{})
-	if !ok {
-		return errors.New("checkpoints not found or invalid format")
+	hv1Checkpoints, err := getCheckpoints(hv1Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv1Checkpoints: %v", err)
 	}
 
-	hv2Checkpoints, ok := hv2Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})["checkpoints"].([]interface{})
-	if !ok {
-		return errors.New("checkpoints not found or invalid format")
+	hv2Checkpoints, err := getCheckpoints(hv2Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv2Checkpoints: %v", err)
 	}
 
 	if len(hv1Checkpoints) != len(hv2Checkpoints) {
@@ -339,6 +339,25 @@ func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) e
 	}
 
 	return nil
+}
+
+func getCheckpoints(genesis map[string]interface{}) ([]interface{}, error) {
+	appState, ok := genesis["app_state"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("app_state key missing or not a map")
+	}
+
+	checkpointData, ok := appState["checkpoint"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("checkpoint key missing or not a map")
+	}
+
+	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("checkpoints key missing or not a list")
+	}
+
+	return checkpoints, nil
 }
 
 // verifyCheckpoints verifies the checkpoints in the genesis files by comparing the data in both versions
@@ -359,15 +378,14 @@ func verifyCheckpoints(hv1Genesis map[string]interface{}, hv2GenesisPath string)
 		return fmt.Errorf("checkpoint module not found in v2 app_state")
 	}
 
-	// ensure checkpoints data is in the correct format for both versions
-	hv1Checkpoints, ok := hv1CheckpointData["checkpoints"].([]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoints not found or invalid format in v1")
+	hv1Checkpoints, err := getCheckpoints(hv1Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv1Checkpoints: %v", err)
 	}
 
-	hv2Checkpoints, ok := hv2CheckpointData["checkpoints"].([]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoints not found or invalid format in v2")
+	hv2Checkpoints, err := getCheckpoints(hv2Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv2Checkpoints: %v", err)
 	}
 
 	// ensure checkpoints count is the same in both versions
