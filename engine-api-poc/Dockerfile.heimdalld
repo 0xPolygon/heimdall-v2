@@ -13,6 +13,7 @@ COPY . .
 
 RUN make heimdalld && cp build/heimdalld /usr/local/bin/
 RUN chmod +x ./engine-api-poc/init-heimdalld-script.sh
+RUN chmod +x ./engine-api-poc/start-heimdalld-script.sh
 
 
 ENV SHELL /bin/bash

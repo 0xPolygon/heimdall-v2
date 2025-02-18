@@ -163,7 +163,18 @@ engine-api-poc-init:
 .PHONY: engine-api-poc-init
 
 engine-api-poc-start:
+	rm -rf ./engine-api-poc/logs
+	mkdir ./engine-api-poc/logs
 	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up -d  node0 node1 node2 node3 node4
+	@echo "Tailing logs for all nodes. Press CTRL+C to stop..."
+	@bash -c '\
+		trap "kill 0" SIGINT; \
+		tail -F ./engine-api-poc/build/node0/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node0.log & \
+		tail -F ./engine-api-poc/build/node1/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node1.log & \
+		tail -F ./engine-api-poc/build/node2/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node2.log & \
+		tail -F ./engine-api-poc/build/node3/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node3.log & \
+		tail -F ./engine-api-poc/build/node4/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node4.log & \
+		wait'	
 .PHONY: engine-api-poc-start
 
 engine-api-poc-stop:
