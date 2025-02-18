@@ -59,7 +59,7 @@ builds:
       - -X github.com/cosmos/cosmos-sdk/version.Name=heimdall
       - -X github.com/cosmos/cosmos-sdk/version.ServerName=heimdalld
       - -X github.com/cosmos/cosmos-sdk/version.Version={{.Version}}
-      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.Version}}
+      - -X github.com/cosmos/cosmos-sdk/version.Commit={{.Commit}}
 
   - <<: *xbuildd
     id: heimdalld-linux-arm64
