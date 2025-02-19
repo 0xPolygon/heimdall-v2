@@ -116,9 +116,17 @@ jobs:
       - name: Launch devnet
         run: |
           cd matic-cli/devnet
-          bash ../util-scripts/docker/devnet_setup.sh
+          # Start ganache
+          bash docker-ganache-start.sh || { echo "Failed to start Ganache"; exit 1; }
+          bash docker-heimdall-start-all.sh || { echo "Failed to start Heimdall"; exit 1; }
+          bash docker-bor-setup.sh || { echo "Failed to setup Bor"; exit 1; }
+          bash docker-bor-start-all.sh || { echo "Failed to start Bor"; exit 1; }
           cd -
-          timeout 2m bash heimdall-v2/integration-tests/bor_health.sh
+          timeout 3m bash heimdall-v2/integration-tests/bor_health.sh
+          cd -
+          bash ganache-deployment-bor.sh || { echo "Failed to deploy Bor to Ganache"; exit 1; }
+          bash ganache-deployment-sync.sh || { echo "Failed to sync Ganache deployment"; exit 1; }
+          echo "Devnet setup complete."
 
       - name: Run smoke tests
         run: |
