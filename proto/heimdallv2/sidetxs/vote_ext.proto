@@ -18,6 +18,7 @@ message MilestoneProposition {
   option (gogoproto.goproto_getters) = true;
 
   bytes block_hash = 1 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 2 [ (amino.dont_omitempty) = true ];
 }
 
 message ConsolidatedSideTxResponse {
