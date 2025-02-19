@@ -1,0 +1,53 @@
+# Defaults
+devnetType: docker
+defaultStake: 10000
+defaultFee: 2000
+
+# L1
+ethURL: http://localhost:9545
+ethHostUser: ubuntu
+
+# Repositories
+borRepo: https://github.com/maticnetwork/bor.git
+borBranch: raneet10/heimdallv2-changes
+
+heimdallRepo: https://github.com/0xPolygon/heimdall-v2.git
+heimdallBranch: develop
+
+contractsRepo: https://github.com/0xPolygon/pos-contracts.git
+contractsBranch: arya/matic-cli/pos-1869
+
+genesisContractsRepo: https://github.com/maticnetwork/genesis-contracts.git
+genesisContractsBranch: master
+
+# Heimdall
+heimdallChainId: heimdall-15005
+heimdallDockerBuildContext: '../../heimdall-v2'
+
+# Bor
+borChainId: 15005
+borDockerBuildContext: 'https://github.com/maticnetwork/bor.git#raneet10/heimdallv2-changes'
+
+sprintSize:
+  - '64'
+blockNumber:
+  - '0'
+blockTime:
+  - '2'
+sprintSizeBlockNumber:
+  - '0'
+
+# Bor
+numOfBorValidators: 1
+numOfBorSentries: 0
+numOfBorArchiveNodes: 0
+
+devnetBorFlags: config
+
+# Erigon
+numOfErigonValidators: 0
+numOfErigonSentries: 0
+numOfErigonArchiveNodes: 0
+
+# Anvil
+mnemonic: 'clock radar mass judge dismiss just intact mind resemble fringe diary casino'

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# TODO HV2: test this script once app is ready, and integrate into CI
-
 set -e
 
 while true
