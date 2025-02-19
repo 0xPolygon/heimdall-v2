@@ -1,4 +1,3 @@
-# TODO HV2: https://polygon.atlassian.net/browse/POS-2758
 defaultStake: 10000
 defaultFee: 2000
 borChainId: 15001
@@ -20,7 +19,7 @@ numOfErigonArchiveNodes: 0
 ethURL: http://ganache:9545
 ethHostUser: ubuntu
 devnetType: docker
-borDockerBuildContext: "https://github.com/maticnetwork/bor.git#develop"
+borDockerBuildContext: "https://github.com/maticnetwork/bor.git#raneet10/heimdallv2-changes"
 heimdallDockerBuildContext: "../../heimdall-v2"
 sprintSizeBlockNumber:
   - '0'
