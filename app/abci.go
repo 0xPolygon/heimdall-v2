@@ -57,8 +57,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
+		latestBlockNumber, err := app.caller.BorChainClient.BlockNumber(ctx)
+		if err != nil {
+			logger.Error("Error occurred while fetching latest block number in prepare proposal", "error", err)
+			return nil, err
+		}
+
 		// Engine API
-		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1)) // change this to a keeper
+		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(latestBlockNumber))) // change this to a keeper
 		if err != nil {
 			return nil, err
 		}
