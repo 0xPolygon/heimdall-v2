@@ -4,7 +4,7 @@ set -e
 echo "Starting the smoke test for the local docker devnet..."
 
 echo ""
-balanceInit=$(docker exec bor0 bash -c "bor attach /var/lib/bor/data/bor.ipc -exec 'Math.round(web3.fromWei(eth.getBalance(eth.accounts[0])))'")
+balanceInit=$(docker exec bor0 bash -c "bor attach /var/lib/bor/data/bor.ipc -exec 'Math.round(eth.getBalance(eth.accounts[0]))'")
 
 echo "Initial balance of first account: $balanceInit"
 
@@ -16,13 +16,14 @@ start_time=$SECONDS
 while true
 do
 
-    balance=$(docker exec bor0 bash -c "bor attach /var/lib/bor/data/bor.ipc -exec 'Math.round(web3.fromWei(eth.getBalance(eth.accounts[0])))'")
+    balance=$(docker exec bor0 bash -c "bor attach /var/lib/bor/data/bor.ipc -exec 'Math.round(eth.getBalance(eth.accounts[0]))'")
 
     if ! [[ "$balance" =~ ^[0-9]+$ ]]; then
         echo "Something is wrong! Can't find the balance of first account in bor network."
         exit 1
     fi
 
+    echo "balance: $balance"
     if (( balance > balanceInit )); then
         if [ "$stateSyncFound" != "true" ]; then
             stateSyncTime=$(( SECONDS - start_time ))
@@ -34,6 +35,7 @@ do
     checkpointID=$(curl -sL http://localhost:1317/checkpoints/latest | jq .checkpoint.id)
 
     if [ "$checkpointID" != "null" ]; then
+        echo "Found checkpoint with id: $checkpointID"
         if [ "$checkpointFound" != "true" ]; then
             checkpointTime=$(( SECONDS - start_time ))
             checkpointFound="true"
