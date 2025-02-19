@@ -116,7 +116,6 @@ jobs:
       - name: Launch devnet
         run: |
           cd matic-cli/devnet
-          # Start ganache
           bash docker-ganache-start.sh || { echo "Failed to start Ganache"; exit 1; }
           bash docker-heimdall-start-all.sh || { echo "Failed to start Heimdall"; exit 1; }
           bash docker-bor-setup.sh || { echo "Failed to setup Bor"; exit 1; }
