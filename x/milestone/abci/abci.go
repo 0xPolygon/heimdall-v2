@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"time"
 
 	"cosmossdk.io/log"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -19,21 +21,37 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
+var pendingMilestoneProposition *sidetxs.MilestoneProposition
+
 func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller) (*sidetxs.MilestoneProposition, error) {
-	hasMilestone, err := milestoneKeeper.HasMilestone(ctx)
-	if err != nil {
+	propStartBlock := uint64(0)
+
+	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
+	if err != nil && err != types.ErrNoMilestoneFound {
 		return nil, err
 	}
 
-	propStartBlock := uint64(0)
+	pendingMilestone := GetPendingMilestoneProposition()
 
-	if hasMilestone {
-		milestone, err := milestoneKeeper.GetLastMilestone(ctx)
-		if err != nil {
-			return nil, err
+	logger := ctx.Logger()
+
+	timeSinceLastMilestone := time.Duration(0)
+
+	if milestone != nil {
+		timeSinceLastMilestone = time.Since(time.Unix(int64(milestone.Timestamp), 0))
+	}
+
+	logger.Debug("timeSinceLastMilestone", "timeSinceLastMilestone", timeSinceLastMilestone)
+
+	// TODO: make the timeout limit configurable or use a value that depends on block time
+	if pendingMilestone != nil && milestone != nil && timeSinceLastMilestone < 6*time.Second {
+		propStartBlock = pendingMilestone.BlockNumber + 1
+	} else {
+		if milestone == nil {
+			propStartBlock = 0
+		} else {
+			propStartBlock = milestone.EndBlock + 1
 		}
-
-		propStartBlock = milestone.EndBlock + 1
 	}
 
 	header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(propStartBlock))
@@ -41,9 +59,17 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	return &sidetxs.MilestoneProposition{
-		BlockHash: header.Hash().Bytes(),
-	}, nil
+	SetPendingMilestoneProposition(&sidetxs.MilestoneProposition{
+		BlockHash:   header.Hash().Bytes(),
+		BlockNumber: propStartBlock,
+	})
+
+	prop := &sidetxs.MilestoneProposition{
+		BlockHash:   header.Hash().Bytes(),
+		BlockNumber: propStartBlock,
+	}
+
+	return prop, nil
 }
 
 func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger) (*sidetxs.MilestoneProposition, []byte, string, error) {
@@ -133,7 +159,15 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 		return hashToProp[maxHash], hashToAggregatedProposersHash[maxHash], voters[0], nil
 	}
 
-	logger.Info("No majority milestone proposition found", "maxVotingPower", maxVotingPower, "majorityVP", majorityVP, "milestonePropositions", hashToProp)
+	logger.Debug("No majority milestone proposition found", "maxVotingPower", maxVotingPower, "majorityVP", majorityVP, "milestonePropositions", hashToProp)
 
 	return nil, nil, "", nil
+}
+
+func SetPendingMilestoneProposition(prop *sidetxs.MilestoneProposition) {
+	pendingMilestoneProposition = prop
+}
+
+func GetPendingMilestoneProposition() *sidetxs.MilestoneProposition {
+	return pendingMilestoneProposition
 }

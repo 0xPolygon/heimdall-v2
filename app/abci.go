@@ -248,14 +248,13 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		// TODO: Temporary fix, propose milestone every other block to avoid double proposing of same bor hash
-		if req.Height%2 == 0 {
-			milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller)
-			if err != nil {
-				logger.Error("Error occurred while generating milestone proposition", "error", err)
-				// We still want to participate in the consensus even if we fail to generate the milestone proposition
-			} else if milestoneProp != nil {
-				vt.MilestoneProposition = milestoneProp
-			}
+		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller)
+		if err != nil {
+			logger.Error("Error occurred while generating milestone proposition", "error", err)
+			// We still want to participate in the consensus even if we fail to generate the milestone proposition
+		} else if milestoneProp != nil {
+			vt.MilestoneProposition = milestoneProp
+			logger.Debug("Proposed milestone", "hash", common.Bytes2Hex(milestoneProp.BlockHash), "number", milestoneProp.BlockNumber)
 		}
 
 		bz, err = vt.Marshal()
@@ -409,7 +408,27 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
-		startBlock := uint64(0)
+		addMilestone := func() error {
+			addMilestoneCtx, msCache := app.cacheTxContext(ctx)
+
+			logger.Debug("Adding milestone", "hash", common.Bytes2Hex(majorityMilestone.BlockHash), "number", majorityMilestone.BlockNumber)
+
+			if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
+				Proposer:    proposer,
+				Hash:        majorityMilestone.BlockHash,
+				StartBlock:  majorityMilestone.BlockNumber,
+				EndBlock:    majorityMilestone.BlockNumber,
+				BorChainId:  params.ChainParams.BorChainId,
+				MilestoneId: common.Bytes2Hex(aggregatedProposers),
+				Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
+			}); err != nil {
+				logger.Error("Error occurred while adding milestone", "error", err)
+				return err
+			}
+
+			msCache.Write()
+			return nil
+		}
 
 		if hasMilestone {
 			lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
@@ -418,24 +437,20 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				return nil, err
 			}
 
-			startBlock = lastMilestone.EndBlock + 1
+			if lastMilestone.EndBlock+1 == majorityMilestone.BlockNumber {
+				if err := addMilestone(); err != nil {
+					logger.Error("Error occurred while adding milestone", "error", err)
+					return nil, err
+				}
+			} else {
+				logger.Info("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.BlockNumber)
+			}
+		} else {
+			if err := addMilestone(); err != nil {
+				logger.Error("Error occurred while adding milestone", "error", err)
+				return nil, err
+			}
 		}
-
-		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
-		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
-			Proposer:    proposer,
-			Hash:        majorityMilestone.BlockHash,
-			StartBlock:  startBlock,
-			EndBlock:    startBlock,
-			BorChainId:  params.ChainParams.BorChainId,
-			MilestoneId: common.Bytes2Hex(aggregatedProposers),
-			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
-		}); err != nil {
-			logger.Error("Error occurred while adding milestone", "error", err)
-			return nil, err
-		}
-
-		msCache.Write()
 	}
 
 	// tally votes
