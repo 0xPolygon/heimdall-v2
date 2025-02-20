@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
-	"time"
 
 	"cosmossdk.io/log"
 
@@ -23,7 +22,7 @@ import (
 
 var pendingMilestoneProposition *sidetxs.MilestoneProposition
 
-func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller) (*sidetxs.MilestoneProposition, error) {
+func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*sidetxs.MilestoneProposition, error) {
 	propStartBlock := uint64(0)
 
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
@@ -35,16 +34,17 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 
 	logger := ctx.Logger()
 
-	timeSinceLastMilestone := time.Duration(0)
-
-	if milestone != nil {
-		timeSinceLastMilestone = time.Since(time.Unix(int64(milestone.Timestamp), 0))
+	lastMilestoneBlockNumber, err := milestoneKeeper.GetMilestoneBlockNumber(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	logger.Debug("timeSinceLastMilestone", "timeSinceLastMilestone", timeSinceLastMilestone)
+	blocksSinceLastMilestone := reqBlock - lastMilestoneBlockNumber
 
-	// TODO: make the timeout limit configurable or use a value that depends on block time
-	if pendingMilestone != nil && milestone != nil && timeSinceLastMilestone < 6*time.Second {
+	logger.Debug("blocksSinceLastMilestone", "blocksSinceLastMilestone", blocksSinceLastMilestone)
+
+	// TODO: make blocksSinceLastMilestone limit configurable
+	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone < 6 {
 		propStartBlock = pendingMilestone.BlockNumber + 1
 	} else {
 		if milestone == nil {

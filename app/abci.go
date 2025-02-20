@@ -248,7 +248,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		// TODO: Temporary fix, propose milestone every other block to avoid double proposing of same bor hash
-		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller)
+		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller, req.Height)
 		if err != nil {
 			logger.Error("Error occurred while generating milestone proposition", "error", err)
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
@@ -426,6 +426,11 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				return err
 			}
 
+			if err = app.MilestoneKeeper.SetMilestoneBlockNumber(ctx, ctx.BlockHeight()); err != nil {
+				logger.Error("error in setting milestone block number", "error", err)
+				return err
+			}
+
 			msCache.Write()
 			return nil
 		}
@@ -443,7 +448,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 					return nil, err
 				}
 			} else {
-				logger.Info("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.BlockNumber)
+				logger.Warn("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.BlockNumber)
 			}
 		} else {
 			if err := addMilestone(); err != nil {
