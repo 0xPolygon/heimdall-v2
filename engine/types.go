@@ -67,19 +67,30 @@ type PayloadAttributes struct {
 }
 
 func (p PayloadAttributes) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
+	payload := struct {
 		Timestamp             string        `json:"timestamp"`
-		PrevRandao            string        `json:"prevRandao"`
-		SuggestedFeeRecipient string        `json:"suggestedFeeRecipient"`
+		PrevRandao            string        `json:"prevRandao,omitempty"`
+		SuggestedFeeRecipient string        `json:"suggestedFeeRecipient,omitempty"`
 		Withdrawals           []*Withdrawal `json:"withdrawals"`
 		ParentBeaconBlockRoot string        `json:"parentBeaconBlockRoot,omitempty"`
 	}{
-		Timestamp:             p.Timestamp.String(),
-		PrevRandao:            p.PrevRandao.Hex(),
-		SuggestedFeeRecipient: p.SuggestedFeeRecipient.Hex(),
-		Withdrawals:           p.Withdrawals,
-		ParentBeaconBlockRoot: p.ParentBeaconBlockRoot.Hex(),
-	})
+		Timestamp:   p.Timestamp.String(),
+		Withdrawals: p.Withdrawals,
+	}
+
+	if p.PrevRandao != (common.Hash{}) {
+		payload.PrevRandao = p.PrevRandao.Hex()
+	}
+
+	if p.SuggestedFeeRecipient != (common.Address{}) {
+		payload.SuggestedFeeRecipient = p.SuggestedFeeRecipient.Hex()
+	}
+
+	if p.ParentBeaconBlockRoot != (common.Hash{}) {
+		payload.ParentBeaconBlockRoot = p.ParentBeaconBlockRoot.Hex()
+	}
+
+	return json.Marshal(payload)
 }
 
 type Withdrawal struct {
