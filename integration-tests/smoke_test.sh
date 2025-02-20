@@ -23,7 +23,6 @@ do
         exit 1
     fi
 
-    echo "balance: $balance"
     if (( balance > balanceInit )); then
         if [ "$stateSyncFound" != "true" ]; then
             stateSyncTime=$(( SECONDS - start_time ))
@@ -32,7 +31,10 @@ do
         fi
     fi
 
+    checkpoint=$(curl -sL http://localhost:1317/checkpoints/latest)
+    echo "Checkpoint: $checkpoint"
     checkpointID=$(curl -sL http://localhost:1317/checkpoints/latest | jq .checkpoint.id)
+    echo "CheckpointID: $checkpointID"
 
     if [ "$checkpointID" != "null" ]; then
         echo "Found checkpoint with id: $checkpointID"

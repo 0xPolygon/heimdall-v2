@@ -121,10 +121,13 @@ jobs:
           bash docker-heimdall-start-all.sh || { echo "Failed to start Heimdall"; exit 1; }
           bash docker-bor-setup.sh || { echo "Failed to setup Bor"; exit 1; }
           bash docker-bor-start-all.sh || { echo "Failed to start Bor"; exit 1; }
+          sleep 60
           cd -
           timeout 3m bash heimdall-v2/integration-tests/bor_health.sh
           cd -
+          sleep 60
           bash ganache-deployment-bor.sh || { echo "Failed to deploy Bor to Ganache"; exit 1; }
+          sleep 60
           bash ganache-deployment-sync.sh || { echo "Failed to sync Ganache deployment"; exit 1; }
           echo "Devnet setup complete."
 
@@ -132,9 +135,11 @@ jobs:
         run: |
           echo "Funding ganache accounts..."
           timeout 10m bash heimdall-v2/integration-tests/fund_ganache_accounts.sh
+          sleep 60
           echo "Deposit 100 matic for each account to bor network"
           cd matic-cli/devnet/code/contracts
           npm run truffle exec scripts/deposit.js -- --network development $(jq -r .root.tokens.MaticToken contractAddresses.json) 100000000000000000000
+          sleep 60
           cd -
           timeout 60m bash heimdall-v2/integration-tests/smoke_test.sh
 
