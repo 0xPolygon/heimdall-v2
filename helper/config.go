@@ -42,7 +42,7 @@ const (
 	MumbaiChain = "mumbai"
 	AmoyChain   = "amoy"
 
-	// heimdall-config flags
+	// app config flags
 
 	MainRPCUrlFlag  = "eth_rpc_url"
 	BorRPCUrlFlag   = "bor_rpc_url"
