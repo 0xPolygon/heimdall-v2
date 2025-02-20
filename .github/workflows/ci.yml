@@ -108,7 +108,6 @@ jobs:
       - name: Bootstrap devnet
         run: |
           cd matic-cli
-          cp .env.example .env
           npm install --prefer-offline --no-audit --progress=false
           mkdir devnet
           cd devnet
