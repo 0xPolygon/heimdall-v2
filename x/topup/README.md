@@ -1,6 +1,15 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Topup module
+
+## Table of Contents
+
+* [Overview](#overview)
+* [Interact with the Node](#interact-with-the-node)
+  * [Tx Commands](#tx-commands)
+  * [CLI Query Commands](#cli-query-commands)
+  * [GRPC Endpoints](#grpc-endpoints)
+  * [REST Endpoints](#rest-endpoints)
+
+## Overview
 
 Heimdall Topup is an amount which will be used to pay fees on Heimdall chain.
 
@@ -57,72 +66,109 @@ message MsgWithdrawFeeTx {
 }
 ```
 
-## CLI Commands
-[//]: # (TODO HV2: populate and check the commands below)
+## Interact with the Node
 
-### Topup fee
+### Tx Commands
+
+#### Topup fee
 
 ```bash
+./build/heimdalld tx topup handle-topup-tx [proposer] [user] [fee] [tx_hash] [log_index] [block_number]
 ```
 
-### Withdraw fee
+#### Withdraw fee
 
 ```bash
-./build/heimdalld tx topup withdraw-fee <proposer> <amount≥
+./build/heimdalld tx topup withdraw-fee [proposer] [amount]
 ```
 
-To check reflected topup on account run following command
+### CLI Query Commands
+
+One can run the following query commands from the topup module:
+
+* `topup-sequence` - Query the sequence of a topup tx
+* `is-old-tx` - Check if a tx is old (already submitted)
+* `dividend-account` - Query a dividend account by its address
+* `dividend-account-root` - Query dividend account root hash
+* `account-proof` - Query account proof
+* `verify-account-proof` - Verify account proof
 
 ```bash
-./build/heimdalld query auth account <validator-address>
+./build/heimdalld query topup topup-sequence [tx_hash] [log_index]
 ```
 
-## REST APIs
-
-### Is topup processed
-
 ```bash
-curl -X GET "localhost:1317/clerk/isoldtx?tx-hash=<transaction-hash>&log-index=<log-index>"
+./build/heimdalld query topup is-old-tx [tx_hash] [log_index]
 ```
 
-### Get topup transaction sequence
-
 ```bash
-curl -X GET "localhost:1317/topup/sequence?tx-hash=<transaction-hash>&log-index=<log-index>"
+./build/heimdalld query topup dividend-account [address]
 ```
 
-### Get dividend account by address
-
 ```bash
-curl -X GET "localhost:1317/topup/dividend-account/<address>"
+./build/heimdalld query topup dividend-account-root
 ```
 
-### Get dividend account root hash
-    
 ```bash
-curl -X GET "localhost:1317/topup/dividend-account-root"
+./build/heimdalld query topup account-proof [address]
 ```
 
-### Get account proof by address
-
 ```bash
-curl -X GET "localhost:1317/topup/account-proof/<address>"
+./build/heimdalld query topup verify-account-proof [address] [proof]
 ```
 
-### Verify account proof
+### GRPC Endpoints
+
+The endpoints and the params are defined in the [topup/query.proto](/proto/heimdallv2/topup/query.proto) file. Please refer them for more information about the optional params.
 
 ```bash
-curl -X GET "localhost:1317/topup/account-proof/<address>/verify"
+grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.topup.Query/GetTopupTxSequence
 ```
 
-### Topup fee
-
 ```bash
-curl -X POST ...
+grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.topup.Query/IsTopupTxOld
 ```
 
-### Withdraw fee
+```bash
+grpcurl -plaintext -d '{"address": <>}' localhost:9090 heimdallv2.topup.Query/GetDividendAccountByAddress
+```
 
 ```bash
-curl -X POST ...
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.topup.Query/GetDividendAccountRootHash
+```
+
+```bash
+grpcurl -plaintext -d '{"address": <>}' localhost:9090 heimdallv2.topup.Query/GetAccountProofByAddress
+```
+
+```bash
+grpcurl -plaintext -d '{"address": <>, "proof": <>}' localhost:9090 heimdallv2.topup.Query/VerifyAccountProofByAddress
+```
+
+### REST APIs
+
+The endpoints and the params are defined in the [topup/query.proto](/proto/heimdallv2/topup/query.proto) file. Please refer them for more information about the optional params.
+
+```bash
+curl curl localhost:1317/topup/sequence?tx_hash=<tx-hash>&log_index=<log-index>
+```
+
+```bash
+curl curl localhost:1317/topup/isoldtx?tx_hash=<tx-hash>&log_index=<log-index>
+```
+
+```bash
+curl curl localhost:1317/topup/dividend-account/{address}
+```
+
+```bash
+curl curl localhost:1317/topup/dividend-account-root
+```
+
+```bash
+curl curl localhost:1317/topup/account-proof/{address}
+```
+
+```bash
+curl curl localhost:1317/topup/account-proof/{address}/verify
 ```
