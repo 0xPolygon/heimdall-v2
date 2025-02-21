@@ -16,6 +16,8 @@ import (
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
@@ -232,17 +234,36 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		// prepare the response with votes, block height and block hash
+		// TODO: Drop the ConsolidatedSideTxResponse and just have SideTxResponses in the VoteExtension
 		consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
 			SideTxResponses: sideTxRes,
-			Height:          req.Height,
-			BlockHash:       req.Hash,
+			// TODO: Move Height and BlockHash to be part of the sidetxs.VoteExtension
+			Height:    req.Height,
+			BlockHash: req.Hash,
 		}
 
-		bz, err = consolidatedSideTxRes.Marshal()
+		vt := sidetxs.VoteExtension{
+			ConsolidatedSideTxResponse: &consolidatedSideTxRes,
+			MilestoneProposition:       nil,
+		}
+
+		// TODO: Temporary fix, propose milestone every other block to avoid double proposing of same bor hash
+		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller, req.Height)
 		if err != nil {
-			logger.Error("Error occurred while marshalling the ConsolidatedSideTxResponse in ExtendVoteHandler", "error", err)
+			logger.Error("Error occurred while generating milestone proposition", "error", err)
+			// We still want to participate in the consensus even if we fail to generate the milestone proposition
+		} else if milestoneProp != nil {
+			vt.MilestoneProposition = milestoneProp
+			logger.Debug("Proposed milestone", "hash", common.Bytes2Hex(milestoneProp.BlockHash), "number", milestoneProp.BlockNumber)
+		}
+
+		bz, err = vt.Marshal()
+		if err != nil {
+			logger.Error("Error occurred while marshalling the VoteExtension in ExtendVoteHandler", "error", err)
 			return nil, err
 		}
+
+		// TODO: Before returning the milestone proposition, we can have here same level of validation as in VerifyVoteExtension to make sure it will really be accepted
 
 		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
@@ -273,11 +294,15 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return nil, err
 		}
 
-		var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-		if err := proto.Unmarshal(req.VoteExtension, &consolidatedSideTxResponse); err != nil {
+		var voteExtension sidetxs.VoteExtension
+		if err := proto.Unmarshal(req.VoteExtension, &voteExtension); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while unmarshalling VoteExtension", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
+
+		consolidatedSideTxResponse := voteExtension.GetConsolidatedSideTxResponse()
+
+		// TODO: Add here stronger or same level of verification as in PrepareProposal for the voteExtension.MilestoneProposition
 
 		// ensure block height and hash match
 		if req.Height != consolidatedSideTxResponse.Height {
@@ -354,12 +379,83 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
+	// TODO: we already have getPreviousBlockValidatorSet function in vote_ext_utils.go. Maybe drop it and just make
+	// stakeKeeper.GetPreviousBlockValidatorSet to return error on empty set
 	validators, err := app.StakeKeeper.GetPreviousBlockValidatorSet(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if len(validators.Validators) == 0 {
 		return nil, errors.New("no validators found")
+	}
+
+	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validators, extVoteInfo, logger)
+	if err != nil {
+		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
+		return nil, err
+	}
+
+	if majorityMilestone != nil {
+		params, err := app.ChainManagerKeeper.GetParams(ctx)
+		if err != nil {
+			logger.Error("Error occurred while getting chain manager params", "error", err)
+			return nil, err
+		}
+
+		hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
+		if err != nil {
+			logger.Error("Error occurred while checking for the last milestone", "error", err)
+			return nil, err
+		}
+
+		addMilestone := func() error {
+			addMilestoneCtx, msCache := app.cacheTxContext(ctx)
+
+			logger.Debug("Adding milestone", "hash", common.Bytes2Hex(majorityMilestone.BlockHash), "number", majorityMilestone.BlockNumber)
+
+			if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
+				Proposer:    proposer,
+				Hash:        majorityMilestone.BlockHash,
+				StartBlock:  majorityMilestone.BlockNumber,
+				EndBlock:    majorityMilestone.BlockNumber,
+				BorChainId:  params.ChainParams.BorChainId,
+				MilestoneId: common.Bytes2Hex(aggregatedProposers),
+				Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
+			}); err != nil {
+				logger.Error("Error occurred while adding milestone", "error", err)
+				return err
+			}
+
+			if err = app.MilestoneKeeper.SetMilestoneBlockNumber(ctx, ctx.BlockHeight()); err != nil {
+				logger.Error("error in setting milestone block number", "error", err)
+				return err
+			}
+
+			msCache.Write()
+			return nil
+		}
+
+		if hasMilestone {
+			lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
+			if err != nil {
+				logger.Error("Error occurred while fetching the last milestone", "error", err)
+				return nil, err
+			}
+
+			if lastMilestone.EndBlock+1 == majorityMilestone.BlockNumber {
+				if err := addMilestone(); err != nil {
+					logger.Error("Error occurred while adding milestone", "error", err)
+					return nil, err
+				}
+			} else {
+				logger.Warn("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.BlockNumber)
+			}
+		} else {
+			if err := addMilestone(); err != nil {
+				logger.Error("Error occurred while adding milestone", "error", err)
+				return nil, err
+			}
+		}
 	}
 
 	// tally votes
