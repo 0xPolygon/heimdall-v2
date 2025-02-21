@@ -1,5 +1,3 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Clerk module
 
 ## Table of Contents
@@ -10,6 +8,9 @@
 * [How does it work](#how-does-it-work)
 * [How to add an event](#how-to-add-an-event)
 * [Query commands](#query-commands)
+  * [CLI Commands](#cli-commands)
+  * [GRPC Endpoints](#grpc-endpoints)
+  * [REST Endpoints](#rest-endpoints)
 
 ## Preliminary terminology
 
@@ -92,17 +93,8 @@ Only when there is a majority of `YES` votes, The event will be processed by `Po
 
 A validator can leverage the CLI to add an event to the state in case it's missing and not processed by the bridge, The CLI command is :
 
-[//]: # (TODO HV2: verify the command below)
 ```bash
-./build/heimdalld tx clerk handle-msg-event-record \
-    <from-address> \
-    <tx-hash> \
-    <log-index> \
-    <block-number> \
-    <contract-address> \
-    <event-data> \
-    <event-id> \
-    <heimdall-chain-id>
+./build/heimdalld tx clerk handle-msg-event-record [from] [tx-hash] [log-index] [block-number] [contract-address] [data] [id] [chain-id]
 ```
 
 ## Query commands
@@ -117,41 +109,69 @@ One can run the following query commands from the clerk module :
 ### CLI commands
 
 ```bash
-./build/heimdalld query clerk record <event-id>
+./build/heimdalld query clerk record [record-id]
 ```
 
 ```bash
-./build/heimdalld query clerk record-list <page> <limit>
+./build/heimdalld query clerk record-list [page] [limit]
 ```
 
 ```bash
-./build/heimdalld query clerk is-old-tx <tx-hash> <log-index>
+./build/heimdalld query clerk record-list-with-time [from-id] [to-time]
+```
+
+```bash
+./build/heimdalld query clerk record-sequence [tx-hash] [log-index]
+```
+
+```bash
+./build/heimdalld query clerk is-old-tx [tx-hash] [log-index]
+```
+
+### GRPC Endpoints
+
+The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file. Please refer them for more information about the optional params.
+
+```bash
+grpcurl -plaintext -d '{"record_id": <>}' localhost:9090 heimdallv2.clerk.Query/GetRecordById
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordList
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordListWithTime
+```
+
+```bash
+grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.clerk.Query/GetRecordSequence
+```
+
+```bash
+grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.clerk.Query/IsClerkTxOld
 ```
 
 ### REST endpoints
 
+The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file. Please refer them for more information about the optional params.
+
 ```bash
-curl -X GET "localhost:1317/clerk/event-record/<event-id>"
+curl localhost:1317/clerk/event-record/<event-id>
 ```
 
 ```bash
-curl -X GET "localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>"
+curl localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>
 ```
 
 ```bash
-curl -X GET "localhost:1317/clerk/event-record/list?from-id=<from-id>&to-time=<time-in-unix>&limit=<limit>"
+curl localhost:1317/clerk/time?from_id=<from-id>&to_time=<to-time>&page=<page>&limit=<limit>
 ```
 
 ```bash
-curl +X GET "localhost:1317/clerk/time?from_time=<from-time>&to_time=<to-time>&page=<page>&limit=<limit>"
+curl localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-curl +X GET "localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>"
-```
-
-[//]: # (TODO HV2: check the endpoint below, isoldtx endpoints are currently giving memory errors)
-
-```bash
-curl -X GET "localhost:1317/clerk/isoldtx?tx-hash=<tx-hash>&log-index=<log-index>"
+curl localhost:1317/clerk/isoldtx?tx_hash=<tx-hash>&log_index=<log-index>
 ```

@@ -1,11 +1,12 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Chainmanager module
 
 ## Table of Contents
 
 * [Overview](#overview)
 * [Query commands](#query-commands)
+  * [CLI Commands](#cli-commands)
+  * [GRPC Endpoints](#grpc-endpoints)
+  * [REST Endpoints](#rest-endpoints)
 
 ## Overview
 
@@ -47,6 +48,13 @@ One can run the following query commands from the chainmanager module :
 
 ```bash
 ./build/heimdalld query chainmanager params
+```
+
+### GRPC Endpoints
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.chainmanager.Query/GetChainManagerParams
+
 ```
 
 ### REST endpoints

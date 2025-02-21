@@ -1,6 +1,15 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Stake module
+
+## Table of Contents
+
+* [Overview](#overview)
+* [Interact with the Node](#interact-with-the-node)
+  * [Tx Commands](#tx-commands)
+  * [CLI Query Commands](#cli-query-commands)
+  * [GRPC Endpoints](#grpc-endpoints)
+  * [REST Endpoints](#rest-endpoints)
+
+## Overview
 
 This module manages validators related transactions and state for Heimdall.  
 validators stake their tokens on the Ethereum chain and send the transactions on Heimdall using necessary parameters to acknowledge the Ethereum stake change.  
@@ -120,71 +129,126 @@ uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 ```
 
-## CLI Commands
-[//]: # (TODO:HV2 methods/commands not available in the heimdalld based heimdall-cli. Only `send-ack` and `send-checkopoint` are available)
-### Validator join
+## Interact with the Node
 
+### Tx Commands
+
+#### Validator Join
 ```bash
-heimdallcli tx stake validator-join \
- --proposer <proposer-address> \ 
- --signer-pubkey <signer-public-key> \
- --staked-amount <amount> \
- --tx-hash <tx-hash>   \
- --log-index <log-index> \
- --block-number <block-number> \ 
- --activation-epoch=<activation-epoch> \ 
- --chain-id <chain-id>
+./build/heimdalld tx stake validator-join --proposer {proposer address} --signer-pubkey {signer pubkey with 04 prefix} --tx-hash {tx hash} --block-number {L1 block number} --staked-amount {total stake amount} --activation-epoch {activation epoch} --home="{path to home}"
 ```
 
-### Signer update
+#### Signer Update
+```bash
+./build/heimdalld tx stake signer-update --proposer {proposer address} --id {val id} --new-pubkey {new pubkey with 04 prefix} --tx-hash {tx hash}  --log-index {log index} --block-number {L1 block number} --nonce {nonce} --home="{path to home}"
+```
+
+#### Stake Update
+```bash
+./build/heimdalld tx stake stake-update [valAddress] [valId] [amount] [txHash] [logIndex] [blockNumber] [nonce]
+```
+
+#### Validator Exit
+```bash
+./build/heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]
+```
+
+### CLI Query Commands
+
+One can run the following query commands from the stake module:
+
+* `current-validator-set` - Query all validators which are currently active in validator set
+* `signer` - Query validator info for given validator address
+* `validator` - Query validator info for a given validator id
+* `validator-status` - Query validator status for given validator address
+* `total-power` - Query total power of the validator set
+* `is-old-tx` - Check if a tx is old (already submitted)
 
 ```bash
-heimdallcli tx stake signer-update \
- --proposer <proposer-address> \ 
- --id <validator-id> \
- --signer-pubkey <signer-public-key> \
- --new-pubkey=<new-signer-pubkey> \
- --tx-hash <tx-hash>   \
- --log-index <log-index> \ 
- --block-number <block-number> \ 
- --nonce <nonce>
+./build/heimdalld query stake current-validator-set
+```
+
+```bash
+./build/heimdalld query stake signer [val_address]
+```
+
+```bash
+./build/heimdalld query stake validator [id]
+```
+
+```bash
+./build/heimdalld query stake validator-status [val_address]
+```
+
+```bash
+./build/heimdalld query stake total-power
+```
+
+```bash
+./build/heimdalld query stake is-old-tx [txHash] [logIndex]
+```
+
+### GRPC Endpoints
+
+The endpoints and the params are defined in the [stake/query.proto](/proto/heimdallv2/stake/query.proto) file. Please refer them for more information about the optional params.
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.stake.Query/GetCurrentValidatorSet
+```
+
+```bash
+grpcurl -plaintext -d '{"val_address": <>}' localhost:9090 heimdallv2.stake.Query/GetSignerByAddress
+```
+
+```bash
+grpcurl -plaintext -d '{"id": <>}' localhost:9090 heimdallv2.stake.Query/GetValidatorById
+```
+
+```bash
+grpcurl -plaintext -d '{"val_address": <>}' localhost:9090 heimdallv2.stake.Query/GetValidatorStatusByAddress
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.stake.Query/GetTotalPower
+```
+
+```bash
+grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.stake.Query/IsStakeTxOld
+```
+
+```bash
+grpcurl -plaintest -d '{"times": <>}' localhost:9090 heimdallv2.stake.Query/GetProposersByTimes
 ```
 
 ## REST APIs
-[//]: # (TODO:HV2 check the endpoints below)
 
-### Get validators set
+The endpoints and the params are defined in the [stake/query.proto](/proto/heimdallv2/stake/query.proto) file. Please refer them for more information about the optional params.
 
 ```bash
-curl -X 'GET' 'localhost:1317/stake/validator-set'
+curl localhost:1317/stake/validator-set
 ```
 
-### Get validator details
-
 ```bash
-curl -X 'GET'  'localhost:1317/stake/validator/<validator-id>' 
+curl localhost:1317/stake/signer/{val_address}
 ```
 
-### Get signer by address
-
 ```bash
-curl -X 'GET'  'localhost:1317/stake/signer/<validator-address>' 
+curl localhost:1317/stake/validator/{id}
 ```
 
-### Get validator status by address
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/validator-status/<validator-address>' 
+curl localhost:1317/stake/validator-status/{val_address}
 ```
 
-### Get total power
-
 ```bash
-curl -X 'GET'  'localhost:1317/stake/total-power' 
+curl localhost:1317/stake/total-power
 ```
 
-### Is stake transaction processed
+```bash
+curl localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
+```
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>' 
+curl localhost:1317/stake/proposers/{times}
 ```

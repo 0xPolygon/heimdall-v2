@@ -1,6 +1,15 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
+# Checkpoint Module
 
-# Checkpoint
+## Table of Contents
+
+* [Overview](#overview)
+* [Interact with the Node](#interact-with-the-node)
+  * [Tx Commands](#tx-commands)
+  * [CLI Query Commands](#cli-query-commands)
+  * [GRPC Endpoints](#grpc-endpoints)
+  * [REST Endpoints](#rest-endpoints)
+
+## Overview
 
 Heimdall selects the next proposer using Peppermint’s leader selection algorithm.  
 The multi-stage checkpoint process is crucial due to potential failures when submitting checkpoints on the Ethereum chain caused by factors like gas limit, network traffic, or high gas fees.
@@ -10,9 +19,9 @@ altering the proposer for the next checkpoint on Heimdall.
 
 ![Checkpoint Flow.png](checkpoint_flow.png)
 
-## Messages
+### Messages
 
-### MsgCheckpoint
+#### MsgCheckpoint
 
 `MsgCheckpoint` defines a message for creating a checkpoint on the Ethereum chain.
 
@@ -41,7 +50,7 @@ string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
 }
 ```
 
-### MsgCpAck
+#### MsgCpAck
 
 `MsgCpAck` defines a message for creating the ack tx of a submitted checkpoint.
 
@@ -77,7 +86,7 @@ uint64 log_index = 8 [ (amino.dont_omitempty) = true ];
 }
 ```
 
-### MsgCheckpointNoAck
+#### MsgCheckpointNoAck
 
 `MsgCheckpointNoAck` defines a message for creating the no-ack tx of a checkpoint.
 
@@ -97,116 +106,196 @@ string from = 1 [
 }
 ```
 
-## CLI Commands
+## Interact with the Node
 
-### Send checkpoint
-[//]: # (TODO HV2: check the commands below, heimdalld based heimdall-cli does not have checkpoint module commands for tx)
+### Tx Commands
+
+#### Send checkpoint
 ```bash
-heimdallcli tx checkpoint send-checkpoint \
- --proposer=<proposer-address> \
- --start-block=<start-block> \
- --end-block=<end-block> \
- --root-hash=<root-hash> \
- --account-root-hash=<account-root-hash> \
- --bor-chain-id=<bor-chain-id>
+./build/heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-block=<start-block-number> --end-block=<end-block-number> --root-hash=<root-hash> --account-root=<account-root> --bor-chain-id=<bor-chain-id> --chain-id=<chain-id> --auto-configure=true/false
 ```
 
-### Send checkpoint ack
+#### Send checkpoint ack
 
 ```bash
-heimdallcli tx checkpoint send-ack \
- --proposer=<proposer-address> \
- --tx-hash=<checkpoint-tx-hash>
- --log-index=<checkpoint-event-log-index>
- --header=<checkpoint-index> \
- --chain-id=<chain-id>
+./build/heimdalld tx checkpoint send-ack --tx-hash=<checkpoint-tx-hash> --log-index=<log-index> --header=<header> --proposer=<proposer-address> --chain-id=<heimdall-chainid>
 ```
 
-### Send checkpoint no-ack
+#### Send checkpoint no-ack
 
 ```bash
-heimdallcli tx checkpoint send-noack --chain-id <chain-id>
+./build/heimdalld tx checkpoint checkpoint-no-ack --from <from>
 ```
 
-## REST APIs
+## CLI Query Commands
 
-### Get params
+One can run the following query commands from the checkpoint module:
+
+* `get-params` - Get checkpoint params
+* `get-overview` - Get checkpoint overview
+* `get-ack-count` - Get checkpoint ack count
+* `get-checkpoint` - Get checkpoint based on its number
+* `get-checkpoint-latest` - Get the latest checkpoint
+* `get-checkpoint-buffer` - Get the checkpoint buffer
+* `get-last-no-ack` - Get the last no ack
+* `get-next-checkpoint` - Get the next checkpoint
+* `get-current-proposer` - Get the current proposer
+* `get-proposers` - Get the proposers
+* `get-checkpoint-list` - Get the list of checkpoints
+
+```bash
+./build/heimdalld query checkpoint get-params
+```
+
+```bash
+./build/heimdalld query checkpoint get-overview
+```
+
+```bash
+./build/heimdalld query checkpoint get-ack-count
+```
+
+```bash
+./build/heimdalld query checkpoint get-checkpoint
+```
+
+```bash
+./build/heimdalld query checkpoint get-checkpoint-latest
+```
+
+```bash
+./build/heimdalld query checkpoint get-checkpoint-buffer
+```
+
+```bash
+./build/heimdalld query checkpoint get-last-no-ack
+```
+
+```bash
+./build/heimdalld query checkpoint get-next-checkpoint
+```
+
+```bash
+./build/heimdalld query checkpoint get-current-proposer
+```
+
+```bash
+./build/heimdalld query checkpoint get-proposers
+```
+
+```bash
+./build/heimdalld query checkpoint get-checkpoint-list
+```
+
+## GRPC Endpoints
+
+The endpoints and the params are defined in the [checkpoint/query.proto](/proto/heimdallv2/checkpoint/query.proto) file. Please refer them for more information about the optional params.
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointParams
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointOverview
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetAckCount
+```
+
+```bash
+grpcurl -plaintext -d '{"number": <>}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpoint
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointLatest
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointBuffer
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetLastNoAck
+```
+
+```bash
+grpcurl -plaintext -d '{"bor_chain_id": <>}' localhost:9090 heimdallv2.checkpoint.Query/GetNextCheckpoint
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCurrentProposer
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetProposers
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointList
+```
+
+```bash
+grpcurl -plaintext -d '{"tx_hash": <>}' localhost:9090 heimdallv2.checkpoint.QueryGetCheckpointSignatures
+```
+
+## REST Endpoints
+
+The endpoints and the params are defined in the [checkpoint/query.proto](/proto/heimdallv2/checkpoint/query.proto) file. Please refer them for more information about the optional params.
+
 
 ```bash
 curl localhost:1317/checkpoints/params
 ```
 
-### Get acknoledgement count
+
+```bash
+curl localhost:1317/checkpoints/overview
+```
+
 
 ```bash
 curl localhost:1317/checkpoints/count
 ```
 
-### Get latest checkpoint
 
 ```bash
 curl localhost:1317/checkpoints/latest
 ```
 
-### Get checkpoint buffer
 
 ```bash
 curl localhost:1317/checkpoints/buffer
 ```
 
-### Get last no-ack
 
 ```bash
 curl localhost:1317/checkpoints/last-no-ack
 ```
 
-### Get next checkpoint
 
 ```bash
-curl localhost:1317/checkpoints/prepare-next?bor_chain_id=<bor-chain-id>
+curl localhost:1317/checkpoints/prepare-next/{bor-chain-id}
 ```
 
-### Get checkpoint list
-
-```bash
-curl localhost:1317/checkpoints/<number>
-```
-
-### Get current proposer
 
 ```bash
 curl localhost:1317/checkpoint/proposers/current
 ```
 
-### Get proposers
 
 ```bash
-curl localhost:1317/checkpoint/proposers/<times>
+curl localhost:1317/checkpoint/proposers/{times}
 ```
 
-### Post checkpoint ack
-[//]: # (TODO:HV2 no endpoint provided here)
-<!-- from swagger but gives method not implemented error
-
-curl -X 'POST' \
-  'localhost:1317/checkpoints/ack' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "base_req": {
-    "address": "string",
-    "chain_id": "string"
-  },
-  "end_block": "string",
-  "from": "string",
-  "header_block": "string",
-  "log_index": "string",
-  "proposer": "string",
-  "root_Hash": "string",
-  "start_block": "string",
-  "tx_hash": "string"
-}' -->
+```bash
+curl localhost:1317/checkpoints/list
+```
 
 ```bash
-curl -X POST ...
+curl localhost:1317/checkpoint/signatures/{tx_hash}
+```
+
+```bash
+curl localhost:1317/checkpoints/{number}
 ```
