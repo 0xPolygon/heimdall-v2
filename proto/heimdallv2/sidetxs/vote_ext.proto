@@ -17,8 +17,10 @@ message MilestoneProposition {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 
-  bytes block_hash = 1 [ (amino.dont_omitempty) = true ];
-  uint64 block_number = 2 [ (amino.dont_omitempty) = true ];
+  repeated bytes block_hashes = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+  uint64 start_block_number = 2 [ (amino.dont_omitempty) = true ];
+  uint64 end_block_number = 3 [ (amino.dont_omitempty) = true ];
 }
 
 message ConsolidatedSideTxResponse {
