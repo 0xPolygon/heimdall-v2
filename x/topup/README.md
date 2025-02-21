@@ -150,25 +150,25 @@ grpcurl -plaintext -d '{"address": <>, "proof": <>}' localhost:9090 heimdallv2.t
 The endpoints and the params are defined in the [topup/query.proto](/proto/heimdallv2/topup/query.proto) file. Please refer them for more information about the optional params.
 
 ```bash
-curl curl localhost:1317/topup/sequence?tx_hash=<tx-hash>&log_index=<log-index>
+curl localhost:1317/topup/sequence?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-curl curl localhost:1317/topup/isoldtx?tx_hash=<tx-hash>&log_index=<log-index>
+curl localhost:1317/topup/isoldtx?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-curl curl localhost:1317/topup/dividend-account/{address}
+curl localhost:1317/topup/dividend-account/{address}
 ```
 
 ```bash
-curl curl localhost:1317/topup/dividend-account-root
+curl localhost:1317/topup/dividend-account-root
 ```
 
 ```bash
-curl curl localhost:1317/topup/account-proof/{address}
+curl localhost:1317/topup/account-proof/{address}
 ```
 
 ```bash
-curl curl localhost:1317/topup/account-proof/{address}/verify
+curl localhost:1317/topup/account-proof/{address}/verify
 ```

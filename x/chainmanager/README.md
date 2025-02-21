@@ -1,5 +1,3 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Chainmanager module
 
 ## Table of Contents

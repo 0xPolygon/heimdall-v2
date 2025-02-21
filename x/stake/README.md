@@ -225,30 +225,30 @@ grpcurl -plaintest -d '{"times": <>}' localhost:9090 heimdallv2.stake.Query/GetP
 The endpoints and the params are defined in the [stake/query.proto](/proto/heimdallv2/stake/query.proto) file. Please refer them for more information about the optional params.
 
 ```bash
-curl -X 'GET' 'localhost:1317/stake/validator-set'
+curl localhost:1317/stake/validator-set
 ```
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/signer/{val_address}'
+curl localhost:1317/stake/signer/{val_address}
 ```
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/validator/{id}'
+curl localhost:1317/stake/validator/{id}
 ```
 
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/validator-status/{val_address}'
+curl localhost:1317/stake/validator-status/{val_address}
 ```
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/total-power'
+curl localhost:1317/stake/total-power
 ```
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>'
+curl localhost:1317/stake/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-curl -X 'GET'  'localhost:1317/stake/proposers/{times}'
+curl localhost:1317/stake/proposers/{times}
 ```

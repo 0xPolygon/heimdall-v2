@@ -1,5 +1,3 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Checkpoint Module
 
 ## Table of Contents
@@ -113,7 +111,6 @@ string from = 1 [
 ### Tx Commands
 
 #### Send checkpoint
-[//]: # (TODO HV2: check the commands below, heimdalld based heimdall-cli does not have checkpoint module commands for tx)
 ```bash
 ./build/heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-block=<start-block-number> --end-block=<end-block-number> --root-hash=<root-hash> --account-root=<account-root> --bor-chain-id=<bor-chain-id> --chain-id=<chain-id> --auto-configure=true/false
 ```

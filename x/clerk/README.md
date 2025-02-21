@@ -157,21 +157,21 @@ grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdall
 The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file. Please refer them for more information about the optional params.
 
 ```bash
-curl -X GET "localhost:1317/clerk/event-record/<event-id>"
+curl localhost:1317/clerk/event-record/<event-id>
 ```
 
 ```bash
-curl -X GET "localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>"
+curl localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>
 ```
 
 ```bash
-curl +X GET "localhost:1317/clerk/time?from_id=<from-id>&to_time=<to-time>&page=<page>&limit=<limit>"
+curl localhost:1317/clerk/time?from_id=<from-id>&to_time=<to-time>&page=<page>&limit=<limit>
 ```
 
 ```bash
-curl +X GET "localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>"
+curl localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-curl -X GET "localhost:1317/clerk/isoldtx?tx_hash=<tx-hash>&log_index=<log-index>"
+curl localhost:1317/clerk/isoldtx?tx_hash=<tx-hash>&log_index=<log-index>
 ```
