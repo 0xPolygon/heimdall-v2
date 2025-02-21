@@ -35,4 +35,8 @@ var (
 
 	// CheckpointSignaturesTxHashPrefixKey represents the prefix for checkpoint signatures tx hash
 	CheckpointSignaturesTxHashPrefixKey = collections.NewPrefix([]byte{0x86})
+
+	// TODO: Move to own keeper
+	// ExecutionStateMetadataPrefixKey represents the prefix for execution client metadata
+	ExecutionStateMetadataPrefixKey = collections.NewPrefix([]byte{0x87})
 )

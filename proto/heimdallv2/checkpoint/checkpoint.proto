@@ -1,11 +1,10 @@
 syntax = "proto3";
 package heimdallv2.checkpoint;
 
+import "amino/amino.proto";
+import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
-
-import "cosmos_proto/cosmos.proto";
-import "amino/amino.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 
@@ -36,3 +35,6 @@ message Params {
   uint64 max_checkpoint_length = 3 [ (amino.dont_omitempty) = true ];
   uint64 child_chain_block_interval = 4 [ (amino.dont_omitempty) = true ];
 }
+
+// TODO: Move to own package
+message ExecutionStateMetadata { bytes final_block_hash = 1; }
