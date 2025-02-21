@@ -1,6 +1,7 @@
 package abci
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"sort"
@@ -23,8 +24,6 @@ import (
 var pendingMilestoneProposition *sidetxs.MilestoneProposition
 
 func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*sidetxs.MilestoneProposition, error) {
-	propStartBlock := uint64(0)
-
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && err != types.ErrNoMilestoneFound {
 		return nil, err
@@ -44,8 +43,9 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	logger.Debug("blocksSinceLastMilestone", "blocksSinceLastMilestone", blocksSinceLastMilestone)
 
 	// TODO: make blocksSinceLastMilestone limit configurable
+	propStartBlock := uint64(0)
 	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone < 6 {
-		propStartBlock = pendingMilestone.BlockNumber + 1
+		propStartBlock = pendingMilestone.EndBlockNumber + 1
 	} else {
 		if milestone == nil {
 			propStartBlock = 0
@@ -54,22 +54,20 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		}
 	}
 
-	header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(propStartBlock))
+	propEndBlock, blockHashes, err := getBlockHashes(ctx, propStartBlock, contractCaller)
 	if err != nil {
 		return nil, err
 	}
 
-	SetPendingMilestoneProposition(&sidetxs.MilestoneProposition{
-		BlockHash:   header.Hash().Bytes(),
-		BlockNumber: propStartBlock,
-	})
-
-	prop := &sidetxs.MilestoneProposition{
-		BlockHash:   header.Hash().Bytes(),
-		BlockNumber: propStartBlock,
+	milestoneProp := &sidetxs.MilestoneProposition{
+		BlockHashes:      blockHashes,
+		StartBlockNumber: propStartBlock,
+		EndBlockNumber:   propEndBlock,
 	}
 
-	return prop, nil
+	SetPendingMilestoneProposition(milestoneProp)
+
+	return milestoneProp, nil
 }
 
 func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger) (*sidetxs.MilestoneProposition, []byte, string, error) {
@@ -97,12 +95,6 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 			continue
 		}
 
-		hash := common.BytesToHash(voteExtension.MilestoneProposition.BlockHash).String()
-		hashToProp[hash] = voteExtension.MilestoneProposition
-		if _, ok := hashToVotingPower[hash]; !ok {
-			hashToVotingPower[hash] = 0
-		}
-
 		valAddr, err := ac.BytesToString(vote.Validator.Address)
 		if err != nil {
 			return nil, nil, "", err
@@ -113,25 +105,41 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 			return nil, nil, "", fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
-		hashToVotingPower[hash] += validator.VotingPower
-
-		if _, ok := hashToAggregatedProposersHash[hash]; !ok {
-			hashToAggregatedProposersHash[hash] = []byte{}
-		}
-
-		hashToAggregatedProposersHash[hash] = crypto.Keccak256(
-			hashToAggregatedProposersHash[hash],
-			[]byte{'|'},
-			vote.Validator.Address,
-		)
-
-		if _, ok := hashVoters[hash]; !ok {
-			hashVoters[hash] = []string{}
-		}
-
-		hashVoters[hash] = append(hashVoters[hash], valAddr)
-
 		valAddressToVotingPower[valAddr] = validator.VotingPower
+
+		blockHashesCount := uint64(len(voteExtension.MilestoneProposition.BlockHashes))
+		prefix := make([][]byte, 0)
+		for i := uint64(0); i < blockHashesCount; i++ {
+			prefix = append(prefix, voteExtension.MilestoneProposition.BlockHashes[i])
+
+			hash := common.BytesToHash(bytes.Join(prefix, []byte{'|'})).String()
+			hashToProp[hash] = &sidetxs.MilestoneProposition{
+				BlockHashes:      prefix,
+				StartBlockNumber: voteExtension.MilestoneProposition.StartBlockNumber,
+				EndBlockNumber:   voteExtension.MilestoneProposition.EndBlockNumber - (blockHashesCount - uint64(len(prefix))),
+			}
+			if _, ok := hashToVotingPower[hash]; !ok {
+				hashToVotingPower[hash] = 0
+			}
+
+			hashToVotingPower[hash] += validator.VotingPower
+
+			if _, ok := hashToAggregatedProposersHash[hash]; !ok {
+				hashToAggregatedProposersHash[hash] = []byte{}
+			}
+
+			hashToAggregatedProposersHash[hash] = crypto.Keccak256(
+				hashToAggregatedProposersHash[hash],
+				[]byte{'|'},
+				vote.Validator.Address,
+			)
+
+			if _, ok := hashVoters[hash]; !ok {
+				hashVoters[hash] = []string{}
+			}
+
+			hashVoters[hash] = append(hashVoters[hash], valAddr)
+		}
 	}
 
 	var maxVotingPower int64
@@ -171,3 +179,49 @@ func SetPendingMilestoneProposition(prop *sidetxs.MilestoneProposition) {
 func GetPendingMilestoneProposition() *sidetxs.MilestoneProposition {
 	return pendingMilestoneProposition
 }
+
+func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) (uint64, [][]byte, error) {
+	latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if latestHeader == nil {
+		return 0, nil, fmt.Errorf("failed to get latest header")
+	}
+
+	result := make([][]byte, 0)
+	latestBlockNumber := latestHeader.Number.Uint64()
+
+	if latestBlockNumber-startBlock > maxBlocksInProposition {
+		latestHeader, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(startBlock+maxBlocksInProposition)))
+		if err != nil {
+			return 0, nil, err
+		}
+
+		if latestHeader == nil {
+			return 0, nil, fmt.Errorf("failed to get header for block number %d", startBlock+maxBlocksInProposition)
+		}
+	}
+
+	for startBlock < latestBlockNumber {
+		header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(startBlock))
+		if err != nil {
+			return 0, nil, err
+		}
+
+		if header == nil {
+			return 0, nil, fmt.Errorf("failed to get header for block number %d", startBlock)
+		}
+
+		result = append(result, header.Hash().Bytes())
+
+		startBlock++
+	}
+
+	result = append(result, latestHeader.Hash().Bytes())
+
+	return latestBlockNumber, result, nil
+}
+
+const maxBlocksInProposition = 10
