@@ -47,10 +47,12 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone < 6 {
 		propStartBlock = pendingMilestone.StartBlockNumber + uint64(len(pendingMilestone.BlockHashes))
 	} else {
-		if milestone == nil {
-			propStartBlock = 0
-		} else {
+		if pendingMilestone != nil {
+			propStartBlock = pendingMilestone.StartBlockNumber + uint64(len(pendingMilestone.BlockHashes))
+		} else if milestone != nil {
 			propStartBlock = milestone.EndBlock + 1
+		} else {
+			propStartBlock = 0
 		}
 	}
 
