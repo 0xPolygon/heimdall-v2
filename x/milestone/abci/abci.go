@@ -181,7 +181,7 @@ func GetPendingMilestoneProposition() *sidetxs.MilestoneProposition {
 func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
 	latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get latest header: %w", err)
 	}
 
 	if latestHeader == nil {
@@ -205,7 +205,7 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 	for startBlock < latestBlockNumber {
 		header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(startBlock))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get header for block number %d: %w", startBlock, err)
 		}
 
 		if header == nil {
