@@ -426,7 +426,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				return err
 			}
 
-			if err = app.MilestoneKeeper.SetMilestoneBlockNumber(ctx, ctx.BlockHeight()); err != nil {
+			if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
 				logger.Error("error in setting milestone block number", "error", err)
 				return err
 			}
