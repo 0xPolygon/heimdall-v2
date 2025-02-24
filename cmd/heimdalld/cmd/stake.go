@@ -1,17 +1,16 @@
 package heimdalld
 
 import (
-	"encoding/json"
 	"errors"
 	"math/big"
 
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	bridge "github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	stakingcli "github.com/0xPolygon/heimdall-v2/x/stake/client/cli"
 )
 
@@ -21,7 +20,8 @@ func StakeCmd() *cobra.Command {
 		Use:   "stake",
 		Short: "Stake pol tokens for your account",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
 			helper.InitHeimdallConfig("")
 
 			validatorStr := viper.GetString(stakingcli.FlagValidatorAddress)
@@ -52,7 +52,7 @@ func StakeCmd() *cobra.Command {
 				return err
 			}
 
-			params, err := GetChainManagerParams()
+			params, err := bridge.GetChainmanagerParams(clientCtx.Codec)
 			if err != nil {
 				return err
 			}
@@ -88,7 +88,8 @@ func ApproveCmd() *cobra.Command {
 		Use:   "approve",
 		Short: "Approve the tokens to stake",
 		Args:  cobra.NoArgs,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			clientCtx, err := client.GetClientTxContext(cmd)
 			helper.InitHeimdallConfig("")
 
 			stakeAmountStr := viper.GetString(stakingcli.FlagAmount)
@@ -111,7 +112,7 @@ func ApproveCmd() *cobra.Command {
 				return err
 			}
 
-			params, err := GetChainManagerParams()
+			params, err := bridge.GetChainmanagerParams(clientCtx.Codec)
 			if err != nil {
 				return err
 			}
@@ -132,19 +133,4 @@ func ApproveCmd() *cobra.Command {
 	cmd.Flags().String(stakingcli.FlagFeeAmount, "5000000000000000000", "--fee-amount=<heimdall fee amount>, if left blank will be assigned as 5 pol tokens")
 
 	return cmd
-}
-
-// GetChainManagerParams return configManager params
-func GetChainManagerParams() (*chainmanagertypes.Params, error) {
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(bridge.ChainManagerParamsURL))
-	if err != nil {
-		return nil, err
-	}
-
-	var params chainmanagertypes.Params
-	if err = json.Unmarshal(response, &params); err != nil {
-		return nil, err
-	}
-
-	return &params, nil
 }
