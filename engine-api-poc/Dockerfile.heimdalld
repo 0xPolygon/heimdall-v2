@@ -1,8 +1,9 @@
-# TODO-HV2: check this file once we have a proper build
 FROM golang:latest
 
 ARG HEIMDALL_DIR=/var/lib/heimdall
 ENV HEIMDALL_DIR=$HEIMDALL_DIR
+# Add this line to fix the 0x%21polygon issue on Mac
+ENV GOPRIVATE=github.com/0xPolygon/*
 
 RUN apt-get update -y && apt-get upgrade -y \
     && apt install build-essential git -y \
@@ -15,7 +16,5 @@ RUN make heimdalld && cp build/heimdalld /usr/local/bin/
 RUN chmod +x ./engine-api-poc/init-heimdalld-script.sh
 RUN chmod +x ./engine-api-poc/start-heimdalld-script.sh
 
-
 ENV SHELL /bin/bash
 EXPOSE 1317 26656 26657
-
