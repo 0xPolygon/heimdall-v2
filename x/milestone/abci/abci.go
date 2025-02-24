@@ -45,7 +45,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	// TODO: make blocksSinceLastMilestone limit configurable
 	propStartBlock := uint64(0)
 	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone < 6 {
-		propStartBlock = pendingMilestone.StartBlockNumber + uint64(len(pendingMilestone.BlockHashes))
+		propStartBlock = milestone.EndBlock + 1
 	} else {
 		if pendingMilestone != nil {
 			propStartBlock = pendingMilestone.StartBlockNumber + uint64(len(pendingMilestone.BlockHashes))
@@ -60,6 +60,8 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	if err != nil {
 		return nil, err
 	}
+
+	logger.Error("Generated milestone proposition", "blockHashes", len(blockHashes), "startBlock", propStartBlock)
 
 	milestoneProp := &sidetxs.MilestoneProposition{
 		BlockHashes:      blockHashes,
