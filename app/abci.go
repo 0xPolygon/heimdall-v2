@@ -451,9 +451,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				logger.Warn("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.StartBlockNumber)
 			}
 		} else {
-			if err := addMilestone(); err != nil {
-				logger.Error("Error occurred while adding milestone", "error", err)
-				return nil, err
+			if majorityMilestone.StartBlockNumber == 0 {
+				if err := addMilestone(); err != nil {
+					logger.Error("Error occurred while adding milestone", "error", err)
+					return nil, err
+				}
+			} else {
+				logger.Warn("Non-zero start block for the first milestone", "start block", majorityMilestone.StartBlockNumber)
 			}
 		}
 	}
