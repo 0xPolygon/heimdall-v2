@@ -61,8 +61,6 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	logger.Error("Generated milestone proposition", "blockHashes", len(blockHashes), "startBlock", propStartBlock)
-
 	milestoneProp := &sidetxs.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: propStartBlock,
@@ -199,8 +197,9 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 	result := make([][]byte, 0)
 	latestBlockNumber := latestHeader.Number.Uint64()
 
-	if latestBlockNumber-startBlock > maxBlocksInProposition {
-		fetchBlock := startBlock + maxBlocksInProposition
+	// +1 Because its inclusive range on both sides, 10-0=10 but these are 11 blocks
+	if (latestBlockNumber-startBlock)+1 > maxBlocksInProposition {
+		fetchBlock := startBlock + maxBlocksInProposition - 1
 		latestHeader, err = contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(fetchBlock)))
 		if err != nil {
 			return nil, fmt.Errorf("failed to get header for block number %d: %w", fetchBlock, err)
