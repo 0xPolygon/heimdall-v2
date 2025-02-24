@@ -254,7 +254,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
 			vt.MilestoneProposition = milestoneProp
-			logger.Debug("Proposed milestone", "hash", hashesToString(milestoneProp.BlockHashes), "startBlock", milestoneProp.StartBlockNumber, "endBlock", milestoneProp.EndBlockNumber)
+			logger.Debug("Proposed milestone", "hash", hashesToString(milestoneProp.BlockHashes), "startBlock", milestoneProp.StartBlockNumber, "endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)))
 		}
 
 		bz, err = vt.Marshal()
@@ -411,13 +411,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		addMilestone := func() error {
 			addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
-			logger.Debug("Adding milestone", "hashes", hashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.EndBlockNumber, "proposer", proposer)
+			logger.Debug("Adding milestone", "hashes", hashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)), "proposer", proposer)
 
 			if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
 				Proposer:    proposer,
 				Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
 				StartBlock:  majorityMilestone.StartBlockNumber,
-				EndBlock:    majorityMilestone.EndBlockNumber,
+				EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)),
 				BorChainId:  params.ChainParams.BorChainId,
 				MilestoneId: common.Bytes2Hex(aggregatedProposers),
 				Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),

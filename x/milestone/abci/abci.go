@@ -45,7 +45,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	// TODO: make blocksSinceLastMilestone limit configurable
 	propStartBlock := uint64(0)
 	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone < 6 {
-		propStartBlock = pendingMilestone.EndBlockNumber + 1
+		propStartBlock = pendingMilestone.StartBlockNumber + uint64(len(pendingMilestone.BlockHashes)+1)
 	} else {
 		if milestone == nil {
 			propStartBlock = 0
@@ -54,7 +54,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		}
 	}
 
-	propEndBlock, blockHashes, err := getBlockHashes(ctx, propStartBlock, contractCaller)
+	blockHashes, err := getBlockHashes(ctx, propStartBlock, contractCaller)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,6 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	milestoneProp := &sidetxs.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: propStartBlock,
-		EndBlockNumber:   propEndBlock,
 	}
 
 	SetPendingMilestoneProposition(milestoneProp)
@@ -116,7 +115,6 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 			hashToProp[hash] = &sidetxs.MilestoneProposition{
 				BlockHashes:      prefix,
 				StartBlockNumber: voteExtension.MilestoneProposition.StartBlockNumber,
-				EndBlockNumber:   voteExtension.MilestoneProposition.EndBlockNumber - (blockHashesCount - uint64(len(prefix))),
 			}
 			if _, ok := hashToVotingPower[hash]; !ok {
 				hashToVotingPower[hash] = 0
@@ -180,14 +178,14 @@ func GetPendingMilestoneProposition() *sidetxs.MilestoneProposition {
 	return pendingMilestoneProposition
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) (uint64, [][]byte, error) {
+func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
 	latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
-		return 0, nil, err
+		return nil, err
 	}
 
 	if latestHeader == nil {
-		return 0, nil, fmt.Errorf("failed to get latest header")
+		return nil, fmt.Errorf("failed to get latest header")
 	}
 
 	result := make([][]byte, 0)
@@ -196,22 +194,22 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 	if latestBlockNumber-startBlock > maxBlocksInProposition {
 		latestHeader, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(startBlock+maxBlocksInProposition)))
 		if err != nil {
-			return 0, nil, err
+			return nil, err
 		}
 
 		if latestHeader == nil {
-			return 0, nil, fmt.Errorf("failed to get header for block number %d", startBlock+maxBlocksInProposition)
+			return nil, fmt.Errorf("failed to get header for block number %d", startBlock+maxBlocksInProposition)
 		}
 	}
 
 	for startBlock < latestBlockNumber {
 		header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(startBlock))
 		if err != nil {
-			return 0, nil, err
+			return nil, err
 		}
 
 		if header == nil {
-			return 0, nil, fmt.Errorf("failed to get header for block number %d", startBlock)
+			return nil, fmt.Errorf("failed to get header for block number %d", startBlock)
 		}
 
 		result = append(result, header.Hash().Bytes())
@@ -221,7 +219,7 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 
 	result = append(result, latestHeader.Hash().Bytes())
 
-	return latestBlockNumber, result, nil
+	return result, nil
 }
 
 const maxBlocksInProposition = 10
