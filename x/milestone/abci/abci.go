@@ -44,7 +44,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 
 	// TODO: make blocksSinceLastMilestone limit configurable
 	propStartBlock := uint64(0)
-	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone < 6 {
+	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone > 6 {
 		propStartBlock = milestone.EndBlock + 1
 	} else {
 		if pendingMilestone != nil {
@@ -114,8 +114,10 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 			prefix = append(prefix, voteExtension.MilestoneProposition.BlockHashes[i])
 
 			hash := common.BytesToHash(bytes.Join(prefix, []byte{'|'})).String()
+			prefixCopy := make([][]byte, len(prefix))
+			copy(prefixCopy, prefix)
 			hashToProp[hash] = &sidetxs.MilestoneProposition{
-				BlockHashes:      prefix,
+				BlockHashes:      prefixCopy,
 				StartBlockNumber: voteExtension.MilestoneProposition.StartBlockNumber,
 			}
 			if _, ok := hashToVotingPower[hash]; !ok {
@@ -147,6 +149,9 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 	for hash, votingPower := range hashToVotingPower {
 		if votingPower > maxVotingPower {
 			maxVotingPower = votingPower
+			maxHash = hash
+		} else if votingPower == maxVotingPower &&
+			len(hashToProp[hash].BlockHashes) > len(hashToProp[maxHash].BlockHashes) {
 			maxHash = hash
 		}
 	}
