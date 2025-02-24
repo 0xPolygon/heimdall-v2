@@ -417,7 +417,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				Proposer:    proposer,
 				Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
 				StartBlock:  majorityMilestone.StartBlockNumber,
-				EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)),
+				EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
 				BorChainId:  params.ChainParams.BorChainId,
 				MilestoneId: common.Bytes2Hex(aggregatedProposers),
 				Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
