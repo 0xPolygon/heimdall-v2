@@ -192,13 +192,14 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 	latestBlockNumber := latestHeader.Number.Uint64()
 
 	if latestBlockNumber-startBlock > maxBlocksInProposition {
-		latestHeader, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(startBlock+maxBlocksInProposition)))
+		fetchBlock := startBlock + maxBlocksInProposition
+		latestHeader, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(fetchBlock)))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get header for block number %d: %w", fetchBlock, err)
 		}
 
 		if latestHeader == nil {
-			return nil, fmt.Errorf("failed to get header for block number %d", startBlock+maxBlocksInProposition)
+			return nil, fmt.Errorf("failed to get header for block number %d", fetchBlock)
 		}
 	}
 
