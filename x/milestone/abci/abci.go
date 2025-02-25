@@ -2,6 +2,7 @@ package abci
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 	"sort"
@@ -113,9 +114,14 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 		for i := uint64(0); i < blockHashesCount; i++ {
 			prefix = append(prefix, voteExtension.MilestoneProposition.BlockHashes[i])
 
-			hash := common.BytesToHash(bytes.Join(prefix, []byte{'|'})).String()
 			prefixCopy := make([][]byte, len(prefix))
 			copy(prefixCopy, prefix)
+
+			startBlockBytes := make([]byte, 8)
+			binary.BigEndian.PutUint64(startBlockBytes, voteExtension.MilestoneProposition.StartBlockNumber)
+			hashInput := bytes.Join(append(prefixCopy, startBlockBytes), []byte{'|'})
+			hash := common.BytesToHash(hashInput).String()
+
 			hashToProp[hash] = &sidetxs.MilestoneProposition{
 				BlockHashes:      prefixCopy,
 				StartBlockNumber: voteExtension.MilestoneProposition.StartBlockNumber,
