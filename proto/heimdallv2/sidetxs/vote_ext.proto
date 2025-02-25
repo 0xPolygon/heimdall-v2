@@ -7,30 +7,30 @@ import "gogoproto/gogo.proto";
 option go_package = "github.com/0xPolygon/heimdall-v2/sidetxs";
 
 message VoteExtension {
-  ConsolidatedSideTxResponse consolidated_side_tx_response = 1
-      [ (amino.dont_omitempty) = true ];
-  MilestoneProposition milestone_proposition = 2
-      [ (amino.dont_omitempty) = true ];
+  ConsolidatedSideTxResponse consolidated_side_tx_response = 1 [(amino.dont_omitempty) = true];
+  MilestoneProposition milestone_proposition = 2 [(amino.dont_omitempty) = true];
 }
 
 message MilestoneProposition {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
 
-  bytes block_hash = 1 [ (amino.dont_omitempty) = true ];
-  uint64 block_number = 2 [ (amino.dont_omitempty) = true ];
+  repeated bytes block_hashes = 1 [(amino.dont_omitempty) = true];
+  uint64 start_block_number = 2 [(amino.dont_omitempty) = true];
 }
 
 message ConsolidatedSideTxResponse {
-  repeated SideTxResponse side_tx_responses = 1
-      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
-  bytes block_hash = 2 [ (amino.dont_omitempty) = true ];
-  int64 height = 3 [ (amino.dont_omitempty) = true ];
+  repeated SideTxResponse side_tx_responses = 1 [
+    (amino.dont_omitempty) = true,
+    (gogoproto.nullable) = false
+  ];
+  bytes block_hash = 2 [(amino.dont_omitempty) = true];
+  int64 height = 3 [(amino.dont_omitempty) = true];
 }
 
 message SideTxResponse {
-  bytes tx_hash = 1 [ (amino.dont_omitempty) = true ];
-  Vote result = 2 [ (amino.dont_omitempty) = true ];
+  bytes tx_hash = 1 [(amino.dont_omitempty) = true];
+  Vote result = 2 [(amino.dont_omitempty) = true];
 }
 
 enum Vote {

@@ -254,7 +254,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
 			vt.MilestoneProposition = milestoneProp
-			logger.Debug("Proposed milestone", "hash", common.Bytes2Hex(milestoneProp.BlockHash), "number", milestoneProp.BlockNumber)
+			logger.Debug("Proposed milestone", "hash", hashesToString(milestoneProp.BlockHashes), "startBlock", milestoneProp.StartBlockNumber, "endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)))
 		}
 
 		bz, err = vt.Marshal()
@@ -411,13 +411,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		addMilestone := func() error {
 			addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
-			logger.Debug("Adding milestone", "hash", common.Bytes2Hex(majorityMilestone.BlockHash), "number", majorityMilestone.BlockNumber)
+			logger.Debug("Adding milestone", "hashes", hashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)), "proposer", proposer)
 
 			if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
 				Proposer:    proposer,
-				Hash:        majorityMilestone.BlockHash,
-				StartBlock:  majorityMilestone.BlockNumber,
-				EndBlock:    majorityMilestone.BlockNumber,
+				Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
+				StartBlock:  majorityMilestone.StartBlockNumber,
+				EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
 				BorChainId:  params.ChainParams.BorChainId,
 				MilestoneId: common.Bytes2Hex(aggregatedProposers),
 				Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
@@ -426,7 +426,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				return err
 			}
 
-			if err = app.MilestoneKeeper.SetMilestoneBlockNumber(ctx, ctx.BlockHeight()); err != nil {
+			if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
 				logger.Error("error in setting milestone block number", "error", err)
 				return err
 			}
@@ -442,18 +442,24 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				return nil, err
 			}
 
-			if lastMilestone.EndBlock+1 == majorityMilestone.BlockNumber {
+			if lastMilestone.EndBlock+1 == majorityMilestone.StartBlockNumber {
 				if err := addMilestone(); err != nil {
 					logger.Error("Error occurred while adding milestone", "error", err)
 					return nil, err
 				}
 			} else {
-				logger.Warn("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.BlockNumber)
+				logger.Warn("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.StartBlockNumber)
 			}
 		} else {
-			if err := addMilestone(); err != nil {
-				logger.Error("Error occurred while adding milestone", "error", err)
-				return nil, err
+			if majorityMilestone.StartBlockNumber == 0 {
+				if err := addMilestone(); err != nil {
+					logger.Error("Error occurred while adding milestone", "error", err)
+					return nil, err
+				}
+			} else {
+				logger.Warn("Non-zero start block for the first milestone", "start block", majorityMilestone.StartBlockNumber)
+
+				milestoneAbci.SetPendingMilestoneProposition(nil)
 			}
 		}
 	}
@@ -530,4 +536,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	return app.ModuleManager.PreBlock(ctx)
+}
+
+// TODO: Move to appropriate file
+func hashesToString(hashes [][]byte) string {
+	hashesStr := ""
+	for _, hash := range hashes {
+		hashesStr += common.Bytes2Hex(hash) + " "
+	}
+	return hashesStr
 }
