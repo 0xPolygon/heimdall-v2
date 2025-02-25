@@ -2,7 +2,6 @@ package abci
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"sort"
 
@@ -21,15 +20,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-var pendingMilestoneProposition *sidetxs.MilestoneProposition
-
 func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*sidetxs.MilestoneProposition, error) {
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && err != types.ErrNoMilestoneFound {
 		return nil, err
 	}
-
-	pendingMilestone := GetPendingMilestoneProposition()
 
 	logger := ctx.Logger()
 
@@ -42,18 +37,10 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 
 	logger.Debug("blocksSinceLastMilestone", "blocksSinceLastMilestone", blocksSinceLastMilestone)
 
-	// TODO: make blocksSinceLastMilestone limit configurable
 	propStartBlock := uint64(0)
-	if pendingMilestone != nil && milestone != nil && blocksSinceLastMilestone > 6 {
+
+	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
-	} else {
-		if pendingMilestone != nil {
-			propStartBlock = pendingMilestone.StartBlockNumber + uint64(len(pendingMilestone.BlockHashes))
-		} else if milestone != nil {
-			propStartBlock = milestone.EndBlock + 1
-		} else {
-			propStartBlock = 0
-		}
 	}
 
 	blockHashes, err := getBlockHashes(ctx, propStartBlock, contractCaller)
@@ -66,23 +53,25 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		StartBlockNumber: propStartBlock,
 	}
 
-	SetPendingMilestoneProposition(milestoneProp)
-
 	return milestoneProp, nil
 }
 
-func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger) (*sidetxs.MilestoneProposition, []byte, string, error) {
+func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*sidetxs.MilestoneProposition, []byte, string, error) {
 	ac := address.HexCodec{}
 
-	hashToProp := make(map[string]*sidetxs.MilestoneProposition)
-	hashToVotingPower := make(map[string]int64)
-	hashToAggregatedProposersHash := make(map[string][]byte)
-	hashVoters := make(map[string][]string)
+	// Track voting power per block number
+	blockVotingPower := make(map[uint64]int64)
+	blockHashVotes := make(map[uint64]map[string]int64) // block -> hash -> voting power
+	blockToHash := make(map[uint64][]byte)
+	validatorVotes := make(map[string]map[uint64][]byte) // validator -> block -> hash
+	validatorAddresses := make(map[string][]byte)
 	valAddressToVotingPower := make(map[string]int64)
-	totalVotingPower := validatorSet.GetTotalVotingPower()
 
+	totalVotingPower := validatorSet.GetTotalVotingPower()
+	majorityVP := totalVotingPower*2/3 + 1
+
+	// First pass - collect all votes
 	for _, vote := range extVoteInfo {
-		// if not BlockIDFlagCommit, skip that vote, as it doesn't have relevant information
 		if vote.BlockIdFlag != cmtTypes.BlockIDFlagCommit {
 			continue
 		}
@@ -106,88 +95,167 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 			return nil, nil, "", fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
+		validatorAddresses[valAddr] = vote.Validator.Address
 		valAddressToVotingPower[valAddr] = validator.VotingPower
+		validatorVotes[valAddr] = make(map[uint64][]byte)
 
-		blockHashesCount := uint64(len(voteExtension.MilestoneProposition.BlockHashes))
-		prefix := make([][]byte, 0)
-		for i := uint64(0); i < blockHashesCount; i++ {
-			prefix = append(prefix, voteExtension.MilestoneProposition.BlockHashes[i])
+		prop := voteExtension.MilestoneProposition
+		for i, blockHash := range prop.BlockHashes {
+			blockNum := prop.StartBlockNumber + uint64(i)
 
-			prefixCopy := make([][]byte, len(prefix))
-			copy(prefixCopy, prefix)
+			// Record this validator's vote for this block
+			validatorVotes[valAddr][blockNum] = blockHash
 
-			startBlockBytes := make([]byte, 8)
-			binary.BigEndian.PutUint64(startBlockBytes, voteExtension.MilestoneProposition.StartBlockNumber)
-			hashInput := bytes.Join(append(prefixCopy, startBlockBytes), []byte{'|'})
-			hash := common.BytesToHash(hashInput).String()
-
-			hashToProp[hash] = &sidetxs.MilestoneProposition{
-				BlockHashes:      prefixCopy,
-				StartBlockNumber: voteExtension.MilestoneProposition.StartBlockNumber,
-			}
-			if _, ok := hashToVotingPower[hash]; !ok {
-				hashToVotingPower[hash] = 0
+			// Initialize maps if needed
+			if _, ok := blockVotingPower[blockNum]; !ok {
+				blockVotingPower[blockNum] = 0
+				blockHashVotes[blockNum] = make(map[string]int64)
 			}
 
-			hashToVotingPower[hash] += validator.VotingPower
+			// Record block hash -> voting power
+			hashStr := common.BytesToHash(blockHash).String()
+			blockHashVotes[blockNum][hashStr] += validator.VotingPower
 
-			if _, ok := hashToAggregatedProposersHash[hash]; !ok {
-				hashToAggregatedProposersHash[hash] = []byte{}
+			// Track the hash that currently has the most votes for this block
+			// Use a deterministic comparison to break ties
+			if blockHashVotes[blockNum][hashStr] > blockVotingPower[blockNum] ||
+				(blockHashVotes[blockNum][hashStr] == blockVotingPower[blockNum] &&
+					hashStr < common.BytesToHash(blockToHash[blockNum]).String()) {
+				blockVotingPower[blockNum] = blockHashVotes[blockNum][hashStr]
+				blockToHash[blockNum] = blockHash
 			}
-
-			hashToAggregatedProposersHash[hash] = crypto.Keccak256(
-				hashToAggregatedProposersHash[hash],
-				[]byte{'|'},
-				vote.Validator.Address,
-			)
-
-			if _, ok := hashVoters[hash]; !ok {
-				hashVoters[hash] = []string{}
-			}
-
-			hashVoters[hash] = append(hashVoters[hash], valAddr)
 		}
 	}
 
-	var maxVotingPower int64
-	var maxHash string
-	for hash, votingPower := range hashToVotingPower {
-		if votingPower > maxVotingPower {
-			maxVotingPower = votingPower
-			maxHash = hash
-		} else if votingPower == maxVotingPower &&
-			len(hashToProp[hash].BlockHashes) > len(hashToProp[maxHash].BlockHashes) {
-			maxHash = hash
+	// Find blocks with majority support - use a slice for deterministic ordering
+	var blockNumbers []uint64
+	for blockNum := range blockVotingPower {
+		blockNumbers = append(blockNumbers, blockNum)
+	}
+	sort.Slice(blockNumbers, func(i, j int) bool {
+		return blockNumbers[i] < blockNumbers[j]
+	})
+
+	var majorityBlocks []uint64
+	for _, blockNum := range blockNumbers {
+		if blockVotingPower[blockNum] >= majorityVP {
+			majorityBlocks = append(majorityBlocks, blockNum)
 		}
 	}
 
-	// If we have at least 2/3 voting power for one milestone proposition, we return it
-	majorityVP := totalVotingPower * 2 / 3
-	if maxVotingPower >= majorityVP {
-
-		voters := hashVoters[maxHash]
-		sort.SliceStable(voters, func(i, j int) bool {
-			return valAddressToVotingPower[voters[i]] > valAddressToVotingPower[voters[j]]
-		})
-
-		if len(voters) == 0 {
-			return nil, nil, "", fmt.Errorf("no voters found for majority milestone proposition")
-		}
-
-		return hashToProp[maxHash], hashToAggregatedProposersHash[maxHash], voters[0], nil
+	if len(majorityBlocks) == 0 {
+		logger.Debug("No blocks found with majority support")
+		return nil, nil, "", nil
 	}
 
-	logger.Debug("No majority milestone proposition found", "maxVotingPower", maxVotingPower, "majorityVP", majorityVP, "milestonePropositions", hashToProp)
+	startBlock := uint64(0)
 
-	return nil, nil, "", nil
-}
+	// Check if we have a block that starts exactly from lastEndBlock + 1
+	if lastEndBlock != nil {
+		startBlock = *lastEndBlock + 1
+	}
 
-func SetPendingMilestoneProposition(prop *sidetxs.MilestoneProposition) {
-	pendingMilestoneProposition = prop
-}
+	// Check if startBlock is in majorityBlocks
+	startBlockFound := false
+	for _, blockNum := range majorityBlocks {
+		if blockNum == startBlock {
+			startBlockFound = true
+			break
+		}
+	}
 
-func GetPendingMilestoneProposition() *sidetxs.MilestoneProposition {
-	return pendingMilestoneProposition
+	if !startBlockFound {
+		logger.Debug("No blocks with majority support starting at requested block",
+			"requestedStartBlock", startBlock)
+		return nil, nil, "", nil
+	}
+
+	// Find the first continuous range starting from startBlock
+	endBlock := startBlock
+	for i := 0; i < len(majorityBlocks); i++ {
+		if majorityBlocks[i] == startBlock {
+			// Find continuous blocks after startBlock
+			for j := i + 1; j < len(majorityBlocks); j++ {
+				if majorityBlocks[j] == endBlock+1 {
+					endBlock = majorityBlocks[j]
+				} else {
+					break
+				}
+			}
+			break
+		}
+	}
+
+	blockCount := endBlock - startBlock + 1
+	blockHashes := make([][]byte, 0, blockCount)
+	for i := startBlock; i <= endBlock; i++ {
+		blockHashes = append(blockHashes, blockToHash[i])
+	}
+
+	// Find validators who support the entire winning range
+	var supportingValidatorList []string
+	for valAddr, blocks := range validatorVotes {
+		supports := true
+		for blockNum := startBlock; blockNum <= endBlock; blockNum++ {
+			hash, hasBlock := blocks[blockNum]
+			if !hasBlock || !bytes.Equal(hash, blockToHash[blockNum]) {
+				supports = false
+				break
+			}
+		}
+		if supports {
+			supportingValidatorList = append(supportingValidatorList, valAddr)
+		}
+	}
+
+	// Sort validators deterministically
+	sort.Strings(supportingValidatorList)
+
+	// Verify that we still have 2/3 majority after filtering
+	totalSupportingPower := int64(0)
+	for _, valAddr := range supportingValidatorList {
+		totalSupportingPower += valAddressToVotingPower[valAddr]
+	}
+
+	if totalSupportingPower < majorityVP {
+		logger.Debug("After filtering validators, no range has 2/3 majority support",
+			"totalSupportingPower", totalSupportingPower,
+			"requiredPower", majorityVP)
+		return nil, nil, "", nil
+	}
+
+	// Additional sort by voting power (stable to preserve string order when tied)
+	sort.SliceStable(supportingValidatorList, func(i, j int) bool {
+		return valAddressToVotingPower[supportingValidatorList[i]] > valAddressToVotingPower[supportingValidatorList[j]]
+	})
+
+	if len(supportingValidatorList) == 0 {
+		return nil, nil, "", fmt.Errorf("no validators support the winning range")
+	}
+
+	// Generate aggregated proposers hash from supporting validators
+	aggregatedProposersHash := []byte{}
+	for _, valAddr := range supportingValidatorList {
+		aggregatedProposersHash = crypto.Keccak256(
+			aggregatedProposersHash,
+			[]byte{'|'},
+			validatorAddresses[valAddr],
+		)
+	}
+
+	// Create final proposition
+	proposition := &sidetxs.MilestoneProposition{
+		BlockHashes:      blockHashes,
+		StartBlockNumber: startBlock,
+	}
+
+	logger.Debug("Found majority milestone proposition",
+		"startBlock", startBlock,
+		"endBlock", endBlock,
+		"blockCount", blockCount,
+		"supportingValidators", len(supportingValidatorList))
+
+	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
 func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) ([][]byte, error) {

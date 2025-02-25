@@ -389,7 +389,23 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, errors.New("no validators found")
 	}
 
-	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validators, extVoteInfo, logger)
+	hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
+	if err != nil {
+		logger.Error("Error occurred while checking for the last milestone", "error", err)
+		return nil, err
+	}
+
+	var lastEndBlock *uint64 = nil
+	if hasMilestone {
+		lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
+		if err != nil {
+			logger.Error("Error occurred while fetching the last milestone", "error", err)
+			return nil, err
+		}
+		lastEndBlock = &lastMilestone.EndBlock
+	}
+
+	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validators, extVoteInfo, logger, lastEndBlock)
 	if err != nil {
 		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
 		return nil, err
@@ -402,66 +418,29 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
-		hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
-		if err != nil {
-			logger.Error("Error occurred while checking for the last milestone", "error", err)
+		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
+
+		logger.Debug("Adding milestone", "hashes", hashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1), "proposer", proposer)
+
+		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
+			Proposer:    proposer,
+			Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
+			StartBlock:  majorityMilestone.StartBlockNumber,
+			EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
+			BorChainId:  params.ChainParams.BorChainId,
+			MilestoneId: common.Bytes2Hex(aggregatedProposers),
+			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
+		}); err != nil {
+			logger.Error("Error occurred while adding milestone", "error", err)
 			return nil, err
 		}
 
-		addMilestone := func() error {
-			addMilestoneCtx, msCache := app.cacheTxContext(ctx)
-
-			logger.Debug("Adding milestone", "hashes", hashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)), "proposer", proposer)
-
-			if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
-				Proposer:    proposer,
-				Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
-				StartBlock:  majorityMilestone.StartBlockNumber,
-				EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
-				BorChainId:  params.ChainParams.BorChainId,
-				MilestoneId: common.Bytes2Hex(aggregatedProposers),
-				Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
-			}); err != nil {
-				logger.Error("Error occurred while adding milestone", "error", err)
-				return err
-			}
-
-			if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
-				logger.Error("error in setting milestone block number", "error", err)
-				return err
-			}
-
-			msCache.Write()
-			return nil
+		if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
+			logger.Error("error in setting milestone block number", "error", err)
+			return nil, err
 		}
 
-		if hasMilestone {
-			lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
-			if err != nil {
-				logger.Error("Error occurred while fetching the last milestone", "error", err)
-				return nil, err
-			}
-
-			if lastMilestone.EndBlock+1 == majorityMilestone.StartBlockNumber {
-				if err := addMilestone(); err != nil {
-					logger.Error("Error occurred while adding milestone", "error", err)
-					return nil, err
-				}
-			} else {
-				logger.Warn("Non-consecutive milestone", "last milestone", lastMilestone.EndBlock, "majority milestone", majorityMilestone.StartBlockNumber)
-			}
-		} else {
-			if majorityMilestone.StartBlockNumber == 0 {
-				if err := addMilestone(); err != nil {
-					logger.Error("Error occurred while adding milestone", "error", err)
-					return nil, err
-				}
-			} else {
-				logger.Warn("Non-zero start block for the first milestone", "start block", majorityMilestone.StartBlockNumber)
-
-				milestoneAbci.SetPendingMilestoneProposition(nil)
-			}
-		}
+		msCache.Write()
 	}
 
 	// tally votes
