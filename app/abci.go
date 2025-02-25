@@ -458,6 +458,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				}
 			} else {
 				logger.Warn("Non-zero start block for the first milestone", "start block", majorityMilestone.StartBlockNumber)
+
+				milestoneAbci.SetPendingMilestoneProposition(nil)
 			}
 		}
 	}
