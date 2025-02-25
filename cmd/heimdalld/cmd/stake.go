@@ -22,6 +22,10 @@ func StakeCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
 			helper.InitHeimdallConfig("")
 
 			validatorStr := viper.GetString(stakingcli.FlagValidatorAddress)
@@ -90,6 +94,10 @@ func ApproveCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			clientCtx, err := client.GetClientTxContext(cmd)
+			if err != nil {
+				return err
+			}
+
 			helper.InitHeimdallConfig("")
 
 			stakeAmountStr := viper.GetString(stakingcli.FlagAmount)
