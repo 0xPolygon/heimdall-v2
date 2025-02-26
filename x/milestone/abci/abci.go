@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"math/big"
 	"sort"
 
 	"cosmossdk.io/log"
@@ -192,53 +191,16 @@ func GetPendingMilestoneProposition() *sidetxs.MilestoneProposition {
 }
 
 func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
-	latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get latest header: %w", err)
-	}
-
-	if latestHeader == nil {
-		return nil, fmt.Errorf("failed to get latest header")
-	}
-
-	if startBlock > latestHeader.Number.Uint64() {
-		return nil, fmt.Errorf("start block number %d is greater than latest block number %d", startBlock, latestHeader.Number.Uint64())
-	}
-
 	result := make([][]byte, 0)
-	latestBlockNumber := latestHeader.Number.Uint64()
 
-	// +1 Because its inclusive range on both sides, 10-0=10 but these are 11 blocks
-	if (latestBlockNumber-startBlock)+1 > maxBlocksInProposition {
-		fetchBlock := startBlock + maxBlocksInProposition - 1
-		latestHeader, err = contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(fetchBlock)))
-		if err != nil {
-			return nil, fmt.Errorf("failed to get header for block number %d: %w", fetchBlock, err)
-		}
-
-		if latestHeader == nil {
-			return nil, fmt.Errorf("failed to get header for block number %d", fetchBlock)
-		}
-
-		latestBlockNumber = latestHeader.Number.Uint64()
+	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get headers")
 	}
 
-	for startBlock < latestBlockNumber {
-		header, err := contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(startBlock))
-		if err != nil {
-			return nil, fmt.Errorf("failed to get header for block number %d: %w", startBlock, err)
-		}
-
-		if header == nil {
-			return nil, fmt.Errorf("failed to get header for block number %d", startBlock)
-		}
-
-		result = append(result, header.Hash().Bytes())
-
-		startBlock++
+	for _, h := range headers {
+		result = append(result, h.Hash().Bytes())
 	}
-
-	result = append(result, latestHeader.Hash().Bytes())
 
 	return result, nil
 }
