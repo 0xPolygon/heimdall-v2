@@ -561,8 +561,7 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 	var response []*ethTypes.Header
 	for i, elem := range batchElems {
 		if elem.Error != nil {
-			// ignore errors since it can be block not found
-			continue
+			break
 		}
 		response = append(response, result[i])
 	}
