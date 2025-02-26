@@ -2,27 +2,28 @@ package abci
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"sort"
 
 	"cosmossdk.io/log"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*sidetxs.MilestoneProposition, error) {
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
-	if err != nil && err != types.ErrNoMilestoneFound {
+	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
 	}
 
@@ -128,7 +129,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 	}
 
 	// Find blocks with majority support - use a slice for deterministic ordering
-	var blockNumbers []uint64
+	blockNumbers := make([]uint64, 0, len(blockVotingPower))
 	for blockNum := range blockVotingPower {
 		blockNumbers = append(blockNumbers, blockNum)
 	}
