@@ -68,6 +68,9 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 	validatorAddresses := make(map[string][]byte)
 	valAddressToVotingPower := make(map[string]int64)
 
+	// Track which validators we've already processed to prevent duplicate votes
+	processedValidators := make(map[string]bool)
+
 	totalVotingPower := validatorSet.GetTotalVotingPower()
 	majorityVP := totalVotingPower*2/3 + 1
 
@@ -90,6 +93,15 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 		if err != nil {
 			return nil, nil, "", err
 		}
+
+		// Skip if we've already processed a vote from this validator
+		if processedValidators[valAddr] {
+			logger.Debug("Skipping duplicate vote from validator", "validator", valAddr)
+			continue
+		}
+
+		// Mark this validator as processed
+		processedValidators[valAddr] = true
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
