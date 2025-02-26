@@ -560,7 +560,7 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 	// Collect the results.
 	var response []*ethTypes.Header
 	for i, elem := range batchElems {
-		if elem.Error != nil {
+		if elem.Error != nil || result[i] == nil {
 			break
 		}
 		response = append(response, result[i])
