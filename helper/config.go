@@ -491,13 +491,13 @@ func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigrati
 	return result, found
 }
 
-// DecorateWithHeimdallFlags adds persistent flags for heimdall-config and bind flags with command
+// DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command
 func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, caller string) {
-	// add with-heimdall-config flag
+	// add with-app-config flag
 	cmd.PersistentFlags().String(
 		WithHeimdallConfigFlag,
 		"",
-		"Override of Heimdall config file (default <home>/config/config.json)",
+		"Override of Heimdall app config file (default <home>/config/config.json)",
 	)
 
 	if err := v.BindPFlag(WithHeimdallConfigFlag, cmd.PersistentFlags().Lookup(WithHeimdallConfigFlag)); err != nil {
