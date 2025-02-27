@@ -1,7 +1,6 @@
 package heimdalld
 
 import (
-	"context"
 	"os"
 	"path"
 
@@ -142,11 +141,7 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	go func() {
-		for {
-			if err := tempApp.ProduceELPayload(context.Background()); err != nil {
-				logger.Error("failed to produce EL block", "err", err)
-			}
-		}
+		tempApp.ProduceELPayload(rootCmd.Context())
 	}()
 	return rootCmd
 }

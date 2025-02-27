@@ -14,32 +14,34 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func (app *HeimdallApp) ProduceELPayload(ctx context.Context) error {
+func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
+	logger := app.Logger()
 	var blockCtx nextELBlockCtx
-	select {
-	case blockCtx = <-app.nextBlockChan:
-		res, err := app.retryBuildNextPayload(blockCtx.context, blockCtx.height+1)
-		if err != nil {
-			return err
+	for {
+		select {
+		case blockCtx = <-app.nextBlockChan:
+			res, err := app.retryBuildNextPayload(blockCtx.context, blockCtx.height+1)
+			if err != nil {
+				logger.Error("error building next payload", "error", err)
+				res = nil
+			}
+
+			app.nextExecPayload = res
+
+		case blockCtx = <-app.currBlockChan:
+			res, err := app.retryBuildLatestPayload(blockCtx.context, blockCtx.height)
+			if err != nil {
+				logger.Error("error building latest payload", "error", err)
+				res = nil
+			}
+
+			app.latestExecPayload = res
+
+		case <-ctx.Done():
+			return
+
+		default:
 		}
-
-		app.nextExecPayload = res
-		return nil
-
-	case blockCtx = <-app.currBlockChan:
-		res, err := app.retryBuildLatestPayload(blockCtx.context, blockCtx.height)
-		if err != nil {
-			return err
-		}
-
-		app.latestExecPayload = res
-		return nil
-
-	case <-ctx.Done():
-		return nil
-
-	default:
-		return nil
 	}
 }
 
