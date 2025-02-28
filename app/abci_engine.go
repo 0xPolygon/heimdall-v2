@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -17,9 +18,13 @@ import (
 func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	logger := app.Logger()
 	var blockCtx nextELBlockCtx
+	logger.Info("##### HERE Wainting next block", "addressOfApp", fmt.Sprintf("%p", app))
 	for {
 		select {
 		case blockCtx = <-app.nextBlockChan:
+			logger.Info("#####")
+			logger.Info("Received next blockchan")
+			logger.Info("#####")
 			res, err := app.retryBuildNextPayload(blockCtx.context, blockCtx.height)
 			if err != nil {
 				logger.Error("error building next payload", "error", err)
@@ -29,6 +34,9 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 			app.nextExecPayload = res
 
 		case blockCtx = <-app.currBlockChan:
+			logger.Info("#####")
+			logger.Info("Received next blockchan")
+			logger.Info("#####")
 			res, err := app.retryBuildLatestPayload(blockCtx.context, blockCtx.height)
 			if err != nil {
 				logger.Error("error building latest payload", "error", err)
@@ -38,9 +46,10 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 			app.latestExecPayload = res
 
 		case <-ctx.Done():
+			logger.Info("#####")
+			logger.Info("ctx Done")
+			logger.Info("#####")
 			return
-
-		default:
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -12,13 +11,9 @@ import (
 )
 
 func main() {
-	rootCmd, heimdallApp := heimdalld.NewRootCmd()
+	rootCmd, _ := heimdalld.NewRootCmd()
 	if err := svrcmd.Execute(rootCmd, "HD", app.DefaultNodeHome); err != nil {
 		_, _ = fmt.Fprintln(rootCmd.OutOrStderr(), err)
 		os.Exit(1)
 	}
-
-	go func(ctx context.Context) {
-		heimdallApp.ProduceELPayload(ctx)
-	}(rootCmd.Context())
 }

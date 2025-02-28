@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -464,6 +465,11 @@ func NewHeimdallApp(
 
 	app.nextBlockChan = make(chan nextELBlockCtx)
 	app.currBlockChan = make(chan nextELBlockCtx)
+
+	go func(ctx context.Context) {
+		app.ProduceELPayload(ctx)
+	}(context.Background())
+
 	return app
 }
 

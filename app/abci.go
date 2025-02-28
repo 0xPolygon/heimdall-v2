@@ -171,6 +171,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		logger := app.Logger()
 		start := time.Now()
 
+		logger.Info("##### Address of app", "addressOfApp", fmt.Sprintf("%p", app))
 		// check if there are any txs in the request
 		if len(req.Txs) < 1 {
 			logger.Error("unexpected behaviour, no txs found in the proposal")
