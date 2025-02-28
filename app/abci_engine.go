@@ -20,7 +20,7 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	for {
 		select {
 		case blockCtx = <-app.nextBlockChan:
-			res, err := app.retryBuildNextPayload(blockCtx.context, blockCtx.height+1)
+			res, err := app.retryBuildNextPayload(blockCtx.context, blockCtx.height)
 			if err != nil {
 				logger.Error("error building next payload", "error", err)
 				res = nil
