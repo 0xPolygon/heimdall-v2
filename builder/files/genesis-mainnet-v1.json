@@ -4,8 +4,8 @@
   "chain_id": "heimdall-137",
   "consensus_params": {
     "block": {
-      "max_bytes": "22020096",
-      "max_gas": "25000000",
+      "max_bytes": "2097152",
+      "max_gas": "10000000",
       "time_iota_ms": "1000"
     },
     "evidence": {
