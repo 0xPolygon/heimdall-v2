@@ -1,0 +1,39 @@
+name: Spell Checker
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y codespell
+
+      - name: Run codespell
+        run: codespell -w --skip="*.pulsar.go,*.pb.go,*.pb.gw.go,*.json,*.git,*.js,go.sum,go.mod,.github,*.css" --ignore-words=.github/.codespellignore
+
+      - name: Create Pull Request for spelling fixes
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: fix spelling errors'
+          branch: 'ci/fix-typos'
+          delete-branch: true
+          title: 'chore: fix spelling errors'
+          body: |
+            This PR fixes typos in the codebase.
+            Please review and merge if everything looks good.
+            If there are proto changes, run `make proto-gen` and commit them.
+          labels: 'spellcheck'
