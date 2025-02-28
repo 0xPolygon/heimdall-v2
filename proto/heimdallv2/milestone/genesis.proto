@@ -1,13 +1,6 @@
 syntax = "proto3";
 package heimdallv2.milestone;
 
-import "heimdallv2/milestone/milestone.proto";
-import "amino/amino.proto";
-import "gogoproto/gogo.proto";
-
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
-message GenesisState {
-  Params params = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-}
+message GenesisState {}

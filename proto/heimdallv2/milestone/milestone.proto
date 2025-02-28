@@ -4,7 +4,6 @@ package heimdallv2.milestone;
 import "amino/amino.proto";
 import "cosmos_proto/cosmos.proto";
 import "gogoproto/gogo.proto";
-import "google/protobuf/duration.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
@@ -29,15 +28,10 @@ message MilestoneCount {
   uint64 count = 1 [ (amino.dont_omitempty) = true ];
 }
 
-message Params {
+message MilestoneProposition {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
-  uint64 min_milestone_length = 1 [ (amino.dont_omitempty) = true ];
-  google.protobuf.Duration milestone_buffer_time = 2 [
-    (gogoproto.stdduration) = true,
-    (gogoproto.nullable) = false,
-    (amino.dont_omitempty) = true
-  ];
-  uint64 milestone_buffer_length = 3 [ (amino.dont_omitempty) = true ];
-  uint64 milestone_tx_confirmations = 4 [ (amino.dont_omitempty) = true ];
+
+  repeated bytes block_hashes = 1 [ (amino.dont_omitempty) = true ];
+  uint64 start_block_number = 2 [ (amino.dont_omitempty) = true ];
 }

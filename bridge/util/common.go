@@ -17,7 +17,6 @@ import (
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	"github.com/pkg/errors"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -39,7 +38,6 @@ const (
 	MilestoneCountURL       = "/milestone/count"
 	ChainManagerParamsURL   = "/chainmanager/params"
 	ProposersURL            = "/stake/proposers/%v"
-	MilestoneProposersURL   = "/milestone/proposer/%v"
 	BufferedCheckpointURL   = "/checkpoints/buffer"
 	LatestCheckpointURL     = "/checkpoints/latest"
 	LatestMilestoneURL      = "/milestone/latest"
@@ -121,42 +119,6 @@ func IsProposer(cdc codec.Codec) (bool, error) {
 	return false, nil
 }
 
-// IsMilestoneProposer checks if we are the milestone proposer
-func IsMilestoneProposer(cdc codec.Codec) (bool, error) {
-	logger := Logger()
-
-	count := uint64(1)
-
-	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
-	if err != nil {
-		logger.Error("Error fetching milestone proposers", "url", MilestoneProposersURL, "error", err)
-		return false, err
-	}
-
-	var response milestoneTypes.QueryMilestoneProposerResponse
-	if err := cdc.UnmarshalJSON(result, &response); err != nil {
-		logger.Error("error unmarshalling milestone proposer slice", "error", err)
-		return false, err
-	}
-
-	if len(response.Proposers) == 0 {
-		logger.Error("length of proposer list is 0")
-		return false, errors.Errorf("Length of proposer list is 0")
-	}
-
-	ac := addressCodec.NewHexCodec()
-	signerBytes, err := ac.StringToBytes(response.Proposers[0].Signer)
-	if err != nil {
-		logger.Error("Error converting signer string to bytes", "error", err)
-		return false, err
-	}
-	if bytes.Equal(signerBytes, helper.GetAddress()) {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 // IsInProposerList checks if we are in the current proposers list
 func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	logger := Logger()
@@ -182,42 +144,6 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 
 	for i := 1; i <= int(count) && i < len(proposers.Proposers); i++ {
 		signerBytes, err := ac.StringToBytes(proposers.Proposers[i].Signer)
-		if err != nil {
-			logger.Error("Error converting signer string to bytes", "error", err)
-			return false, err
-		}
-		if bytes.Equal(signerBytes, helper.GetAddress()) {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-// IsInMilestoneProposerList checks if we are in the current milestone proposers list
-func IsInMilestoneProposerList(count uint64, cdc codec.Codec) (bool, error) {
-	logger := Logger()
-
-	logger.Debug("Skipping proposers", "count", strconv.FormatUint(count, 10))
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(MilestoneProposersURL, strconv.FormatUint(count, 10))))
-	if err != nil {
-		logger.Error("Unable to send request for next proposers", "url", MilestoneProposersURL, "error", err)
-		return false, err
-	}
-
-	var milestoneProposers milestoneTypes.QueryMilestoneProposerResponse
-	if err := cdc.UnmarshalJSON(response, &milestoneProposers); err != nil {
-		logger.Error("Error unmarshalling validator data ", "error", err)
-		return false, err
-	}
-
-	logger.Debug("Fetched proposers list", "numberOfProposers", count)
-
-	ac := addressCodec.NewHexCodec()
-
-	for _, proposer := range milestoneProposers.Proposers {
-		signerBytes, err := ac.StringToBytes(proposer.Signer)
 		if err != nil {
 			logger.Error("Error converting signer string to bytes", "error", err)
 			return false, err
