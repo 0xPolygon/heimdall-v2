@@ -120,7 +120,7 @@ func initCometBFTConfig() *cmtcfg.Config {
 	customCMTConfig.Consensus.TimeoutPrecommitDelta = 200 * time.Millisecond
 	customCMTConfig.Consensus.TimeoutCommit = 500 * time.Millisecond
 	customCMTConfig.Consensus.PeerGossipSleepDuration = 25 * time.Millisecond
-	customCMTConfig.Consensus.PeerQueryMaj23SleepDuration = 500 * time.Millisecond
+	customCMTConfig.Consensus.PeerQueryMaj23SleepDuration = 200 * time.Millisecond
 
 	return customCMTConfig
 }
