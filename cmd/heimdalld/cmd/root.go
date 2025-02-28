@@ -36,7 +36,7 @@ type EncodingConfig struct {
 
 // NewRootCmd creates a new root command for heimdalld. It is called once in the
 // main function.
-func NewRootCmd() *cobra.Command {
+func NewRootCmd() (*cobra.Command, *app.HeimdallApp) {
 	dataDir := path.Join(viper.GetString(cli.HomeFlag), "data")
 	db, err := dbm.NewDB("application", dbm.GoLevelDBBackend, dataDir)
 	if err != nil {
@@ -140,8 +140,5 @@ func NewRootCmd() *cobra.Command {
 		panic(err)
 	}
 
-	go func() {
-		tempApp.ProduceELPayload(rootCmd.Context())
-	}()
-	return rootCmd
+	return rootCmd, tempApp
 }
