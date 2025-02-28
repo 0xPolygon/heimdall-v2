@@ -1557,14 +1557,7 @@
       },
       "constitution": "This chain has no constitution."
     },
-    "milestone": {
-      "params": {
-        "min_milestone_length": "12",
-        "milestone_buffer_time": "256s",
-        "milestone_buffer_length": "60",
-        "milestone_tx_confirmations": "16"
-      }
-    },
+    "milestone": {},
     "sidechannel": {
       "past_commits": []
     },
@@ -1682,6 +1675,6 @@
       "app": "0"
     }
   },
-  "genesis_time": "2025-02-17T10:25:27.144569Z",
+  "genesis_time": "2024-09-13T08:54:11.342700084Z",
   "initial_height": "1"
 }

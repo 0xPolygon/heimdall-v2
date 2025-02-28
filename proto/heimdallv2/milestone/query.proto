@@ -1,21 +1,15 @@
 syntax = "proto3";
 package heimdallv2.milestone;
 
+import "amino/amino.proto";
+import "cosmos/query/v1/query.proto";
 import "gogoproto/gogo.proto";
 import "google/api/annotations.proto";
-import "cosmos/query/v1/query.proto";
-import "amino/amino.proto";
 import "heimdallv2/milestone/milestone.proto";
-import "heimdallv2/stake/validator.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
 service Query {
-  // GetMilestoneParams queries for the x/milestone parameters
-  rpc GetMilestoneParams(QueryParamsRequest) returns (QueryParamsResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/params";
-  }
   // GetMilestoneCount queries for the milestone count
   rpc GetMilestoneCount(QueryCountRequest) returns (QueryCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -27,49 +21,18 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/latest";
   }
-  // GetLatestNoAckMilestone query for the LatestNoAck
-  rpc GetLatestNoAckMilestone(QueryLatestNoAckMilestoneRequest)
-      returns (QueryLatestNoAckMilestoneResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/last-no-ack";
-  }
   // GetMilestoneByNumber queries for the milestone based on the number
   rpc GetMilestoneByNumber(QueryMilestoneRequest)
       returns (QueryMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/{number}";
   }
-  // GetNoAckMilestoneById query for the no-ack by id
-  rpc GetNoAckMilestoneById(QueryNoAckMilestoneByIDRequest)
-      returns (QueryNoAckMilestoneByIDResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/no-ack/{id}";
-  }
-  // GetMilestoneProposerByTimes queries for the milestone proposer
-  rpc GetMilestoneProposerByTimes(QueryMilestoneProposerRequest)
-      returns (QueryMilestoneProposerResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/proposer/{times}";
-  }
-}
-
-message QueryParamsRequest {}
-
-message QueryParamsResponse {
-  Params params = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 message QueryCountRequest {}
 
 message QueryCountResponse {
   uint64 count = 1 [ (amino.dont_omitempty) = true ];
-}
-
-message QueryLastNoAckRequest {}
-
-message QueryLastNoAckResponse {
-  uint64 result = 1 [ (amino.dont_omitempty) = true ];
 }
 
 message QueryLatestMilestoneRequest {}
@@ -85,28 +48,5 @@ message QueryMilestoneRequest {
 
 message QueryMilestoneResponse {
   Milestone milestone = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-}
-
-message QueryLatestNoAckMilestoneRequest {}
-
-message QueryLatestNoAckMilestoneResponse {
-  string result = 1 [ (amino.dont_omitempty) = true ];
-}
-
-message QueryNoAckMilestoneByIDRequest {
-  string id = 1 [ (amino.dont_omitempty) = true ];
-}
-
-message QueryNoAckMilestoneByIDResponse {
-  bool result = 1 [ (amino.dont_omitempty) = true ];
-}
-
-message QueryMilestoneProposerRequest {
-  uint64 times = 1 [ (amino.dont_omitempty) = true ];
-}
-
-message QueryMilestoneProposerResponse {
-  repeated heimdallv2.stake.Validator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

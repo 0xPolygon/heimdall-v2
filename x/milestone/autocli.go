@@ -15,12 +15,6 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: milestone.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
-					RpcMethod:      "GetMilestoneParams",
-					Use:            "get-params",
-					Short:          "Get milestone params",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
-				},
-				{
 					RpcMethod:      "GetMilestoneCount",
 					Use:            "get-count",
 					Short:          "Get milestone count",
@@ -37,48 +31,6 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Use:            "get-milestone-by-number",
 					Short:          "Get milestone by number",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "number"}},
-				},
-				{
-					RpcMethod:      "GetMilestoneProposerByTimes",
-					Use:            "get-milestone-proposer",
-					Short:          "Get milestone proposer",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "times"}},
-				},
-				{
-					RpcMethod:      "GetLatestNoAckMilestone",
-					Use:            "get-latest-no-ack-milestone",
-					Short:          "Get latest no ack milestone",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
-				},
-				{
-					RpcMethod:      "GetNoAckMilestoneById",
-					Use:            "get-no-ack-milestone-by-id",
-					Short:          "Get no ack milestone by id",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "id"}},
-				},
-			},
-		},
-		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: milestone.Msg_ServiceDesc.ServiceName,
-			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
-				{
-					RpcMethod: "Milestone",
-					Use:       "milestone [proposer] [startBlock] [endBlock] [hash] [borChainId] [milestoneId]",
-					Short:     "Send milestone tx",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "proposer"},
-						{ProtoField: "start_block"},
-						{ProtoField: "end_block"},
-						{ProtoField: "hash"},
-						{ProtoField: "bor_chain_id"},
-						{ProtoField: "milestone_id"},
-					},
-				},
-				{
-					RpcMethod:      "MilestoneTimeout",
-					Use:            "milestone-timeout",
-					Short:          "Send milestone timeout tx",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 			},
 		},

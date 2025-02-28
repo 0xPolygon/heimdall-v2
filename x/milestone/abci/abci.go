@@ -21,7 +21,7 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*sidetxs.MilestoneProposition, error) {
+func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*types.MilestoneProposition, error) {
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
@@ -49,7 +49,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	milestoneProp := &sidetxs.MilestoneProposition{
+	milestoneProp := &types.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: propStartBlock,
 	}
@@ -57,7 +57,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	return milestoneProp, nil
 }
 
-func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*sidetxs.MilestoneProposition, []byte, string, error) {
+func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*types.MilestoneProposition, []byte, string, error) {
 	ac := address.HexCodec{}
 
 	// Track voting power per block number
@@ -257,7 +257,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 	}
 
 	// Create final proposition
-	proposition := &sidetxs.MilestoneProposition{
+	proposition := &types.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: startBlock,
 	}
@@ -284,6 +284,20 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 	}
 
 	return result, nil
+}
+
+func ValidateMilestoneProposition(ctx sdk.Context, milestoneProp *types.MilestoneProposition) error {
+	if len(milestoneProp.BlockHashes) > maxBlocksInProposition {
+		return fmt.Errorf("too many blocks in proposition")
+	}
+
+	for _, blockHash := range milestoneProp.BlockHashes {
+		if len(blockHash) == 0 || len(blockHash) > common.HashLength {
+			return fmt.Errorf("invalid block hash length")
+		}
+	}
+
+	return nil
 }
 
 const maxBlocksInProposition = 10

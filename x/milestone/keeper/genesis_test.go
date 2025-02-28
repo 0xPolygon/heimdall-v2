@@ -8,14 +8,10 @@ func (s *KeeperTestSuite) TestInitExportGenesis() {
 	ctx, keeper := s.ctx, s.milestoneKeeper
 	require := s.Require()
 
-	params := types.DefaultParams()
-	genesisState := types.NewGenesisState(
-		params,
-	)
+	genesisState := types.NewGenesisState()
 
 	keeper.InitGenesis(ctx, &genesisState)
 
-	actualParams := keeper.ExportGenesis(ctx)
+	require.NotNil(keeper.ExportGenesis(ctx))
 
-	require.True(actualParams.Params.Equal(params))
 }

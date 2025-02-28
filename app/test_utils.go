@@ -159,7 +159,7 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 	t.Helper()
 	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
 	require.NoError(t, err)
-	consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
+	consolidatedSideTxRes := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{},
 		Height:          height - 1,
 	}
@@ -211,7 +211,7 @@ func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxRespo
 		responses = append(responses, r...)
 	}
 
-	sideTxResponses := sidetxs.ConsolidatedSideTxResponse{
+	sideTxResponses := sidetxs.VoteExtension{
 		SideTxResponses: responses,
 		Height:          VoteExtBlockHeight,
 	}

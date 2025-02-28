@@ -86,15 +86,11 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
 
-		// TODO: Add some basic check for the voteExtension.MilestoneProposition
-
-		consolidatedSideTxResponse := voteExtension.ConsolidatedSideTxResponse
-
-		if consolidatedSideTxResponse.Height != reqHeight-1 {
-			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, consolidatedSideTxResponse.Height)
+		if voteExtension.Height != reqHeight-1 {
+			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, voteExtension.Height)
 		}
 
-		txHash, err := validateSideTxResponses(consolidatedSideTxResponse.SideTxResponses)
+		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
 			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", valAddrStr, common.Bytes2Hex(txHash), err)
 		}
@@ -235,16 +231,14 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 			return nil, err
 		}
 
-		consolidateSideTxResult := ve.ConsolidatedSideTxResponse
-
-		if consolidateSideTxResult.Height != currentHeight-1 {
-			return nil, fmt.Errorf("invalid height received for vote extension, VeHeight should match CurrentHeight-1. VeHeight: %d, CurrentHeight: %d", consolidateSideTxResult.Height, currentHeight)
+		if ve.Height != currentHeight-1 {
+			return nil, fmt.Errorf("invalid height received for vote extension, VeHeight should match CurrentHeight-1. VeHeight: %d, CurrentHeight: %d", ve.Height, currentHeight)
 		}
 
 		// blockHash consistency check
 		if blockHash == nil {
 			// store the block hash from the first vote
-			blockHash = consolidateSideTxResult.BlockHash
+			blockHash = ve.BlockHash
 		} else {
 			ac := address.HexCodec{}
 			valAddr, err := ac.BytesToString(vote.Validator.Address)
@@ -252,10 +246,10 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 				return nil, err
 			}
 			// compare the current block hash with the stored block hash
-			if !bytes.Equal(blockHash, consolidateSideTxResult.BlockHash) {
+			if !bytes.Equal(blockHash, ve.BlockHash) {
 				logger.Error("invalid block hash found for vote extension",
 					"expectedBlockHash", common.Bytes2Hex(blockHash),
-					"receivedBlockHash", common.Bytes2Hex(consolidateSideTxResult.BlockHash),
+					"receivedBlockHash", common.Bytes2Hex(ve.BlockHash),
 					"validator", valAddr)
 				return nil, fmt.Errorf("mismatching block hash for vote extension from validator %s", valAddr)
 			}
@@ -272,7 +266,7 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 		validatorToTxMap[addr] = make(map[string]struct{})
 
 		// iterate through vote extensions and accumulate voting power for YES/NO/UNSPECIFIED votes
-		for _, res := range consolidateSideTxResult.SideTxResponses {
+		for _, res := range ve.SideTxResponses {
 			txHashStr := common.Bytes2Hex(res.TxHash)
 
 			if _, hasVoted := validatorToTxMap[addr][txHashStr]; hasVoted {
@@ -403,7 +397,7 @@ func ValidateNonRpVoteExtensions(
 		return nil
 	}
 
-	// Check if there are 2/3 voting power for one same extension
+	// Check if there is vote extension with majority voting power
 	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, stakeKeeper, logger)
 	if err != nil {
 		return err
@@ -488,7 +482,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 	return nil
 }
 
-// getMajorityNonRpVoteExtension returns the non-rp vote extension with atleast 2/3 voting power
+// getMajorityNonRpVoteExtension returns the non-rp vote extension with the majority voting power
 func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) ([]byte, error) {
 	// Fetch validatorSet from previous block
 	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)

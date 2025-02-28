@@ -540,7 +540,7 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 	rpcClient := c.BorChainClient.Client()
 
 	// Prepare a slice of batch elements.
-	var batchElems []rpc.BatchElem
+	batchElems := make([]rpc.BatchElem, 0, end-start+1)
 	result := make([]*ethTypes.Header, end-start+1)
 	for i := start; i <= end; i++ {
 		blockNumHex := fmt.Sprintf("0x%x", i)
@@ -558,7 +558,7 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 	}
 
 	// Collect the results.
-	var response []*ethTypes.Header
+	response := make([]*ethTypes.Header, 0, len(batchElems))
 	for i, elem := range batchElems {
 		if elem.Error != nil || result[i] == nil {
 			break
