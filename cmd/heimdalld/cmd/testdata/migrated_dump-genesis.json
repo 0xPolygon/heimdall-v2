@@ -35,7 +35,7 @@
       },
       "balances": [
         {
-          "address": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
+          "address": "0xfa7c0bb8762f56b63de6c9b7567ea7ca2cb70358",
           "coins": [
             {
               "denom": "matic",
@@ -44,7 +44,7 @@
           ]
         },
         {
-          "address": "0xfa7c0bb8762f56b63de6c9b7567ea7ca2cb70358",
+          "address": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
           "coins": [
             {
               "denom": "matic",
@@ -308,9 +308,10 @@
     },
     "chainmanager": {
       "params": {
+        "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "15005",
-          "heimdall_chain_id": "heimdall-sCCAH4",
+          "heimdall_chain_id": "heimdall-7nDxha",
           "pol_token_address": "0x675c1bd77f573aaf2df04ee7180a21a110d3d4fa",
           "root_chain_address": "0xa1a6f9ff932eba930db4a638e06ae0ae3c8fa2d1",
           "slash_manager_address": "0x0000000000000000000000000000000000000000",
@@ -320,8 +321,7 @@
           "state_sender_address": "0x3463e6b634e4d358b6c7212de3b1527b95bbc90c",
           "validator_set_address": "0x0000000000000000000000000000000000001000"
         },
-        "main_chain_tx_confirmations": "6",
-        "bor_chain_tx_confirmations": "10"
+        "main_chain_tx_confirmations": "6"
       }
     },
     "checkpoint": {
@@ -1547,7 +1547,7 @@
         "expedited_min_deposit": [
           {
             "denom": "pol",
-            "amount": "50000000000000000000"
+            "amount": "500000000000000000000"
           }
         ],
         "burn_vote_quorum": false,
@@ -1659,36 +1659,29 @@
       "topup_sequences": null
     }
   },
-  "chain_id": "heimdall-sCCAH4",
+  "chain_id": "heimdall-7nDxha",
   "consensus_params": {
+    "abci": {
+      "vote_extensions_enable_height": "1"
+    },
     "block": {
-      "max_bytes": "22020096",
+      "max_bytes": "102400",
       "max_gas": "25000000"
     },
     "evidence": {
       "max_age_duration": "172800000000000",
       "max_age_num_blocks": "100000",
-      "max_bytes": "1048576"
-    },
-    "params": {
-      "abci": {
-        "vote_extensions_enable_height": "1"
-      },
-      "validator": {
-        "pub_key_types": [
-          "secp256k1"
-        ]
-      },
-      "version": {
-        "app": "0"
-      }
+      "max_bytes": "10240"
     },
     "validator": {
       "pub_key_types": [
         "secp256k1"
       ]
+    },
+    "version": {
+      "app": "0"
     }
   },
-  "genesis_time": "2024-12-18T09:48:11.342700084Z",
-  "initial_height": "0"
+  "genesis_time": "2025-02-17T10:25:27.144569Z",
+  "initial_height": "1"
 }

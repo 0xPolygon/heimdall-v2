@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# TODO-HV2: test this script once app is ready, and integrate into CI
-
 host='localhost'
 
 echo "Transferring 1 ETH from ganache account[0] to all others..."

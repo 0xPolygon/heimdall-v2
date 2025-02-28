@@ -1,10 +1,12 @@
 #!/bin/bash
-
-# TODO-HV2: test this script once app is ready, and integrate into CI
-
 set -e
 
+echo "Starting the smoke test for the local docker devnet..."
+
+echo ""
 balanceInit=$(docker exec bor0 bash -c "bor attach /var/lib/bor/data/bor.ipc -exec 'Math.round(web3.fromWei(eth.getBalance(eth.accounts[0])))'")
+
+echo "Initial balance of first account: $balanceInit"
 
 stateSyncFound="false"
 checkpointFound="false"
@@ -25,6 +27,7 @@ do
         if [ "$stateSyncFound" != "true" ]; then
             stateSyncTime=$(( SECONDS - start_time ))
             stateSyncFound="true"
+            echo "State sync went through. Time taken: $(printf '%02dm:%02ds\n' $((stateSyncTime%3600/60)) $((stateSyncTime%60)))"
         fi
     fi
 
@@ -34,6 +37,7 @@ do
         if [ "$checkpointFound" != "true" ]; then
             checkpointTime=$(( SECONDS - start_time ))
             checkpointFound="true"
+            echo "Checkpoint went through. Time taken: $(printf '%02dm:%02ds\n' $((checkpointTime%3600/60)) $((checkpointTime%60)))"
         fi
     fi
 
