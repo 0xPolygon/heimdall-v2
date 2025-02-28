@@ -1665,8 +1665,8 @@
       "vote_extensions_enable_height": "1"
     },
     "block": {
-      "max_bytes": "102400",
-      "max_gas": "25000000"
+      "max_bytes": "2097152",
+      "max_gas": "10000000"
     },
     "evidence": {
       "max_age_duration": "172800000000000",
