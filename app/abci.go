@@ -12,7 +12,7 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 
-	commonStr "github.com/0xPolygon/heimdall-v2/common/string"
+	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -251,7 +251,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				// We don't want to halt consensus because of invalid milestone proposition
 			} else {
 				vt.MilestoneProposition = milestoneProp
-				logger.Debug("Proposed milestone", "hash", commonStr.HashesToString(milestoneProp.BlockHashes), "startBlock", milestoneProp.StartBlockNumber, "endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)))
+				logger.Debug("Proposed milestone", "hash", strutil.HashesToString(milestoneProp.BlockHashes), "startBlock", milestoneProp.StartBlockNumber, "endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)))
 			}
 		}
 
@@ -423,7 +423,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
-		logger.Debug("Adding milestone", "hashes", commonStr.HashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1), "proposer", proposer)
+		logger.Debug("Adding milestone", "hashes", strutil.HashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1), "proposer", proposer)
 
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
 			Proposer:    proposer,
