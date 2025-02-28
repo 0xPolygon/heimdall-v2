@@ -105,6 +105,9 @@ jobs:
             matic-cli/devnet/code/genesis-contracts/package-lock.json
             matic-cli/devnet/code/genesis-contracts/matic-contracts/package-lock.json
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
       - name: Bootstrap devnet
         run: |
           cd matic-cli
