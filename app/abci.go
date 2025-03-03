@@ -2,8 +2,10 @@ package app
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
@@ -425,7 +427,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		logger.Debug("Adding milestone", "hashes", strutil.HashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1), "proposer", proposer)
 
-		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
+		proposedMilestone := milestoneTypes.Milestone{
 			Proposer:    proposer,
 			Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
 			StartBlock:  majorityMilestone.StartBlockNumber,
@@ -433,10 +435,30 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			BorChainId:  params.ChainParams.BorChainId,
 			MilestoneId: common.Bytes2Hex(aggregatedProposers),
 			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
-		}); err != nil {
+		}
+		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, proposedMilestone); err != nil {
 			logger.Error("Error occurred while adding milestone", "error", err)
 			return nil, err
 		}
+		milestoneNumber, err := app.MilestoneKeeper.GetMilestoneCount(ctx)
+		if err != nil {
+			logger.Error("Error occurred while getting milestone number", "error", err)
+			return nil, err
+		}
+
+		ctx.EventManager().EmitEvent(sdk.Event{
+			Type: "NewMilestone",
+			Attributes: []abci.EventAttribute{
+				{Key: "proposer", Value: proposedMilestone.Proposer},
+				{Key: "hash", Value: hex.EncodeToString(proposedMilestone.Hash)},
+				{Key: "start_block", Value: strconv.FormatUint(proposedMilestone.StartBlock, 10)},
+				{Key: "end_block", Value: strconv.FormatUint(proposedMilestone.EndBlock, 10)},
+				{Key: "bor_chain_id", Value: proposedMilestone.BorChainId},
+				{Key: "milestone_id", Value: proposedMilestone.MilestoneId},
+				{Key: "timestamp", Value: strconv.FormatUint(proposedMilestone.Timestamp, 10)},
+				{Key: "number", Value: strconv.FormatUint(milestoneNumber, 10)},
+			},
+		})
 
 		if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
 			logger.Error("error in setting milestone block number", "error", err)
