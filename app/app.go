@@ -595,7 +595,16 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		}
 	}
 
-	return app.ModuleManager.EndBlock(ctx)
+	events := ctx.EventManager().ABCIEvents()
+	response, err := app.ModuleManager.EndBlock(ctx)
+
+	app.Logger().Info("######################################")
+	app.Logger().Info("######################################")
+	app.Logger().Info("Inserting events no endblocker", "amountOfEvents", len(events))
+	app.Logger().Info("######################################")
+	app.Logger().Info("######################################")
+	response.Events = append(response.Events, events...)
+	return response, err
 }
 
 func (app *HeimdallApp) LoadHeight(height int64) error {
