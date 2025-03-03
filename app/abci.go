@@ -462,6 +462,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		logger.Info("######################################")
 		logger.Info("######################################")
 		logger.Info("Event inserted on EventManager", "lenOfEventManager", len(ctx.EventManager().ABCIEvents()))
+		logger.Info("Some addresses to confirm", "addressOfApp", fmt.Sprintf("%p", app), "adddressOfCtx", &ctx, "addressOfEM", fmt.Sprintf("%d", ctx.EventManager()))
 		logger.Info("######################################")
 		logger.Info("######################################")
 

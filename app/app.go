@@ -600,7 +600,8 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 
 	app.Logger().Info("######################################")
 	app.Logger().Info("######################################")
-	app.Logger().Info("Inserting events no endblocker", "amountOfEvents", len(events))
+	app.Logger().Info("Inserting events on endblocker", "amountOfEvents", len(events))
+	app.Logger().Info("Some addresses to confirm", "addressOfApp", fmt.Sprintf("%p", app), "adddressOfCtx", &ctx, "addressOfEM", fmt.Sprintf("%d", ctx.EventManager()))
 	app.Logger().Info("######################################")
 	app.Logger().Info("######################################")
 	response.Events = append(response.Events, events...)
