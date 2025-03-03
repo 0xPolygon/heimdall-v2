@@ -19,6 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
+	Query_GetMilestoneParams_FullMethodName   = "/heimdallv2.milestone.Query/GetMilestoneParams"
 	Query_GetMilestoneCount_FullMethodName    = "/heimdallv2.milestone.Query/GetMilestoneCount"
 	Query_GetLatestMilestone_FullMethodName   = "/heimdallv2.milestone.Query/GetLatestMilestone"
 	Query_GetMilestoneByNumber_FullMethodName = "/heimdallv2.milestone.Query/GetMilestoneByNumber"
@@ -28,6 +29,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type QueryClient interface {
+	// GetMilestoneParams queries for the x/milestone parameters
+	GetMilestoneParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
 	// GetMilestoneCount queries for the milestone count
 	GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error)
 	// GetLatestMilestone queries for the latest milestone
@@ -42,6 +45,15 @@ type queryClient struct {
 
 func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 	return &queryClient{cc}
+}
+
+func (c *queryClient) GetMilestoneParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error) {
+	out := new(QueryParamsResponse)
+	err := c.cc.Invoke(ctx, Query_GetMilestoneParams_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *queryClient) GetMilestoneCount(ctx context.Context, in *QueryCountRequest, opts ...grpc.CallOption) (*QueryCountResponse, error) {
@@ -75,6 +87,8 @@ func (c *queryClient) GetMilestoneByNumber(ctx context.Context, in *QueryMilesto
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
 type QueryServer interface {
+	// GetMilestoneParams queries for the x/milestone parameters
+	GetMilestoneParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
 	// GetMilestoneCount queries for the milestone count
 	GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error)
 	// GetLatestMilestone queries for the latest milestone
@@ -88,6 +102,9 @@ type QueryServer interface {
 type UnimplementedQueryServer struct {
 }
 
+func (UnimplementedQueryServer) GetMilestoneParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneParams not implemented")
+}
 func (UnimplementedQueryServer) GetMilestoneCount(context.Context, *QueryCountRequest) (*QueryCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetMilestoneCount not implemented")
 }
@@ -108,6 +125,24 @@ type UnsafeQueryServer interface {
 
 func RegisterQueryServer(s grpc.ServiceRegistrar, srv QueryServer) {
 	s.RegisterService(&Query_ServiceDesc, srv)
+}
+
+func _Query_GetMilestoneParams_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryParamsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetMilestoneParams(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetMilestoneParams_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetMilestoneParams(ctx, req.(*QueryParamsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Query_GetMilestoneCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -171,6 +206,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "heimdallv2.milestone.Query",
 	HandlerType: (*QueryServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetMilestoneParams",
+			Handler:    _Query_GetMilestoneParams_Handler,
+		},
 		{
 			MethodName: "GetMilestoneCount",
 			Handler:    _Query_GetMilestoneCount_Handler,

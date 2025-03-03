@@ -15,6 +15,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 			Service: milestone.Query_ServiceDesc.ServiceName,
 			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
 				{
+					RpcMethod:      "GetMilestoneParams",
+					Use:            "get-params",
+					Short:          "Get milestone params",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
+				},
+				{
 					RpcMethod:      "GetMilestoneCount",
 					Use:            "get-count",
 					Short:          "Get milestone count",

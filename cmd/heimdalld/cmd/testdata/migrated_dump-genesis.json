@@ -35,7 +35,7 @@
       },
       "balances": [
         {
-          "address": "0xfa7c0bb8762f56b63de6c9b7567ea7ca2cb70358",
+          "address": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
           "coins": [
             {
               "denom": "matic",
@@ -44,7 +44,7 @@
           ]
         },
         {
-          "address": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
+          "address": "0xfa7c0bb8762f56b63de6c9b7567ea7ca2cb70358",
           "coins": [
             {
               "denom": "matic",
@@ -311,7 +311,7 @@
         "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "15005",
-          "heimdall_chain_id": "heimdall-7nDxha",
+          "heimdall_chain_id": "heimdall-sCCAH4",
           "pol_token_address": "0x675c1bd77f573aaf2df04ee7180a21a110d3d4fa",
           "root_chain_address": "0xa1a6f9ff932eba930db4a638e06ae0ae3c8fa2d1",
           "slash_manager_address": "0x0000000000000000000000000000000000000000",
@@ -1557,7 +1557,11 @@
       },
       "constitution": "This chain has no constitution."
     },
-    "milestone": {},
+    "milestone": {
+      "params": {
+        "max_milestone_proposition_length": "10"
+      }
+    },
     "sidechannel": {
       "past_commits": []
     },
@@ -1652,7 +1656,7 @@
       "topup_sequences": null
     }
   },
-  "chain_id": "heimdall-7nDxha",
+  "chain_id": "heimdall-sCCAH4",
   "consensus_params": {
     "abci": {
       "vote_extensions_enable_height": "1"

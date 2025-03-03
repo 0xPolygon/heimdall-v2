@@ -22,6 +22,18 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 	}
 }
 
+// GetMilestoneParams returns the milestones params
+func (q queryServer) GetMilestoneParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
+	params, err := q.k.GetParams(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryParamsResponse{
+		Params: params,
+	}, nil
+}
+
 // GetMilestoneCount returns the milestone count
 func (q queryServer) GetMilestoneCount(ctx context.Context, _ *types.QueryCountRequest) (*types.QueryCountResponse, error) {
 	count, err := q.k.GetMilestoneCount(ctx)

@@ -44,7 +44,12 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		propStartBlock = milestone.EndBlock + 1
 	}
 
-	blockHashes, err := getBlockHashes(ctx, propStartBlock, contractCaller)
+	params, err := milestoneKeeper.GetParams(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, contractCaller)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +276,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet *stakeTypes.V
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
+func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
 	result := make([][]byte, 0)
 
 	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
@@ -286,8 +291,13 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 	return result, nil
 }
 
-func ValidateMilestoneProposition(ctx sdk.Context, milestoneProp *types.MilestoneProposition) error {
-	if len(milestoneProp.BlockHashes) > maxBlocksInProposition {
+func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, milestoneProp *types.MilestoneProposition) error {
+	params, err := milestoneKeeper.GetParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(milestoneProp.BlockHashes) > int(params.MaxMilestonePropositionLength) {
 		return fmt.Errorf("too many blocks in proposition")
 	}
 
@@ -299,5 +309,3 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneProp *types.Mileston
 
 	return nil
 }
-
-const maxBlocksInProposition = 10

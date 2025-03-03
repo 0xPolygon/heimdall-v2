@@ -10,6 +10,19 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
+func (s *KeeperTestSuite) TestQueryParams() {
+	ctx, require, queryClient := s.ctx, s.Require(), s.queryClient
+
+	req := &types.QueryParamsRequest{}
+	defaultParams := types.DefaultParams()
+
+	res, err := queryClient.GetMilestoneParams(ctx, req)
+	require.NoError(err)
+	require.NotNil(res)
+
+	require.True(defaultParams.Equal(res.Params))
+}
+
 func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient
 

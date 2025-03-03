@@ -10,6 +10,12 @@ import "heimdallv2/milestone/milestone.proto";
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 
 service Query {
+  // GetMilestoneParams queries for the x/milestone parameters
+  rpc GetMilestoneParams(QueryParamsRequest) returns (QueryParamsResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/milestone/params";
+  }
+
   // GetMilestoneCount queries for the milestone count
   rpc GetMilestoneCount(QueryCountRequest) returns (QueryCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -27,6 +33,13 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/milestone/{number}";
   }
+}
+
+message QueryParamsRequest {}
+
+message QueryParamsResponse {
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
 message QueryCountRequest {}

@@ -2120,6 +2120,46 @@ paths:
                       format: byte
       tags:
         - Query
+  /milestone/params:
+    get:
+      summary: GetMilestoneParams queries for the x/milestone parameters
+      operationId: GetMilestoneParams
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              params:
+                type: object
+                properties:
+                  max_milestone_proposition_length:
+                    type: string
+                    format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /milestone/{number}:
     get:
       summary: GetMilestoneByNumber queries for the milestone based on the number
@@ -4400,6 +4440,12 @@ definitions:
       timestamp:
         type: string
         format: uint64
+  heimdallv2.milestone.Params:
+    type: object
+    properties:
+      max_milestone_proposition_length:
+        type: string
+        format: uint64
   heimdallv2.milestone.QueryCountResponse:
     type: object
     properties:
@@ -4452,6 +4498,15 @@ definitions:
           milestone_id:
             type: string
           timestamp:
+            type: string
+            format: uint64
+  heimdallv2.milestone.QueryParamsResponse:
+    type: object
+    properties:
+      params:
+        type: object
+        properties:
+          max_milestone_proposition_length:
             type: string
             format: uint64
   heimdallv2.stake.QueryCurrentValidatorSetResponse:

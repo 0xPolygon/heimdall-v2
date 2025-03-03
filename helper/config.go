@@ -121,17 +121,6 @@ const (
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hardfork
 	MaxStateSyncSize = 30000
-
-	// MilestoneLength is minimum supported length of milestone
-	MilestoneLength = uint64(12)
-
-	BorChainMilestoneConfirmation = uint64(16)
-
-	// MilestoneBufferLength defines the condition to propose the
-	// milestoneTimeout if this many bor blocks have passed since
-	// the last milestone
-	MilestoneBufferLength = MilestoneLength * 5
-	MilestoneBufferTime   = 256 * time.Second
 )
 
 var cdc = amino.NewCodec()

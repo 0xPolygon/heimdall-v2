@@ -13,6 +13,8 @@ import (
 	cosmosTestutil "github.com/cosmos/cosmos-sdk/testutil"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	moduletestutil "github.com/cosmos/cosmos-sdk/types/module/testutil"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
@@ -35,9 +37,9 @@ type KeeperTestSuite struct {
 
 	ctx             sdk.Context
 	milestoneKeeper *milestoneKeeper.Keeper
-	stakeKeeper     *testutil.MockStakeKeeper
 	contractCaller  *mocks.IContractCaller
 	queryClient     milestoneTypes.QueryClient
+	msgServer       milestoneTypes.MsgServer
 	sideMsgCfg      sidetxs.SideTxConfigurator
 }
 
@@ -57,10 +59,10 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.ctx = ctx
 	s.contractCaller = &mocks.IContractCaller{}
-	s.stakeKeeper = testutil.NewMockStakeKeeper(ctrl)
 
 	keeper := milestoneKeeper.NewKeeper(
 		encCfg.Codec,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		storeService,
 		s.contractCaller,
 	)
@@ -75,7 +77,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
 	milestoneTypes.RegisterQueryServer(queryHelper, milestoneKeeper.NewQueryServer(&keeper))
 	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
-
+	s.msgServer = milestoneKeeper.NewMsgServerImpl(&keeper)
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 }
 

@@ -1,28 +1,34 @@
 package keeper
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
 	"cosmossdk.io/log"
-	"github.com/cosmos/cosmos-sdk/codec"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 )
 
 // Keeper of the x/milestone store
 type Keeper struct {
 	storeService storetypes.KVStoreService
 	cdc          codec.BinaryCodec
+	authority    string
 	schema       collections.Schema
 
 	IContractCaller helper.IContractCaller
 
 	milestone   collections.Map[uint64, types.Milestone]
+	params      collections.Item[types.Params]
 	blockNumber collections.Item[int64]
 	count       collections.Item[uint64]
 }
@@ -30,17 +36,30 @@ type Keeper struct {
 // NewKeeper creates a new milestone Keeper instance
 func NewKeeper(
 	cdc codec.BinaryCodec,
+	authority string,
 	storeService storetypes.KVStoreService,
 	contractCaller helper.IContractCaller,
 ) Keeper {
+	bz, err := address.NewHexCodec().StringToBytes(authority)
+	if err != nil {
+		panic(fmt.Errorf("invalid milestone authority address: %w", err))
+	}
+
+	// ensure only gov has the authority to update the params
+	if !bytes.Equal(bz, authtypes.NewModuleAddress(govtypes.ModuleName)) {
+		panic(fmt.Errorf("invalid milestone authority address: %s", authority))
+	}
+
 	sb := collections.NewSchemaBuilder(storeService)
 
 	k := Keeper{
 		storeService:    storeService,
+		authority:       authority,
 		cdc:             cdc,
 		IContractCaller: contractCaller,
 
 		milestone:   collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
+		params:      collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
 		count:       collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
 		blockNumber: collections.NewItem(sb, types.BlockNumberPrefixKey, "block_number", collections.Int64Value),
 	}
@@ -59,6 +78,39 @@ func NewKeeper(
 func (k Keeper) Logger(ctx context.Context) log.Logger {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 	return sdkCtx.Logger().With("module", "x/"+types.ModuleName)
+}
+
+// GetAuthority returns x/milestone module's authority
+func (k Keeper) GetAuthority() string {
+	return k.authority
+}
+
+// SetParams sets the x/milestone module parameters.
+func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
+	err := params.Validate()
+	if err != nil {
+		k.Logger(ctx).Error("error while validating params", "err", err)
+		return err
+	}
+
+	err = k.params.Set(ctx, params)
+	if err != nil {
+		k.Logger(ctx).Error("error while storing params in store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+// GetParams gets the x/Milestone module parameters.
+func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) {
+	params, err = k.params.Get(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while fetching params from store", "err", err)
+		return
+	}
+
+	return params, nil
 }
 
 // AddMilestone adds a milestone to the store

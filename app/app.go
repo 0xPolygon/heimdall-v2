@@ -321,6 +321,7 @@ func NewHeimdallApp(
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		appCodec,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.NewKVStoreService(keys[milestoneTypes.StoreKey]),
 		&app.caller,
 	)

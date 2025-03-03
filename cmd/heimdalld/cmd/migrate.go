@@ -321,7 +321,8 @@ func migrateChainmanagerModule(genesisData map[string]interface{}, chainId strin
 func migrateMilestoneModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating milestone module...")
 
-	milestoneState := milestoneTypes.NewGenesisState()
+	params := milestoneTypes.DefaultParams()
+	milestoneState := milestoneTypes.NewGenesisState(params)
 
 	milestoneStateMarshled := appCodec.MustMarshalJSON(&milestoneState)
 

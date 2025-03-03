@@ -246,7 +246,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			logger.Error("Error occurred while generating milestone proposition", "error", err)
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
-			if err := milestoneAbci.ValidateMilestoneProposition(ctx, milestoneProp); err != nil {
+			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {
 				logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "milestoneProp", milestoneProp)
 				// We don't want to halt consensus because of invalid milestone proposition
 			} else {
@@ -321,7 +321,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			}
 		}
 
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, voteExtension.MilestoneProposition); err != nil {
+		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
 			logger.Error("ALERT, MILESTONE PROPOSITION VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
@@ -406,7 +406,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	isValidMilestone := false
 	if majorityMilestone != nil {
-		if err := milestoneAbci.ValidateMilestoneProposition(ctx, majorityMilestone); err != nil {
+		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of invalid majority milestone proposition
 		} else {
