@@ -573,7 +573,19 @@ func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
 		}
 	}
 
-	return app.ModuleManager.BeginBlock(ctx)
+	events := ctx.EventManager().ABCIEvents()
+	response, err := app.ModuleManager.BeginBlock(ctx)
+
+	app.Logger().Info("######################################")
+	app.Logger().Info("######################################")
+	app.Logger().Info("Inserting events on beginblocker", "amountOfEvents", len(events))
+	em := ctx.EventManager()
+	app.Logger().Info("Some addresses to confirm", "addressOfApp", fmt.Sprintf("%p", app), "adddressOfCtx", fmt.Sprintf("%p", &ctx), "addressOfEM", fmt.Sprintf("%d", &em))
+	app.Logger().Info("######################################")
+	app.Logger().Info("######################################")
+	response.Events = append(response.Events, events...)
+
+	return response, err
 }
 
 // EndBlocker application updates every end block
