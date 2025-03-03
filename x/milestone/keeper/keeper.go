@@ -3,7 +3,11 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
+	"strconv"
+
+	abci "github.com/cometbft/cometbft/abci/types"
 
 	"cosmossdk.io/collections"
 	storetypes "cosmossdk.io/core/store"
@@ -115,9 +119,9 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 }
 
 // AddMilestone adds a milestone to the store
-func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) error {
+func (k *Keeper) AddMilestone(goCtx context.Context, milestone types.Milestone) error {
 	// GetMilestoneCount gives the number of previous milestone
-	milestoneNumber, err := k.GetMilestoneCount(ctx)
+	milestoneNumber, err := k.GetMilestoneCount(goCtx)
 	if err != nil {
 		return err
 	}
@@ -125,15 +129,29 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 	milestoneNumber = milestoneNumber + 1
 
 	milestone.Proposer = util.FormatAddress(milestone.Proposer)
-	err = k.milestone.Set(ctx, milestoneNumber, milestone)
+	err = k.milestone.Set(goCtx, milestoneNumber, milestone)
 	if err != nil {
-		k.Logger(ctx).Error("error while storing milestone in store", "err", err)
+		k.Logger(goCtx).Error("error while storing milestone in store", "err", err)
 		return err
 	}
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	ctx.EventManager().EmitEvent(sdk.Event{
+		Type: "NewMilestone",
+		Attributes: []abci.EventAttribute{
+			{Key: "proposer", Value: milestone.Proposer},
+			{Key: "hash", Value: hex.EncodeToString(milestone.Hash)},
+			{Key: "start_block", Value: strconv.FormatUint(milestone.StartBlock, 10)},
+			{Key: "end_block", Value: strconv.FormatUint(milestone.EndBlock, 10)},
+			{Key: "bor_chain_id", Value: milestone.BorChainId},
+			{Key: "milestone_id", Value: milestone.MilestoneId},
+			{Key: "timestamp", Value: strconv.FormatUint(milestone.Timestamp, 10)},
+			{Key: "number", Value: strconv.FormatUint(milestoneNumber, 10)},
+		},
+	})
 
-	err = k.SetMilestoneCount(ctx, milestoneNumber)
+	err = k.SetMilestoneCount(goCtx, milestoneNumber)
 	if err != nil {
-		k.Logger(ctx).Error("error while storing milestone count in store", "err", err)
+		k.Logger(goCtx).Error("error while storing milestone count in store", "err", err)
 		return err
 	}
 
