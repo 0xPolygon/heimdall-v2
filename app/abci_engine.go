@@ -25,7 +25,7 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 			logger.Info("#####")
 			logger.Info("Received next blockchan")
 			logger.Info("#####")
-			res, err := app.retryBuildNextPayload(blockCtx.context, blockCtx.height)
+			res, err := app.retryBuildNextPayload(blockCtx.ForkChoiceState, blockCtx.context, blockCtx.height)
 			if err != nil {
 				logger.Error("error building next payload", "error", err)
 				res = nil
@@ -37,7 +37,7 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 			logger.Info("#####")
 			logger.Info("Received next blockchan")
 			logger.Info("#####")
-			res, err := app.retryBuildLatestPayload(blockCtx.context, blockCtx.height)
+			res, err := app.retryBuildLatestPayload(blockCtx.ForkChoiceState, blockCtx.context, blockCtx.height)
 			if err != nil {
 				logger.Error("error building latest payload", "error", err)
 				res = nil
@@ -54,17 +54,19 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	}
 }
 
-func (app *HeimdallApp) retryBuildLatestPayload(ctx sdk.Context, height int64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx sdk.Context, height int64) (response *engine.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
-	latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(height)) // change this to a keeper
-	if err != nil {
-		return nil, err
-	}
 
-	state := engine.ForkChoiceState{
-		HeadHash:           latestBlock.Hash(),
-		SafeBlockHash:      latestBlock.Hash(),
-		FinalizedBlockHash: common.Hash{},
+	if state == (engine.ForkChoiceState{}) {
+		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(height)) // change this to a keeper
+		if err != nil {
+			return nil, err
+		}
+		state = engine.ForkChoiceState{
+			HeadHash:           latestBlock.Hash(),
+			SafeBlockHash:      latestBlock.Hash(),
+			FinalizedBlockHash: common.Hash{},
+		}
 	}
 
 	// The engine complains when the withdrawals are empty
@@ -115,18 +117,18 @@ func (app *HeimdallApp) retryBuildLatestPayload(ctx sdk.Context, height int64) (
 	return response, nil
 }
 
-func (app *HeimdallApp) retryBuildNextPayload(ctx sdk.Context, height int64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx sdk.Context, height int64) (response *engine.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
-	latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(height)) // change this to a keeper
-	if err != nil {
-		return nil, err
-	}
+	// latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(height)) // change this to a keeper
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	state := engine.ForkChoiceState{
-		HeadHash:           latestBlock.Hash(),
-		SafeBlockHash:      latestBlock.Hash(),
-		FinalizedBlockHash: common.Hash{},
-	}
+	// state := engine.ForkChoiceState{
+	// 	HeadHash:           latestBlock.Hash(),
+	// 	SafeBlockHash:      latestBlock.Hash(),
+	// 	FinalizedBlockHash: common.Hash{},
+	// }
 
 	// The engine complains when the withdrawals are empty
 	withdrawals := []*engine.Withdrawal{ // need to undestand

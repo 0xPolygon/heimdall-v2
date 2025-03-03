@@ -106,6 +106,7 @@ var (
 )
 
 type nextELBlockCtx struct {
+	engine.ForkChoiceState
 	height  int64
 	context sdk.Context
 }
