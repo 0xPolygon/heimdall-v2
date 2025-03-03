@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	autocliv1 "cosmossdk.io/api/cosmos/autocli/v1"
 	reflectionv1 "cosmossdk.io/api/cosmos/reflection/v1"
@@ -607,6 +609,13 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 		}
 	}
 
+	ctx.EventManager().EmitEvent(sdk.Event{
+		Type: "FooEvent",
+		Attributes: []abci.EventAttribute{
+			{Key: "FooTestEvent", Value: strconv.Itoa(rand.Intn(100))},
+		},
+	})
+
 	events := ctx.EventManager().ABCIEvents()
 	response, err := app.ModuleManager.EndBlock(ctx)
 
@@ -618,6 +627,7 @@ func (app *HeimdallApp) EndBlocker(ctx sdk.Context) (sdk.EndBlock, error) {
 	app.Logger().Info("######################################")
 	app.Logger().Info("######################################")
 	response.Events = append(response.Events, events...)
+
 	return response, err
 }
 
