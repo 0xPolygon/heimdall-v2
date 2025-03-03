@@ -461,9 +461,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		})
 		logger.Info("######################################")
 		logger.Info("######################################")
-		logger.Info("Event inserted on EventManager")
+		logger.Info("Event inserted on EventManager", "lenOfEventManager", len(ctx.EventManager().ABCIEvents()))
 		logger.Info("######################################")
 		logger.Info("######################################")
+
 		if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
 			logger.Error("error in setting milestone block number", "error", err)
 			return nil, err
