@@ -10,7 +10,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoiface "google.golang.org/protobuf/runtime/protoiface"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
 	reflect "reflect"
 	sync "sync"
@@ -1178,21 +1177,543 @@ func (x *fastReflection_MilestoneCount) ProtoMethods() *protoiface.Methods {
 	}
 }
 
+var _ protoreflect.List = (*_MilestoneProposition_1_list)(nil)
+
+type _MilestoneProposition_1_list struct {
+	list *[][]byte
+}
+
+func (x *_MilestoneProposition_1_list) Len() int {
+	if x.list == nil {
+		return 0
+	}
+	return len(*x.list)
+}
+
+func (x *_MilestoneProposition_1_list) Get(i int) protoreflect.Value {
+	return protoreflect.ValueOfBytes((*x.list)[i])
+}
+
+func (x *_MilestoneProposition_1_list) Set(i int, value protoreflect.Value) {
+	valueUnwrapped := value.Bytes()
+	concreteValue := valueUnwrapped
+	(*x.list)[i] = concreteValue
+}
+
+func (x *_MilestoneProposition_1_list) Append(value protoreflect.Value) {
+	valueUnwrapped := value.Bytes()
+	concreteValue := valueUnwrapped
+	*x.list = append(*x.list, concreteValue)
+}
+
+func (x *_MilestoneProposition_1_list) AppendMutable() protoreflect.Value {
+	panic(fmt.Errorf("AppendMutable can not be called on message MilestoneProposition at list field BlockHashes as it is not of Message kind"))
+}
+
+func (x *_MilestoneProposition_1_list) Truncate(n int) {
+	*x.list = (*x.list)[:n]
+}
+
+func (x *_MilestoneProposition_1_list) NewElement() protoreflect.Value {
+	var v []byte
+	return protoreflect.ValueOfBytes(v)
+}
+
+func (x *_MilestoneProposition_1_list) IsValid() bool {
+	return x.list != nil
+}
+
 var (
-	md_Params                            protoreflect.MessageDescriptor
-	fd_Params_min_milestone_length       protoreflect.FieldDescriptor
-	fd_Params_milestone_buffer_time      protoreflect.FieldDescriptor
-	fd_Params_milestone_buffer_length    protoreflect.FieldDescriptor
-	fd_Params_milestone_tx_confirmations protoreflect.FieldDescriptor
+	md_MilestoneProposition                    protoreflect.MessageDescriptor
+	fd_MilestoneProposition_block_hashes       protoreflect.FieldDescriptor
+	fd_MilestoneProposition_start_block_number protoreflect.FieldDescriptor
+)
+
+func init() {
+	file_heimdallv2_milestone_milestone_proto_init()
+	md_MilestoneProposition = File_heimdallv2_milestone_milestone_proto.Messages().ByName("MilestoneProposition")
+	fd_MilestoneProposition_block_hashes = md_MilestoneProposition.Fields().ByName("block_hashes")
+	fd_MilestoneProposition_start_block_number = md_MilestoneProposition.Fields().ByName("start_block_number")
+}
+
+var _ protoreflect.Message = (*fastReflection_MilestoneProposition)(nil)
+
+type fastReflection_MilestoneProposition MilestoneProposition
+
+func (x *MilestoneProposition) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_MilestoneProposition)(x)
+}
+
+func (x *MilestoneProposition) slowProtoReflect() protoreflect.Message {
+	mi := &file_heimdallv2_milestone_milestone_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+var _fastReflection_MilestoneProposition_messageType fastReflection_MilestoneProposition_messageType
+var _ protoreflect.MessageType = fastReflection_MilestoneProposition_messageType{}
+
+type fastReflection_MilestoneProposition_messageType struct{}
+
+func (x fastReflection_MilestoneProposition_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_MilestoneProposition)(nil)
+}
+func (x fastReflection_MilestoneProposition_messageType) New() protoreflect.Message {
+	return new(fastReflection_MilestoneProposition)
+}
+func (x fastReflection_MilestoneProposition_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_MilestoneProposition
+}
+
+// Descriptor returns message descriptor, which contains only the protobuf
+// type information for the message.
+func (x *fastReflection_MilestoneProposition) Descriptor() protoreflect.MessageDescriptor {
+	return md_MilestoneProposition
+}
+
+// Type returns the message type, which encapsulates both Go and protobuf
+// type information. If the Go type information is not needed,
+// it is recommended that the message descriptor be used instead.
+func (x *fastReflection_MilestoneProposition) Type() protoreflect.MessageType {
+	return _fastReflection_MilestoneProposition_messageType
+}
+
+// New returns a newly allocated and mutable empty message.
+func (x *fastReflection_MilestoneProposition) New() protoreflect.Message {
+	return new(fastReflection_MilestoneProposition)
+}
+
+// Interface unwraps the message reflection interface and
+// returns the underlying ProtoMessage interface.
+func (x *fastReflection_MilestoneProposition) Interface() protoreflect.ProtoMessage {
+	return (*MilestoneProposition)(x)
+}
+
+// Range iterates over every populated field in an undefined order,
+// calling f for each field descriptor and value encountered.
+// Range returns immediately if f returns false.
+// While iterating, mutating operations may only be performed
+// on the current field descriptor.
+func (x *fastReflection_MilestoneProposition) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if len(x.BlockHashes) != 0 {
+		value := protoreflect.ValueOfList(&_MilestoneProposition_1_list{list: &x.BlockHashes})
+		if !f(fd_MilestoneProposition_block_hashes, value) {
+			return
+		}
+	}
+	if x.StartBlockNumber != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.StartBlockNumber)
+		if !f(fd_MilestoneProposition_start_block_number, value) {
+			return
+		}
+	}
+}
+
+// Has reports whether a field is populated.
+//
+// Some fields have the property of nullability where it is possible to
+// distinguish between the default value of a field and whether the field
+// was explicitly populated with the default value. Singular message fields,
+// member fields of a oneof, and proto2 scalar fields are nullable. Such
+// fields are populated only if explicitly set.
+//
+// In other cases (aside from the nullable cases above),
+// a proto3 scalar field is populated if it contains a non-zero value, and
+// a repeated field is populated if it is non-empty.
+func (x *fastReflection_MilestoneProposition) Has(fd protoreflect.FieldDescriptor) bool {
+	switch fd.FullName() {
+	case "heimdallv2.milestone.MilestoneProposition.block_hashes":
+		return len(x.BlockHashes) != 0
+	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
+		return x.StartBlockNumber != uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
+		}
+		panic(fmt.Errorf("message heimdallv2.milestone.MilestoneProposition does not contain field %s", fd.FullName()))
+	}
+}
+
+// Clear clears the field such that a subsequent Has call reports false.
+//
+// Clearing an extension field clears both the extension type and value
+// associated with the given field number.
+//
+// Clear is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MilestoneProposition) Clear(fd protoreflect.FieldDescriptor) {
+	switch fd.FullName() {
+	case "heimdallv2.milestone.MilestoneProposition.block_hashes":
+		x.BlockHashes = nil
+	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
+		x.StartBlockNumber = uint64(0)
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
+		}
+		panic(fmt.Errorf("message heimdallv2.milestone.MilestoneProposition does not contain field %s", fd.FullName()))
+	}
+}
+
+// Get retrieves the value for a field.
+//
+// For unpopulated scalars, it returns the default value, where
+// the default value of a bytes scalar is guaranteed to be a copy.
+// For unpopulated composite types, it returns an empty, read-only view
+// of the value; to obtain a mutable reference, use Mutable.
+func (x *fastReflection_MilestoneProposition) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+	switch descriptor.FullName() {
+	case "heimdallv2.milestone.MilestoneProposition.block_hashes":
+		if len(x.BlockHashes) == 0 {
+			return protoreflect.ValueOfList(&_MilestoneProposition_1_list{})
+		}
+		listValue := &_MilestoneProposition_1_list{list: &x.BlockHashes}
+		return protoreflect.ValueOfList(listValue)
+	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
+		value := x.StartBlockNumber
+		return protoreflect.ValueOfUint64(value)
+	default:
+		if descriptor.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
+		}
+		panic(fmt.Errorf("message heimdallv2.milestone.MilestoneProposition does not contain field %s", descriptor.FullName()))
+	}
+}
+
+// Set stores the value for a field.
+//
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType.
+// When setting a composite type, it is unspecified whether the stored value
+// aliases the source's memory in any way. If the composite value is an
+// empty, read-only value, then it panics.
+//
+// Set is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MilestoneProposition) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+	switch fd.FullName() {
+	case "heimdallv2.milestone.MilestoneProposition.block_hashes":
+		lv := value.List()
+		clv := lv.(*_MilestoneProposition_1_list)
+		x.BlockHashes = *clv.list
+	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
+		x.StartBlockNumber = value.Uint()
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
+		}
+		panic(fmt.Errorf("message heimdallv2.milestone.MilestoneProposition does not contain field %s", fd.FullName()))
+	}
+}
+
+// Mutable returns a mutable reference to a composite type.
+//
+// If the field is unpopulated, it may allocate a composite value.
+// For a field belonging to a oneof, it implicitly clears any other field
+// that may be currently set within the same oneof.
+// For extension fields, it implicitly stores the provided ExtensionType
+// if not already stored.
+// It panics if the field does not contain a composite type.
+//
+// Mutable is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MilestoneProposition) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.milestone.MilestoneProposition.block_hashes":
+		if x.BlockHashes == nil {
+			x.BlockHashes = [][]byte{}
+		}
+		value := &_MilestoneProposition_1_list{list: &x.BlockHashes}
+		return protoreflect.ValueOfList(value)
+	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
+		panic(fmt.Errorf("field start_block_number of message heimdallv2.milestone.MilestoneProposition is not mutable"))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
+		}
+		panic(fmt.Errorf("message heimdallv2.milestone.MilestoneProposition does not contain field %s", fd.FullName()))
+	}
+}
+
+// NewField returns a new value that is assignable to the field
+// for the given descriptor. For scalars, this returns the default value.
+// For lists, maps, and messages, this returns a new, empty, mutable value.
+func (x *fastReflection_MilestoneProposition) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+	switch fd.FullName() {
+	case "heimdallv2.milestone.MilestoneProposition.block_hashes":
+		list := [][]byte{}
+		return protoreflect.ValueOfList(&_MilestoneProposition_1_list{list: &list})
+	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
+		return protoreflect.ValueOfUint64(uint64(0))
+	default:
+		if fd.IsExtension() {
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
+		}
+		panic(fmt.Errorf("message heimdallv2.milestone.MilestoneProposition does not contain field %s", fd.FullName()))
+	}
+}
+
+// WhichOneof reports which field within the oneof is populated,
+// returning nil if none are populated.
+// It panics if the oneof descriptor does not belong to this message.
+func (x *fastReflection_MilestoneProposition) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+	switch d.FullName() {
+	default:
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.milestone.MilestoneProposition", d.FullName()))
+	}
+	panic("unreachable")
+}
+
+// GetUnknown retrieves the entire list of unknown fields.
+// The caller may only mutate the contents of the RawFields
+// if the mutated bytes are stored back into the message with SetUnknown.
+func (x *fastReflection_MilestoneProposition) GetUnknown() protoreflect.RawFields {
+	return x.unknownFields
+}
+
+// SetUnknown stores an entire list of unknown fields.
+// The raw fields must be syntactically valid according to the wire format.
+// An implementation may panic if this is not the case.
+// Once stored, the caller must not mutate the content of the RawFields.
+// An empty RawFields may be passed to clear the fields.
+//
+// SetUnknown is a mutating operation and unsafe for concurrent use.
+func (x *fastReflection_MilestoneProposition) SetUnknown(fields protoreflect.RawFields) {
+	x.unknownFields = fields
+}
+
+// IsValid reports whether the message is valid.
+//
+// An invalid message is an empty, read-only value.
+//
+// An invalid message often corresponds to a nil pointer of the concrete
+// message type, but the details are implementation dependent.
+// Validity is not part of the protobuf data model, and may not
+// be preserved in marshaling or other operations.
+func (x *fastReflection_MilestoneProposition) IsValid() bool {
+	return x != nil
+}
+
+// ProtoMethods returns optional fastReflectionFeature-path implementations of various operations.
+// This method may return nil.
+//
+// The returned methods type is identical to
+// "google.golang.org/protobuf/runtime/protoiface".Methods.
+// Consult the protoiface package documentation for details.
+func (x *fastReflection_MilestoneProposition) ProtoMethods() *protoiface.Methods {
+	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
+		x := input.Message.Interface().(*MilestoneProposition)
+		if x == nil {
+			return protoiface.SizeOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Size:              0,
+			}
+		}
+		options := runtime.SizeInputToOptions(input)
+		_ = options
+		var n int
+		var l int
+		_ = l
+		if len(x.BlockHashes) > 0 {
+			for _, b := range x.BlockHashes {
+				l = len(b)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if x.StartBlockNumber != 0 {
+			n += 1 + runtime.Sov(uint64(x.StartBlockNumber))
+		}
+		if x.unknownFields != nil {
+			n += len(x.unknownFields)
+		}
+		return protoiface.SizeOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Size:              n,
+		}
+	}
+
+	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
+		x := input.Message.Interface().(*MilestoneProposition)
+		if x == nil {
+			return protoiface.MarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Buf:               input.Buf,
+			}, nil
+		}
+		options := runtime.MarshalInputToOptions(input)
+		_ = options
+		size := options.Size(x)
+		dAtA := make([]byte, size)
+		i := len(dAtA)
+		_ = i
+		var l int
+		_ = l
+		if x.unknownFields != nil {
+			i -= len(x.unknownFields)
+			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.StartBlockNumber != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.StartBlockNumber))
+			i--
+			dAtA[i] = 0x10
+		}
+		if len(x.BlockHashes) > 0 {
+			for iNdEx := len(x.BlockHashes) - 1; iNdEx >= 0; iNdEx-- {
+				i -= len(x.BlockHashes[iNdEx])
+				copy(dAtA[i:], x.BlockHashes[iNdEx])
+				i = runtime.EncodeVarint(dAtA, i, uint64(len(x.BlockHashes[iNdEx])))
+				i--
+				dAtA[i] = 0xa
+			}
+		}
+		if input.Buf != nil {
+			input.Buf = append(input.Buf, dAtA...)
+		} else {
+			input.Buf = dAtA
+		}
+		return protoiface.MarshalOutput{
+			NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+			Buf:               input.Buf,
+		}, nil
+	}
+	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
+		x := input.Message.Interface().(*MilestoneProposition)
+		if x == nil {
+			return protoiface.UnmarshalOutput{
+				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+				Flags:             input.Flags,
+			}, nil
+		}
+		options := runtime.UnmarshalInputToOptions(input)
+		_ = options
+		dAtA := input.Buf
+		l := len(dAtA)
+		iNdEx := 0
+		for iNdEx < l {
+			preIndex := iNdEx
+			var wire uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+				}
+				if iNdEx >= l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				wire |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			fieldNum := int32(wire >> 3)
+			wireType := int(wire & 0x7)
+			if wireType == 4 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MilestoneProposition: wiretype end group for non-group")
+			}
+			if fieldNum <= 0 {
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: MilestoneProposition: illegal tag %d (wire type %d)", fieldNum, wire)
+			}
+			switch fieldNum {
+			case 1:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field BlockHashes", wireType)
+				}
+				var byteLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					byteLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if byteLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + byteLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.BlockHashes = append(x.BlockHashes, make([]byte, postIndex-iNdEx))
+				copy(x.BlockHashes[len(x.BlockHashes)-1], dAtA[iNdEx:postIndex])
+				iNdEx = postIndex
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field StartBlockNumber", wireType)
+				}
+				x.StartBlockNumber = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.StartBlockNumber |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			default:
+				iNdEx = preIndex
+				skippy, err := runtime.Skip(dAtA[iNdEx:])
+				if err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				if (skippy < 0) || (iNdEx+skippy) < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if (iNdEx + skippy) > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if !options.DiscardUnknown {
+					x.unknownFields = append(x.unknownFields, dAtA[iNdEx:iNdEx+skippy]...)
+				}
+				iNdEx += skippy
+			}
+		}
+
+		if iNdEx > l {
+			return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+		}
+		return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, nil
+	}
+	return &protoiface.Methods{
+		NoUnkeyedLiterals: struct{}{},
+		Flags:             protoiface.SupportMarshalDeterministic | protoiface.SupportUnmarshalDiscardUnknown,
+		Size:              size,
+		Marshal:           marshal,
+		Unmarshal:         unmarshal,
+		Merge:             nil,
+		CheckInitialized:  nil,
+	}
+}
+
+var (
+	md_Params                                  protoreflect.MessageDescriptor
+	fd_Params_max_milestone_proposition_length protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_milestone_milestone_proto_init()
 	md_Params = File_heimdallv2_milestone_milestone_proto.Messages().ByName("Params")
-	fd_Params_min_milestone_length = md_Params.Fields().ByName("min_milestone_length")
-	fd_Params_milestone_buffer_time = md_Params.Fields().ByName("milestone_buffer_time")
-	fd_Params_milestone_buffer_length = md_Params.Fields().ByName("milestone_buffer_length")
-	fd_Params_milestone_tx_confirmations = md_Params.Fields().ByName("milestone_tx_confirmations")
+	fd_Params_max_milestone_proposition_length = md_Params.Fields().ByName("max_milestone_proposition_length")
 }
 
 var _ protoreflect.Message = (*fastReflection_Params)(nil)
@@ -1204,7 +1725,7 @@ func (x *Params) ProtoReflect() protoreflect.Message {
 }
 
 func (x *Params) slowProtoReflect() protoreflect.Message {
-	mi := &file_heimdallv2_milestone_milestone_proto_msgTypes[2]
+	mi := &file_heimdallv2_milestone_milestone_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1260,27 +1781,9 @@ func (x *fastReflection_Params) Interface() protoreflect.ProtoMessage {
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
 func (x *fastReflection_Params) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.MinMilestoneLength != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.MinMilestoneLength)
-		if !f(fd_Params_min_milestone_length, value) {
-			return
-		}
-	}
-	if x.MilestoneBufferTime != nil {
-		value := protoreflect.ValueOfMessage(x.MilestoneBufferTime.ProtoReflect())
-		if !f(fd_Params_milestone_buffer_time, value) {
-			return
-		}
-	}
-	if x.MilestoneBufferLength != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.MilestoneBufferLength)
-		if !f(fd_Params_milestone_buffer_length, value) {
-			return
-		}
-	}
-	if x.MilestoneTxConfirmations != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.MilestoneTxConfirmations)
-		if !f(fd_Params_milestone_tx_confirmations, value) {
+	if x.MaxMilestonePropositionLength != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.MaxMilestonePropositionLength)
+		if !f(fd_Params_max_milestone_proposition_length, value) {
 			return
 		}
 	}
@@ -1299,14 +1802,8 @@ func (x *fastReflection_Params) Range(f func(protoreflect.FieldDescriptor, proto
 // a repeated field is populated if it is non-empty.
 func (x *fastReflection_Params) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.milestone.Params.min_milestone_length":
-		return x.MinMilestoneLength != uint64(0)
-	case "heimdallv2.milestone.Params.milestone_buffer_time":
-		return x.MilestoneBufferTime != nil
-	case "heimdallv2.milestone.Params.milestone_buffer_length":
-		return x.MilestoneBufferLength != uint64(0)
-	case "heimdallv2.milestone.Params.milestone_tx_confirmations":
-		return x.MilestoneTxConfirmations != uint64(0)
+	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
+		return x.MaxMilestonePropositionLength != uint64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1323,14 +1820,8 @@ func (x *fastReflection_Params) Has(fd protoreflect.FieldDescriptor) bool {
 // Clear is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_Params) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.milestone.Params.min_milestone_length":
-		x.MinMilestoneLength = uint64(0)
-	case "heimdallv2.milestone.Params.milestone_buffer_time":
-		x.MilestoneBufferTime = nil
-	case "heimdallv2.milestone.Params.milestone_buffer_length":
-		x.MilestoneBufferLength = uint64(0)
-	case "heimdallv2.milestone.Params.milestone_tx_confirmations":
-		x.MilestoneTxConfirmations = uint64(0)
+	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
+		x.MaxMilestonePropositionLength = uint64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1347,17 +1838,8 @@ func (x *fastReflection_Params) Clear(fd protoreflect.FieldDescriptor) {
 // of the value; to obtain a mutable reference, use Mutable.
 func (x *fastReflection_Params) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.milestone.Params.min_milestone_length":
-		value := x.MinMilestoneLength
-		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.milestone.Params.milestone_buffer_time":
-		value := x.MilestoneBufferTime
-		return protoreflect.ValueOfMessage(value.ProtoReflect())
-	case "heimdallv2.milestone.Params.milestone_buffer_length":
-		value := x.MilestoneBufferLength
-		return protoreflect.ValueOfUint64(value)
-	case "heimdallv2.milestone.Params.milestone_tx_confirmations":
-		value := x.MilestoneTxConfirmations
+	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
+		value := x.MaxMilestonePropositionLength
 		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
@@ -1379,14 +1861,8 @@ func (x *fastReflection_Params) Get(descriptor protoreflect.FieldDescriptor) pro
 // Set is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_Params) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.milestone.Params.min_milestone_length":
-		x.MinMilestoneLength = value.Uint()
-	case "heimdallv2.milestone.Params.milestone_buffer_time":
-		x.MilestoneBufferTime = value.Message().Interface().(*durationpb.Duration)
-	case "heimdallv2.milestone.Params.milestone_buffer_length":
-		x.MilestoneBufferLength = value.Uint()
-	case "heimdallv2.milestone.Params.milestone_tx_confirmations":
-		x.MilestoneTxConfirmations = value.Uint()
+	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
+		x.MaxMilestonePropositionLength = value.Uint()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1407,17 +1883,8 @@ func (x *fastReflection_Params) Set(fd protoreflect.FieldDescriptor, value proto
 // Mutable is a mutating operation and unsafe for concurrent use.
 func (x *fastReflection_Params) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.milestone.Params.milestone_buffer_time":
-		if x.MilestoneBufferTime == nil {
-			x.MilestoneBufferTime = new(durationpb.Duration)
-		}
-		return protoreflect.ValueOfMessage(x.MilestoneBufferTime.ProtoReflect())
-	case "heimdallv2.milestone.Params.min_milestone_length":
-		panic(fmt.Errorf("field min_milestone_length of message heimdallv2.milestone.Params is not mutable"))
-	case "heimdallv2.milestone.Params.milestone_buffer_length":
-		panic(fmt.Errorf("field milestone_buffer_length of message heimdallv2.milestone.Params is not mutable"))
-	case "heimdallv2.milestone.Params.milestone_tx_confirmations":
-		panic(fmt.Errorf("field milestone_tx_confirmations of message heimdallv2.milestone.Params is not mutable"))
+	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
+		panic(fmt.Errorf("field max_milestone_proposition_length of message heimdallv2.milestone.Params is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1431,14 +1898,7 @@ func (x *fastReflection_Params) Mutable(fd protoreflect.FieldDescriptor) protore
 // For lists, maps, and messages, this returns a new, empty, mutable value.
 func (x *fastReflection_Params) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.milestone.Params.min_milestone_length":
-		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.milestone.Params.milestone_buffer_time":
-		m := new(durationpb.Duration)
-		return protoreflect.ValueOfMessage(m.ProtoReflect())
-	case "heimdallv2.milestone.Params.milestone_buffer_length":
-		return protoreflect.ValueOfUint64(uint64(0))
-	case "heimdallv2.milestone.Params.milestone_tx_confirmations":
+	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
@@ -1509,18 +1969,8 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 		var n int
 		var l int
 		_ = l
-		if x.MinMilestoneLength != 0 {
-			n += 1 + runtime.Sov(uint64(x.MinMilestoneLength))
-		}
-		if x.MilestoneBufferTime != nil {
-			l = options.Size(x.MilestoneBufferTime)
-			n += 1 + l + runtime.Sov(uint64(l))
-		}
-		if x.MilestoneBufferLength != 0 {
-			n += 1 + runtime.Sov(uint64(x.MilestoneBufferLength))
-		}
-		if x.MilestoneTxConfirmations != 0 {
-			n += 1 + runtime.Sov(uint64(x.MilestoneTxConfirmations))
+		if x.MaxMilestonePropositionLength != 0 {
+			n += 1 + runtime.Sov(uint64(x.MaxMilestonePropositionLength))
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -1551,32 +2001,8 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.MilestoneTxConfirmations != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.MilestoneTxConfirmations))
-			i--
-			dAtA[i] = 0x20
-		}
-		if x.MilestoneBufferLength != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.MilestoneBufferLength))
-			i--
-			dAtA[i] = 0x18
-		}
-		if x.MilestoneBufferTime != nil {
-			encoded, err := options.Marshal(x.MilestoneBufferTime)
-			if err != nil {
-				return protoiface.MarshalOutput{
-					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
-					Buf:               input.Buf,
-				}, err
-			}
-			i -= len(encoded)
-			copy(dAtA[i:], encoded)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
-			i--
-			dAtA[i] = 0x12
-		}
-		if x.MinMilestoneLength != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.MinMilestoneLength))
+		if x.MaxMilestonePropositionLength != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.MaxMilestonePropositionLength))
 			i--
 			dAtA[i] = 0x8
 		}
@@ -1631,9 +2057,9 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 			switch fieldNum {
 			case 1:
 				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MinMilestoneLength", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MaxMilestonePropositionLength", wireType)
 				}
-				x.MinMilestoneLength = 0
+				x.MaxMilestonePropositionLength = 0
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -1643,81 +2069,7 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					x.MinMilestoneLength |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-			case 2:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MilestoneBufferTime", wireType)
-				}
-				var msglen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					msglen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if msglen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + msglen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				if x.MilestoneBufferTime == nil {
-					x.MilestoneBufferTime = &durationpb.Duration{}
-				}
-				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.MilestoneBufferTime); err != nil {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
-				}
-				iNdEx = postIndex
-			case 3:
-				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MilestoneBufferLength", wireType)
-				}
-				x.MilestoneBufferLength = 0
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					x.MilestoneBufferLength |= uint64(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-			case 4:
-				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MilestoneTxConfirmations", wireType)
-				}
-				x.MilestoneTxConfirmations = 0
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					x.MilestoneTxConfirmations |= uint64(b&0x7F) << shift
+					x.MaxMilestonePropositionLength |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1888,21 +2240,61 @@ func (x *MilestoneCount) GetCount() uint64 {
 	return 0
 }
 
+type MilestoneProposition struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	BlockHashes      [][]byte `protobuf:"bytes,1,rep,name=block_hashes,json=blockHashes,proto3" json:"block_hashes,omitempty"`
+	StartBlockNumber uint64   `protobuf:"varint,2,opt,name=start_block_number,json=startBlockNumber,proto3" json:"start_block_number,omitempty"`
+}
+
+func (x *MilestoneProposition) Reset() {
+	*x = MilestoneProposition{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_heimdallv2_milestone_milestone_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MilestoneProposition) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MilestoneProposition) ProtoMessage() {}
+
+// Deprecated: Use MilestoneProposition.ProtoReflect.Descriptor instead.
+func (*MilestoneProposition) Descriptor() ([]byte, []int) {
+	return file_heimdallv2_milestone_milestone_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MilestoneProposition) GetBlockHashes() [][]byte {
+	if x != nil {
+		return x.BlockHashes
+	}
+	return nil
+}
+
+func (x *MilestoneProposition) GetStartBlockNumber() uint64 {
+	if x != nil {
+		return x.StartBlockNumber
+	}
+	return 0
+}
+
 type Params struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	MinMilestoneLength       uint64               `protobuf:"varint,1,opt,name=min_milestone_length,json=minMilestoneLength,proto3" json:"min_milestone_length,omitempty"`
-	MilestoneBufferTime      *durationpb.Duration `protobuf:"bytes,2,opt,name=milestone_buffer_time,json=milestoneBufferTime,proto3" json:"milestone_buffer_time,omitempty"`
-	MilestoneBufferLength    uint64               `protobuf:"varint,3,opt,name=milestone_buffer_length,json=milestoneBufferLength,proto3" json:"milestone_buffer_length,omitempty"`
-	MilestoneTxConfirmations uint64               `protobuf:"varint,4,opt,name=milestone_tx_confirmations,json=milestoneTxConfirmations,proto3" json:"milestone_tx_confirmations,omitempty"`
+	MaxMilestonePropositionLength uint64 `protobuf:"varint,1,opt,name=max_milestone_proposition_length,json=maxMilestonePropositionLength,proto3" json:"max_milestone_proposition_length,omitempty"`
 }
 
 func (x *Params) Reset() {
 	*x = Params{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_heimdallv2_milestone_milestone_proto_msgTypes[2]
+		mi := &file_heimdallv2_milestone_milestone_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1916,33 +2308,12 @@ func (*Params) ProtoMessage() {}
 
 // Deprecated: Use Params.ProtoReflect.Descriptor instead.
 func (*Params) Descriptor() ([]byte, []int) {
-	return file_heimdallv2_milestone_milestone_proto_rawDescGZIP(), []int{2}
+	return file_heimdallv2_milestone_milestone_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Params) GetMinMilestoneLength() uint64 {
+func (x *Params) GetMaxMilestonePropositionLength() uint64 {
 	if x != nil {
-		return x.MinMilestoneLength
-	}
-	return 0
-}
-
-func (x *Params) GetMilestoneBufferTime() *durationpb.Duration {
-	if x != nil {
-		return x.MilestoneBufferTime
-	}
-	return nil
-}
-
-func (x *Params) GetMilestoneBufferLength() uint64 {
-	if x != nil {
-		return x.MilestoneBufferLength
-	}
-	return 0
-}
-
-func (x *Params) GetMilestoneTxConfirmations() uint64 {
-	if x != nil {
-		return x.MilestoneTxConfirmations
+		return x.MaxMilestonePropositionLength
 	}
 	return 0
 }
@@ -1958,8 +2329,6 @@ var file_heimdallv2_milestone_milestone_proto_rawDesc = []byte{
 	0x19, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x63, 0x6f,
 	0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x14, 0x67, 0x6f, 0x67, 0x6f,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
-	0x66, 0x2f, 0x64, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 	0x22, 0xaf, 0x02, 0x0a, 0x09, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x12, 0x39,
 	0x0a, 0x08, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
 	0x42, 0x1d, 0xd2, 0xb4, 0x2d, 0x14, 0x63, 0x6f, 0x73, 0x6d, 0x6f, 0x73, 0x2e, 0x41, 0x64, 0x64,
@@ -1982,40 +2351,36 @@ var file_heimdallv2_milestone_milestone_proto_rawDesc = []byte{
 	0x1f, 0x01, 0x22, 0x37, 0x0a, 0x0e, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x43,
 	0x6f, 0x75, 0x6e, 0x74, 0x12, 0x1b, 0x0a, 0x05, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x63, 0x6f, 0x75, 0x6e,
-	0x74, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0xad, 0x02, 0x0a, 0x06,
-	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x37, 0x0a, 0x14, 0x6d, 0x69, 0x6e, 0x5f, 0x6d, 0x69,
-	0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x12, 0x6d, 0x69, 0x6e,
-	0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x12,
-	0x5c, 0x0a, 0x15, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x62, 0x75, 0x66,
-	0x66, 0x65, 0x72, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19,
-	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
-	0x2e, 0x44, 0x75, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x42, 0x0d, 0xc8, 0xde, 0x1f, 0x00, 0x98,
-	0xdf, 0x1f, 0x01, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x13, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74,
-	0x6f, 0x6e, 0x65, 0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x3d, 0x0a,
-	0x17, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x62, 0x75, 0x66, 0x66, 0x65,
-	0x72, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05,
-	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x15, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65,
-	0x42, 0x75, 0x66, 0x66, 0x65, 0x72, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x12, 0x43, 0x0a, 0x1a,
-	0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x74, 0x78, 0x5f, 0x63, 0x6f, 0x6e,
-	0x66, 0x69, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x04,
-	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x18, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f,
-	0x6e, 0x65, 0x54, 0x78, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x72, 0x6d, 0x61, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x42, 0xd6, 0x01, 0x0a, 0x18,
-	0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x6d,
-	0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x42, 0x0e, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74,
-	0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x39, 0x67, 0x69, 0x74, 0x68,
-	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e,
-	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69,
-	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x6d, 0x69, 0x6c, 0x65,
-	0x73, 0x74, 0x6f, 0x6e, 0x65, 0xa2, 0x02, 0x03, 0x48, 0x4d, 0x58, 0xaa, 0x02, 0x14, 0x48, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f,
-	0x6e, 0x65, 0xca, 0x02, 0x14, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c,
-	0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xe2, 0x02, 0x20, 0x48, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65,
-	0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x15, 0x48,
-	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x4d, 0x69, 0x6c, 0x65, 0x73,
-	0x74, 0x6f, 0x6e, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0x7f, 0x0a, 0x14, 0x4d,
+	0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74,
+	0x69, 0x6f, 0x6e, 0x12, 0x28, 0x0a, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73,
+	0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
+	0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x65, 0x73, 0x12, 0x33, 0x0a,
+	0x12, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x6e, 0x75, 0x6d,
+	0x62, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
+	0x52, 0x10, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62,
+	0x65, 0x72, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0x62, 0x0a, 0x06,
+	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x4e, 0x0a, 0x20, 0x6d, 0x61, 0x78, 0x5f, 0x6d, 0x69,
+	0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74,
+	0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
+	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x1d, 0x6d, 0x61, 0x78, 0x4d, 0x69, 0x6c, 0x65,
+	0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e,
+	0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01,
+	0x42, 0xd6, 0x01, 0x0a, 0x18, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x42, 0x0e, 0x4d,
+	0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a,
+	0x39, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f,
+	0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76,
+	0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2f, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xa2, 0x02, 0x03, 0x48, 0x4d, 0x58,
+	0xaa, 0x02, 0x14, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x4d, 0x69,
+	0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xca, 0x02, 0x14, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xe2, 0x02,
+	0x20, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x69, 0x6c, 0x65,
+	0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
+	0x61, 0xea, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a,
+	0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x33,
 }
 
 var (
@@ -2030,20 +2395,19 @@ func file_heimdallv2_milestone_milestone_proto_rawDescGZIP() []byte {
 	return file_heimdallv2_milestone_milestone_proto_rawDescData
 }
 
-var file_heimdallv2_milestone_milestone_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_heimdallv2_milestone_milestone_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_heimdallv2_milestone_milestone_proto_goTypes = []interface{}{
-	(*Milestone)(nil),           // 0: heimdallv2.milestone.Milestone
-	(*MilestoneCount)(nil),      // 1: heimdallv2.milestone.MilestoneCount
-	(*Params)(nil),              // 2: heimdallv2.milestone.Params
-	(*durationpb.Duration)(nil), // 3: google.protobuf.Duration
+	(*Milestone)(nil),            // 0: heimdallv2.milestone.Milestone
+	(*MilestoneCount)(nil),       // 1: heimdallv2.milestone.MilestoneCount
+	(*MilestoneProposition)(nil), // 2: heimdallv2.milestone.MilestoneProposition
+	(*Params)(nil),               // 3: heimdallv2.milestone.Params
 }
 var file_heimdallv2_milestone_milestone_proto_depIdxs = []int32{
-	3, // 0: heimdallv2.milestone.Params.milestone_buffer_time:type_name -> google.protobuf.Duration
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	0, // [0:0] is the sub-list for method output_type
+	0, // [0:0] is the sub-list for method input_type
+	0, // [0:0] is the sub-list for extension type_name
+	0, // [0:0] is the sub-list for extension extendee
+	0, // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_milestone_milestone_proto_init() }
@@ -2077,6 +2441,18 @@ func file_heimdallv2_milestone_milestone_proto_init() {
 			}
 		}
 		file_heimdallv2_milestone_milestone_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*MilestoneProposition); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_heimdallv2_milestone_milestone_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Params); i {
 			case 0:
 				return &v.state
@@ -2095,7 +2471,7 @@ func file_heimdallv2_milestone_milestone_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_heimdallv2_milestone_milestone_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

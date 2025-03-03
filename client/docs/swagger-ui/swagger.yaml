@@ -2065,42 +2065,6 @@ paths:
                       format: byte
       tags:
         - Query
-  /milestone/last-no-ack:
-    get:
-      summary: GetLatestNoAckMilestone query for the LatestNoAck
-      operationId: GetLatestNoAckMilestone
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              result:
-                type: string
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      tags:
-        - Query
   /milestone/latest:
     get:
       summary: GetLatestMilestone queries for the latest milestone
@@ -2156,47 +2120,6 @@ paths:
                       format: byte
       tags:
         - Query
-  /milestone/no-ack/{id}:
-    get:
-      summary: GetNoAckMilestoneById query for the no-ack by id
-      operationId: GetNoAckMilestoneById
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              result:
-                type: boolean
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: id
-          in: path
-          required: true
-          type: string
-      tags:
-        - Query
   /milestone/params:
     get:
       summary: GetMilestoneParams queries for the x/milestone parameters
@@ -2210,15 +2133,7 @@ paths:
               params:
                 type: object
                 properties:
-                  min_milestone_length:
-                    type: string
-                    format: uint64
-                  milestone_buffer_time:
-                    type: string
-                  milestone_buffer_length:
-                    type: string
-                    format: uint64
-                  milestone_tx_confirmations:
+                  max_milestone_proposition_length:
                     type: string
                     format: uint64
         default:
@@ -2243,78 +2158,6 @@ paths:
                     value:
                       type: string
                       format: byte
-      tags:
-        - Query
-  /milestone/proposer/{times}:
-    get:
-      summary: GetMilestoneProposerByTimes queries for the milestone proposer
-      operationId: GetMilestoneProposerByTimes
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              proposers:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    val_id:
-                      type: string
-                      format: uint64
-                    start_epoch:
-                      type: string
-                      format: uint64
-                    end_epoch:
-                      type: string
-                      format: uint64
-                    nonce:
-                      type: string
-                      format: uint64
-                    voting_power:
-                      type: string
-                      format: int64
-                    pub_key:
-                      type: string
-                      format: byte
-                    signer:
-                      type: string
-                    last_updated:
-                      type: string
-                    jailed:
-                      type: boolean
-                    proposer_priority:
-                      type: string
-                      format: int64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: times
-          in: path
-          required: true
-          type: string
-          format: uint64
       tags:
         - Query
   /milestone/{number}:
@@ -4600,15 +4443,7 @@ definitions:
   heimdallv2.milestone.Params:
     type: object
     properties:
-      min_milestone_length:
-        type: string
-        format: uint64
-      milestone_buffer_time:
-        type: string
-      milestone_buffer_length:
-        type: string
-        format: uint64
-      milestone_tx_confirmations:
+      max_milestone_proposition_length:
         type: string
         format: uint64
   heimdallv2.milestone.QueryCountResponse:
@@ -4641,46 +4476,6 @@ definitions:
           timestamp:
             type: string
             format: uint64
-  heimdallv2.milestone.QueryLatestNoAckMilestoneResponse:
-    type: object
-    properties:
-      result:
-        type: string
-  heimdallv2.milestone.QueryMilestoneProposerResponse:
-    type: object
-    properties:
-      proposers:
-        type: array
-        items:
-          type: object
-          properties:
-            val_id:
-              type: string
-              format: uint64
-            start_epoch:
-              type: string
-              format: uint64
-            end_epoch:
-              type: string
-              format: uint64
-            nonce:
-              type: string
-              format: uint64
-            voting_power:
-              type: string
-              format: int64
-            pub_key:
-              type: string
-              format: byte
-            signer:
-              type: string
-            last_updated:
-              type: string
-            jailed:
-              type: boolean
-            proposer_priority:
-              type: string
-              format: int64
   heimdallv2.milestone.QueryMilestoneResponse:
     type: object
     properties:
@@ -4705,26 +4500,13 @@ definitions:
           timestamp:
             type: string
             format: uint64
-  heimdallv2.milestone.QueryNoAckMilestoneByIDResponse:
-    type: object
-    properties:
-      result:
-        type: boolean
   heimdallv2.milestone.QueryParamsResponse:
     type: object
     properties:
       params:
         type: object
         properties:
-          min_milestone_length:
-            type: string
-            format: uint64
-          milestone_buffer_time:
-            type: string
-          milestone_buffer_length:
-            type: string
-            format: uint64
-          milestone_tx_confirmations:
+          max_milestone_proposition_length:
             type: string
             format: uint64
   heimdallv2.stake.QueryCurrentValidatorSetResponse:

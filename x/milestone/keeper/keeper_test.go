@@ -37,7 +37,6 @@ type KeeperTestSuite struct {
 
 	ctx             sdk.Context
 	milestoneKeeper *milestoneKeeper.Keeper
-	stakeKeeper     *testutil.MockStakeKeeper
 	contractCaller  *mocks.IContractCaller
 	queryClient     milestoneTypes.QueryClient
 	msgServer       milestoneTypes.MsgServer
@@ -60,13 +59,11 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.ctx = ctx
 	s.contractCaller = &mocks.IContractCaller{}
-	s.stakeKeeper = testutil.NewMockStakeKeeper(ctrl)
 
 	keeper := milestoneKeeper.NewKeeper(
 		encCfg.Codec,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		storeService,
-		s.stakeKeeper,
 		s.contractCaller,
 	)
 
@@ -81,9 +78,7 @@ func (s *KeeperTestSuite) SetupTest() {
 	milestoneTypes.RegisterQueryServer(queryHelper, milestoneKeeper.NewQueryServer(&keeper))
 	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
 	s.msgServer = milestoneKeeper.NewMsgServerImpl(&keeper)
-
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
-	types.RegisterSideMsgServer(s.sideMsgCfg, milestoneKeeper.NewSideMsgServerImpl(&keeper))
 }
 
 func TestKeeperTestSuite(t *testing.T) {
@@ -99,13 +94,14 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 	proposerAddress := util.FormatAddress(secp256k1.GenPrivKey().PubKey().Address().String())
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := TestMilestoneID
+	borChainId := "1234"
 
 	milestone := testutil.CreateMilestone(
 		startBlock,
 		endBlock,
 		hash,
 		proposerAddress,
-		BorChainId,
+		borChainId,
 		milestoneID,
 		timestamp,
 	)
@@ -139,13 +135,14 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	proposerAddress := secp256k1.GenPrivKey().PubKey().Address().String()
 	timestamp := uint64(time.Now().Unix())
 	milestoneID := TestMilestoneID
+	borChainId := "1234"
 
 	milestone := testutil.CreateMilestone(
 		startBlock,
 		endBlock,
 		hash,
 		proposerAddress,
-		BorChainId,
+		borChainId,
 		milestoneID,
 		timestamp,
 	)
@@ -155,85 +152,4 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 	result, err = keeper.GetMilestoneCount(ctx)
 	require.NoError(err)
 	require.Equal(uint64(1), result)
-}
-
-func (s *KeeperTestSuite) TestGetNoAckMilestone() {
-	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
-
-	result, err := keeper.GetMilestoneCount(ctx)
-	require.NoError(err)
-	require.Equal(uint64(0), result)
-
-	milestoneID := TestMilestoneID
-
-	err = keeper.SetNoAckMilestone(ctx, milestoneID)
-	require.NoError(err)
-
-	val, err := keeper.HasNoAckMilestone(ctx, milestoneID)
-	require.NoError(err)
-	require.True(val)
-
-	val, err = keeper.HasNoAckMilestone(ctx, "00001")
-	require.NoError(err)
-	require.False(val)
-
-	val, err = keeper.HasNoAckMilestone(ctx, "")
-	require.NoError(err)
-	require.False(val)
-
-	milestoneID = "0001"
-	err = keeper.SetNoAckMilestone(ctx, milestoneID)
-	require.NoError(err)
-
-	val, err = keeper.HasNoAckMilestone(ctx, "0001")
-	require.NoError(err)
-	require.True(val)
-
-	val, err = keeper.HasNoAckMilestone(ctx, milestoneID)
-	require.NoError(err)
-	require.True(val)
-}
-
-func (s *KeeperTestSuite) TestLastNoAckMilestone() {
-	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
-
-	result, err := keeper.GetMilestoneCount(ctx)
-	require.NoError(err)
-	require.Equal(uint64(0), result)
-
-	milestoneID := TestMilestoneID
-
-	val, err := keeper.GetLastNoAckMilestone(ctx)
-	require.NoError(err)
-
-	err = keeper.SetNoAckMilestone(ctx, milestoneID)
-	require.NoError(err)
-
-	val, err = keeper.GetLastNoAckMilestone(ctx)
-	require.NoError(err)
-	require.Equal(val, milestoneID)
-
-	milestoneID = "0001"
-
-	err = keeper.SetNoAckMilestone(ctx, milestoneID)
-	require.NoError(err)
-
-	val, err = keeper.GetLastNoAckMilestone(ctx)
-	require.NoError(err)
-	require.Equal(val, milestoneID)
-}
-
-func (s *KeeperTestSuite) TestGetMilestoneTimeout() {
-	ctx, require, keeper := s.ctx, s.Require(), s.milestoneKeeper
-
-	val, err := keeper.GetLastMilestoneTimeout(ctx)
-	require.NoError(err)
-	require.Zero(val)
-
-	err = keeper.SetLastMilestoneTimeout(ctx, uint64(21))
-	require.NoError(err)
-
-	val, err = keeper.GetLastMilestoneTimeout(ctx)
-	require.NoError(err)
-	require.Equal(uint64(21), val)
 }

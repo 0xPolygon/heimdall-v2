@@ -394,7 +394,7 @@ func TestAggregateVotes(t *testing.T) {
 	blockHashBytes := common.Hex2Bytes(TxHash2)
 
 	// create a protobuf msg for ConsolidatedSideTxResponse
-	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
+	voteExtensionProto := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{
 			{
 				TxHash: txHashBytes,
@@ -545,7 +545,7 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey) abci.ExtendedVoteInfo {
 	t.Helper()
 	// create a protobuf msg for ConsolidatedSideTxResponse
-	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
+	voteExtensionProto := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{
 			{
 				TxHash: txHashBytes,

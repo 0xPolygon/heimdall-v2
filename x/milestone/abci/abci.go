@@ -21,7 +21,7 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*sidetxs.MilestoneProposition, error) {
+func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*types.MilestoneProposition, error) {
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
@@ -44,12 +44,17 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		propStartBlock = milestone.EndBlock + 1
 	}
 
-	blockHashes, err := getBlockHashes(ctx, propStartBlock, contractCaller)
+	params, err := milestoneKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	milestoneProp := &sidetxs.MilestoneProposition{
+	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, contractCaller)
+	if err != nil {
+		return nil, err
+	}
+
+	milestoneProp := &types.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: propStartBlock,
 	}
@@ -57,7 +62,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	return milestoneProp, nil
 }
 
-func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*sidetxs.MilestoneProposition, []byte, string, error) {
+func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*types.MilestoneProposition, []byte, string, error) {
 	ac := address.HexCodec{}
 
 	// Track voting power per block number
@@ -257,7 +262,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 	}
 
 	// Create final proposition
-	proposition := &sidetxs.MilestoneProposition{
+	proposition := &types.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: startBlock,
 	}
@@ -271,7 +276,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet stakeTypes.Va
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
+func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
 	result := make([][]byte, 0)
 
 	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
@@ -286,4 +291,21 @@ func getBlockHashes(ctx sdk.Context, startBlock uint64, contractCaller helper.IC
 	return result, nil
 }
 
-const maxBlocksInProposition = 10
+func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, milestoneProp *types.MilestoneProposition) error {
+	params, err := milestoneKeeper.GetParams(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(milestoneProp.BlockHashes) > int(params.MaxMilestonePropositionLength) {
+		return fmt.Errorf("too many blocks in proposition")
+	}
+
+	for _, blockHash := range milestoneProp.BlockHashes {
+		if len(blockHash) == 0 || len(blockHash) > common.HashLength {
+			return fmt.Errorf("invalid block hash length")
+		}
+	}
+
+	return nil
+}

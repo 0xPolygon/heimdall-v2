@@ -323,7 +323,6 @@ func NewHeimdallApp(
 		appCodec,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.NewKVStoreService(keys[milestoneTypes.StoreKey]),
-		&app.StakeKeeper,
 		&app.caller,
 	)
 
