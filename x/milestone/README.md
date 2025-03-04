@@ -97,6 +97,25 @@ string from = 1 [
 }
 ```
 
+## Events
+
+The milestone module emit events on its keeper:
+
+### Keeper Events
+
+Any time we `AddMilestone`, it will trigger the following events
+
+| Type      | Attribute Key |
+| --------  | ------------- |
+| milestone | proposer     |
+| milestone | hash         |
+| milestone | start_block  |
+| milestone | end_block    |
+| milestone | bor_chain_id |
+| milestone | milestone_id |
+| milestone | timestamp    |
+| milestone | number       |
+
 ## Interact with the Node
 
 ### Tx Commands

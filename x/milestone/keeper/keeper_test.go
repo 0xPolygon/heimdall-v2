@@ -120,6 +120,12 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 	result, err = keeper.GetMilestoneByNumber(ctx, 2)
 	require.Nil(result)
 	require.Error(err)
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	events := sdkCtx.EventManager().ABCIEvents()
+
+	require.Equal(1, len(events))
+	require.Equal(types.EventTypeMilestone, events[0].Type)
 }
 
 func (s *KeeperTestSuite) TestGetMilestoneCount() {
