@@ -24,7 +24,6 @@ var (
 func NewMilestoneEvent(milestone Milestone, milestoneNumber uint64) sdk.Event {
 	return sdk.NewEvent(
 		EventTypeMilestone,
-		sdk.NewAttribute("hash", string(milestone.Hash)),
 		sdk.NewAttribute("proposer", milestone.Proposer),
 		sdk.NewAttribute("hash", hex.EncodeToString(milestone.Hash)),
 		sdk.NewAttribute("start_block", strconv.FormatUint(milestone.StartBlock, 10)),
