@@ -292,6 +292,10 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 }
 
 func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, milestoneProp *types.MilestoneProposition) error {
+	if milestoneProp == nil {
+		return nil
+	}
+
 	params, err := milestoneKeeper.GetParams(ctx)
 	if err != nil {
 		return err
