@@ -49,6 +49,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
+	logger.Error("Generating milestone proposition", "params.MaxMilestonePropositionLength", params.MaxMilestonePropositionLength)
 	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, contractCaller)
 	if err != nil {
 		return nil, err
@@ -296,6 +297,10 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 	if err != nil {
 		return err
 	}
+
+	logger := ctx.Logger()
+
+	logger.Error("Validating milestone proposition", "params.MaxMilestonePropositionLength", params.MaxMilestonePropositionLength)
 
 	if len(milestoneProp.BlockHashes) > int(params.MaxMilestonePropositionLength) {
 		return fmt.Errorf("too many blocks in proposition")
