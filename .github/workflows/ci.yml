@@ -82,7 +82,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: maticnetwork/matic-cli
-          ref: mardizzone/heimdallv2-ganache
+          ref: heimdall-v2
           path: matic-cli
 
       - name: Install dependencies on Linux
@@ -105,6 +105,9 @@ jobs:
             matic-cli/devnet/code/genesis-contracts/package-lock.json
             matic-cli/devnet/code/genesis-contracts/matic-contracts/package-lock.json
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
       - name: Bootstrap devnet
         run: |
           cd matic-cli
@@ -116,23 +119,19 @@ jobs:
       - name: Launch devnet
         run: |
           cd matic-cli/devnet
-          bash docker-ganache-start.sh || { echo "Failed to start Ganache"; exit 1; }
-          bash docker-heimdall-start-all.sh || { echo "Failed to start Heimdall"; exit 1; }
-          bash docker-bor-setup.sh || { echo "Failed to setup Bor"; exit 1; }
-          bash docker-bor-start-all.sh || { echo "Failed to start Bor"; exit 1; }
+          bash ../util-scripts/docker/devnet_setup.sh
           cd -
-          timeout 3m bash heimdall-v2/integration-tests/bor_health.sh
-          cd -
-          bash ganache-deployment-bor.sh || { echo "Failed to deploy Bor to Ganache"; exit 1; }
-          bash ganache-deployment-sync.sh || { echo "Failed to sync Ganache deployment"; exit 1; }
-          echo "Devnet setup complete."
+          timeout 2m bash heimdall-v2/integration-tests/bor_health.sh
 
       - name: Run smoke tests
         run: |
-          echo "Deposit 100 matic for each account to bor network"
-          cd matic-cli/devnet/code/contracts
-          npm run truffle exec scripts/deposit.js -- --network development $(jq -r .root.tokens.MaticToken contractAddresses.json) 100000000000000000000
-          cd -
+          cd matic-cli/devnet/devnet
+          SCRIPT_ADDRESS=$(jq -r '.[0].address' signer-dump.json)
+          SCRIPT_PRIVATE_KEY=$(jq -r '.[0].priv_key' signer-dump.json)
+          cd ../code/pos-contracts
+          CONTRACT_ADDRESS=$(jq -r .root.tokens.MaticToken contractAddresses.json)
+          forge script scripts/matic-cli-scripts/Deposit.s.sol:MaticDeposit --rpc-url http://localhost:9545 --private-key $SCRIPT_PRIVATE_KEY --broadcast --sig "run(address,address,uint256)" $SCRIPT_ADDRESS $CONTRACT_ADDRESS 100000000000000000000
+          cd ../../../..
           timeout 60m bash heimdall-v2/integration-tests/smoke_test.sh
 
       - name: Upload logs
