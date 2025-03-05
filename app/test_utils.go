@@ -136,7 +136,7 @@ func setupAppWithValidatorSet(t *testing.T, validatorPrivKeys []cmtcrypto.PrivKe
 	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
-	vals := []stakeTypes.Validator{}
+	vals := make([]stakeTypes.Validator, 0, len(validators))
 	for _, val := range validators {
 		vals = append(vals, *val)
 	}

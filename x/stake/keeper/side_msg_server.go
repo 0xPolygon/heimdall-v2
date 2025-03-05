@@ -621,7 +621,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	// check if incoming tx is older
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
 		s.k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return errors.New("Older invalid tx found")
+		return errors.New("older invalid tx found")
 	}
 
 	s.k.Logger(ctx).Debug("persisting signer update", "sideTxResult", sideTxResult)
@@ -760,7 +760,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	// check if incoming tx is older
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
 		s.k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return errors.New("Older invalid tx found")
+		return errors.New("older invalid tx found")
 	}
 
 	s.k.Logger(ctx).Debug("persisting validator exit", "sideTxResult", sideTxResult)

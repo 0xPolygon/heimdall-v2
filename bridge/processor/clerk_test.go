@@ -138,7 +138,7 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 
 			// when
 			b.StartTimer()
-			// This will trigger 'error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused'
+			// This will trigger error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused"
 			// it's fine as long as we don't want to test the actual sendTask to rabbitmq
 			rcl.SendTaskWithDelay(
 				"sendStateSyncedToHeimdall", "StateSynced",

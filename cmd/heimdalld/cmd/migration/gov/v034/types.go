@@ -4,9 +4,7 @@ package v034
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,8 +13,6 @@ import (
 var _ ProposalContent = TextProposal{}
 
 const (
-	ModuleName = "gov"
-
 	StatusNil           ProposalStatus = 0x00
 	StatusDepositPeriod ProposalStatus = 0x01
 	StatusVotingPeriod  ProposalStatus = 0x02
@@ -30,7 +26,6 @@ const (
 	OptionNo         VoteOption = 0x03
 	OptionNoWithVeto VoteOption = 0x04
 
-	ProposalTypeNil             ProposalKind = 0x00
 	ProposalTypeText            ProposalKind = 0x01
 	ProposalTypeParameterChange ProposalKind = 0x02
 )
@@ -135,7 +130,7 @@ func (tp TextProposal) GetTitle() string           { return tp.Title }
 func (tp TextProposal) GetDescription() string     { return tp.Description }
 func (tp TextProposal) ProposalType() ProposalKind { return ProposalTypeText }
 
-// ProposalStatusToString turns a string into a ProposalStatus
+// ProposalStatusFromString turns a string into a ProposalStatus
 func ProposalStatusFromString(str string) (ProposalStatus, error) {
 	switch str {
 	case "DepositPeriod":
@@ -325,12 +320,6 @@ func (pt ProposalKind) String() string {
 	}
 }
 
-// Constants pertaining to a Content object
-const (
-	MaxDescriptionLength int = 5000
-	MaxTitleLength       int = 140
-)
-
 // Content defines an interface that a proposal must implement. It contains
 // information such as the title and description along with the type and routing
 // information for the appropriate handler to process the proposal. Content can
@@ -347,25 +336,3 @@ type Content interface {
 // Handler defines a function that handles a proposal after it has passed the
 // governance process.
 type Handler func(ctx sdk.Context, content Content) error
-
-// ValidateAbstract validates a proposal's abstract contents returning an error
-// if invalid.
-func ValidateAbstract(c Content) error {
-	title := c.GetTitle()
-	if len(strings.TrimSpace(title)) == 0 {
-		return errors.New("proposal title cannot be blank")
-	}
-	if len(title) > MaxTitleLength {
-		return fmt.Errorf("proposal title (%d) is longer than max length of %d", len(title), MaxTitleLength)
-	}
-
-	description := c.GetDescription()
-	if len(description) == 0 {
-		return errors.New("proposal description cannot be blank")
-	}
-	if len(description) > MaxDescriptionLength {
-		return fmt.Errorf("proposal description(%d) is longer than max length of %d", len(description), MaxDescriptionLength)
-	}
-
-	return nil
-}

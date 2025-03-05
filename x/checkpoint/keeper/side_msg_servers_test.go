@@ -21,7 +21,7 @@ func (s *KeeperTestSuite) sideHandler(ctx sdk.Context, msg sdk.Msg) sidetxs.Vote
 
 func (s *KeeperTestSuite) postHandler(ctx sdk.Context, msg sdk.Msg, vote sidetxs.Vote) {
 	cfg := s.sideMsgCfg
-	cfg.GetPostHandler(msg)(ctx, msg, vote)
+	_ = cfg.GetPostHandler(msg)(ctx, msg, vote)
 }
 
 func (s *KeeperTestSuite) TestSideHandleMsgCheckpoint() {
@@ -205,7 +205,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgCheckpoint() {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
 
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 
 	checkpoint := testutil.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 

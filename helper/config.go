@@ -13,7 +13,6 @@ import (
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	"github.com/cometbft/cometbft/privval"
-	cmTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
@@ -80,7 +79,6 @@ const (
 	// DefaultAmqpURL represents default AMQP url
 	DefaultAmqpURL           = "amqp://guest:guest@localhost:5672/"
 	DefaultHeimdallServerURL = "tcp://localhost:1317"
-	DefaultGRPCServerURL     = "http://0.0.0.0:1318"
 
 	DefaultCometBFTNodeURL = "http://0.0.0.0:26657"
 
@@ -143,9 +141,9 @@ type CustomConfig struct {
 
 	AmqpURL string `mapstructure:"amqp_url"` // amqp url
 
-	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction. eg....submit checkpoint.
+	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction, e.g. submit checkpoint.
 
-	MainchainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max gas price to mainchain transaction. eg....submit checkpoint.
+	MainchainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max gas price to mainchain transaction, e.g. submit checkpoint.
 
 	// config related to bridge
 	CheckpointPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
@@ -196,11 +194,6 @@ var pubKeyObject secp256k1.PubKey
 
 // Logger stores global logger object
 var Logger logger.Logger
-
-// GenesisDoc contains the genesis file
-var GenesisDoc cmTypes.GenesisDoc
-
-var milestoneBorBlockHeight uint64 = 0
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -462,11 +455,6 @@ func GetAddressString() (string, error) {
 // GetValidChains returns all the valid chains
 func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
-}
-
-// GetMilestoneBorBlockHeight returns milestoneBorBlockHeight
-func GetMilestoneBorBlockHeight() uint64 {
-	return milestoneBorBlockHeight
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {

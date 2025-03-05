@@ -33,7 +33,7 @@ import (
 // It checks the signature of each vote extension with its signer's public key
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
-func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
+func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
 	// check if VEs are enabled
 	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
 		return err

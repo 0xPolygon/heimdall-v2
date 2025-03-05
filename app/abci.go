@@ -26,7 +26,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 
-		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// validate the vote extensions
-		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -398,7 +398,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		lastEndBlock = &lastMilestone.EndBlock
 	}
 
-	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(ctx, validatorSet, extVoteInfo, logger, lastEndBlock)
+	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(validatorSet, extVoteInfo, logger, lastEndBlock)
 	if err != nil {
 		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
 		return nil, err
@@ -466,7 +466,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip first byte because its the vote
+	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip first byte because it's the vote
 	if approvedTxsMap[checkpointTxHash] {
 		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
 		if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {
