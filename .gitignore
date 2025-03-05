@@ -3,6 +3,8 @@
 # ignore build
 build
 engine-api-poc/build
+engine-api-poc/test-output
+engine-api-poc/logs
 logs
 *.log
 

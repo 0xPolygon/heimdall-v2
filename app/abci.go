@@ -35,6 +35,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestPrepareProposal) (*abci.ResponsePrepareProposal, error) {
 		logger := app.Logger()
 		start := time.Now()
+		logger.Info("🕒 Start PrepareProposal:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
@@ -159,7 +160,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		duration := time.Since(start)
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
-		logger.Info("🕒 PrepareProposal:" + formatted)
+		logger.Info("🕒 End PrepareProposal:", "duration", formatted, "height", req.Height, "payloadSize", len(txs[0]), "momentTime", time.Now().Format("04:05.000000"))
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
@@ -170,6 +171,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
 		start := time.Now()
+		logger.Info("🕒 Start ProcessProposal:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
 		logger.Info("##### Address of app", "addressOfApp", fmt.Sprintf("%p", app))
 		// check if there are any txs in the request
@@ -310,6 +312,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		logger := app.Logger()
 		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
 		start := time.Now()
+		logger.Info("🕒 Start ExtendVote:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
 		// check if VEs are enabled
 		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
@@ -415,7 +418,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		duration := time.Since(start)
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
-		logger.Info("🕒 ExtendVote:" + formatted)
+		logger.Info("🕒 End ExtendVote:", "duration", formatted, "height", req.Height, "payloadSize", len(req.Txs[0]), "momentTime", time.Now().Format("04:05.000000"))
 		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
 	}
 }
@@ -426,6 +429,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		logger := app.Logger()
 		logger.Debug("Verifying vote extension", "height", ctx.BlockHeight())
 		start := time.Now()
+		logger.Info("🕒 Start VerifyVote:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
 		// check if VEs are enabled
 		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
@@ -471,7 +475,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 
 		duration := time.Since(start)
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
-		logger.Info("🕒 VerifyVote:" + formatted)
+		logger.Info("🕒 End VerifyVote:", "duration", formatted, "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 		return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_ACCEPT}, nil
 	}
 }
@@ -480,6 +484,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 	start := time.Now()
+	logger.Info("🕒 Start PreBlocker:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
 	if err := checkIfVoteExtensionsDisabled(ctx, req.Height+1); err != nil {
 		return nil, err
@@ -546,6 +551,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		if choice != nil && choice.PayloadStatus.Status != "VALID" {
 			infoLog = fmt.Sprintf("%s: %s", infoLog, choice.PayloadStatus.ValidationError)
 		}
+		return nil, err
+	}
+
+	if err := app.CheckpointKeeper.SetExecutionStateMetadata(ctx, checkpointTypes.ExecutionStateMetadata{
+		FinalBlockHash: common.Hex2Bytes(executionPayload.BlockHash),
+	}); err != nil {
+		logger.Error("Error occurred while setting execution state metadata", "error", err)
 		return nil, err
 	}
 
@@ -652,18 +664,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 	duration := time.Since(start)
 	formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
-	logger.Info("🕒 PreBlocker:" + formatted)
-	res, err := app.ModuleManager.PreBlock(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	if app.nextExecPayload != nil {
-		app.latestExecPayload = app.nextExecPayload
-		app.nextExecPayload = nil
-	}
-
-	return res, nil
+	logger.Info("🕒 End PreBlocker:", "duration", formatted, "height", req.Height, "payloadSize", len(req.Txs[0]), "momentTime", time.Now().Format("04:05.000000"))
+	return app.ModuleManager.PreBlock(ctx)
 }
 
 // func (app *HeimdallApp) retryBuildLatestPayload(ctx sdk.Context, height int64) (response *engine.Payload, err error) {
