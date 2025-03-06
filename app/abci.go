@@ -116,6 +116,11 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 		}
 
+		if req.Height%2 == 0 {
+			logger.Info("MARKING STATE ROOT AS EMPTY", "height", req.Height)
+			payload.ExecutionPayload.StateRoot = common.Hash{}.Hex()
+		}
+
 		// this is where we could filter/reorder transactions, or mark them for filtering so consensus could be checked
 
 		marshaledExecutionPayload, err := json.Marshal(payload.ExecutionPayload)
