@@ -73,9 +73,9 @@ func TestValidateVoteExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldError {
-				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper))
+				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper))
 			} else {
-				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
+				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper)
 				require.NoError(t, err)
 			}
 		})

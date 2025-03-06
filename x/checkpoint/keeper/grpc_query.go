@@ -227,7 +227,7 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: *pageRes}, nil
 }
 
-// GetChekpointOverview returns the checkpoint overview
+// GetCheckpointOverview returns the checkpoint overview
 // which includes AckCount, LastNoAckId, BufferCheckpoint, ValidatorCount, and ValidatorSet
 func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCheckpointOverviewRequest) (*types.QueryCheckpointOverviewResponse, error) {
 	// get validator set

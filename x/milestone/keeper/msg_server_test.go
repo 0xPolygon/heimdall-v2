@@ -7,11 +7,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
-const (
-	AccountHash = "0x000000000000000000000000000000000000dEaD"
-	BorChainId  = "1234"
-)
-
 func (s *KeeperTestSuite) TestMsgUpdateParams() {
 	ctx, require, keeper, queryClient, msgServer, params := s.ctx, s.Require(), s.milestoneKeeper, s.queryClient, s.msgServer, types.DefaultParams()
 

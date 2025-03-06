@@ -461,7 +461,6 @@ func (vals *ValidatorSet) applyUpdates(updates []*Validator) {
 			merged[i] = existing[0]
 			existing = existing[1:]
 		} else {
-			// Apply add or update.
 			merged[i] = updates[0]
 			if strings.Compare(util.FormatAddress(existing[0].Signer), util.FormatAddress(updates[0].Signer)) == 0 {
 				// Validator is present in both, advance existing.

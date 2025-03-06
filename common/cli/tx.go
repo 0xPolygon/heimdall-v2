@@ -34,8 +34,8 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	}
 	clientCtx = clientCtx.WithFromAddress(account.GetAddress())
 	from := clientCtx.GetFromAddress()
-	authqueryClient := authtypes.NewQueryClient(clientCtx)
-	_, err = authqueryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: from.String()})
+	authQueryClient := authtypes.NewQueryClient(clientCtx)
+	_, err = authQueryClient.Account(context.Background(), &authtypes.QueryAccountRequest{Address: from.String()})
 	if err != nil {
 		logger.Error("Error fetching account", "Error", err)
 		return err
@@ -63,8 +63,8 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 	return nil
 }
 
-func MakeTxFactory(clictx client.Context, address string, logger log.Logger) (tx.Factory, error) {
-	account, err := util.GetAccount(clictx, address)
+func MakeTxFactory(cliCtx client.Context, address string, logger log.Logger) (tx.Factory, error) {
+	account, err := util.GetAccount(cliCtx, address)
 	if err != nil {
 		logger.Error("Error fetching account", "address", address, "err", err)
 		return tx.Factory{}, err
@@ -73,31 +73,31 @@ func MakeTxFactory(clictx client.Context, address string, logger log.Logger) (tx
 	accNum := account.GetAccountNumber()
 	accSeq := account.GetSequence()
 
-	signMode, err := authsign.APISignModeToInternal(clictx.TxConfig.SignModeHandler().DefaultMode())
+	signMode, err := authsign.APISignModeToInternal(cliCtx.TxConfig.SignModeHandler().DefaultMode())
 	if err != nil {
 		logger.Error("Error getting sign mode", "err", err)
 		return tx.Factory{}, err
 	}
 
-	authParams, err := util.GetAccountParamsURL(clictx.Codec)
+	authParams, err := util.GetAccountParamsURL(cliCtx.Codec)
 	if err != nil {
 		logger.Error("Error getting account params", "err", err)
 		return tx.Factory{}, err
 	}
 
-	chainParam, err := util.GetChainmanagerParams(clictx.Codec)
+	chainParam, err := util.GetChainmanagerParams(cliCtx.Codec)
 	if err != nil {
 		return tx.Factory{}, err
 	}
 
 	txf := tx.Factory{}.
-		WithTxConfig(clictx.TxConfig).
-		WithAccountRetriever(clictx.AccountRetriever).
+		WithTxConfig(cliCtx.TxConfig).
+		WithAccountRetriever(cliCtx.AccountRetriever).
 		WithChainID(chainParam.ChainParams.HeimdallChainId).
 		WithSignMode(signMode).
 		WithAccountNumber(accNum).
 		WithSequence(accSeq).
-		WithKeybase(clictx.Keyring).
+		WithKeybase(cliCtx.Keyring).
 		WithSignMode(signMode).
 		WithFees(ante.DefaultFeeWantedPerTx.String()).
 		WithGas(authParams.MaxTxGas)

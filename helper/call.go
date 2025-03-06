@@ -443,7 +443,7 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
 	if err != nil {
-		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
+		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "error", err)
 		return
 	}
 
@@ -532,7 +532,7 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	return latestBlock, nil
 }
 
-// GetBorChainBlock returns bor chain block headers via single RPC Batch call
+// GetBorChainBlocksInBatch returns bor chain block headers via single RPC Batch call
 func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()

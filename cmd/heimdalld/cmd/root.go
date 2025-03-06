@@ -121,7 +121,7 @@ func NewRootCmd() *cobra.Command {
 			}
 			serverCtx.Logger = logger.With(log.ModuleKey, "server")
 
-			// Get log_level from from serverCtx.Viper
+			// Get log_level from serverCtx.Viper
 			logLevelStr := serverCtx.Viper.GetString(flags.FlagLogLevel)
 
 			// Set log_level value to viper

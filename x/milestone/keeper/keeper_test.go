@@ -28,8 +28,7 @@ import (
 )
 
 const (
-	TestMilestoneID  = "17ce48fe-0a18-41a8-ab7e-59d8002f027b - 0x901a64406d97a3fa9b87b320cbeb86b3c62328f5"
-	TestMilestoneID2 = "18ce48fe-0a18-41a8-ab7e-59d8002f027b - 0x801a64406d97a3fa9b87b320cbeb86b3c62328f6"
+	TestMilestoneID = "17ce48fe-0a18-41a8-ab7e-59d8002f027b - 0x901a64406d97a3fa9b87b320cbeb86b3c62328f5"
 )
 
 type KeeperTestSuite struct {
