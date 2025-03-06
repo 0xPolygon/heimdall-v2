@@ -116,12 +116,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 		}
 
-		if req.Height%2 == 0 {
-			logger.Info("MARKING PAYLOAD INVALID FOR TESTING PURPOSES", "height", req.Height)
-			payload.ExecutionPayload.StateRoot = "0x"
-
-		}
-
 		// this is where we could filter/reorder transactions, or mark them for filtering so consensus could be checked
 
 		marshaledExecutionPayload, err := json.Marshal(payload.ExecutionPayload)
@@ -263,22 +257,40 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		var executionPayload engine.ExecutionPayload
 		err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
 		if err != nil {
-			// TODO: ForkChoiceState can be updated from the last block stored in the keeper
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: req.Height,
+				context: ctx,
+				ForkChoiceState: engine.ForkChoiceState{
+					HeadHash:           common.HexToHash(executionPayload.ParentHash),
+					SafeBlockHash:      common.HexToHash(executionPayload.ParentHash),
+					FinalizedBlockHash: common.Hash{},
+				},
+			}
 			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 			return nil, err
 		}
 		payload, err := app.retryUntilNewPayload(executionPayload)
 		if err != nil {
-			// TODO: ForkChoiceState can be updated from the last block stored in the keeper
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: req.Height,
+				context: ctx,
+				ForkChoiceState: engine.ForkChoiceState{
+					HeadHash:           common.HexToHash(executionPayload.ParentHash),
+					SafeBlockHash:      common.HexToHash(executionPayload.ParentHash),
+					FinalizedBlockHash: common.Hash{},
+				},
+			}
 			logger.Error("failed to validate execution payload on execution client, cannot proceed", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		if payload.Status != "VALID" {
-			// TODO: ForkChoiceState can be updated from the last block stored in the keeper
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: req.Height,
+				context: ctx,
+				ForkChoiceState: engine.ForkChoiceState{
+					HeadHash:           common.HexToHash(executionPayload.ParentHash),
+					SafeBlockHash:      common.HexToHash(executionPayload.ParentHash),
+					FinalizedBlockHash: common.Hash{},
+				},
+			}
 			logger.Error("execution payload is not valid, cannot proceed", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
