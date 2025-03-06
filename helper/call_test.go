@@ -104,6 +104,7 @@ func TestPopulateABIs(t *testing.T) {
 		t.Error("Error creating contract caller")
 	}
 
+	assert.NotNil(t, &contractCallerObjFirst)
 	assert.Equalf(t, ContractsABIsMap[rootchain.RootchainMetaData.ABI], &contractCallerObjFirst.RootChainABI,
 		"values for %s not equals", rootchain.RootchainMetaData.ABI)
 	assert.Equalf(t, ContractsABIsMap[stakinginfo.StakinginfoMetaData.ABI], &contractCallerObjFirst.StakingInfoABI,
@@ -142,6 +143,7 @@ func TestPopulateABIs(t *testing.T) {
 	if err != nil {
 		t.Log("Error creating contract caller")
 	}
+	assert.NotNil(t, &contractCallerObjSecond)
 
 	assert.Equalf(t, ContractsABIsMap[rootchain.RootchainMetaData.ABI], &contractCallerObjSecond.RootChainABI,
 		"values for %s not equals", rootchain.RootchainMetaData.ABI)

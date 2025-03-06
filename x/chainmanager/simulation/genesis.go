@@ -17,9 +17,7 @@ import (
 const (
 	MainChainTxConfirmations = "main_chain_tx_confirmations"
 	BorChainTxConfirmations  = "bor_chain_tx_confirmations"
-
-	BorChainID      = "bor_chain_id"
-	HeimdallChainID = "heimdall_chain_id"
+	BorChainID               = "bor_chain_id"
 	// #nosec G101 -- suppress gosec warning
 	PolTokenAddress       = "pol_token_address"
 	StakingManagerAddress = "staking_manager_address"
@@ -27,11 +25,8 @@ const (
 	RootChainAddress      = "root_chain_address"
 	StakingInfoAddress    = "staking_info_address"
 	StateSenderAddress    = "state_sender_address"
-
-	// Bor Chain Contracts
-
-	StateReceiverAddress = "state_receiver_address"
-	ValidatorSetAddress  = "validator_set_address"
+	StateReceiverAddress  = "state_receiver_address"
+	ValidatorSetAddress   = "validator_set_address"
 )
 
 // genMainChainTxConfirmations returns a randomized mainchain tx confirmations

@@ -255,7 +255,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to rename current_val_set field: %w", err)
 	}
 
-	if err := utils.MigrateValidators(appCodec, stakeData["validators"]); err != nil {
+	if err := utils.MigrateValidators(stakeData["validators"]); err != nil {
 		return fmt.Errorf("failed to migrate validators in stake module: %w", err)
 	}
 
@@ -264,7 +264,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to find current_validator_set in stake module")
 	}
 
-	if err := utils.MigrateValidators(appCodec, currentValidatorSet["validators"]); err != nil {
+	if err := utils.MigrateValidators(currentValidatorSet["validators"]); err != nil {
 		return fmt.Errorf("failed to migrate validators in current_validator_set: %w", err)
 	}
 
@@ -273,7 +273,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to find proposer in current_validator_set")
 	}
 
-	if err := utils.MigrateValidator(appCodec, proposer); err != nil {
+	if err := utils.MigrateValidator(proposer); err != nil {
 		return fmt.Errorf("failed to migrate proposer: %w", err)
 	}
 
@@ -317,7 +317,7 @@ func migrateChainmanagerModule(genesisData map[string]interface{}, chainId strin
 	return nil
 }
 
-// migrateMilestoneModule adds genesis state for the milestone module because its not exported from heimdall v1.
+// migrateMilestoneModule adds genesis state for the milestone module because it's not exported from heimdall-v1.
 func migrateMilestoneModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating milestone module...")
 
@@ -726,7 +726,7 @@ func migrateBorModule(genesisData map[string]interface{}) error {
 			return fmt.Errorf("failed to rename bor_chain_id field: %w", err)
 		}
 
-		if err := utils.MigrateValidators(appCodec, spanMap["selected_producers"]); err != nil {
+		if err := utils.MigrateValidators(spanMap["selected_producers"]); err != nil {
 			return fmt.Errorf("failed to migrate selected_producers in span: %w", err)
 		}
 
@@ -737,12 +737,12 @@ func migrateBorModule(genesisData map[string]interface{}) error {
 
 		proposer, _ := validatorSet["proposer"].(map[string]interface{})
 		if proposer != nil {
-			if err := utils.MigrateValidator(appCodec, proposer); err != nil {
+			if err := utils.MigrateValidator(proposer); err != nil {
 				return fmt.Errorf("failed to migrate proposer: %w", err)
 			}
 		}
 
-		if err := utils.MigrateValidators(appCodec, validatorSet["validators"]); err != nil {
+		if err := utils.MigrateValidators(validatorSet["validators"]); err != nil {
 			return fmt.Errorf("failed to migrate validators in validator_set: %w", err)
 		}
 	}

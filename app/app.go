@@ -180,7 +180,7 @@ func NewHeimdallApp(
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
 
-	bApp := baseapp.NewBaseApp(AppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(HeimdallAppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
@@ -323,7 +323,6 @@ func NewHeimdallApp(
 		appCodec,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.NewKVStoreService(keys[milestoneTypes.StoreKey]),
-		&app.StakeKeeper,
 		&app.caller,
 	)
 

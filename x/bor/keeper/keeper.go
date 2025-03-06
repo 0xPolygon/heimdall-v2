@@ -99,11 +99,6 @@ func (k *Keeper) SetContractCaller(contractCaller helper.IContractCaller) {
 	k.contractCaller = contractCaller
 }
 
-// GetSpanKey appends prefix to start block
-func GetSpanKey(id uint64) []byte {
-	return append(types.SpanPrefixKey, sdk.Uint64ToBigEndian(id)...)
-}
-
 // AddNewSpan adds new span for bor to store and updates last span
 func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 	logger := k.Logger(ctx)

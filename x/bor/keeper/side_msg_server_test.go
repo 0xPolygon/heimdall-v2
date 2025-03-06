@@ -240,7 +240,7 @@ func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
 			postHandler := sideMsgServer.PostTxHandler(sdk.MsgTypeURL(&types.MsgProposeSpan{}))
-			postHandler(ctx, tc.msg, tc.vote)
+			_ = postHandler(ctx, tc.msg, tc.vote)
 
 			lastSpan, err := borKeeper.GetLastSpan(ctx)
 			require.NoError(err)

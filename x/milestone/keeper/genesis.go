@@ -11,12 +11,12 @@ import (
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	err := data.Params.Validate()
 	if err != nil {
-		panic(fmt.Sprint("error in validating the milestone params", "err", err))
+		panic(fmt.Sprintf("error in validating milestone params: err = %v", err))
 	}
 
 	err = k.params.Set(ctx, data.Params)
 	if err != nil {
-		panic(fmt.Sprint("error in setting the milestone params", "err", err))
+		panic(fmt.Sprintf("error in setting the milestone params: err = %v", err))
 	}
 }
 

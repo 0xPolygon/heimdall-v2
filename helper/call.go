@@ -59,6 +59,7 @@ type IContractCaller interface {
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
+	GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
@@ -442,7 +443,7 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
 	if err != nil {
-		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
+		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "error", err)
 		return
 	}
 
@@ -529,6 +530,43 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	}
 
 	return latestBlock, nil
+}
+
+// GetBorChainBlocksInBatch returns bor chain block headers via single RPC Batch call
+func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
+
+	rpcClient := c.BorChainClient.Client()
+
+	// Prepare a slice of batch elements.
+	batchElems := make([]rpc.BatchElem, 0, end-start+1)
+	result := make([]*ethTypes.Header, end-start+1)
+	for i := start; i <= end; i++ {
+		blockNumHex := fmt.Sprintf("0x%x", i)
+
+		batchElems = append(batchElems, rpc.BatchElem{
+			Method: "eth_getHeaderByNumber",
+			Args:   []interface{}{blockNumHex},
+			Result: &result[i-start],
+		})
+	}
+
+	// Execute the batch call.
+	if err := rpcClient.BatchCallContext(ctx, batchElems); err != nil {
+		return nil, err
+	}
+
+	// Collect the results.
+	response := make([]*ethTypes.Header, 0, len(batchElems))
+	for i, elem := range batchElems {
+		if elem.Error != nil || result[i] == nil {
+			break
+		}
+		response = append(response, result[i])
+	}
+
+	return response, nil
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block
