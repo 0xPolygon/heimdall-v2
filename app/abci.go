@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -59,9 +60,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// Engine API
 		var payload *engine.Payload
-		if app.latestExecPayload != nil {
+
+		// TODO: store bor block height in a keeper
+		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == strconv.FormatInt(req.Height, 10) {
 			payload = app.latestExecPayload
+		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == strconv.FormatInt(req.Height, 10) {
+			payload = app.nextExecPayload
 		} else {
+			logger.Debug("latest payload not found, fetching from engine")
 			latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1)) // change this to a keeper
 			if err != nil {
 				return nil, err
@@ -667,130 +673,6 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	logger.Info("🕒 End PreBlocker:", "duration", formatted, "height", req.Height, "payloadSize", len(req.Txs[0]), "momentTime", time.Now().Format("04:05.000000"))
 	return app.ModuleManager.PreBlock(ctx)
 }
-
-// func (app *HeimdallApp) retryBuildLatestPayload(ctx sdk.Context, height int64) (response *engine.Payload, err error) {
-// 	forever := backoff.NewExponentialBackOff()
-// 	latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(height)) // change this to a keeper
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	state := engine.ForkChoiceState{
-// 		HeadHash:           latestBlock.Hash(),
-// 		SafeBlockHash:      latestBlock.Hash(),
-// 		FinalizedBlockHash: common.Hash{},
-// 	}
-
-// 	// The engine complains when the withdrawals are empty
-// 	withdrawals := []*engine.Withdrawal{ // need to undestand
-// 		{
-// 			Index:     "0x0",
-// 			Validator: "0x0",
-// 			Address:   common.Address{}.Hex(),
-// 			Amount:    "0x0",
-// 		},
-// 	}
-
-// 	addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-// 	attrs := engine.PayloadAttributes{
-// 		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-// 		PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
-// 		SuggestedFeeRecipient: addr,
-// 		Withdrawals:           withdrawals,
-// 	}
-
-// 	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(&state, &attrs)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	payloadId := choice.PayloadId
-// 	status := choice.PayloadStatus
-
-// 	if status.Status != "VALID" {
-// 		// logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
-// 		return nil, errors.New(status.ValidationError)
-// 	}
-
-// 	err = backoff.Retry(func() error {
-// 		response, err = app.caller.BorEngineClient.GetPayloadV2(payloadId)
-// 		if forever.NextBackOff() > 1*time.Minute {
-// 			forever.Reset()
-// 		}
-// 		if err != nil {
-// 			return err
-// 		}
-// 		return nil
-// 	}, forever)
-// 	if err != nil {
-// 		return nil, err // should not happen, retries forever
-// 	}
-
-// 	app.latestExecPayload = response
-// 	return response, nil
-// }
-
-// func (app *HeimdallApp) retryBuildNextPayload(ctx sdk.Context, height int64) (response *engine.Payload, err error) {
-// 	forever := backoff.NewExponentialBackOff()
-// 	latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(height)) // change this to a keeper
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	state := engine.ForkChoiceState{
-// 		HeadHash:           latestBlock.Hash(),
-// 		SafeBlockHash:      latestBlock.Hash(),
-// 		FinalizedBlockHash: common.Hash{},
-// 	}
-
-// 	// The engine complains when the withdrawals are empty
-// 	withdrawals := []*engine.Withdrawal{ // need to undestand
-// 		{
-// 			Index:     "0x0",
-// 			Validator: "0x0",
-// 			Address:   common.Address{}.Hex(),
-// 			Amount:    "0x0",
-// 		},
-// 	}
-
-// 	addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-// 	attrs := engine.PayloadAttributes{
-// 		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-// 		PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
-// 		SuggestedFeeRecipient: addr,
-// 		Withdrawals:           withdrawals,
-// 	}
-
-// 	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(&state, &attrs)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	payloadId := choice.PayloadId
-// 	status := choice.PayloadStatus
-
-// 	if status.Status != "VALID" {
-// 		// logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
-// 		return nil, errors.New(status.ValidationError)
-// 	}
-
-// 	err = backoff.Retry(func() error {
-// 		response, err = app.caller.BorEngineClient.GetPayloadV2(payloadId)
-// 		if forever.NextBackOff() > 1*time.Minute {
-// 			forever.Reset()
-// 		}
-// 		if err != nil {
-// 			return err
-// 		}
-// 		return nil
-// 	}, forever)
-// 	if err != nil {
-// 		return nil, err // should not happen, retries forever
-// 	}
-
-// 	app.nextExecPayload = response
-// 	return response, nil
-// }
 
 func (app *HeimdallApp) retryUntilNewPayload(payload engine.ExecutionPayload) (response *engine.NewPayloadResponse, err error) {
 	forever := backoff.NewExponentialBackOff()
