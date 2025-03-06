@@ -7,20 +7,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-// Milestone tags
-var (
-	AttributeKeyProposer      = "proposer"
-	AttributeKeyStartBlock    = "start-block"
-	AttributeKeyEndBlock      = "end-block"
-	AttributeKeyNewProposer   = "new-proposer"
-	AttributeKeyHash          = "hash"
-	AttributeKeyMilestoneID   = "milestone-id"
-	AttributeValueCategory    = ModuleName
-	EventTypeMilestone        = "milestone"
-	EventTypeMilestoneTimeout = "milestone-timeout"
-)
+var EventTypeMilestone = "milestone"
 
-// NewMilestoneEvent construct a new coin minted sdk.Event
+// NewMilestoneEvent construct a new sdk.Event for a new milestone added to the store
 func NewMilestoneEvent(milestone Milestone, milestoneNumber uint64) sdk.Event {
 	return sdk.NewEvent(
 		EventTypeMilestone,

@@ -69,25 +69,6 @@ type (
 	}
 )
 
-func NewGenesisState(
-	startingProposalID uint64, deposits v034gov.Deposits, votes v034gov.Votes, proposals []Proposal,
-	depositParams v034gov.DepositParams, votingParams v034gov.VotingParams, tallyParams v034gov.TallyParams,
-) GenesisState {
-	return GenesisState{
-		StartingProposalID: startingProposalID,
-		Deposits:           deposits,
-		Votes:              votes,
-		Proposals:          proposals,
-		DepositParams:      depositParams,
-		VotingParams:       votingParams,
-		TallyParams:        tallyParams,
-	}
-}
-
-func NewTextProposal(title, description string) Content {
-	return TextProposal{title, description}
-}
-
 func (tp TextProposal) GetTitle() string       { return tp.Title }
 func (tp TextProposal) GetDescription() string { return tp.Description }
 func (tp TextProposal) ProposalRoute() string  { return RouterKey }

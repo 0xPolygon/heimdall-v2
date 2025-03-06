@@ -9,13 +9,6 @@ type TestOpts struct {
 	chainId string
 }
 
-func NewTestOpts(app abci.Application, chainId string) *TestOpts {
-	return &TestOpts{
-		app:     app,
-		chainId: chainId,
-	}
-}
-
 func (t *TestOpts) SetApplication(app abci.Application) {
 	t.app = app
 }

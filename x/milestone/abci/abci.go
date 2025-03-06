@@ -62,7 +62,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	return milestoneProp, nil
 }
 
-func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*types.MilestoneProposition, []byte, string, error) {
+func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*types.MilestoneProposition, []byte, string, error) {
 	ac := address.HexCodec{}
 
 	// Track voting power per block number
@@ -252,7 +252,7 @@ func GetMajorityMilestoneProposition(ctx sdk.Context, validatorSet *stakeTypes.V
 	}
 
 	// Generate aggregated proposers hash from supporting validators
-	aggregatedProposersHash := []byte{}
+	var aggregatedProposersHash []byte
 	for _, valAddr := range supportingValidatorList {
 		aggregatedProposersHash = crypto.Keccak256(
 			aggregatedProposersHash,

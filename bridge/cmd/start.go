@@ -41,7 +41,7 @@ const (
 	waitDuration = 1 * time.Minute
 )
 
-// StartBridgeWithCtx starts bridge service and is able to shutdow gracefully
+// StartBridgeWithCtx starts bridge service, and it's able to shut down gracefully
 // returns service errors, if any
 func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) error {
 	// create codec

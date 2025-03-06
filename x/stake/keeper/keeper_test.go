@@ -360,7 +360,7 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 
 	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer)
 	require.Equal(newSigner[0].Signer, newVal.Signer, "Signer address should be update")
-	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubkey should should be updated")
+	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubKey should should be updated")
 
 	require.Equal(prevValSet.GetTotalVotingPower(), currentValSet.GetTotalVotingPower(), "Total VotingPower should not change")
 }

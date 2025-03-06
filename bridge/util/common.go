@@ -23,7 +23,6 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -35,12 +34,10 @@ const (
 	LastNoAckURL            = "/checkpoints/last-no-ack"
 	CheckpointParamsURL     = "/checkpoints/params"
 	CheckpointSignaturesURL = "/checkpoint/signatures/%v"
-	MilestoneCountURL       = "/milestone/count"
 	ChainManagerParamsURL   = "/chainmanager/params"
 	ProposersURL            = "/stake/proposers/%v"
 	BufferedCheckpointURL   = "/checkpoints/buffer"
 	LatestCheckpointURL     = "/checkpoints/latest"
-	LatestMilestoneURL      = "/milestone/latest"
 	CountCheckpointURL      = "/checkpoints/count"
 	CurrentProposerURL      = "/checkpoint/proposers/current"
 	LatestSpanURL           = "/bor/span/latest"
@@ -63,8 +60,6 @@ const (
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
 
-	TransactionTimeout      = 1 * time.Minute
-	CommitTimeout           = 2 * time.Minute
 	TaskDelayBetweenEachVal = 10 * time.Second
 	RetryTaskDelay          = 12 * time.Second
 	RetryStateSyncTaskDelay = 24 * time.Second
@@ -412,44 +407,6 @@ func GetLatestCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 	}
 
 	return &checkpoint.Checkpoint, nil
-}
-
-// GetLatestMilestone return last successful milestone
-func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
-	logger := Logger()
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
-	if err != nil {
-		logger.Debug("Error fetching latest milestone", "err", err)
-		return nil, err
-	}
-
-	var milestoneResp milestoneTypes.QueryLatestMilestoneResponse
-	if err = cdc.UnmarshalJSON(response, &milestoneResp); err != nil {
-		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
-		return nil, err
-	}
-
-	return &milestoneResp.Milestone, nil
-}
-
-// GetMilestoneCount return milestones count
-func GetMilestoneCount(cdc codec.Codec) (uint64, error) {
-	logger := Logger()
-
-	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(MilestoneCountURL))
-	if err != nil {
-		logger.Error("Error fetching Milestone count", "err", err)
-		return 0, err
-	}
-
-	var count milestoneTypes.QueryCountResponse
-	if err := cdc.UnmarshalJSON(response, &count); err != nil {
-		logger.Error("Error unmarshalling milestone Count", "url", MilestoneCountURL)
-		return 0, err
-	}
-
-	return count.Count, nil
 }
 
 // AppendPrefix returns PublicKey in uncompressed format

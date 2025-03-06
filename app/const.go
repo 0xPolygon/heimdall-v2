@@ -1,5 +1,5 @@
 package app
 
 const (
-	AppName = "heimdallapp"
+	HeimdallAppName = "heimdallapp"
 )
