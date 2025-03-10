@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -62,9 +61,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		var payload *engine.Payload
 
 		// TODO: store bor block height in a keeper
-		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == strconv.FormatInt(req.Height, 10) {
+		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
 			payload = app.latestExecPayload
-		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == strconv.FormatInt(req.Height, 10) {
+		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
 			payload = app.nextExecPayload
 		} else {
 			logger.Debug("latest payload not found, fetching from engine")
