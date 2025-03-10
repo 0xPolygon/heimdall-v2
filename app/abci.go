@@ -283,8 +283,8 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		app.nextBlockChan <- nextELBlockCtx{height: req.Height + 1,
 			context: ctx,
 			ForkChoiceState: engine.ForkChoiceState{
-				HeadHash:           common.HexToHash(payload.LatestValidHash),
-				SafeBlockHash:      common.HexToHash(payload.LatestValidHash),
+				HeadHash:           common.HexToHash(executionPayload.BlockHash),
+				SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
 				FinalizedBlockHash: common.Hash{},
 			},
 		}
@@ -509,7 +509,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	state := engine.ForkChoiceState{
 		HeadHash:           common.HexToHash(executionPayload.BlockHash),
 		SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
-		FinalizedBlockHash: common.HexToHash(executionPayload.ParentHash), // latestHash from the Proposal stage
+		FinalizedBlockHash: common.HexToHash(executionPayload.BlockHash), // latestHash from the Proposal stage
 	}
 
 	// The engine complains when the withdrawals are empty
