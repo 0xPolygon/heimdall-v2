@@ -87,7 +87,10 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	genesisFileV1 := args[0]
+	genesisFileV1, err := filepath.Abs(args[0])
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
 
 	if _, err := os.Stat(genesisFileV1); os.IsNotExist(err) {
 		return fmt.Errorf("genesis file does not exist: %s", genesisFileV1)
