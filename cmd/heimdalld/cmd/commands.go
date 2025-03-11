@@ -110,7 +110,19 @@ func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) Va
 // initCometBFTConfig helps to override default CometBFT Config values.
 // It returns cmtcfg.DefaultConfig if no custom configuration is required for the application.
 func initCometBFTConfig() *cmtcfg.Config {
-	return cmtcfg.DefaultConfig()
+	customCMTConfig := cmtcfg.DefaultConfig()
+
+	customCMTConfig.Consensus.TimeoutPropose = 1000 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutProposeDelta = 200 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrevote = 500 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrevoteDelta = 200 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrecommit = 500 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutPrecommitDelta = 200 * time.Millisecond
+	customCMTConfig.Consensus.TimeoutCommit = 500 * time.Millisecond
+	customCMTConfig.Consensus.PeerGossipSleepDuration = 25 * time.Millisecond
+	customCMTConfig.Consensus.PeerQueryMaj23SleepDuration = 200 * time.Millisecond
+
+	return customCMTConfig
 }
 
 // initAppConfig helps to override default appConfig template and configs.
