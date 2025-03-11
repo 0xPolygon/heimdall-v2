@@ -105,7 +105,10 @@ func NewRootCmd() *cobra.Command {
 			customAppTemplate, customAppConfig := initAppConfig()
 			customCMTConfig := initCometBFTConfig()
 
-			if cmd.Name() != commands.InitFilesCmd.Name() && cmd.Name() != commands.VersionCmd.Name() && cmd.Name() != testnetCmdName {
+			if cmd.Name() != commands.InitFilesCmd.Name() &&
+				cmd.Name() != commands.VersionCmd.Name() &&
+				cmd.Name() != MigrateCommand().Name() &&
+				cmd.Name() != testnetCmdName {
 				helper.InitHeimdallConfig("")
 			}
 
