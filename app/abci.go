@@ -166,6 +166,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		duration := time.Since(start)
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
 		logger.Info("🕒 End PrepareProposal:", "duration", formatted, "height", req.Height, "payloadSize", len(txs[0]), "momentTime", time.Now().Format("04:05.000000"))
+
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
@@ -175,6 +176,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
+
 		start := time.Now()
 		logger.Info("🕒 Start ProcessProposal:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
@@ -469,6 +471,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
+
 	start := time.Now()
 	logger.Info("🕒 Start PreBlocker:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
@@ -512,25 +515,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		FinalizedBlockHash: common.HexToHash(executionPayload.BlockHash), // latestHash from the Proposal stage
 	}
 
-	// The engine complains when the withdrawals are empty
-	withdrawals := []*engine.Withdrawal{
-		{
-			Index:     "0x0",
-			Validator: "0x0",
-			Address:   common.Address{}.Hex(),
-			Amount:    "0x0",
-		},
-	}
-
-	attrs := engine.PayloadAttributes{
-		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-		PrevRandao:            common.Hash{},
-		SuggestedFeeRecipient: common.HexToAddress(executionPayload.FeeRecipient),
-		Withdrawals:           withdrawals,
-	}
-
 	var choice *engine.ForkchoiceUpdatedResponse
-	choice, err = app.retryUntilForkchoiceUpdated(&state, &attrs)
+	choice, err = app.retryUntilForkchoiceUpdated(&state, nil)
 	if err != nil {
 		infoLog := "fork choice failed, cannot proceed"
 		logger.Error(infoLog, err.Error())
