@@ -54,7 +54,8 @@ func TestEnginePayloadProcessing(t *testing.T) {
 
 	fmt.Printf("1-> ForkchoiceUpdatedV2: state=%v, attrs=%v\n", state, attrs)
 
-	fcu1, err := ec.ForkchoiceUpdatedV2(&state, &attrs)
+	ctx := context.TODO()
+	fcu1, err := ec.ForkchoiceUpdatedV2(ctx, &state, &attrs)
 	require.NoError(t, err)
 	require.NotNil(t, fcu1)
 	require.Equal(t, "VALID", fcu1.PayloadStatus.Status)
@@ -63,7 +64,7 @@ func TestEnginePayloadProcessing(t *testing.T) {
 	fmt.Printf("return: %v\n\n", fcu1)
 
 	fmt.Printf("2-> GetPayloadV2: %v\n", fcu1.PayloadId)
-	payload1, err := ec.GetPayloadV2(fcu1.PayloadId)
+	payload1, err := ec.GetPayloadV2(ctx, fcu1.PayloadId)
 	require.NoError(t, err)
 	require.NotNil(t, payload1)
 
@@ -71,7 +72,7 @@ func TestEnginePayloadProcessing(t *testing.T) {
 
 	fmt.Printf("3-> NewPayloadV2: %v\n", payload1.ExecutionPayload)
 
-	newPayload, err := ec.NewPayloadV2(payload1.ExecutionPayload)
+	newPayload, err := ec.NewPayloadV2(ctx, payload1.ExecutionPayload)
 	require.NoError(t, err)
 	require.NotNil(t, newPayload)
 	require.Equal(t, "VALID", newPayload.Status)
@@ -90,7 +91,7 @@ func TestEnginePayloadProcessing(t *testing.T) {
 
 	fmt.Printf("4-> ForkchoiceUpdatedV2: state=%v, attrs=%v\n", state, attrs)
 
-	fcu2, err := ec.ForkchoiceUpdatedV2(&state, &attrs)
+	fcu2, err := ec.ForkchoiceUpdatedV2(ctx, &state, &attrs)
 	require.NoError(t, err)
 	require.NotNil(t, fcu2)
 	require.Equal(t, "VALID", fcu2.PayloadStatus.Status)
@@ -180,13 +181,14 @@ func TestMultiEngineExecution(t *testing.T) {
 		//ParentBeaconBlockRoot: common.Hash{},
 	}
 
-	fcu1, err := ec0.ForkchoiceUpdatedV2(&state, &attrs)
+	ctx := context.TODO()
+	fcu1, err := ec0.ForkchoiceUpdatedV2(ctx, &state, &attrs)
 	require.NoError(t, err)
 	require.NotNil(t, fcu1)
 	require.Equal(t, "VALID", fcu1.PayloadStatus.Status)
 	require.NotEmpty(t, fcu1.PayloadId)
 
-	payload1, err := ec0.GetPayloadV2(fcu1.PayloadId)
+	payload1, err := ec0.GetPayloadV2(ctx, fcu1.PayloadId)
 	require.NoError(t, err)
 	require.NotNil(t, payload1)
 
@@ -198,7 +200,7 @@ func TestMultiEngineExecution(t *testing.T) {
 		require.NoError(t, err)
 		defer engine.Close()
 
-		newPayload, err := engine.NewPayloadV2(payload1.ExecutionPayload)
+		newPayload, err := engine.NewPayloadV2(ctx, payload1.ExecutionPayload)
 		require.NoError(t, err)
 		require.NotNil(t, newPayload)
 		require.Equal(t, "VALID", newPayload.Status)
@@ -213,7 +215,7 @@ func TestMultiEngineExecution(t *testing.T) {
 		// apparently not used in block hash, but must be distinct from previous attrs
 		attrs.Timestamp = hexutil.Uint64(time.Now().UnixMilli())
 
-		fcu2, err := engine.ForkchoiceUpdatedV2(&state, &attrs)
+		fcu2, err := engine.ForkchoiceUpdatedV2(ctx, &state, &attrs)
 		require.NoError(t, err)
 		require.NotNil(t, fcu2)
 		require.Equal(t, "VALID", fcu2.PayloadStatus.Status)

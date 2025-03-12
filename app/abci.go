@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -96,7 +97,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				Withdrawals:           withdrawals,
 			}
 
-			choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(&state, &attrs)
+			ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
+			defer cancelFunc()
+			choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, &state, &attrs)
 			if err != nil {
 				return nil, err
 			}
@@ -109,7 +112,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				return nil, errors.New(status.ValidationError)
 			}
 
-			payload, err = app.caller.BorEngineClient.GetPayloadV2(payloadId)
+			payload, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
 			if err != nil {
 				return nil, err
 			}
@@ -262,7 +265,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 			return nil, err
 		}
-		payload, err := app.retryUntilNewPayload(executionPayload)
+		payload, err := app.retryUntilNewPayload(ctx, executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper
 			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
@@ -516,7 +519,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var choice *engine.ForkchoiceUpdatedResponse
-	choice, err = app.retryUntilForkchoiceUpdated(&state, nil)
+	choice, err = app.retryUntilForkchoiceUpdated(ctx, &state, nil)
 	if err != nil {
 		infoLog := "fork choice failed, cannot proceed"
 		logger.Error(infoLog, err.Error())
@@ -640,10 +643,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	return app.ModuleManager.PreBlock(ctx)
 }
 
-func (app *HeimdallApp) retryUntilNewPayload(payload engine.ExecutionPayload) (response *engine.NewPayloadResponse, err error) {
+func (app *HeimdallApp) retryUntilNewPayload(ctx sdk.Context, payload engine.ExecutionPayload) (response *engine.NewPayloadResponse, err error) {
 	forever := backoff.NewExponentialBackOff()
 	err = backoff.Retry(func() error {
-		response, err = app.caller.BorEngineClient.NewPayloadV2(payload)
+		ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
+		defer cancelFunc()
+		response, err = app.caller.BorEngineClient.NewPayloadV2(ctx, payload)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
@@ -658,10 +663,12 @@ func (app *HeimdallApp) retryUntilNewPayload(payload engine.ExecutionPayload) (r
 	return response, nil
 }
 
-func (app *HeimdallApp) retryUntilForkchoiceUpdated(state *engine.ForkChoiceState, attrs *engine.PayloadAttributes) (response *engine.ForkchoiceUpdatedResponse, err error) {
+func (app *HeimdallApp) retryUntilForkchoiceUpdated(ctx sdk.Context, state *engine.ForkChoiceState, attrs *engine.PayloadAttributes) (response *engine.ForkchoiceUpdatedResponse, err error) {
 	forever := backoff.NewExponentialBackOff()
 	err = backoff.Retry(func() error {
-		response, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(state, attrs)
+		ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
+		defer cancelFunc()
+		response, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, state, attrs)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
