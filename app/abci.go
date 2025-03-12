@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -267,7 +266,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 			return nil, err
 		}
-		payload, err := app.retryUntilNewPayload(ctx, executionPayload)
+		payload, err := app.caller.BorEngineClient.NewPayloadV2(ctx, executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper
 			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
@@ -521,7 +520,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var choice *engine.ForkchoiceUpdatedResponse
-	choice, err = app.retryUntilForkchoiceUpdated(ctx, &state, nil)
+	choice, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, &state, nil)
 	if err != nil {
 		infoLog := "fork choice failed, cannot proceed"
 		logger.Error(infoLog, err.Error())
@@ -643,44 +642,4 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
 	logger.Info("🕒 End PreBlocker:", "duration", formatted, "height", req.Height, "payloadSize", len(req.Txs[0]), "momentTime", time.Now().Format("04:05.000000"))
 	return app.ModuleManager.PreBlock(ctx)
-}
-
-func (app *HeimdallApp) retryUntilNewPayload(ctx sdk.Context, payload engine.ExecutionPayload) (response *engine.NewPayloadResponse, err error) {
-	forever := backoff.NewExponentialBackOff()
-	err = backoff.Retry(func() error {
-		ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
-		defer cancelFunc()
-		response, err = app.caller.BorEngineClient.NewPayloadV2(ctx, payload)
-		if forever.NextBackOff() > 1*time.Minute {
-			forever.Reset()
-		}
-		if err != nil {
-			return err
-		}
-		return nil
-	}, forever)
-	if err != nil {
-		return nil, err // should not happen, retries forever
-	}
-	return response, nil
-}
-
-func (app *HeimdallApp) retryUntilForkchoiceUpdated(ctx sdk.Context, state *engine.ForkChoiceState, attrs *engine.PayloadAttributes) (response *engine.ForkchoiceUpdatedResponse, err error) {
-	forever := backoff.NewExponentialBackOff()
-	err = backoff.Retry(func() error {
-		ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
-		defer cancelFunc()
-		response, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, state, attrs)
-		if forever.NextBackOff() > 1*time.Minute {
-			forever.Reset()
-		}
-		if err != nil {
-			return err
-		}
-		return nil
-	}, forever)
-	if err != nil {
-		return nil, err // should not happen, retries forever
-	}
-	return response, nil
 }
