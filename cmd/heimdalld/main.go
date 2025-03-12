@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	rootCmd := heimdalld.NewRootCmd()
+	rootCmd, _ := heimdalld.NewRootCmd()
 	if err := svrcmd.Execute(rootCmd, "HD", app.DefaultNodeHome); err != nil {
 		_, _ = fmt.Fprintln(rootCmd.OutOrStderr(), err)
 		os.Exit(1)

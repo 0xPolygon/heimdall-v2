@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -63,6 +64,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
+	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
@@ -103,9 +105,18 @@ var (
 	_ servertypes.Application = (*HeimdallApp)(nil)
 )
 
+type nextELBlockCtx struct {
+	engine.ForkChoiceState
+	height  int64
+	context sdk.Context
+}
 type HeimdallApp struct {
 	*baseapp.BaseApp
 
+	latestExecPayload *engine.Payload
+	nextExecPayload   *engine.Payload
+	currBlockChan     chan nextELBlockCtx
+	nextBlockChan     chan nextELBlockCtx
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
 	txConfig          client.TxConfig
@@ -452,6 +463,13 @@ func NewHeimdallApp(
 			panic(fmt.Errorf("error loading last version: %w", err))
 		}
 	}
+
+	app.nextBlockChan = make(chan nextELBlockCtx)
+	app.currBlockChan = make(chan nextELBlockCtx)
+
+	go func(ctx context.Context) {
+		app.ProduceELPayload(ctx)
+	}(context.Background())
 
 	return app
 }

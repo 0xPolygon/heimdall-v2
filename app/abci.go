@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -58,51 +59,63 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		}
 
 		// Engine API
-		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1)) // change this to a keeper
-		if err != nil {
-			return nil, err
-		}
+		var payload *engine.Payload
 
-		state := engine.ForkChoiceState{
-			HeadHash:           latestBlock.Hash(),
-			SafeBlockHash:      latestBlock.Hash(),
-			FinalizedBlockHash: common.Hash{},
-		}
+		// TODO: store bor block height in a keeper
+		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
+			payload = app.latestExecPayload
+		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
+			payload = app.nextExecPayload
+		} else {
+			logger.Debug("latest payload not found, fetching from engine")
+			latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1)) // change this to a keeper
+			if err != nil {
+				return nil, err
+			}
 
-		// The engine complains when the withdrawals are empty
-		withdrawals := []*engine.Withdrawal{ // need to undestand
-			{
-				Index:     "0x0",
-				Validator: "0x0",
-				Address:   common.Address{}.Hex(),
-				Amount:    "0x0",
-			},
-		}
+			state := engine.ForkChoiceState{
+				HeadHash:           latestBlock.Hash(),
+				SafeBlockHash:      latestBlock.Hash(),
+				FinalizedBlockHash: common.Hash{},
+			}
 
-		addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-		attrs := engine.PayloadAttributes{
-			Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-			PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
-			SuggestedFeeRecipient: addr,
-			Withdrawals:           withdrawals,
-		}
+			// The engine complains when the withdrawals are empty
+			withdrawals := []*engine.Withdrawal{ // need to undestand
+				{
+					Index:     "0x0",
+					Validator: "0x0",
+					Address:   common.Address{}.Hex(),
+					Amount:    "0x0",
+				},
+			}
 
-		choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(&state, &attrs)
-		if err != nil {
-			return nil, err
-		}
+			addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
+			attrs := engine.PayloadAttributes{
+				Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
+				PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
+				SuggestedFeeRecipient: addr,
+				Withdrawals:           withdrawals,
+			}
 
-		payloadId := choice.PayloadId
-		status := choice.PayloadStatus
+			ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
+			defer cancelFunc()
+			choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, &state, &attrs)
+			if err != nil {
+				return nil, err
+			}
 
-		if status.Status != "VALID" {
-			logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
-			return nil, errors.New(status.ValidationError)
-		}
+			payloadId := choice.PayloadId
+			status := choice.PayloadStatus
 
-		payload, err := app.caller.BorEngineClient.GetPayloadV2(payloadId)
-		if err != nil {
-			return nil, err
+			if status.Status != "VALID" {
+				logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
+				return nil, errors.New(status.ValidationError)
+			}
+
+			payload, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// this is where we could filter/reorder transactions, or mark them for filtering so consensus could be checked
@@ -156,6 +169,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		duration := time.Since(start)
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
 		logger.Info("🕒 End PrepareProposal:", "duration", formatted, "height", req.Height, "payloadSize", len(txs[0]), "momentTime", time.Now().Format("04:05.000000"))
+
 		return &abci.ResponsePrepareProposal{Txs: txs}, nil
 	}
 }
@@ -165,12 +179,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 	return func(ctx sdk.Context, req *abci.RequestProcessProposal) (*abci.ResponseProcessProposal, error) {
 		logger := app.Logger()
+
 		start := time.Now()
 		logger.Info("🕒 Start ProcessProposal:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
 		// check if there are any txs in the request
 		if len(req.Txs) < 1 {
 			logger.Error("unexpected behaviour, no txs found in the proposal")
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
@@ -185,17 +201,20 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := metadata.MarshaledLocalLastCommit
 		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			logger.Error("Error occurred while decoding ExtendedCommitInfo", "height", req.Height, "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		if extCommitInfo.Round != req.ProposedLastCommit.Round {
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			logger.Error("Received commit round does not match expected round", "expected", req.ProposedLastCommit.Round, "got", extCommitInfo.Round)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		// validate the vote extensions
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -207,6 +226,8 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			} else {
 				logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
 			}
+
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
@@ -214,18 +235,21 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 			txn, err := app.TxDecode(tx)
 			if err != nil {
+				app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 				logger.Error("error occurred while decoding tx bytes in ProcessProposalHandler", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
 			// ensure we allow transactions with only one side msg inside
 			if sidetxs.CountSideHandlers(app.sideTxCfg, txn) > 1 {
+				app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
 			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			_, err = app.ProcessProposalVerifyTx(tx)
 			if err != nil {
+				app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
@@ -236,23 +260,39 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		var executionPayload engine.ExecutionPayload
 		err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
 		if err != nil {
+			// TODO: use forkchoice state from the latest block stored in the keeper
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 			return nil, err
 		}
-		payload, err := app.retryUntilNewPayload(executionPayload)
+		payload, err := app.retryUntilNewPayload(ctx, executionPayload)
 		if err != nil {
+			// TODO: use forkchoice state from the latest block stored in the keeper
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			logger.Error("failed to validate execution payload on execution client, cannot proceed", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		if payload.Status != "VALID" {
+			// TODO: use forkchoice state from the latest block stored in the keeper
+			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
 			logger.Error("execution payload is not valid, cannot proceed", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		// app.execPayloadCache.Add(payload.LatestValidHash, payload)
 		duration := time.Since(start)
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
-		logger.Info("🕒 End ProcessProposal:", "duration", formatted, "height", req.Height, "payloadSize", len(req.Txs[0]), "momentTime", time.Now().Format("04:05.000000"))
+		logger.Info("🕒 ProcessProposal:" + formatted)
+
+		app.nextBlockChan <- nextELBlockCtx{height: req.Height + 1,
+			context: ctx,
+			ForkChoiceState: engine.ForkChoiceState{
+				HeadHash:           common.HexToHash(executionPayload.BlockHash),
+				SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
+				FinalizedBlockHash: common.Hash{},
+			},
+		}
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
 	}
 }
@@ -434,6 +474,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 // PreBlocker application updates every pre block
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
+
 	start := time.Now()
 	logger.Info("🕒 Start PreBlocker:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
@@ -474,28 +515,11 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	state := engine.ForkChoiceState{
 		HeadHash:           common.HexToHash(executionPayload.BlockHash),
 		SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
-		FinalizedBlockHash: common.HexToHash(executionPayload.ParentHash), // latestHash from the Proposal stage
-	}
-
-	// The engine complains when the withdrawals are empty
-	withdrawals := []*engine.Withdrawal{
-		{
-			Index:     "0x0",
-			Validator: "0x0",
-			Address:   common.Address{}.Hex(),
-			Amount:    "0x0",
-		},
-	}
-
-	attrs := engine.PayloadAttributes{
-		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-		PrevRandao:            common.Hash{},
-		SuggestedFeeRecipient: common.HexToAddress(executionPayload.FeeRecipient),
-		Withdrawals:           withdrawals,
+		FinalizedBlockHash: common.HexToHash(executionPayload.BlockHash), // latestHash from the Proposal stage
 	}
 
 	var choice *engine.ForkchoiceUpdatedResponse
-	choice, err = app.retryUntilForkchoiceUpdated(&state, &attrs)
+	choice, err = app.retryUntilForkchoiceUpdated(ctx, &state, nil)
 	if err != nil {
 		infoLog := "fork choice failed, cannot proceed"
 		logger.Error(infoLog, err.Error())
@@ -619,10 +643,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	return app.ModuleManager.PreBlock(ctx)
 }
 
-func (app *HeimdallApp) retryUntilNewPayload(payload engine.ExecutionPayload) (response *engine.NewPayloadResponse, err error) {
+func (app *HeimdallApp) retryUntilNewPayload(ctx sdk.Context, payload engine.ExecutionPayload) (response *engine.NewPayloadResponse, err error) {
 	forever := backoff.NewExponentialBackOff()
 	err = backoff.Retry(func() error {
-		response, err = app.caller.BorEngineClient.NewPayloadV2(payload)
+		ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
+		defer cancelFunc()
+		response, err = app.caller.BorEngineClient.NewPayloadV2(ctx, payload)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
@@ -637,10 +663,12 @@ func (app *HeimdallApp) retryUntilNewPayload(payload engine.ExecutionPayload) (r
 	return response, nil
 }
 
-func (app *HeimdallApp) retryUntilForkchoiceUpdated(state *engine.ForkChoiceState, attrs *engine.PayloadAttributes) (response *engine.ForkchoiceUpdatedResponse, err error) {
+func (app *HeimdallApp) retryUntilForkchoiceUpdated(ctx sdk.Context, state *engine.ForkChoiceState, attrs *engine.PayloadAttributes) (response *engine.ForkchoiceUpdatedResponse, err error) {
 	forever := backoff.NewExponentialBackOff()
 	err = backoff.Retry(func() error {
-		response, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(state, attrs)
+		ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
+		defer cancelFunc()
+		response, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, state, attrs)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
