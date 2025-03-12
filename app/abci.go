@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
+	"math/rand"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -118,7 +120,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 		}
 
-		if req.Height%2 == 0 {
+		if rand.Int63n(math.MaxInt64)%2 == 0 {
 			logger.Info("MARKING STATE ROOT AS EMPTY", "height", req.Height)
 			payload.ExecutionPayload.StateRoot = common.Hash{}.Hex()
 		}
