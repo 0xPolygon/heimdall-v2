@@ -1,6 +1,7 @@
 package types
 
 import (
+  "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -52,8 +53,14 @@ func DefaultGenesisState() *GenesisState {
 	signer := "0x" + validatorKey.Address
 	pubKeyValue := validatorKey.PubKey.Value
 
+  pubKeyDecoded, err := base64.StdEncoding.DecodeString(validatorKey.PubKey.Value)
+	if err != nil {
+		fmt.Print("Error decoding public key: ", err)
+	}
+
 	fmt.Println("Signer Address: ", signer)
 	fmt.Println("Public Key: ", pubKeyValue)
+  fmt.Println("Decoded public key : ", pubKeyDecoded)
 
 	return &GenesisState{
 		Validators: []*Validator{
@@ -63,7 +70,7 @@ func DefaultGenesisState() *GenesisState {
 				EndEpoch:         1000000,
 				Nonce:            0,
 				VotingPower:      1000,
-				PubKey:           []byte(pubKeyValue),
+				PubKey:           pubKeyDecoded,
 				Signer:           signer,
 				LastUpdated:      "hello",
 				Jailed:           false,
@@ -78,7 +85,7 @@ func DefaultGenesisState() *GenesisState {
 					EndEpoch:         1000000,
 					Nonce:            0,
 					VotingPower:      1000,
-					PubKey:           []byte(pubKeyValue),
+					PubKey:           pubKeyDecoded,
 					Signer:           signer,
 					LastUpdated:      "hello",
 					Jailed:           false,
