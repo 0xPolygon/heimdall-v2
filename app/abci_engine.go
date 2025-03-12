@@ -20,7 +20,7 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	for {
 		select {
 		case blockCtx = <-app.nextBlockChan:
-			res, err := app.retryBuildNextPayload(blockCtx.ForkChoiceState, blockCtx.context, blockCtx.height)
+			res, err := app.retryBuildNextPayload(blockCtx.ForkChoiceState, blockCtx.context)
 			if err != nil {
 				logger.Error("error building next payload", "error", err)
 				res = nil
@@ -29,7 +29,7 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 			app.nextExecPayload = res
 
 		case blockCtx = <-app.currBlockChan:
-			res, err := app.retryBuildLatestPayload(blockCtx.ForkChoiceState, blockCtx.context, blockCtx.height)
+			res, err := app.retryBuildLatestPayload(blockCtx.ForkChoiceState, ctx, blockCtx.height)
 			if err != nil {
 				logger.Error("error building latest payload", "error", err)
 				res = nil
@@ -43,11 +43,14 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	}
 }
 
-func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx sdk.Context, height int64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx context.Context, height int64) (response *engine.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
 
+	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
 	if state == (engine.ForkChoiceState{}) {
-		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(height)) // change this to a keeper
+		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(height)) // change this to a keeper
 		if err != nil {
 			return nil, err
 		}
@@ -76,7 +79,7 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 		Withdrawals:           withdrawals,
 	}
 
-	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(&state, &attrs)
+	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctxTimeout, &state, &attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +93,9 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 	}
 
 	err = backoff.Retry(func() error {
-		response, err = app.caller.BorEngineClient.GetPayloadV2(payloadId)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
@@ -106,7 +111,7 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 	return response, nil
 }
 
-func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx sdk.Context, height int64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx sdk.Context) (response *engine.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
 
 	// The engine complains when the withdrawals are empty
@@ -127,7 +132,9 @@ func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx 
 		Withdrawals:           withdrawals,
 	}
 
-	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(&state, &attrs)
+	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctxTimeout, &state, &attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +148,9 @@ func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx 
 	}
 
 	err = backoff.Retry(func() error {
-		response, err = app.caller.BorEngineClient.GetPayloadV2(payloadId)
+		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}

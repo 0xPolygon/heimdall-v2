@@ -2,9 +2,9 @@ package engine
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -39,8 +39,8 @@ func (ec *EngineClient) Close() {
 	ec.client.CloseIdleConnections()
 }
 
-func (ec *EngineClient) ForkchoiceUpdatedV2(state *ForkChoiceState, attrs *PayloadAttributes) (*ForkchoiceUpdatedResponse, error) {
-	msg, err := ec.call("engine_forkchoiceUpdatedV2", state, attrs)
+func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoiceState, attrs *PayloadAttributes) (*ForkchoiceUpdatedResponse, error) {
+	msg, err := ec.call(ctx, "engine_forkchoiceUpdatedV2", state, attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +56,8 @@ func (ec *EngineClient) ForkchoiceUpdatedV2(state *ForkChoiceState, attrs *Paylo
 	return &response, nil
 }
 
-func (ec *EngineClient) GetPayloadV2(payloadId string) (*Payload, error) {
-	msg, err := ec.call("engine_getPayloadV2", payloadId)
+func (ec *EngineClient) GetPayloadV2(ctx context.Context, payloadId string) (*Payload, error) {
+	msg, err := ec.call(ctx, "engine_getPayloadV2", payloadId)
 	if err != nil {
 		return nil, err
 	}
@@ -69,8 +69,8 @@ func (ec *EngineClient) GetPayloadV2(payloadId string) (*Payload, error) {
 	return &response, nil
 }
 
-func (ec *EngineClient) NewPayloadV2(payload ExecutionPayload) (*NewPayloadResponse, error) {
-	msg, err := ec.call("engine_newPayloadV2", payload)
+func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload ExecutionPayload) (*NewPayloadResponse, error) {
+	msg, err := ec.call(ctx, "engine_newPayloadV2", payload)
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +82,8 @@ func (ec *EngineClient) NewPayloadV2(payload ExecutionPayload) (*NewPayloadRespo
 	return &response, nil
 }
 
-func (ec *EngineClient) CheckCapabilities(requiredMethods []string) error {
-	data, err := ec.call("engine_exchangeCapabilities", requiredMethods)
+func (ec *EngineClient) CheckCapabilities(ctx context.Context, requiredMethods []string) error {
+	data, err := ec.call(ctx, "engine_exchangeCapabilities", requiredMethods)
 	if err != nil {
 		return err
 	}
@@ -111,34 +111,42 @@ func contains(arr []string, val string) bool {
 }
 
 // Call returns raw response of method call
-func (ec *EngineClient) call(method string, params ...interface{}) (json.RawMessage, error) {
+func (ec *EngineClient) call(ctx context.Context, method string, params ...interface{}) (json.RawMessage, error) {
 	var args []interface{}
 	for _, p := range params {
 		if p != nil {
 			args = append(args, p)
 		}
 	}
+
 	request := JsonrpcRequest{
 		ID:      ec.reqID,
 		JSONRPC: "2.0",
 		Method:  method,
 		Params:  args,
 	}
+
 	payload, err := json.Marshal(request)
 	if err != nil {
 		return nil, err
 	}
 	ec.reqID++
 
-	response, err := ec.client.Post(ec.url, "application/json", bytes.NewBuffer(payload))
-	if response != nil {
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(response.Body)
-	}
+	req, err := http.NewRequestWithContext(ctx, "POST", ec.url, bytes.NewBuffer(payload))
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "application/json")
+
+	response, err := ec.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if response.Body != nil {
+			_ = response.Body.Close()
+		}
+	}()
 
 	resp := new(JsonrpcResponse)
 	if err := json.NewDecoder(response.Body).Decode(resp); err != nil {
