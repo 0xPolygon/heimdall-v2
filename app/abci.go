@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -67,15 +66,18 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
 			payload = app.nextExecPayload
 		} else {
-			logger.Debug("latest payload not found, fetching from engine")
-			latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1)) // change this to a keeper
+			logger.Debug("latest payload not found, fetching from CheckpointKeeper")
+
+			executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
 			if err != nil {
+				logger.Error("Error occurred while fetching latest execution metadata", "error", err)
 				return nil, err
 			}
+			blockHash := common.BytesToHash(executionState.FinalBlockHash)
 
 			state := engine.ForkChoiceState{
-				HeadHash:           latestBlock.Hash(),
-				SafeBlockHash:      latestBlock.Hash(),
+				HeadHash:           blockHash,
+				SafeBlockHash:      blockHash,
 				FinalizedBlockHash: common.Hash{},
 			}
 
