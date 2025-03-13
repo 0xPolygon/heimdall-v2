@@ -92,7 +92,7 @@ func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload ExecutionPaylo
 	defer observe(newPayloadV2, start, err)
 
 	var msg json.RawMessage
-	msg, err = ec.call(ctx, "engine_newPayloadV2", payload)
+	msg, err = ec.call(ctx, newPayloadV2, payload)
 	if err != nil {
 		return
 	}
@@ -105,7 +105,7 @@ func (ec *EngineClient) CheckCapabilities(ctx context.Context, requiredMethods [
 	defer observe(exchangeCapabilitiesV2, start, err)
 
 	var data []byte
-	data, err = ec.call(ctx, "engine_exchangeCapabilities", requiredMethods)
+	data, err = ec.call(ctx, exchangeCapabilitiesV2, requiredMethods)
 	if err != nil {
 		return err
 	}
