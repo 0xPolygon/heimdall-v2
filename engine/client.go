@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -42,11 +41,7 @@ func NewEngineClient(url string, jwtFile string) (*EngineClient, error) {
 		},
 	}
 
-	go func() {
-		// this should be somewhere else, but we only have metrics case right now
-		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2112", nil)
-	}()
+	startMetricsServer()
 
 	return &EngineClient{
 		client: client,
@@ -56,6 +51,9 @@ func NewEngineClient(url string, jwtFile string) (*EngineClient, error) {
 
 func (ec *EngineClient) Close() {
 	ec.client.CloseIdleConnections()
+	if metricsServer != nil {
+		metricsServer.Shutdown(context.Background())
+	}
 }
 
 func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoiceState, attrs *PayloadAttributes) (resp *ForkchoiceUpdatedResponse, err error) {
@@ -127,7 +125,7 @@ func (ec *EngineClient) CheckCapabilities(ctx context.Context, requiredMethods [
 func observe(rpc string, start time.Time, err error) {
 	elapsed := time.Since(start)
 	rpcCalls.WithLabelValues(rpc).Inc()
-	rpcCallDuration.WithLabelValues(rpc).Observe(elapsed.Seconds())
+	rpcCallDuration.WithLabelValues(rpc).Observe(float64(elapsed.Milliseconds()))
 	if err != nil {
 		rpcErrors.WithLabelValues(rpc, reflect.TypeOf(err).String()).Inc()
 	}
