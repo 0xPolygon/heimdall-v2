@@ -423,13 +423,24 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
-		logger.Debug("Adding milestone", "hashes", strutil.HashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1), "proposer", proposer)
+		if lastEndBlock != nil {
+			*lastEndBlock += 1
+		} else {
+			lastEndBlock = new(uint64)
+		}
+
+		logger.Debug("Adding milestone", "hashes",
+			strutil.HashesToString(majorityMilestone.BlockHashes),
+			"startBlock", majorityMilestone.StartBlockNumber,
+			"endBlock", *lastEndBlock,
+			"proposer", proposer,
+		)
 
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
 			Proposer:    proposer,
 			Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
 			StartBlock:  majorityMilestone.StartBlockNumber,
-			EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
+			EndBlock:    *lastEndBlock,
 			BorChainId:  params.ChainParams.BorChainId,
 			MilestoneId: common.Bytes2Hex(aggregatedProposers),
 			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),

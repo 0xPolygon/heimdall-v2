@@ -50,8 +50,13 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 			return nil, fmt.Errorf("failed to get latest header")
 		}
 
-		if latestHeader.Number.Uint64() > milestone.EndBlock && latestHeader.Number.Uint64()-milestone.EndBlock > 1000 {
-			propStartBlock = ((latestHeader.Number.Uint64() - milestone.EndBlock) / 100) * 100
+		params, err := milestoneKeeper.GetParams(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if latestHeader.Number.Uint64() > milestone.EndBlock && latestHeader.Number.Uint64()-milestone.EndBlock > params.FfMilestoneThreshold {
+			propStartBlock = ((latestHeader.Number.Uint64() - milestone.EndBlock) / params.FfMilestoneBlockInterval) * params.FfMilestoneBlockInterval
 			propStartBlock = propStartBlock + milestone.EndBlock
 		}
 
@@ -63,7 +68,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, contractCaller)
+	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, uint64(lastMilestoneBlockNumber), contractCaller)
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +295,7 @@ func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extV
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, contractCaller helper.IContractCaller) ([][]byte, error) {
+func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
 	result := make([][]byte, 0)
 
 	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
@@ -298,12 +303,23 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		return nil, fmt.Errorf("failed to get headers")
 	}
 
-	for idx, h := range headers {
-		if idx == 0 && len(lastMilestoneHash) > 0 {
-			if !bytes.Equal(h.ParentHash.Bytes(), lastMilestoneHash) {
-				return nil, fmt.Errorf("first block parent hash does not match last milestone hash")
+	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
+		lastFinalizedFork := headers[0].ParentHash.Bytes()
+		if startBlock-lastMilestoneBlock > 1 {
+			headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(lastMilestoneBlock), 1)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get headers")
 			}
+
+			lastFinalizedFork = headers[0].ParentHash.Bytes()
 		}
+
+		if !bytes.Equal(lastFinalizedFork, lastMilestoneHash) {
+			return nil, fmt.Errorf("first block parent hash does not match last milestone hash")
+		}
+	}
+
+	for _, h := range headers {
 		result = append(result, h.Hash().Bytes())
 	}
 
