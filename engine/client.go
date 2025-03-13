@@ -51,9 +51,6 @@ func NewEngineClient(url string, jwtFile string) (*EngineClient, error) {
 
 func (ec *EngineClient) Close() {
 	ec.client.CloseIdleConnections()
-	if metricsServer != nil {
-		metricsServer.Shutdown(context.Background())
-	}
 }
 
 func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoiceState, attrs *PayloadAttributes) (resp *ForkchoiceUpdatedResponse, err error) {
