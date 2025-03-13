@@ -40,4 +40,6 @@ message Params {
   option (gogoproto.equal) = true;
   option (gogoproto.goproto_getters) = true;
   uint64 max_milestone_proposition_length = 1 [ (amino.dont_omitempty) = true ];
+  uint64 ff_milestone_threshold = 2 [ (amino.dont_omitempty) = true ];
+  uint64 ff_milestone_block_interval = 3 [ (amino.dont_omitempty) = true ];
 }

@@ -22,12 +22,12 @@ import (
 )
 
 func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*types.MilestoneProposition, error) {
+	logger := ctx.Logger()
+
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
 	}
-
-	logger := ctx.Logger()
 
 	lastMilestoneBlockNumber, err := milestoneKeeper.GetMilestoneBlockNumber(ctx)
 	if err != nil {
@@ -44,6 +44,17 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 
 	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
+
+		latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get latest header")
+		}
+
+		if latestHeader.Number.Uint64() > milestone.EndBlock && latestHeader.Number.Uint64()-milestone.EndBlock > 1000 {
+			propStartBlock = ((latestHeader.Number.Uint64() - milestone.EndBlock) / 100) * 100
+			propStartBlock = propStartBlock + milestone.EndBlock
+		}
+
 		lastMilestoneHash = milestone.Hash
 	}
 
