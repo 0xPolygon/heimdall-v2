@@ -1,10 +1,11 @@
 package types
 
 import (
-  "encoding/base64"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 )
@@ -39,7 +40,11 @@ type ValidatorKey struct {
 
 // DefaultGenesisState gets the raw genesis raw message for testing
 func DefaultGenesisState() *GenesisState {
-	content, err := os.ReadFile("/Users/alanjewar/var/lib/heimdall/config/priv_validator_key.json")
+  homeDir, err := os.UserHomeDir()
+  if err != nil {
+    fmt.Print(err)
+  }
+	content, err := os.ReadFile(filepath.Join(homeDir, "/var/lib/heimdall/config/priv_validator_key.json"))
 	if err != nil {
 		fmt.Print(err)
 	}
@@ -53,16 +58,32 @@ func DefaultGenesisState() *GenesisState {
 	signer := "0x" + validatorKey.Address
 	pubKeyValue := validatorKey.PubKey.Value
 
-  pubKeyDecoded, err := base64.StdEncoding.DecodeString(validatorKey.PubKey.Value)
+	pubKeyDecoded, err := base64.StdEncoding.DecodeString(validatorKey.PubKey.Value)
 	if err != nil {
 		fmt.Print("Error decoding public key: ", err)
 	}
 
 	fmt.Println("Signer Address: ", signer)
 	fmt.Println("Public Key: ", pubKeyValue)
-  fmt.Println("Decoded public key : ", pubKeyDecoded)
+	fmt.Println("Decoded public key : ", pubKeyDecoded)
 
 	return &GenesisState{
+		CurrentValidatorSet: ValidatorSet{
+			Validators: []*Validator{
+				{
+					EndEpoch:         0,
+					ValId:            1,
+					StartEpoch:       0,
+					Nonce:            0,
+					VotingPower:      1000,
+					PubKey:           pubKeyDecoded,
+					Signer:           signer,
+					LastUpdated:      "",
+					Jailed:           false,
+					ProposerPriority: 0,
+				},
+			},
+		},
 		Validators: []*Validator{
 			{
 				ValId:            1,
@@ -72,28 +93,11 @@ func DefaultGenesisState() *GenesisState {
 				VotingPower:      1000,
 				PubKey:           pubKeyDecoded,
 				Signer:           signer,
-				LastUpdated:      "hello",
+				LastUpdated:      "",
 				Jailed:           false,
 				ProposerPriority: 0,
 			},
 		},
-		CurrentValidatorSet: ValidatorSet{
-			Validators: []*Validator{
-				{
-					ValId:            1,
-					StartEpoch:       0,
-					EndEpoch:         1000000,
-					Nonce:            0,
-					VotingPower:      1000,
-					PubKey:           pubKeyDecoded,
-					Signer:           signer,
-					LastUpdated:      "hello",
-					Jailed:           false,
-					ProposerPriority: 0,
-				},
-			},
-		},
-		StakingSequences: []string{"initial_stake"},
 	}
 }
 
