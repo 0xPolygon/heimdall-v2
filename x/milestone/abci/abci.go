@@ -40,8 +40,11 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 
 	propStartBlock := uint64(0)
 
+	var lastMilestoneHash []byte
+
 	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
+		lastMilestoneHash = milestone.Hash
 	}
 
 	params, err := milestoneKeeper.GetParams(ctx)
@@ -49,7 +52,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, contractCaller)
+	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, contractCaller)
 	if err != nil {
 		return nil, err
 	}
@@ -276,7 +279,7 @@ func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extV
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
+func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, contractCaller helper.IContractCaller) ([][]byte, error) {
 	result := make([][]byte, 0)
 
 	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
@@ -284,7 +287,12 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		return nil, fmt.Errorf("failed to get headers")
 	}
 
-	for _, h := range headers {
+	for idx, h := range headers {
+		if idx == 0 && len(lastMilestoneHash) > 0 {
+			if !bytes.Equal(h.ParentHash.Bytes(), lastMilestoneHash) {
+				return nil, fmt.Errorf("first block parent hash does not match last milestone hash")
+			}
+		}
 		result = append(result, h.Hash().Bytes())
 	}
 
