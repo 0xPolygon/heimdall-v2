@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -69,9 +70,16 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 			executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
 			if err != nil {
-				logger.Error("Error occurred while fetching latest execution metadata", "error", err)
-				return nil, err
+				lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1))
+				if err != nil {
+					return nil, err
+				}
+
+				executionState = checkpointTypes.ExecutionStateMetadata{
+					FinalBlockHash: lastHeader.Hash().Bytes(),
+				}
 			}
+
 			blockHash := common.BytesToHash(executionState.FinalBlockHash)
 
 			state := engine.ForkChoiceState{
