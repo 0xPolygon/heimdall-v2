@@ -190,8 +190,8 @@ engine-api-poc-test:
 	ARCH=$(ARCH) bash ./engine-api-poc/run_test.sh
 .PHONY: engine-api-poc-test
 
-engine-api-poc-install-test:
-	ARCH=$(ARCH) npm install -g pandoras-box
+engine-api-poc-monitor-test:
+	ARCH=$(ARCH) polycli monitor
 .PHONY: engine-api-poc-test
 
 .PHONY: help

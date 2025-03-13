@@ -54,6 +54,7 @@ services:
         "--authrpc.addr", "0.0.0.0",
         "--authrpc.vhosts", "any",
         "--nodekeyhex", $ERIGON_NODE_PK_0,
+        "--miner.gaslimit", "60000000"
     ]
     healthcheck:
       test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
@@ -81,6 +82,7 @@ services:
         "--authrpc.addr", "0.0.0.0",
         "--authrpc.vhosts", "any",
         "--nodekeyhex", $ERIGON_NODE_PK_1,
+        "--miner.gaslimit", "60000000",
         "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303"
     ]
     healthcheck:
@@ -110,6 +112,7 @@ services:
       "--authrpc.addr", "0.0.0.0",
       "--authrpc.vhosts", "any",
       "--nodekeyhex", $ERIGON_NODE_PK_2,
+      "--miner.gaslimit", "60000000",
       "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
     ]
     healthcheck:
@@ -139,6 +142,7 @@ services:
       "--authrpc.addr", "0.0.0.0",
       "--authrpc.vhosts", "any",
       "--nodekeyhex", $ERIGON_NODE_PK_3,
+      "--miner.gaslimit", "60000000",
       "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
     ]
     healthcheck:
@@ -167,6 +171,7 @@ services:
       "--authrpc.addr", "0.0.0.0",
       "--authrpc.vhosts", "any",
       "--nodekeyhex", $ERIGON_NODE_PK_4,
+      "--miner.gaslimit", "60000000",
       "--staticpeers", "enode://$ERIGON_NODE_P2P_KEY_0@erigon-0:30303,enode://$ERIGON_NODE_P2P_KEY_1@erigon-1:30303"
     ]
     healthcheck:
