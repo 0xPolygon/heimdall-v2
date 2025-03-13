@@ -6,8 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+const (
+	forkChoiceUpdatedV2    = "engine_forkchoiceUpdatedV2"
+	getPayloadV2           = "engine_getPayloadV2"
+	newPayloadV2           = "engine_newPayloadV2"
+	exchangeCapabilitiesV2 = "engine_exchangeCapabilitiesV2"
 )
 
 type EngineClient struct {
@@ -21,14 +31,23 @@ func NewEngineClient(url string, jwtFile string) (*EngineClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	authTransport := &jwtTransport{
-		underlyingTransport: http.DefaultTransport,
-		jwtSecret:           secret,
-	}
+
 	client := &http.Client{
-		Timeout:   DefaultRPCTimeout,
-		Transport: authTransport,
+		Timeout: DefaultRPCTimeout,
+		Transport: &MetricsTransport{
+			Transport: &JWTTransport{
+				Transport: http.DefaultTransport,
+				JWTSecret: secret,
+			},
+		},
 	}
+
+	go func() {
+		// this should be somewhere else, but we only have metrics case right now
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
+
 	return &EngineClient{
 		client: client,
 		url:    url,
@@ -39,51 +58,56 @@ func (ec *EngineClient) Close() {
 	ec.client.CloseIdleConnections()
 }
 
-func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoiceState, attrs *PayloadAttributes) (*ForkchoiceUpdatedResponse, error) {
-	msg, err := ec.call(ctx, "engine_forkchoiceUpdatedV2", state, attrs)
+func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoiceState, attrs *PayloadAttributes) (resp *ForkchoiceUpdatedResponse, err error) {
+	start := time.Now()
+	defer observe(forkChoiceUpdatedV2, start, err)
+
+	var msg json.RawMessage
+	msg, err = ec.call(ctx, forkChoiceUpdatedV2, state, attrs)
 	if err != nil {
-		return nil, err
+		return
 	}
-	data, err := msg.MarshalJSON()
+	var data []byte
+	data, err = msg.MarshalJSON()
 	if err != nil {
-		return nil, err
+		return
 	}
-	var response ForkchoiceUpdatedResponse
-	err = json.Unmarshal(data, &response)
-	if err != nil {
-		return nil, err
-	}
-	return &response, nil
+	err = json.Unmarshal(data, &resp)
+	return
 }
 
-func (ec *EngineClient) GetPayloadV2(ctx context.Context, payloadId string) (*Payload, error) {
-	msg, err := ec.call(ctx, "engine_getPayloadV2", payloadId)
+func (ec *EngineClient) GetPayloadV2(ctx context.Context, payloadId string) (payload *Payload, err error) {
+	start := time.Now()
+	defer observe(getPayloadV2, start, err)
+
+	var msg json.RawMessage
+	msg, err = ec.call(ctx, getPayloadV2, payloadId)
 	if err != nil {
-		return nil, err
+		return
 	}
-	var response Payload
-	err = json.Unmarshal(msg, &response)
-	if err != nil {
-		return nil, err
-	}
-	return &response, nil
+	err = json.Unmarshal(msg, &payload)
+	return
 }
 
-func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload ExecutionPayload) (*NewPayloadResponse, error) {
-	msg, err := ec.call(ctx, "engine_newPayloadV2", payload)
+func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload ExecutionPayload) (resp NewPayloadResponse, err error) {
+	start := time.Now()
+	defer observe(newPayloadV2, start, err)
+
+	var msg json.RawMessage
+	msg, err = ec.call(ctx, "engine_newPayloadV2", payload)
 	if err != nil {
-		return nil, err
+		return
 	}
-	var response NewPayloadResponse
-	err = json.Unmarshal(msg, &response)
-	if err != nil {
-		return nil, err
-	}
-	return &response, nil
+	err = json.Unmarshal(msg, &resp)
+	return
 }
 
-func (ec *EngineClient) CheckCapabilities(ctx context.Context, requiredMethods []string) error {
-	data, err := ec.call(ctx, "engine_exchangeCapabilities", requiredMethods)
+func (ec *EngineClient) CheckCapabilities(ctx context.Context, requiredMethods []string) (err error) {
+	start := time.Now()
+	defer observe(exchangeCapabilitiesV2, start, err)
+
+	var data []byte
+	data, err = ec.call(ctx, "engine_exchangeCapabilities", requiredMethods)
 	if err != nil {
 		return err
 	}
@@ -92,13 +116,21 @@ func (ec *EngineClient) CheckCapabilities(ctx context.Context, requiredMethods [
 	if err != nil {
 		return err
 	}
-
 	for _, method := range requiredMethods {
 		if !contains(response, method) {
 			return errors.New(fmt.Sprintf("engine API does not support method '%v'", method))
 		}
 	}
-	return nil
+	return
+}
+
+func observe(rpc string, start time.Time, err error) {
+	elapsed := time.Since(start)
+	rpcCalls.WithLabelValues(rpc).Inc()
+	rpcCallDuration.WithLabelValues(rpc).Observe(elapsed.Seconds())
+	if err != nil {
+		rpcErrors.WithLabelValues(rpc, reflect.TypeOf(err).String()).Inc()
+	}
 }
 
 func contains(arr []string, val string) bool {

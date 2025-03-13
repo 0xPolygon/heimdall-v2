@@ -64,6 +64,7 @@ services:
       - ./build/erigon-0:/erigon
     ports:
       - "8545:8545"
+      - "8551:8551"
 
   erigon-1:
     <<: *erigon-image
@@ -121,7 +122,7 @@ services:
       - ./build/erigon-2:/erigon
     ports:
       - "10545:8545"
-    
+
 
   erigon-3:
     <<: *erigon-image
@@ -182,7 +183,7 @@ services:
   node0:
     <<: *heimdalld-image
     entrypoint: ["./engine-api-poc/start-heimdalld-script.sh"]
-    environment: 
+    environment:
       - BOR_ENGINE_JWT=/erigon/jwt.hex
       - BOR_ENGINE_URL=http://erigon-0:8551
       - BOR_RPC_URL=http://erigon-0:8545
@@ -200,7 +201,7 @@ services:
   node1:
     <<: *heimdalld-image
     entrypoint: ["./engine-api-poc/start-heimdalld-script.sh"]
-    environment: 
+    environment:
       - BOR_ENGINE_JWT=/erigon/jwt.hex
       - BOR_ENGINE_URL=http://erigon-1:8551
       - BOR_RPC_URL=http://erigon-1:8545
@@ -217,7 +218,7 @@ services:
   node2:
     <<: *heimdalld-image
     entrypoint: ["./engine-api-poc/start-heimdalld-script.sh"]
-    environment: 
+    environment:
       - BOR_ENGINE_JWT=/erigon/jwt.hex
       - BOR_ENGINE_URL=http://erigon-2:8551
       - BOR_RPC_URL=http://erigon-2:8545
@@ -234,7 +235,7 @@ services:
   node3:
     <<: *heimdalld-image
     entrypoint: ["./engine-api-poc/start-heimdalld-script.sh"]
-    environment: 
+    environment:
       - BOR_ENGINE_JWT=/erigon/jwt.hex
       - BOR_ENGINE_URL=http://erigon-3:8551
       - BOR_RPC_URL=http://erigon-3:8545
@@ -251,7 +252,7 @@ services:
   node4:
     <<: *heimdalld-image
     entrypoint: ["./engine-api-poc/start-heimdalld-script.sh"]
-    environment: 
+    environment:
       - BOR_ENGINE_JWT=/erigon/jwt.hex
       - BOR_ENGINE_URL=http://erigon-4:8551
       - BOR_RPC_URL=http://erigon-4:8545
