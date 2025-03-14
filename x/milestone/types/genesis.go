@@ -23,5 +23,7 @@ func (gs GenesisState) ValidateGenesis() error {
 func DefaultParams() Params {
 	return Params{
 		MaxMilestonePropositionLength: 10,
+		FfMilestoneThreshold:          1000,
+		FfMilestoneBlockInterval:      100,
 	}
 }
