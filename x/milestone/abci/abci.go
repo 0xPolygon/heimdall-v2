@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 	"sort"
 
 	"cosmossdk.io/log"
@@ -304,17 +305,17 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 	}
 
 	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
-		lastFinalizedFork := headers[0].ParentHash.Bytes()
+		currentFork := headers[0].ParentHash.Bytes()
 		if startBlock-lastMilestoneBlock > 1 {
-			headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(lastMilestoneBlock), 1)
+			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock)))
 			if err != nil {
 				return nil, fmt.Errorf("failed to get headers")
 			}
 
-			lastFinalizedFork = headers[0].ParentHash.Bytes()
+			currentFork = header.ParentHash.Bytes()
 		}
 
-		if !bytes.Equal(lastFinalizedFork, lastMilestoneHash) {
+		if !bytes.Equal(currentFork, lastMilestoneHash) {
 			return nil, fmt.Errorf("first block parent hash does not match last milestone hash")
 		}
 	}
