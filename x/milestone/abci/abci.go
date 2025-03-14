@@ -298,7 +298,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
 		currentFork := headers[0].ParentHash.Bytes()
 		if startBlock-lastMilestoneBlock > 1 {
-			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock)))
+			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
 				return nil, fmt.Errorf("failed to get headers")
 			}
