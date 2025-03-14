@@ -389,6 +389,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var lastEndBlock *uint64 = nil
+	var lastEndHash []byte
 	if hasMilestone {
 		lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
 		if err != nil {
@@ -396,9 +397,16 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 		lastEndBlock = &lastMilestone.EndBlock
+		lastEndHash = lastMilestone.Hash
 	}
 
-	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(validatorSet, extVoteInfo, logger, lastEndBlock)
+	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(
+		validatorSet,
+		extVoteInfo,
+		logger,
+		lastEndBlock,
+		lastEndHash,
+	)
 	if err != nil {
 		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
 		return nil, err
@@ -423,16 +431,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
-		if lastEndBlock != nil {
-			*lastEndBlock += 1
-		} else {
-			lastEndBlock = new(uint64)
-		}
-
 		logger.Debug("Adding milestone", "hashes",
 			strutil.HashesToString(majorityMilestone.BlockHashes),
 			"startBlock", majorityMilestone.StartBlockNumber,
-			"endBlock", *lastEndBlock,
+			"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
 			"proposer", proposer,
 		)
 
@@ -440,7 +442,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			Proposer:    proposer,
 			Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
 			StartBlock:  majorityMilestone.StartBlockNumber,
-			EndBlock:    *lastEndBlock,
+			EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
 			BorChainId:  params.ChainParams.BorChainId,
 			MilestoneId: common.Bytes2Hex(aggregatedProposers),
 			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
