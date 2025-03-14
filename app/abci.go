@@ -449,11 +449,6 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
-		if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
-			logger.Error("error in setting milestone block number", "error", err)
-			return nil, err
-		}
-
 		msCache.Write()
 	}
 

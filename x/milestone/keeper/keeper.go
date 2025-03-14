@@ -28,10 +28,9 @@ type Keeper struct {
 
 	IContractCaller helper.IContractCaller
 
-	milestone   collections.Map[uint64, types.Milestone]
-	params      collections.Item[types.Params]
-	blockNumber collections.Item[int64]
-	count       collections.Item[uint64]
+	milestone collections.Map[uint64, types.Milestone]
+	params    collections.Item[types.Params]
+	count     collections.Item[uint64]
 }
 
 // NewKeeper creates a new milestone Keeper instance
@@ -59,10 +58,9 @@ func NewKeeper(
 		cdc:             cdc,
 		IContractCaller: contractCaller,
 
-		milestone:   collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
-		params:      collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
-		count:       collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
-		blockNumber: collections.NewItem(sb, types.BlockNumberPrefixKey, "block_number", collections.Int64Value),
+		milestone: collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
+		params:    collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		count:     collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
 	}
 
 	// build the schema and set it in the keeper
@@ -223,36 +221,4 @@ func (k *Keeper) GetMilestoneCount(ctx context.Context) (uint64, error) {
 	}
 
 	return count, nil
-}
-
-// SetMilestoneBlockNumber set the block number when the latest milestone enter the handler
-func (k *Keeper) SetMilestoneBlockNumber(ctx context.Context, number int64) error {
-	err := k.blockNumber.Set(ctx, number)
-	if err != nil {
-		k.Logger(ctx).Error("error while setting block number in store", "err", err)
-		return err
-	}
-
-	return nil
-}
-
-// GetMilestoneBlockNumber returns the block number when the latest milestone enter the handler
-func (k *Keeper) GetMilestoneBlockNumber(ctx context.Context) (int64, error) {
-	doExist, err := k.blockNumber.Has(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error while checking the existence of block number in store", "err", err)
-		return 0, err
-	}
-
-	if !doExist {
-		return 0, nil
-	}
-
-	number, err := k.blockNumber.Get(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error while fetching block number from store", "err", err)
-		return 0, err
-	}
-
-	return number, nil
 }

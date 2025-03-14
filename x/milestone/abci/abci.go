@@ -23,25 +23,15 @@ import (
 )
 
 func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, reqBlock int64) (*types.MilestoneProposition, error) {
-	logger := ctx.Logger()
-
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
 	}
 
-	lastMilestoneBlockNumber, err := milestoneKeeper.GetMilestoneBlockNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	blocksSinceLastMilestone := reqBlock - lastMilestoneBlockNumber
-
-	logger.Debug("blocksSinceLastMilestone", "blocksSinceLastMilestone", blocksSinceLastMilestone)
-
 	propStartBlock := uint64(0)
 
 	var lastMilestoneHash []byte
+	var lastMilestoneBlockNumber uint64
 
 	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
@@ -62,6 +52,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		}
 
 		lastMilestoneHash = milestone.Hash
+		lastMilestoneBlockNumber = milestone.EndBlock
 	}
 
 	params, err := milestoneKeeper.GetParams(ctx)
@@ -69,7 +60,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, uint64(lastMilestoneBlockNumber), contractCaller)
+	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
 	if err != nil {
 		return nil, err
 	}
