@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -11,55 +11,72 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+const (
+	namespace = "heimdall"
+	subsystem = "engine"
+)
+
 var (
-	// For the HTTP transport
-	httpRequests = prometheus.NewCounterVec(
+	// Track inbound bytes partitioned by remote host
+	inboundBytes = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "http_requests",
-			Help: "Total number of HTTP requests made.",
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "bytes_in",
+			Help:      "Total bytes inbound",
 		},
-		[]string{"method", "status_code"},
-	)
-	httpRequestDuration = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "http_request_duration_ms",
-			Help:    "Histogram of HTTP request durations.",
-			Buckets: prometheus.DefBuckets,
-		},
-		[]string{"method", "status_code"},
+		[]string{"host"},
 	)
 
-	// For specific RPC calls
+	// Track outbound bytes partitioned by remote host
+	outboundBytes = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "bytes_out",
+			Help:      "Total bytes outbound",
+		},
+		[]string{"host"},
+	)
+
+	// Track calls by RPC method
 	rpcCalls = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "rpc_calls",
-			Help: "Total number of RPC calls made.",
-		},
-		[]string{"rpc"},
-	)
-
-	rpcCallDuration = prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "rpc_call_duration_ms",
-			Help:    "Histogram of HTTP request durations.",
-			Buckets: prometheus.DefBuckets,
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "calls",
+			Help:      "Total number of RPC calls",
 		},
 		[]string{"method"},
 	)
+
+	// Track call durations by RPC method
+	rpcDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "duration",
+			Help:      "Histogram of RPC request durations",
+			Buckets:   prometheus.DefBuckets,
+		},
+		[]string{"method"},
+	)
+
+	// Track errors by RPC method and error type
 	rpcErrors = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "rpc_errors",
+			Name: "errors",
 			Help: "Total number of RPC errors encountered.",
 		},
-		[]string{"rpc", "error"},
+		[]string{"method", "error"},
 	)
 )
 
 func init() {
-	prometheus.MustRegister(httpRequests)
-	prometheus.MustRegister(httpRequestDuration)
+	prometheus.MustRegister(inboundBytes)
+	prometheus.MustRegister(outboundBytes)
 	prometheus.MustRegister(rpcCalls)
-	prometheus.MustRegister(rpcCallDuration)
+	prometheus.MustRegister(rpcDuration)
 	prometheus.MustRegister(rpcErrors)
 }
 
@@ -89,21 +106,60 @@ func startMetricsServer() {
 	})
 }
 
+type IOBytesMetrics struct {
+	rc         io.ReadCloser
+	onClose    func(totalBytes int64)
+	totalBytes int64
+}
+
+func (m *IOBytesMetrics) Read(p []byte) (int, error) {
+	n, err := m.rc.Read(p)
+	m.totalBytes += int64(n)
+	return n, err
+}
+
+func (m *IOBytesMetrics) Close() error {
+	if m.onClose != nil {
+		m.onClose(m.totalBytes)
+	}
+	return m.rc.Close()
+}
+
 type MetricsTransport struct {
 	Transport http.RoundTripper
 }
 
 func (mt *MetricsTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	start := time.Now()
-	resp, err := mt.Transport.RoundTrip(req)
-	duration := time.Since(start).Milliseconds()
+	if mt.Transport == nil {
+		mt.Transport = http.DefaultTransport
+	}
 
+	host := req.URL.Host
+
+	if req.Body != nil {
+		rc := req.Body
+		req.Body = &IOBytesMetrics{
+			rc: rc,
+			onClose: func(totalBytes int64) {
+				outboundBytes.WithLabelValues(host).Add(float64(totalBytes))
+			},
+		}
+	}
+
+	resp, err := mt.Transport.RoundTrip(req)
 	if err != nil {
 		return nil, err
 	}
 
-	httpRequests.WithLabelValues(req.Method, fmt.Sprintf("%d", resp.StatusCode)).Inc()
-	httpRequestDuration.WithLabelValues(req.Method, fmt.Sprintf("%d", resp.StatusCode)).Observe(float64(duration))
+	if resp.Body != nil {
+		rc := resp.Body
+		resp.Body = &IOBytesMetrics{
+			rc: rc,
+			onClose: func(totalBytes int64) {
+				inboundBytes.WithLabelValues(host).Add(float64(totalBytes))
+			},
+		}
+	}
 
 	return resp, nil
 }

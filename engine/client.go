@@ -119,12 +119,12 @@ func (ec *EngineClient) CheckCapabilities(ctx context.Context, requiredMethods [
 	return
 }
 
-func observe(rpc string, start time.Time, err error) {
+func observe(method string, start time.Time, err error) {
 	elapsed := time.Since(start)
-	rpcCalls.WithLabelValues(rpc).Inc()
-	rpcCallDuration.WithLabelValues(rpc).Observe(float64(elapsed.Milliseconds()))
+	rpcCalls.WithLabelValues(method).Inc()
+	rpcDuration.WithLabelValues(method).Observe(float64(elapsed.Milliseconds()))
 	if err != nil {
-		rpcErrors.WithLabelValues(rpc, reflect.TypeOf(err).String()).Inc()
+		rpcErrors.WithLabelValues(method, reflect.TypeOf(err).String()).Inc()
 	}
 }
 
