@@ -16,6 +16,8 @@ type EngineClient struct {
 	reqID  uint64
 }
 
+var _ ExecutionEngineClient = (*EngineClient)(nil)
+
 func NewEngineClient(url string, jwtFile string) (*EngineClient, error) {
 	secret, err := parseJWTSecretFromFile(jwtFile)
 	if err != nil {
