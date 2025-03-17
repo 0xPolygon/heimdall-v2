@@ -43,14 +43,14 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	}
 }
 
-func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx context.Context, height int64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx context.Context, height uint64) (response *engine.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	if state == (engine.ForkChoiceState{}) {
-		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(height)) // change this to a keeper
+		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(int64(height))) // change this to a keeper
 		if err != nil {
 			return nil, err
 		}

@@ -60,28 +60,35 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		// Engine API
 		var payload *engine.Payload
 
+		executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
+		if err != nil {
+			logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
+			blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNum)))
+			if err != nil {
+				return nil, err
+			}
+
+			executionState = checkpointTypes.ExecutionStateMetadata{
+				FinalBlockHash:    lastHeader.Hash().Bytes(),
+				LatestBlockNumber: blockNum,
+			}
+
+		}
+
 		// TODO: store bor block height in a keeper
-		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
+		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(executionState.LatestBlockNumber+1) {
 			payload = app.latestExecPayload
-		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
+		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(executionState.LatestBlockNumber+1) {
 			payload = app.nextExecPayload
 		} else {
 			logger.Debug("latest payload not found, fetching from CheckpointKeeper")
 
-			executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
-			if err != nil {
-				lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(req.Height-1))
-				if err != nil {
-					return nil, err
-				}
-
-				executionState = checkpointTypes.ExecutionStateMetadata{
-					FinalBlockHash: lastHeader.Hash().Bytes(),
-				}
-			}
-
 			blockHash := common.BytesToHash(executionState.FinalBlockHash)
-
 			state := engine.ForkChoiceState{
 				HeadHash:           blockHash,
 				SafeBlockHash:      blockHash,
@@ -192,16 +199,37 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		start := time.Now()
 		logger.Info("🕒 Start ProcessProposal:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
+		executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
+		if err != nil {
+			logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
+			blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
+			if err != nil {
+				return nil, err
+			}
+
+			lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNum)))
+			if err != nil {
+				return nil, err
+			}
+
+			executionState = checkpointTypes.ExecutionStateMetadata{
+				FinalBlockHash:    lastHeader.Hash().Bytes(),
+				LatestBlockNumber: blockNum,
+			}
+
+		}
+
 		// check if there are any txs in the request
 		if len(req.Txs) < 1 {
 			logger.Error("unexpected behaviour, no txs found in the proposal")
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		var metadata HeimdallMetadata
-		err := json.Unmarshal(req.Txs[0], &metadata)
+		err = json.Unmarshal(req.Txs[0], &metadata)
 		if err != nil {
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("failed to decode metadata, cannot proceed", "error", err)
 			return nil, err
 		}
@@ -210,20 +238,20 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		extCommitInfo := new(abci.ExtendedCommitInfo)
 		extendedCommitTx := metadata.MarshaledLocalLastCommit
 		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("Error occurred while decoding ExtendedCommitInfo", "height", req.Height, "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		if extCommitInfo.Round != req.ProposedLastCommit.Round {
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("Received commit round does not match expected round", "expected", req.ProposedLastCommit.Round, "got", extCommitInfo.Round)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		// validate the vote extensions
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -236,7 +264,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 				logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
 			}
 
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
@@ -244,21 +272,21 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 			txn, err := app.TxDecode(tx)
 			if err != nil {
-				app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+				app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 				logger.Error("error occurred while decoding tx bytes in ProcessProposalHandler", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
 			// ensure we allow transactions with only one side msg inside
 			if sidetxs.CountSideHandlers(app.sideTxCfg, txn) > 1 {
-				app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+				app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
 			// run the tx by executing the msg_server handler on the tx msgs and the ante handler
 			_, err = app.ProcessProposalVerifyTx(tx)
 			if err != nil {
-				app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+				app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 				// this should never happen, as the txs have already been checked in PrepareProposal
 				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
@@ -270,21 +298,21 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 			return nil, err
 		}
 		payload, err := app.caller.BorEngineClient.NewPayloadV2(ctx, executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("failed to validate execution payload on execution client, cannot proceed", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		if payload.Status != "VALID" {
 			// TODO: use forkchoice state from the latest block stored in the keeper
-			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("execution payload is not valid, cannot proceed", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -294,7 +322,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
 		logger.Info("🕒 ProcessProposal:" + formatted)
 
-		app.nextBlockChan <- nextELBlockCtx{height: req.Height + 1,
+		app.nextBlockChan <- nextELBlockCtx{height: hexutil.MustDecodeUint64(executionPayload.BlockNumber) + 1,
 			context: ctx,
 			ForkChoiceState: engine.ForkChoiceState{
 				HeadHash:           common.HexToHash(executionPayload.BlockHash),
@@ -539,7 +567,8 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	if err := app.CheckpointKeeper.SetExecutionStateMetadata(ctx, checkpointTypes.ExecutionStateMetadata{
-		FinalBlockHash: common.Hex2Bytes(executionPayload.BlockHash),
+		FinalBlockHash:    common.Hex2Bytes(executionPayload.BlockHash),
+		LatestBlockNumber: hexutil.MustDecodeUint64(executionPayload.BlockNumber),
 	}); err != nil {
 		logger.Error("Error occurred while setting execution state metadata", "error", err)
 		return nil, err
