@@ -6,12 +6,13 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/cenkalti/backoff/v4"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	gethEngine "github.com/ethereum/go-ethereum/beacon/engine"
+	gethTypes "github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
@@ -20,7 +21,7 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	for {
 		select {
 		case blockCtx = <-app.nextBlockChan:
-			res, err := app.retryBuildNextPayload(blockCtx.ForkChoiceState, blockCtx.context)
+			res, err := app.retryBuildNextPayload(blockCtx.ForkchoiceStateV1, blockCtx.context)
 			if err != nil {
 				logger.Error("error building next payload", "error", err)
 				res = nil
@@ -29,7 +30,7 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 			app.nextExecPayload = res
 
 		case blockCtx = <-app.currBlockChan:
-			res, err := app.retryBuildLatestPayload(blockCtx.ForkChoiceState, ctx, blockCtx.height)
+			res, err := app.retryBuildLatestPayload(blockCtx.ForkchoiceStateV1, ctx, blockCtx.height)
 			if err != nil {
 				logger.Error("error building latest payload", "error", err)
 				res = nil
@@ -43,38 +44,38 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	}
 }
 
-func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx context.Context, height int64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildLatestPayload(state gethEngine.ForkchoiceStateV1, ctx context.Context, height int64) (response *gethEngine.ExecutionPayloadEnvelope, err error) {
 	forever := backoff.NewExponentialBackOff()
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	if state == (engine.ForkChoiceState{}) {
+	if state == (gethEngine.ForkchoiceStateV1{}) {
 		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(height)) // change this to a keeper
 		if err != nil {
 			return nil, err
 		}
-		state = engine.ForkChoiceState{
-			HeadHash:           latestBlock.Hash(),
+		state = gethEngine.ForkchoiceStateV1{
+			HeadBlockHash:      latestBlock.Hash(),
 			SafeBlockHash:      latestBlock.Hash(),
 			FinalizedBlockHash: common.Hash{},
 		}
 	}
 
 	// The engine complains when the withdrawals are empty
-	withdrawals := []*engine.Withdrawal{ // need to undestand
+	withdrawals := []*gethTypes.Withdrawal{ // need to undestand
 		{
-			Index:     "0x0",
-			Validator: "0x0",
-			Address:   common.Address{}.Hex(),
-			Amount:    "0x0",
+			Index:     0,
+			Validator: 0,
+			Address:   common.Address{},
+			Amount:    0,
 		},
 	}
 
 	addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-	attrs := engine.PayloadAttributes{
-		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-		PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
+	attrs := gethEngine.PayloadAttributes{
+		Timestamp:             uint64(time.Now().Unix()),
+		Random:                common.Hash{}, // do we need to generate a randao for the EVM?
 		SuggestedFeeRecipient: addr,
 		Withdrawals:           withdrawals,
 	}
@@ -84,18 +85,18 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 		return nil, err
 	}
 
-	payloadId := choice.PayloadId
+	payloadId := choice.PayloadID
 	status := choice.PayloadStatus
 
 	if status.Status != "VALID" {
 		// logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
-		return nil, errors.New(status.ValidationError)
+		return nil, errors.New(*status.ValidationError)
 	}
 
 	err = backoff.Retry(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
+		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId.String())
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
@@ -111,23 +112,23 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 	return response, nil
 }
 
-func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx sdk.Context) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildNextPayload(state gethEngine.ForkchoiceStateV1, ctx sdk.Context) (response *gethEngine.ExecutionPayloadEnvelope, err error) {
 	forever := backoff.NewExponentialBackOff()
 
 	// The engine complains when the withdrawals are empty
-	withdrawals := []*engine.Withdrawal{ // need to undestand
+	withdrawals := []*gethTypes.Withdrawal{ // need to undestand
 		{
-			Index:     "0x0",
-			Validator: "0x0",
-			Address:   common.Address{}.Hex(),
-			Amount:    "0x0",
+			Index:     0,
+			Validator: 0,
+			Address:   common.Address{},
+			Amount:    0,
 		},
 	}
 
 	addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-	attrs := engine.PayloadAttributes{
-		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-		PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
+	attrs := gethEngine.PayloadAttributes{
+		Timestamp:             uint64(time.Now().UnixMilli()),
+		Random:                common.Hash{}, // do we need to generate a randao for the EVM?
 		SuggestedFeeRecipient: addr,
 		Withdrawals:           withdrawals,
 	}
@@ -139,18 +140,18 @@ func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx 
 		return nil, err
 	}
 
-	payloadId := choice.PayloadId
+	payloadId := choice.PayloadID
 	status := choice.PayloadStatus
 
 	if status.Status != "VALID" {
 		// logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
-		return nil, errors.New(status.ValidationError)
+		return nil, errors.New(*status.ValidationError)
 	}
 
 	err = backoff.Retry(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
+		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId.String())
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
