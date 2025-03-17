@@ -266,6 +266,36 @@ services:
       heimdalld-localnet:
         ipv4_address: 172.18.0.11
 
+# Metrics components
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus/config.yml:/etc/prometheus/config.yml
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/config.yml"
+    networks:
+      heimdalld-localnet:
+        ipv4_address: 172.18.0.20
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      # default admin user is "admin"
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+    networks:
+      heimdalld-localnet:
+        ipv4_address: 172.18.0.21
 
 networks:
   heimdalld-localnet:
