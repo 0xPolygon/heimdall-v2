@@ -47,8 +47,8 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		}
 
 		if latestHeader.Number.Uint64() > milestone.EndBlock && latestHeader.Number.Uint64()-milestone.EndBlock > params.FfMilestoneThreshold {
-			propStartBlock = ((latestHeader.Number.Uint64() - milestone.EndBlock) / params.FfMilestoneBlockInterval) * params.FfMilestoneBlockInterval
-			propStartBlock = propStartBlock + milestone.EndBlock
+			latestHeaderMilestoneDistanceInBlocks := ((latestHeader.Number.Uint64() - milestone.EndBlock) / params.FfMilestoneBlockInterval) * params.FfMilestoneBlockInterval
+			propStartBlock = milestone.EndBlock + latestHeaderMilestoneDistanceInBlocks + 1
 		}
 
 		lastMilestoneHash = milestone.Hash
@@ -62,6 +62,10 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 
 	parentHash, blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := validateMilestonePropositionFork(parentHash, lastMilestoneHash); err != nil {
 		return nil, err
 	}
 
@@ -353,10 +357,6 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 
 			parentHash = header.ParentHash.Bytes()
 		}
-
-		if !bytes.Equal(parentHash, lastMilestoneHash) {
-			return nil, nil, fmt.Errorf("first block parent hash does not match last milestone hash")
-		}
 	}
 
 	for _, h := range headers {
@@ -364,6 +364,15 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 	}
 
 	return parentHash, result, nil
+}
+
+func validateMilestonePropositionFork(parentHash []byte, lastMilestoneHash []byte) error {
+	if len(parentHash) > 0 && len(lastMilestoneHash) > 0 {
+		if !bytes.Equal(parentHash, lastMilestoneHash) {
+			return fmt.Errorf("first block parent hash does not match last milestone hash")
+		}
+	}
+	return nil
 }
 
 func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, milestoneProp *types.MilestoneProposition) error {
