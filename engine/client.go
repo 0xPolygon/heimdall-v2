@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	gethEngine "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/pkg/errors"
 )
 
@@ -14,6 +15,34 @@ type EngineClient struct {
 	client *http.Client
 	url    string
 	reqID  uint64
+}
+
+type JsonrpcRequest struct {
+	ID      uint64        `json:"id"`
+	JSONRPC string        `json:"jsonrpc"`
+	Method  string        `json:"method"`
+	Params  []interface{} `json:"params"`
+}
+
+type JsonrpcResponse struct {
+	ID      int             `json:"id"`
+	JSONRPC string          `json:"jsonrpc"`
+	Result  json.RawMessage `json:"result"`
+	Error   *EthError       `json:"error"`
+}
+
+type ApiError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type EthError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+func (err EthError) Error() string {
+	return fmt.Sprintf("Error %d (%s)", err.Code, err.Message)
 }
 
 var _ ExecutionEngineClient = (*EngineClient)(nil)
@@ -41,7 +70,7 @@ func (ec *EngineClient) Close() {
 	ec.client.CloseIdleConnections()
 }
 
-func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoiceState, attrs *PayloadAttributes) (*ForkchoiceUpdatedResponse, error) {
+func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *gethEngine.ForkchoiceStateV1, attrs *gethEngine.PayloadAttributes) (*gethEngine.ForkChoiceResponse, error) {
 	msg, err := ec.call(ctx, "engine_forkchoiceUpdatedV2", state, attrs)
 	if err != nil {
 		return nil, err
@@ -50,7 +79,7 @@ func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoi
 	if err != nil {
 		return nil, err
 	}
-	var response ForkchoiceUpdatedResponse
+	var response gethEngine.ForkChoiceResponse
 	err = json.Unmarshal(data, &response)
 	if err != nil {
 		return nil, err
@@ -58,12 +87,12 @@ func (ec *EngineClient) ForkchoiceUpdatedV2(ctx context.Context, state *ForkChoi
 	return &response, nil
 }
 
-func (ec *EngineClient) GetPayloadV2(ctx context.Context, payloadId string) (*Payload, error) {
+func (ec *EngineClient) GetPayloadV2(ctx context.Context, payloadId string) (*gethEngine.ExecutionPayloadEnvelope, error) {
 	msg, err := ec.call(ctx, "engine_getPayloadV2", payloadId)
 	if err != nil {
 		return nil, err
 	}
-	var response Payload
+	var response gethEngine.ExecutionPayloadEnvelope
 	err = json.Unmarshal(msg, &response)
 	if err != nil {
 		return nil, err
@@ -71,12 +100,12 @@ func (ec *EngineClient) GetPayloadV2(ctx context.Context, payloadId string) (*Pa
 	return &response, nil
 }
 
-func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload ExecutionPayload) (*NewPayloadResponse, error) {
+func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload gethEngine.ExecutableData) (*gethEngine.PayloadStatusV1, error) {
 	msg, err := ec.call(ctx, "engine_newPayloadV2", payload)
 	if err != nil {
 		return nil, err
 	}
-	var response NewPayloadResponse
+	var response gethEngine.PayloadStatusV1
 	err = json.Unmarshal(msg, &response)
 	if err != nil {
 		return nil, err

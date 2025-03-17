@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -15,14 +14,15 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rlp"
 
-	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	gethEngine "github.com/ethereum/go-ethereum/beacon/engine"
+	gethTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 type HeimdallMetadata struct {
@@ -58,12 +58,12 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		}
 
 		// Engine API
-		var payload *engine.Payload
+		var payload *gethEngine.ExecutionPayloadEnvelope
 
 		// TODO: store bor block height in a keeper
-		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
+		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.Number == uint64(req.Height) {
 			payload = app.latestExecPayload
-		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(uint64(req.Height)) {
+		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.Number == uint64(req.Height) {
 			payload = app.nextExecPayload
 		} else {
 			logger.Debug("latest payload not found, fetching from CheckpointKeeper")
@@ -82,26 +82,26 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 			blockHash := common.BytesToHash(executionState.FinalBlockHash)
 
-			state := engine.ForkChoiceState{
-				HeadHash:           blockHash,
+			state := gethEngine.ForkchoiceStateV1{
+				HeadBlockHash:      blockHash,
 				SafeBlockHash:      blockHash,
 				FinalizedBlockHash: common.Hash{},
 			}
 
 			// The engine complains when the withdrawals are empty
-			withdrawals := []*engine.Withdrawal{ // need to undestand
+			withdrawals := []*gethTypes.Withdrawal{ // need to undestand
 				{
-					Index:     "0x0",
-					Validator: "0x0",
-					Address:   common.Address{}.Hex(),
-					Amount:    "0x0",
+					Index:     0,
+					Validator: 0,
+					Address:   common.Address{},
+					Amount:    0,
 				},
 			}
 
 			addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-			attrs := engine.PayloadAttributes{
-				Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-				PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
+			attrs := gethEngine.PayloadAttributes{
+				Timestamp:             uint64(time.Now().Unix()),
+				Random:                common.Hash{}, // do we need to generate a randao for the EVM?
 				SuggestedFeeRecipient: addr,
 				Withdrawals:           withdrawals,
 			}
@@ -113,15 +113,15 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				return nil, err
 			}
 
-			payloadId := choice.PayloadId
+			payloadId := choice.PayloadID
 			status := choice.PayloadStatus
 
 			if status.Status != "VALID" {
-				logger.Error("validation err: %v, critical err: %v", status.ValidationError, status.CriticalError)
-				return nil, errors.New(status.ValidationError)
+				logger.Error("validation err: %v", status.ValidationError)
+				return nil, errors.New(*status.ValidationError)
 			}
 
-			payload, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
+			payload, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId.String())
 			if err != nil {
 				return nil, err
 			}
@@ -129,7 +129,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// this is where we could filter/reorder transactions, or mark them for filtering so consensus could be checked
 
-		marshaledExecutionPayload, err := json.Marshal(payload.ExecutionPayload)
+		marshaledExecutionPayload, err := rlp.EncodeToBytes(payload.ExecutionPayload)
 		if err != nil {
 			return nil, err
 		}
@@ -138,7 +138,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			MarshaledLocalLastCommit:  marshaledLocalLastCommit,
 			MarshaledExecutionPayload: marshaledExecutionPayload,
 		}
-		marshaledMetadata, err := json.Marshal(metadata)
+		marshaledMetadata, err := rlp.EncodeToBytes(metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -200,7 +200,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		var metadata HeimdallMetadata
-		err := json.Unmarshal(req.Txs[0], &metadata)
+		err := rlp.DecodeBytes(req.Txs[0], &metadata)
 		if err != nil {
 			logger.Error("failed to decode metadata, cannot proceed", "error", err)
 			return nil, err
@@ -266,8 +266,8 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// Engine API - Validate block
-		var executionPayload engine.ExecutionPayload
-		err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
+		var executionPayload gethEngine.ExecutableData
+		err = rlp.DecodeBytes(metadata.MarshaledExecutionPayload, &executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper
 			app.currBlockChan <- nextELBlockCtx{height: req.Height, context: ctx}
@@ -292,13 +292,13 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		// app.execPayloadCache.Add(payload.LatestValidHash, payload)
 		duration := time.Since(start)
 		formatted := fmt.Sprintf("%.6fms", float64(duration)/float64(time.Millisecond))
-		logger.Info("🕒 ProcessProposal:" + formatted)
+		logger.Info("🕒 ProcessProposal:", "duration", formatted, "height", req.Height, "payloadSize", len(req.Txs[0]), "momentTime", time.Now().Format("04:05.000000"))
 
 		app.nextBlockChan <- nextELBlockCtx{height: req.Height + 1,
 			context: ctx,
-			ForkChoiceState: engine.ForkChoiceState{
-				HeadHash:           common.HexToHash(executionPayload.BlockHash),
-				SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
+			ForkchoiceStateV1: gethEngine.ForkchoiceStateV1{
+				HeadBlockHash:      executionPayload.BlockHash,
+				SafeBlockHash:      executionPayload.BlockHash,
 				FinalizedBlockHash: common.Hash{},
 			},
 		}
@@ -320,7 +320,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 		}
 
 		var metadata HeimdallMetadata
-		err := json.Unmarshal(req.Txs[0], &metadata)
+		err := rlp.DecodeBytes(req.Txs[0], &metadata)
 		if err != nil {
 			logger.Error("failed to decode metadata, cannot proceed", "error", err)
 			return nil, err
@@ -501,7 +501,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var metadata HeimdallMetadata
-	err := json.Unmarshal(req.Txs[0], &metadata)
+	err := rlp.DecodeBytes(req.Txs[0], &metadata)
 	if err != nil {
 		logger.Error("failed to decode metadata, cannot proceed", "error", err)
 		return nil, err
@@ -514,32 +514,32 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	// Engine API
-	var executionPayload engine.ExecutionPayload
-	err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
+	var executionPayload gethEngine.ExecutableData
+	err = rlp.DecodeBytes(metadata.MarshaledExecutionPayload, &executionPayload)
 	if err != nil {
 		logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 		return nil, err
 	}
 
-	state := engine.ForkChoiceState{
-		HeadHash:           common.HexToHash(executionPayload.BlockHash),
-		SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
-		FinalizedBlockHash: common.HexToHash(executionPayload.BlockHash), // latestHash from the Proposal stage
+	state := gethEngine.ForkchoiceStateV1{
+		HeadBlockHash:      executionPayload.BlockHash,
+		SafeBlockHash:      executionPayload.BlockHash,
+		FinalizedBlockHash: executionPayload.BlockHash, // latestHash from the Proposal stage
 	}
 
-	var choice *engine.ForkchoiceUpdatedResponse
+	var choice *gethEngine.ForkChoiceResponse
 	choice, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, &state, nil)
 	if err != nil {
 		infoLog := "fork choice failed, cannot proceed"
 		logger.Error(infoLog, err.Error())
 		if choice != nil && choice.PayloadStatus.Status != "VALID" {
-			infoLog = fmt.Sprintf("%s: %s", infoLog, choice.PayloadStatus.ValidationError)
+			infoLog = fmt.Sprintf("%s: %s", infoLog, *choice.PayloadStatus.ValidationError)
 		}
 		return nil, err
 	}
 
 	if err := app.CheckpointKeeper.SetExecutionStateMetadata(ctx, checkpointTypes.ExecutionStateMetadata{
-		FinalBlockHash: common.Hex2Bytes(executionPayload.BlockHash),
+		FinalBlockHash: executionPayload.BlockHash.Bytes(),
 	}); err != nil {
 		logger.Error("Error occurred while setting execution state metadata", "error", err)
 		return nil, err
