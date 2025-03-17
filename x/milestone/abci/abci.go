@@ -198,16 +198,12 @@ func GetMajorityMilestoneProposition(
 
 	var majorityParentHash string
 	isParentHashMajority := false
-	isFastForward := false
 
 	for parentHash := range parentHashes {
 		key := getParentChildKey(parentHash, common.BytesToHash(blockToHash[majorityBlocks[0]]).String())
 		if parentHashToVotingPower[key] >= majorityVP {
 			isParentHashMajority = true
 			majorityParentHash = parentHash
-			if parentHash != common.BytesToHash([]byte{}).String() {
-				isFastForward = true
-			}
 			break
 		}
 	}
@@ -217,7 +213,7 @@ func GetMajorityMilestoneProposition(
 		return nil, nil, "", nil
 	}
 
-	if isFastForward && majorityParentHash != common.BytesToHash(lastEndBlockHash).String() {
+	if majorityParentHash != common.BytesToHash(lastEndBlockHash).String() {
 		logger.Debug("Parent hash does not match last end block hash",
 			"majorityParentHash", majorityParentHash,
 			"lastEndBlockHash", common.BytesToHash(lastEndBlockHash).String())
@@ -229,6 +225,10 @@ func GetMajorityMilestoneProposition(
 	// Check if we have a block that starts exactly from lastEndBlock + 1
 	if lastEndBlock != nil {
 		startBlock = *lastEndBlock + 1
+
+		if majorityBlocks[0] > startBlock {
+			startBlock = majorityBlocks[0]
+		}
 	}
 
 	// Check if startBlock is in majorityBlocks
@@ -240,14 +240,10 @@ func GetMajorityMilestoneProposition(
 		}
 	}
 
-	if !isFastForward && !startBlockFound {
+	if !startBlockFound {
 		logger.Debug("No blocks with majority support starting at requested block",
 			"requestedStartBlock", startBlock)
 		return nil, nil, "", nil
-	}
-
-	if isFastForward {
-		startBlock = majorityBlocks[0]
 	}
 
 	// Find the first continuous range starting from startBlock
