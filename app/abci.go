@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -60,24 +59,9 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		// Engine API
 		var payload *engine.Payload
 
-		executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
+		executionState, err := app.getExecutionStateMetadata(ctx)
 		if err != nil {
-			logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
-			blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
-			if err != nil {
-				return nil, err
-			}
-
-			lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNum)))
-			if err != nil {
-				return nil, err
-			}
-
-			executionState = checkpointTypes.ExecutionStateMetadata{
-				FinalBlockHash:    lastHeader.Hash().Bytes(),
-				LatestBlockNumber: blockNum,
-			}
-
+			return nil, err
 		}
 
 		// TODO: store bor block height in a keeper
@@ -199,24 +183,9 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		start := time.Now()
 		logger.Info("🕒 Start ProcessProposal:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
-		executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
+		executionState, err := app.getExecutionStateMetadata(ctx)
 		if err != nil {
-			logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
-			blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
-			if err != nil {
-				return nil, err
-			}
-
-			lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNum)))
-			if err != nil {
-				return nil, err
-			}
-
-			executionState = checkpointTypes.ExecutionStateMetadata{
-				FinalBlockHash:    lastHeader.Hash().Bytes(),
-				LatestBlockNumber: blockNum,
-			}
-
+			return nil, err
 		}
 
 		// check if there are any txs in the request
