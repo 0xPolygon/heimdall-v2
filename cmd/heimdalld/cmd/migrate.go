@@ -37,7 +37,7 @@ import (
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "migrate [genesis-file] --chain-id=[chain-id] --genesis-time=[genesis-time] --initial-height=[initial-height]",
+		Use:   "migrate [genesis-file] --chain-id=[chain-id] --genesis-time=[genesis-time] --initial-height=[initial-height] [--verify-hash=true|false]",
 		Short: "Migrate application state",
 		Long:  `Run migrations to update the application state (e.g., for a chain upgrade) based on the provided genesis file.`,
 		Args:  cobra.ExactArgs(1),
@@ -47,6 +47,7 @@ func MigrateCommand() *cobra.Command {
 	cmd.Flags().String(flagChainId, "", "The new network chain id")
 	cmd.Flags().String(flagGenesisTime, "", "The new network genesis time")
 	cmd.Flags().Uint64(flagInitialHeight, 0, "The new network initial height")
+	cmd.Flags().Bool(flagVerifyHash, true, "Enable or disable remote genesis hash verification")
 
 	if err := cmd.MarkFlagRequired(flagChainId); err != nil {
 		panic(err)
@@ -80,6 +81,11 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	verifyHash, err := cmd.Flags().GetBool(flagVerifyHash)
+	if err != nil {
+		return fmt.Errorf("failed to parse --verify-hash flag: %w", err)
+	}
+
 	flagsToCheck := []string{flagChainId, flagGenesisTime, flagInitialHeight}
 	for _, flag := range flagsToCheck {
 		if !cmd.Flags().Changed(flag) {
@@ -109,9 +115,11 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-			logger.Error("Genesis hash verification failed", "error", err)
-			return err
+		if verifyHash {
+			if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
+				logger.Error("Genesis hash verification failed", "error", err)
+				return err
+			}
 		}
 
 		return nil
@@ -148,9 +156,11 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-		logger.Error("Genesis hash verification failed", "error", err)
-		return err
+	if verifyHash {
+		if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
+			logger.Error("Genesis hash verification failed", "error", err)
+			return err
+		}
 	}
 
 	return nil
@@ -881,4 +891,5 @@ const (
 	flagChainId       = "chain-id"
 	flagGenesisTime   = "genesis-time"
 	flagInitialHeight = "initial-height"
+	flagVerifyHash    = "verify-hash"
 )
