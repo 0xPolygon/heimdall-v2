@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/cometbft/cometbft/libs/rand"
+	gethEngine "github.com/ethereum/go-ethereum/beacon/engine"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
@@ -31,24 +31,24 @@ func TestEnginePayloadProcessing(t *testing.T) {
 	require.NoError(t, err)
 	defer ec.Close()
 
-	state := ForkChoiceState{
-		HeadHash:           *latest,
+	state := gethEngine.ForkchoiceStateV1{
+		HeadBlockHash:      *latest,
 		SafeBlockHash:      *latest,
 		FinalizedBlockHash: common.Hash{},
 	}
 
-	w := Withdrawal{
-		Index:     "0x1",
-		Validator: "0x1",
-		Address:   common.Address{}.Hex(),
-		Amount:    "0x1",
+	w := types.Withdrawal{
+		Index:     1,
+		Validator: 1,
+		Address:   common.Address{},
+		Amount:    1,
 	}
 
-	attrs := PayloadAttributes{
-		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-		PrevRandao:            common.Hash{},
+	attrs := gethEngine.PayloadAttributes{
+		Timestamp:             uint64(time.Now().Unix()),
+		Random:                common.Hash{},
 		SuggestedFeeRecipient: common.Address{},
-		Withdrawals:           []*Withdrawal{&w},
+		Withdrawals:           []*types.Withdrawal{&w},
 		//ParentBeaconBlockRoot: common.Hash{},
 	}
 
@@ -59,12 +59,12 @@ func TestEnginePayloadProcessing(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, fcu1)
 	require.Equal(t, "VALID", fcu1.PayloadStatus.Status)
-	require.NotEmpty(t, fcu1.PayloadId)
+	require.NotEmpty(t, fcu1.PayloadID)
 
 	fmt.Printf("return: %v\n\n", fcu1)
 
-	fmt.Printf("2-> GetPayloadV2: %v\n", fcu1.PayloadId)
-	payload1, err := ec.GetPayloadV2(ctx, fcu1.PayloadId)
+	fmt.Printf("2-> GetPayloadV2: %v\n", fcu1.PayloadID)
+	payload1, err := ec.GetPayloadV2(ctx, fcu1.PayloadID.String())
 	require.NoError(t, err)
 	require.NotNil(t, payload1)
 
@@ -72,7 +72,7 @@ func TestEnginePayloadProcessing(t *testing.T) {
 
 	fmt.Printf("3-> NewPayloadV2: %v\n", payload1.ExecutionPayload)
 
-	newPayload, err := ec.NewPayloadV2(ctx, payload1.ExecutionPayload)
+	newPayload, err := ec.NewPayloadV2(ctx, *payload1.ExecutionPayload)
 	require.NoError(t, err)
 	require.NotNil(t, newPayload)
 	require.Equal(t, "VALID", newPayload.Status)
@@ -82,12 +82,12 @@ func TestEnginePayloadProcessing(t *testing.T) {
 	fmt.Printf("return: %v\n\n", newPayload)
 
 	// forkchoice with new hashes
-	state.FinalizedBlockHash = state.HeadHash
-	state.HeadHash = common.HexToHash(newPayload.LatestValidHash)
-	state.SafeBlockHash = common.HexToHash(newPayload.LatestValidHash)
+	state.FinalizedBlockHash = state.HeadBlockHash
+	state.HeadBlockHash = *newPayload.LatestValidHash
+	state.SafeBlockHash = *newPayload.LatestValidHash
 
 	// what to do with payload attributes? what is parent beacon block root?
-	attrs.Timestamp = hexutil.Uint64(time.Now().UnixMilli())
+	attrs.Timestamp = uint64(time.Now().Unix())
 
 	fmt.Printf("4-> ForkchoiceUpdatedV2: state=%v, attrs=%v\n", state, attrs)
 
@@ -95,7 +95,7 @@ func TestEnginePayloadProcessing(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, fcu2)
 	require.Equal(t, "VALID", fcu2.PayloadStatus.Status)
-	require.NotEmpty(t, fcu2.PayloadId)
+	require.NotEmpty(t, fcu2.PayloadID)
 
 	fmt.Printf("return: %v\n\n", fcu2)
 }
@@ -160,24 +160,24 @@ func TestMultiEngineExecution(t *testing.T) {
 	require.NoError(t, err)
 	defer ec0.Close()
 
-	state := ForkChoiceState{
-		HeadHash:           *latest,
+	state := gethEngine.ForkchoiceStateV1{
+		HeadBlockHash:      *latest,
 		SafeBlockHash:      *latest,
 		FinalizedBlockHash: common.Hash{},
 	}
 
-	w := Withdrawal{
-		Index:     "0x1",
-		Validator: "0x1",
-		Address:   common.Address{}.Hex(),
-		Amount:    "0x1",
+	w := types.Withdrawal{
+		Index:     1,
+		Validator: 1,
+		Address:   common.Address{},
+		Amount:    1,
 	}
 
-	attrs := PayloadAttributes{
-		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
-		PrevRandao:            common.Hash{},
+	attrs := gethEngine.PayloadAttributes{
+		Timestamp:             uint64(time.Now().Unix()),
+		Random:                common.Hash{},
 		SuggestedFeeRecipient: common.Address{},
-		Withdrawals:           []*Withdrawal{&w},
+		Withdrawals:           []*types.Withdrawal{&w},
 		//ParentBeaconBlockRoot: common.Hash{},
 	}
 
@@ -186,9 +186,9 @@ func TestMultiEngineExecution(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, fcu1)
 	require.Equal(t, "VALID", fcu1.PayloadStatus.Status)
-	require.NotEmpty(t, fcu1.PayloadId)
+	require.NotEmpty(t, fcu1.PayloadID)
 
-	payload1, err := ec0.GetPayloadV2(ctx, fcu1.PayloadId)
+	payload1, err := ec0.GetPayloadV2(ctx, fcu1.PayloadID.String())
 	require.NoError(t, err)
 	require.NotNil(t, payload1)
 
@@ -200,7 +200,7 @@ func TestMultiEngineExecution(t *testing.T) {
 		require.NoError(t, err)
 		defer engine.Close()
 
-		newPayload, err := engine.NewPayloadV2(ctx, payload1.ExecutionPayload)
+		newPayload, err := engine.NewPayloadV2(ctx, *payload1.ExecutionPayload)
 		require.NoError(t, err)
 		require.NotNil(t, newPayload)
 		require.Equal(t, "VALID", newPayload.Status)
@@ -208,18 +208,18 @@ func TestMultiEngineExecution(t *testing.T) {
 		require.NotEmpty(t, newPayload.LatestValidHash)
 
 		// forkchoice with new hashes
-		state.FinalizedBlockHash = state.HeadHash
-		state.HeadHash = common.HexToHash(newPayload.LatestValidHash)
-		state.SafeBlockHash = common.HexToHash(newPayload.LatestValidHash)
+		state.FinalizedBlockHash = state.HeadBlockHash
+		state.HeadBlockHash = *newPayload.LatestValidHash
+		state.SafeBlockHash = *newPayload.LatestValidHash
 
 		// apparently not used in block hash, but must be distinct from previous attrs
-		attrs.Timestamp = hexutil.Uint64(time.Now().UnixMilli())
+		attrs.Timestamp = uint64(time.Now().Unix())
 
 		fcu2, err := engine.ForkchoiceUpdatedV2(ctx, &state, &attrs)
 		require.NoError(t, err)
 		require.NotNil(t, fcu2)
 		require.Equal(t, "VALID", fcu2.PayloadStatus.Status)
-		require.NotEmpty(t, fcu2.PayloadId)
+		require.NotEmpty(t, fcu2.PayloadID)
 	}
 
 	// All engines should have advanced and be at same block num/hash

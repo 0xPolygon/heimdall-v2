@@ -64,7 +64,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
-	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
@@ -88,6 +87,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+	gethEngine "github.com/ethereum/go-ethereum/beacon/engine"
 )
 
 var (
@@ -106,15 +106,15 @@ var (
 )
 
 type nextELBlockCtx struct {
-	engine.ForkChoiceState
+	gethEngine.ForkchoiceStateV1
 	height  int64
 	context sdk.Context
 }
 type HeimdallApp struct {
 	*baseapp.BaseApp
 
-	latestExecPayload *engine.Payload
-	nextExecPayload   *engine.Payload
+	latestExecPayload *gethEngine.ExecutionPayloadEnvelope
+	nextExecPayload   *gethEngine.ExecutionPayloadEnvelope
 	currBlockChan     chan nextELBlockCtx
 	nextBlockChan     chan nextELBlockCtx
 	legacyAmino       *codec.LegacyAmino

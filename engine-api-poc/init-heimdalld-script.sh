@@ -1,10 +1,9 @@
 #!/bin/bash
 
 
-heimdalld create-testnet --v 5 --n 0 --output-dir /data --home /data
+heimdalld create-testnet --v $NODES --n 0 --output-dir /data --home /data
 
-for i in {1..4}
-do
+for (( i=1; i<$NODES; i++ )); do
     cp /data/node0/heimdalld/config/genesis.json /data/node$i/heimdalld/config/genesis.json 
 done
 
