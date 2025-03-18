@@ -1,12 +1,5 @@
 #!/bin/bash
-
-mnemonics=(
-  "erupt oven loud noise rug proof sunset gas table era dizzy vault"
-  "charge taxi rifle female calm mask sea holiday wheat paddle expand surprise"
-  "clip avoid maze squeeze one chest space style define leave sing dignity"
-  "slam lab bind click ice prepare online reason wedding resist process exclude"
-  "again cinnamon vessel dignity wise bike creek escape master siren govern battle"
-)
+. ./engine-api-poc/deployment/.env; 
 
 folder="./engine-api-poc/test-output"
 rm -rf "$folder"
@@ -19,23 +12,16 @@ if ! polycli version > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if polycli is installed and working
-if ! cast --version > /dev/null 2>&1; then
-    echo "- cast is not installed or not working properly. Please install cast to continue."
-    echo "- You can do this via this link: https://github.com/foundry-rs/foundry?tab=readme-ov-file#installation"
-    exit 1
-fi
-
 echo "Starting testing rountines..."
 
   
-# Launch 5 processes concurrently
-for i in {0..4}; do
+# Launch processes concurrently
+for (( i=0; i<$NODES; i++ )); do
   prefix=$((i + 8))
   port="${prefix}545"
   mnemonic="${mnemonics[i]}"
   out_file="./engine-api-poc/test-output/test_${i}.json"
-  private_key=$(cast wallet private-key "${mnemonics[i]}")
+  private_key=$(jq -r '.['"$i"'].private_key' ./engine-api-poc/deployment/wallets_for_test.json)
   
   polycli loadtest -r "http://localhost:${port}" \
     --private-key "${private_key}" --verbosity 100 \

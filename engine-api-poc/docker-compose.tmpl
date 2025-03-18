@@ -1,0 +1,108 @@
+{{/* docker-compose.tmpl */}}
+# This is an example compose file for starting up geimdall-v2 required components
+# to run standalone without Bor for development and testing purposes.
+# Do not use this for production.
+version: "3"
+
+x-heimdalld-image: &heimdalld-image
+    image: heimdalld:local
+    build:
+        context: ../../
+        dockerfile: ./engine-api-poc/Dockerfile.heimdalld
+    networks:
+        - heimdalld-localnet
+    restart: on-failure
+    env_file:
+        - ./.env
+
+x-erigon-image: &erigon-image
+    image: erigon:local
+    build:
+        context: ../../
+        dockerfile: ./engine-api-poc/Dockerfile.erigon
+    networks:
+        - heimdalld-localnet
+    restart: on-failure
+    env_file:
+        - ./.env
+
+services:
+    heimdalld-init:
+        <<: *heimdalld-image
+        entrypoint: ["/script/init-heimdalld-script.sh"]
+        volumes:
+            - ./build:/data
+            - ../init-heimdalld-script.sh:/script/init-heimdalld-script.sh:ro
+    erigon-init:
+        <<: *erigon-image
+        entrypoint: ["/script/init-erigon-script.sh"]
+        volumes:
+            - ../init-erigon-script.sh:/script/init-erigon-script.sh:ro
+            - ./genesis.json:/config/genesis.json:ro
+
+{{- range $i := seq 0 (sub (conv.ToInt64 (getenv "NODES")) 1) }}
+            - ./build/erigon-{{ $i }}:/data/erigon-{{ $i }}
+{{- end }}
+
+
+{{- range $i := seq 0 (sub (conv.ToInt64 (getenv "NODES")) 1) }}
+    {{ $peers := "" }}
+    {{- range $j := seq 0 (sub (conv.ToInt64 (getenv "NODES")) 1) }}
+    {{- if ne $j $i }}
+        {{- if eq $peers "" }}
+        {{ $peers = printf "enode://$ERIGON_NODE_P2P_KEY_%d@erigon-%d:30303" $j $j }}
+        {{- else }}
+        {{ $peers = printf "%s,enode://$ERIGON_NODE_P2P_KEY_%d@erigon-%d:30303" $peers $j $j }}
+        {{- end }}
+    {{- end }}
+    {{- end }}
+    node{{ $i }}:
+        <<: *heimdalld-image
+        entrypoint: ["/script/start-heimdalld-script.sh"]
+        environment:
+            - BOR_ENGINE_JWT=/erigon/jwt.hex
+            - BOR_ENGINE_URL=http://erigon-{{ $i }}:8551
+            - BOR_RPC_URL=http://erigon-{{ $i }}:8545
+        depends_on:
+            erigon-{{ $i }}:
+                condition: service_healthy
+        volumes:
+            - ./build/node{{ $i }}/heimdalld:/data
+            - ./build/erigon-{{ $i }}:/erigon
+            - ../start-heimdalld-script.sh:/script/start-heimdalld-script.sh:ro
+    erigon-{{ $i }}:
+        <<: *erigon-image
+        entrypoint: ["erigon"]
+        command: [
+            "--verbosity", "debug",
+            "--log.console.verbosity", "debug",
+            "--chain", "holesky",
+            "--datadir", "/erigon",
+            "--port", "30303",
+            "--http",
+            "--http.addr", "0.0.0.0",
+            "--http.vhosts", "any",
+            "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
+            "--authrpc.addr", "0.0.0.0",
+            "--authrpc.vhosts", "any",
+            "--miner.gaslimit", "60000000"
+
+        ]
+        healthcheck:
+            test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        volumes:
+            - ./build/erigon-{{ $i }}:/erigon
+        ports:
+            - "{{ add 8 $i }}545:8545"
+{{- end }}
+
+networks:
+  heimdalld-localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16

@@ -155,40 +155,51 @@ release:
 ###                                Engine API POC                           ###
 ###############################################################################
 
-engine-api-poc-build: 
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml build heimdalld-init erigon-init
+engine-api-poc-build:
+	NODES=1 bash ./engine-api-poc/engine-api-poc-generate.sh 
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/deployment/docker-compose.yaml build heimdalld-init erigon-init
 .PHONY: engine-api-poc-build
 
 engine-api-poc-init: 
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up heimdalld-init erigon-init
+	bash ./engine-api-poc/engine-api-poc-generate.sh
+	chmod +x ./engine-api-poc/init-heimdalld-script.sh
+	chmod +x ./engine-api-poc/start-heimdalld-script.sh
+	chmod +x ./engine-api-poc/init-erigon-script.sh
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/deployment/docker-compose.yaml up heimdalld-init erigon-init
 .PHONY: engine-api-poc-init
 
 engine-api-poc-start:
-	rm -rf ./engine-api-poc/logs
-	mkdir ./engine-api-poc/logs
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml up -d  node0 node1 node2 node3 node4
+	@rm -rf ./engine-api-poc/logs
+	@mkdir -p ./engine-api-poc/logs
+	@bash -c '\
+		. ./engine-api-poc/deployment/.env; \
+		nodes=""; \
+		for i in $$(seq 0 $$(expr $$NODES - 1)); do \
+		  nodes="$$nodes node$$i"; \
+		done; \
+		echo "Starting nodes: $$nodes"; \
+		ARCH=$$ARCH docker compose -f ./engine-api-poc/deployment/docker-compose.yaml up -d $$nodes'
 	@echo "Tailing logs for all nodes. Press CTRL+C to stop..."
 	@bash -c '\
+		. ./engine-api-poc/deployment/.env; \
 		trap "kill 0" SIGINT; \
-		tail -F ./engine-api-poc/build/node0/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node0.log & \
-		tail -F ./engine-api-poc/build/node1/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node1.log & \
-		tail -F ./engine-api-poc/build/node2/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node2.log & \
-		tail -F ./engine-api-poc/build/node3/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node3.log & \
-		tail -F ./engine-api-poc/build/node4/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node4.log & \
-		wait'	
+		for i in $$(seq 0 $$(expr $$NODES - 1)); do \
+		  tail -F ./engine-api-poc/deployment/build/node$$i/heimdalld/app.log | grep --line-buffered "🕒" >> ./engine-api-poc/logs/node$$i.log & \
+		done; \
+		wait'
 .PHONY: engine-api-poc-start
 
 engine-api-poc-stop:
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml  stop
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/deployment/docker-compose.yaml  stop
 .PHONY: engine-api-poc-stop
 
 engine-api-poc-destroy:
-	ARCH=$(ARCH) docker compose -f ./engine-api-poc/docker-compose.yaml  down --remove-orphans
-	ARCH=$(ARCH) rm -rf ./engine-api-poc/build
+	ARCH=$(ARCH) docker compose -f ./engine-api-poc/deployment/docker-compose.yaml  down --remove-orphans
+	ARCH=$(ARCH) rm -rf ./engine-api-poc/deployment
 .PHONY: engine-api-poc-stop
 
 engine-api-poc-test:
-	ARCH=$(ARCH) bash ./engine-api-poc/run_test.sh
+	ARCH=$(ARCH) bash ./engine-api-poc/engine-api-poc-test.sh
 .PHONY: engine-api-poc-test
 
 engine-api-poc-monitor-test:

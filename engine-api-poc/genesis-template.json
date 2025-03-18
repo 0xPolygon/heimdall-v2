@@ -17,27 +17,6 @@
     "shanghaiTime": 1696000704
   },
   "alloc": {
-    "0x67b1d87101671b127f5f8714789C7192f7ad340e": {
-      "balance": "0xFFFEEBE0B40E8000000"
-    },
-    "0xa94f5374Fce5edBC8E2a8697C15331677e6EbF0B": {
-      "balance": "0xFFFEEBE0B40E8000000"
-    },
-    "0xf62242f0e2adcd6fba36292a073824fc7746d9bc": {
-      "balance": "0xFFFEEBE0B40E8000000"
-    },
-    "0x5f8fcc809e7deeea64a4001dac406ae89040afba": {
-      "balance": "0xFFFEEBE0B40E8000000"
-    },
-    "0xef5a53a5d3c2f51bd7aafede41045d129cd0aeef": {
-      "balance": "0xFFFEEBE0B40E8000000"
-    },
-    "0xb595514c011fb452a9a47ea038890d886e60e276": {
-      "balance": "0xFFFEEBE0B40E8000000"
-    },
-    "0xa1cb34f649ac6eb78734f24405a3fc935d2bf643": {
-      "balance": "0xFFFEEBE0B40E8000000"
-    }
   },
   "coinbase": "0x0000000000000000000000000000000000000000",
   "difficulty": "0x01",
