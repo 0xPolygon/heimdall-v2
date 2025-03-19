@@ -33,9 +33,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
-			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return nil, err
-			}
 		}
 
 		// prepare the proposal with the vote extensions and the validators set's votes
@@ -263,10 +260,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
-			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: dummyVoteExt}, nil
-			}
-			return nil, err
 		}
 
 		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
@@ -316,9 +309,6 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 
 		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("ALERT, NON-RP VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
-			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
-			}
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {

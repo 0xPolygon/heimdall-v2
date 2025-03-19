@@ -93,7 +93,6 @@ func GetMajorityMilestoneProposition(
 	lastEndBlock *uint64,
 	lastEndBlockHash []byte,
 ) (*types.MilestoneProposition, []byte, string, error) {
-
 	ac := address.HexCodec{}
 
 	// Track voting power per block number
