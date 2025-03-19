@@ -64,7 +64,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
-	"github.com/0xPolygon/heimdall-v2/engine"
+	engineclient "github.com/0xPolygon/heimdall-v2/engine" // should this code be moved to module?
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
@@ -79,6 +79,9 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk"
 	clerkkeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	"github.com/0xPolygon/heimdall-v2/x/engine"
+	enginekeeper "github.com/0xPolygon/heimdall-v2/x/engine/keeper"
+	enginetypes "github.com/0xPolygon/heimdall-v2/x/engine/types"
 	"github.com/0xPolygon/heimdall-v2/x/milestone"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -106,15 +109,15 @@ var (
 )
 
 type nextELBlockCtx struct {
-	engine.ForkChoiceState
+	engineclient.ForkChoiceState
 	height  uint64
 	context sdk.Context
 }
 type HeimdallApp struct {
 	*baseapp.BaseApp
 
-	latestExecPayload *engine.Payload
-	nextExecPayload   *engine.Payload
+	latestExecPayload *engineclient.Payload
+	nextExecPayload   *engineclient.Payload
 	currBlockChan     chan nextELBlockCtx
 	nextBlockChan     chan nextELBlockCtx
 	legacyAmino       *codec.LegacyAmino
@@ -141,6 +144,7 @@ type HeimdallApp struct {
 	CheckpointKeeper   checkpointKeeper.Keeper
 	MilestoneKeeper    milestoneKeeper.Keeper
 	BorKeeper          borKeeper.Keeper
+	EngineKeeper       enginekeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
@@ -210,6 +214,7 @@ func NewHeimdallApp(
 		chainmanagertypes.StoreKey,
 		milestoneTypes.StoreKey,
 		borTypes.StoreKey,
+		enginetypes.StoreKey,
 	)
 
 	// register streaming services
@@ -316,7 +321,7 @@ func NewHeimdallApp(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -347,6 +352,13 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	app.EngineKeeper = enginekeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[enginetypes.StoreKey]),
+		logger,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+
 	// HV2: stake and checkpoint keepers are circularly dependent. This workaround solves it
 	app.StakeKeeper.SetCheckpointKeeper(app.CheckpointKeeper)
 
@@ -363,6 +375,7 @@ func NewHeimdallApp(
 		bor.NewAppModule(app.BorKeeper, &app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
+		engine.NewAppModule(appCodec, app.EngineKeeper, app.AccountKeeper, app.BankKeeper),
 	)
 
 	// Basic manager
@@ -408,6 +421,7 @@ func NewHeimdallApp(
 		topupTypes.ModuleName,
 		paramstypes.ModuleName,
 		consensusparamtypes.ModuleName,
+		enginetypes.ModuleName,
 	}
 
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
