@@ -44,9 +44,9 @@ func TestJWTAuthTransport(t *testing.T) {
 	secret, err := parseJWTSecretFromFile(jwtFile)
 	require.NoError(t, err)
 
-	authTransport := &jwtTransport{
-		underlyingTransport: http.DefaultTransport,
-		jwtSecret:           secret,
+	authTransport := &JWTTransport{
+		Transport: http.DefaultTransport,
+		JWTSecret: secret,
 	}
 	client := &http.Client{
 		Timeout:   DefaultRPCTimeout,

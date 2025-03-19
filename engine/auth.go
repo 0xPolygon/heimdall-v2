@@ -12,19 +12,19 @@ import (
 	"github.com/pkg/errors"
 )
 
-type jwtTransport struct {
-	underlyingTransport http.RoundTripper
-	jwtSecret           []byte
+type JWTTransport struct {
+	Transport http.RoundTripper
+	JWTSecret []byte
 }
 
 // RoundTrip is an HTTP filter that injects a generated JWT token for authentication
-func (t *jwtTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	tokenString, err := generateTokenString(t.jwtSecret)
+func (t *JWTTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	tokenString, err := generateTokenString(t.JWTSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not produce signed JWT token")
 	}
 	req.Header.Set("Authorization", "Bearer "+tokenString)
-	return t.underlyingTransport.RoundTrip(req)
+	return t.Transport.RoundTrip(req)
 }
 
 func parseJWTSecretFromFile(path string) ([]byte, error) {

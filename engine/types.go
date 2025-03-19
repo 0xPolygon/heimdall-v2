@@ -138,4 +138,5 @@ type NewPayloadResponse struct {
 	Status          string `json:"status"`
 	LatestValidHash string `json:"latestValidHash"`
 	ValidationError string `json:"validationError"`
+	CriticalError   string `json:"CriticalError"`
 }
