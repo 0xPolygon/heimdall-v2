@@ -107,7 +107,7 @@ var (
 
 type nextELBlockCtx struct {
 	engine.ForkChoiceState
-	height  int64
+	height  uint64
 	context sdk.Context
 }
 type HeimdallApp struct {

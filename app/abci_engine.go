@@ -8,6 +8,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	"github.com/cenkalti/backoff/v4"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -43,14 +44,14 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	}
 }
 
-func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx context.Context, height int64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx context.Context, height uint64) (response *engine.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	if state == (engine.ForkChoiceState{}) {
-		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(height)) // change this to a keeper
+		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(int64(height))) // change this to a keeper
 		if err != nil {
 			return nil, err
 		}
@@ -164,4 +165,30 @@ func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx 
 	}
 
 	return response, nil
+}
+
+func (app *HeimdallApp) getExecutionStateMetadata(ctx sdk.Context) (checkpointTypes.ExecutionStateMetadata, error) {
+	logger := app.Logger()
+	executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
+	if err != nil {
+		logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
+		blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
+		if err != nil {
+			return checkpointTypes.ExecutionStateMetadata{}, err
+		}
+
+		lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNum)))
+		if err != nil {
+			return checkpointTypes.ExecutionStateMetadata{}, err
+		}
+
+		executionState = checkpointTypes.ExecutionStateMetadata{
+			FinalBlockHash:    lastHeader.Hash().Bytes(),
+			LatestBlockNumber: blockNum,
+		}
+
+	}
+
+	return executionState, nil
+
 }

@@ -1338,14 +1338,16 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 }
 
 var (
-	md_ExecutionStateMetadata                  protoreflect.MessageDescriptor
-	fd_ExecutionStateMetadata_final_block_hash protoreflect.FieldDescriptor
+	md_ExecutionStateMetadata                     protoreflect.MessageDescriptor
+	fd_ExecutionStateMetadata_final_block_hash    protoreflect.FieldDescriptor
+	fd_ExecutionStateMetadata_latest_block_number protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_checkpoint_checkpoint_proto_init()
 	md_ExecutionStateMetadata = File_heimdallv2_checkpoint_checkpoint_proto.Messages().ByName("ExecutionStateMetadata")
 	fd_ExecutionStateMetadata_final_block_hash = md_ExecutionStateMetadata.Fields().ByName("final_block_hash")
+	fd_ExecutionStateMetadata_latest_block_number = md_ExecutionStateMetadata.Fields().ByName("latest_block_number")
 }
 
 var _ protoreflect.Message = (*fastReflection_ExecutionStateMetadata)(nil)
@@ -1419,6 +1421,12 @@ func (x *fastReflection_ExecutionStateMetadata) Range(f func(protoreflect.FieldD
 			return
 		}
 	}
+	if x.LatestBlockNumber != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.LatestBlockNumber)
+		if !f(fd_ExecutionStateMetadata_latest_block_number, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -1436,6 +1444,8 @@ func (x *fastReflection_ExecutionStateMetadata) Has(fd protoreflect.FieldDescrip
 	switch fd.FullName() {
 	case "heimdallv2.checkpoint.ExecutionStateMetadata.final_block_hash":
 		return len(x.FinalBlockHash) != 0
+	case "heimdallv2.checkpoint.ExecutionStateMetadata.latest_block_number":
+		return x.LatestBlockNumber != uint64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.ExecutionStateMetadata"))
@@ -1454,6 +1464,8 @@ func (x *fastReflection_ExecutionStateMetadata) Clear(fd protoreflect.FieldDescr
 	switch fd.FullName() {
 	case "heimdallv2.checkpoint.ExecutionStateMetadata.final_block_hash":
 		x.FinalBlockHash = nil
+	case "heimdallv2.checkpoint.ExecutionStateMetadata.latest_block_number":
+		x.LatestBlockNumber = uint64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.ExecutionStateMetadata"))
@@ -1473,6 +1485,9 @@ func (x *fastReflection_ExecutionStateMetadata) Get(descriptor protoreflect.Fiel
 	case "heimdallv2.checkpoint.ExecutionStateMetadata.final_block_hash":
 		value := x.FinalBlockHash
 		return protoreflect.ValueOfBytes(value)
+	case "heimdallv2.checkpoint.ExecutionStateMetadata.latest_block_number":
+		value := x.LatestBlockNumber
+		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.ExecutionStateMetadata"))
@@ -1495,6 +1510,8 @@ func (x *fastReflection_ExecutionStateMetadata) Set(fd protoreflect.FieldDescrip
 	switch fd.FullName() {
 	case "heimdallv2.checkpoint.ExecutionStateMetadata.final_block_hash":
 		x.FinalBlockHash = value.Bytes()
+	case "heimdallv2.checkpoint.ExecutionStateMetadata.latest_block_number":
+		x.LatestBlockNumber = value.Uint()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.ExecutionStateMetadata"))
@@ -1517,6 +1534,8 @@ func (x *fastReflection_ExecutionStateMetadata) Mutable(fd protoreflect.FieldDes
 	switch fd.FullName() {
 	case "heimdallv2.checkpoint.ExecutionStateMetadata.final_block_hash":
 		panic(fmt.Errorf("field final_block_hash of message heimdallv2.checkpoint.ExecutionStateMetadata is not mutable"))
+	case "heimdallv2.checkpoint.ExecutionStateMetadata.latest_block_number":
+		panic(fmt.Errorf("field latest_block_number of message heimdallv2.checkpoint.ExecutionStateMetadata is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.ExecutionStateMetadata"))
@@ -1532,6 +1551,8 @@ func (x *fastReflection_ExecutionStateMetadata) NewField(fd protoreflect.FieldDe
 	switch fd.FullName() {
 	case "heimdallv2.checkpoint.ExecutionStateMetadata.final_block_hash":
 		return protoreflect.ValueOfBytes(nil)
+	case "heimdallv2.checkpoint.ExecutionStateMetadata.latest_block_number":
+		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.checkpoint.ExecutionStateMetadata"))
@@ -1605,6 +1626,9 @@ func (x *fastReflection_ExecutionStateMetadata) ProtoMethods() *protoiface.Metho
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
+		if x.LatestBlockNumber != 0 {
+			n += 1 + runtime.Sov(uint64(x.LatestBlockNumber))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -1633,6 +1657,11 @@ func (x *fastReflection_ExecutionStateMetadata) ProtoMethods() *protoiface.Metho
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.LatestBlockNumber != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.LatestBlockNumber))
+			i--
+			dAtA[i] = 0x10
 		}
 		if len(x.FinalBlockHash) > 0 {
 			i -= len(x.FinalBlockHash)
@@ -1724,6 +1753,25 @@ func (x *fastReflection_ExecutionStateMetadata) ProtoMethods() *protoiface.Metho
 					x.FinalBlockHash = []byte{}
 				}
 				iNdEx = postIndex
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field LatestBlockNumber", wireType)
+				}
+				x.LatestBlockNumber = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.LatestBlockNumber |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -1920,7 +1968,8 @@ type ExecutionStateMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FinalBlockHash []byte `protobuf:"bytes,1,opt,name=final_block_hash,json=finalBlockHash,proto3" json:"final_block_hash,omitempty"`
+	FinalBlockHash    []byte `protobuf:"bytes,1,opt,name=final_block_hash,json=finalBlockHash,proto3" json:"final_block_hash,omitempty"`
+	LatestBlockNumber uint64 `protobuf:"varint,2,opt,name=latest_block_number,json=latestBlockNumber,proto3" json:"latest_block_number,omitempty"`
 }
 
 func (x *ExecutionStateMetadata) Reset() {
@@ -1948,6 +1997,13 @@ func (x *ExecutionStateMetadata) GetFinalBlockHash() []byte {
 		return x.FinalBlockHash
 	}
 	return nil
+}
+
+func (x *ExecutionStateMetadata) GetLatestBlockNumber() uint64 {
+	if x != nil {
+		return x.LatestBlockNumber
+	}
+	return 0
 }
 
 var File_heimdallv2_checkpoint_checkpoint_proto protoreflect.FileDescriptor
@@ -2000,11 +2056,14 @@ var file_heimdallv2_checkpoint_checkpoint_proto_rawDesc = []byte{
 	0x63, 0x6b, 0x5f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x18, 0x04, 0x20, 0x01, 0x28,
 	0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x17, 0x63, 0x68, 0x69, 0x6c, 0x64, 0x43,
 	0x68, 0x61, 0x69, 0x6e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61,
-	0x6c, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0x42, 0x0a, 0x16, 0x45,
+	0x6c, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0x72, 0x0a, 0x16, 0x45,
 	0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x74, 0x61, 0x74, 0x65, 0x4d, 0x65, 0x74,
 	0x61, 0x64, 0x61, 0x74, 0x61, 0x12, 0x28, 0x0a, 0x10, 0x66, 0x69, 0x6e, 0x61, 0x6c, 0x5f, 0x62,
 	0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52,
-	0x0e, 0x66, 0x69, 0x6e, 0x61, 0x6c, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x42,
+	0x0e, 0x66, 0x69, 0x6e, 0x61, 0x6c, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x12,
+	0x2e, 0x0a, 0x13, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f,
+	0x6e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x11, 0x6c, 0x61,
+	0x74, 0x65, 0x73, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x42,
 	0xdd, 0x01, 0x0a, 0x19, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
 	0x76, 0x32, 0x2e, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x42, 0x0f, 0x43,
 	0x68, 0x65, 0x63, 0x6b, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01,
