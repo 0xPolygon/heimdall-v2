@@ -80,7 +80,7 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engineclient.ForkChoiceSta
 		Withdrawals:           withdrawals,
 	}
 
-	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctxTimeout, &state, &attrs)
+	choice, err := app.ExecutionEngineClient.ForkchoiceUpdatedV2(ctxTimeout, &state, &attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engineclient.ForkChoiceSta
 	err = backoff.Retry(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
+		response, err = app.ExecutionEngineClient.GetPayloadV2(ctx, payloadId)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}
@@ -135,7 +135,7 @@ func (app *HeimdallApp) retryBuildNextPayload(state engineclient.ForkChoiceState
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctxTimeout, &state, &attrs)
+	choice, err := app.ExecutionEngineClient.ForkchoiceUpdatedV2(ctxTimeout, &state, &attrs)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (app *HeimdallApp) retryBuildNextPayload(state engineclient.ForkChoiceState
 	err = backoff.Retry(func() error {
 		ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		response, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
+		response, err = app.ExecutionEngineClient.GetPayloadV2(ctx, payloadId)
 		if forever.NextBackOff() > 1*time.Minute {
 			forever.Reset()
 		}

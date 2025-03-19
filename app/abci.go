@@ -99,7 +99,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 			ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Second)
 			defer cancelFunc()
-			choice, err := app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, &state, &attrs)
+			choice, err := app.ExecutionEngineClient.ForkchoiceUpdatedV2(ctx, &state, &attrs)
 			if err != nil {
 				return nil, err
 			}
@@ -112,7 +112,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 				return nil, errors.New(status.ValidationError)
 			}
 
-			payload, err = app.caller.BorEngineClient.GetPayloadV2(ctx, payloadId)
+			payload, err = app.ExecutionEngineClient.GetPayloadV2(ctx, payloadId)
 			if err != nil {
 				return nil, err
 			}
@@ -271,7 +271,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 			return nil, err
 		}
-		payload, err := app.caller.BorEngineClient.NewPayloadV2(ctx, executionPayload)
+		payload, err := app.ExecutionEngineClient.NewPayloadV2(ctx, executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper
 			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}

@@ -563,7 +563,7 @@ func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes,
 	cve := cmtTypes.CanonicalVoteExtension{
 		Extension: voteExtensionBytes,
 		Height:    CurrentHeight - 1, // the vote extension was signed in the previous height
-		Round:     int64(1),
+		Round:     int64(0),
 		ChainId:   "",
 	}
 
@@ -582,10 +582,18 @@ func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes,
 	signature, err := privKey.Sign(extSignBytes)
 	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
 
+	dummyNonRpExt, err := getDummyNonRpVoteExtension(CurrentHeight-1, "")
+	require.NoError(t, err)
+
+	nonRpSignature, err := privKey.Sign(dummyNonRpExt)
+	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
+
 	return abci.ExtendedVoteInfo{
-		BlockIdFlag:        flag,
-		VoteExtension:      voteExtensionBytes,
-		ExtensionSignature: signature,
-		Validator:          validator,
+		BlockIdFlag:             flag,
+		VoteExtension:           voteExtensionBytes,
+		ExtensionSignature:      signature,
+		Validator:               validator,
+		NonRpVoteExtension:      dummyNonRpExt,
+		NonRpExtensionSignature: nonRpSignature,
 	}
 }

@@ -22,8 +22,12 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/0xPolygon/heimdall-v2/engine"
+	mockengine "github.com/0xPolygon/heimdall-v2/engine/mock"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -180,10 +184,45 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 			},
 		})
 	}
-	commitInfo, err := extCommitInfo.Marshal()
+
+	var req abci.RequestPrepareProposal
+	req.LocalLastCommit = *extCommitInfo
+	marshaledLocalLastCommit, err := req.LocalLastCommit.Marshal()
+	require.NoError(t, err)
+
+	ctrl := gomock.NewController(t)
+	mockEngineClient := mockengine.NewMockExecutionEngineClient(ctrl)
+
+	payload := &engine.Payload{
+		ExecutionPayload: engine.ExecutionPayload{
+			BlockNumber: hexutil.EncodeUint64(2),
+		},
+	}
+	marshaledExecutionPayload, err := json.Marshal(payload.ExecutionPayload)
+	require.NoError(t, err)
+
+	choice := engine.ForkchoiceUpdatedResponse{
+		PayloadId: hexutil.EncodeUint64(2),
+		PayloadStatus: engine.PayloadStatus{
+			Status: "VALID",
+		},
+	}
+
+	mockEngineClient.EXPECT().ForkchoiceUpdatedV2(gomock.Any(), gomock.Any(), gomock.Any()).Return(&choice, nil).AnyTimes()
+	mockEngineClient.EXPECT().GetPayloadV2(gomock.Any(), gomock.Any()).Return(payload, nil).AnyTimes()
+	app.ExecutionEngineClient = mockEngineClient
+
+	metadata := HeimdallMetadata{
+		MarshaledLocalLastCommit:  marshaledLocalLastCommit,
+		MarshaledExecutionPayload: marshaledExecutionPayload,
+	}
+
+	bz, err := json.Marshal(metadata)
+	require.NoError(t, err)
+	// commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Txs:    [][]byte{commitInfo},
+		Txs:    [][]byte{bz},
 		Height: height,
 	})
 	require.NoError(t, err)

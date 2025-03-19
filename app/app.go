@@ -147,7 +147,8 @@ type HeimdallApp struct {
 	EngineKeeper       enginekeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
-	caller helper.ContractCaller
+	caller                helper.ContractCaller
+	ExecutionEngineClient engine.ExecutionEngineClient
 
 	ModuleManager *module.Manager
 	BasicManager  module.BasicManager
@@ -241,6 +242,7 @@ func NewHeimdallApp(
 	}
 
 	app.caller = contractCallerObj
+	app.ExecutionEngineClient = app.caller.BorEngineClient
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
