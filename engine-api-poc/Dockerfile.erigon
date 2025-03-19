@@ -1,5 +1,7 @@
-# Use root to ensure permission changes work
-FROM public.ecr.aws/alluvial/thorax/erigon:v2.52.5
+FROM erigontech/erigon:v3.0.0-rc3
 
 USER root
 
+RUN apt-get update && \
+    apt-get install -y curl && \
+    ldconfig

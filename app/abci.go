@@ -129,6 +129,8 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// this is where we could filter/reorder transactions, or mark them for filtering so consensus could be checked
 
+		payload.ExecutionPayload.BlobGasUsed = nil
+		payload.ExecutionPayload.ExcessBlobGas = nil
 		marshaledExecutionPayload, err := rlp.EncodeToBytes(payload.ExecutionPayload)
 		if err != nil {
 			return nil, err
@@ -274,6 +276,9 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 			return nil, err
 		}
+
+		executionPayload.BlobGasUsed = nil
+		executionPayload.ExcessBlobGas = nil
 		payload, err := app.caller.BorEngineClient.NewPayloadV2(ctx, executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper

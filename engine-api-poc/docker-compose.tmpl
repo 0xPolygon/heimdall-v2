@@ -41,7 +41,7 @@ services:
             - ./genesis.json:/config/genesis.json:ro
 
 {{- range $i := seq 0 (sub (conv.ToInt64 (getenv "NODES")) 1) }}
-            - ./build/erigon-{{ $i }}:/data/erigon-{{ $i }}
+            - ./build/erigon-{{ $i }}:/data/erigon-{{ $i }}:rw
 {{- end }}
 
 
@@ -76,7 +76,7 @@ services:
         command: [
             "--verbosity", "debug",
             "--log.console.verbosity", "debug",
-            "--chain", "holesky",
+            "--chain", "dev",
             "--datadir", "/erigon",
             "--port", "30303",
             "--http",
@@ -85,11 +85,14 @@ services:
             "--http.api", "engine,net,eth,trace,web3,erigon,txpool",
             "--authrpc.addr", "0.0.0.0",
             "--authrpc.vhosts", "any",
-            "--miner.gaslimit", "60000000"
+            "--miner.gaslimit", "60000000",
+            "--externalcl",
+            "--healthcheck"
 
         ]
         healthcheck:
-            test: curl --fail -X POST http://127.0.0.1:8545/health --data '{}' || exit 1
+            test: >
+                curl --fail -X POST http://127.0.0.1:8545/health --data "{\"min_peer_count\": 0, \"known_block\": \"0x0\"}" || exit 1
             interval: 10s
             timeout: 5s
             retries: 5
