@@ -220,6 +220,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 						continue
 					}
 
+					checkpointMsg.RootHash = []byte{0xDE, 0xAD, 0xBE, 0xEF}
 					nonRpVoteExt = packExtensionWithVote(checkpointMsg.GetSideSignBytes())
 				}
 
