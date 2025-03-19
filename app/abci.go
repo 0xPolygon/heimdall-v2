@@ -20,8 +20,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	engineTypes "github.com/0xPolygon/heimdall-v2/x/engine/types"
 )
 
 type HeimdallMetadata struct {
@@ -372,7 +372,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				res := sideHandler(ctx, msg)
 
 				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
-					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+					checkpointMsg, ok := msg.(*checkpointTypes.MsgCheckpoint)
 					if !ok {
 						logger.Error("ExtendVoteHandler: type mismatch for MsgCheckpoint")
 						continue
@@ -535,7 +535,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	if err := app.CheckpointKeeper.SetExecutionStateMetadata(ctx, checkpointTypes.ExecutionStateMetadata{
+	if err := app.EngineKeeper.SetExecutionStateMetadata(ctx, engineTypes.ExecutionStateMetadata{
 		FinalBlockHash:    common.Hex2Bytes(executionPayload.BlockHash),
 		LatestBlockNumber: hexutil.MustDecodeUint64(executionPayload.BlockNumber),
 	}); err != nil {

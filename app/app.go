@@ -321,7 +321,7 @@ func NewHeimdallApp(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-			// register the governance hooks
+		// register the governance hooks
 		),
 	)
 
@@ -824,6 +824,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(milestoneTypes.ModuleName)
 	paramsKeeper.Subspace(staketypes.ModuleName)
 	paramsKeeper.Subspace(topupTypes.ModuleName)
+	paramsKeeper.Subspace(enginetypes.ModuleName)
 
 	return paramsKeeper
 }

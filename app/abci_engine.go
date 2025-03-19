@@ -8,7 +8,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	enginetypes "github.com/0xPolygon/heimdall-v2/x/engine/types"
 	"github.com/cenkalti/backoff/v4"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -167,22 +167,22 @@ func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx 
 	return response, nil
 }
 
-func (app *HeimdallApp) getExecutionStateMetadata(ctx sdk.Context) (checkpointTypes.ExecutionStateMetadata, error) {
+func (app *HeimdallApp) getExecutionStateMetadata(ctx sdk.Context) (enginetypes.ExecutionStateMetadata, error) {
 	logger := app.Logger()
-	executionState, err := app.CheckpointKeeper.GetExecutionStateMetadata(ctx)
+	executionState, err := app.EngineKeeper.GetExecutionStateMetadata(ctx)
 	if err != nil {
 		logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
 		blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
 		if err != nil {
-			return checkpointTypes.ExecutionStateMetadata{}, err
+			return enginetypes.ExecutionStateMetadata{}, err
 		}
 
 		lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNum)))
 		if err != nil {
-			return checkpointTypes.ExecutionStateMetadata{}, err
+			return enginetypes.ExecutionStateMetadata{}, err
 		}
 
-		executionState = checkpointTypes.ExecutionStateMetadata{
+		executionState = enginetypes.ExecutionStateMetadata{
 			FinalBlockHash:    lastHeader.Hash().Bytes(),
 			LatestBlockNumber: blockNum,
 		}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/0xPolygon/heimdall-v2/x/engine"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/testutil/mock"
@@ -166,6 +167,7 @@ func TestInitGenesisOnMigration(t *testing.T) {
 			"milestone":    milestone.AppModule{}.ConsensusVersion(),
 			"topup":        topup.AppModule{}.ConsensusVersion(),
 			"bor":          bor.AppModule{}.ConsensusVersion(),
+			"engine":       engine.AppModule{}.ConsensusVersion(),
 		},
 	)
 	require.NoError(t, err)

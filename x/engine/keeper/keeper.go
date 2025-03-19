@@ -2,8 +2,10 @@ package keeper
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
+	"cosmossdk.io/collections"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -23,6 +25,8 @@ type (
 		// the address capable of executing a MsgUpdateParams message. Typically, this
 		// should be the x/gov module account.
 		authority string
+
+		executionStateMetadata collections.Item[types.ExecutionStateMetadata]
 	}
 )
 
@@ -43,11 +47,15 @@ func NewKeeper(
 		panic(fmt.Errorf("invalid engine authority address: %s", authority))
 	}
 
+	sb := collections.NewSchemaBuilder(storeService)
+
 	return Keeper{
 		cdc:          cdc,
 		storeService: storeService,
 		authority:    authority,
 		logger:       logger,
+
+		executionStateMetadata: collections.NewItem(sb, types.ExecutionStateMetadataPrefixKey, "execution_state_metadata", codec.CollValue[types.ExecutionStateMetadata](cdc)),
 	}
 }
 
@@ -59,4 +67,14 @@ func (k Keeper) GetAuthority() string {
 // Logger returns a module-specific logger.
 func (k Keeper) Logger() log.Logger {
 	return k.logger.With("module", fmt.Sprintf("x/%s", types.ModuleName))
+}
+
+// SetExecutionStateMetadata stores the execution state metadata
+func (k Keeper) SetExecutionStateMetadata(ctx context.Context, metadata types.ExecutionStateMetadata) error {
+	return k.executionStateMetadata.Set(ctx, metadata)
+}
+
+// GetExecutionStateMetadata retrieves the execution state metadata
+func (k Keeper) GetExecutionStateMetadata(ctx context.Context) (types.ExecutionStateMetadata, error) {
+	return k.executionStateMetadata.Get(ctx)
 }
