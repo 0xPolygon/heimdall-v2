@@ -20,7 +20,7 @@ COPY . .
 
 # Build the application and copy the binary
 
-RUN make heimdalld && cp build/heimdalld /usr/local/bin/
+RUN make build && cp build/heimdalld /usr/local/bin/
 RUN chmod +x ./engine-api-poc/init-heimdalld-script.sh
 RUN chmod +x ./engine-api-poc/start-heimdalld-script.sh
 
