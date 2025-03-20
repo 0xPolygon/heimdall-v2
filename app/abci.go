@@ -33,9 +33,6 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
-			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return nil, err
-			}
 		}
 
 		// prepare the proposal with the vote extensions and the validators set's votes
@@ -263,10 +260,6 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
-			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: dummyVoteExt}, nil
-			}
-			return nil, err
 		}
 
 		return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: nonRpVoteExt}, nil
@@ -316,9 +309,6 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 
 		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("ALERT, NON-RP VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
-			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
-			}
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
@@ -389,6 +379,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var lastEndBlock *uint64 = nil
+	var lastEndHash []byte
 	if hasMilestone {
 		lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
 		if err != nil {
@@ -396,9 +387,16 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 		lastEndBlock = &lastMilestone.EndBlock
+		lastEndHash = lastMilestone.Hash
 	}
 
-	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(validatorSet, extVoteInfo, logger, lastEndBlock)
+	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(
+		validatorSet,
+		extVoteInfo,
+		logger,
+		lastEndBlock,
+		lastEndHash,
+	)
 	if err != nil {
 		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
 		return nil, err
@@ -423,7 +421,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
-		logger.Debug("Adding milestone", "hashes", strutil.HashesToString(majorityMilestone.BlockHashes), "startBlock", majorityMilestone.StartBlockNumber, "endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1), "proposer", proposer)
+		logger.Debug("Adding milestone", "hashes",
+			strutil.HashesToString(majorityMilestone.BlockHashes),
+			"startBlock", majorityMilestone.StartBlockNumber,
+			"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
+			"proposer", proposer,
+		)
 
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
 			Proposer:    proposer,
@@ -435,11 +438,6 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
 		}); err != nil {
 			logger.Error("Error occurred while adding milestone", "error", err)
-			return nil, err
-		}
-
-		if err = app.MilestoneKeeper.SetMilestoneBlockNumber(addMilestoneCtx, ctx.BlockHeight()); err != nil {
-			logger.Error("error in setting milestone block number", "error", err)
 			return nil, err
 		}
 

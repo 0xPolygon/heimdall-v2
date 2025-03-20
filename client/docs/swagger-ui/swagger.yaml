@@ -2136,6 +2136,12 @@ paths:
                   max_milestone_proposition_length:
                     type: string
                     format: uint64
+                  ff_milestone_threshold:
+                    type: string
+                    format: uint64
+                  ff_milestone_block_interval:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -4446,6 +4452,12 @@ definitions:
       max_milestone_proposition_length:
         type: string
         format: uint64
+      ff_milestone_threshold:
+        type: string
+        format: uint64
+      ff_milestone_block_interval:
+        type: string
+        format: uint64
   heimdallv2.milestone.QueryCountResponse:
     type: object
     properties:
@@ -4507,6 +4519,12 @@ definitions:
         type: object
         properties:
           max_milestone_proposition_length:
+            type: string
+            format: uint64
+          ff_milestone_threshold:
+            type: string
+            format: uint64
+          ff_milestone_block_interval:
             type: string
             format: uint64
   heimdallv2.stake.QueryCurrentValidatorSetResponse:

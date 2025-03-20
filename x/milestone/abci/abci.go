@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 	"sort"
 
 	"cosmossdk.io/log"
@@ -27,21 +28,30 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	logger := ctx.Logger()
-
-	lastMilestoneBlockNumber, err := milestoneKeeper.GetMilestoneBlockNumber(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	blocksSinceLastMilestone := reqBlock - lastMilestoneBlockNumber
-
-	logger.Debug("blocksSinceLastMilestone", "blocksSinceLastMilestone", blocksSinceLastMilestone)
-
 	propStartBlock := uint64(0)
+
+	var lastMilestoneHash []byte
+	var lastMilestoneBlockNumber uint64
 
 	if milestone != nil {
 		propStartBlock = milestone.EndBlock + 1
+
+		latestHeader, err := contractCaller.GetBorChainBlock(ctx, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get latest header")
+		}
+
+		params, err := milestoneKeeper.GetParams(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if isFastForwardMilestone(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneThreshold) {
+			propStartBlock = getFastForwardMilestoneStartBlock(latestHeader.Number.Uint64(), milestone.EndBlock, params.FfMilestoneBlockInterval)
+		}
+
+		lastMilestoneHash = milestone.Hash
+		lastMilestoneBlockNumber = milestone.EndBlock
 	}
 
 	params, err := milestoneKeeper.GetParams(ctx)
@@ -49,20 +59,40 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, contractCaller)
+	parentHash, blockHashes, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := validateMilestonePropositionFork(parentHash, lastMilestoneHash); err != nil {
 		return nil, err
 	}
 
 	milestoneProp := &types.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: propStartBlock,
+		ParentHash:       parentHash,
 	}
 
 	return milestoneProp, nil
 }
 
-func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, lastEndBlock *uint64) (*types.MilestoneProposition, []byte, string, error) {
+func isFastForwardMilestone(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneThreshold uint64) bool {
+	return latestHeaderNumber > latestMilestoneEndBlock && latestHeaderNumber-latestMilestoneEndBlock > ffMilestoneThreshold
+}
+
+func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneBlockInterval uint64) uint64 {
+	latestHeaderMilestoneDistanceInBlocks := ((latestHeaderNumber - latestMilestoneEndBlock) / ffMilestoneBlockInterval) * ffMilestoneBlockInterval
+	return latestMilestoneEndBlock + latestHeaderMilestoneDistanceInBlocks + 1
+}
+
+func GetMajorityMilestoneProposition(
+	validatorSet *stakeTypes.ValidatorSet,
+	extVoteInfo []abciTypes.ExtendedVoteInfo,
+	logger log.Logger,
+	lastEndBlock *uint64,
+	lastEndBlockHash []byte,
+) (*types.MilestoneProposition, []byte, string, error) {
 	ac := address.HexCodec{}
 
 	// Track voting power per block number
@@ -72,12 +102,18 @@ func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extV
 	validatorVotes := make(map[string]map[uint64][]byte) // validator -> block -> hash
 	validatorAddresses := make(map[string][]byte)
 	valAddressToVotingPower := make(map[string]int64)
+	parentHashes := make(map[string]struct{})
+	parentHashToVotingPower := make(map[string]int64)
 
 	// Track which validators we've already processed to prevent duplicate votes
 	processedValidators := make(map[string]bool)
 
 	totalVotingPower := validatorSet.GetTotalVotingPower()
 	majorityVP := totalVotingPower*2/3 + 1
+
+	getParentChildKey := func(parent, child string) string {
+		return fmt.Sprintf("%s-%s", parent, child)
+	}
 
 	// First pass - collect all votes
 	for _, vote := range extVoteInfo {
@@ -119,6 +155,7 @@ func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extV
 
 		prop := voteExtension.MilestoneProposition
 		for i, blockHash := range prop.BlockHashes {
+
 			blockNum := prop.StartBlockNumber + uint64(i)
 
 			// Record this validator's vote for this block
@@ -142,7 +179,11 @@ func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extV
 				blockVotingPower[blockNum] = blockHashVotes[blockNum][hashStr]
 				blockToHash[blockNum] = blockHash
 			}
+
+			key := getParentChildKey(common.BytesToHash(prop.ParentHash).String(), common.BytesToHash(blockHash).String())
+			parentHashToVotingPower[key] += validator.VotingPower
 		}
+		parentHashes[common.BytesToHash(prop.ParentHash).String()] = struct{}{}
 	}
 
 	// Find blocks with majority support - use a slice for deterministic ordering
@@ -166,11 +207,39 @@ func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extV
 		return nil, nil, "", nil
 	}
 
+	var majorityParentHash string
+	isParentHashMajority := false
+
+	for parentHash := range parentHashes {
+		key := getParentChildKey(parentHash, common.BytesToHash(blockToHash[majorityBlocks[0]]).String())
+		if parentHashToVotingPower[key] >= majorityVP {
+			isParentHashMajority = true
+			majorityParentHash = parentHash
+			break
+		}
+	}
+
+	if !isParentHashMajority {
+		logger.Debug("No parent hash found with majority support")
+		return nil, nil, "", nil
+	}
+
+	if majorityParentHash != common.BytesToHash(lastEndBlockHash).String() {
+		logger.Debug("Parent hash does not match last end block hash",
+			"majorityParentHash", majorityParentHash,
+			"lastEndBlockHash", common.BytesToHash(lastEndBlockHash).String())
+		return nil, nil, "", nil
+	}
+
 	startBlock := uint64(0)
 
 	// Check if we have a block that starts exactly from lastEndBlock + 1
 	if lastEndBlock != nil {
 		startBlock = *lastEndBlock + 1
+
+		if majorityBlocks[0] > startBlock {
+			startBlock = majorityBlocks[0]
+		}
 	}
 
 	// Check if startBlock is in majorityBlocks
@@ -276,19 +345,41 @@ func GetMajorityMilestoneProposition(validatorSet *stakeTypes.ValidatorSet, extV
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, contractCaller helper.IContractCaller) ([][]byte, error) {
+func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, error) {
 	result := make([][]byte, 0)
 
 	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
 	if err != nil {
-		return nil, fmt.Errorf("failed to get headers")
+		return nil, nil, fmt.Errorf("failed to get headers")
+	}
+
+	var parentHash []byte
+	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
+		parentHash = headers[0].ParentHash.Bytes()
+		if startBlock-lastMilestoneBlock > 1 {
+			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to get headers")
+			}
+
+			parentHash = header.ParentHash.Bytes()
+		}
 	}
 
 	for _, h := range headers {
 		result = append(result, h.Hash().Bytes())
 	}
 
-	return result, nil
+	return parentHash, result, nil
+}
+
+func validateMilestonePropositionFork(parentHash []byte, lastMilestoneHash []byte) error {
+	if len(parentHash) > 0 && len(lastMilestoneHash) > 0 {
+		if !bytes.Equal(parentHash, lastMilestoneHash) {
+			return fmt.Errorf("first block parent hash does not match last milestone hash")
+		}
+	}
+	return nil
 }
 
 func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, milestoneProp *types.MilestoneProposition) error {

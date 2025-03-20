@@ -1227,6 +1227,7 @@ var (
 	md_MilestoneProposition                    protoreflect.MessageDescriptor
 	fd_MilestoneProposition_block_hashes       protoreflect.FieldDescriptor
 	fd_MilestoneProposition_start_block_number protoreflect.FieldDescriptor
+	fd_MilestoneProposition_parent_hash        protoreflect.FieldDescriptor
 )
 
 func init() {
@@ -1234,6 +1235,7 @@ func init() {
 	md_MilestoneProposition = File_heimdallv2_milestone_milestone_proto.Messages().ByName("MilestoneProposition")
 	fd_MilestoneProposition_block_hashes = md_MilestoneProposition.Fields().ByName("block_hashes")
 	fd_MilestoneProposition_start_block_number = md_MilestoneProposition.Fields().ByName("start_block_number")
+	fd_MilestoneProposition_parent_hash = md_MilestoneProposition.Fields().ByName("parent_hash")
 }
 
 var _ protoreflect.Message = (*fastReflection_MilestoneProposition)(nil)
@@ -1313,6 +1315,12 @@ func (x *fastReflection_MilestoneProposition) Range(f func(protoreflect.FieldDes
 			return
 		}
 	}
+	if len(x.ParentHash) != 0 {
+		value := protoreflect.ValueOfBytes(x.ParentHash)
+		if !f(fd_MilestoneProposition_parent_hash, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -1332,6 +1340,8 @@ func (x *fastReflection_MilestoneProposition) Has(fd protoreflect.FieldDescripto
 		return len(x.BlockHashes) != 0
 	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
 		return x.StartBlockNumber != uint64(0)
+	case "heimdallv2.milestone.MilestoneProposition.parent_hash":
+		return len(x.ParentHash) != 0
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
@@ -1352,6 +1362,8 @@ func (x *fastReflection_MilestoneProposition) Clear(fd protoreflect.FieldDescrip
 		x.BlockHashes = nil
 	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
 		x.StartBlockNumber = uint64(0)
+	case "heimdallv2.milestone.MilestoneProposition.parent_hash":
+		x.ParentHash = nil
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
@@ -1377,6 +1389,9 @@ func (x *fastReflection_MilestoneProposition) Get(descriptor protoreflect.FieldD
 	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
 		value := x.StartBlockNumber
 		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.milestone.MilestoneProposition.parent_hash":
+		value := x.ParentHash
+		return protoreflect.ValueOfBytes(value)
 	default:
 		if descriptor.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
@@ -1403,6 +1418,8 @@ func (x *fastReflection_MilestoneProposition) Set(fd protoreflect.FieldDescripto
 		x.BlockHashes = *clv.list
 	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
 		x.StartBlockNumber = value.Uint()
+	case "heimdallv2.milestone.MilestoneProposition.parent_hash":
+		x.ParentHash = value.Bytes()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
@@ -1431,6 +1448,8 @@ func (x *fastReflection_MilestoneProposition) Mutable(fd protoreflect.FieldDescr
 		return protoreflect.ValueOfList(value)
 	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
 		panic(fmt.Errorf("field start_block_number of message heimdallv2.milestone.MilestoneProposition is not mutable"))
+	case "heimdallv2.milestone.MilestoneProposition.parent_hash":
+		panic(fmt.Errorf("field parent_hash of message heimdallv2.milestone.MilestoneProposition is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
@@ -1449,6 +1468,8 @@ func (x *fastReflection_MilestoneProposition) NewField(fd protoreflect.FieldDesc
 		return protoreflect.ValueOfList(&_MilestoneProposition_1_list{list: &list})
 	case "heimdallv2.milestone.MilestoneProposition.start_block_number":
 		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.milestone.MilestoneProposition.parent_hash":
+		return protoreflect.ValueOfBytes(nil)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.MilestoneProposition"))
@@ -1527,6 +1548,10 @@ func (x *fastReflection_MilestoneProposition) ProtoMethods() *protoiface.Methods
 		if x.StartBlockNumber != 0 {
 			n += 1 + runtime.Sov(uint64(x.StartBlockNumber))
 		}
+		l = len(x.ParentHash)
+		if l > 0 {
+			n += 1 + l + runtime.Sov(uint64(l))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -1555,6 +1580,13 @@ func (x *fastReflection_MilestoneProposition) ProtoMethods() *protoiface.Methods
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if len(x.ParentHash) > 0 {
+			i -= len(x.ParentHash)
+			copy(dAtA[i:], x.ParentHash)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.ParentHash)))
+			i--
+			dAtA[i] = 0x1a
 		}
 		if x.StartBlockNumber != 0 {
 			i = runtime.EncodeVarint(dAtA, i, uint64(x.StartBlockNumber))
@@ -1670,6 +1702,40 @@ func (x *fastReflection_MilestoneProposition) ProtoMethods() *protoiface.Methods
 						break
 					}
 				}
+			case 3:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field ParentHash", wireType)
+				}
+				var byteLen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					byteLen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if byteLen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + byteLen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.ParentHash = append(x.ParentHash[:0], dAtA[iNdEx:postIndex]...)
+				if x.ParentHash == nil {
+					x.ParentHash = []byte{}
+				}
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -1708,12 +1774,16 @@ func (x *fastReflection_MilestoneProposition) ProtoMethods() *protoiface.Methods
 var (
 	md_Params                                  protoreflect.MessageDescriptor
 	fd_Params_max_milestone_proposition_length protoreflect.FieldDescriptor
+	fd_Params_ff_milestone_threshold           protoreflect.FieldDescriptor
+	fd_Params_ff_milestone_block_interval      protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_milestone_milestone_proto_init()
 	md_Params = File_heimdallv2_milestone_milestone_proto.Messages().ByName("Params")
 	fd_Params_max_milestone_proposition_length = md_Params.Fields().ByName("max_milestone_proposition_length")
+	fd_Params_ff_milestone_threshold = md_Params.Fields().ByName("ff_milestone_threshold")
+	fd_Params_ff_milestone_block_interval = md_Params.Fields().ByName("ff_milestone_block_interval")
 }
 
 var _ protoreflect.Message = (*fastReflection_Params)(nil)
@@ -1787,6 +1857,18 @@ func (x *fastReflection_Params) Range(f func(protoreflect.FieldDescriptor, proto
 			return
 		}
 	}
+	if x.FfMilestoneThreshold != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.FfMilestoneThreshold)
+		if !f(fd_Params_ff_milestone_threshold, value) {
+			return
+		}
+	}
+	if x.FfMilestoneBlockInterval != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.FfMilestoneBlockInterval)
+		if !f(fd_Params_ff_milestone_block_interval, value) {
+			return
+		}
+	}
 }
 
 // Has reports whether a field is populated.
@@ -1804,6 +1886,10 @@ func (x *fastReflection_Params) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
 	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
 		return x.MaxMilestonePropositionLength != uint64(0)
+	case "heimdallv2.milestone.Params.ff_milestone_threshold":
+		return x.FfMilestoneThreshold != uint64(0)
+	case "heimdallv2.milestone.Params.ff_milestone_block_interval":
+		return x.FfMilestoneBlockInterval != uint64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1822,6 +1908,10 @@ func (x *fastReflection_Params) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
 	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
 		x.MaxMilestonePropositionLength = uint64(0)
+	case "heimdallv2.milestone.Params.ff_milestone_threshold":
+		x.FfMilestoneThreshold = uint64(0)
+	case "heimdallv2.milestone.Params.ff_milestone_block_interval":
+		x.FfMilestoneBlockInterval = uint64(0)
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1840,6 +1930,12 @@ func (x *fastReflection_Params) Get(descriptor protoreflect.FieldDescriptor) pro
 	switch descriptor.FullName() {
 	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
 		value := x.MaxMilestonePropositionLength
+		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.milestone.Params.ff_milestone_threshold":
+		value := x.FfMilestoneThreshold
+		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.milestone.Params.ff_milestone_block_interval":
+		value := x.FfMilestoneBlockInterval
 		return protoreflect.ValueOfUint64(value)
 	default:
 		if descriptor.IsExtension() {
@@ -1863,6 +1959,10 @@ func (x *fastReflection_Params) Set(fd protoreflect.FieldDescriptor, value proto
 	switch fd.FullName() {
 	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
 		x.MaxMilestonePropositionLength = value.Uint()
+	case "heimdallv2.milestone.Params.ff_milestone_threshold":
+		x.FfMilestoneThreshold = value.Uint()
+	case "heimdallv2.milestone.Params.ff_milestone_block_interval":
+		x.FfMilestoneBlockInterval = value.Uint()
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1885,6 +1985,10 @@ func (x *fastReflection_Params) Mutable(fd protoreflect.FieldDescriptor) protore
 	switch fd.FullName() {
 	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
 		panic(fmt.Errorf("field max_milestone_proposition_length of message heimdallv2.milestone.Params is not mutable"))
+	case "heimdallv2.milestone.Params.ff_milestone_threshold":
+		panic(fmt.Errorf("field ff_milestone_threshold of message heimdallv2.milestone.Params is not mutable"))
+	case "heimdallv2.milestone.Params.ff_milestone_block_interval":
+		panic(fmt.Errorf("field ff_milestone_block_interval of message heimdallv2.milestone.Params is not mutable"))
 	default:
 		if fd.IsExtension() {
 			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.milestone.Params"))
@@ -1899,6 +2003,10 @@ func (x *fastReflection_Params) Mutable(fd protoreflect.FieldDescriptor) protore
 func (x *fastReflection_Params) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	case "heimdallv2.milestone.Params.max_milestone_proposition_length":
+		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.milestone.Params.ff_milestone_threshold":
+		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.milestone.Params.ff_milestone_block_interval":
 		return protoreflect.ValueOfUint64(uint64(0))
 	default:
 		if fd.IsExtension() {
@@ -1972,6 +2080,12 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 		if x.MaxMilestonePropositionLength != 0 {
 			n += 1 + runtime.Sov(uint64(x.MaxMilestonePropositionLength))
 		}
+		if x.FfMilestoneThreshold != 0 {
+			n += 1 + runtime.Sov(uint64(x.FfMilestoneThreshold))
+		}
+		if x.FfMilestoneBlockInterval != 0 {
+			n += 1 + runtime.Sov(uint64(x.FfMilestoneBlockInterval))
+		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
 		}
@@ -2000,6 +2114,16 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 		if x.unknownFields != nil {
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
+		}
+		if x.FfMilestoneBlockInterval != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.FfMilestoneBlockInterval))
+			i--
+			dAtA[i] = 0x18
+		}
+		if x.FfMilestoneThreshold != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.FfMilestoneThreshold))
+			i--
+			dAtA[i] = 0x10
 		}
 		if x.MaxMilestonePropositionLength != 0 {
 			i = runtime.EncodeVarint(dAtA, i, uint64(x.MaxMilestonePropositionLength))
@@ -2070,6 +2194,44 @@ func (x *fastReflection_Params) ProtoMethods() *protoiface.Methods {
 					b := dAtA[iNdEx]
 					iNdEx++
 					x.MaxMilestonePropositionLength |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field FfMilestoneThreshold", wireType)
+				}
+				x.FfMilestoneThreshold = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.FfMilestoneThreshold |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+			case 3:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field FfMilestoneBlockInterval", wireType)
+				}
+				x.FfMilestoneBlockInterval = 0
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					x.FfMilestoneBlockInterval |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2247,6 +2409,7 @@ type MilestoneProposition struct {
 
 	BlockHashes      [][]byte `protobuf:"bytes,1,rep,name=block_hashes,json=blockHashes,proto3" json:"block_hashes,omitempty"`
 	StartBlockNumber uint64   `protobuf:"varint,2,opt,name=start_block_number,json=startBlockNumber,proto3" json:"start_block_number,omitempty"`
+	ParentHash       []byte   `protobuf:"bytes,3,opt,name=parent_hash,json=parentHash,proto3" json:"parent_hash,omitempty"`
 }
 
 func (x *MilestoneProposition) Reset() {
@@ -2283,12 +2446,21 @@ func (x *MilestoneProposition) GetStartBlockNumber() uint64 {
 	return 0
 }
 
+func (x *MilestoneProposition) GetParentHash() []byte {
+	if x != nil {
+		return x.ParentHash
+	}
+	return nil
+}
+
 type Params struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	MaxMilestonePropositionLength uint64 `protobuf:"varint,1,opt,name=max_milestone_proposition_length,json=maxMilestonePropositionLength,proto3" json:"max_milestone_proposition_length,omitempty"`
+	FfMilestoneThreshold          uint64 `protobuf:"varint,2,opt,name=ff_milestone_threshold,json=ffMilestoneThreshold,proto3" json:"ff_milestone_threshold,omitempty"`
+	FfMilestoneBlockInterval      uint64 `protobuf:"varint,3,opt,name=ff_milestone_block_interval,json=ffMilestoneBlockInterval,proto3" json:"ff_milestone_block_interval,omitempty"`
 }
 
 func (x *Params) Reset() {
@@ -2314,6 +2486,20 @@ func (*Params) Descriptor() ([]byte, []int) {
 func (x *Params) GetMaxMilestonePropositionLength() uint64 {
 	if x != nil {
 		return x.MaxMilestonePropositionLength
+	}
+	return 0
+}
+
+func (x *Params) GetFfMilestoneThreshold() uint64 {
+	if x != nil {
+		return x.FfMilestoneThreshold
+	}
+	return 0
+}
+
+func (x *Params) GetFfMilestoneBlockInterval() uint64 {
+	if x != nil {
+		return x.FfMilestoneBlockInterval
 	}
 	return 0
 }
@@ -2351,36 +2537,46 @@ var file_heimdallv2_milestone_milestone_proto_rawDesc = []byte{
 	0x1f, 0x01, 0x22, 0x37, 0x0a, 0x0e, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x43,
 	0x6f, 0x75, 0x6e, 0x74, 0x12, 0x1b, 0x0a, 0x05, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x63, 0x6f, 0x75, 0x6e,
-	0x74, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0x7f, 0x0a, 0x14, 0x4d,
-	0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74,
-	0x69, 0x6f, 0x6e, 0x12, 0x28, 0x0a, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73,
-	0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
-	0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x65, 0x73, 0x12, 0x33, 0x0a,
-	0x12, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x6e, 0x75, 0x6d,
-	0x62, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01,
-	0x52, 0x10, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d, 0x62,
-	0x65, 0x72, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0x62, 0x0a, 0x06,
-	0x50, 0x61, 0x72, 0x61, 0x6d, 0x73, 0x12, 0x4e, 0x0a, 0x20, 0x6d, 0x61, 0x78, 0x5f, 0x6d, 0x69,
-	0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74,
-	0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
-	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x1d, 0x6d, 0x61, 0x78, 0x4d, 0x69, 0x6c, 0x65,
-	0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e,
-	0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01,
-	0x42, 0xd6, 0x01, 0x0a, 0x18, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
-	0x6c, 0x76, 0x32, 0x2e, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x42, 0x0e, 0x4d,
-	0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a,
-	0x39, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f,
-	0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76,
-	0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x2f, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xa2, 0x02, 0x03, 0x48, 0x4d, 0x58,
-	0xaa, 0x02, 0x14, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x4d, 0x69,
-	0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xca, 0x02, 0x14, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xe2, 0x02,
-	0x20, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x69, 0x6c, 0x65,
-	0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74,
-	0x61, 0xea, 0x02, 0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a,
-	0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x74, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0xa7, 0x01, 0x0a, 0x14,
+	0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69,
+	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x28, 0x0a, 0x0c, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61,
+	0x73, 0x68, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x0b, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x65, 0x73, 0x12, 0x33,
+	0x0a, 0x12, 0x73, 0x74, 0x61, 0x72, 0x74, 0x5f, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x5f, 0x6e, 0x75,
+	0x6d, 0x62, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x10, 0x73, 0x74, 0x61, 0x72, 0x74, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x4e, 0x75, 0x6d,
+	0x62, 0x65, 0x72, 0x12, 0x26, 0x0a, 0x0b, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x5f, 0x68, 0x61,
+	0x73, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52,
+	0x0a, 0x70, 0x61, 0x72, 0x65, 0x6e, 0x74, 0x48, 0x61, 0x73, 0x68, 0x3a, 0x08, 0x88, 0xa0, 0x1f,
+	0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x22, 0xe5, 0x01, 0x0a, 0x06, 0x50, 0x61, 0x72, 0x61, 0x6d, 0x73,
+	0x12, 0x4e, 0x0a, 0x20, 0x6d, 0x61, 0x78, 0x5f, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e,
+	0x65, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x6c, 0x65,
+	0x6e, 0x67, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x1d, 0x6d, 0x61, 0x78, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50,
+	0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x12, 0x3b, 0x0a, 0x16, 0x66, 0x66, 0x5f, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65,
+	0x5f, 0x74, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04,
+	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x14, 0x66, 0x66, 0x4d, 0x69, 0x6c, 0x65, 0x73,
+	0x74, 0x6f, 0x6e, 0x65, 0x54, 0x68, 0x72, 0x65, 0x73, 0x68, 0x6f, 0x6c, 0x64, 0x12, 0x44, 0x0a,
+	0x1b, 0x66, 0x66, 0x5f, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x62, 0x6c,
+	0x6f, 0x63, 0x6b, 0x5f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x76, 0x61, 0x6c, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x18, 0x66, 0x66, 0x4d, 0x69, 0x6c,
+	0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x49, 0x6e, 0x74, 0x65, 0x72,
+	0x76, 0x61, 0x6c, 0x3a, 0x08, 0x88, 0xa0, 0x1f, 0x01, 0xe8, 0xa0, 0x1f, 0x01, 0x42, 0xd6, 0x01,
+	0x0a, 0x18, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x42, 0x0e, 0x4d, 0x69, 0x6c, 0x65,
+	0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x39, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67,
+	0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61,
+	0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x6d, 0x69,
+	0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xa2, 0x02, 0x03, 0x48, 0x4d, 0x58, 0xaa, 0x02, 0x14,
+	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x4d, 0x69, 0x6c, 0x65, 0x73,
+	0x74, 0x6f, 0x6e, 0x65, 0xca, 0x02, 0x14, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x5c, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0xe2, 0x02, 0x20, 0x48, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x4d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f,
+	0x6e, 0x65, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02,
+	0x15, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x4d, 0x69, 0x6c,
+	0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
