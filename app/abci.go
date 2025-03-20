@@ -16,9 +16,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
+	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -219,12 +219,8 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// validate the vote extensions
-<<<<<<< HEAD
-		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
-			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
-=======
 		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
->>>>>>> develop
+			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}

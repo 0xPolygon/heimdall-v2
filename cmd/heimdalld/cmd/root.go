@@ -165,5 +165,5 @@ func NewRootCmd() *cobra.Command {
 		panic(err)
 	}
 
-	return rootCmd, tempApp
+	return rootCmd
 }
