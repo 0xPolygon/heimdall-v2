@@ -30,5 +30,8 @@ for (( i=0; i<$NODES; i++ )); do
     jq --argjson wallet "$WALLET" '. += [$wallet]' ./engine-api-poc/deployment/wallets_for_test.json > tmp.json && mv tmp.json ./engine-api-poc/deployment/wallets_for_test.json;
 done
 
+set -a 
+. engine-api-poc/.env.e2e;
+set +a
 NODES=$NODES gomplate -f engine-api-poc/docker-compose.tmpl -o engine-api-poc/deployment/docker-compose.yaml; 
 NODES=$NODES gomplate -f engine-api-poc/.env.tmpl -o engine-api-poc/deployment/.env

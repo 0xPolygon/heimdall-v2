@@ -70,6 +70,16 @@ services:
             - ./build/node{{ $i }}/heimdalld:/data
             - ./build/erigon-{{ $i }}:/erigon
             - ../start-heimdalld-script.sh:/script/start-heimdalld-script.sh:ro
+{{ $peers := "" }}
+{{- range $j := seq 0 (sub (conv.ToInt64 (getenv "NODES")) 1) }}
+  {{- if ne $j $i }}
+    {{- if eq $peers "" }}
+      {{ $peers = printf "enode://$E2E_NODE_%d_ADDRESS@erigon-%d:30303" $j $j }}
+    {{- else }}
+      {{ $peers = printf "%s,enode://$E2E_NODE_%d_ADDRESS@erigon-%d:30303" $peers $j $j }}
+    {{- end }}
+  {{- end }}
+{{- end }}
     erigon-{{ $i }}:
         <<: *erigon-image
         entrypoint: ["erigon"]
@@ -86,9 +96,10 @@ services:
             "--authrpc.addr", "0.0.0.0",
             "--authrpc.vhosts", "any",
             "--miner.gaslimit", "60000000",
+            "--nodekeyhex", $E2E_NODE_{{ $i }}_PRIVATE_KEY,
             "--externalcl",
-            "--healthcheck"
-
+            "--healthcheck",
+            "--staticpeers", "{{ $peers }}"
         ]
         healthcheck:
             test: >
