@@ -89,7 +89,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		logger.Error("error validating checkpoint",
 			"startBlock", msg.StartBlock,
 			"endBlock", msg.EndBlock,
-			"rootHash", msg.RootHash,
+			"rootHash", common.Bytes2Hex(msg.RootHash),
 			"error", err,
 		)
 	} else if validCheckpoint {
@@ -101,7 +101,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		"rootHash is not valid",
 		"startBlock", msg.StartBlock,
 		"endBlock", msg.EndBlock,
-		"rootHash", msg.RootHash,
+		"rootHash", common.Bytes2Hex(msg.RootHash),
 	)
 
 	return sidetxs.Vote_VOTE_NO
@@ -164,7 +164,7 @@ func (srv *sideMsgServer) SideHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			"rootChain checkpoint end block", end,
 			"message proposer", msg.Proposer,
 			"rootChain checkpoint proposer", proposer,
-			"message root hash", string(msg.RootHash),
+			"message root hash", common.Bytes2Hex(msg.RootHash),
 			"rootChain checkpoint root hash", root,
 			"error", err,
 		)
@@ -322,8 +322,8 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 			"startReceived", msg.StartBlock,
 			"endExpected", checkpointObj.EndBlock,
 			"endReceived", msg.StartBlock,
-			"rootExpected", string(checkpointObj.RootHash),
-			"rootReceived", string(msg.RootHash),
+			"rootExpected", common.Bytes2Hex(checkpointObj.RootHash),
+			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)
 
 		return errors.New("invalid ACK")

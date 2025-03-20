@@ -104,7 +104,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 }
 
 // sendCheckpointToHeimdall - handles header block from bor
-// 1. check if i am the proposer for next checkpoint
+// 1. check if I am the proposer for next checkpoint
 // 2. check if checkpoint has to be proposed for given header block
 // 3. if so, propose checkpoint to heimdall.
 func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (err error) {
@@ -178,7 +178,7 @@ func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (
 }
 
 // sendCheckpointToRootchain - handles checkpoint confirmation event from heimdall.
-// 1. check if i am the current proposer.
+// 1. check if I am the current proposer.
 // 2. check if this checkpoint has to be submitted to rootchain
 // 3. if so, create and broadcast checkpoint transaction to rootchain
 func (cp *CheckpointProcessor) sendCheckpointToRootchain(eventBytes string, blockHeight int64) error {
@@ -344,7 +344,7 @@ func (cp *CheckpointProcessor) handleCheckpointNoAck() {
 			return
 		}
 
-		// if i am the proposer and NoAck is required, then propose No-Ack
+		// if I am the proposer and NoAck is required, then propose No-Ack
 		if isProposer {
 			// send Checkpoint No-Ack to heimdall
 			if err := cp.proposeCheckpointNoAck(); err != nil {
@@ -471,7 +471,7 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToHeimdall(checkpointConte
 		"start", start,
 		"end", end,
 		"root", common.Bytes2Hex(root),
-		"accountRoot", accountRootHash,
+		"accountRoot", common.Bytes2Hex(accountRootHash),
 	)
 
 	chainParams := checkpointContext.ChainmanagerParams.ChainParams
@@ -600,8 +600,16 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 		return bytes.Compare(sideTxSigs[i].address, sideTxSigs[j].address) < 0
 	})
 
-	dummyLegacyTxn := ethTypes.NewTransaction(0, common.Address{}, nil, 0, nil, nil)
-	sigs := [][3]*big.Int{}
+	dummyLegacyTxn := ethTypes.NewTx(&types.LegacyTx{
+		Nonce:    0,
+		To:       &common.Address{},
+		Value:    nil,
+		Gas:      0,
+		GasPrice: nil,
+		Data:     nil,
+	})
+
+	sigs := make([][3]*big.Int, 0, len(sideTxSigs))
 
 	for _, sideTxSig := range sideTxSigs {
 		R, S, V, err := ethTypes.HomesteadSigner{}.SignatureValues(dummyLegacyTxn, sideTxSig.sig)
@@ -683,12 +691,12 @@ func (cp *CheckpointProcessor) getLastNoAckTime() uint64 {
 func (cp *CheckpointProcessor) getCheckpointSignatures(txHash string) ([]checkpointtypes.CheckpointSignature, error) {
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.CheckpointSignaturesURL, txHash)))
 	if err != nil {
-		return nil, fmt.Errorf("Error while sending request for checkpoint signatures: %w", err)
+		return nil, fmt.Errorf("error while sending request for checkpoint signatures: %w", err)
 	}
 
 	var res checkpointtypes.QueryCheckpointSignaturesResponse
 	if err := cp.cliCtx.Codec.UnmarshalJSON(response, &res); err != nil {
-		return nil, fmt.Errorf("Error unmarshalling checkpoint signatures: %w", err)
+		return nil, fmt.Errorf("error unmarshalling checkpoint signatures: %w", err)
 	}
 
 	return res.Signatures, nil

@@ -1,5 +1,3 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Bor module
 
 ## Table of Contents
@@ -9,6 +7,10 @@
 * [How does it work](#how-does-it-work)
 	* [How to propose a span](#how-to-propose-a-span)
 * [Query commands](#query-commands)
+	* [CLI Commands](#cli-commands)
+	* [GRPC Endpoints](#grpc-endpoints)
+	* [REST Endpoints](#rest-endpoints)
+
 
 
 ## Preliminary terminology
@@ -104,50 +106,82 @@ return k.AddNewSpan(ctx, newSpan)
 A validator can leverage the CLI to propose a span like so :
 
 ```bash
-heimdallcli tx bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+./build/heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
 ## Query commands
 
-One can run the following query commands from the bor module :
+One can run the following query commands from the bor module:
 
 * `span` - Query the span corresponding to the given span id.
-* `latest span` - Query the latest span.
-* `params` - Fetch the parameters associated to bor module.
-* `spanlist` - Fetch span list.
+* `span-list` - Fetch span list.
+* `latest-span` - Query the latest span.
 * `next-span-seed` - Query the seed for the next span.
-* `propose-span` - Print the `propose-span` command.
+* `next-span` - Query the next span.
+* `params` - Fetch the parameters associated to bor module.
 
 ### CLI commands
 
 ```bash
-heimdallcli query bor span --span-id=<SPAN_ID>
+./build/heimdalld query bor span-by-id <SPAN_ID>
 ```
 
 ```bash
-heimdallcli query bor latest-span
+./build/heimdalld query bor span-list
 ```
 
 ```bash
-heimdallcli query bor params
+./build/heimdalld query bor latest-span
 ```
 
 ```bash
-heimdallcli query bor spanlist --page=<PAGE_NUM> --limit=<LIMIT>
+./build/heimdalld query bor next-span-seed [id]
 ```
 
 ```bash
-heimdallcli query bor next-span-seed
+./build/heimdalld query bor next-span
 ```
 
 ```bash
-heimdallcli query bor next-span --proposer <VALIDATOR ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+./build/heimdalld query bor params
 ```
+
+### GRPC Endpoints
+
+The endpoints and the params are defined in the [bor/query.proto](/proto/heimdallv2/bor/query.proto) file. Please refer them for more information about the optional params.
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.bor.Query/GetSpanList
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.bor.Query/GetLatestSpan
+```
+
+```bash
+grpcurl -plaintext -d '{"id": <>}' localhost:9090 heimdallv2.bor.Query/GetNextSpanSeed
+```
+
+```bash
+grpcurl -plaintext -d '{"span_id": <>, "start_block": <>, "bor_chain_id": "<>"}' localhost:9090 heimdallv2.bor.Query/GetNextSpan
+```
+
+```bash
+grpcurl -plaintext -d '{"id": "<>"}' localhost:9090 heimdallv2.bor.Query/GetSpanById
+
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.bor.Query/GetBorParams
+```
+
 
 ### REST endpoints
 
+The endpoints and the params are defined in the [bor/query.proto](/proto/heimdallv2/bor/query.proto) file. Please refer them for more information about the optional params.
+
 ```bash
-curl localhost:1317/bor/span/<SPAN_ID>
+curl localhost:1317/bor/span/list
 ```
 
 ```bash
@@ -155,13 +189,19 @@ curl localhost:1317/bor/span/latest
 ```
 
 ```bash
+curl localhost:1317/bor/span/seed/<SPAN_ID>
+```
+
+```bash
+curl "localhost:1317/bor/span/prepare?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&chain_id=<BOR_CHAIN_ID>"
+```
+
+```bash
+curl localhost:1317/bor/span/<SPAN_ID>
+```
+
+```bash
 curl localhost:1317/bor/params
 ```
 
-```bash
-curl localhost:1317/bor/span/seed
-```
 
-```bash
-curl "localhost:1317/bor/span/prepare?span_id=<SPAN_ID>&start_block=<BOR_START_BLOCK>&chain_id="<BOR_CHAIN_ID>""
-```

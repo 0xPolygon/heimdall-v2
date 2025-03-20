@@ -38,36 +38,6 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Get milestone by number",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "number"}},
 				},
-				{
-					RpcMethod:      "GetMilestoneProposerByTimes",
-					Use:            "get-milestone-proposer",
-					Short:          "Get milestone proposer",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "times"}},
-				},
-			},
-		},
-		Tx: &autocliv1.ServiceCommandDescriptor{
-			Service: milestone.Msg_ServiceDesc.ServiceName,
-			RpcCommandOptions: []*autocliv1.RpcCommandOptions{
-				{
-					RpcMethod: "Milestone",
-					Use:       "milestone [proposer] [startBlock] [endBlock] [hash] [borChainId] [milestoneId]",
-					Short:     "Send milestone tx",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "proposer"},
-						{ProtoField: "start_block"},
-						{ProtoField: "end_block"},
-						{ProtoField: "hash"},
-						{ProtoField: "bor_chain_id"},
-						{ProtoField: "milestone_id"},
-					},
-				},
-				{
-					RpcMethod:      "MilestoneTimeout",
-					Use:            "milestone-timeout",
-					Short:          "Send milestone timeout tx",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
-				},
 			},
 		},
 	}

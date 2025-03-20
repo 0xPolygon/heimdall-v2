@@ -10,19 +10,15 @@ import (
 	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	proto "github.com/cosmos/gogoproto/proto"
-	github_com_cosmos_gogoproto_types "github.com/cosmos/gogoproto/types"
-	_ "google.golang.org/protobuf/types/known/durationpb"
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
-var _ = time.Kitchen
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the proto package it is being compiled against.
@@ -166,18 +162,77 @@ func (m *MilestoneCount) GetCount() uint64 {
 	return 0
 }
 
+type MilestoneProposition struct {
+	BlockHashes      [][]byte `protobuf:"bytes,1,rep,name=block_hashes,json=blockHashes,proto3" json:"block_hashes,omitempty"`
+	StartBlockNumber uint64   `protobuf:"varint,2,opt,name=start_block_number,json=startBlockNumber,proto3" json:"start_block_number,omitempty"`
+	ParentHash       []byte   `protobuf:"bytes,3,opt,name=parent_hash,json=parentHash,proto3" json:"parent_hash,omitempty"`
+}
+
+func (m *MilestoneProposition) Reset()         { *m = MilestoneProposition{} }
+func (m *MilestoneProposition) String() string { return proto.CompactTextString(m) }
+func (*MilestoneProposition) ProtoMessage()    {}
+func (*MilestoneProposition) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6d06b2e981472ef5, []int{2}
+}
+func (m *MilestoneProposition) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *MilestoneProposition) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_MilestoneProposition.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *MilestoneProposition) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MilestoneProposition.Merge(m, src)
+}
+func (m *MilestoneProposition) XXX_Size() int {
+	return m.Size()
+}
+func (m *MilestoneProposition) XXX_DiscardUnknown() {
+	xxx_messageInfo_MilestoneProposition.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_MilestoneProposition proto.InternalMessageInfo
+
+func (m *MilestoneProposition) GetBlockHashes() [][]byte {
+	if m != nil {
+		return m.BlockHashes
+	}
+	return nil
+}
+
+func (m *MilestoneProposition) GetStartBlockNumber() uint64 {
+	if m != nil {
+		return m.StartBlockNumber
+	}
+	return 0
+}
+
+func (m *MilestoneProposition) GetParentHash() []byte {
+	if m != nil {
+		return m.ParentHash
+	}
+	return nil
+}
+
 type Params struct {
-	MinMilestoneLength       uint64        `protobuf:"varint,1,opt,name=min_milestone_length,json=minMilestoneLength,proto3" json:"min_milestone_length,omitempty"`
-	MilestoneBufferTime      time.Duration `protobuf:"bytes,2,opt,name=milestone_buffer_time,json=milestoneBufferTime,proto3,stdduration" json:"milestone_buffer_time"`
-	MilestoneBufferLength    uint64        `protobuf:"varint,3,opt,name=milestone_buffer_length,json=milestoneBufferLength,proto3" json:"milestone_buffer_length,omitempty"`
-	MilestoneTxConfirmations uint64        `protobuf:"varint,4,opt,name=milestone_tx_confirmations,json=milestoneTxConfirmations,proto3" json:"milestone_tx_confirmations,omitempty"`
+	MaxMilestonePropositionLength uint64 `protobuf:"varint,1,opt,name=max_milestone_proposition_length,json=maxMilestonePropositionLength,proto3" json:"max_milestone_proposition_length,omitempty"`
+	FfMilestoneThreshold          uint64 `protobuf:"varint,2,opt,name=ff_milestone_threshold,json=ffMilestoneThreshold,proto3" json:"ff_milestone_threshold,omitempty"`
+	FfMilestoneBlockInterval      uint64 `protobuf:"varint,3,opt,name=ff_milestone_block_interval,json=ffMilestoneBlockInterval,proto3" json:"ff_milestone_block_interval,omitempty"`
 }
 
 func (m *Params) Reset()         { *m = Params{} }
 func (m *Params) String() string { return proto.CompactTextString(m) }
 func (*Params) ProtoMessage()    {}
 func (*Params) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6d06b2e981472ef5, []int{2}
+	return fileDescriptor_6d06b2e981472ef5, []int{3}
 }
 func (m *Params) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -206,30 +261,23 @@ func (m *Params) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Params proto.InternalMessageInfo
 
-func (m *Params) GetMinMilestoneLength() uint64 {
+func (m *Params) GetMaxMilestonePropositionLength() uint64 {
 	if m != nil {
-		return m.MinMilestoneLength
+		return m.MaxMilestonePropositionLength
 	}
 	return 0
 }
 
-func (m *Params) GetMilestoneBufferTime() time.Duration {
+func (m *Params) GetFfMilestoneThreshold() uint64 {
 	if m != nil {
-		return m.MilestoneBufferTime
+		return m.FfMilestoneThreshold
 	}
 	return 0
 }
 
-func (m *Params) GetMilestoneBufferLength() uint64 {
+func (m *Params) GetFfMilestoneBlockInterval() uint64 {
 	if m != nil {
-		return m.MilestoneBufferLength
-	}
-	return 0
-}
-
-func (m *Params) GetMilestoneTxConfirmations() uint64 {
-	if m != nil {
-		return m.MilestoneTxConfirmations
+		return m.FfMilestoneBlockInterval
 	}
 	return 0
 }
@@ -237,6 +285,7 @@ func (m *Params) GetMilestoneTxConfirmations() uint64 {
 func init() {
 	proto.RegisterType((*Milestone)(nil), "heimdallv2.milestone.Milestone")
 	proto.RegisterType((*MilestoneCount)(nil), "heimdallv2.milestone.MilestoneCount")
+	proto.RegisterType((*MilestoneProposition)(nil), "heimdallv2.milestone.MilestoneProposition")
 	proto.RegisterType((*Params)(nil), "heimdallv2.milestone.Params")
 }
 
@@ -245,41 +294,41 @@ func init() {
 }
 
 var fileDescriptor_6d06b2e981472ef5 = []byte{
-	// 536 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x93, 0x4f, 0x8b, 0xd3, 0x4e,
-	0x18, 0xc7, 0x3b, 0xfb, 0x6b, 0xfb, 0x6b, 0xa7, 0x55, 0x70, 0xec, 0x62, 0x5a, 0x31, 0x2d, 0x55,
-	0xb4, 0x08, 0x9b, 0x48, 0x3d, 0x2c, 0x0a, 0x1e, 0x4c, 0xbd, 0x2c, 0xac, 0xb0, 0xe8, 0x9e, 0x44,
-	0x08, 0xf9, 0x33, 0x4d, 0x06, 0x33, 0x33, 0x65, 0x66, 0xba, 0x74, 0xdf, 0x81, 0x47, 0x8f, 0x1e,
-	0xf7, 0xe8, 0x45, 0xf4, 0xe0, 0x8b, 0xd8, 0xe3, 0xe2, 0xc9, 0x93, 0x4a, 0x7b, 0xd0, 0x97, 0x21,
-	0x99, 0xa4, 0x49, 0x56, 0x2f, 0x61, 0x9e, 0xe7, 0xfb, 0x79, 0xfe, 0xf0, 0x7d, 0x08, 0xbc, 0x13,
-	0x63, 0x42, 0x43, 0x2f, 0x49, 0x4e, 0xa6, 0x36, 0x25, 0x09, 0x96, 0x8a, 0x33, 0x5c, 0xbe, 0xac,
-	0x85, 0xe0, 0x8a, 0xa3, 0x5e, 0x49, 0x59, 0x85, 0x36, 0xb8, 0xe6, 0x51, 0xc2, 0xb8, 0xad, 0xbf,
-	0x19, 0x38, 0xe8, 0x07, 0x5c, 0x52, 0x2e, 0x5d, 0x1d, 0xd9, 0x59, 0x90, 0x4b, 0xbd, 0x88, 0x47,
-	0x3c, 0xcb, 0xa7, 0xaf, 0x3c, 0x6b, 0x46, 0x9c, 0x47, 0x09, 0xb6, 0x75, 0xe4, 0x2f, 0xe7, 0x76,
-	0xb8, 0x14, 0x9e, 0x22, 0x9c, 0x65, 0xfa, 0xf8, 0xd3, 0x0e, 0x6c, 0x3f, 0xdf, 0x4e, 0x44, 0x8f,
-	0x60, 0x6b, 0x21, 0xf8, 0x82, 0x4b, 0x2c, 0x0c, 0x30, 0x02, 0x93, 0xb6, 0x73, 0xeb, 0xeb, 0x97,
-	0xbd, 0x5e, 0x3e, 0xe7, 0x69, 0x18, 0x0a, 0x2c, 0xe5, 0x4b, 0x25, 0x08, 0x8b, 0x3e, 0xfc, 0xfa,
-	0x7c, 0x1f, 0xbc, 0x28, 0x70, 0x74, 0x17, 0x76, 0xa4, 0xf2, 0x84, 0x72, 0xfd, 0x84, 0x07, 0x6f,
-	0x8c, 0x9d, 0x11, 0x98, 0xd4, 0x9d, 0x46, 0x46, 0x41, 0xad, 0x38, 0xa9, 0x80, 0xc6, 0xb0, 0x8d,
-	0x59, 0x98, 0x53, 0xff, 0x55, 0xa9, 0x16, 0x66, 0x61, 0xc6, 0xf4, 0x61, 0x3d, 0xf6, 0x64, 0x6c,
-	0xd4, 0x47, 0x60, 0xd2, 0xdd, 0xca, 0x3a, 0x85, 0xee, 0xc1, 0xae, 0xcf, 0x85, 0x1b, 0xc4, 0x1e,
-	0x61, 0x2e, 0x09, 0x8d, 0x86, 0xde, 0x72, 0x3b, 0xc7, 0xe7, 0x62, 0x96, 0x2a, 0x07, 0x21, 0x9a,
-	0xc0, 0x6e, 0xe1, 0x64, 0x0a, 0x36, 0xab, 0x60, 0xa7, 0x90, 0x0e, 0x42, 0x74, 0x1b, 0xb6, 0x15,
-	0xa1, 0x58, 0x2a, 0x8f, 0x2e, 0x8c, 0xff, 0xab, 0x1b, 0x95, 0xf9, 0xc7, 0xad, 0xb7, 0x67, 0x43,
-	0xf0, 0xfb, 0x6c, 0x08, 0xc6, 0xfb, 0xf0, 0x6a, 0x61, 0xd8, 0x8c, 0x2f, 0x99, 0x42, 0x37, 0x61,
-	0x23, 0x48, 0x1f, 0xda, 0xb2, 0xa2, 0x38, 0xcb, 0x55, 0x0a, 0x3f, 0xee, 0xc0, 0xe6, 0x91, 0x27,
-	0x3c, 0x2a, 0xd1, 0x3e, 0xec, 0x51, 0xc2, 0xdc, 0x72, 0xc1, 0x04, 0xb3, 0x48, 0xc5, 0x97, 0x1b,
-	0x20, 0x4a, 0x58, 0x31, 0xe9, 0x50, 0x03, 0xe8, 0x35, 0xdc, 0x2d, 0x8b, 0xfc, 0xe5, 0x7c, 0x8e,
-	0x85, 0x9b, 0x2e, 0xa9, 0xfd, 0xee, 0x4c, 0xfb, 0x56, 0x76, 0x6e, 0x6b, 0x7b, 0x6e, 0xeb, 0x59,
-	0x7e, 0x6e, 0xe7, 0xca, 0xf9, 0xf7, 0x61, 0xed, 0xfd, 0x8f, 0x21, 0xc8, 0x9a, 0x5f, 0x2f, 0xda,
-	0x38, 0xba, 0xcb, 0x31, 0xa1, 0x18, 0x3d, 0x81, 0x37, 0xfe, 0xe9, 0x9e, 0x6f, 0x76, 0xe9, 0x52,
-	0xbb, 0x7f, 0x15, 0xe7, 0xcb, 0xcd, 0xe0, 0xa0, 0x2c, 0x57, 0x2b, 0x37, 0xe0, 0x6c, 0x4e, 0x04,
-	0xd5, 0xf3, 0xa5, 0x3e, 0x66, 0xd1, 0xc1, 0x28, 0xc0, 0xe3, 0xd5, 0xac, 0x8a, 0x95, 0x7e, 0x39,
-	0x87, 0xe7, 0x6b, 0x13, 0x5c, 0xac, 0x4d, 0xf0, 0x73, 0x6d, 0x82, 0x77, 0x1b, 0xb3, 0x76, 0xb1,
-	0x31, 0x6b, 0xdf, 0x36, 0x66, 0xed, 0xd5, 0x34, 0x22, 0x2a, 0x5e, 0xfa, 0x56, 0xc0, 0xa9, 0xfd,
-	0x60, 0x75, 0xc4, 0x93, 0xd3, 0x88, 0x33, 0x7b, 0xfb, 0x0f, 0xed, 0x9d, 0x4c, 0xed, 0x55, 0xe5,
-	0x67, 0x53, 0xa7, 0x0b, 0x2c, 0xfd, 0xa6, 0xb6, 0xe4, 0xe1, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0xd6, 0x2c, 0x25, 0xba, 0x91, 0x03, 0x00, 0x00,
+	// 543 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x53, 0x4f, 0x6f, 0xd3, 0x30,
+	0x1c, 0x9d, 0xb7, 0xb6, 0xb4, 0x6e, 0x85, 0xc0, 0xaa, 0x50, 0xb6, 0x69, 0x59, 0x55, 0x10, 0x54,
+	0x48, 0x6b, 0x50, 0x77, 0x40, 0xc0, 0x89, 0x8e, 0x03, 0x95, 0xc6, 0x54, 0x01, 0x27, 0x2e, 0x91,
+	0xd3, 0xb8, 0x89, 0x45, 0x6c, 0x47, 0xb6, 0x5b, 0x75, 0xdf, 0x80, 0x23, 0x1f, 0x61, 0x37, 0xb8,
+	0xc1, 0x81, 0x0f, 0xc1, 0x71, 0xe2, 0xc4, 0x11, 0xb5, 0x42, 0xf0, 0x31, 0x50, 0x9c, 0xe6, 0x9f,
+	0xc4, 0x25, 0xb2, 0x7f, 0xef, 0xfd, 0x5e, 0x7e, 0xef, 0x25, 0x3f, 0x78, 0x2f, 0x24, 0x94, 0xf9,
+	0x38, 0x8a, 0x96, 0x23, 0x87, 0xd1, 0x88, 0x28, 0x2d, 0x38, 0x29, 0x4e, 0xc3, 0x58, 0x0a, 0x2d,
+	0x50, 0xb7, 0x60, 0x0d, 0x73, 0xec, 0xe0, 0x36, 0x66, 0x94, 0x0b, 0xc7, 0x3c, 0x53, 0xe2, 0xc1,
+	0xfe, 0x4c, 0x28, 0x26, 0x94, 0x6b, 0x6e, 0x4e, 0x7a, 0xd9, 0x42, 0xdd, 0x40, 0x04, 0x22, 0xad,
+	0x27, 0xa7, 0xb4, 0xda, 0xff, 0xb2, 0x0b, 0x5b, 0xaf, 0x32, 0x45, 0xf4, 0x04, 0x36, 0x63, 0x29,
+	0x62, 0xa1, 0x88, 0xb4, 0x40, 0x0f, 0x0c, 0x5a, 0xe3, 0xa3, 0x1f, 0xdf, 0x4e, 0xba, 0x5b, 0x9d,
+	0xe7, 0xbe, 0x2f, 0x89, 0x52, 0x6f, 0xb4, 0xa4, 0x3c, 0xf8, 0xfc, 0xe7, 0xeb, 0x43, 0xf0, 0x3a,
+	0xa7, 0xa3, 0xfb, 0xb0, 0xad, 0x34, 0x96, 0xda, 0xf5, 0x22, 0x31, 0x7b, 0x6f, 0xed, 0xf6, 0xc0,
+	0xa0, 0x36, 0xae, 0xa7, 0x2c, 0x68, 0x90, 0x71, 0x02, 0xa0, 0x3e, 0x6c, 0x11, 0xee, 0x6f, 0x59,
+	0x7b, 0x65, 0x56, 0x93, 0x70, 0x3f, 0xe5, 0xec, 0xc3, 0x5a, 0x88, 0x55, 0x68, 0xd5, 0x7a, 0x60,
+	0xd0, 0xc9, 0x60, 0x53, 0x42, 0x0f, 0x60, 0xc7, 0x13, 0xd2, 0x9d, 0x85, 0x98, 0x72, 0x97, 0xfa,
+	0x56, 0xdd, 0x4c, 0x99, 0xbd, 0xc7, 0x13, 0xf2, 0x2c, 0x41, 0x26, 0x3e, 0x1a, 0xc0, 0x4e, 0x9e,
+	0x54, 0x42, 0x6c, 0x94, 0x89, 0xed, 0x1c, 0x9a, 0xf8, 0xe8, 0x2e, 0x6c, 0x69, 0xca, 0x88, 0xd2,
+	0x98, 0xc5, 0xd6, 0x8d, 0xf2, 0x44, 0x45, 0xfd, 0x69, 0xf3, 0xc3, 0xd5, 0x31, 0xf8, 0x7b, 0x75,
+	0x0c, 0xfa, 0x8f, 0xe1, 0xcd, 0x3c, 0xb0, 0x33, 0xb1, 0xe0, 0x1a, 0x1d, 0xc2, 0xfa, 0x2c, 0x39,
+	0x98, 0xc8, 0xf2, 0xe6, 0xb4, 0x56, 0x6a, 0xfc, 0x04, 0x60, 0x37, 0xef, 0x9c, 0x9a, 0xdc, 0xa8,
+	0xa6, 0x82, 0x27, 0xa3, 0x9a, 0x38, 0xdc, 0xc4, 0x21, 0x51, 0x16, 0xe8, 0xed, 0x15, 0xb6, 0xdb,
+	0x06, 0x7a, 0x69, 0x10, 0x74, 0x0a, 0x51, 0x29, 0x64, 0x97, 0x2f, 0x98, 0x47, 0x64, 0x35, 0xeb,
+	0x5b, 0x45, 0xd6, 0x17, 0x06, 0x4e, 0xbe, 0x4c, 0x8c, 0x25, 0xe1, 0xda, 0xe8, 0x9b, 0xcc, 0x73,
+	0x75, 0x98, 0x22, 0x89, 0x7c, 0x69, 0xd2, 0xdf, 0x00, 0x36, 0xa6, 0x58, 0x62, 0xa6, 0xd0, 0x05,
+	0xec, 0x31, 0xbc, 0x72, 0x8b, 0x28, 0xe3, 0x62, 0x70, 0x37, 0x22, 0x3c, 0xd0, 0x61, 0xd5, 0xf6,
+	0x11, 0xc3, 0xab, 0xff, 0xb9, 0x3c, 0x37, 0x5c, 0xf4, 0x0c, 0xde, 0x99, 0xcf, 0x4b, 0x72, 0x3a,
+	0x94, 0x44, 0x85, 0x22, 0xf2, 0xab, 0x2e, 0xba, 0xf3, 0x79, 0x2e, 0xf2, 0x36, 0xa3, 0xa0, 0x17,
+	0xf0, 0xb0, 0xd2, 0x9c, 0xa6, 0x40, 0xb9, 0x26, 0x72, 0x89, 0xa3, 0xea, 0xdf, 0x64, 0x95, 0x14,
+	0x4c, 0x1a, 0x93, 0x2d, 0xad, 0xf0, 0x39, 0x3e, 0xff, 0xbe, 0xb6, 0xc1, 0xf5, 0xda, 0x06, 0xbf,
+	0xd6, 0x36, 0xf8, 0xb8, 0xb1, 0x77, 0xae, 0x37, 0xf6, 0xce, 0xcf, 0x8d, 0xbd, 0xf3, 0x6e, 0x14,
+	0x50, 0x1d, 0x2e, 0xbc, 0xe1, 0x4c, 0x30, 0xe7, 0xd1, 0x6a, 0x2a, 0xa2, 0xcb, 0x40, 0x70, 0x27,
+	0xdb, 0xc2, 0x93, 0xe5, 0xc8, 0x59, 0x95, 0xd6, 0x55, 0x5f, 0xc6, 0x44, 0x79, 0x0d, 0xb3, 0x51,
+	0xa7, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0x99, 0x4a, 0x88, 0xb0, 0xd3, 0x03, 0x00, 0x00,
 }
 
 func (this *Milestone) Equal(that interface{}) bool {
@@ -348,6 +397,41 @@ func (this *MilestoneCount) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *MilestoneProposition) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*MilestoneProposition)
+	if !ok {
+		that2, ok := that.(MilestoneProposition)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.BlockHashes) != len(that1.BlockHashes) {
+		return false
+	}
+	for i := range this.BlockHashes {
+		if !bytes.Equal(this.BlockHashes[i], that1.BlockHashes[i]) {
+			return false
+		}
+	}
+	if this.StartBlockNumber != that1.StartBlockNumber {
+		return false
+	}
+	if !bytes.Equal(this.ParentHash, that1.ParentHash) {
+		return false
+	}
+	return true
+}
 func (this *Params) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -367,16 +451,13 @@ func (this *Params) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.MinMilestoneLength != that1.MinMilestoneLength {
+	if this.MaxMilestonePropositionLength != that1.MaxMilestonePropositionLength {
 		return false
 	}
-	if this.MilestoneBufferTime != that1.MilestoneBufferTime {
+	if this.FfMilestoneThreshold != that1.FfMilestoneThreshold {
 		return false
 	}
-	if this.MilestoneBufferLength != that1.MilestoneBufferLength {
-		return false
-	}
-	if this.MilestoneTxConfirmations != that1.MilestoneTxConfirmations {
+	if this.FfMilestoneBlockInterval != that1.FfMilestoneBlockInterval {
 		return false
 	}
 	return true
@@ -475,6 +556,50 @@ func (m *MilestoneCount) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *MilestoneProposition) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *MilestoneProposition) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MilestoneProposition) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ParentHash) > 0 {
+		i -= len(m.ParentHash)
+		copy(dAtA[i:], m.ParentHash)
+		i = encodeVarintMilestone(dAtA, i, uint64(len(m.ParentHash)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.StartBlockNumber != 0 {
+		i = encodeVarintMilestone(dAtA, i, uint64(m.StartBlockNumber))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.BlockHashes) > 0 {
+		for iNdEx := len(m.BlockHashes) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.BlockHashes[iNdEx])
+			copy(dAtA[i:], m.BlockHashes[iNdEx])
+			i = encodeVarintMilestone(dAtA, i, uint64(len(m.BlockHashes[iNdEx])))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *Params) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -495,26 +620,18 @@ func (m *Params) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.MilestoneTxConfirmations != 0 {
-		i = encodeVarintMilestone(dAtA, i, uint64(m.MilestoneTxConfirmations))
-		i--
-		dAtA[i] = 0x20
-	}
-	if m.MilestoneBufferLength != 0 {
-		i = encodeVarintMilestone(dAtA, i, uint64(m.MilestoneBufferLength))
+	if m.FfMilestoneBlockInterval != 0 {
+		i = encodeVarintMilestone(dAtA, i, uint64(m.FfMilestoneBlockInterval))
 		i--
 		dAtA[i] = 0x18
 	}
-	n1, err1 := github_com_cosmos_gogoproto_types.StdDurationMarshalTo(m.MilestoneBufferTime, dAtA[i-github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.MilestoneBufferTime):])
-	if err1 != nil {
-		return 0, err1
+	if m.FfMilestoneThreshold != 0 {
+		i = encodeVarintMilestone(dAtA, i, uint64(m.FfMilestoneThreshold))
+		i--
+		dAtA[i] = 0x10
 	}
-	i -= n1
-	i = encodeVarintMilestone(dAtA, i, uint64(n1))
-	i--
-	dAtA[i] = 0x12
-	if m.MinMilestoneLength != 0 {
-		i = encodeVarintMilestone(dAtA, i, uint64(m.MinMilestoneLength))
+	if m.MaxMilestonePropositionLength != 0 {
+		i = encodeVarintMilestone(dAtA, i, uint64(m.MaxMilestonePropositionLength))
 		i--
 		dAtA[i] = 0x8
 	}
@@ -578,22 +695,42 @@ func (m *MilestoneCount) Size() (n int) {
 	return n
 }
 
+func (m *MilestoneProposition) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.BlockHashes) > 0 {
+		for _, b := range m.BlockHashes {
+			l = len(b)
+			n += 1 + l + sovMilestone(uint64(l))
+		}
+	}
+	if m.StartBlockNumber != 0 {
+		n += 1 + sovMilestone(uint64(m.StartBlockNumber))
+	}
+	l = len(m.ParentHash)
+	if l > 0 {
+		n += 1 + l + sovMilestone(uint64(l))
+	}
+	return n
+}
+
 func (m *Params) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.MinMilestoneLength != 0 {
-		n += 1 + sovMilestone(uint64(m.MinMilestoneLength))
+	if m.MaxMilestonePropositionLength != 0 {
+		n += 1 + sovMilestone(uint64(m.MaxMilestonePropositionLength))
 	}
-	l = github_com_cosmos_gogoproto_types.SizeOfStdDuration(m.MilestoneBufferTime)
-	n += 1 + l + sovMilestone(uint64(l))
-	if m.MilestoneBufferLength != 0 {
-		n += 1 + sovMilestone(uint64(m.MilestoneBufferLength))
+	if m.FfMilestoneThreshold != 0 {
+		n += 1 + sovMilestone(uint64(m.FfMilestoneThreshold))
 	}
-	if m.MilestoneTxConfirmations != 0 {
-		n += 1 + sovMilestone(uint64(m.MilestoneTxConfirmations))
+	if m.FfMilestoneBlockInterval != 0 {
+		n += 1 + sovMilestone(uint64(m.FfMilestoneBlockInterval))
 	}
 	return n
 }
@@ -910,6 +1047,141 @@ func (m *MilestoneCount) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *MilestoneProposition) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMilestone
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MilestoneProposition: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MilestoneProposition: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BlockHashes", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMilestone
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMilestone
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMilestone
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.BlockHashes = append(m.BlockHashes, make([]byte, postIndex-iNdEx))
+			copy(m.BlockHashes[len(m.BlockHashes)-1], dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field StartBlockNumber", wireType)
+			}
+			m.StartBlockNumber = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMilestone
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.StartBlockNumber |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ParentHash", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMilestone
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMilestone
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMilestone
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ParentHash = append(m.ParentHash[:0], dAtA[iNdEx:postIndex]...)
+			if m.ParentHash == nil {
+				m.ParentHash = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMilestone(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMilestone
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *Params) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -941,9 +1213,9 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MinMilestoneLength", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field MaxMilestonePropositionLength", wireType)
 			}
-			m.MinMilestoneLength = 0
+			m.MaxMilestonePropositionLength = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowMilestone
@@ -953,16 +1225,16 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MinMilestoneLength |= uint64(b&0x7F) << shift
+				m.MaxMilestonePropositionLength |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MilestoneBufferTime", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FfMilestoneThreshold", wireType)
 			}
-			var msglen int
+			m.FfMilestoneThreshold = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowMilestone
@@ -972,30 +1244,16 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.FfMilestoneThreshold |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthMilestone
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMilestone
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := github_com_cosmos_gogoproto_types.StdDurationUnmarshal(&m.MilestoneBufferTime, dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 3:
 			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MilestoneBufferLength", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field FfMilestoneBlockInterval", wireType)
 			}
-			m.MilestoneBufferLength = 0
+			m.FfMilestoneBlockInterval = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowMilestone
@@ -1005,26 +1263,7 @@ func (m *Params) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.MilestoneBufferLength |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field MilestoneTxConfirmations", wireType)
-			}
-			m.MilestoneTxConfirmations = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMilestone
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.MilestoneTxConfirmations |= uint64(b&0x7F) << shift
+				m.FfMilestoneBlockInterval |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}

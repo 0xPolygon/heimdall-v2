@@ -1,13 +1,16 @@
-schedule:
-  - cron: '0 0 * * *'
+on:
+  schedule:
+    - cron: '0 0 * * *' # Runs every day at midnight (UTC)
+
 jobs:
   stale:
     runs-on: ubuntu-latest
     permissions:
-      issues: write
-      pull-requests: write
+      issues: write # Grants write permission to issues
+      pull-requests: write # Grants write permission to pull requests
+
     steps:
-      - uses: actions/stale@v5
+      - uses: actions/stale@v9
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           stale-issue-message: 'This issue is stale because it has been open 14 days with no activity. Remove stale label or comment or this will be closed in 14 days.'

@@ -73,9 +73,9 @@ func TestValidateVoteExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldError {
-				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper))
+				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper))
 			} else {
-				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, cometVal.Address, tt.extVoteInfo, tt.round, tt.keeper)
+				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper)
 				require.NoError(t, err)
 			}
 		})
@@ -394,7 +394,7 @@ func TestAggregateVotes(t *testing.T) {
 	blockHashBytes := common.Hex2Bytes(TxHash2)
 
 	// create a protobuf msg for ConsolidatedSideTxResponse
-	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
+	voteExtensionProto := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{
 			{
 				TxHash: txHashBytes,
@@ -545,7 +545,7 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey) abci.ExtendedVoteInfo {
 	t.Helper()
 	// create a protobuf msg for ConsolidatedSideTxResponse
-	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
+	voteExtensionProto := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{
 			{
 				TxHash: txHashBytes,

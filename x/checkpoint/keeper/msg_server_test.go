@@ -35,7 +35,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength, lastCheckpoint.Id+1)
@@ -147,7 +147,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
@@ -208,7 +208,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
@@ -255,7 +255,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
@@ -356,7 +356,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	if err == nil {
 		start = start + lastCheckpoint.EndBlock + 1
 	}
-	require.NotNil(lastCheckpoint)
+	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
 	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)

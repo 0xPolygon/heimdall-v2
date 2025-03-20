@@ -60,6 +60,7 @@ type IContractCaller interface {
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
+	GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
@@ -408,13 +409,18 @@ func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID stri
 
 // GetLastChildBlock fetch current child block
 func (c *ContractCaller) GetLastChildBlock(rootChainInstance *rootchain.Rootchain) (uint64, error) {
-	GetLastChildBlock, err := rootChainInstance.GetLastChildBlock(nil)
+	lastChildBlock, err := rootChainInstance.GetLastChildBlock(nil)
 	if err != nil {
 		Logger.Error("Could not fetch current child block from rootChain contract", "error", err)
 		return 0, err
 	}
 
-	return GetLastChildBlock.Uint64(), nil
+	if lastChildBlock == nil {
+		Logger.Error("Contract returned nil value for lastChildBlock")
+		return 0, fmt.Errorf("contract returned nil value")
+	}
+
+	return lastChildBlock.Uint64(), nil
 }
 
 // CurrentHeaderBlock fetches current header block
@@ -423,6 +429,11 @@ func (c *ContractCaller) CurrentHeaderBlock(rootChainInstance *rootchain.Rootcha
 	if err != nil {
 		Logger.Error("Could not fetch current header block from rootChain contract", "error", err)
 		return 0, err
+	}
+
+	if currentHeaderBlock == nil {
+		Logger.Error("Contract returned nil value for currentHeaderBlock")
+		return 0, fmt.Errorf("contract returned nil value")
 	}
 
 	return currentHeaderBlock.Uint64() / childBlockInterval, nil
@@ -446,7 +457,7 @@ func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 func (c *ContractCaller) GetValidatorInfo(valID uint64, stakingInfoInstance *stakinginfo.Stakinginfo) (validator types.Validator, err error) {
 	stakerDetails, err := stakingInfoInstance.GetStakerDetails(nil, big.NewInt(int64(valID)))
 	if err != nil {
-		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "status", stakerDetails.Status, "error", err)
+		Logger.Error("error fetching validator information from stake manager", "validatorId", valID, "error", err)
 		return
 	}
 
@@ -533,6 +544,43 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	}
 
 	return latestBlock, nil
+}
+
+// GetBorChainBlocksInBatch returns bor chain block headers via single RPC Batch call
+func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
+
+	rpcClient := c.BorChainClient.Client()
+
+	// Prepare a slice of batch elements.
+	batchElems := make([]rpc.BatchElem, 0, end-start+1)
+	result := make([]*ethTypes.Header, end-start+1)
+	for i := start; i <= end; i++ {
+		blockNumHex := fmt.Sprintf("0x%x", i)
+
+		batchElems = append(batchElems, rpc.BatchElem{
+			Method: "eth_getHeaderByNumber",
+			Args:   []interface{}{blockNumHex},
+			Result: &result[i-start],
+		})
+	}
+
+	// Execute the batch call.
+	if err := rpcClient.BatchCallContext(ctx, batchElems); err != nil {
+		return nil, err
+	}
+
+	// Collect the results.
+	response := make([]*ethTypes.Header, 0, len(batchElems))
+	for i, elem := range batchElems {
+		if elem.Error != nil || result[i] == nil {
+			break
+		}
+		response = append(response, result[i])
+	}
+
+	return response, nil
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block
@@ -873,7 +921,7 @@ func (c *ContractCaller) GetSpanDetails(id *big.Int, validatorSetInstance *valid
 	if err != nil {
 		return nil, nil, nil, errors.New("unable to get span details")
 	}
-	return d.Number, d.StartBlock, d.EndBlock, err
+	return d.Number, d.StartBlock, d.EndBlock, nil
 }
 
 // CurrentStateCounter get state counter

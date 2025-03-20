@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	cfg "github.com/cometbft/cometbft/config"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/spf13/viper"
 )
 
@@ -15,7 +16,7 @@ func TestHeimdallConfig(t *testing.T) {
 	// cli context
 	cometBFTNode := "tcp://localhost:26657"
 	viper.Set(CometBFTNodeFlag, cometBFTNode)
-	viper.Set("log_level", "info")
+	viper.Set(flags.FlagLogLevel, "info")
 
 	InitTestHeimdallConfig("")
 

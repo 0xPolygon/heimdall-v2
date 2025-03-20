@@ -33,7 +33,7 @@ import (
 // It checks the signature of each vote extension with its signer's public key
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
-func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []byte, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
+func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
 	// check if VEs are enabled
 	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
 		return err
@@ -81,16 +81,16 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, proposerAddress []
 			return fmt.Errorf("received empty vote extension signature at height %d from validator %s", reqHeight, valAddrStr)
 		}
 
-		consolidatedSideTxResponse := new(sidetxs.ConsolidatedSideTxResponse)
-		if err = consolidatedSideTxResponse.Unmarshal(vote.VoteExtension); err != nil {
+		voteExtension := new(sidetxs.VoteExtension)
+		if err = voteExtension.Unmarshal(vote.VoteExtension); err != nil {
 			return fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
 
-		if consolidatedSideTxResponse.Height != reqHeight-1 {
-			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, consolidatedSideTxResponse.Height)
+		if voteExtension.Height != reqHeight-1 {
+			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, voteExtension.Height)
 		}
 
-		txHash, err := validateSideTxResponses(consolidatedSideTxResponse.SideTxResponses)
+		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
 			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", valAddrStr, common.Bytes2Hex(txHash), err)
 		}
@@ -225,7 +225,7 @@ func aggregateVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, currentHeight int6
 			continue
 		}
 
-		ve := new(sidetxs.ConsolidatedSideTxResponse)
+		ve := new(sidetxs.VoteExtension)
 		err := ve.Unmarshal(vote.VoteExtension)
 		if err != nil {
 			return nil, err
@@ -397,7 +397,7 @@ func ValidateNonRpVoteExtensions(
 		return nil
 	}
 
-	// Check if there are 2/3 voting power for one same extension
+	// Check if there is vote extension with majority voting power
 	majorityExt, err := getMajorityNonRpVoteExtension(ctx, extVoteInfo, stakeKeeper, logger)
 	if err != nil {
 		return err
@@ -482,7 +482,7 @@ func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes
 	return nil
 }
 
-// getMajorityNonRpVoteExtension returns the non-rp vote extension with atleast 2/3 voting power
+// getMajorityNonRpVoteExtension returns the non-rp vote extension with the majority voting power
 func getMajorityNonRpVoteExtension(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper, logger log.Logger) ([]byte, error) {
 	// Fetch validatorSet from previous block
 	validatorSet, err := getPreviousBlockValidatorSet(ctx, stakeKeeper)

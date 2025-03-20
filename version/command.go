@@ -24,6 +24,7 @@ var Cmd = &cobra.Command{
 		verInfo := NewInfo()
 
 		if !viper.GetBool(flagLong) {
+			fmt.Println()
 			fmt.Println(verInfo.Version)
 			return nil
 		}
@@ -42,6 +43,7 @@ var Cmd = &cobra.Command{
 			return err
 		}
 
+		fmt.Println()
 		_, err = fmt.Println(string(bz))
 		return err
 	},

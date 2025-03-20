@@ -138,7 +138,7 @@ func (c *ContractCaller) StakeFor(val common.Address, stakeAmount *big.Int, feeA
 		return errors.New("public key first byte mismatch")
 	}
 	// pack data based on method definition
-	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKey)
+	data, err := c.StakeManagerABI.Pack("stakeFor", val, stakeAmount, feeAmount, acceptDelegation, signerPubKey.Bytes())
 	if err != nil {
 		Logger.Error("unable to pack tx for stakeFor", "error", err)
 		return err

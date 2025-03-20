@@ -8,16 +8,11 @@ import (
 	"fmt"
 	"io"
 	"math/big"
-	"math/bits"
 	"net/http"
 	"os"
 	"strings"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cometbft/cometbft/crypto"
-	"github.com/cometbft/cometbft/crypto/merkle"
-	"github.com/cometbft/cometbft/crypto/secp256k1"
-	"github.com/cometbft/cometbft/crypto/tmhash"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/input"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
@@ -56,111 +51,6 @@ func GetFromAddress(cliCtx client.Context) string {
 
 func init() {
 	Client = &http.Client{}
-}
-
-// GetPubObjects returns PubKeySecp256k1 public key
-func GetPubObjects(pubkey crypto.PubKey) secp256k1.PubKey {
-	var pubObject secp256k1.PubKey
-
-	cdc.MustUnmarshalBinaryBare(pubkey.Bytes(), &pubObject)
-
-	return pubObject
-}
-
-// GetMerkleProofList return proof array
-// each proof has one byte for direction: 0x0 for left and 0x1 for right
-func GetMerkleProofList(proof *merkle.Proof) [][]byte {
-	var result [][]byte
-	computeHashFromAunts(proof.Index, proof.Total, proof.LeafHash, proof.Aunts, &result)
-
-	return result
-}
-
-// AppendBytes appends bytes
-func AppendBytes(data ...[]byte) []byte {
-	var result []byte
-	for _, v := range data {
-		result = append(result, v[:]...)
-	}
-
-	return result
-}
-
-// Use the leafHash and innerHashes to get the root merkle hash.
-// If the length of the innerHashes slice isn't exactly correct, the result is nil.
-// Recursive impl.
-func computeHashFromAunts(index int64, total int64, leafHash []byte, innerHashes [][]byte, newInnerHashes *[][]byte) []byte {
-	if index >= total || index < 0 || total <= 0 {
-		return nil
-	}
-
-	switch total {
-	case 1:
-		if len(innerHashes) != 0 {
-			return nil
-		}
-
-		return leafHash
-	default:
-		if len(innerHashes) == 0 {
-			return nil
-		}
-
-		numLeft := getSplitPoint(total)
-		if index < numLeft {
-			leftHash := computeHashFromAunts(index, numLeft, leafHash, innerHashes[:len(innerHashes)-1], newInnerHashes)
-			if leftHash == nil {
-				return nil
-			}
-
-			*newInnerHashes = append(*newInnerHashes, append(rightPrefix, innerHashes[len(innerHashes)-1]...))
-
-			return innerHash(leftHash, innerHashes[len(innerHashes)-1])
-		}
-
-		rightHash := computeHashFromAunts(index-numLeft, total-numLeft, leafHash, innerHashes[:len(innerHashes)-1], newInnerHashes)
-		if rightHash == nil {
-			return nil
-		}
-
-		*newInnerHashes = append(*newInnerHashes, append(leftPrefix, innerHashes[len(innerHashes)-1]...))
-
-		return innerHash(innerHashes[len(innerHashes)-1], rightHash)
-	}
-}
-
-//
-// Inner functions
-//
-
-// getSplitPoint returns the largest power of 2 less than length
-func getSplitPoint(length int64) int64 {
-	if length < 1 {
-		panic("Trying to split a tree with size < 1")
-	}
-
-	uLength := uint(length)
-	bitlen := bits.Len(uLength)
-
-	k := 1 << uint(bitlen-1)
-	if k == int(length) {
-		k >>= 1
-	}
-
-	return int64(k)
-}
-
-// TODO: make these have a large predefined capacity
-var (
-	innerPrefix = []byte{1}
-
-	leftPrefix  = []byte{0}
-	rightPrefix = []byte{1}
-)
-
-// returns tmhash(0x01 || left || right)
-func innerHash(left []byte, right []byte) []byte {
-	return tmhash.Sum(append(innerPrefix, append(left, right...)...))
 }
 
 // ToBytes32 is a convenience method for converting a byte slice to a fix
@@ -433,18 +323,4 @@ func SecureRandomInt(minValue, maxLimit int64) (int64, error) {
 	nBig.Add(nBig, minBig)
 
 	return nBig.Int64(), nil
-}
-
-func GetSignature(signMode signing.SignMode, accSeq uint64) signing.SignatureV2 {
-	cosmosPrivKey := cosmossecp256k1.PrivKey{Key: GetPrivKey()}
-
-	sig := signing.SignatureV2{
-		PubKey: cosmosPrivKey.PubKey(),
-		Data: &signing.SingleSignatureData{
-			SignMode: signMode,
-		},
-		Sequence: accSeq,
-	}
-
-	return sig
 }

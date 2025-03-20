@@ -9,16 +9,16 @@ import (
 	"strings"
 	"time"
 
+	logger "cosmossdk.io/log"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
-	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
-	logger "github.com/cometbft/cometbft/libs/log"
 	"github.com/cometbft/cometbft/privval"
-	cmTypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
@@ -31,12 +31,10 @@ import (
 const (
 	CometBFTNodeFlag       = "node"
 	WithHeimdallConfigFlag = "app"
-	HomeFlag               = "home"
 	RestServerFlag         = "rest-server"
 	BridgeFlag             = "bridge"
 	AllProcessesFlag       = "all"
 	OnlyProcessesFlag      = "only"
-	LogLevel               = "log_level"
 	LogsWriterFileFlag     = "logs_writer_file"
 	SeedsFlag              = "seeds"
 
@@ -44,7 +42,7 @@ const (
 	MumbaiChain = "mumbai"
 	AmoyChain   = "amoy"
 
-	// heimdall-config flags
+	// app config flags
 
 	MainRPCUrlFlag  = "eth_rpc_url"
 	BorRPCUrlFlag   = "bor_rpc_url"
@@ -85,7 +83,6 @@ const (
 	// DefaultAmqpURL represents default AMQP url
 	DefaultAmqpURL           = "amqp://guest:guest@localhost:5672/"
 	DefaultHeimdallServerURL = "tcp://localhost:1317"
-	DefaultGRPCServerURL     = "http://0.0.0.0:1318"
 
 	DefaultCometBFTNodeURL = "http://0.0.0.0:26657"
 
@@ -117,35 +114,21 @@ const (
 
 	DefaultCometBFTNode = "tcp://localhost:26657"
 
-	// TODO HV2: https://polygon.atlassian.net/browse/POS-2763
-
-	DefaultMainnetSeeds       = "1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656"
+	DefaultMainnetSeeds     = "e019e16d4e376723f3adc58eb1761809fea9bee0@35.234.150.253:26656,7f3049e88ac7f820fd86d9120506aaec0dc54b27@34.89.75.187:26656,1f5aff3b4f3193404423c3dd1797ce60cd9fea43@34.142.43.249:26656,2d5484feef4257e56ece025633a6ea132d8cadca@35.246.99.203:26656,17e9efcbd173e81a31579310c502e8cdd8b8ff2e@35.197.233.240:26656,72a83490309f9f63fdca3a0bef16c290e5cbb09c@35.246.95.65:26656,00677b1b2c6282fb060b7bb6e9cc7d2d05cdd599@34.105.180.11:26656,721dd4cebfc4b78760c7ee5d7b1b44d29a0aa854@34.147.169.102:26656,4760b3fc04648522a0bcb2d96a10aadee141ee89@34.89.55.74:26656"
+	DefaultAmoyTestnetSeeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
+	// Deprecated: Mumbai Testnet is deprecated
 	DefaultMumbaiTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
-	DefaultAmoyTestnetSeeds   = "eb57fffe96d74312963ced94a94cbaf8e0d8ec2e@54.217.171.196:26656,080dcdffcc453367684b61d8f3ce032f357b0f73@13.251.184.185:26656"
 
 	secretFilePerm = 0o600
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hardfork
 	MaxStateSyncSize = 30000
-
-	// MilestoneLength is minimum supported length of milestone
-	MilestoneLength = uint64(12)
-
-	BorChainMilestoneConfirmation = uint64(16)
-
-	// MilestoneBufferLength defines the condition to propose the
-	// milestoneTimeout if this many bor blocks have passed since
-	// the last milestone
-	MilestoneBufferLength = MilestoneLength * 5
-	MilestoneBufferTime   = 256 * time.Second
 )
-
-var DefaultNodeHome = os.ExpandEnv("$HOME/var/lib/heimdall")
 
 var cdc = amino.NewCodec()
 
 func init() {
-	Logger = logger.NewTMLogger(logger.NewSyncWriter(os.Stdout))
+	Logger = logger.NewLogger(os.Stdout, logger.LevelOption(zerolog.InfoLevel))
 }
 
 // CustomConfig represents heimdall config
@@ -164,9 +147,9 @@ type CustomConfig struct {
 
 	AmqpURL string `mapstructure:"amqp_url"` // amqp url
 
-	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction. eg....submit checkpoint.
+	MainchainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainchain transaction, e.g. submit checkpoint.
 
-	MainchainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max gas price to mainchain transaction. eg....submit checkpoint.
+	MainchainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max gas price to mainchain transaction, e.g. submit checkpoint.
 
 	// config related to bridge
 	CheckpointPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
@@ -219,11 +202,6 @@ var pubKeyObject secp256k1.PubKey
 // Logger stores global logger object
 var Logger logger.Logger
 
-// GenesisDoc contains the genesis file
-var GenesisDoc cmTypes.GenesisDoc
-
-var milestoneBorBlockHeight uint64 = 0
-
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -244,7 +222,7 @@ var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigr
 func InitHeimdallConfig(homeDir string) {
 	if strings.Compare(homeDir, "") == 0 {
 		// get home dir from viper
-		homeDir = viper.GetString(HomeFlag)
+		homeDir = viper.GetString(flags.FlagHome)
 	}
 
 	// get heimdall config filepath from viper/cobra flag
@@ -256,9 +234,10 @@ func InitHeimdallConfig(homeDir string) {
 
 // InitHeimdallConfigWith initializes passed heimdall/tendermint config files
 func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
+	var err error
+
 	if strings.Compare(homeDir, "") == 0 {
-		Logger.Error("home directory is mentioned")
-		return
+		panic("home directory is not specified")
 	}
 
 	if strings.Compare(conf.Custom.BorRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorGRPCUrl, "") != 0 || strings.Compare(conf.Custom.BorEngineUrl, "") != 0 {
@@ -279,12 +258,12 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// Handle errors reading the config file
-	if err := heimdallViper.ReadInConfig(); err != nil {
+	if err = heimdallViper.ReadInConfig(); err != nil {
 		log.Fatal(err)
 	}
 
 	// unmarshal configuration from the standard configuration file
-	if err := heimdallViper.UnmarshalExact(&conf); err != nil {
+	if err = heimdallViper.UnmarshalExact(&conf); err != nil {
 		log.Fatalln("unable to unmarshall config", "Error", err)
 	}
 
@@ -293,7 +272,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		heimdallViperFromFlag := viper.New()
 		heimdallViperFromFlag.SetConfigFile(heimdallConfigFileFromFlag) // set flag config file explicitly
 
-		err := heimdallViperFromFlag.ReadInConfig()
+		err = heimdallViperFromFlag.ReadInConfig()
 		if err != nil { // Handle errors reading the config file sybmitted as a flag
 			log.Fatalln("unable to read config file submitted via flag", "Error", err)
 		}
@@ -308,16 +287,22 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	}
 
 	// update configuration data with submitted flags
-	if err := conf.UpdateWithFlags(viper.GetViper(), Logger); err != nil {
+	if err = conf.UpdateWithFlags(viper.GetViper(), Logger); err != nil {
 		log.Fatalln("unable to read flag values. Check log for details.", "Error", err)
 	}
 
 	// perform check for json logging
+	logLevelStr := viper.GetString(flags.FlagLogLevel)
+	logLevel, err := zerolog.ParseLevel(logLevelStr)
+	if err != nil {
+		// Default to info in case of error
+		logLevel = zerolog.InfoLevel
+	}
 	if conf.Custom.LogsType == "json" {
-		Logger = logger.NewTMJSONLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
+		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel), logger.OutputJSONOption())
 	} else {
 		// default fallback
-		Logger = logger.NewTMLogger(logger.NewSyncWriter(GetLogsWriter(conf.Custom.LogsWriterFile)))
+		Logger = logger.NewLogger(GetLogsWriter(conf.Custom.LogsWriterFile), logger.LevelOption(logLevel))
 	}
 
 	// perform checks for timeout
@@ -351,7 +336,6 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		conf.Custom.SHMaxDepthDuration = DefaultSHMaxDepthDuration
 	}
 
-	var err error
 	if mainRPCClient, err = rpc.Dial(conf.Custom.EthRPCUrl); err != nil {
 		log.Fatalln("Unable to dial via ethClient", "URL", conf.Custom.EthRPCUrl, "chain", "eth", "error", err)
 	}
@@ -489,11 +473,6 @@ func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
 }
 
-// GetMilestoneBorBlockHeight returns milestoneBorBlockHeight
-func GetMilestoneBorBlockHeight() uint64 {
-	return milestoneBorBlockHeight
-}
-
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
@@ -505,13 +484,13 @@ func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigrati
 	return result, found
 }
 
-// DecorateWithHeimdallFlags adds persistent flags for heimdall-config and bind flags with command
+// DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command
 func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, caller string) {
-	// add with-heimdall-config flag
+	// add with-app-config flag
 	cmd.PersistentFlags().String(
 		WithHeimdallConfigFlag,
 		"",
-		"Override of Heimdall config file (default <home>/config/config.json)",
+		"Override of Heimdall app config file (default <home>/config/config.json)",
 	)
 
 	if err := v.BindPFlag(WithHeimdallConfigFlag, cmd.PersistentFlags().Lookup(WithHeimdallConfigFlag)); err != nil {
@@ -1048,7 +1027,7 @@ func InitTestHeimdallConfig(chain string) {
 
 	SetTestConfig(customAppConf)
 
-	privKeyObject = cmtcrypto.GenPrivKey()
+	privKeyObject = secp256k1.GenPrivKey()
 	pubKeyObject = privKeyObject.PubKey().(secp256k1.PubKey)
 }
 

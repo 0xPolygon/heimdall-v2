@@ -18,10 +18,13 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 type HeimdallMetadata struct {
@@ -36,16 +39,13 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		start := time.Now()
 		logger.Info("🕒 Start PrepareProposal:", "height", req.Height, "momentTime", time.Now().Format("04:05.000000"))
 
-		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
+		if err := ValidateVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, req.LocalLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Error occurred while validating VEs in PrepareProposal", err)
 			return nil, err
 		}
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
-			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return nil, err
-			}
 		}
 
 		// prepare the proposal with the vote extensions and the validators set's votes
@@ -219,8 +219,12 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// validate the vote extensions
+<<<<<<< HEAD
 		if err := ValidateVoteExtensions(ctx, req.Height, req.ProposerAddress, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			app.currBlockChan <- nextELBlockCtx{height: executionState.LatestBlockNumber + 1, context: ctx}
+=======
+		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
+>>>>>>> develop
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
@@ -392,25 +396,35 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			}
 		}
 
-		// prepare the response with votes, block height and block hash
-		consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
-			SideTxResponses: sideTxRes,
-			Height:          req.Height,
-			BlockHash:       req.Hash,
+		vt := sidetxs.VoteExtension{
+			Height:               req.Height,
+			BlockHash:            req.Hash,
+			SideTxResponses:      sideTxRes,
+			MilestoneProposition: nil,
 		}
 
-		bz, err = consolidatedSideTxRes.Marshal()
+		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, &app.caller, req.Height)
 		if err != nil {
-			logger.Error("Error occurred while marshalling the ConsolidatedSideTxResponse in ExtendVoteHandler", "error", err)
+			logger.Error("Error occurred while generating milestone proposition", "error", err)
+			// We still want to participate in the consensus even if we fail to generate the milestone proposition
+		} else if milestoneProp != nil {
+			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {
+				logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "milestoneProp", milestoneProp)
+				// We don't want to halt consensus because of invalid milestone proposition
+			} else {
+				vt.MilestoneProposition = milestoneProp
+				logger.Debug("Proposed milestone", "hash", strutil.HashesToString(milestoneProp.BlockHashes), "startBlock", milestoneProp.StartBlockNumber, "endBlock", milestoneProp.StartBlockNumber+uint64(len(milestoneProp.BlockHashes)))
+			}
+		}
+
+		bz, err = vt.Marshal()
+		if err != nil {
+			logger.Error("Error occurred while marshalling the VoteExtension in ExtendVoteHandler", "error", err)
 			return nil, err
 		}
 
 		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
-			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: dummyVoteExt}, nil
-			}
-			return nil, err
 		}
 
 		duration := time.Since(start)
@@ -439,35 +453,37 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return nil, err
 		}
 
-		var consolidatedSideTxResponse sidetxs.ConsolidatedSideTxResponse
-		if err := proto.Unmarshal(req.VoteExtension, &consolidatedSideTxResponse); err != nil {
+		var voteExtension sidetxs.VoteExtension
+		if err := proto.Unmarshal(req.VoteExtension, &voteExtension); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS! Error while unmarshalling VoteExtension", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		// ensure block height and hash match
-		if req.Height != consolidatedSideTxResponse.Height {
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block height", req.Height, "consolidatedSideTxResponse height", consolidatedSideTxResponse.Height, "validator", valAddr)
+		if req.Height != voteExtension.Height {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block height", req.Height, "consolidatedSideTxResponse height", voteExtension.Height, "validator", valAddr)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if !bytes.Equal(req.Hash, consolidatedSideTxResponse.BlockHash) {
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block hash", common.Bytes2Hex(req.Hash), "consolidatedSideTxResponse blockHash", common.Bytes2Hex(consolidatedSideTxResponse.BlockHash), "validator", valAddr)
+		if !bytes.Equal(req.Hash, voteExtension.BlockHash) {
+			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "block hash", common.Bytes2Hex(req.Hash), "consolidatedSideTxResponse blockHash", common.Bytes2Hex(voteExtension.BlockHash), "validator", valAddr)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		// check for duplicate votes
-		txHash, err := validateSideTxResponses(consolidatedSideTxResponse.SideTxResponses)
+		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "tx hash", common.Bytes2Hex(txHash), "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
-			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
-			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
-			}
+			logger.Error("ALERT, NON-RP VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
+		}
+
+		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+			logger.Error("ALERT, MILESTONE PROPOSITION VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
+			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
 		duration := time.Since(start)
@@ -566,16 +582,86 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	validators, err := app.StakeKeeper.GetPreviousBlockValidatorSet(ctx)
+	validatorSet, err := getPreviousBlockValidatorSet(ctx, app.StakeKeeper)
 	if err != nil {
+		logger.Error("Error occurred while getting previous block validator set", "error", err)
 		return nil, err
 	}
-	if len(validators.Validators) == 0 {
-		return nil, errors.New("no validators found")
+
+	hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
+	if err != nil {
+		logger.Error("Error occurred while checking for the last milestone", "error", err)
+		return nil, err
+	}
+
+	var lastEndBlock *uint64 = nil
+	var lastEndHash []byte
+	if hasMilestone {
+		lastMilestone, err := app.MilestoneKeeper.GetLastMilestone(ctx)
+		if err != nil {
+			logger.Error("Error occurred while fetching the last milestone", "error", err)
+			return nil, err
+		}
+		lastEndBlock = &lastMilestone.EndBlock
+		lastEndHash = lastMilestone.Hash
+	}
+
+	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(
+		validatorSet,
+		extVoteInfo,
+		logger,
+		lastEndBlock,
+		lastEndHash,
+	)
+	if err != nil {
+		logger.Error("Error occurred while getting majority milestone proposition", "error", err)
+		return nil, err
+	}
+
+	isValidMilestone := false
+	if majorityMilestone != nil {
+		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
+			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
+			// We don't want to halt consensus because of invalid majority milestone proposition
+		} else {
+			isValidMilestone = true
+		}
+	}
+
+	if isValidMilestone {
+		params, err := app.ChainManagerKeeper.GetParams(ctx)
+		if err != nil {
+			logger.Error("Error occurred while getting chain manager params", "error", err)
+			return nil, err
+		}
+
+		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
+
+		logger.Debug("Adding milestone", "hashes",
+			strutil.HashesToString(majorityMilestone.BlockHashes),
+			"startBlock", majorityMilestone.StartBlockNumber,
+			"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
+			"proposer", proposer,
+		)
+
+		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
+			Proposer:    proposer,
+			Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
+			StartBlock:  majorityMilestone.StartBlockNumber,
+			EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
+			BorChainId:  params.ChainParams.BorChainId,
+			MilestoneId: common.Bytes2Hex(aggregatedProposers),
+			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
+		}); err != nil {
+			logger.Error("Error occurred while adding milestone", "error", err)
+			return nil, err
+		}
+
+		msCache.Write()
 	}
 
 	// tally votes
-	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validators.GetTotalVotingPower(), req.Height)
+	approvedTxs, _, _, err := tallyVotes(extVoteInfo, logger, validatorSet.GetTotalVotingPower(), req.Height)
 	if err != nil {
 		logger.Error("Error occurred while tallying votes", "error", err)
 		return nil, err
@@ -594,7 +680,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip first byte because its the vote
+	checkpointTxHash := findCheckpointTx(txs, majorityExt[1:], app, logger) // skip first byte because it's the vote
 	if approvedTxsMap[checkpointTxHash] {
 		signatures := getCheckpointSignatures(majorityExt, extVoteInfo)
 		if err := app.CheckpointKeeper.SetCheckpointSignaturesTxHash(ctx, checkpointTxHash); err != nil {

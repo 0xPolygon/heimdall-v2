@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"cosmossdk.io/math"
-	"github.com/cosmos/cosmos-sdk/codec"
 	codecTypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -121,7 +120,7 @@ func traversePath(data map[string]interface{}, path string) (map[string]interfac
 }
 
 // MigrateValidators migrates multiple validators to the new format.
-func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) error {
+func MigrateValidators(validatorsInterface interface{}) error {
 	validators, ok := validatorsInterface.([]interface{})
 	if !ok {
 		return fmt.Errorf("failed to cast validators")
@@ -132,7 +131,7 @@ func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) er
 			return fmt.Errorf("failed to cast validator data at index %d", i)
 		}
 
-		if err := MigrateValidator(appCodec, validatorMap); err != nil {
+		if err := MigrateValidator(validatorMap); err != nil {
 			return fmt.Errorf("failed to migrate validator at index %d: %w", i, err)
 		}
 	}
@@ -140,7 +139,7 @@ func MigrateValidators(appCodec codec.Codec, validatorsInterface interface{}) er
 }
 
 // MigrateValidator migrates a single validator to the new format by renaming few fields and migrating the public key to proto encoding.
-func MigrateValidator(appCodec codec.Codec, validator map[string]interface{}) error {
+func MigrateValidator(validator map[string]interface{}) error {
 	if err := RenameProperty(validator, ".", "power", "voting_power"); err != nil {
 		return fmt.Errorf("failed to rename power field: %w", err)
 	}

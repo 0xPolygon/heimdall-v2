@@ -41,7 +41,7 @@ const (
 	waitDuration = 1 * time.Minute
 )
 
-// StartBridgeWithCtx starts bridge service and is able to shutdow gracefully
+// StartBridgeWithCtx starts bridge service, and it's able to shut down gracefully
 // returns service errors, if any
 func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) error {
 	// create codec
@@ -280,13 +280,6 @@ func GetStartCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			StartBridge(true)
 		},
-	}
-
-	// log level
-	startCmd.Flags().String(helper.LogLevel, "info", "Log level for bridge")
-
-	if err := viper.BindPFlag(helper.LogLevel, startCmd.Flags().Lookup(helper.LogLevel)); err != nil {
-		logger.Error("GetStartCmd | BindPFlag | logLevel", "Error", err)
 	}
 
 	startCmd.Flags().Bool("all", false, "Start all bridge services")

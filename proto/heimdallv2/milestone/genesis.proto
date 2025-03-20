@@ -1,9 +1,9 @@
 syntax = "proto3";
 package heimdallv2.milestone;
 
-import "heimdallv2/milestone/milestone.proto";
 import "amino/amino.proto";
 import "gogoproto/gogo.proto";
+import "heimdallv2/milestone/milestone.proto";
 
 option go_package = "github.com/0xPolygon/heimdall-v2/x/milestone/types";
 

@@ -1,5 +1,3 @@
-# TODO-HV2: test this script once app is ready (is this needed at all?)
-
 [Unit]
   Description=heimdalld
   StartLimitIntervalSec=500

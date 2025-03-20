@@ -1,6 +1,15 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Milestone module
+
+## Table of Contents
+
+* [Overview](#overview)
+* [Interact with the Node](#interact-with-the-node)
+  * [Tx Commands](#tx-commands)
+  * [CLI Query Commands](#cli-query-commands)
+  * [GRPC Endpoints](#grpc-endpoints)
+  * [REST Endpoints](#rest-endpoints)
+
+## Overview
 
 This module enables deterministic finality by leveraging Polygon PoS’s dual client architecture.  
 This is done using a hybrid system that utilizes Peppermint layer consensus,  
@@ -88,6 +97,140 @@ string from = 1 [
 }
 ```
 
-## CLI Commands
+## Events
 
-## REST APIs
+The milestone module emit events on its keeper:
+
+### Keeper Events
+
+Any time we `AddMilestone`, it will trigger the following events
+
+| Type      | Attribute Key |
+| --------  | ------------- |
+| milestone | proposer     |
+| milestone | hash         |
+| milestone | start_block  |
+| milestone | end_block    |
+| milestone | bor_chain_id |
+| milestone | milestone_id |
+| milestone | timestamp    |
+| milestone | number       |
+
+## Interact with the Node
+
+### Tx Commands
+
+#### Send Milestone Transaction 
+```bash
+./build/heimdalld tx milestone milestone [proposer] [startBlock] [endBlock] [hash] [borChainId] [milestoneId]
+```
+
+#### Send milestone timeout tx
+```bash
+./build/heimdalld tx milestone milestone-timeout
+```
+
+### CLI Query Commands
+
+One can run the following query commands from the milestone module:
+
+* `get-params` - Get milestone params
+* `get-count` - Get milestone count
+* `get-latest-milestone` - Get latest milestone
+* `get-milestone-by-number` - Get milestone by number
+* `get-milestone-proposer` - Get milestone proposer
+* `get-latest-no-ack-milestone` - Get latest no ack milestone
+* `get-no-ack-milestone-by-id` - Get no ack milestone by id
+
+```bash
+./build/heimdalld query milestone get-params
+```
+
+```bash
+./build/heimdalld query milestone get-count
+```
+
+```bash
+./build/heimdalld query milestone get-latest-milestone
+```
+
+```bash
+./build/heimdalld query milestone get-milestone-by-number
+```
+
+```bash
+./build/heimdalld query milestone get-milestone-proposer
+```
+
+```bash
+./build/heimdalld query milestone get-latest-no-ack-milestone
+```
+
+```bash
+./build/heimdalld query milestone get-no-ack-milestone-by-id
+```
+
+### GRPC Endpoints
+
+The endpoints and the params are defined in the [milestone/query.proto](/proto/heimdallv2/milestone/query.proto) file. Please refer them for more information about the optional params.
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetMilestoneParams
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetMilestoneCount
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetLatestMilestone
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetMilestoneByNumber
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetMilestoneProposerByTimes
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetLatestNoAckMilestone
+```
+
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetNoAckMilestoneById
+```
+
+### REST APIs
+
+The endpoints and the params are defined in the [milestone/query.proto](/proto/heimdallv2/milestone/query.proto) file. Please refer them for more information about the optional params.
+
+```bash
+curl localhost:1317/milestone/params
+```
+
+```bash
+curl localhost:1317/milestone/count
+```
+
+```bash
+curl localhost:1317/milestone/latest
+```
+
+```bash
+curl localhost:1317/milestone/{number}
+```
+
+```bash
+curl localhost:1317/milestone/proposer/{times}
+```
+
+```bash
+curl localhost:1317/milestone/last-no-ack
+```
+
+```bash
+curl localhost:1317/milestone/no-ack/{id}
+```
+

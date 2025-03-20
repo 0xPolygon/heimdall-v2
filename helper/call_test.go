@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/x/auth/signing"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,7 +30,7 @@ func TestCheckpointSigs(t *testing.T) {
 	t.Parallel()
 
 	viper.Set(CometBFTNodeFlag, testCometBFTNode)
-	viper.Set("log_level", "info")
+	viper.Set(flags.FlagLogLevel, "info")
 	InitTestHeimdallConfig("")
 
 	contractCallerObj, err := NewContractCaller()
@@ -103,6 +104,7 @@ func TestPopulateABIs(t *testing.T) {
 		t.Error("Error creating contract caller")
 	}
 
+	assert.NotNil(t, &contractCallerObjFirst)
 	assert.Equalf(t, ContractsABIsMap[rootchain.RootchainMetaData.ABI], &contractCallerObjFirst.RootChainABI,
 		"values for %s not equals", rootchain.RootchainMetaData.ABI)
 	assert.Equalf(t, ContractsABIsMap[stakinginfo.StakinginfoMetaData.ABI], &contractCallerObjFirst.StakingInfoABI,
@@ -141,6 +143,7 @@ func TestPopulateABIs(t *testing.T) {
 	if err != nil {
 		t.Log("Error creating contract caller")
 	}
+	assert.NotNil(t, &contractCallerObjSecond)
 
 	assert.Equalf(t, ContractsABIsMap[rootchain.RootchainMetaData.ABI], &contractCallerObjSecond.RootChainABI,
 		"values for %s not equals", rootchain.RootchainMetaData.ABI)

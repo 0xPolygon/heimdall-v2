@@ -360,7 +360,7 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 
 	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer)
 	require.Equal(newSigner[0].Signer, newVal.Signer, "Signer address should be update")
-	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubkey should should be updated")
+	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubKey should should be updated")
 
 	require.Equal(prevValSet.GetTotalVotingPower(), currentValSet.GetTotalVotingPower(), "Total VotingPower should not change")
 }
@@ -573,109 +573,4 @@ func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
 
 	validators := keeper.GetSpanEligibleValidators(ctx)
 	require.LessOrEqual(len(validators), 4)
-}
-
-func (s *KeeperTestSuite) TestGetMilestoneProposer() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
-
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	currentValSet1, err := keeper.GetMilestoneValidatorSet(ctx)
-	require.NoError(err)
-
-	currentMilestoneProposer := keeper.GetMilestoneCurrentProposer(ctx)
-	require.Equal(currentValSet1.GetProposer(), currentMilestoneProposer)
-
-	keeper.MilestoneIncrementAccum(ctx, 1)
-
-	currentValSet2, err := keeper.GetMilestoneValidatorSet(ctx)
-	require.NoError(err)
-
-	currentMilestoneProposer = keeper.GetMilestoneCurrentProposer(ctx)
-	require.NotEqual(currentValSet1.GetProposer(), currentMilestoneProposer)
-	require.Equal(currentValSet2.GetProposer(), currentMilestoneProposer)
-}
-
-func (s *KeeperTestSuite) TestMilestoneValidatorSetIncAccumChange() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
-
-	// load 4 validators to state
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-
-	initMilestoneValSet, err := keeper.GetMilestoneValidatorSet(ctx)
-	require.NoError(err)
-
-	initMilestoneValSetProp := initMilestoneValSet.Proposer
-
-	initCheckpointValSet, err := keeper.GetValidatorSet(ctx)
-	require.NoError(err)
-
-	initCheckpointValSetProp := initCheckpointValSet.Proposer
-
-	require.Equal(initMilestoneValSetProp, initCheckpointValSetProp)
-
-	err = keeper.IncrementAccum(ctx, 1)
-	require.NoError(err)
-
-	initMilestoneValSet, err = keeper.GetMilestoneValidatorSet(ctx)
-	require.NoError(err)
-
-	initMilestoneValSetProp = initMilestoneValSet.Proposer
-
-	initCheckpointValSet, err = keeper.GetValidatorSet(ctx)
-	require.NoError(err)
-
-	initCheckpointValSetProp = initCheckpointValSet.Proposer
-
-	require.Equal(initMilestoneValSetProp, initCheckpointValSetProp)
-
-	initValSet, err := keeper.GetMilestoneValidatorSet(ctx)
-
-	keeper.MilestoneIncrementAccum(ctx, 1)
-
-	require.NotNil(initValSet)
-	initValSet.IncrementProposerPriority(1)
-	require.NotNil(initValSet)
-	_proposer := initValSet.Proposer
-
-	currentValSet, err := keeper.GetMilestoneValidatorSet(ctx)
-	require.NotNil(currentValSet)
-	proposer := currentValSet.Proposer
-
-	require.Equal(_proposer, proposer)
-}
-
-func (s *KeeperTestSuite) TestUpdateMilestoneValidatorSetChange() {
-	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
-
-	// load 4 validators to state
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
-	initValSet, err := keeper.GetMilestoneValidatorSet(ctx)
-	require.NoError(err)
-
-	keeper.MilestoneIncrementAccum(ctx, 1)
-
-	prevValSet := initValSet.Copy()
-	currentValSet, err := keeper.GetMilestoneValidatorSet(ctx)
-	require.NoError(err)
-
-	valToUpdate := currentValSet.Validators[0]
-	newSigner := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
-
-	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
-	require.NoError(err)
-
-	setUpdates := types.GetUpdatedValidators(&currentValSet, keeper.GetAllValidators(ctx), 5)
-	err = currentValSet.UpdateWithChangeSet(setUpdates)
-	require.NoError(err)
-
-	require.Equal(len(prevValSet.Validators), len(currentValSet.Validators), "Number of validators should remain same")
-
-	index, _ := currentValSet.GetByAddress(valToUpdate.Signer)
-	require.Equal(-1, index, "Prev Validator should not be present in CurrentValSet")
-
-	_, newVal := currentValSet.GetByAddress(newSigner[0].Signer)
-	require.Equal(newSigner[0].Signer, newVal.Signer, "Signer address should change")
-	require.Equal(newSigner[0].PubKey, newVal.PubKey, "Signer pubkey should change")
-
-	require.Equal(prevValSet.GetTotalVotingPower(), currentValSet.GetTotalVotingPower(), "Total VotingPower should not change")
 }

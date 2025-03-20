@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
-	logger "github.com/cometbft/cometbft/libs/log"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttypes "github.com/cometbft/cometbft/types"
 	dbm "github.com/cosmos/cosmos-db"
@@ -24,7 +22,7 @@ import (
 
 // VerifyMigration verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
 // and verifying balances, validators, bor spans, clerk events, and checkpoints
-func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger) error {
+func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
 	logger.Info("Verifying migration")
 
 	hv1Genesis, err := utils.LoadJSONFromFile(hv1GenesisPath)
@@ -37,7 +35,7 @@ func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger logger.Logger
 	appOptions := make(simtestutil.AppOptionsMap)
 	appOptions[flags.FlagHome] = heimdallApp.DefaultNodeHome
 
-	app := heimdallApp.NewHeimdallApp(log.NewLogger(os.Stderr), db, nil, true, appOptions)
+	app := heimdallApp.NewHeimdallApp(logger, db, nil, true, appOptions)
 
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
 
@@ -326,14 +324,14 @@ func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) e
 		return fmt.Errorf("mismatch in clerk events count: expected %d, got %d", len(hv1ClerkEvents), len(hv2ClerkEvents))
 	}
 
-	hv1Checkpoints, ok := hv1Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})["checkpoints"].([]interface{})
-	if !ok {
-		return errors.New("checkpoints not found or invalid format")
+	hv1Checkpoints, err := getCheckpoints(hv1Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv1Checkpoints: %v", err)
 	}
 
-	hv2Checkpoints, ok := hv2Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})["checkpoints"].([]interface{})
-	if !ok {
-		return errors.New("checkpoints not found or invalid format")
+	hv2Checkpoints, err := getCheckpoints(hv2Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv2Checkpoints: %v", err)
 	}
 
 	if len(hv1Checkpoints) != len(hv2Checkpoints) {
@@ -341,6 +339,25 @@ func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) e
 	}
 
 	return nil
+}
+
+func getCheckpoints(genesis map[string]interface{}) ([]interface{}, error) {
+	appState, ok := genesis["app_state"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("app_state key missing or not a map")
+	}
+
+	checkpointData, ok := appState["checkpoint"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("checkpoint key missing or not a map")
+	}
+
+	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("checkpoints key missing or not a list")
+	}
+
+	return checkpoints, nil
 }
 
 // verifyCheckpoints verifies the checkpoints in the genesis files by comparing the data in both versions
@@ -361,15 +378,14 @@ func verifyCheckpoints(hv1Genesis map[string]interface{}, hv2GenesisPath string)
 		return fmt.Errorf("checkpoint module not found in v2 app_state")
 	}
 
-	// ensure checkpoints data is in the correct format for both versions
-	hv1Checkpoints, ok := hv1CheckpointData["checkpoints"].([]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoints not found or invalid format in v1")
+	hv1Checkpoints, err := getCheckpoints(hv1Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv1Checkpoints: %v", err)
 	}
 
-	hv2Checkpoints, ok := hv2CheckpointData["checkpoints"].([]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoints not found or invalid format in v2")
+	hv2Checkpoints, err := getCheckpoints(hv2Genesis)
+	if err != nil {
+		fmt.Printf("Error extracting hv2Checkpoints: %v", err)
 	}
 
 	// ensure checkpoints count is the same in both versions

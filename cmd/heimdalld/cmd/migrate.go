@@ -37,7 +37,7 @@ import (
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
 	cmd := cobra.Command{
-		Use:   "migrate [genesis-file] --chain-id=[chain-id] --genesis-time=[genesis-time] --initial-height=[initial-height]",
+		Use:   "migrate [genesis-file] --chain-id=[chain-id] --genesis-time=[genesis-time] --initial-height=[initial-height] [--verify-hash=true|false]",
 		Short: "Migrate application state",
 		Long:  `Run migrations to update the application state (e.g., for a chain upgrade) based on the provided genesis file.`,
 		Args:  cobra.ExactArgs(1),
@@ -47,6 +47,7 @@ func MigrateCommand() *cobra.Command {
 	cmd.Flags().String(flagChainId, "", "The new network chain id")
 	cmd.Flags().String(flagGenesisTime, "", "The new network genesis time")
 	cmd.Flags().Uint64(flagInitialHeight, 0, "The new network initial height")
+	cmd.Flags().Bool(flagVerifyHash, true, "Enable or disable remote genesis hash verification")
 
 	if err := cmd.MarkFlagRequired(flagChainId); err != nil {
 		panic(err)
@@ -80,6 +81,11 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	verifyHash, err := cmd.Flags().GetBool(flagVerifyHash)
+	if err != nil {
+		return fmt.Errorf("failed to parse --verify-hash flag: %w", err)
+	}
+
 	flagsToCheck := []string{flagChainId, flagGenesisTime, flagInitialHeight}
 	for _, flag := range flagsToCheck {
 		if !cmd.Flags().Changed(flag) {
@@ -87,7 +93,10 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	genesisFileV1 := args[0]
+	genesisFileV1, err := filepath.Abs(args[0])
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
 
 	if _, err := os.Stat(genesisFileV1); os.IsNotExist(err) {
 		return fmt.Errorf("genesis file does not exist: %s", genesisFileV1)
@@ -106,9 +115,11 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-			logger.Error("Genesis hash verification failed", "error", err)
-			return err
+		if verifyHash {
+			if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
+				logger.Error("Genesis hash verification failed", "error", err)
+				return err
+			}
 		}
 
 		return nil
@@ -145,9 +156,11 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-		logger.Error("Genesis hash verification failed", "error", err)
-		return err
+	if verifyHash {
+		if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
+			logger.Error("Genesis hash verification failed", "error", err)
+			return err
+		}
 	}
 
 	return nil
@@ -207,7 +220,7 @@ func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string
 		return err
 	}
 
-	if err := migrateChainmanagerModule(genesisData); err != nil {
+	if err := migrateChainmanagerModule(genesisData, chainId); err != nil {
 		return err
 	}
 
@@ -217,8 +230,7 @@ func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string
 
 	genesisData["chain_id"] = chainId
 	genesisData["genesis_time"] = genesisTime
-	strInitialHeight := strconv.FormatUint(initialHeight, 10)
-	genesisData["initial_height"] = strInitialHeight
+	genesisData["initial_height"] = strconv.FormatUint(initialHeight, 10)
 
 	logger.Info("Saving migrated genesis file...", "file", genesisFileV2)
 
@@ -236,7 +248,7 @@ func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string
 func migrateStakeModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating stake module...")
 
-	// TODO HV2: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initilization we should call GetTotalVotingPower
+	// TODO HV2: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initialization we should call GetTotalVotingPower
 	// because it gets calculated if its zero
 	if err := utils.RenameProperty(genesisData, "app_state", "staking", "stake"); err != nil {
 		return fmt.Errorf("failed to rename staking module: %w", err)
@@ -256,7 +268,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to rename current_val_set field: %w", err)
 	}
 
-	if err := utils.MigrateValidators(appCodec, stakeData["validators"]); err != nil {
+	if err := utils.MigrateValidators(stakeData["validators"]); err != nil {
 		return fmt.Errorf("failed to migrate validators in stake module: %w", err)
 	}
 
@@ -265,7 +277,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to find current_validator_set in stake module")
 	}
 
-	if err := utils.MigrateValidators(appCodec, currentValidatorSet["validators"]); err != nil {
+	if err := utils.MigrateValidators(currentValidatorSet["validators"]); err != nil {
 		return fmt.Errorf("failed to migrate validators in current_validator_set: %w", err)
 	}
 
@@ -274,7 +286,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to find proposer in current_validator_set")
 	}
 
-	if err := utils.MigrateValidator(appCodec, proposer); err != nil {
+	if err := utils.MigrateValidator(proposer); err != nil {
 		return fmt.Errorf("failed to migrate proposer: %w", err)
 	}
 
@@ -284,7 +296,7 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 }
 
 // migrateChainmanagerModule renames the chainmanager module params fields to match the new naming convention.
-func migrateChainmanagerModule(genesisData map[string]interface{}) error {
+func migrateChainmanagerModule(genesisData map[string]interface{}, chainId string) error {
 	logger.Info("Migrating chainmanager module...")
 
 	chainmanagerModule, ok := genesisData["app_state"].(map[string]interface{})["chainmanager"]
@@ -309,12 +321,16 @@ func migrateChainmanagerModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to rename matic_token_address field: %w", err)
 	}
 
+	if err := utils.AddProperty(chainmanagerData, "params.chain_params", "heimdall_chain_id", chainId); err != nil {
+		return fmt.Errorf("failed to add heimdall_chain_id field: %w", err)
+	}
+
 	logger.Info("Chainmanager module migration completed successfully")
 
 	return nil
 }
 
-// migrateMilestoneModule adds genesis state for the milestone module because its not exported from heimdall v1.
+// migrateMilestoneModule adds genesis state for the milestone module because it's not exported from heimdall-v1.
 func migrateMilestoneModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating milestone module...")
 
@@ -621,44 +637,42 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 	}
 
 	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoints not found in checkpoint module")
-	}
+	if ok {
+		// Sort checkpoints by timestamp
+		sort.Slice(checkpoints, func(i, j int) bool {
+			checkpointI := checkpoints[i].(map[string]interface{})
+			checkpointJ := checkpoints[j].(map[string]interface{})
+			timestampI, _ := strconv.Atoi(checkpointI["timestamp"].(string))
+			timestampJ, _ := strconv.Atoi(checkpointJ["timestamp"].(string))
+			return timestampI < timestampJ
+		})
 
-	// Sort checkpoints by timestamp
-	sort.Slice(checkpoints, func(i, j int) bool {
-		checkpointI := checkpoints[i].(map[string]interface{})
-		checkpointJ := checkpoints[j].(map[string]interface{})
-		timestampI, _ := strconv.Atoi(checkpointI["timestamp"].(string))
-		timestampJ, _ := strconv.Atoi(checkpointJ["timestamp"].(string))
-		return timestampI < timestampJ
-	})
+		for i, checkpoint := range checkpoints {
+			checkpointMap, ok := checkpoint.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("invalid checkpoint format at index %d", i)
+			}
 
-	for i, checkpoint := range checkpoints {
-		checkpointMap, ok := checkpoint.(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("invalid checkpoint format at index %d", i)
+			rootHashHex, ok := checkpointMap["root_hash"].(string)
+			if !ok {
+				return fmt.Errorf("root_hash not found in checkpoint at index %d", i)
+			}
+
+			if !strings.HasPrefix(rootHashHex, "0x") {
+				return fmt.Errorf("invalid root_hash format at index %d", i)
+			}
+
+			rootHashHex = rootHashHex[2:]
+
+			rootHashBytes, err := hex.DecodeString(rootHashHex)
+			if err != nil {
+				return fmt.Errorf("failed to decode root_hash at index %d: %w", i, err)
+			}
+
+			rootHashBase64 := base64.StdEncoding.EncodeToString(rootHashBytes)
+
+			checkpointMap["root_hash"] = rootHashBase64
 		}
-
-		rootHashHex, ok := checkpointMap["root_hash"].(string)
-		if !ok {
-			return fmt.Errorf("root_hash not found in checkpoint at index %d", i)
-		}
-
-		if !strings.HasPrefix(rootHashHex, "0x") {
-			return fmt.Errorf("invalid root_hash format at index %d", i)
-		}
-
-		rootHashHex = rootHashHex[2:]
-
-		rootHashBytes, err := hex.DecodeString(rootHashHex)
-		if err != nil {
-			return fmt.Errorf("failed to decode root_hash at index %d: %w", i, err)
-		}
-
-		rootHashBase64 := base64.StdEncoding.EncodeToString(rootHashBytes)
-
-		checkpointMap["root_hash"] = rootHashBase64
 	}
 
 	// Iterate over ack_count and assign checkpoint id
@@ -721,15 +735,11 @@ func migrateBorModule(genesisData map[string]interface{}) error {
 			return fmt.Errorf("failed to cast span data")
 		}
 
-		if err := utils.RenameProperty(spanMap, ".", "bor_chain_id", "chain_id"); err != nil {
-			return fmt.Errorf("failed to rename bor_chain_id field: %w", err)
-		}
-
 		if err := utils.RenameProperty(spanMap, ".", "span_id", "id"); err != nil {
 			return fmt.Errorf("failed to rename bor_chain_id field: %w", err)
 		}
 
-		if err := utils.MigrateValidators(appCodec, spanMap["selected_producers"]); err != nil {
+		if err := utils.MigrateValidators(spanMap["selected_producers"]); err != nil {
 			return fmt.Errorf("failed to migrate selected_producers in span: %w", err)
 		}
 
@@ -740,12 +750,12 @@ func migrateBorModule(genesisData map[string]interface{}) error {
 
 		proposer, _ := validatorSet["proposer"].(map[string]interface{})
 		if proposer != nil {
-			if err := utils.MigrateValidator(appCodec, proposer); err != nil {
+			if err := utils.MigrateValidator(proposer); err != nil {
 				return fmt.Errorf("failed to migrate proposer: %w", err)
 			}
 		}
 
-		if err := utils.MigrateValidators(appCodec, validatorSet["validators"]); err != nil {
+		if err := utils.MigrateValidators(validatorSet["validators"]); err != nil {
 			return fmt.Errorf("failed to migrate validators in validator_set: %w", err)
 		}
 	}
@@ -820,7 +830,7 @@ func addMissingCometBFTConsensusParams(genesisData map[string]interface{}, initi
 		return err
 	}
 
-	if err := utils.AddProperty(genesisData, "consensus_params.evidence", "max_bytes", "1048576"); err != nil {
+	if err := utils.AddProperty(genesisData, "consensus_params.evidence", "max_bytes", "10240"); err != nil {
 		return err
 	}
 
@@ -836,25 +846,21 @@ func addMissingCometBFTConsensusParams(genesisData map[string]interface{}, initi
 		return err
 	}
 
-	if err := utils.AddProperty(genesisData, "consensus_params", "params", make(map[string]interface{})); err != nil {
-		return err
-	}
-
 	validatorParams := make(map[string]interface{})
 	validatorParams["pub_key_types"] = []interface{}{"secp256k1"}
-	if err := utils.AddProperty(genesisData, "consensus_params.params", "validator", validatorParams); err != nil {
+	if err := utils.AddProperty(genesisData, "consensus_params", "validator", validatorParams); err != nil {
 		return err
 	}
 
 	versionParams := make(map[string]interface{})
 	versionParams["app"] = "0"
-	if err := utils.AddProperty(genesisData, "consensus_params.params", "version", versionParams); err != nil {
+	if err := utils.AddProperty(genesisData, "consensus_params", "version", versionParams); err != nil {
 		return err
 	}
 
 	abciParams := make(map[string]interface{})
-	abciParams["vote_extensions_enable_height"] = strconv.FormatUint(initialHeight+1, 10)
-	if err := utils.AddProperty(genesisData, "consensus_params.params", "abci", abciParams); err != nil {
+	abciParams["vote_extensions_enable_height"] = strconv.FormatUint(initialHeight, 10)
+	if err := utils.AddProperty(genesisData, "consensus_params", "abci", abciParams); err != nil {
 		return err
 	}
 
@@ -868,10 +874,6 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	logger.Info("Removing unused Tendermint consensus parameters...")
 
 	if err := utils.DeleteProperty(genesisData, "consensus_params.evidence", "max_age"); err != nil {
-		return err
-	}
-
-	if err := utils.DeleteProperty(genesisData, "consensus_params.block", "time_iota_ms"); err != nil {
 		return err
 	}
 
@@ -889,4 +891,5 @@ const (
 	flagChainId       = "chain-id"
 	flagGenesisTime   = "genesis-time"
 	flagInitialHeight = "initial-height"
+	flagVerifyHash    = "verify-hash"
 )

@@ -4,12 +4,19 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
+)
+
+const (
+	defaultPageLimit          = 1
+	defaultRecordListLimit    = 50
+	maxRecordListLimitPerPage = 1000
 )
 
 var _ types.QueryServer = queryServer{}
@@ -43,6 +50,14 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	if request.Page == 0 {
+		request.Page = defaultPageLimit
+	}
+
+	if request.Limit == 0 {
+		request.Limit = defaultRecordListLimit
+	}
+
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -59,15 +74,29 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	records, err := q.k.GetEventRecordListWithTime(ctx, request.FromTime, request.ToTime, request.Page, request.Limit)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
+		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
 	}
 
-	newRecords := make([]types.EventRecord, len(records))
-	copy(newRecords, records)
+	res, _, err := query.CollectionPaginate(
+		ctx,
+		q.k.RecordsWithID,
+		&request.Pagination, func(id uint64, record types.EventRecord) (*types.EventRecord, error) {
+			return q.k.GetEventRecord(ctx, id)
+		},
+	)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+	}
 
-	return &types.RecordListWithTimeResponse{EventRecords: newRecords}, nil
+	records := make([]types.EventRecord, 0, len(res))
+	for _, r := range res {
+		if r.Id >= request.FromId && r.RecordTime.Before(request.ToTime) {
+			records = append(records, *r)
+		}
+	}
+
+	return &types.RecordListWithTimeResponse{EventRecords: records}, nil
 }
 
 func (q queryServer) GetRecordSequence(ctx context.Context, request *types.RecordSequenceRequest) (*types.RecordSequenceResponse, error) {
@@ -126,4 +155,12 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 	}
 
 	return &types.IsClerkTxOldResponse{IsOld: true}, nil
+}
+
+func isPaginationEmpty(p query.PageRequest) bool {
+	return p.Key == nil &&
+		p.Offset == 0 &&
+		p.Limit == 0 &&
+		!p.CountTotal &&
+		!p.Reverse
 }

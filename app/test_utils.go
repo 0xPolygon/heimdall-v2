@@ -136,7 +136,7 @@ func setupAppWithValidatorSet(t *testing.T, validatorPrivKeys []cmtcrypto.PrivKe
 	_, err = app.InitChain(req)
 	require.NoError(t, err)
 
-	vals := []stakeTypes.Validator{}
+	vals := make([]stakeTypes.Validator, 0, len(validators))
 	for _, val := range validators {
 		vals = append(vals, *val)
 	}
@@ -159,7 +159,7 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 	t.Helper()
 	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
 	require.NoError(t, err)
-	consolidatedSideTxRes := sidetxs.ConsolidatedSideTxResponse{
+	consolidatedSideTxRes := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{},
 		Height:          height - 1,
 	}
@@ -211,7 +211,7 @@ func mustMarshalSideTxResponses(t *testing.T, respVotes ...[]sidetxs.SideTxRespo
 		responses = append(responses, r...)
 	}
 
-	sideTxResponses := sidetxs.ConsolidatedSideTxResponse{
+	sideTxResponses := sidetxs.VoteExtension{
 		SideTxResponses: responses,
 		Height:          VoteExtBlockHeight,
 	}

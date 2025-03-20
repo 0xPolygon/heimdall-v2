@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	logger "github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 )
 
 const (
@@ -22,7 +22,7 @@ const (
 
 // VerifyMigratedGenesisHash verifies the SHA256 hash of the migrated genesis file against a remote precomputed hash.
 // It computes the hash of the local file, fetches the precomputed hash from the remote JSON file, then compares the two hashes.
-func VerifyMigratedGenesisHash(migratedGenesisFilePath string, logger logger.Logger) error {
+func VerifyMigratedGenesisHash(migratedGenesisFilePath string, logger log.Logger) error {
 	logger.Info("Generating migrated genesis hash...")
 
 	localHash, err := computeFileHash(migratedGenesisFilePath)

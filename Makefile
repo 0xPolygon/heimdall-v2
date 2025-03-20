@@ -9,7 +9,7 @@ DOCKER := $(shell which docker)
 
 PACKAGE_NAME := github.com/0xPolygon/heimdall-v2
 HTTPS_GIT := https://$(PACKAGE_NAME).git
-GOLANG_CROSS_VERSION  ?= v1.23.2
+GOLANG_CROSS_VERSION  ?= v1.23.6
 
 # Fetch git latest tag
 LATEST_GIT_TAG:=$(shell git describe --tags $(git rev-list --tags --max-count=1))
@@ -29,22 +29,42 @@ ldflags = -X github.com/0xPolygon/heimdall-v2/version.Name=heimdall \
 
 BUILD_FLAGS := -ldflags '$(ldflags)'
 
+###############################################################################
+###	                      Build, Test and Clean								###
+###############################################################################
+
 .PHONY: clean
 clean:
 	rm -rf build
 
-heimdalld: clean
+.PHONY: build
+build: clean
 	mkdir -p build
 	go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
+	@echo "====================================================\n==================Build Successful==================\n===================================================="
+
+.PHONY: build-arm
+build-arm: clean
+	mkdir -p build
+	env CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-g++ go build $(BUILD_FLAGS) -o build/heimdalld ./cmd/heimdalld
 	@echo "====================================================\n==================Build Successful==================\n===================================================="
 
 test:
 	go test ./...
 
+
+###############################################################################
+###	                      Checks and Linters								###
+###############################################################################
+
+.PHONY: vulncheck
+vulncheck:
+	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.61.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.63.4
 
 .PHONY: lint
 lint:
@@ -90,7 +110,6 @@ mock:
 	mockgen -source=x/bor/types/expected_keepers.go -destination=x/bor/testutil/expected_keepers_mocks.go  -package=testutil
 	mockgen -source=x/checkpoint/types/expected_keepers.go -destination=x/checkpoint/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/clerk/types/expected_keepers.go -destination=x/clerk/testutil/expected_keepers_mocks.go -package=testutil
-	mockgen -source=x/milestone/types/expected_keepers.go -destination=x/milestone/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/stake/types/expected_keepers.go -destination=x/stake/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -source=x/topup/types/expected_keepers.go -destination=x/topup/testutil/expected_keepers_mocks.go -package=testutil
 	mockgen -destination=helper/mocks/i_http_client.go -package=mocks --source=./helper/util.go HTTPClient
@@ -103,12 +122,12 @@ mock:
 ###                                docker                                   ###
 ###############################################################################
 
-build-docker: # TODO-HV2: check this command once we have a proper docker build
+build-docker:
 	@echo Fetching latest tag: $(LATEST_GIT_TAG)
 	git checkout $(LATEST_GIT_TAG)
 	docker build -t "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)" -f Dockerfile .
 
-push-docker: # TODO-HV2: check this command once we have a proper docker push
+push-docker:
 	@echo Pushing docker tag image: $(LATEST_GIT_TAG)
 	docker push "0xpolygon/heimdall-v2:$(LATEST_GIT_TAG)"
 
@@ -116,7 +135,7 @@ push-docker: # TODO-HV2: check this command once we have a proper docker push
 ###                                release                                  ###
 ###############################################################################
 
-.PHONY: release-dry-run # TODO-HV2: check this command once we have a proper release process
+.PHONY: release-dry-run
 release-dry-run:
 	@docker run \
 		--platform linux/amd64 \
@@ -132,13 +151,14 @@ release-dry-run:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		--rm-dist --skip-validate --skip-publish
+		--clean --skip=validate,publish
 
-.PHONY: release # TODO-HV2: check this command once we have a proper release process
+.PHONY: release
 release:
 	@docker run \
 		--rm \
 		--privileged \
+		-e main=./cmd/heimdalld \
 		-e CGO_ENABLED=1 \
 		-e GITHUB_TOKEN \
 		-e DOCKER_USERNAME \
@@ -149,7 +169,7 @@ release:
 		-v `pwd`:/go/src/$(PACKAGE_NAME) \
 		-w /go/src/$(PACKAGE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_CROSS_VERSION} \
-		--rm-dist --skip-validate
+		--clean --skip=validate
 
 ###############################################################################
 ###                                Engine API POC                           ###
@@ -195,13 +215,18 @@ engine-api-poc-install-test:
 	ARCH=$(ARCH) npm install -g pandoras-box
 .PHONY: engine-api-poc-test
 
+###############################################################################
+###	                      			Help									###
+###############################################################################
+
 .PHONY: help
 help:
 	@echo "Available targets:"
 	@echo "  lint-deps           	- Install dependencies for GolangCI-Lint tool."
 	@echo "  lint                	- Run the GolangCI-Lint tool on the codebase."
 	@echo "  clean               	- Delete build folder."
-	@echo "  heimdalld              - Compiles the Heimdall binaries."
+	@echo "  build              	- Compiles the Heimdall binaries."
+	@echo "  build-arm           	- Compiles the Heimdall binaries for ARM64 architecture."
 	@echo "  test               	- Run the tests."
 	@echo "  mock                	- Generate mocks."
 	@echo "  proto-all           	- Format, lint and generate proto files."

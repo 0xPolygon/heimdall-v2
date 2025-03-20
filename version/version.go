@@ -19,6 +19,9 @@ package version
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var (
@@ -33,6 +36,21 @@ var (
 	// Commit is the app's commit hash
 	Commit = ""
 )
+
+// heimdalldInfoGauge stores Heimdall git commit and version details.
+var heimdalldInfoGauge = promauto.NewGaugeVec(prometheus.GaugeOpts{
+	Namespace: "heimdalld",
+	Name:      "info",
+	Help:      "Heimdall commit and version details",
+}, []string{"commit", "version"})
+
+// UpdateHeimdalldInfo updates the heimdall_info metric with the current git commit and version details.
+func UpdateHeimdalldInfo() {
+	heimdalldInfoGauge.WithLabelValues(
+		Commit,
+		Version,
+	).Set(1)
+}
 
 // Info defines the application version information.
 type Info struct {

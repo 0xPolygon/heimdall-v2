@@ -308,6 +308,7 @@
     },
     "chainmanager": {
       "params": {
+        "bor_chain_tx_confirmations": "10",
         "chain_params": {
           "bor_chain_id": "15005",
           "heimdall_chain_id": "heimdall-sCCAH4",
@@ -320,8 +321,7 @@
           "state_sender_address": "0x3463e6b634e4d358b6c7212de3b1527b95bbc90c",
           "validator_set_address": "0x0000000000000000000000000000000000001000"
         },
-        "main_chain_tx_confirmations": "6",
-        "bor_chain_tx_confirmations": "10"
+        "main_chain_tx_confirmations": "6"
       }
     },
     "checkpoint": {
@@ -1547,7 +1547,7 @@
         "expedited_min_deposit": [
           {
             "denom": "pol",
-            "amount": "50000000000000000000"
+            "amount": "500000000000000000000"
           }
         ],
         "burn_vote_quorum": false,
@@ -1559,10 +1559,9 @@
     },
     "milestone": {
       "params": {
-        "min_milestone_length": "12",
-        "milestone_buffer_time": "256s",
-        "milestone_buffer_length": "60",
-        "milestone_tx_confirmations": "16"
+        "max_milestone_proposition_length": "10",
+        "ff_milestone_threshold": "1000",
+        "ff_milestone_block_interval": "100"
       }
     },
     "sidechannel": {
@@ -1661,6 +1660,9 @@
   },
   "chain_id": "heimdall-sCCAH4",
   "consensus_params": {
+    "abci": {
+      "vote_extensions_enable_height": "1"
+    },
     "block": {
       "max_bytes": "2097152",
       "max_gas": "10000000"
@@ -1668,27 +1670,17 @@
     "evidence": {
       "max_age_duration": "172800000000000",
       "max_age_num_blocks": "100000",
-      "max_bytes": "1048576"
-    },
-    "params": {
-      "abci": {
-        "vote_extensions_enable_height": "1"
-      },
-      "validator": {
-        "pub_key_types": [
-          "secp256k1"
-        ]
-      },
-      "version": {
-        "app": "0"
-      }
+      "max_bytes": "10240"
     },
     "validator": {
       "pub_key_types": [
         "secp256k1"
       ]
+    },
+    "version": {
+      "app": "0"
     }
   },
-  "genesis_time": "2024-12-18T09:48:11.342700084Z",
-  "initial_height": "0"
+  "genesis_time": "2024-09-13T08:54:11.342700084Z",
+  "initial_height": "1"
 }

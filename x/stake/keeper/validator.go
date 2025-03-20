@@ -495,58 +495,6 @@ func (k Keeper) IterateCurrentValidatorsAndApplyFn(ctx context.Context, f func(v
 	return nil
 }
 
-// MilestoneIncrementAccum increments accum for milestone validator set by n times and replace validator set in store
-func (k *Keeper) MilestoneIncrementAccum(ctx context.Context, times int) {
-	k.PanicIfSetupIsIncomplete()
-	// get milestone validator set
-	validatorSet, err := k.GetMilestoneValidatorSet(ctx)
-	if err != nil {
-		k.Logger(ctx).Error("error in fetching the milestone validator set from the db", "error", err)
-		return
-	}
-
-	// increment accum
-	validatorSet.IncrementProposerPriority(times)
-
-	if err := k.UpdateMilestoneValidatorSetInStore(ctx, validatorSet); err != nil {
-		k.Logger(ctx).Error("error in setting the milestone validator set in the db", "error", err)
-	}
-}
-
-// GetMilestoneValidatorSet returns current milestone Validator Set from store
-func (k *Keeper) GetMilestoneValidatorSet(ctx context.Context) (validatorSet types.ValidatorSet, err error) {
-	k.PanicIfSetupIsIncomplete()
-	// get the current milestone validator set
-	validatorSet, err = k.validatorSet.Get(ctx, types.CurrentMilestoneValidatorSetKey)
-	if err != nil {
-		k.Logger(ctx).Error("error while getting milestone validator set from store", "error", err)
-		return validatorSet, err
-	}
-
-	// return validator set
-	return validatorSet, nil
-}
-
-// UpdateMilestoneValidatorSetInStore adds milestone validator set to store
-func (k *Keeper) UpdateMilestoneValidatorSetInStore(ctx context.Context, newValidatorSet types.ValidatorSet) error {
-	k.PanicIfSetupIsIncomplete()
-	// set validator set with CurrentMilestoneValidatorSetKey as key in store
-	return k.validatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
-}
-
-// GetMilestoneCurrentProposer returns current proposer
-func (k *Keeper) GetMilestoneCurrentProposer(ctx context.Context) *types.Validator {
-	k.PanicIfSetupIsIncomplete()
-	// get validator set
-	validatorSet, err := k.GetMilestoneValidatorSet(ctx)
-	if err != nil {
-		return nil
-	}
-
-	// return get proposer
-	return validatorSet.GetProposer()
-}
-
 // ValidatorAddressCodec return the validator address codec
 func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 	return k.validatorAddressCodec

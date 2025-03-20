@@ -14,6 +14,7 @@ import (
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
@@ -137,7 +138,7 @@ func BenchmarkSendTaskWithDelay(b *testing.B) {
 
 			// when
 			b.StartTimer()
-			// This will trigger 'error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused'
+			// This will trigger error="Set state pending error: dial tcp 127.0.0.1:6379: connect: connection refused"
 			// it's fine as long as we don't want to test the actual sendTask to rabbitmq
 			rcl.SendTaskWithDelay(
 				"sendStateSyncedToHeimdall", "StateSynced",
@@ -259,7 +260,7 @@ func prepareClerkProcessor() (*ClerkProcessor, error) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
-	viper.Set("log_level", "debug")
+	viper.Set(flags.FlagLogLevel, "debug")
 	helper.InitTestHeimdallConfig("")
 
 	srvconf := serverconfig.DefaultConfig()
@@ -296,7 +297,7 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	cdc := codec.NewProtoCodec(interfaceRegistry)
 
 	viper.Set(helper.CometBFTNodeFlag, dummyCometBFTNode)
-	viper.Set("log_level", "debug")
+	viper.Set(flags.FlagLogLevel, "debug")
 
 	srvconf := serverconfig.DefaultConfig()
 	configuration := helper.GetDefaultHeimdallConfig()
@@ -312,7 +313,6 @@ func prepareRootChainListener() (*listener.RootChainListener, func(), error) {
 	stopFn := func() {}
 
 	rcl := listener.NewRootChainListener()
-	rcl.Logger = helper.Logger
 
 	server, err := getTestServer()
 	if err != nil {

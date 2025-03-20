@@ -191,7 +191,7 @@ func NewHeimdallApp(
 	std.RegisterLegacyAminoCodec(legacyAmino)
 	std.RegisterInterfaces(interfaceRegistry)
 
-	bApp := baseapp.NewBaseApp(AppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
+	bApp := baseapp.NewBaseApp(HeimdallAppName, logger, db, txConfig.TxDecoder(), baseAppOptions...)
 	bApp.SetCommitMultiStoreTracer(traceStore)
 	bApp.SetVersion(version.Version)
 	bApp.SetInterfaceRegistry(interfaceRegistry)
@@ -334,7 +334,6 @@ func NewHeimdallApp(
 		appCodec,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.NewKVStoreService(keys[milestoneTypes.StoreKey]),
-		&app.StakeKeeper,
 		&app.caller,
 	)
 
@@ -539,6 +538,11 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 	// init genesis
 	if _, err := app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState); err != nil {
 		return &abci.ResponseInitChain{}, err
+	}
+
+	moduleAccTopUp := app.AccountKeeper.GetModuleAccount(ctx, topupTypes.ModuleName)
+	if moduleAccTopUp == nil {
+		panic(fmt.Sprintf("%s module account has not been set", topupTypes.ModuleName))
 	}
 
 	stakingState := staketypes.GetGenesisStateFromAppState(app.appCodec, genesisState)

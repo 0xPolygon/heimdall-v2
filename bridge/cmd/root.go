@@ -8,12 +8,14 @@ import (
 	"path/filepath"
 	"time"
 
-	cometbftLogger "github.com/cometbft/cometbft/libs/log"
+	"cosmossdk.io/log"
 	rpcserver "github.com/cometbft/cometbft/rpc/jsonrpc/server"
+	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 )
@@ -53,23 +55,23 @@ var rootCmd = &cobra.Command{
 }
 
 // BridgeCommands returns command for bridge service
-func BridgeCommands(v *viper.Viper, loggerInstance cometbftLogger.Logger, caller string) *cobra.Command {
+func BridgeCommands(v *viper.Viper, loggerInstance log.Logger, caller string) *cobra.Command {
 	DecorateWithBridgeRootFlags(rootCmd, v, loggerInstance, caller)
 	return rootCmd
 }
 
 // DecorateWithBridgeRootFlags is called when bridge flags needs to be added to command
-func DecorateWithBridgeRootFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance cometbftLogger.Logger, caller string) {
+func DecorateWithBridgeRootFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance log.Logger, caller string) {
 	cmd.PersistentFlags().StringP(helper.CometBFTNodeFlag, "n", helper.DefaultCometBFTNode, "Node to connect to")
 
 	if err := v.BindPFlag(helper.CometBFTNodeFlag, cmd.PersistentFlags().Lookup(helper.CometBFTNodeFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, helper.CometBFTNodeFlag), "Error", err)
 	}
 
-	cmd.PersistentFlags().String(helper.HomeFlag, helper.DefaultNodeHome, "directory for config and data")
+	cmd.PersistentFlags().String(flags.FlagHome, app.DefaultNodeHome, "directory for config and data")
 
-	if err := v.BindPFlag(helper.HomeFlag, cmd.PersistentFlags().Lookup(helper.HomeFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, helper.HomeFlag), "Error", err)
+	if err := v.BindPFlag(flags.FlagHome, cmd.PersistentFlags().Lookup(flags.FlagHome)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, flags.FlagHome), "Error", err)
 	}
 
 	// bridge storage db
@@ -127,7 +129,7 @@ func initMetrics() {
 // AdjustBridgeDBValue function is called to set appropriate bridge db path
 func AdjustBridgeDBValue(cmd *cobra.Command) {
 	cometbftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
-	homeValue, _ := cmd.Flags().GetString(helper.HomeFlag)
+	homeValue, _ := cmd.Flags().GetString(flags.FlagHome)
 	withHeimdallConfigValue, _ := cmd.Flags().GetString(helper.WithHeimdallConfigFlag)
 	bridgeDBValue, _ := cmd.Flags().GetString(bridgeDBFlag)
 	borChainIDValue, _ := cmd.Flags().GetString(borChainIDFlag)
@@ -140,7 +142,7 @@ func AdjustBridgeDBValue(cmd *cobra.Command) {
 
 	// set to viper
 	viper.Set(helper.CometBFTNodeFlag, cometbftNode)
-	viper.Set(helper.HomeFlag, homeValue)
+	viper.Set(flags.FlagHome, homeValue)
 	viper.Set(helper.WithHeimdallConfigFlag, withHeimdallConfigValue)
 	viper.Set(bridgeDBFlag, bridgeDBValue)
 	viper.Set(borChainIDFlag, borChainIDValue)

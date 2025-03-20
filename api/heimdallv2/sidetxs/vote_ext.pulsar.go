@@ -4,6 +4,7 @@ package sidetxs
 import (
 	_ "cosmossdk.io/api/amino"
 	fmt "fmt"
+	milestone "github.com/0xPolygon/heimdall-v2/api/heimdallv2/milestone"
 	runtime "github.com/cosmos/cosmos-proto/runtime"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -14,81 +15,83 @@ import (
 	sync "sync"
 )
 
-var _ protoreflect.List = (*_ConsolidatedSideTxResponse_1_list)(nil)
+var _ protoreflect.List = (*_VoteExtension_3_list)(nil)
 
-type _ConsolidatedSideTxResponse_1_list struct {
+type _VoteExtension_3_list struct {
 	list *[]*SideTxResponse
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) Len() int {
+func (x *_VoteExtension_3_list) Len() int {
 	if x.list == nil {
 		return 0
 	}
 	return len(*x.list)
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) Get(i int) protoreflect.Value {
+func (x *_VoteExtension_3_list) Get(i int) protoreflect.Value {
 	return protoreflect.ValueOfMessage((*x.list)[i].ProtoReflect())
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) Set(i int, value protoreflect.Value) {
+func (x *_VoteExtension_3_list) Set(i int, value protoreflect.Value) {
 	valueUnwrapped := value.Message()
 	concreteValue := valueUnwrapped.Interface().(*SideTxResponse)
 	(*x.list)[i] = concreteValue
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) Append(value protoreflect.Value) {
+func (x *_VoteExtension_3_list) Append(value protoreflect.Value) {
 	valueUnwrapped := value.Message()
 	concreteValue := valueUnwrapped.Interface().(*SideTxResponse)
 	*x.list = append(*x.list, concreteValue)
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) AppendMutable() protoreflect.Value {
+func (x *_VoteExtension_3_list) AppendMutable() protoreflect.Value {
 	v := new(SideTxResponse)
 	*x.list = append(*x.list, v)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) Truncate(n int) {
+func (x *_VoteExtension_3_list) Truncate(n int) {
 	for i := n; i < len(*x.list); i++ {
 		(*x.list)[i] = nil
 	}
 	*x.list = (*x.list)[:n]
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) NewElement() protoreflect.Value {
+func (x *_VoteExtension_3_list) NewElement() protoreflect.Value {
 	v := new(SideTxResponse)
 	return protoreflect.ValueOfMessage(v.ProtoReflect())
 }
 
-func (x *_ConsolidatedSideTxResponse_1_list) IsValid() bool {
+func (x *_VoteExtension_3_list) IsValid() bool {
 	return x.list != nil
 }
 
 var (
-	md_ConsolidatedSideTxResponse                   protoreflect.MessageDescriptor
-	fd_ConsolidatedSideTxResponse_side_tx_responses protoreflect.FieldDescriptor
-	fd_ConsolidatedSideTxResponse_block_hash        protoreflect.FieldDescriptor
-	fd_ConsolidatedSideTxResponse_height            protoreflect.FieldDescriptor
+	md_VoteExtension                       protoreflect.MessageDescriptor
+	fd_VoteExtension_block_hash            protoreflect.FieldDescriptor
+	fd_VoteExtension_height                protoreflect.FieldDescriptor
+	fd_VoteExtension_side_tx_responses     protoreflect.FieldDescriptor
+	fd_VoteExtension_milestone_proposition protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_sidetxs_vote_ext_proto_init()
-	md_ConsolidatedSideTxResponse = File_heimdallv2_sidetxs_vote_ext_proto.Messages().ByName("ConsolidatedSideTxResponse")
-	fd_ConsolidatedSideTxResponse_side_tx_responses = md_ConsolidatedSideTxResponse.Fields().ByName("side_tx_responses")
-	fd_ConsolidatedSideTxResponse_block_hash = md_ConsolidatedSideTxResponse.Fields().ByName("block_hash")
-	fd_ConsolidatedSideTxResponse_height = md_ConsolidatedSideTxResponse.Fields().ByName("height")
+	md_VoteExtension = File_heimdallv2_sidetxs_vote_ext_proto.Messages().ByName("VoteExtension")
+	fd_VoteExtension_block_hash = md_VoteExtension.Fields().ByName("block_hash")
+	fd_VoteExtension_height = md_VoteExtension.Fields().ByName("height")
+	fd_VoteExtension_side_tx_responses = md_VoteExtension.Fields().ByName("side_tx_responses")
+	fd_VoteExtension_milestone_proposition = md_VoteExtension.Fields().ByName("milestone_proposition")
 }
 
-var _ protoreflect.Message = (*fastReflection_ConsolidatedSideTxResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_VoteExtension)(nil)
 
-type fastReflection_ConsolidatedSideTxResponse ConsolidatedSideTxResponse
+type fastReflection_VoteExtension VoteExtension
 
-func (x *ConsolidatedSideTxResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_ConsolidatedSideTxResponse)(x)
+func (x *VoteExtension) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_VoteExtension)(x)
 }
 
-func (x *ConsolidatedSideTxResponse) slowProtoReflect() protoreflect.Message {
+func (x *VoteExtension) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_sidetxs_vote_ext_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -100,43 +103,43 @@ func (x *ConsolidatedSideTxResponse) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_ConsolidatedSideTxResponse_messageType fastReflection_ConsolidatedSideTxResponse_messageType
-var _ protoreflect.MessageType = fastReflection_ConsolidatedSideTxResponse_messageType{}
+var _fastReflection_VoteExtension_messageType fastReflection_VoteExtension_messageType
+var _ protoreflect.MessageType = fastReflection_VoteExtension_messageType{}
 
-type fastReflection_ConsolidatedSideTxResponse_messageType struct{}
+type fastReflection_VoteExtension_messageType struct{}
 
-func (x fastReflection_ConsolidatedSideTxResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_ConsolidatedSideTxResponse)(nil)
+func (x fastReflection_VoteExtension_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_VoteExtension)(nil)
 }
-func (x fastReflection_ConsolidatedSideTxResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_ConsolidatedSideTxResponse)
+func (x fastReflection_VoteExtension_messageType) New() protoreflect.Message {
+	return new(fastReflection_VoteExtension)
 }
-func (x fastReflection_ConsolidatedSideTxResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_ConsolidatedSideTxResponse
+func (x fastReflection_VoteExtension_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_VoteExtension
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_ConsolidatedSideTxResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_ConsolidatedSideTxResponse
+func (x *fastReflection_VoteExtension) Descriptor() protoreflect.MessageDescriptor {
+	return md_VoteExtension
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_ConsolidatedSideTxResponse) Type() protoreflect.MessageType {
-	return _fastReflection_ConsolidatedSideTxResponse_messageType
+func (x *fastReflection_VoteExtension) Type() protoreflect.MessageType {
+	return _fastReflection_VoteExtension_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_ConsolidatedSideTxResponse) New() protoreflect.Message {
-	return new(fastReflection_ConsolidatedSideTxResponse)
+func (x *fastReflection_VoteExtension) New() protoreflect.Message {
+	return new(fastReflection_VoteExtension)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_ConsolidatedSideTxResponse) Interface() protoreflect.ProtoMessage {
-	return (*ConsolidatedSideTxResponse)(x)
+func (x *fastReflection_VoteExtension) Interface() protoreflect.ProtoMessage {
+	return (*VoteExtension)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -144,22 +147,28 @@ func (x *fastReflection_ConsolidatedSideTxResponse) Interface() protoreflect.Pro
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_ConsolidatedSideTxResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if len(x.SideTxResponses) != 0 {
-		value := protoreflect.ValueOfList(&_ConsolidatedSideTxResponse_1_list{list: &x.SideTxResponses})
-		if !f(fd_ConsolidatedSideTxResponse_side_tx_responses, value) {
-			return
-		}
-	}
+func (x *fastReflection_VoteExtension) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 	if len(x.BlockHash) != 0 {
 		value := protoreflect.ValueOfBytes(x.BlockHash)
-		if !f(fd_ConsolidatedSideTxResponse_block_hash, value) {
+		if !f(fd_VoteExtension_block_hash, value) {
 			return
 		}
 	}
 	if x.Height != int64(0) {
 		value := protoreflect.ValueOfInt64(x.Height)
-		if !f(fd_ConsolidatedSideTxResponse_height, value) {
+		if !f(fd_VoteExtension_height, value) {
+			return
+		}
+	}
+	if len(x.SideTxResponses) != 0 {
+		value := protoreflect.ValueOfList(&_VoteExtension_3_list{list: &x.SideTxResponses})
+		if !f(fd_VoteExtension_side_tx_responses, value) {
+			return
+		}
+	}
+	if x.MilestoneProposition != nil {
+		value := protoreflect.ValueOfMessage(x.MilestoneProposition.ProtoReflect())
+		if !f(fd_VoteExtension_milestone_proposition, value) {
 			return
 		}
 	}
@@ -176,19 +185,21 @@ func (x *fastReflection_ConsolidatedSideTxResponse) Range(f func(protoreflect.Fi
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_ConsolidatedSideTxResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_VoteExtension) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.side_tx_responses":
-		return len(x.SideTxResponses) != 0
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.block_hash":
+	case "heimdallv2.sidetxs.VoteExtension.block_hash":
 		return len(x.BlockHash) != 0
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.height":
+	case "heimdallv2.sidetxs.VoteExtension.height":
 		return x.Height != int64(0)
+	case "heimdallv2.sidetxs.VoteExtension.side_tx_responses":
+		return len(x.SideTxResponses) != 0
+	case "heimdallv2.sidetxs.VoteExtension.milestone_proposition":
+		return x.MilestoneProposition != nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.ConsolidatedSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.VoteExtension"))
 		}
-		panic(fmt.Errorf("message heimdallv2.sidetxs.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.sidetxs.VoteExtension does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -198,19 +209,21 @@ func (x *fastReflection_ConsolidatedSideTxResponse) Has(fd protoreflect.FieldDes
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_ConsolidatedSideTxResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_VoteExtension) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.side_tx_responses":
-		x.SideTxResponses = nil
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.block_hash":
+	case "heimdallv2.sidetxs.VoteExtension.block_hash":
 		x.BlockHash = nil
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.height":
+	case "heimdallv2.sidetxs.VoteExtension.height":
 		x.Height = int64(0)
+	case "heimdallv2.sidetxs.VoteExtension.side_tx_responses":
+		x.SideTxResponses = nil
+	case "heimdallv2.sidetxs.VoteExtension.milestone_proposition":
+		x.MilestoneProposition = nil
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.ConsolidatedSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.VoteExtension"))
 		}
-		panic(fmt.Errorf("message heimdallv2.sidetxs.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.sidetxs.VoteExtension does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -220,25 +233,28 @@ func (x *fastReflection_ConsolidatedSideTxResponse) Clear(fd protoreflect.FieldD
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_ConsolidatedSideTxResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_VoteExtension) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.side_tx_responses":
-		if len(x.SideTxResponses) == 0 {
-			return protoreflect.ValueOfList(&_ConsolidatedSideTxResponse_1_list{})
-		}
-		listValue := &_ConsolidatedSideTxResponse_1_list{list: &x.SideTxResponses}
-		return protoreflect.ValueOfList(listValue)
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.block_hash":
+	case "heimdallv2.sidetxs.VoteExtension.block_hash":
 		value := x.BlockHash
 		return protoreflect.ValueOfBytes(value)
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.height":
+	case "heimdallv2.sidetxs.VoteExtension.height":
 		value := x.Height
 		return protoreflect.ValueOfInt64(value)
+	case "heimdallv2.sidetxs.VoteExtension.side_tx_responses":
+		if len(x.SideTxResponses) == 0 {
+			return protoreflect.ValueOfList(&_VoteExtension_3_list{})
+		}
+		listValue := &_VoteExtension_3_list{list: &x.SideTxResponses}
+		return protoreflect.ValueOfList(listValue)
+	case "heimdallv2.sidetxs.VoteExtension.milestone_proposition":
+		value := x.MilestoneProposition
+		return protoreflect.ValueOfMessage(value.ProtoReflect())
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.ConsolidatedSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.VoteExtension"))
 		}
-		panic(fmt.Errorf("message heimdallv2.sidetxs.ConsolidatedSideTxResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.sidetxs.VoteExtension does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -252,21 +268,23 @@ func (x *fastReflection_ConsolidatedSideTxResponse) Get(descriptor protoreflect.
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_ConsolidatedSideTxResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_VoteExtension) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.side_tx_responses":
-		lv := value.List()
-		clv := lv.(*_ConsolidatedSideTxResponse_1_list)
-		x.SideTxResponses = *clv.list
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.block_hash":
+	case "heimdallv2.sidetxs.VoteExtension.block_hash":
 		x.BlockHash = value.Bytes()
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.height":
+	case "heimdallv2.sidetxs.VoteExtension.height":
 		x.Height = value.Int()
+	case "heimdallv2.sidetxs.VoteExtension.side_tx_responses":
+		lv := value.List()
+		clv := lv.(*_VoteExtension_3_list)
+		x.SideTxResponses = *clv.list
+	case "heimdallv2.sidetxs.VoteExtension.milestone_proposition":
+		x.MilestoneProposition = value.Message().Interface().(*milestone.MilestoneProposition)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.ConsolidatedSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.VoteExtension"))
 		}
-		panic(fmt.Errorf("message heimdallv2.sidetxs.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.sidetxs.VoteExtension does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -280,53 +298,61 @@ func (x *fastReflection_ConsolidatedSideTxResponse) Set(fd protoreflect.FieldDes
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_ConsolidatedSideTxResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_VoteExtension) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.side_tx_responses":
+	case "heimdallv2.sidetxs.VoteExtension.side_tx_responses":
 		if x.SideTxResponses == nil {
 			x.SideTxResponses = []*SideTxResponse{}
 		}
-		value := &_ConsolidatedSideTxResponse_1_list{list: &x.SideTxResponses}
+		value := &_VoteExtension_3_list{list: &x.SideTxResponses}
 		return protoreflect.ValueOfList(value)
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.block_hash":
-		panic(fmt.Errorf("field block_hash of message heimdallv2.sidetxs.ConsolidatedSideTxResponse is not mutable"))
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.height":
-		panic(fmt.Errorf("field height of message heimdallv2.sidetxs.ConsolidatedSideTxResponse is not mutable"))
+	case "heimdallv2.sidetxs.VoteExtension.milestone_proposition":
+		if x.MilestoneProposition == nil {
+			x.MilestoneProposition = new(milestone.MilestoneProposition)
+		}
+		return protoreflect.ValueOfMessage(x.MilestoneProposition.ProtoReflect())
+	case "heimdallv2.sidetxs.VoteExtension.block_hash":
+		panic(fmt.Errorf("field block_hash of message heimdallv2.sidetxs.VoteExtension is not mutable"))
+	case "heimdallv2.sidetxs.VoteExtension.height":
+		panic(fmt.Errorf("field height of message heimdallv2.sidetxs.VoteExtension is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.ConsolidatedSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.VoteExtension"))
 		}
-		panic(fmt.Errorf("message heimdallv2.sidetxs.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.sidetxs.VoteExtension does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_ConsolidatedSideTxResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_VoteExtension) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.side_tx_responses":
-		list := []*SideTxResponse{}
-		return protoreflect.ValueOfList(&_ConsolidatedSideTxResponse_1_list{list: &list})
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.block_hash":
+	case "heimdallv2.sidetxs.VoteExtension.block_hash":
 		return protoreflect.ValueOfBytes(nil)
-	case "heimdallv2.sidetxs.ConsolidatedSideTxResponse.height":
+	case "heimdallv2.sidetxs.VoteExtension.height":
 		return protoreflect.ValueOfInt64(int64(0))
+	case "heimdallv2.sidetxs.VoteExtension.side_tx_responses":
+		list := []*SideTxResponse{}
+		return protoreflect.ValueOfList(&_VoteExtension_3_list{list: &list})
+	case "heimdallv2.sidetxs.VoteExtension.milestone_proposition":
+		m := new(milestone.MilestoneProposition)
+		return protoreflect.ValueOfMessage(m.ProtoReflect())
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.ConsolidatedSideTxResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.sidetxs.VoteExtension"))
 		}
-		panic(fmt.Errorf("message heimdallv2.sidetxs.ConsolidatedSideTxResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.sidetxs.VoteExtension does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_ConsolidatedSideTxResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_VoteExtension) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.sidetxs.ConsolidatedSideTxResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.sidetxs.VoteExtension", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -334,7 +360,7 @@ func (x *fastReflection_ConsolidatedSideTxResponse) WhichOneof(d protoreflect.On
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_ConsolidatedSideTxResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_VoteExtension) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -345,7 +371,7 @@ func (x *fastReflection_ConsolidatedSideTxResponse) GetUnknown() protoreflect.Ra
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_ConsolidatedSideTxResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_VoteExtension) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -357,7 +383,7 @@ func (x *fastReflection_ConsolidatedSideTxResponse) SetUnknown(fields protorefle
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_ConsolidatedSideTxResponse) IsValid() bool {
+func (x *fastReflection_VoteExtension) IsValid() bool {
 	return x != nil
 }
 
@@ -367,9 +393,9 @@ func (x *fastReflection_ConsolidatedSideTxResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_VoteExtension) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*ConsolidatedSideTxResponse)
+		x := input.Message.Interface().(*VoteExtension)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -381,18 +407,22 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 		var n int
 		var l int
 		_ = l
-		if len(x.SideTxResponses) > 0 {
-			for _, e := range x.SideTxResponses {
-				l = options.Size(e)
-				n += 1 + l + runtime.Sov(uint64(l))
-			}
-		}
 		l = len(x.BlockHash)
 		if l > 0 {
 			n += 1 + l + runtime.Sov(uint64(l))
 		}
 		if x.Height != 0 {
 			n += 1 + runtime.Sov(uint64(x.Height))
+		}
+		if len(x.SideTxResponses) > 0 {
+			for _, e := range x.SideTxResponses {
+				l = options.Size(e)
+				n += 1 + l + runtime.Sov(uint64(l))
+			}
+		}
+		if x.MilestoneProposition != nil {
+			l = options.Size(x.MilestoneProposition)
+			n += 1 + l + runtime.Sov(uint64(l))
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -404,7 +434,7 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*ConsolidatedSideTxResponse)
+		x := input.Message.Interface().(*VoteExtension)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -423,17 +453,19 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.Height != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.Height))
+		if x.MilestoneProposition != nil {
+			encoded, err := options.Marshal(x.MilestoneProposition)
+			if err != nil {
+				return protoiface.MarshalOutput{
+					NoUnkeyedLiterals: input.NoUnkeyedLiterals,
+					Buf:               input.Buf,
+				}, err
+			}
+			i -= len(encoded)
+			copy(dAtA[i:], encoded)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
 			i--
-			dAtA[i] = 0x18
-		}
-		if len(x.BlockHash) > 0 {
-			i -= len(x.BlockHash)
-			copy(dAtA[i:], x.BlockHash)
-			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.BlockHash)))
-			i--
-			dAtA[i] = 0x12
+			dAtA[i] = 0x22
 		}
 		if len(x.SideTxResponses) > 0 {
 			for iNdEx := len(x.SideTxResponses) - 1; iNdEx >= 0; iNdEx-- {
@@ -448,8 +480,20 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 				copy(dAtA[i:], encoded)
 				i = runtime.EncodeVarint(dAtA, i, uint64(len(encoded)))
 				i--
-				dAtA[i] = 0xa
+				dAtA[i] = 0x1a
 			}
+		}
+		if x.Height != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.Height))
+			i--
+			dAtA[i] = 0x10
+		}
+		if len(x.BlockHash) > 0 {
+			i -= len(x.BlockHash)
+			copy(dAtA[i:], x.BlockHash)
+			i = runtime.EncodeVarint(dAtA, i, uint64(len(x.BlockHash)))
+			i--
+			dAtA[i] = 0xa
 		}
 		if input.Buf != nil {
 			input.Buf = append(input.Buf, dAtA...)
@@ -462,7 +506,7 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*ConsolidatedSideTxResponse)
+		x := input.Message.Interface().(*VoteExtension)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -494,47 +538,13 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: ConsolidatedSideTxResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: VoteExtension: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: ConsolidatedSideTxResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: VoteExtension: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
-				if wireType != 2 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field SideTxResponses", wireType)
-				}
-				var msglen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
-					}
-					if iNdEx >= l {
-						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					msglen |= int(b&0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if msglen < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				postIndex := iNdEx + msglen
-				if postIndex < 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
-				}
-				if postIndex > l {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
-				}
-				x.SideTxResponses = append(x.SideTxResponses, &SideTxResponse{})
-				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.SideTxResponses[len(x.SideTxResponses)-1]); err != nil {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
-				}
-				iNdEx = postIndex
-			case 2:
 				if wireType != 2 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field BlockHash", wireType)
 				}
@@ -568,7 +578,7 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 					x.BlockHash = []byte{}
 				}
 				iNdEx = postIndex
-			case 3:
+			case 2:
 				if wireType != 0 {
 					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field Height", wireType)
 				}
@@ -587,6 +597,76 @@ func (x *fastReflection_ConsolidatedSideTxResponse) ProtoMethods() *protoiface.M
 						break
 					}
 				}
+			case 3:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field SideTxResponses", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				x.SideTxResponses = append(x.SideTxResponses, &SideTxResponse{})
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.SideTxResponses[len(x.SideTxResponses)-1]); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
+			case 4:
+				if wireType != 2 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field MilestoneProposition", wireType)
+				}
+				var msglen int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					msglen |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				if msglen < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				postIndex := iNdEx + msglen
+				if postIndex < 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrInvalidLength
+				}
+				if postIndex > l {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+				}
+				if x.MilestoneProposition == nil {
+					x.MilestoneProposition = &milestone.MilestoneProposition{}
+				}
+				if err := options.Unmarshal(dAtA[iNdEx:postIndex], x.MilestoneProposition); err != nil {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, err
+				}
+				iNdEx = postIndex
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -1154,18 +1234,19 @@ func (Vote) EnumDescriptor() ([]byte, []int) {
 	return file_heimdallv2_sidetxs_vote_ext_proto_rawDescGZIP(), []int{0}
 }
 
-type ConsolidatedSideTxResponse struct {
+type VoteExtension struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SideTxResponses []*SideTxResponse `protobuf:"bytes,1,rep,name=side_tx_responses,json=sideTxResponses,proto3" json:"side_tx_responses,omitempty"`
-	BlockHash       []byte            `protobuf:"bytes,2,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
-	Height          int64             `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
+	BlockHash            []byte                          `protobuf:"bytes,1,opt,name=block_hash,json=blockHash,proto3" json:"block_hash,omitempty"`
+	Height               int64                           `protobuf:"varint,2,opt,name=height,proto3" json:"height,omitempty"`
+	SideTxResponses      []*SideTxResponse               `protobuf:"bytes,3,rep,name=side_tx_responses,json=sideTxResponses,proto3" json:"side_tx_responses,omitempty"`
+	MilestoneProposition *milestone.MilestoneProposition `protobuf:"bytes,4,opt,name=milestone_proposition,json=milestoneProposition,proto3" json:"milestone_proposition,omitempty"`
 }
 
-func (x *ConsolidatedSideTxResponse) Reset() {
-	*x = ConsolidatedSideTxResponse{}
+func (x *VoteExtension) Reset() {
+	*x = VoteExtension{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_sidetxs_vote_ext_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -1173,36 +1254,43 @@ func (x *ConsolidatedSideTxResponse) Reset() {
 	}
 }
 
-func (x *ConsolidatedSideTxResponse) String() string {
+func (x *VoteExtension) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ConsolidatedSideTxResponse) ProtoMessage() {}
+func (*VoteExtension) ProtoMessage() {}
 
-// Deprecated: Use ConsolidatedSideTxResponse.ProtoReflect.Descriptor instead.
-func (*ConsolidatedSideTxResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use VoteExtension.ProtoReflect.Descriptor instead.
+func (*VoteExtension) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_sidetxs_vote_ext_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ConsolidatedSideTxResponse) GetSideTxResponses() []*SideTxResponse {
-	if x != nil {
-		return x.SideTxResponses
-	}
-	return nil
-}
-
-func (x *ConsolidatedSideTxResponse) GetBlockHash() []byte {
+func (x *VoteExtension) GetBlockHash() []byte {
 	if x != nil {
 		return x.BlockHash
 	}
 	return nil
 }
 
-func (x *ConsolidatedSideTxResponse) GetHeight() int64 {
+func (x *VoteExtension) GetHeight() int64 {
 	if x != nil {
 		return x.Height
 	}
 	return 0
+}
+
+func (x *VoteExtension) GetSideTxResponses() []*SideTxResponse {
+	if x != nil {
+		return x.SideTxResponses
+	}
+	return nil
+}
+
+func (x *VoteExtension) GetMilestoneProposition() *milestone.MilestoneProposition {
+	if x != nil {
+		return x.MilestoneProposition
+	}
+	return nil
 }
 
 type SideTxResponse struct {
@@ -1257,42 +1345,50 @@ var file_heimdallv2_sidetxs_vote_ext_proto_rawDesc = []byte{
 	0x73, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x1a, 0x11, 0x61, 0x6d, 0x69, 0x6e, 0x6f, 0x2f, 0x61,
 	0x6d, 0x69, 0x6e, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x14, 0x67, 0x6f, 0x67, 0x6f,
 	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x67, 0x6f, 0x67, 0x6f, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x22, 0xbc, 0x01, 0x0a, 0x1a, 0x43, 0x6f, 0x6e, 0x73, 0x6f, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65,
-	0x64, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12,
-	0x59, 0x0a, 0x11, 0x73, 0x69, 0x64, 0x65, 0x5f, 0x74, 0x78, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f,
-	0x6e, 0x73, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x2e,
-	0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x09,
-	0xc8, 0xde, 0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0f, 0x73, 0x69, 0x64, 0x65, 0x54,
-	0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x73, 0x12, 0x24, 0x0a, 0x0a, 0x62, 0x6c,
-	0x6f, 0x63, 0x6b, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x42, 0x05,
-	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68,
-	0x12, 0x1d, 0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03,
-	0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x22,
-	0x69, 0x0a, 0x0e, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61, 0x73,
-	0x68, 0x12, 0x37, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x0e, 0x32, 0x18, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73,
-	0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x2e, 0x56, 0x6f, 0x74, 0x65, 0x42, 0x05, 0xa8, 0xe7, 0xb0,
-	0x2a, 0x01, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2a, 0x32, 0x0a, 0x04, 0x56, 0x6f,
-	0x74, 0x65, 0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45,
-	0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x59, 0x45, 0x53, 0x10,
-	0x01, 0x12, 0x0b, 0x0a, 0x07, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x4e, 0x4f, 0x10, 0x02, 0x42, 0xc8,
-	0x01, 0x0a, 0x16, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x73, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x42, 0x0c, 0x56, 0x6f, 0x74, 0x65, 0x45,
-	0x78, 0x74, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x37, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f,
-	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f,
-	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x73, 0x69, 0x64, 0x65, 0x74,
-	0x78, 0x73, 0xa2, 0x02, 0x03, 0x48, 0x53, 0x58, 0xaa, 0x02, 0x12, 0x48, 0x65, 0x69, 0x6d, 0x64,
-	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x53, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0xca, 0x02, 0x12,
-	0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53, 0x69, 0x64, 0x65, 0x74,
-	0x78, 0x73, 0xe2, 0x02, 0x1e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c,
-	0x53, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64,
-	0x61, 0x74, 0x61, 0xea, 0x02, 0x13, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
-	0x3a, 0x3a, 0x53, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x1a, 0x24, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x6d, 0x69, 0x6c,
+	0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x2f, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x97, 0x02, 0x0a, 0x0d, 0x56, 0x6f, 0x74, 0x65, 0x45,
+	0x78, 0x74, 0x65, 0x6e, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x24, 0x0a, 0x0a, 0x62, 0x6c, 0x6f, 0x63,
+	0x6b, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7,
+	0xb0, 0x2a, 0x01, 0x52, 0x09, 0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x48, 0x61, 0x73, 0x68, 0x12, 0x1d,
+	0x0a, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x03, 0x42, 0x05,
+	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x68, 0x65, 0x69, 0x67, 0x68, 0x74, 0x12, 0x59, 0x0a,
+	0x11, 0x73, 0x69, 0x64, 0x65, 0x5f, 0x74, 0x78, 0x5f, 0x72, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64,
+	0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x73, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x2e, 0x53, 0x69,
+	0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x09, 0xc8, 0xde,
+	0x1f, 0x00, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x0f, 0x73, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52,
+	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x73, 0x12, 0x66, 0x0a, 0x15, 0x6d, 0x69, 0x6c, 0x65,
+	0x73, 0x74, 0x6f, 0x6e, 0x65, 0x5f, 0x70, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f,
+	0x6e, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x6d, 0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x2e, 0x4d,
+	0x69, 0x6c, 0x65, 0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74,
+	0x69, 0x6f, 0x6e, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x14, 0x6d, 0x69, 0x6c, 0x65,
+	0x73, 0x74, 0x6f, 0x6e, 0x65, 0x50, 0x72, 0x6f, 0x70, 0x6f, 0x73, 0x69, 0x74, 0x69, 0x6f, 0x6e,
+	0x22, 0x69, 0x0a, 0x0e, 0x53, 0x69, 0x64, 0x65, 0x54, 0x78, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x1e, 0x0a, 0x07, 0x74, 0x78, 0x5f, 0x68, 0x61, 0x73, 0x68, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0c, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x06, 0x74, 0x78, 0x48, 0x61,
+	0x73, 0x68, 0x12, 0x37, 0x0a, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x0e, 0x32, 0x18, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x73, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x2e, 0x56, 0x6f, 0x74, 0x65, 0x42, 0x05, 0xa8, 0xe7,
+	0xb0, 0x2a, 0x01, 0x52, 0x06, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x2a, 0x32, 0x0a, 0x04, 0x56,
+	0x6f, 0x74, 0x65, 0x12, 0x0f, 0x0a, 0x0b, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
+	0x45, 0x44, 0x10, 0x00, 0x12, 0x0c, 0x0a, 0x08, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x59, 0x45, 0x53,
+	0x10, 0x01, 0x12, 0x0b, 0x0a, 0x07, 0x56, 0x4f, 0x54, 0x45, 0x5f, 0x4e, 0x4f, 0x10, 0x02, 0x42,
+	0xc8, 0x01, 0x0a, 0x16, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x73, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x42, 0x0c, 0x56, 0x6f, 0x74, 0x65,
+	0x45, 0x78, 0x74, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x37, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69,
+	0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x73, 0x69, 0x64, 0x65,
+	0x74, 0x78, 0x73, 0xa2, 0x02, 0x03, 0x48, 0x53, 0x58, 0xaa, 0x02, 0x12, 0x48, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x53, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0xca, 0x02,
+	0x12, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x53, 0x69, 0x64, 0x65,
+	0x74, 0x78, 0x73, 0xe2, 0x02, 0x1e, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x5c, 0x53, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61,
+	0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x13, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x3a, 0x3a, 0x53, 0x69, 0x64, 0x65, 0x74, 0x78, 0x73, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
+	0x6f, 0x33,
 }
 
 var (
@@ -1310,18 +1406,20 @@ func file_heimdallv2_sidetxs_vote_ext_proto_rawDescGZIP() []byte {
 var file_heimdallv2_sidetxs_vote_ext_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_heimdallv2_sidetxs_vote_ext_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_heimdallv2_sidetxs_vote_ext_proto_goTypes = []interface{}{
-	(Vote)(0),                          // 0: heimdallv2.sidetxs.Vote
-	(*ConsolidatedSideTxResponse)(nil), // 1: heimdallv2.sidetxs.ConsolidatedSideTxResponse
-	(*SideTxResponse)(nil),             // 2: heimdallv2.sidetxs.SideTxResponse
+	(Vote)(0),                              // 0: heimdallv2.sidetxs.Vote
+	(*VoteExtension)(nil),                  // 1: heimdallv2.sidetxs.VoteExtension
+	(*SideTxResponse)(nil),                 // 2: heimdallv2.sidetxs.SideTxResponse
+	(*milestone.MilestoneProposition)(nil), // 3: heimdallv2.milestone.MilestoneProposition
 }
 var file_heimdallv2_sidetxs_vote_ext_proto_depIdxs = []int32{
-	2, // 0: heimdallv2.sidetxs.ConsolidatedSideTxResponse.side_tx_responses:type_name -> heimdallv2.sidetxs.SideTxResponse
-	0, // 1: heimdallv2.sidetxs.SideTxResponse.result:type_name -> heimdallv2.sidetxs.Vote
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2, // 0: heimdallv2.sidetxs.VoteExtension.side_tx_responses:type_name -> heimdallv2.sidetxs.SideTxResponse
+	3, // 1: heimdallv2.sidetxs.VoteExtension.milestone_proposition:type_name -> heimdallv2.milestone.MilestoneProposition
+	0, // 2: heimdallv2.sidetxs.SideTxResponse.result:type_name -> heimdallv2.sidetxs.Vote
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_heimdallv2_sidetxs_vote_ext_proto_init() }
@@ -1331,7 +1429,7 @@ func file_heimdallv2_sidetxs_vote_ext_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_heimdallv2_sidetxs_vote_ext_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ConsolidatedSideTxResponse); i {
+			switch v := v.(*VoteExtension); i {
 			case 0:
 				return &v.state
 			case 1:
