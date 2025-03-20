@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
+	engineclient "github.com/0xPolygon/heimdall-v2/x/engine/client"
 	enginetypes "github.com/0xPolygon/heimdall-v2/x/engine/types"
 	"github.com/cenkalti/backoff/v4"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -44,18 +44,18 @@ func (app *HeimdallApp) ProduceELPayload(ctx context.Context) {
 	}
 }
 
-func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ctx context.Context, height uint64) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildLatestPayload(state engineclient.ForkChoiceState, ctx context.Context, height uint64) (response *engineclient.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
 
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	if state == (engine.ForkChoiceState{}) {
+	if state == (engineclient.ForkChoiceState{}) {
 		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(int64(height))) // change this to a keeper
 		if err != nil {
 			return nil, err
 		}
-		state = engine.ForkChoiceState{
+		state = engineclient.ForkChoiceState{
 			HeadHash:           latestBlock.Hash(),
 			SafeBlockHash:      latestBlock.Hash(),
 			FinalizedBlockHash: common.Hash{},
@@ -63,7 +63,7 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 	}
 
 	// The engine complains when the withdrawals are empty
-	withdrawals := []*engine.Withdrawal{ // need to undestand
+	withdrawals := []*engineclient.Withdrawal{ // need to understand
 		{
 			Index:     "0x0",
 			Validator: "0x0",
@@ -73,7 +73,7 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 	}
 
 	addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-	attrs := engine.PayloadAttributes{
+	attrs := engineclient.PayloadAttributes{
 		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
 		PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
 		SuggestedFeeRecipient: addr,
@@ -112,11 +112,11 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engine.ForkChoiceState, ct
 	return response, nil
 }
 
-func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx sdk.Context) (response *engine.Payload, err error) {
+func (app *HeimdallApp) retryBuildNextPayload(state engineclient.ForkChoiceState, ctx sdk.Context) (response *engineclient.Payload, err error) {
 	forever := backoff.NewExponentialBackOff()
 
 	// The engine complains when the withdrawals are empty
-	withdrawals := []*engine.Withdrawal{ // need to undestand
+	withdrawals := []*engineclient.Withdrawal{ // need to understand
 		{
 			Index:     "0x0",
 			Validator: "0x0",
@@ -126,7 +126,7 @@ func (app *HeimdallApp) retryBuildNextPayload(state engine.ForkChoiceState, ctx 
 	}
 
 	addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-	attrs := engine.PayloadAttributes{
+	attrs := engineclient.PayloadAttributes{
 		Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
 		PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
 		SuggestedFeeRecipient: addr,

@@ -17,6 +17,7 @@ import (
 	"cosmossdk.io/log"
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
+	engineclient "github.com/0xPolygon/heimdall-v2/x/engine/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -64,7 +65,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
-	engineclient "github.com/0xPolygon/heimdall-v2/engine" // should this code be moved to module?
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor"

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	engineclient "github.com/0xPolygon/heimdall-v2/x/engine/client"
 	cfg "github.com/cometbft/cometbft/config"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtcrypto "github.com/cometbft/cometbft/crypto/secp256k1"
@@ -23,7 +24,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tendermint/go-amino"
 
-	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/file"
 	borgrpc "github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 )
@@ -208,7 +208,7 @@ var (
 	borClient       *ethclient.Client
 	borRPCClient    *rpc.Client
 	borGRPCClient   *borgrpc.BorGRPCClient
-	borEngineClient *engine.EngineClient
+	borEngineClient *engineclient.EngineClient
 )
 
 // private key object
@@ -366,7 +366,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
-	if borEngineClient, err = engine.NewEngineClient(conf.Custom.BorEngineUrl, conf.Custom.BorEngineJWT); err != nil {
+	if borEngineClient, err = engineclient.NewEngineClient(conf.Custom.BorEngineUrl, conf.Custom.BorEngineJWT); err != nil {
 		log.Fatal(err)
 	}
 
@@ -454,7 +454,7 @@ func GetBorRPCClient() *rpc.Client {
 }
 
 // GetBorClient returns bor eth client
-func GetEngine() *engine.EngineClient {
+func GetEngine() *engineclient.EngineClient {
 	return borEngineClient
 }
 
