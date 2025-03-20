@@ -1,0 +1,15 @@
+syntax = "proto3";
+package heimdallv2.engine;
+
+import "amino/amino.proto";
+import "gogoproto/gogo.proto";
+import "heimdallv2/engine/params.proto";
+
+option go_package = "github.com/0xPolygon/heimdall-v2/x/engine/types";
+
+// GenesisState defines the engine module's genesis state.
+message GenesisState {
+  // params defines all the parameters of the module.
+  Params params = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}

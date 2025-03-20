@@ -1,4 +1,4 @@
-package engine
+package client
 
 import (
 	"bytes"
@@ -86,7 +86,7 @@ func (ec *EngineClient) GetPayloadV2(ctx context.Context, payloadId string) (pay
 	return
 }
 
-func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload ExecutionPayload) (resp NewPayloadResponse, err error) {
+func (ec *EngineClient) NewPayloadV2(ctx context.Context, payload ExecutionPayload) (resp *NewPayloadResponse, err error) {
 	start := time.Now()
 	defer observe(newPayloadV2, start, err)
 

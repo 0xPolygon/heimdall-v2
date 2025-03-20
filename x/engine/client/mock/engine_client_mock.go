@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	engine "github.com/0xPolygon/heimdall-v2/engine"
+	engine "github.com/0xPolygon/heimdall-v2/x/engine/client"
 	gomock "github.com/golang/mock/gomock"
 )
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	engineclient "github.com/0xPolygon/heimdall-v2/x/engine/client"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +27,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/contracts/statereceiver"
 	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
 	"github.com/0xPolygon/heimdall-v2/contracts/validatorset"
-	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/x/bor/grpc"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -110,7 +110,7 @@ type ContractCaller struct {
 	BorChainGrpcFlag   bool
 	BorChainGrpcClient *grpc.BorGRPCClient
 
-	BorEngineClient *engine.EngineClient
+	BorEngineClient *engineclient.EngineClient
 
 	RootChainABI     abi.ABI
 	StakingInfoABI   abi.ABI

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	engineclient "github.com/0xPolygon/heimdall-v2/x/engine/client"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
@@ -16,12 +17,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 
-	"github.com/0xPolygon/heimdall-v2/engine"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	engineTypes "github.com/0xPolygon/heimdall-v2/x/engine/types"
 )
 
 type HeimdallMetadata struct {
@@ -57,7 +57,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		}
 
 		// Engine API
-		var payload *engine.Payload
+		var payload *engineclient.Payload
 
 		executionState, err := app.getExecutionStateMetadata(ctx)
 		if err != nil {
@@ -73,14 +73,14 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			logger.Debug("latest payload not found, fetching from CheckpointKeeper")
 
 			blockHash := common.BytesToHash(executionState.FinalBlockHash)
-			state := engine.ForkChoiceState{
+			state := engineclient.ForkChoiceState{
 				HeadHash:           blockHash,
 				SafeBlockHash:      blockHash,
 				FinalizedBlockHash: common.Hash{},
 			}
 
 			// The engine complains when the withdrawals are empty
-			withdrawals := []*engine.Withdrawal{ // need to undestand
+			withdrawals := []*engineclient.Withdrawal{ // need to undestand
 				{
 					Index:     "0x0",
 					Validator: "0x0",
@@ -90,7 +90,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			}
 
 			addr := common.BytesToAddress(helper.GetPrivKey().PubKey().Address().Bytes())
-			attrs := engine.PayloadAttributes{
+			attrs := engineclient.PayloadAttributes{
 				Timestamp:             hexutil.Uint64(time.Now().UnixMilli()),
 				PrevRandao:            common.Hash{}, // do we need to generate a randao for the EVM?
 				SuggestedFeeRecipient: addr,
@@ -263,7 +263,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// Engine API - Validate block
-		var executionPayload engine.ExecutionPayload
+		var executionPayload engineclient.ExecutionPayload
 		err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
 		if err != nil {
 			// TODO: use forkchoice state from the latest block stored in the keeper
@@ -293,7 +293,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 
 		app.nextBlockChan <- nextELBlockCtx{height: hexutil.MustDecodeUint64(executionPayload.BlockNumber) + 1,
 			context: ctx,
-			ForkChoiceState: engine.ForkChoiceState{
+			ForkChoiceState: engineclient.ForkChoiceState{
 				HeadHash:           common.HexToHash(executionPayload.BlockHash),
 				SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
 				FinalizedBlockHash: common.Hash{},
@@ -372,7 +372,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 				res := sideHandler(ctx, msg)
 
 				if res == sidetxs.Vote_VOTE_YES && checkpointTypes.IsCheckpointMsg(msg) {
-					checkpointMsg, ok := msg.(*types.MsgCheckpoint)
+					checkpointMsg, ok := msg.(*checkpointTypes.MsgCheckpoint)
 					if !ok {
 						logger.Error("ExtendVoteHandler: type mismatch for MsgCheckpoint")
 						continue
@@ -511,20 +511,20 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	// Engine API
-	var executionPayload engine.ExecutionPayload
+	var executionPayload engineclient.ExecutionPayload
 	err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
 	if err != nil {
 		logger.Error("failed to decode execution payload, cannot proceed", "error", err)
 		return nil, err
 	}
 
-	state := engine.ForkChoiceState{
+	state := engineclient.ForkChoiceState{
 		HeadHash:           common.HexToHash(executionPayload.BlockHash),
 		SafeBlockHash:      common.HexToHash(executionPayload.BlockHash),
 		FinalizedBlockHash: common.HexToHash(executionPayload.BlockHash), // latestHash from the Proposal stage
 	}
 
-	var choice *engine.ForkchoiceUpdatedResponse
+	var choice *engineclient.ForkchoiceUpdatedResponse
 	choice, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, &state, nil)
 	if err != nil {
 		infoLog := "fork choice failed, cannot proceed"
@@ -535,7 +535,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		return nil, err
 	}
 
-	if err := app.CheckpointKeeper.SetExecutionStateMetadata(ctx, checkpointTypes.ExecutionStateMetadata{
+	if err := app.EngineKeeper.SetExecutionStateMetadata(ctx, engineTypes.ExecutionStateMetadata{
 		FinalBlockHash:    common.Hex2Bytes(executionPayload.BlockHash),
 		LatestBlockNumber: hexutil.MustDecodeUint64(executionPayload.BlockNumber),
 	}); err != nil {
