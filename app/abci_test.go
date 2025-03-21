@@ -5,10 +5,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/0xPolygon/heimdall-v2/engine"
-	mocks "github.com/0xPolygon/heimdall-v2/engine/mock"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	contractMock "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	engineclient "github.com/0xPolygon/heimdall-v2/x/engine/client"
+	mocks "github.com/0xPolygon/heimdall-v2/x/engine/client/mock"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -38,13 +38,13 @@ func (suite *ABCIAppTestSuite) SetupTest() {
 // to an earlier block
 func (s *ABCIAppTestSuite) TestELRewindProposer() {
 	testApp, extVoteInfo, ctx := s.testSetup()
-	choice := engine.ForkchoiceUpdatedResponse{
+	choice := engineclient.ForkchoiceUpdatedResponse{
 		PayloadId:     hexutil.EncodeUint64(1),
-		PayloadStatus: engine.PayloadStatus{Status: "VALID"},
+		PayloadStatus: engineclient.PayloadStatus{Status: "VALID"},
 	}
 
-	proposerPayloadRes := engine.Payload{
-		ExecutionPayload: engine.ExecutionPayload{
+	proposerPayloadRes := engineclient.Payload{
+		ExecutionPayload: engineclient.ExecutionPayload{
 			BlockNumber: hexutil.EncodeUint64(1),
 		},
 	}
@@ -70,11 +70,11 @@ func (s *ABCIAppTestSuite) TestELRewindProposer() {
 	err = json.Unmarshal(resp1.Txs[0], &metadata)
 	s.Require().NoError(err)
 
-	var executionPayload engine.ExecutionPayload
+	var executionPayload engineclient.ExecutionPayload
 	err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
 	s.Require().NoError(err)
 
-	processorPayloadRes := engine.NewPayloadResponse{
+	processorPayloadRes := engineclient.NewPayloadResponse{
 		Status: "INVALID",
 	}
 
@@ -100,13 +100,13 @@ func (s *ABCIAppTestSuite) TestELRewindProposer() {
 // that the verifier's EL has rewound to an earlier block
 func (s *ABCIAppTestSuite) TestELRewindProcessor() {
 	testApp, extVoteInfo, ctx := s.testSetup()
-	choice := engine.ForkchoiceUpdatedResponse{
+	choice := engineclient.ForkchoiceUpdatedResponse{
 		PayloadId:     hexutil.EncodeUint64(1),
-		PayloadStatus: engine.PayloadStatus{Status: "VALID"},
+		PayloadStatus: engineclient.PayloadStatus{Status: "VALID"},
 	}
 
-	proposerPayloadRes := engine.Payload{
-		ExecutionPayload: engine.ExecutionPayload{
+	proposerPayloadRes := engineclient.Payload{
+		ExecutionPayload: engineclient.ExecutionPayload{
 			BlockNumber: hexutil.EncodeUint64(5),
 		},
 	}
@@ -132,12 +132,12 @@ func (s *ABCIAppTestSuite) TestELRewindProcessor() {
 	err = json.Unmarshal(resp1.Txs[0], &metadata)
 	s.Require().NoError(err)
 
-	var executionPayload engine.ExecutionPayload
+	var executionPayload engineclient.ExecutionPayload
 	err = json.Unmarshal(metadata.MarshaledExecutionPayload, &executionPayload)
 	s.Require().NoError(err)
 
 	// Execution client might trigger a sync knowing it's behind
-	processorPayloadRes := engine.NewPayloadResponse{
+	processorPayloadRes := engineclient.NewPayloadResponse{
 		Status: "SYNCING",
 	}
 

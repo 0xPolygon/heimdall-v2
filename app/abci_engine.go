@@ -51,7 +51,7 @@ func (app *HeimdallApp) retryBuildLatestPayload(state engineclient.ForkChoiceSta
 	defer cancel()
 
 	if state == (engineclient.ForkChoiceState{}) {
-		latestBlock, err := app.caller.BorChainClient.BlockByNumber(ctxTimeout, big.NewInt(int64(height))) // change this to a keeper
+		latestBlock, err := app.caller.GetBorChainBlock(ctxTimeout, big.NewInt(int64(height))) // change this to a keeper
 		if err != nil {
 			return nil, err
 		}
@@ -172,18 +172,6 @@ func (app *HeimdallApp) getExecutionStateMetadata(ctx sdk.Context) (enginetypes.
 	executionState, err := app.EngineKeeper.GetExecutionStateMetadata(ctx)
 	if err != nil {
 		logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
-<<<<<<< HEAD
-		blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
-		if err != nil {
-			return enginetypes.ExecutionStateMetadata{}, err
-		}
-||||||| parent of 93f73b1b (app,x/bor,x/stake,x/topup: add TestELRewindProcessor)
-		blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
-		if err != nil {
-			return checkpointTypes.ExecutionStateMetadata{}, err
-		}
-=======
->>>>>>> 93f73b1b (app,x/bor,x/stake,x/topup: add TestELRewindProcessor)
 
 		lastHeader, err := app.caller.GetBorChainBlock(ctx, nil)
 		if err != nil {

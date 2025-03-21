@@ -148,7 +148,7 @@ type HeimdallApp struct {
 
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller                helper.IContractCaller
-	ExecutionEngineClient engine.ExecutionEngineClient
+	ExecutionEngineClient engineclient.ExecutionEngineClient
 
 	ModuleManager *module.Manager
 	BasicManager  module.BasicManager

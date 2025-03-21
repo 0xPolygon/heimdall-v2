@@ -26,10 +26,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/0xPolygon/heimdall-v2/engine"
-	mockengine "github.com/0xPolygon/heimdall-v2/engine/mock"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	engineclient "github.com/0xPolygon/heimdall-v2/x/engine/client"
+	mockengine "github.com/0xPolygon/heimdall-v2/x/engine/client/mock"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -193,17 +193,17 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 	ctrl := gomock.NewController(t)
 	mockEngineClient := mockengine.NewMockExecutionEngineClient(ctrl)
 
-	payload := &engine.Payload{
-		ExecutionPayload: engine.ExecutionPayload{
+	payload := &engineclient.Payload{
+		ExecutionPayload: engineclient.ExecutionPayload{
 			BlockNumber: hexutil.EncodeUint64(2),
 		},
 	}
 	marshaledExecutionPayload, err := json.Marshal(payload.ExecutionPayload)
 	require.NoError(t, err)
 
-	choice := engine.ForkchoiceUpdatedResponse{
+	choice := engineclient.ForkchoiceUpdatedResponse{
 		PayloadId: hexutil.EncodeUint64(2),
-		PayloadStatus: engine.PayloadStatus{
+		PayloadStatus: engineclient.PayloadStatus{
 			Status: "VALID",
 		},
 	}

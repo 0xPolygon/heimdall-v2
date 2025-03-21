@@ -527,7 +527,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	var choice *engineclient.ForkchoiceUpdatedResponse
-	choice, err = app.caller.BorEngineClient.ForkchoiceUpdatedV2(ctx, &state, nil)
+	choice, err = app.ExecutionEngineClient.ForkchoiceUpdatedV2(ctx, &state, nil)
 	if err != nil {
 		infoLog := "fork choice failed, cannot proceed"
 		logger.Error(infoLog, err.Error())
