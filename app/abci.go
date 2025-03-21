@@ -41,7 +41,7 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, req.LocalLastCommit.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
 			logger.Error("Error occurred while validating non-rp VEs in PrepareProposal", err)
 			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
 				return nil, err
@@ -67,8 +67,10 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 		// TODO: store bor block height in a keeper
 		if app.latestExecPayload != nil && app.latestExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(executionState.LatestBlockNumber+1) {
 			payload = app.latestExecPayload
+			app.latestExecPayload = nil
 		} else if app.nextExecPayload != nil && app.nextExecPayload.ExecutionPayload.BlockNumber == hexutil.EncodeUint64(executionState.LatestBlockNumber+1) {
 			payload = app.nextExecPayload
+			app.nextExecPayload = nil
 		} else {
 			logger.Debug("latest payload not found, fetching from CheckpointKeeper")
 
@@ -225,7 +227,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
+		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
 			// We could reject proposal if we fail to query bor, we follow RFC 105 (https://github.com/cometbft/cometbft/blob/main/docs/references/rfc/rfc-105-non-det-process-proposal.md)
 			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
 				logger.Error("Failed to query bor, rejecting proposal", "error", err)
@@ -405,7 +407,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, err
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, nonRpVoteExt, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
 			logger.Error("Error occurred while validating non-rp vote extension", "error", err)
 			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
 				return &abci.ResponseExtendVote{VoteExtension: bz, NonRpExtension: dummyVoteExt}, nil
@@ -463,7 +465,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
-		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller); err != nil {
+		if err := ValidateNonRpVoteExtension(ctx, req.Height, req.NonRpVoteExtension, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller); err != nil {
 			logger.Error("ALERT, VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
 			if !errors.Is(err, borTypes.ErrFailedToQueryBor) {
 				return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil

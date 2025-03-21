@@ -51,7 +51,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			name: "ves disabled with non-empty vote extension",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 0),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0], 1),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
@@ -61,7 +61,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			name: "function executed and signature verified successfully",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 1),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0], 1),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
@@ -542,7 +542,7 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 	}
 }
 
-func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey) abci.ExtendedVoteInfo {
+func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey, round int64) abci.ExtendedVoteInfo {
 	t.Helper()
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.ConsolidatedSideTxResponse{
@@ -563,7 +563,7 @@ func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes,
 	cve := cmtTypes.CanonicalVoteExtension{
 		Extension: voteExtensionBytes,
 		Height:    CurrentHeight - 1, // the vote extension was signed in the previous height
-		Round:     int64(0),
+		Round:     round,
 		ChainId:   "",
 	}
 

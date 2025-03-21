@@ -172,19 +172,27 @@ func (app *HeimdallApp) getExecutionStateMetadata(ctx sdk.Context) (enginetypes.
 	executionState, err := app.EngineKeeper.GetExecutionStateMetadata(ctx)
 	if err != nil {
 		logger.Warn("execution state not found in the keeper, this should not happen. Fetching from bor chain", "error", err)
+<<<<<<< HEAD
 		blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
 		if err != nil {
 			return enginetypes.ExecutionStateMetadata{}, err
 		}
+||||||| parent of 93f73b1b (app,x/bor,x/stake,x/topup: add TestELRewindProcessor)
+		blockNum, err := app.caller.BorChainClient.BlockNumber(ctx)
+		if err != nil {
+			return checkpointTypes.ExecutionStateMetadata{}, err
+		}
+=======
+>>>>>>> 93f73b1b (app,x/bor,x/stake,x/topup: add TestELRewindProcessor)
 
-		lastHeader, err := app.caller.BorChainClient.BlockByNumber(ctx, big.NewInt(int64(blockNum)))
+		lastHeader, err := app.caller.GetBorChainBlock(ctx, nil)
 		if err != nil {
 			return enginetypes.ExecutionStateMetadata{}, err
 		}
 
 		executionState = enginetypes.ExecutionStateMetadata{
 			FinalBlockHash:    lastHeader.Hash().Bytes(),
-			LatestBlockNumber: blockNum,
+			LatestBlockNumber: lastHeader.Number.Uint64(),
 		}
 
 	}
