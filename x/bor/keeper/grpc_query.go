@@ -35,17 +35,11 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 }
 
 func (q queryServer) GetLatestSpan(ctx context.Context, _ *types.QueryLatestSpanRequest) (*types.QueryLatestSpanResponse, error) {
-	spans, err := q.k.GetAllSpans(ctx)
+	latestSpan, err := q.k.GetLastSpan(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	if len(spans) == 0 {
-		return nil, status.Error(codes.NotFound, "no spans found")
-	}
-
-	latestSpan := spans[len(spans)-1]
-	return &types.QueryLatestSpanResponse{Span: *latestSpan}, nil
+	return &types.QueryLatestSpanResponse{Span: latestSpan}, nil
 }
 
 func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRequest) (*types.QueryNextSpanResponse, error) {
