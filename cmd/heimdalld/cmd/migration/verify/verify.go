@@ -25,11 +25,6 @@ import (
 func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
 	logger.Info("Verifying migration")
 
-	hv1Genesis, err := utils.LoadJSONFromFile(hv1GenesisPath)
-	if err != nil {
-		return err
-	}
-
 	db := dbm.NewMemDB()
 
 	appOptions := make(simtestutil.AppOptionsMap)
@@ -44,6 +39,11 @@ func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) e
 		return err
 	}
 
+	hv1Genesis, err := utils.LoadJSONFromFile(hv1GenesisPath)
+	if err != nil {
+		return err
+	}
+
 	if err := verifyDataLists(hv1Genesis, hv2GenesisPath); err != nil {
 		return err
 	}
@@ -51,18 +51,22 @@ func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) e
 	delete(genesisState, "bor")
 	delete(genesisState, "clerk")
 
+	logger.Info("Initializing genesis state")
 	if _, err := app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState); err != nil {
 		return err
 	}
 
+	logger.Info("Verify balances")
 	if err := verifyBalances(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
 
+	logger.Info("Verify validators")
 	if err := verifyValidators(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
 
+	logger.Info("Verify checkpoints")
 	if err := verifyCheckpoints(hv1Genesis, hv2GenesisPath); err != nil {
 		return err
 	}

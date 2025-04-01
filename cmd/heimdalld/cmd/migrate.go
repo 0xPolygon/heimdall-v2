@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -146,9 +147,22 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	v036gov.RegisterLegacyAminoCodec(legacyAmino)
 	v036params.RegisterLegacyAminoCodec(legacyAmino)
 
-	if err := performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime, initialHeight); err != nil {
-		logger.Error("Migration failed", "error", err)
-		return err
+	{
+		genesisData, err := performMigrations(genesisFileV1, chainId, genesisTime, initialHeight)
+		if err != nil {
+			logger.Error("Migration failed", "error", err)
+			return err
+		}
+
+		if err := saveGenesisFile(genesisData, genesisFileV2); err != nil {
+			logger.Error("Failed to save migrated genesis file", "error", err)
+			return err
+		}
+
+		//nolint:ineffassign
+		genesisData = nil
+
+		runtime.GC()
 	}
 
 	if err := verify.VerifyMigration(genesisFileV1, genesisFileV2, logger); err != nil {
@@ -167,71 +181,75 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 }
 
 // performMigrations loads v1 genesis file, executes all the migration functions on the genesis data.
-// Stores the new v2 genesis file on disk.
-func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string, initialHeight uint64) error {
+func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight uint64) (map[string]interface{}, error) {
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
 	genesisData, err := utils.LoadJSONFromFile(genesisFileV1)
 	if err != nil {
-		return fmt.Errorf("failed to load genesis file: %w", err)
+		return nil, fmt.Errorf("failed to load genesis file: %w", err)
 	}
 
 	logger.Info("Performing custom migrations...")
 
 	if err := addMissingCometBFTConsensusParams(genesisData, initialHeight); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := removeUnusedTendermintConsensusParams(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
 	// they are deleted from the genesis during auth module migration
 	if err := migrateBankModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateAuthModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateGovModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateClerkModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateBorModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateCheckpointModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateTopupModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateMilestoneModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateChainmanagerModule(genesisData, chainId); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := migrateStakeModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
 
 	genesisData["chain_id"] = chainId
 	genesisData["genesis_time"] = genesisTime
 	genesisData["initial_height"] = strconv.FormatUint(initialHeight, 10)
 
+	return genesisData, nil
+}
+
+// saveGenesisFile saves the migrated genesis data to a new file.
+func saveGenesisFile(genesisData map[string]interface{}, genesisFileV2 string) error {
 	logger.Info("Saving migrated genesis file...", "file", genesisFileV2)
 
 	if err := utils.SaveJSONToFile(genesisData, genesisFileV2); err != nil {
