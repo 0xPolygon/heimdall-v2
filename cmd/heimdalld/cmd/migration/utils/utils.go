@@ -46,13 +46,15 @@ func LoadJSONFromFile(filename string) (map[string]interface{}, error) {
 
 // SaveJSONToFile writes data map to a file in JSON format.
 func SaveJSONToFile(data map[string]interface{}, filename string) error {
-	fileContent, err := json.MarshalIndent(data, "", "  ")
+	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
+		return fmt.Errorf("failed to create file: %w", err)
 	}
-	// #nosec G306 -- write file with 0644 permission
-	if err := os.WriteFile(filename, fileContent, 0o644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(data); err != nil {
+		return fmt.Errorf("failed to encode JSON to file: %w", err)
 	}
 
 	return nil
