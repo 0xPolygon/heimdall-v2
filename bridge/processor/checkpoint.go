@@ -75,7 +75,7 @@ func (cp *CheckpointProcessor) RegisterTasks() {
 		cp.Logger.Error("RegisterTasks | sendCheckpointToHeimdall", "error", err)
 	}
 
-	if err := cp.queueConnector.Server.RegisterTask("sendCheckpointToRootChain", cp.sendCheckpointToRootChain); err != nil {
+	if err := cp.queueConnector.Server.RegisterTask("sendCheckpointToRootchain", cp.sendCheckpointToRootChain); err != nil {
 		cp.Logger.Error("RegisterTasks | sendCheckpointToRootChain", "error", err)
 	}
 
