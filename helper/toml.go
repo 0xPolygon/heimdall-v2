@@ -1,10 +1,7 @@
 package helper
 
 import (
-	"bytes"
 	"text/template"
-
-	cmtos "github.com/cometbft/cometbft/libs/os"
 )
 
 // Note: any changes to the comments/variables/mapstructure
@@ -53,10 +50,10 @@ sh_stake_update_interval = "{{ .Custom.SHStakeUpdateInterval }}"
 sh_max_depth_duration = "{{ .Custom.SHMaxDepthDuration }}"
 
 #### gas limits ####
-main_chain_gas_limit = "{{ .Custom.MainchainGasLimit }}"
+main_chain_gas_limit = "{{ .Custom.MainChainGasLimit }}"
 
 #### gas price ####
-main_chain_max_gas_price = "{{ .Custom.MainchainMaxGasPrice }}"
+main_chain_max_gas_price = "{{ .Custom.MainChainMaxGasPrice }}"
 
 ##### Timeout Config #####
 no_ack_wait_time = "{{ .Custom.NoACKWaitTime }}"
@@ -64,25 +61,13 @@ no_ack_wait_time = "{{ .Custom.NoACKWaitTime }}"
 chain = "{{ .Custom.Chain }}"
 `
 
-var configTemplate *template.Template
+var _ *template.Template
 
 func init() {
 	var err error
 
 	tmpl := template.New("appConfigFileTemplate")
-	if configTemplate, err = tmpl.Parse(DefaultConfigTemplate); err != nil {
+	if _, err = tmpl.Parse(DefaultConfigTemplate); err != nil {
 		panic(err)
 	}
-}
-
-// WriteConfigFile renders config using the template and writes it to
-// configFilePath.
-func WriteConfigFile(configFilePath string, config *CustomConfig) {
-	var buffer bytes.Buffer
-
-	if err := configTemplate.Execute(&buffer, config); err != nil {
-		panic(err)
-	}
-
-	cmtos.MustWriteFile(configFilePath, buffer.Bytes(), 0o644)
 }

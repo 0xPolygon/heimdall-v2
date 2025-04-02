@@ -248,8 +248,8 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	m.k.Logger(ctx).Debug("validator in store", "validator", validator)
 	// check if validator deactivation period is set
 	if validator.EndEpoch != 0 {
-		m.k.Logger(ctx).Error("validator already unbonded")
-		return nil, errorsmod.Wrap(types.ErrValUnbonded, "validator already unbonded")
+		m.k.Logger(ctx).Error("validator already unBonded")
+		return nil, errorsmod.Wrap(types.ErrValUnBonded, "validator already unBonded")
 	}
 
 	// add sequence

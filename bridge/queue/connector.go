@@ -7,19 +7,19 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// QueueConnector is used to connect to the queue
-type QueueConnector struct {
+// Connector is used to connect to the queue
+type Connector struct {
 	logger log.Logger
 	Server *machinery.Server
 }
 
 const (
-	// QueueName is machinery task queue
-	QueueName = "machinery_tasks"
+	// QName is machinery task queue
+	QName = "machinery_tasks"
 )
 
 // NewQueueConnector creates a new queue connector
-func NewQueueConnector(dialer string) *QueueConnector {
+func NewQueueConnector(dialer string) *Connector {
 	// amqp dialer
 	_, err := amqp.Dial(dialer)
 	if err != nil {
@@ -28,7 +28,7 @@ func NewQueueConnector(dialer string) *QueueConnector {
 
 	cnf := &config.Config{
 		Broker:        dialer,
-		DefaultQueue:  QueueName,
+		DefaultQueue:  QName,
 		ResultBackend: dialer,
 		AMQP: &config.AMQPConfig{
 			Exchange:     "machinery_exchange",
@@ -42,18 +42,16 @@ func NewQueueConnector(dialer string) *QueueConnector {
 		panic(err)
 	}
 
-	// queue connector
-	connector := QueueConnector{
+	connector := Connector{
 		logger: log.NewNopLogger().With("module", "QueueConnector"),
 		Server: server,
 	}
 
-	// connector
 	return &connector
 }
 
 // StartWorker - starts worker to process registered tasks
-func (qc *QueueConnector) StartWorker() {
+func (qc *Connector) StartWorker() {
 	worker := qc.Server.NewWorker("invoke-processor", 10)
 
 	qc.logger.Info("Starting machinery worker")

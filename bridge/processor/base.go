@@ -26,7 +26,7 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// Processor defines a block header listener for Rootchain, Borchain, Heimdall
+// Processor defines a block header listener for RootChain, BorChain, Heimdall
 type Processor interface {
 	Start() error
 
@@ -43,7 +43,7 @@ type BaseProcessor struct {
 	quit   chan struct{}
 
 	// queue connector
-	queueConnector *queue.QueueConnector
+	queueConnector *queue.Connector
 
 	// tx broadcaster
 	txBroadcaster *broadcaster.TxBroadcaster
@@ -70,7 +70,7 @@ func Logger(name string) log.Logger {
 }
 
 // NewBaseProcessor creates a new BaseProcessor.
-func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.QueueConnector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, name string, impl Processor) *BaseProcessor {
+func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, txBroadcaster *broadcaster.TxBroadcaster, name string, impl Processor) *BaseProcessor {
 	logger := Logger(name)
 
 	cliCtx := client.Context{}.WithCodec(cdc)

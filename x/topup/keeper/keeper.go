@@ -48,8 +48,6 @@ func NewKeeper(
 		ChainKeeper:    chainKeeper,
 		contractCaller: contractCaller,
 
-		// HV2: Compared to v1, we are not using prefixes as they are handled by collections directly.
-		// Also, `sequences` is a KeySet (despite being implemented as a `Map` in v1) because it only holds keys (no values).
 		sequences:        collections.NewKeySet(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey),
 		dividendAccounts: collections.NewMap(sb, types.DividendAccountMapKey, "dividend_account", collections.StringKey, codec.CollValue[hTypes.DividendAccount](cdc)),
 	}

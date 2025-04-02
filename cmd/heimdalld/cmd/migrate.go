@@ -32,9 +32,6 @@ import (
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
-// HV2: Since default encoding for bytes in proto is base64 instead of hex encoding (like in heimdall-v1),
-// it could be breaking change for anyone querying the node APIs.
-
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
 	cmd := cobra.Command{
@@ -48,7 +45,7 @@ func MigrateCommand() *cobra.Command {
 	cmd.Flags().String(flagChainId, "", "The new network chain id")
 	cmd.Flags().String(flagGenesisTime, "", "The new network genesis time")
 	cmd.Flags().Uint64(flagInitialHeight, 0, "The new network initial height")
-	cmd.Flags().Bool(flagVerifyHash, true, "Enable or disable remote genesis hash verification")
+	cmd.Flags().Bool(flagVerifyData, true, "Enable or disable data verification")
 
 	if err := cmd.MarkFlagRequired(flagChainId); err != nil {
 		panic(err)
@@ -82,9 +79,9 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	verifyHash, err := cmd.Flags().GetBool(flagVerifyHash)
+	verifyData, err := cmd.Flags().GetBool(flagVerifyData)
 	if err != nil {
-		return fmt.Errorf("failed to parse --verify-hash flag: %w", err)
+		return fmt.Errorf("failed to parse --verify-data flag: %w", err)
 	}
 
 	flagsToCheck := []string{flagChainId, flagGenesisTime, flagInitialHeight}
@@ -111,14 +108,9 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(genesisFileV2); err == nil {
 		logger.Info("Migrated genesis file already exists", "file", genesisFileV2)
 
-		if err := verify.VerifyMigration(genesisFileV1, genesisFileV2, logger); err != nil {
-			logger.Error("Verification failed", "error", err)
-			return err
-		}
-
-		if verifyHash {
-			if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-				logger.Error("Genesis hash verification failed", "error", err)
+		if verifyData {
+			if err := verify.RunMigrationVerification(genesisFileV1, genesisFileV2, logger); err != nil {
+				logger.Error("Verification failed", "error", err)
 				return err
 			}
 		}
@@ -159,19 +151,12 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
-		genesisData = nil
-
 		runtime.GC()
 	}
 
-	if err := verify.VerifyMigration(genesisFileV1, genesisFileV2, logger); err != nil {
-		logger.Error("Verification failed", "error", err)
-		return err
-	}
-
-	if verifyHash {
-		if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-			logger.Error("Genesis hash verification failed", "error", err)
+	if verifyData {
+		if err := verify.RunMigrationVerification(genesisFileV1, genesisFileV2, logger); err != nil {
+			logger.Error("Verification failed", "error", err)
 			return err
 		}
 	}
@@ -265,8 +250,6 @@ func saveGenesisFile(genesisData map[string]interface{}, genesisFileV2 string) e
 func migrateStakeModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating stake module...")
 
-	// TODO HV2: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initialization we should call GetTotalVotingPower
-	// because it gets calculated if its zero
 	if err := utils.RenameProperty(genesisData, "app_state", "staking", "stake"); err != nil {
 		return fmt.Errorf("failed to rename staking module: %w", err)
 	}
@@ -354,9 +337,9 @@ func migrateMilestoneModule(genesisData map[string]interface{}) error {
 	params := milestoneTypes.DefaultParams()
 	milestoneState := milestoneTypes.NewGenesisState(params)
 
-	milestoneStateMarshled := appCodec.MustMarshalJSON(&milestoneState)
+	milestoneStateMarshaled := appCodec.MustMarshalJSON(&milestoneState)
 
-	genesisData["app_state"].(map[string]interface{})["milestone"] = json.RawMessage(milestoneStateMarshled)
+	genesisData["app_state"].(map[string]interface{})["milestone"] = json.RawMessage(milestoneStateMarshaled)
 
 	logger.Info("Milestone module migration completed successfully")
 
@@ -471,7 +454,10 @@ func migrateGovModule(genesisData map[string]interface{}) error {
 		Votes:              newVotes,
 		Proposals:          newProposals,
 		Params:             &params,
-		Constitution:       "This chain has no constitution.", // TODO HV2: This should be updated with the actual constitution
+		Constitution: "Heimdall chain serves as the coordination and consensus layer of the Polygon PoS protocol. " +
+			"Its governance is responsible for managing validator sets, protocol upgrades, and system parameters critical to the network's security and liveness. " +
+			"Decisions must be guided by principles of decentralization, transparency, and the long-term resilience of the Polygon ecosystem. " +
+			"All governance participants are expected to act in good faith and in alignment with the collective interest of the network.",
 	}
 
 	newGovStateMarshaled := appCodec.MustMarshalJSON(&newGovState)
@@ -908,5 +894,5 @@ const (
 	flagChainId       = "chain-id"
 	flagGenesisTime   = "genesis-time"
 	flagInitialHeight = "initial-height"
-	flagVerifyHash    = "verify-hash"
+	flagVerifyData    = "verify-data"
 )

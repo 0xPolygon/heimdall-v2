@@ -30,14 +30,14 @@ func TestHeimdallConfig(t *testing.T) {
 func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 	t.Parallel()
 
-	type teststruct struct {
+	type testStruct struct {
 		chain string
 		viper string
 		def   string
 		value string
 	}
 
-	data := []teststruct{
+	data := []testStruct{
 		{chain: "mumbai", viper: "viper", def: "default", value: "viper"},
 		{chain: "mumbai", viper: "viper", def: "", value: "viper"},
 		{chain: "mumbai", viper: "", def: "default", value: "default"},

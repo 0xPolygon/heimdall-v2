@@ -20,9 +20,9 @@ import (
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// VerifyMigration verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
+// RunMigrationVerification verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
 // and verifying balances, validators, bor spans, clerk events, and checkpoints
-func VerifyMigration(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
+func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
 	logger.Info("Verifying migration")
 
 	db := dbm.NewMemDB()

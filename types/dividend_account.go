@@ -50,8 +50,7 @@ func GetAccountTree(dividendAccounts []DividendAccount) (*merkletree.MerkleTree,
 func VerifyAccountProof(dividendAccounts []DividendAccount, userAddr, proofToVerify string) (bool, error) {
 	proof, _, err := GetAccountProof(dividendAccounts, userAddr)
 	if err != nil {
-		//nolint: nilerr
-		return false, nil
+		return false, err
 	}
 
 	// check proof bytes

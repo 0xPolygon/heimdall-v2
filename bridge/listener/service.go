@@ -20,27 +20,27 @@ const (
 	borChainListenerStr  = "borchain"
 )
 
-// ListenerService starts and stops all chain event listeners
-type ListenerService struct {
+// Service starts and stops all chain event listeners
+type Service struct {
 	// Base service
 	common.BaseService
 	listeners []Listener
 }
 
-// NewListenerService returns new service object for listneing to events
-func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, httpClient *rpchttp.HTTP) *ListenerService {
+// NewListenerService returns new service object for listening to events
+func NewListenerService(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP) *Service {
 	// creating listener object
-	listenerService := &ListenerService{}
+	listenerService := &Service{}
 
 	listenerService.BaseService = *common.NewBaseService(logger.NewTMLogger(logger.NewSyncWriter(os.Stdout)).With("service", "listener"), listenerServiceStr, listenerService)
 
-	rootchainListener := NewRootChainListener()
-	rootchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootchainListener)
-	listenerService.listeners = append(listenerService.listeners, rootchainListener)
+	rootChainListener := NewRootChainListener()
+	rootChainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetMainClient(), rootChainListenerStr, rootChainListener)
+	listenerService.listeners = append(listenerService.listeners, rootChainListener)
 
-	borchainListener := &BorChainListener{}
-	borchainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetBorClient(), borChainListenerStr, borchainListener)
-	listenerService.listeners = append(listenerService.listeners, borchainListener)
+	borChainListener := &BorChainListener{}
+	borChainListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, helper.GetBorClient(), borChainListenerStr, borChainListener)
+	listenerService.listeners = append(listenerService.listeners, borChainListener)
 
 	heimdallListener := &HeimdallListener{}
 	heimdallListener.BaseListener = *NewBaseListener(cdc, queueConnector, httpClient, nil, heimdallListenerStr, heimdallListener)
@@ -50,7 +50,7 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.QueueConnector, h
 }
 
 // OnStart starts new block subscription
-func (listenerService *ListenerService) OnStart() error {
+func (listenerService *Service) OnStart() error {
 	if err := listenerService.BaseService.OnStart(); err != nil {
 		listenerService.Logger.Error("OnStart | OnStart", "Error", err)
 	} // Always call the overridden method.
@@ -68,7 +68,7 @@ func (listenerService *ListenerService) OnStart() error {
 }
 
 // OnStop stops all necessary go routines
-func (listenerService *ListenerService) OnStop() {
+func (listenerService *Service) OnStop() {
 	listenerService.BaseService.OnStop() // Always call the overridden method.
 
 	// start chain listeners

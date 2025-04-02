@@ -101,13 +101,13 @@ func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, er
 
 // getCurrentStateID returns the current state ID handled by the polygon chain
 func (rl *RootChainListener) getCurrentStateID(ctx context.Context) (*big.Int, error) {
-	rootchainContext, err := rl.getRootChainContext()
+	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
 		return nil, err
 	}
 
 	stateReceiverInstance, err := rl.contractCaller.GetStateReceiverInstance(
-		rootchainContext.ChainmanagerParams.ChainParams.StateReceiverAddress,
+		rootChainContext.ChainmanagerParams.ChainParams.StateReceiverAddress,
 	)
 	if err != nil {
 		return nil, err

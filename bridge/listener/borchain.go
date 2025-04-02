@@ -38,7 +38,7 @@ func (ml *BorChainListener) Start() error {
 	return nil
 }
 
-// ProcessHeader - process headerblock from bor chain
+// ProcessHeader - process header block from bor chain
 func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
 	ml.Logger.Debug("New block detected", "blockNumber", newHeader.header.Number)
 	// Marshall header block and publish to queue
@@ -68,7 +68,7 @@ func (ml *BorChainListener) sendTaskWithDelay(taskName string, headerBytes []byt
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
 
-	ml.Logger.Debug("Sending task", "taskname", taskName, "currentTime", time.Now(), "delayTime", eta)
+	ml.Logger.Debug("Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)
 
 	_, err := ml.queueConnector.Server.SendTask(signature)
 	if err != nil {

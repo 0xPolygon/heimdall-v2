@@ -50,7 +50,12 @@ func SaveJSONToFile(data map[string]interface{}, filename string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("failed to close file: %v", err)
+		}
+	}(file)
 
 	encoder := json.NewEncoder(file)
 	if err := encoder.Encode(data); err != nil {
