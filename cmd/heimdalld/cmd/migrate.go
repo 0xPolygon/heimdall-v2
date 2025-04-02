@@ -151,6 +151,9 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		//nolint:ineffassign
+		genesisData = nil
+
 		runtime.GC()
 	}
 
