@@ -633,7 +633,7 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 		if dbRecords[i-1].RecordTime.After(dbRecords[i].RecordTime) {
 			return fmt.Errorf("records not ordered correctly at index %d", i)
 		}
-		// TODO skipping this check because IDs aren't sequential after sort, apparently
+		// TODO HV2: skipping this check because IDs aren't sequential, double check
 		//if int(dbRecords[i].Id) != i+1 {
 		//	return fmt.Errorf("event records in v2 have non-sequential IDs at index %d", i)
 		//}
@@ -784,7 +784,7 @@ func getValidatorBasicInfo(validator interface{}) (*validatorBasicInfo, error) {
 
 // validatorBasicInfo contains the basic info of a validator
 type validatorBasicInfo struct {
-	// TODO is this all we want to validate? e.g. pub_key is missing
+	// TODO HV2: is this all we want to validate? Probably to be extended
 	power  int64
 	signer string
 	nonce  uint64
