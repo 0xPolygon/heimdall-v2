@@ -29,6 +29,7 @@ import (
 // RunMigrationVerification verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
 // and verifying balances, validators, bor spans, clerk events, and checkpoints
 func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
+	globalStart := time.Now()
 	logger.Info("Verifying migration")
 
 	db := dbm.NewMemDB()
@@ -114,6 +115,8 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 	delete(genesisState, "bank")
 
 	logger.Info("Migration verified successfully")
+	logger.Info(fmt.Sprintf("performMigrations took %.2f minutes", time.Since(globalStart).Minutes()))
+
 	return nil
 }
 

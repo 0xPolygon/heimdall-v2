@@ -177,6 +177,8 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 
 // performMigrations loads v1 genesis file, executes all the migration functions on the genesis data.
 func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight uint64) (map[string]interface{}, error) {
+	globalStart := time.Now()
+
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
 	start := time.Now()
@@ -276,6 +278,8 @@ func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight
 	genesisData["chain_id"] = chainId
 	genesisData["genesis_time"] = genesisTime
 	genesisData["initial_height"] = strconv.FormatUint(initialHeight, 10)
+
+	logger.Info(fmt.Sprintf("performMigrations took %.2f minutes", time.Since(globalStart).Minutes()))
 
 	return genesisData, nil
 }
