@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 
 	"cosmossdk.io/log"
@@ -44,7 +46,8 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 
-	if err := verifyDataLists(hv1Genesis, hv2GenesisPath); err != nil {
+	logger.Info("Verifying modules' data lists")
+	if err := verifyDataLists(hv1GenesisPath, hv2GenesisPath, logger); err != nil {
 		return err
 	}
 
@@ -293,56 +296,133 @@ func getValidatorBasicInfo(validator interface{}) (*validatorBasicInfo, error) {
 	}, nil
 }
 
-// verifyDataLists verifies the count the bor spans, clerk events, and checkpoints in the genesis file
-func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) error {
-	hv2Genesis, err := utils.LoadJSONFromFile(hv2GenesisPath)
-	if err != nil {
-		return err
+// verifyDataLists checks list counts in v1 vs v2 using potentially different keys.
+func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
+	type keyMapping struct {
+		moduleV1 string
+		keyV1    string
+		moduleV2 string
+		keyV2    string
+	}
+	keyMappings := []keyMapping{
+		{"auth", "accounts", "auth", "accounts"},
+		{"bor", "spans", "bor", "spans"},
+		{"clerk", "event_records", "clerk", "event_records"},
+		{"clerk", "record_sequences", "clerk", "record_sequences"},
+		{"checkpoint", "checkpoints", "checkpoint", "checkpoints"},
+		{"gov", "proposals", "gov", "proposals"},
+		{"staking", "validators", "stake", "validators"},
+		{"topup", "dividend_accounts", "topup", "dividend_accounts"},
 	}
 
-	hv1BorSpans, ok := hv1Genesis["app_state"].(map[string]interface{})["bor"].(map[string]interface{})["spans"].([]interface{})
-	if !ok {
-		return errors.New("bor spans not found or invalid format")
+	for _, km := range keyMappings {
+		count1, err := countJSONArrayEntries(hv1Path, km.moduleV1, km.keyV1)
+		if err != nil {
+			return fmt.Errorf("v1 %s.%s: %w", km.moduleV1, km.keyV1, err)
+		}
+		count2, err := countJSONArrayEntries(hv2Path, km.moduleV2, km.keyV2)
+		if err != nil {
+			return fmt.Errorf("v2 %s.%s: %w", km.moduleV2, km.keyV2, err)
+		}
+		if km.moduleV1 == "auth" && km.keyV1 == "accounts" {
+			// in v1 the accounts also consider the module accounts, which are not present in v2
+			if count1 <= count2 {
+				logger.Error("count mismatch",
+					"v1_module", km.moduleV1, "v1_key", km.keyV1, "v1_count", count1,
+					"v2_module", km.moduleV2, "v2_key", km.keyV2, "v2_count", count2)
+				return fmt.Errorf("mismatch in auth accounts: %s.%s=%d > %s.%s=%d",
+					km.moduleV1, km.keyV1, count1,
+					km.moduleV2, km.keyV2, count2)
+			}
+		} else {
+			if count1 != count2 {
+				logger.Error("count mismatch",
+					"v1_module", km.moduleV1, "v1_key", km.keyV1, "v1_count", count1,
+					"v2_module", km.moduleV2, "v2_key", km.keyV2, "v2_count", count2)
+				return fmt.Errorf("mismatch: %s.%s=%d ≠ %s.%s=%d",
+					km.moduleV1, km.keyV1, count1,
+					km.moduleV2, km.keyV2, count2)
+			}
+		}
 	}
 
-	hv2BorSpans, ok := hv2Genesis["app_state"].(map[string]interface{})["bor"].(map[string]interface{})["spans"].([]interface{})
-	if !ok {
-		return errors.New("bor spans not found or invalid format")
-	}
-
-	if len(hv1BorSpans) != len(hv2BorSpans) {
-		return fmt.Errorf("mismatch in bor spans count: expected %d, got %d", len(hv1BorSpans), len(hv2BorSpans))
-	}
-
-	hv1ClerkEvents, ok := hv1Genesis["app_state"].(map[string]interface{})["clerk"].(map[string]interface{})["event_records"].([]interface{})
-	if !ok {
-		return errors.New("clerk events not found or invalid format")
-	}
-
-	hv2ClerkEvents, ok := hv2Genesis["app_state"].(map[string]interface{})["clerk"].(map[string]interface{})["event_records"].([]interface{})
-	if !ok {
-		return errors.New("clerk events not found or invalid format")
-	}
-
-	if len(hv1ClerkEvents) != len(hv2ClerkEvents) {
-		return fmt.Errorf("mismatch in clerk events count: expected %d, got %d", len(hv1ClerkEvents), len(hv2ClerkEvents))
-	}
-
-	hv1Checkpoints, err := getCheckpoints(hv1Genesis)
-	if err != nil {
-		fmt.Printf("Error extracting hv1Checkpoints: %v", err)
-	}
-
-	hv2Checkpoints, err := getCheckpoints(hv2Genesis)
-	if err != nil {
-		fmt.Printf("Error extracting hv2Checkpoints: %v", err)
-	}
-
-	if len(hv1Checkpoints) != len(hv2Checkpoints) {
-		return fmt.Errorf("mismatch in checkpoints count: expected %d, got %d", len(hv1Checkpoints), len(hv2Checkpoints))
-	}
-
+	logger.Info("All streaming list comparisons passed")
 	return nil
+}
+
+// countJSONArrayEntries streams through a genesis file to count entries in a nested array.
+func countJSONArrayEntries(path, module, key string) (int, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	dec := json.NewDecoder(f)
+	inAppState, inModule := false, false
+	var depth int
+
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return 0, fmt.Errorf("json stream error: %w", err)
+		}
+		if keyStr, ok := tok.(string); ok {
+			if !inAppState && keyStr == "app_state" {
+				inAppState = true
+				continue
+			}
+			if inAppState && !inModule && keyStr == module {
+				inModule = true
+				continue
+			}
+			if inAppState && inModule && keyStr == key {
+				// start array
+				t, err := dec.Token()
+				if err != nil {
+					return 0, fmt.Errorf("expected token after key %s: %w", key, err)
+				}
+				delim, ok := t.(json.Delim)
+				if !ok || delim != '[' {
+					return 0, fmt.Errorf("expected array for %s.%s", module, key)
+				}
+				count := 0
+				for dec.More() {
+					var discard json.RawMessage
+					if err := dec.Decode(&discard); err != nil {
+						return 0, fmt.Errorf("failed to decode item in %s.%s: %w", module, key, err)
+					}
+					count++
+				}
+				// Read the closing ']'
+				_, err = dec.Token()
+				if err != nil {
+					return 0, fmt.Errorf("error finishing array read: %w", err)
+				}
+				return count, nil
+			}
+		}
+
+		// Track depth to exit app_state if needed
+		if delim, ok := tok.(json.Delim); ok {
+			switch delim {
+			case '{':
+				depth++
+			case '}':
+				depth--
+				if inModule && depth == 2 {
+					inModule = false
+				}
+				if inAppState && depth == 1 {
+					inAppState = false
+				}
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("array %s.%s not found", module, key)
 }
 
 func getCheckpoints(genesis map[string]interface{}) ([]interface{}, error) {
