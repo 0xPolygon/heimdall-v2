@@ -146,6 +146,14 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 			return err
 		}
 
+		logger.Info("Deleting supply")
+		// delete supply (not present in v2)
+		delete(genesisData, "supply")
+		logger.Info("Supply deleted")
+
+		// Recursively replace denom from "matic" to "pol"
+		replaceDenom(genesisData)
+
 		if err := saveGenesisFile(genesisData, genesisFileV2); err != nil {
 			logger.Error("Failed to save migrated genesis file", "error", err)
 			return err
@@ -886,6 +894,27 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	logger.Info("Unused Tendermint consensus parameters removed successfully")
 
 	return nil
+}
+
+// replaceDenom recursively replaces the "denom" key with "pol" if its value is "matic"
+func replaceDenom(v interface{}) {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		for key, item := range val {
+			// Match key "denom" and value "matic"
+			if key == "denom" {
+				if strVal, ok := item.(string); ok && strVal == "matic" {
+					val[key] = "pol"
+				}
+			} else {
+				replaceDenom(item)
+			}
+		}
+	case []interface{}:
+		for _, item := range val {
+			replaceDenom(item)
+		}
+	}
 }
 
 var (
