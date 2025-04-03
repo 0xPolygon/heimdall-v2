@@ -1,9 +1,11 @@
+// Package verify provides tools to validate that a Heimdall v1 genesis file has been properly
+// migrated to Heimdall v2, by verifying balances, validators, bor spans, clerk events, and checkpoints.
 package verify
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"os"
 	"strconv"
 
 	"cosmossdk.io/log"
@@ -16,460 +18,512 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 
 	heimdallApp "github.com/0xPolygon/heimdall-v2/app"
-	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
 	hmTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// RunMigrationVerification verifies the migration from Heimdall v1 to Heimdall v2 by consuming the migrated genesis file
-// and verifying balances, validators, bor spans, clerk events, and checkpoints
+// RunMigrationVerification verifies a Heimdall v2 genesis file migrated from v1.
+// It checks consistency of balances, validators, bor spans, clerk events, and checkpoints.
 func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
 	logger.Info("Verifying migration")
 
 	db := dbm.NewMemDB()
-
 	appOptions := make(simtestutil.AppOptionsMap)
 	appOptions[flags.FlagHome] = heimdallApp.DefaultNodeHome
 
 	app := heimdallApp.NewHeimdallApp(logger, db, nil, true, appOptions)
-
 	ctx := app.NewContextLegacy(true, cmtproto.Header{Height: app.LastBlockHeight()})
+
+	logger.Info("Verifying data lists for bor and clerk")
+	if err := verifyDataLists(hv1GenesisPath, hv2GenesisPath, logger); err != nil {
+		return err
+	}
+
+	logger.Info("Verifying balances")
+	if err := verifyBalances(ctx, app, hv1GenesisPath, logger); err != nil {
+		return err
+	}
+
+	logger.Info("Verifying validators")
+	if err := verifyValidators(ctx, app, hv1GenesisPath, logger); err != nil {
+		return err
+	}
+
+	logger.Info("Verifying checkpoints")
+	if err := verifyCheckpoints(hv1GenesisPath, hv2GenesisPath, logger); err != nil {
+		return err
+	}
+
+	logger.Info("Verifying topup")
+	if err := verifyTopup(hv1GenesisPath, hv2GenesisPath, logger); err != nil {
+		return err
+	}
+
+	logger.Info("Verifying governance proposals")
+	if err := verifyGov(hv1GenesisPath, hv2GenesisPath, logger); err != nil {
+		return err
+	}
 
 	genesisState, err := getGenesisAppState(hv2GenesisPath)
 	if err != nil {
 		return err
 	}
 
-	hv1Genesis, err := utils.LoadJSONFromFile(hv1GenesisPath)
-	if err != nil {
-		return err
-	}
-
-	if err := verifyDataLists(hv1Genesis, hv2GenesisPath); err != nil {
-		return err
-	}
-
-	delete(genesisState, "bor")
-	delete(genesisState, "clerk")
-
 	logger.Info("Initializing genesis state")
 	if _, err := app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState); err != nil {
 		return err
 	}
 
-	logger.Info("Verify balances")
-	if err := verifyBalances(ctx, app, hv1Genesis); err != nil {
-		return err
-	}
-
-	logger.Info("Verify validators")
-	if err := verifyValidators(ctx, app, hv1Genesis); err != nil {
-		return err
-	}
-
-	logger.Info("Verify checkpoints")
-	if err := verifyCheckpoints(hv1Genesis, hv2GenesisPath); err != nil {
-		return err
-	}
-
 	logger.Info("Migration verified successfully")
-
 	return nil
 }
 
-// verifyBalances verifies the balances of all the accounts in the genesis file to the balances in the database
-func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map[string]interface{}) error {
-	authModule, ok := hv1Genesis["app_state"].(map[string]interface{})["auth"]
+// streamToAppState streams a large genesis JSON file and extracts only the app_state section.
+func streamToAppState(filePath string) (map[string]json.RawMessage, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open file: %w", err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			fmt.Printf("failed to close file: %v\n", err)
+		}
+	}(file)
+
+	decoder := json.NewDecoder(file)
+	for {
+		tok, err := decoder.Token()
+		if err != nil {
+			return nil, fmt.Errorf("token stream error: %w", err)
+		}
+		if key, ok := tok.(string); ok && key == "app_state" {
+			break
+		}
+	}
+
+	var appState map[string]json.RawMessage
+	if err := decoder.Decode(&appState); err != nil {
+		return nil, fmt.Errorf("failed to decode app_state: %w", err)
+	}
+	return appState, nil
+}
+
+// getGenesisAppState loads app_state from a full genesis file using standard Cosmos SDK GenesisDoc.
+func getGenesisAppState(path string) (heimdallApp.GenesisState, error) {
+	doc, err := cmttypes.GenesisDocFromFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var state heimdallApp.GenesisState
+	if err := json.Unmarshal(doc.AppState, &state); err != nil {
+		return nil, err
+	}
+	return state, nil
+}
+
+// validatorBasicInfo represents simplified validator state used for comparison.
+type validatorBasicInfo struct {
+	signer string
+	power  int64
+	nonce  uint64
+	jailed bool
+}
+
+// verifyBalances streams and validates that all account balances in the genesis match what's in the DB.
+func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1GenesisPath string, logger log.Logger) error {
+	appState, err := streamToAppState(hv1GenesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to stream hv1 genesis: %w", err)
+	}
+	authRaw, ok := appState["auth"]
 	if !ok {
 		return fmt.Errorf("auth module not found in app_state")
 	}
 
-	authData, ok := authModule.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("failed to cast auth module data")
+	type baseAccount struct {
+		Address string `json:"address"`
+		Coins   []struct {
+			Denom  string `json:"denom"`
+			Amount string `json:"amount"`
+		} `json:"coins"`
 	}
 
-	accounts, ok := authData["accounts"].([]interface{})
-	if !ok {
-		return fmt.Errorf("accounts not found or invalid format")
+	var accounts []json.RawMessage
+	if err := json.Unmarshal(authRaw, &map[string]interface{}{"accounts": &accounts}); err != nil {
+		return fmt.Errorf("failed to extract accounts: %w", err)
 	}
 
-	addressCoins := map[string]types.Coins{}
+	addressCoins := make(map[string]types.Coins)
+	for i, raw := range accounts {
+		var acc baseAccount
+		if err := json.Unmarshal(raw, &acc); err != nil {
+			return fmt.Errorf("failed to unmarshal account at %d: %w", i, err)
+		}
 
-	for i, account := range accounts {
-		accountMap, ok := account.(map[string]interface{})
+		for _, coin := range acc.Coins {
+			amount, ok := math.NewIntFromString(coin.Amount)
+			if !ok {
+				return fmt.Errorf("invalid amount '%s' for address %s", coin.Amount, acc.Address)
+			}
+			addressCoins[acc.Address] = append(addressCoins[acc.Address], types.NewCoin(coin.Denom, amount))
+		}
+	}
+
+	for _, balance := range app.BankKeeper.GetAccountsBalances(ctx) {
+		expected, ok := addressCoins[balance.Address]
 		if !ok {
-			return fmt.Errorf("invalid account format at index %d", i)
-		}
-
-		accAddress, _ := accountMap["address"].(string)
-		coins, _ := accountMap["coins"].([]interface{})
-
-		for _, coin := range coins {
-			coinMap, ok := coin.(map[string]interface{})
-			if !ok {
-				return fmt.Errorf("invalid coin format at index %d", i)
-			}
-
-			denom, _ := coinMap["denom"].(string)
-			amountStr, _ := coinMap["amount"].(string)
-
-			amount, ok := math.NewIntFromString(amountStr)
-			if !ok {
-				return fmt.Errorf("failed to parse amount at index %d: %s", i, amountStr)
-			}
-
-			if coins, ok := addressCoins[accAddress]; ok {
-				addressCoins[accAddress] = append(coins, types.NewCoin(denom, amount))
-			} else {
-				addressCoins[accAddress] = types.NewCoins(types.NewCoin(denom, amount))
-			}
-		}
-	}
-
-	dbBalances := app.BankKeeper.GetAccountsBalances(ctx)
-	for _, balance := range dbBalances {
-		if coins, ok := addressCoins[balance.Address]; ok {
-			for _, coin := range coins {
-				if !balance.Coins.AmountOf(coin.Denom).Equal(coin.Amount) {
-					return fmt.Errorf("mismatch in balance for address %s: expected %s, got %s", balance.Address, coin, balance.Coins.AmountOf(coin.Denom))
-				}
-			}
-		} else {
+			logger.Error("missing balance", "address", balance.Address)
 			return fmt.Errorf("balance not found for address %s", balance.Address)
 		}
+		for _, coin := range expected {
+			actual := balance.Coins.AmountOf(coin.Denom)
+			if !actual.Equal(coin.Amount) {
+				logger.Error("balance mismatch", "address", balance.Address, "denom", coin.Denom, "expected", coin.Amount.String(), "got", actual.String())
+				return fmt.Errorf("balance mismatch for %s in %s", balance.Address, coin.Denom)
+			}
+		}
 	}
-
+	logger.Info("All balances match")
 	return nil
 }
 
-// verifyValidators verifies the validators in the genesis file to the validators in the database using basic validator info
-func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map[string]interface{}) error {
-	stakingModule, ok := hv1Genesis["app_state"].(map[string]interface{})["staking"]
+// verifyValidators streams and validates validator records in the genesis against DB values.
+func verifyValidators(ctx types.Context, app *heimdallApp.HeimdallApp, hv1GenesisPath string, logger log.Logger) error {
+	appState, err := streamToAppState(hv1GenesisPath)
+	if err != nil {
+		return err
+	}
+	stakingRaw, ok := appState["staking"]
 	if !ok {
-		return fmt.Errorf("staking module not found in app_state")
+		return fmt.Errorf("staking module not found")
+	}
+	var staking map[string]json.RawMessage
+	if err := json.Unmarshal(stakingRaw, &staking); err != nil {
+		return fmt.Errorf("failed to parse staking module: %w", err)
 	}
 
-	stakingModuleData, ok := stakingModule.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("failed to cast staking module data")
+	// Try current_val_set first
+	var currentValSet struct {
+		Validators []json.RawMessage `json:"validators"`
 	}
-
-	curValSetDB := app.StakeKeeper.GetCurrentValidators(ctx)
-
-	currentValSet, ok := stakingModuleData["current_val_set"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("current_val_set not found or invalid format")
-	}
-
-	curValSetGenesis, ok := currentValSet["validators"].([]interface{})
-	if !ok {
-		return fmt.Errorf("current_val_set validators not found or invalid format")
-	}
-
-	if len(curValSetGenesis) > 0 {
-		curValSetDbMap := map[string]hmTypes.Validator{}
-
-		for _, valDB := range curValSetDB {
-			curValSetDbMap[valDB.Signer] = valDB
+	if raw, ok := staking["current_val_set"]; ok {
+		if err := json.Unmarshal(raw, &currentValSet); err != nil {
+			return fmt.Errorf("invalid current_val_set: %w", err)
 		}
-
-		for i, validator := range curValSetGenesis {
-			basicValInfo, err := getValidatorBasicInfo(validator)
-			if err != nil {
-				return fmt.Errorf("failed to get validator basic info at index %d: %w", i, err)
-			}
-
-			validatorDB, ok := curValSetDbMap[basicValInfo.signer]
-			if !ok {
-				return fmt.Errorf("validator not found in current validator set database: %s", basicValInfo.signer)
-			}
-
-			if err := compareValidators(validatorDB, basicValInfo); err != nil {
-				return fmt.Errorf("validator mismatch %s: %w", basicValInfo.signer, err)
-			}
-
-			delete(curValSetDbMap, basicValInfo.signer)
+		if len(currentValSet.Validators) > 0 {
+			return compareValidatorsSet(currentValSet.Validators, app.StakeKeeper.GetCurrentValidators(ctx), logger)
 		}
-
-		return nil
 	}
 
-	allValidatorsGenesis, ok := stakingModuleData["validators"].([]interface{})
-	if !ok {
-		return fmt.Errorf("validators not found or invalid format")
+	// Else fall back to validators
+	var all []json.RawMessage
+	if raw, ok := staking["validators"]; ok {
+		if err := json.Unmarshal(raw, &all); err != nil {
+			return fmt.Errorf("invalid validators array: %w", err)
+		}
+		ptrs := make([]hmTypes.Validator, 0, len(app.StakeKeeper.GetAllValidators(ctx)))
+		for _, v := range app.StakeKeeper.GetAllValidators(ctx) {
+			if v != nil {
+				ptrs = append(ptrs, *v)
+			}
+		}
+		return compareValidatorsSet(all, ptrs, logger)
+	}
+	return fmt.Errorf("no validators found")
+}
+
+// compareValidatorsSet matches a list of genesis validators with the DB validator set.
+func compareValidatorsSet(genesisVals []json.RawMessage, dbVals []hmTypes.Validator, logger log.Logger) error {
+	dbMap := make(map[string]hmTypes.Validator)
+	for _, val := range dbVals {
+		dbMap[val.Signer] = val
 	}
 
-	allValidatorsDB := app.StakeKeeper.GetAllValidators(ctx)
-
-	validatorsDbMap := map[string]*hmTypes.Validator{}
-	for _, valDB := range allValidatorsDB {
-		validatorsDbMap[valDB.Signer] = valDB
-	}
-
-	for i, validator := range allValidatorsGenesis {
-		basicValInfo, err := getValidatorBasicInfo(validator)
+	for i, raw := range genesisVals {
+		info, err := getValidatorBasicInfoFromRaw(raw)
 		if err != nil {
-			return fmt.Errorf("failed to get validator basic info at index %d: %w", i, err)
+			return fmt.Errorf("validator %d parse error: %w", i, err)
 		}
-
-		validatorDB, ok := validatorsDbMap[basicValInfo.signer]
+		dbVal, ok := dbMap[info.signer]
 		if !ok {
-			return fmt.Errorf("validator not found in database: %s", basicValInfo.signer)
+			logger.Error("validator not found in DB", "signer", info.signer)
+			return fmt.Errorf("validator %s not found in DB", info.signer)
 		}
-
-		if err := compareValidators(*validatorDB, basicValInfo); err != nil {
-			return fmt.Errorf("validator mismatch %s: %w", basicValInfo.signer, err)
+		if err := compareValidators(dbVal, info); err != nil {
+			logger.Error("validator mismatch", "signer", info.signer, "error", err.Error())
+			return err
 		}
-
-		delete(validatorsDbMap, basicValInfo.signer)
 	}
-
+	logger.Info("All validators match")
 	return nil
 }
 
-// compareValidators compares the validator in the database to the validator in the genesis file based on basic info
-func compareValidators(validatorDB hmTypes.Validator, validatorGenesis *validatorBasicInfo) error {
-	if validatorDB.Signer != validatorGenesis.signer {
-		return fmt.Errorf("mismatch in signer for validator %s: expected %s, got %s", validatorDB.Signer, validatorGenesis.signer, validatorDB.Signer)
+// getValidatorBasicInfoFromRaw extracts validator info from a RawMessage.
+func getValidatorBasicInfoFromRaw(raw json.RawMessage) (*validatorBasicInfo, error) {
+	var m map[string]interface{}
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, err
 	}
-
-	if validatorDB.VotingPower != validatorGenesis.power {
-		return fmt.Errorf("mismatch in power for validator %s: expected %d, got %d", validatorDB.Signer, validatorGenesis.power, validatorDB.VotingPower)
-	}
-
-	if validatorDB.Nonce != validatorGenesis.nonce {
-		return fmt.Errorf("mismatch in nonce for validator %s: expected %d, got %d", validatorDB.Signer, validatorGenesis.nonce, validatorDB.Nonce)
-	}
-
-	if validatorDB.Jailed != validatorGenesis.jailed {
-		return fmt.Errorf("mismatch in jailed status for validator %s: expected %t, got %t", validatorDB.Signer, validatorGenesis.jailed, validatorDB.Jailed)
-	}
-
-	return nil
-}
-
-// getValidatorBasicInfo extracts the basic info of a validator from the genesis file
-func getValidatorBasicInfo(validator interface{}) (*validatorBasicInfo, error) {
-	validatorMap, ok := validator.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("invalid validator format")
-	}
-
-	jailed, ok := validatorMap["jailed"].(bool)
-	if !ok {
-		return nil, errors.New("jailed not found or invalid format")
-	}
-
-	signer, ok := validatorMap["signer"].(string)
-	if !ok {
-		return nil, errors.New("signer not found or invalid format")
-	}
-
-	powerStr, ok := validatorMap["power"].(string)
-	if !ok {
-		return nil, errors.New("power not found or invalid format")
-	}
-
-	nonceStr, ok := validatorMap["nonce"].(string)
-	if !ok {
-		return nil, errors.New("nonce not found or invalid format")
-	}
+	signer, _ := m["signer"].(string)
+	powerStr, _ := m["power"].(string)
+	nonceStr, _ := m["nonce"].(string)
+	jailed, _ := m["jailed"].(bool)
 
 	power, err := strconv.ParseInt(powerStr, 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid power: %w", err)
 	}
-
 	nonce, err := strconv.ParseUint(nonceStr, 10, 64)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid nonce: %w", err)
 	}
 
-	return &validatorBasicInfo{
-		power:  power,
-		signer: signer,
-		nonce:  nonce,
-		jailed: jailed,
-	}, nil
+	return &validatorBasicInfo{signer, power, nonce, jailed}, nil
 }
 
-// verifyDataLists verifies the count the bor spans, clerk events, and checkpoints in the genesis file
-func verifyDataLists(hv1Genesis map[string]interface{}, hv2GenesisPath string) error {
-	hv2Genesis, err := utils.LoadJSONFromFile(hv2GenesisPath)
+// verifyCheckpoints streams and validates the checkpoint list, count, and order between v1 and v2 genesis.
+func verifyCheckpoints(hv1Path, hv2Path string, logger log.Logger) error {
+	hv1App, err := streamToAppState(hv1Path)
+	if err != nil {
+		return err
+	}
+	hv2App, err := streamToAppState(hv2Path)
 	if err != nil {
 		return err
 	}
 
-	hv1BorSpans, ok := hv1Genesis["app_state"].(map[string]interface{})["bor"].(map[string]interface{})["spans"].([]interface{})
-	if !ok {
-		return errors.New("bor spans not found or invalid format")
+	hv1CP, hv2CP := hv1App["checkpoint"], hv2App["checkpoint"]
+	var m1, m2 map[string]interface{}
+	if err := json.Unmarshal(hv1CP, &m1); err != nil {
+		return err
 	}
-
-	hv2BorSpans, ok := hv2Genesis["app_state"].(map[string]interface{})["bor"].(map[string]interface{})["spans"].([]interface{})
-	if !ok {
-		return errors.New("bor spans not found or invalid format")
-	}
-
-	if len(hv1BorSpans) != len(hv2BorSpans) {
-		return fmt.Errorf("mismatch in bor spans count: expected %d, got %d", len(hv1BorSpans), len(hv2BorSpans))
-	}
-
-	hv1ClerkEvents, ok := hv1Genesis["app_state"].(map[string]interface{})["clerk"].(map[string]interface{})["event_records"].([]interface{})
-	if !ok {
-		return errors.New("clerk events not found or invalid format")
-	}
-
-	hv2ClerkEvents, ok := hv2Genesis["app_state"].(map[string]interface{})["clerk"].(map[string]interface{})["event_records"].([]interface{})
-	if !ok {
-		return errors.New("clerk events not found or invalid format")
-	}
-
-	if len(hv1ClerkEvents) != len(hv2ClerkEvents) {
-		return fmt.Errorf("mismatch in clerk events count: expected %d, got %d", len(hv1ClerkEvents), len(hv2ClerkEvents))
-	}
-
-	hv1Checkpoints, err := getCheckpoints(hv1Genesis)
-	if err != nil {
-		fmt.Printf("Error extracting hv1Checkpoints: %v", err)
-	}
-
-	hv2Checkpoints, err := getCheckpoints(hv2Genesis)
-	if err != nil {
-		fmt.Printf("Error extracting hv2Checkpoints: %v", err)
-	}
-
-	if len(hv1Checkpoints) != len(hv2Checkpoints) {
-		return fmt.Errorf("mismatch in checkpoints count: expected %d, got %d", len(hv1Checkpoints), len(hv2Checkpoints))
-	}
-
-	return nil
-}
-
-func getCheckpoints(genesis map[string]interface{}) ([]interface{}, error) {
-	appState, ok := genesis["app_state"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("app_state key missing or not a map")
-	}
-
-	checkpointData, ok := appState["checkpoint"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("checkpoint key missing or not a map")
-	}
-
-	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("checkpoints key missing or not a list")
-	}
-
-	return checkpoints, nil
-}
-
-// verifyCheckpoints verifies the checkpoints in the genesis files by comparing the data in both versions
-func verifyCheckpoints(hv1Genesis map[string]interface{}, hv2GenesisPath string) error {
-	hv2Genesis, err := utils.LoadJSONFromFile(hv2GenesisPath)
-	if err != nil {
+	if err := json.Unmarshal(hv2CP, &m2); err != nil {
 		return err
 	}
 
-	// ensure checkpoints data exist in both versions
-	hv1CheckpointData, ok := hv1Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoint module not found in v1 app_state")
+	hv1List := m1["checkpoints"].([]interface{})
+	hv2List := m2["checkpoints"].([]interface{})
+
+	if len(hv1List) != len(hv2List) {
+		logger.Error("checkpoint count mismatch", "v1", len(hv1List), "v2", len(hv2List))
+		return fmt.Errorf("checkpoint count mismatch")
 	}
 
-	hv2CheckpointData, ok := hv2Genesis["app_state"].(map[string]interface{})["checkpoint"].(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoint module not found in v2 app_state")
+	hv1Ack, _ := strconv.Atoi(m1["ack_count"].(string))
+	hv2Ack, _ := strconv.Atoi(m2["ack_count"].(string))
+	if hv1Ack != hv2Ack {
+		logger.Error("ack_count mismatch", "v1", hv1Ack, "v2", hv2Ack)
+		return fmt.Errorf("ack_count mismatch")
 	}
 
-	hv1Checkpoints, err := getCheckpoints(hv1Genesis)
-	if err != nil {
-		fmt.Printf("Error extracting hv1Checkpoints: %v", err)
-	}
-
-	hv2Checkpoints, err := getCheckpoints(hv2Genesis)
-	if err != nil {
-		fmt.Printf("Error extracting hv2Checkpoints: %v", err)
-	}
-
-	// ensure checkpoints count is the same in both versions
-	if len(hv1Checkpoints) != len(hv2Checkpoints) {
-		return fmt.Errorf("mismatch in checkpoints count: v1 has %d, v2 has %d", len(hv1Checkpoints), len(hv2Checkpoints))
-	}
-
-	// ensure ack_count is present in both versions
-	hv1AckCountStr, ok := hv1CheckpointData["ack_count"].(string)
-	if !ok {
-		return fmt.Errorf("ack_count not found or invalid in v1")
-	}
-
-	hv2AckCountStr, ok := hv2CheckpointData["ack_count"].(string)
-	if !ok {
-		return fmt.Errorf("ack_count not found or invalid in v2")
-	}
-
-	// ensure ack_count is the same in both versions
-	hv1AckCount, err := strconv.Atoi(hv1AckCountStr)
-	if err != nil {
-		return fmt.Errorf("failed to convert v1 ack_count to integer: %w", err)
-	}
-
-	hv2AckCount, err := strconv.Atoi(hv2AckCountStr)
-	if err != nil {
-		return fmt.Errorf("failed to convert v2 ack_count to integer: %w", err)
-	}
-
-	if hv1AckCount != hv2AckCount {
-		return fmt.Errorf("mismatch in ack_count: v1 has %d, v2 has %d", hv1AckCount, hv2AckCount)
-	}
-
-	// ensure checkpoints are ordered by growing start_block in both versions
-	for i := 1; i < len(hv1Checkpoints); i++ {
-		hv1StartBlockPrev, _ := strconv.Atoi(hv1Checkpoints[i-1].(map[string]interface{})["start_block"].(string))
-		hv1StartBlockCurr, _ := strconv.Atoi(hv1Checkpoints[i].(map[string]interface{})["start_block"].(string))
-		if hv1StartBlockPrev >= hv1StartBlockCurr {
-			return fmt.Errorf("checkpoints in v1 are not ordered by growing start_block at index %d", i)
+	for i := 1; i < len(hv1List); i++ {
+		prev := hv1List[i-1].(map[string]interface{})
+		curr := hv1List[i].(map[string]interface{})
+		pSB, _ := strconv.Atoi(prev["start_block"].(string))
+		cSB, _ := strconv.Atoi(curr["start_block"].(string))
+		if pSB >= cSB {
+			logger.Error("v1 checkpoint start_block disorder", "index", i)
+			return fmt.Errorf("v1 checkpoint start_block disorder at %d", i)
 		}
 	}
 
-	for i := 1; i < len(hv2Checkpoints); i++ {
-		hv2StartBlockPrev, _ := strconv.Atoi(hv2Checkpoints[i-1].(map[string]interface{})["start_block"].(string))
-		hv2StartBlockCurr, _ := strconv.Atoi(hv2Checkpoints[i].(map[string]interface{})["start_block"].(string))
-		if hv2StartBlockPrev >= hv2StartBlockCurr {
-			return fmt.Errorf("checkpoints in v2 are not ordered by growing start_block at index %d", i)
-		}
-	}
-
-	// ensure IDs are sequential in v2 checkpoints
-	for i := 0; i < len(hv2Checkpoints); i++ {
-		id, _ := strconv.Atoi(hv2Checkpoints[i].(map[string]interface{})["id"].(string))
+	for i, cp := range hv2List {
+		entry := cp.(map[string]interface{})
+		id, _ := strconv.Atoi(entry["id"].(string))
 		if id != i+1 {
-			return fmt.Errorf("checkpoints in v2 have non-sequential IDs at index %d", i)
+			logger.Error("v2 checkpoint ID not sequential", "index", i, "id", id)
+			return fmt.Errorf("v2 checkpoint ID not sequential at %d", i)
+		}
+		if i > 0 {
+			prev := hv2List[i-1].(map[string]interface{})
+			pSB, _ := strconv.Atoi(prev["start_block"].(string))
+			cSB, _ := strconv.Atoi(entry["start_block"].(string))
+			if pSB >= cSB {
+				logger.Error("v2 checkpoint start_block disorder", "index", i)
+				return fmt.Errorf("v2 checkpoint start_block disorder at %d", i)
+			}
 		}
 	}
 
+	logger.Info("All checkpoints verified")
 	return nil
 }
 
-// getGenesisAppState reads the genesis file and returns the app state
-func getGenesisAppState(hv2GenesisPath string) (heimdallApp.GenesisState, error) {
-	genDoc, err := cmttypes.GenesisDocFromFile(hv2GenesisPath)
+// verifyDataLists checks count equality of bor spans and clerk event records between v1 and v2 genesis.
+func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
+	hv1, err := streamToAppState(hv1Path)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	hv2, err := streamToAppState(hv2Path)
+	if err != nil {
+		return err
 	}
 
-	var genesisState heimdallApp.GenesisState
-	if err := json.Unmarshal(genDoc.AppState, &genesisState); err != nil {
-		return nil, err
+	if err := compareListLength(hv1, hv2, "bor", "spans", logger); err != nil {
+		return err
 	}
-
-	return genesisState, nil
+	if err := compareListLength(hv1, hv2, "clerk", "event_records", logger); err != nil {
+		return err
+	}
+	logger.Info("All bor spans and clerk events verified")
+	return nil
 }
 
-// validatorBasicInfo contains the basic info of a validator
-type validatorBasicInfo struct {
-	power  int64
-	signer string
-	nonce  uint64
-	jailed bool
+// compareListLength verifies equal array length for a given module and key between two app states.
+func compareListLength(hv1, hv2 map[string]json.RawMessage, module, key string, logger log.Logger) error {
+	getCount := func(app map[string]json.RawMessage) (int, error) {
+		modRaw, ok := app[module]
+		if !ok {
+			return 0, fmt.Errorf("module %s missing", module)
+		}
+		var mod map[string]json.RawMessage
+		if err := json.Unmarshal(modRaw, &mod); err != nil {
+			return 0, err
+		}
+		listRaw, ok := mod[key]
+		if !ok {
+			return 0, fmt.Errorf("key %s missing in %s", key, module)
+		}
+		var list []json.RawMessage
+		if err := json.Unmarshal(listRaw, &list); err != nil {
+			return 0, err
+		}
+		return len(list), nil
+	}
+
+	n1, err := getCount(hv1)
+	if err != nil {
+		return err
+	}
+	n2, err := getCount(hv2)
+	if err != nil {
+		return err
+	}
+	if n1 != n2 {
+		logger.Error("mismatched count in module", "module", module, "key", key, "v1", n1, "v2", n2)
+		return fmt.Errorf("%s.%s count mismatch", module, key)
+	}
+	return nil
+}
+
+// compareValidators checks if the fields of a validator in the DB match those in the genesis.
+func compareValidators(db hmTypes.Validator, g *validatorBasicInfo) error {
+	if db.Signer != g.signer || db.VotingPower != g.power || db.Nonce != g.nonce || db.Jailed != g.jailed {
+		return fmt.Errorf("validator fields mismatch")
+	}
+	return nil
+}
+
+// verifyTopup compares the topup module between two genesis files,
+// checking that topup_sequences (v2) and tx_sequences (v1) have same count,
+// and that all dividend_accounts match by user and feeAmount.
+func verifyTopup(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
+	// Load app_state
+	appState1, err := streamToAppState(hv1GenesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to stream hv1 genesis: %w", err)
+	}
+	appState2, err := streamToAppState(hv2GenesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to stream hv2 genesis: %w", err)
+	}
+
+	topupV1Raw, ok1 := appState1["topup"]
+	topupV2Raw, ok2 := appState2["topup"]
+	if !ok1 || !ok2 {
+		return fmt.Errorf("topup module not found in one of the genesis files")
+	}
+
+	var topupV1, topupV2 struct {
+		TxSequences      []string `json:"tx_sequences"`    // v1
+		TopupSequences   []string `json:"topup_sequences"` // v2
+		DividendAccounts []struct {
+			User      string `json:"user"`
+			FeeAmount string `json:"feeAmount"`
+		} `json:"dividend_accounts"`
+	}
+
+	if err := json.Unmarshal(topupV1Raw, &topupV1); err != nil {
+		return fmt.Errorf("failed to parse topup module in v1: %w", err)
+	}
+	if err := json.Unmarshal(topupV2Raw, &topupV2); err != nil {
+		return fmt.Errorf("failed to parse topup module in v2: %w", err)
+	}
+
+	// Check tx_sequences vs topup_sequences count
+	if len(topupV1.TxSequences) != len(topupV2.TopupSequences) {
+		logger.Error("Mismatch in topup/tx sequence count",
+			"v1", len(topupV1.TxSequences),
+			"v2", len(topupV2.TopupSequences),
+		)
+		return fmt.Errorf("topup sequence count mismatch: v1 has %d, v2 has %d",
+			len(topupV1.TxSequences), len(topupV2.TopupSequences))
+	}
+
+	// Check dividend_accounts count
+	if len(topupV1.DividendAccounts) != len(topupV2.DividendAccounts) {
+		logger.Error("Mismatch in dividend accounts",
+			"v1", len(topupV1.DividendAccounts),
+			"v2", len(topupV2.DividendAccounts),
+		)
+		return fmt.Errorf("dividend account count mismatch: v1 has %d, v2 has %d",
+			len(topupV1.DividendAccounts), len(topupV2.DividendAccounts))
+	}
+
+	// Check individual dividend accounts by index
+	for i, a1 := range topupV1.DividendAccounts {
+		a2 := topupV2.DividendAccounts[i]
+		if a1.User != a2.User || a1.FeeAmount != a2.FeeAmount {
+			logger.Error("Mismatch in dividend account",
+				"index", i,
+				"user_v1", a1.User, "user_v2", a2.User,
+				"fee_v1", a1.FeeAmount, "fee_v2", a2.FeeAmount,
+			)
+			return fmt.Errorf("dividend account mismatch at index %d", i)
+		}
+	}
+
+	logger.Info("Topup module verified successfully")
+	return nil
+}
+
+// verifyGov ensures that the number of governance proposals matches between v1 and v2 genesis files.
+func verifyGov(hv1GenesisPath, hv2GenesisPath string, logger log.Logger) error {
+	appState1, err := streamToAppState(hv1GenesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to stream hv1 genesis: %w", err)
+	}
+	appState2, err := streamToAppState(hv2GenesisPath)
+	if err != nil {
+		return fmt.Errorf("failed to stream hv2 genesis: %w", err)
+	}
+
+	govV1Raw, ok1 := appState1["gov"]
+	govV2Raw, ok2 := appState2["gov"]
+	if !ok1 || !ok2 {
+		return fmt.Errorf("gov module not found in one of the genesis files")
+	}
+
+	var govV1, govV2 struct {
+		Proposals []json.RawMessage `json:"proposals"`
+	}
+
+	if err := json.Unmarshal(govV1Raw, &govV1); err != nil {
+		return fmt.Errorf("failed to parse gov module in v1: %w", err)
+	}
+	if err := json.Unmarshal(govV2Raw, &govV2); err != nil {
+		return fmt.Errorf("failed to parse gov module in v2: %w", err)
+	}
+
+	if len(govV1.Proposals) != len(govV2.Proposals) {
+		logger.Error("Mismatch in number of governance proposals",
+			"v1", len(govV1.Proposals), "v2", len(govV2.Proposals),
+		)
+		return fmt.Errorf("governance proposal count mismatch: v1 has %d, v2 has %d",
+			len(govV1.Proposals), len(govV2.Proposals))
+	}
+
+	logger.Info("Governance proposal count verified successfully")
+	return nil
 }
