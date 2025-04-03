@@ -179,63 +179,100 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight uint64) (map[string]interface{}, error) {
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
+	start := time.Now()
 	genesisData, err := utils.LoadJSONFromFile(genesisFileV1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load genesis file: %w", err)
 	}
+	logger.Info(fmt.Sprintf("LoadJSONFromFile took %.2f minutes", time.Since(start).Minutes()))
 
 	logger.Info("Performing custom migrations...")
 
+	// addMissingCometBFTConsensusParams
+	start = time.Now()
 	if err := addMissingCometBFTConsensusParams(genesisData, initialHeight); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("addMissingCometBFTConsensusParams took %.2f minutes", time.Since(start).Minutes()))
 
+	// removeUnusedTendermintConsensusParams
+	start = time.Now()
 	if err := removeUnusedTendermintConsensusParams(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("removeUnusedTendermintConsensusParams took %.2f minutes", time.Since(start).Minutes()))
 
-	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
-	// they are deleted from the genesis during auth module migration
+	// migrateBankModule
+	start = time.Now()
 	if err := migrateBankModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateBankModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateAuthModule
+	start = time.Now()
 	if err := migrateAuthModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateAuthModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateGovModule
+	start = time.Now()
 	if err := migrateGovModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateGovModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateClerkModule
+	start = time.Now()
 	if err := migrateClerkModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateClerkModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateBorModule
+	start = time.Now()
 	if err := migrateBorModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateBorModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateCheckpointModule
+	start = time.Now()
 	if err := migrateCheckpointModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateCheckpointModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateTopupModule
+	start = time.Now()
 	if err := migrateTopupModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateTopupModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateMilestoneModule
+	start = time.Now()
 	if err := migrateMilestoneModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateMilestoneModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateChainmanagerModule
+	start = time.Now()
 	if err := migrateChainmanagerModule(genesisData, chainId); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateChainmanagerModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateStakeModule
+	start = time.Now()
 	if err := migrateStakeModule(genesisData); err != nil {
 		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateStakeModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// Set final values
 	genesisData["chain_id"] = chainId
 	genesisData["genesis_time"] = genesisTime
 	genesisData["initial_height"] = strconv.FormatUint(initialHeight, 10)

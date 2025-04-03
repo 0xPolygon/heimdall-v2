@@ -10,6 +10,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"time"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/math"
@@ -50,61 +51,69 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 	}
 
 	logger.Info("Verifying modules' data lists")
+	start := time.Now()
 	if err := verifyDataLists(hv1GenesisPath, hv2GenesisPath, logger); err != nil {
 		return err
 	}
+	logger.Info(fmt.Sprintf("verifyDataLists took %.2f minutes", time.Since(start).Minutes()))
 
 	logger.Info("Initializing genesis state")
+	start = time.Now()
 	if _, err := app.ModuleManager.InitGenesis(ctx, app.AppCodec(), genesisState); err != nil {
 		return err
 	}
+	logger.Info(fmt.Sprintf("InitGenesis took %.2f minutes", time.Since(start).Minutes()))
 
 	logger.Info("Verify event records")
+	start = time.Now()
 	if err := verifyClerkEventRecords(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
-	// remove unnecessary keys from genesis state (clerk already verified)
+	logger.Info(fmt.Sprintf("verifyClerkEventRecords took %.2f minutes", time.Since(start).Minutes()))
 	delete(genesisState, "clerk")
 
 	logger.Info("Verify spans")
+	start = time.Now()
 	if err := verifySpans(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
-	// remove unnecessary keys from genesis state (bor already verified)
+	logger.Info(fmt.Sprintf("verifySpans took %.2f minutes", time.Since(start).Minutes()))
 	delete(genesisState, "bor")
 
 	logger.Info("Verify checkpoints")
+	start = time.Now()
 	if err := verifyCheckpoints(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
-	// remove unnecessary keys from genesis state (checkpoint already verified)
+	logger.Info(fmt.Sprintf("verifyCheckpoints took %.2f minutes", time.Since(start).Minutes()))
 	delete(genesisState, "checkpoint")
 
 	logger.Info("Verify validators")
+	start = time.Now()
 	if err := verifyValidators(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
-	// remove unnecessary keys from genesis state (staking already verified)
+	logger.Info(fmt.Sprintf("verifyValidators took %.2f minutes", time.Since(start).Minutes()))
 	delete(genesisState, "staking")
 
 	logger.Info("Verify topup")
+	start = time.Now()
 	if err := verifyTopup(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
-	// remove unnecessary keys from genesis state (topup already verified)
+	logger.Info(fmt.Sprintf("verifyTopup took %.2f minutes", time.Since(start).Minutes()))
 	delete(genesisState, "topup")
 
 	logger.Info("Verify balances")
+	start = time.Now()
 	if err := verifyBalances(ctx, app, hv1Genesis); err != nil {
 		return err
 	}
-	// remove unnecessary keys from genesis state (auth and bank already verified)
-	// these last deletions are redundant as the function is about to return, here just for consistency
+	logger.Info(fmt.Sprintf("verifyBalances took %.2f minutes", time.Since(start).Minutes()))
 	delete(genesisState, "auth")
 	delete(genesisState, "bank")
 
 	logger.Info("Migration verified successfully")
-
 	return nil
 }
 
