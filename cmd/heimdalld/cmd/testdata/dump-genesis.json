@@ -1458,7 +1458,7 @@
       }
     },
     "topup": {
-      "tx_sequences": null,
+      "tx_sequences": ["1020617100146"],
       "dividend_accounts": [
         {
           "user": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",

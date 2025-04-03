@@ -97,7 +97,7 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (s *KeeperTestSuite) TestAddCheckpoint() {
+func (s *KeeperTestSuite) TestAddAndGetCheckpoints() {
 	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 
 	cpNumber := uint64(2000)
@@ -119,9 +119,36 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 	err := keeper.AddCheckpoint(ctx, checkpoint)
 	require.NoError(err)
 
+	cpNumber2 := uint64(2001)
+	startBlock2 := uint64(257)
+	endBlock2 := uint64(513)
+	rootHash2 := testutil.RandomBytes()
+	proposerAddress2 := common.Address{}.String()
+	timestamp2 := uint64(time.Now().Unix())
+
+	checkpoint2 := types.CreateCheckpoint(
+		cpNumber2,
+		startBlock2,
+		endBlock2,
+		rootHash2,
+		proposerAddress2,
+		BorChainID,
+		timestamp2,
+	)
+	err = keeper.AddCheckpoint(ctx, checkpoint2)
+	require.NoError(err)
+
 	result, err := keeper.GetCheckpointByNumber(ctx, cpNumber)
 	require.NoError(err)
 	require.True(checkpoint.Equal(result))
+
+	result2, err := keeper.GetCheckpointByNumber(ctx, cpNumber2)
+	require.NoError(err)
+	require.True(checkpoint2.Equal(result2))
+
+	checkpoints, err := keeper.GetCheckpoints(ctx)
+	require.NoError(err)
+	require.Equal(2, len(checkpoints))
 }
 
 func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {

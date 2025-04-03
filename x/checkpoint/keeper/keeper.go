@@ -263,31 +263,23 @@ func (k *Keeper) GetLastNoAck(ctx context.Context) (uint64, error) {
 }
 
 // GetCheckpoints gets all the checkpoints from the store
-func (k *Keeper) GetCheckpoints(ctx context.Context) (checkpoints []types.Checkpoint, e error) {
+func (k *Keeper) GetCheckpoints(ctx context.Context) ([]types.Checkpoint, error) {
 	iterator, err := k.checkpoints.Iterate(ctx, nil)
 	if err != nil {
 		k.Logger(ctx).Error("error in getting the iterator", "err", err)
 		return nil, err
 	}
-
-	defer func() {
+	defer func(iterator collections.Iterator[uint64, types.Checkpoint]) {
 		err := iterator.Close()
 		if err != nil {
-			k.Logger(ctx).Error("error in closing the checkpoint iterator", "error", err)
+			k.Logger(ctx).Error("error in closing iterator", "err", err)
 		}
-		checkpoints = nil
-		e = err
-	}()
+	}(iterator)
 
-	var checkpoint types.Checkpoint
-
-	for ; iterator.Valid(); iterator.Next() {
-		checkpoint, err = iterator.Value()
-		if err != nil {
-			k.Logger(ctx).Error("error while getting checkpoint from iterator", "err", err)
-			return nil, err
-		}
-		checkpoints = append(checkpoints, checkpoint)
+	checkpoints, err := iterator.Values()
+	if err != nil {
+		k.Logger(ctx).Error("error in getting the iterator values", "err", err)
+		return nil, err
 	}
 
 	return checkpoints, nil
