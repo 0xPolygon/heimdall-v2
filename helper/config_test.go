@@ -75,22 +75,36 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 }
 
 func TestGetChainManagerAddressMigration(t *testing.T) {
-	t.Parallel()
+	// Backup and defer restore for chainManagerAddressMigrations
+	originalMigrations := make(map[string]map[int64]ChainManagerAddressMigration)
+	for k, v := range chainManagerAddressMigrations {
+		cp := make(map[int64]ChainManagerAddressMigration)
+		for kk, vv := range v {
+			cp[kk] = vv
+		}
+		originalMigrations[k] = cp
+	}
+	defer func() { chainManagerAddressMigrations = originalMigrations }()
 
+	// Backup and defer restore for conf.Custom
+	originalCustom := conf.Custom
+	defer func() { conf.Custom = originalCustom }()
+
+	// Backup and restore viper flags
+	originalChain := viper.GetString(ChainFlag)
+	defer viper.Set(ChainFlag, originalChain)
+
+	// Set up the test
 	newPolContractAddress := "0x0000000000000000000000000000000000001234"
-
 	chainManagerAddressMigrations["mumbai"] = map[int64]ChainManagerAddressMigration{
 		350: {PolTokenAddress: newPolContractAddress},
 	}
 
 	InitTestHeimdallConfig("mumbai")
-
 	migration, found := GetChainManagerAddressMigration(350)
-
 	if !found {
 		t.Errorf("Expected migration to be found")
 	}
-
 	if migration.PolTokenAddress != newPolContractAddress {
 		t.Errorf("Expected pol token address to be %s, got %s", newPolContractAddress, migration.PolTokenAddress)
 	}
