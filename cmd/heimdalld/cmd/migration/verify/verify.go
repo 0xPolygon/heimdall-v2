@@ -449,7 +449,7 @@ func verifyCheckpoints(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genes
 		return fmt.Errorf("mismatch in ack_count: v1 has %d, v2 has %d", hv1AckCount, dbAckCount)
 	}
 
-	// Optional: Check V2 ordering and sequential ID
+	// Check V2 ordering and sequential ID
 	for i := 1; i < len(dbCheckpoints); i++ {
 		if dbCheckpoints[i-1].StartBlock >= dbCheckpoints[i].StartBlock {
 			return fmt.Errorf("checkpoints in v2 are not ordered by growing start_block at index %d", i)
@@ -530,7 +530,7 @@ func verifySpans(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map
 		}
 	}
 
-	// Optional: Ensure no extra spans exist in v1
+	// Ensure no extra spans exist in v1
 	if len(v1SpansByID) != len(dbSpans) {
 		return fmt.Errorf("span count mismatch: v1 has %d, v2 has %d", len(v1SpansByID), len(dbSpans))
 	}
@@ -633,7 +633,7 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 		if dbRecords[i-1].RecordTime.After(dbRecords[i].RecordTime) {
 			return fmt.Errorf("records not ordered correctly at index %d", i)
 		}
-		// TODO HV2: skipping this check because IDs aren't sequential, double check
+		// TODO HV2: skipping this check because IDs aren't sequential, to double check
 		//if int(dbRecords[i].Id) != i+1 {
 		//	return fmt.Errorf("event records in v2 have non-sequential IDs at index %d", i)
 		//}
