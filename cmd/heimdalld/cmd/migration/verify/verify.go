@@ -633,7 +633,17 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 		if dbRecords[i-1].RecordTime.After(dbRecords[i].RecordTime) {
 			return fmt.Errorf("records not ordered correctly at index %d", i)
 		}
-		// TODO HV2: skipping this check because IDs aren't sequential, to double check
+
+		// TODO HV2: skipping this check because IDs aren't sequential.
+		//  This has always been the case apparently for v1.
+		//  However, what happens after the migration with new events?
+		//  What would be the starting id and will the new ones be sequential?
+		//  Will they be ordered by record time or id?
+		//  Why do we have a join between recordTime and recordId?
+		//  Do we have the same problem we have in v1? ("1,10,100..." instead of "1,2,3...")
+		//  Can we solve this by ordering them in genesisInit?
+		// 	If that's the case, apparently we need to order by RecordTime as IDs are anyway not sequential
+
 		//if int(dbRecords[i].Id) != i+1 {
 		//	return fmt.Errorf("event records in v2 have non-sequential IDs at index %d", i)
 		//}
