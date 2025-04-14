@@ -348,6 +348,8 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 				return fmt.Errorf("mismatch: %s.%s=%d ≠ %s.%s=%d",
 					km.moduleV1, km.keyV1, count1,
 					km.moduleV2, km.keyV2, count2)
+			} else {
+				fmt.Printf("found %d entries in %s module for v1 and %d entries for %s module in v2", count1, km.moduleV1, count2, km.moduleV2)
 			}
 		}
 	}
@@ -586,8 +588,11 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 
 	dbRecords := app.ClerkKeeper.GetAllEventRecords(ctx)
 
-	sort.Slice(dbRecords, func(i, j int) bool {
-		return dbRecords[i].RecordTime.Before(dbRecords[j].RecordTime)
+	sort.SliceStable(dbRecords, func(i, j int) bool {
+		if !dbRecords[i].RecordTime.Equal(dbRecords[j].RecordTime) {
+			return dbRecords[i].RecordTime.Before(dbRecords[j].RecordTime)
+		}
+		return dbRecords[i].Id < dbRecords[j].Id
 	})
 
 	v1RecordsByID := make(map[int]map[string]interface{})
@@ -634,19 +639,42 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 			return fmt.Errorf("records not ordered correctly at index %d", i)
 		}
 
-		// TODO HV2: skipping this check because IDs aren't sequential.
-		//  This has always been the case apparently for v1.
-		//  However, what happens after the migration with new events?
-		//  What would be the starting id and will the new ones be sequential?
-		//  Will they be ordered by record time or id?
-		//  Why do we have a join between recordTime and recordId?
-		//  Do we have the same problem we have in v1? ("1,10,100..." instead of "1,2,3...")
-		//  Can we solve this by ordering them in genesisInit?
-		// 	If that's the case, apparently we need to order by RecordTime as IDs are anyway not sequential
+		/* TODO HV2: skipping this check
+		if int(dbRecords[i].Id) != i+1 {
+			return fmt.Errorf("event records in v2 have non-sequential IDs at index %d", i)
+		}
+		*/
+	}
 
-		//if int(dbRecords[i].Id) != i+1 {
-		//	return fmt.Errorf("event records in v2 have non-sequential IDs at index %d", i)
-		//}
+	// just log if IDs are not sequential
+	var nonSequential []uint64
+	for i := 1; i < len(dbRecords); i++ {
+		expected := dbRecords[i-1].Id + 1
+		if dbRecords[i].Id != expected {
+			nonSequential = append(nonSequential, dbRecords[i].Id)
+		}
+	}
+	if len(nonSequential) > 0 {
+		fmt.Printf("Found %d non-sequential IDs after sorting dbRecords by RecordTime.\n", len(nonSequential))
+	} else {
+		fmt.Println("All dbRecord IDs are strictly sequential after sorting by RecordTime.")
+	}
+
+	sort.SliceStable(dbRecords, func(i, j int) bool {
+		return dbRecords[i].Id < dbRecords[j].Id
+	})
+
+	nonChronoCount := 0
+	for i := 1; i < len(dbRecords); i++ {
+		if dbRecords[i].RecordTime.Before(dbRecords[i-1].RecordTime) {
+			nonChronoCount++
+		}
+	}
+
+	if nonChronoCount > 0 {
+		fmt.Printf("Found %d record_time violations after sorting dbRecords by ID.\n", nonChronoCount)
+	} else {
+		fmt.Println("All dbRecord record_times are strictly increasing after sorting by ID.")
 	}
 
 	return nil

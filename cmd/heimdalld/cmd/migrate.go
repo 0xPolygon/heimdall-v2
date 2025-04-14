@@ -260,12 +260,12 @@ func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight
 	}
 	logger.Info(fmt.Sprintf("migrateMilestoneModule took %.2f minutes", time.Since(start).Minutes()))
 
-	// migrateChainmanagerModule
+	// migrateChainManagerModule
 	start = time.Now()
-	if err := migrateChainmanagerModule(genesisData, chainId); err != nil {
+	if err := migrateChainManagerModule(genesisData, chainId); err != nil {
 		return nil, err
 	}
-	logger.Info(fmt.Sprintf("migrateChainmanagerModule took %.2f minutes", time.Since(start).Minutes()))
+	logger.Info(fmt.Sprintf("migrateChainManagerModule took %.2f minutes", time.Since(start).Minutes()))
 
 	// migrateStakeModule
 	start = time.Now()
@@ -347,8 +347,8 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 	return nil
 }
 
-// migrateChainmanagerModule renames the chainmanager module params fields to match the new naming convention.
-func migrateChainmanagerModule(genesisData map[string]interface{}, chainId string) error {
+// migrateChainManagerModule renames the chainmanager module params fields to match the new naming convention.
+func migrateChainManagerModule(genesisData map[string]interface{}, chainId string) error {
 	logger.Info("Migrating chainmanager module...")
 
 	chainmanagerModule, ok := genesisData["app_state"].(map[string]interface{})["chainmanager"]
