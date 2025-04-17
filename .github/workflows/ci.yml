@@ -159,6 +159,22 @@ jobs:
           name: logs_${{ github.run_id }}
           path: ${{ env.ABS_LOG_PATH }}
 
+      - name: Scan logs for secrets with Gitleaks
+        if: always()
+        run: |
+          docker run -v ${{ env.ABS_LOG_PATH }}:/scan \
+            zricethezav/gitleaks detect \
+            --no-git \
+            --source /scan \
+            --report-path /scan/gitleaks-report.json || true
+
+      - name: Upload Gitleaks Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: gitleaks-report-${{ github.run_id }}
+          path: ${{ env.ABS_LOG_PATH }}/gitleaks-report.json
+
 
       - name: Package code and chain data
         if: always()
