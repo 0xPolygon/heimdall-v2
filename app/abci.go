@@ -515,5 +515,21 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		}
 	}
 
+	// set the block proposer
+	addr, err := sdk.HexifyAddressBytes(req.ProposerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := sdk.AccAddressFromHex(addr)
+	if err != nil {
+		return nil, err
+	}
+	err = app.AccountKeeper.SetBlockProposer(ctx, account)
+	if err != nil {
+		app.Logger().Error("error while setting the block proposer", "error", err)
+		return nil, err
+	}
+
 	return app.ModuleManager.PreBlock(ctx)
 }
