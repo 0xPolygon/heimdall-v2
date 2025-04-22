@@ -549,14 +549,20 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 		return errors.New("older invalid tx found")
 	}
 
-	s.k.Logger(ctx).Debug("updating validator stake", "sideTxResult", sideTxResult)
-
 	// pull validator from store
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
 		s.k.Logger(ctx).Error("failed to fetch validator from store", "validatorId", msg.ValId)
 		return err
 	}
+
+	// Check nonce validity just before applying state update
+	if msg.Nonce != validator.Nonce+1 {
+		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle StakeUpdate", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
+		return errors.New("incorrect validator nonce during PostHandle StakeUpdate")
+	}
+
+	s.k.Logger(ctx).Debug("updating validator stake", "sideTxResult", sideTxResult)
 
 	validator.LastUpdated = sequence.String()
 	validator.Nonce = msg.Nonce
@@ -624,8 +630,6 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		return errors.New("older invalid tx found")
 	}
 
-	s.k.Logger(ctx).Debug("persisting signer update", "sideTxResult", sideTxResult)
-
 	// Generate PubKey from PubKey in message and signer
 	newPubKey := secp256k1.PubKey{Key: msg.NewSignerPubKey}
 
@@ -642,6 +646,14 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		s.k.Logger(ctx).Error("fetching of validator from store failed", "validatorId", msg.ValId)
 		return err
 	}
+
+	// Check nonce validity just before applying state update
+	if msg.Nonce != validator.Nonce+1 {
+		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle SignerUpdate", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
+		return errors.New("incorrect validator nonce during PostHandle SignerUpdate")
+	}
+
+	s.k.Logger(ctx).Debug("persisting signer update", "sideTxResult", sideTxResult)
 
 	oldValidator := validator.Copy()
 
@@ -763,13 +775,19 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return errors.New("older invalid tx found")
 	}
 
-	s.k.Logger(ctx).Debug("persisting validator exit", "sideTxResult", sideTxResult)
-
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
 		s.k.Logger(ctx).Error("fetching of validator from store failed", "validatorID", msg.ValId)
 		return err
 	}
+
+	// Check nonce validity just before applying state update
+	if msg.Nonce != validator.Nonce+1 {
+		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle ValidatorExit", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
+		return errors.New("incorrect validator nonce during PostHandle ValidatorExit")
+	}
+
+	s.k.Logger(ctx).Debug("persisting validator exit", "sideTxResult", sideTxResult)
 
 	validator.EndEpoch = msg.DeactivationEpoch
 	validator.LastUpdated = sequence.String()

@@ -126,18 +126,6 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
 	}
 
-	// pull validator from store
-	validator, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
-	if err != nil {
-		m.k.Logger(ctx).Error("failed to fetch validator from store", "validatorId", msg.ValId, "error", err)
-		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
-	}
-
-	if msg.Nonce != validator.Nonce+1 {
-		m.k.Logger(ctx).Error("incorrect validator nonce")
-		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "incorrect validator nonce")
-	}
-
 	// set validator amount
 	_, err = helper.GetPowerFromAmount(msg.NewAmount.BigInt())
 	if err != nil {
@@ -145,14 +133,7 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			types.EventTypeStakeUpdate,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
-			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
-		),
-	})
+	sdkCtx.EventManager().EmitEvents(sdk.Events{})
 
 	return &types.MsgStakeUpdateResponse{}, nil
 }
@@ -210,21 +191,8 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	}
 
-	// check nonce validity
-	if msg.Nonce != validator.Nonce+1 {
-		m.k.Logger(ctx).Error("incorrect validator nonce")
-		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "incorrect validator nonce")
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			types.EventTypeSignerUpdate,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
-			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
-		),
-	})
+	sdkCtx.EventManager().EmitEvents(sdk.Events{})
 
 	return &types.MsgSignerUpdateResponse{}, nil
 }
@@ -263,21 +231,8 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
 	}
 
-	// check nonce validity
-	if msg.Nonce != validator.Nonce+1 {
-		m.k.Logger(ctx).Error("incorrect validator nonce")
-		return nil, errorsmod.Wrap(types.ErrInvalidNonce, "incorrect validator nonce")
-	}
-
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvents(sdk.Events{
-		sdk.NewEvent(
-			types.EventTypeValidatorExit,
-			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
-			sdk.NewAttribute(types.AttributeKeyValidatorID, strconv.FormatUint(validator.ValId, 10)),
-			sdk.NewAttribute(types.AttributeKeyValidatorNonce, strconv.FormatUint(msg.Nonce, 10)),
-		),
-	})
+	sdkCtx.EventManager().EmitEvents(sdk.Events{})
 
 	return &types.MsgValidatorExitResponse{}, nil
 }
