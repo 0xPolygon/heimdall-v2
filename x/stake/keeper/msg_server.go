@@ -132,9 +132,6 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprintf("invalid amount %s for validator %d", msg.NewAmount, msg.ValId))
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvents(sdk.Events{})
-
 	return &types.MsgStakeUpdateResponse{}, nil
 }
 
@@ -191,9 +188,6 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 
 	}
 
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvents(sdk.Events{})
-
 	return &types.MsgSignerUpdateResponse{}, nil
 }
 
@@ -230,9 +224,6 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
 	}
-
-	sdkCtx := sdk.UnwrapSDKContext(ctx)
-	sdkCtx.EventManager().EmitEvents(sdk.Events{})
 
 	return &types.MsgValidatorExitResponse{}, nil
 }
