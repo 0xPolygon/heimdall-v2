@@ -50,12 +50,6 @@ const (
 	TopupTxStatusURL        = "/topup/isoldtx"
 	ClerkTxStatusURL        = "/clerk/isoldtx"
 	ClerkEventRecordURL     = "/clerk/event-record/%d"
-	/* HV2 - not adding slashing
-	LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
-	TickSlashInfoListURL    = "/slashing/tick_slash_infos"
-	SlashingTxStatusURL     = "/slashing/isoldtx"
-	SlashingTickCountURL    = "/slashing/tick-count"
-	*/
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
@@ -66,13 +60,9 @@ const (
 
 	mempoolTxnCountDivisor = 1000
 
-	// Bridge event types
 	StakingEvent BridgeEvent = "staking"
 	TopupEvent   BridgeEvent = "topup"
 	ClerkEvent   BridgeEvent = "clerk"
-	/* HV2 - not adding slashing
-	SlashingEvent BridgeEvent = "slashing"
-	*/
 
 	BridgeDBFlag = "bridge-db"
 )
@@ -164,7 +154,7 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 
 	validatorSet, err := GetValidatorSet(cdc)
 	if err != nil {
-		logger.Error("Error getting current validatorset data ", "error", err)
+		logger.Error("Error getting current validatorSet data ", "error", err)
 		return false, 0
 	}
 
@@ -186,12 +176,12 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	}
 
 	// Change calculation later as per the discussion
-	// Currently it will multiply delay for every 1000 unconfirmed txns in mempool
+	// Currently it will multiply delay for every 1000 unconfirmed txs in mempool
 	// For example if the current default delay is 12 Seconds
-	// Then for upto 1000 txns it will stay as 12 only
+	// Then for upto 1000 txs it will stay as 12 only
 	// For 1000-2000 It will be 24 seconds
 	// For 2000-3000 it will be 36 seconds
-	// Basically for every 1000 txns it will increase the factor by 1.
+	// Basically for every 1000 txs it will increase the factor by 1.
 
 	mempoolFactor := GetUnconfirmedTxnCount(event) / mempoolTxnCountDivisor
 
@@ -447,7 +437,7 @@ func GetValidatorSet(cdc codec.Codec) (*staketypes.ValidatorSet, error) {
 
 	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentValidatorSetURL))
 	if err != nil {
-		logger.Error("Unable to send request for current validatorset", "url", CurrentValidatorSetURL, "error", err)
+		logger.Error("Unable to send request for current validatorSet", "url", CurrentValidatorSetURL, "error", err)
 		return nil, err
 	}
 

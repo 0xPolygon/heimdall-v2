@@ -269,7 +269,7 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators from state
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	initValSet, err := keeper.GetValidatorSet(ctx)
 
 	require.NoError(err)
@@ -303,12 +303,12 @@ func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators from state
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	initValSet, err := keeper.GetValidatorSet(ctx)
 
 	require.NoError(err)
 
-	validators := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
+	validators := testUtil.GenRandomVals(1, 0, 10, 10, false, 1, 0)
 	prevValSet := initValSet.Copy()
 
 	valToBeAdded := validators[0]
@@ -332,7 +332,7 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// load 4 validators to state
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	initValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -344,7 +344,7 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 	require.NoError(err)
 
 	valToUpdate := currentValSet.Validators[0]
-	newSigner := testUtil.GenRandomVals(1, 0, 10, 10, false, 1)
+	newSigner := testUtil.GenRandomVals(1, 0, 10, 10, false, 1, 0)
 
 	err = keeper.UpdateSigner(ctx, newSigner[0].Signer, newSigner[0].PubKey, valToUpdate.Signer)
 	require.NoError(err)
@@ -368,7 +368,7 @@ func (s *KeeperTestSuite) TestUpdateValidatorSetChange() {
 func (s *KeeperTestSuite) TestGetCurrentValidators() {
 	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
@@ -382,7 +382,7 @@ func (s *KeeperTestSuite) TestGetPreviousBlockValidatorSet() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// Load 4 validators into state
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	// Get the current validator set
 	currentValSet, err := keeper.GetValidatorSet(ctx)
@@ -422,7 +422,7 @@ func (s *KeeperTestSuite) TestUpdatePreviousBlockValidatorSetInStore() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
 	// Load 4 validators into state
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	// Get the current validator set
 	currentValSet, err := keeper.GetValidatorSet(ctx)
@@ -515,7 +515,7 @@ func (s *KeeperTestSuite) TestSetAndGetLastBlockTxs() {
 func (s *KeeperTestSuite) TestGetCurrentProposer() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	currentValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -526,7 +526,7 @@ func (s *KeeperTestSuite) TestGetCurrentProposer() {
 func (s *KeeperTestSuite) TestGetNextProposer() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	nextProposer := keeper.GetNextProposer(ctx)
 	require.NotNil(nextProposer)
@@ -535,7 +535,7 @@ func (s *KeeperTestSuite) TestGetNextProposer() {
 func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
@@ -548,7 +548,7 @@ func (s *KeeperTestSuite) TestGetValidatorFromValID() {
 func (s *KeeperTestSuite) TestGetLastUpdated() {
 	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	testUtil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 10)
+	testUtil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 10, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
@@ -561,7 +561,7 @@ func (s *KeeperTestSuite) TestGetLastUpdated() {
 func (s *KeeperTestSuite) TestGetSpanEligibleValidators() {
 	ctx, keeper, require, checkpointKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 
 	// Test ActCount = 0
 	checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(0), nil).Times(1)

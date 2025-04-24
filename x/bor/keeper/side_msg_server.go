@@ -85,8 +85,8 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 			"chainID", msg.ChainId,
 			"msgSeed", msg.Seed,
 			"msgSeedAuthor", msg.SeedAuthor,
-			"mainchainSeedAuthor", nextSpanSeedAuthor.Hex(),
-			"mainchainSeed", nextSpanSeed,
+			"mainChainSeedAuthor", nextSpanSeedAuthor.Hex(),
+			"mainChainSeed", nextSpanSeed,
 		)
 
 		return sidetxs.Vote_VOTE_NO

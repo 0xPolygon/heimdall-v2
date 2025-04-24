@@ -15,13 +15,13 @@ const (
 	processorServiceStr = "processor-service"
 )
 
-// ProcessorService starts and stops all event processors
-type ProcessorService struct {
+// Service starts and stops all event processors
+type Service struct {
 	// Base service
 	common.BaseService
 
 	// queue connector
-	queueConnector *queue.QueueConnector
+	queueConnector *queue.Connector
 
 	processors []Processor
 }
@@ -29,12 +29,12 @@ type ProcessorService struct {
 // NewProcessorService returns new service object for processing queue msg
 func NewProcessorService(
 	cdc codec.Codec,
-	queueConnector *queue.QueueConnector,
+	queueConnector *queue.Connector,
 	httpClient *rpchttp.HTTP,
 	txBroadcaster *broadcaster.TxBroadcaster,
-) *ProcessorService {
+) *Service {
 	// creating processor object
-	processorService := &ProcessorService{
+	processorService := &Service{
 		queueConnector: queueConnector,
 	}
 
@@ -74,13 +74,6 @@ func NewProcessorService(
 	spanProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "span", spanProcessor)
 	spanProcessor.cliCtx = txBroadcaster.CliCtx
 
-	// HV2 - not adding slashing
-	/*
-		// initialize slashing processor
-		slashingProcessor := NewSlashingProcessor(&contractCaller.StakingInfoABI)
-		slashingProcessor.BaseProcessor = *NewBaseProcessor(cdc, queueConnector, httpClient, txBroadcaster, "slashing", slashingProcessor)
-	*/
-
 	//
 	// Select processors
 	//
@@ -96,8 +89,6 @@ func NewProcessorService(
 			clerkProcessor,
 			feeProcessor,
 			spanProcessor,
-			// HV2 - not adding slashing
-			// slashingProcessor,
 		)
 	} else {
 		for _, service := range onlyServices {
@@ -112,11 +103,6 @@ func NewProcessorService(
 				processorService.processors = append(processorService.processors, feeProcessor)
 			case "span":
 				processorService.processors = append(processorService.processors, spanProcessor)
-				// HV2 - not adding slashing
-				/*
-					case "slashing":
-						processorService.processors = append(processorService.processors, slashingProcessor)
-				*/
 			}
 		}
 	}
@@ -129,7 +115,7 @@ func NewProcessorService(
 }
 
 // OnStart starts new block subscription
-func (processorService *ProcessorService) OnStart() error {
+func (processorService *Service) OnStart() error {
 	if err := processorService.BaseService.OnStart(); err != nil {
 		processorService.Logger.Error("OnStart | OnStart", "Error", err)
 	} // Always call the overridden method.
@@ -149,7 +135,7 @@ func (processorService *ProcessorService) OnStart() error {
 }
 
 // OnStop stops all necessary go routines
-func (processorService *ProcessorService) OnStop() {
+func (processorService *Service) OnStop() {
 	processorService.BaseService.OnStop() // Always call the overridden method.
 	// start chain listeners
 	for _, processor := range processorService.processors {

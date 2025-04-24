@@ -33,7 +33,7 @@ func purgeQueue() {
 		panic(err)
 	}
 
-	if _, err = channel.QueuePurge(queue.QueueName, false); err != nil {
+	if _, err = channel.QueuePurge(queue.QName, false); err != nil {
 		logger.Error("purgeQueue | QueuePurge", "Error", err)
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func TestSortValidatorByAddress(t *testing.T) {
-	randValidators := testutil.GenRandomVals(5, 1, 1, 5, false, 0)
+	randValidators := testutil.GenRandomVals(5, 1, 1, 5, false, 0, 0)
 
 	validators := make([]*types.Validator, len(randValidators))
 

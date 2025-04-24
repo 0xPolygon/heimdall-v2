@@ -12,7 +12,6 @@ import (
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
-	"github.com/cosmos/cosmos-sdk/codec"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
 	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -34,14 +33,14 @@ import (
 var testnetCmdName = "create-testnet"
 
 // testnetCmd initialises files required to start heimdall testnet
-func testnetCmd(_ *server.Context, cdc *codec.LegacyAmino, mbm module.BasicManager) *cobra.Command {
+func testnetCmd(_ *server.Context, mbm module.BasicManager) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   testnetCmdName,
 		Short: "Initialize files for a Heimdall testnet",
 		Long: `testnet will create "v" + "n" number of directories and populate each with
 necessary files (private validator, genesis, config, etc.).
 
-Note, strict routability for addresses is turned off in the config file.
+Note, strict rout ability for addresses is turned off in the config file.
 Optionally, it will fill in persistent_peers list in config file using either hostnames or IPs.
 
 Example:
@@ -149,15 +148,15 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 					}
 				}
 
-				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes(), cdc)
+				signers[i] = GetSignerInfo(valPubKeys[i], privKeys[i].Bytes())
 
-				cfgz, err := os.ReadFile(appCfgFile)
+				cf, err := os.ReadFile(appCfgFile)
 				if err != nil {
 					return err
 				}
 
 				// write config file
-				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cfgz, 0o600)
+				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cf, 0o600)
 				if err != nil {
 					return err
 				}

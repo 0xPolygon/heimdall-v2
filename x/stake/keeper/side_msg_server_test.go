@@ -433,22 +433,22 @@ func (s *KeeperTestSuite) TestSideHandleMsgSignerUpdate() {
 	ctx, keeper, req, checkpointKeeper, cmKeeper := s.ctx, s.stakeKeeper, s.Require(), s.checkpointKeeper, s.cmKeeper
 	contractCaller, sideHandler := s.contractCaller, s.sideHandler
 
+	nonce := big.NewInt(5)
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0, nonce.Uint64()-1)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	req.NoError(err)
 
 	oldSigner := oldValSet.Validators[0]
-	newSigner := stakeSim.GenRandomVals(2, 0, 10, 10, false, 1)
+	newSigner := stakeSim.GenRandomVals(2, 0, 10, 10, false, 1, nonce.Uint64()-1)
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 	chainParams, err := cmKeeper.GetParams(ctx)
 	req.NoError(err)
 
 	blockNumber := big.NewInt(10)
-	nonce := big.NewInt(5)
 
 	oldSignerBytes, err := addressCodec.StringToBytes(oldSigner.Signer)
 	req.NoError(err)
@@ -619,8 +619,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	keeper, checkpointKeeper, cmKeeper, sideHandler := s.stakeKeeper, s.checkpointKeeper, s.cmKeeper, s.sideHandler
 	ctx, req, contractCaller := s.ctx, s.Require(), s.contractCaller
 
+	nonce := big.NewInt(9)
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0, nonce.Uint64()-1)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
@@ -629,7 +630,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgValidatorExit() {
 	req.NoError(err)
 	logIndex := uint64(0)
 	blockNumber := big.NewInt(10)
-	nonce := big.NewInt(9)
 
 	validator0Bytes, err := addressCodec.StringToBytes(validators[0].Signer)
 	req.NoError(err)
@@ -878,8 +878,9 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 	keeper, checkpointKeeper, cmKeeper, sideHandler := s.stakeKeeper, s.checkpointKeeper, s.cmKeeper, s.sideHandler
 	ctx, req, contractCaller := s.ctx, s.Require(), s.contractCaller
 
+	nonce := big.NewInt(1)
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0, nonce.Uint64()-1)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
@@ -892,7 +893,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgStakeUpdate() {
 
 	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
-	nonce := big.NewInt(1)
 
 	s.Run("Success", func() {
 		contractCaller.Mock = mock.Mock{}
@@ -1184,8 +1184,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	keeper, postHandler, checkpointKeeper, bankKeeper := s.stakeKeeper, s.postHandler, s.checkpointKeeper, s.bankKeeper
 	ctx, req, contractCaller := s.ctx, s.Require(), s.contractCaller
 
+	nonce := big.NewInt(5)
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0, nonce.Uint64()-1)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	amount := math.NewInt(1)
@@ -1202,11 +1203,10 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	req.NoError(err)
 
 	oldSigner := oldValSet.Validators[0]
-	newSigner := stakeSim.GenRandomVals(1, 0, 10, 10, false, 1)
+	newSigner := stakeSim.GenRandomVals(1, 0, 10, 10, false, 1, nonce.Uint64())
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 	blockNumber := big.NewInt(10)
-	nonce := big.NewInt(5)
 
 	// gen msg
 	msgTxHash := common.Hash{}.Bytes()
@@ -1248,9 +1248,10 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 	keeper, postHandler, checkpointKeeper, bankKeeper := s.stakeKeeper, s.postHandler, s.checkpointKeeper, s.bankKeeper
 	ctx, req := s.ctx, s.Require()
+	nonce := big.NewInt(9)
 
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0, nonce.Uint64()-1)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).Times(2).Return(uint64(1), nil)
 
 	amount := math.NewInt(1)
@@ -1266,7 +1267,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 	validators := keeper.GetCurrentValidators(ctx)
 	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
-	nonce := big.NewInt(9)
 
 	s.Run("No Success", func() {
 		validators[0].EndEpoch = 10
@@ -1314,8 +1314,9 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 	keeper, postHandler, checkpointKeeper := s.stakeKeeper, s.postHandler, s.checkpointKeeper
 	ctx, req, contractCaller := s.ctx, s.Require(), s.contractCaller
 
+	nonce := big.NewInt(1)
 	// pass 0 as time alive to generate non de-activated validators
-	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0)
+	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0, nonce.Uint64()-1)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
@@ -1325,7 +1326,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgStakeUpdate() {
 
 	msgTxHash := common.Hash{}.Bytes()
 	blockNumber := big.NewInt(10)
-	nonce := big.NewInt(1)
 	newAmount := new(big.Int).SetInt64(2000000000000000000)
 
 	s.Run("No result", func() {

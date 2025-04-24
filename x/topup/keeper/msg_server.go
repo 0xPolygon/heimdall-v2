@@ -37,10 +37,6 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 		"blockNumber", msg.BlockNumber,
 	)
 
-	/* HV2: v1's BankKeeper.GetSendEnabled is no longer available in cosmos-sdk.
-	   We use BankKeeper.IsSendEnabledDenom instead
-	*/
-
 	// check if send is enabled for default denom
 	if !m.k.BankKeeper.IsSendEnabledDenom(ctx, sdk.DefaultBondDenom) {
 		logger.Error("send not enabled")
@@ -105,11 +101,6 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 	// partial withdraw
 	amount := msg.Amount
 
-	/* HV2: v1's BankKeeper.GetCoins is no longer available in cosmos-sdk.
-	Hence, we could use BankKeeper.GetBalance,
-	but - just to be compatible with vesting, if ever enabled - we use BankKeeper.SpendableCoin.
-	*/
-
 	// full withdraw
 	if msg.Amount.IsZero() {
 		coins := m.k.BankKeeper.SpendableCoin(ctx, sdk.AccAddress(msg.Proposer), sdk.DefaultBondDenom)
@@ -127,10 +118,6 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 
 	// create coins object
 	coins := sdk.Coins{sdk.Coin{Denom: sdk.DefaultBondDenom, Amount: amount}}
-
-	/* HV2: v1's BankKeeper.SubtractCoins is no longer available in cosmos-sdk.
-	   We use BankKeeper.SendCoinsFromAccountToModule + BankKeeper.BurnCoins instead
-	*/
 
 	// send coins from account to module
 	err := m.k.BankKeeper.SendCoinsFromAccountToModule(ctx, sdk.AccAddress(msg.Proposer), types.ModuleName, coins)

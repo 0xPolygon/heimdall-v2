@@ -190,18 +190,6 @@ grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetLatestMi
 grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetMilestoneByNumber
 ```
 
-```bash
-grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetMilestoneProposerByTimes
-```
-
-```bash
-grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetLatestNoAckMilestone
-```
-
-```bash
-grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.milestone.Query/GetNoAckMilestoneById
-```
-
 ### REST APIs
 
 The endpoints and the params are defined in the [milestone/query.proto](/proto/heimdallv2/milestone/query.proto) file. Please refer them for more information about the optional params.
@@ -221,16 +209,3 @@ curl localhost:1317/milestone/latest
 ```bash
 curl localhost:1317/milestone/{number}
 ```
-
-```bash
-curl localhost:1317/milestone/proposer/{times}
-```
-
-```bash
-curl localhost:1317/milestone/last-no-ack
-```
-
-```bash
-curl localhost:1317/milestone/no-ack/{id}
-```
-

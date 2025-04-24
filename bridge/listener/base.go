@@ -21,7 +21,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// Listener defines a block header listener for Rootchain, Borchain, Heimdall
+// Listener defines a block header listener for RootChain, BorChain, Heimdall
 type Listener interface {
 	Start() error
 
@@ -64,7 +64,7 @@ type BaseListener struct {
 	cliCtx client.Context
 
 	// queue connector
-	queueConnector *queue.QueueConnector
+	queueConnector *queue.Connector
 
 	// http client to subscribe to
 	httpClient *rpchttp.HTTP
@@ -79,7 +79,7 @@ type blockHeader struct {
 }
 
 // NewBaseListener creates a new BaseListener.
-func NewBaseListener(cdc codec.Codec, queueConnector *queue.QueueConnector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
+func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP, chainClient *ethclient.Client, name string, impl Listener) *BaseListener {
 	logger := util.Logger().With("service", "listener", "module", name)
 
 	contractCaller, err := helper.NewContractCaller()
