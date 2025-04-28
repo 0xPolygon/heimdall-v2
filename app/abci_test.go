@@ -2,14 +2,23 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"math/big"
 	"testing"
 
+	// borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	// borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 
 	"github.com/cosmos/cosmos-sdk/client/tx"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
@@ -17,8 +26,13 @@ import (
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	testutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
 )
 
 func TestPrepareProposal(t *testing.T) {
@@ -27,6 +41,14 @@ func TestPrepareProposal(t *testing.T) {
 	// Setup test app with 3 validators
 	setupResult := SetupApp(t, 1)
 	app := setupResult.App
+
+	genState := app.DefaultGenesis()
+	genBytes, err := json.Marshal(genState)
+	require.NoError(t, err)
+	app.InitChain(&abci.RequestInitChain{
+		Validators:    []abci.ValidatorUpdate{},
+		AppStateBytes: genBytes,
+	})
 
 	// Initialize the application state
 	ctx := app.BaseApp.NewContext(true)
@@ -39,17 +61,39 @@ func TestPrepareProposal(t *testing.T) {
 	}
 	ctx = ctx.WithConsensusParams(params)
 
-	require.Panics(t, func() {
-		_, err := app.InitChain(
-			&abci.RequestInitChain{
-				Validators:    []abci.ValidatorUpdate{},
-				AppStateBytes: []byte("{}"),
-			},
-		)
-		require.Error(t, err)
-	})
+	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.Anything, mock.Anything).
+		Return([]*ethTypes.Header{}, nil)
+	// stub any other calls used in GenMilestoneProposition:
+	mockCaller.
+		On("GetBlockNumberFromTxHash", mock.Anything).
+		Return(big.NewInt(0), nil)
 
-	RequestFinalizeBlock(t, app, app.LastBlockHeight()+1)
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	// If you also hit checkpoint or bor RPCs in your test, stub those too:
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	// app.BorKeeper = borKeeper.NewKeeper(
+	// 	app.AppCodec(),
+	// 	runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+	// 	authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+	// 	app.ChainManagerKeeper,
+	// 	&app.StakeKeeper,
+	// 	mockCaller,
+	// )
 
 	validatorPrivKeys := setupResult.ValidatorKeys
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -66,14 +110,31 @@ func TestPrepareProposal(t *testing.T) {
 		EndBlock:        200,
 		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
 		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
-		BorChainId:      "",
+		BorChainId:      "test",
 	}
 
-	addr := sdk.AccAddress(priv.PubKey().Address())
-	acc := authTypes.NewBaseAccount(addr, priv.PubKey(), 1337, 0)
-	require.NoError(t, testutil.FundAccount(ctx, app.BankKeeper, addr, sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount))))
+	propBytes := common.FromHex(validators[0].Signer) // or use FromBech32 if it’s bech32‑encoded
+	propAddr := sdk.AccAddress(propBytes)
 
-	app.AccountKeeper.SetAccount(ctx, acc)
+	// create & set a BaseAccount for that address
+	propAcc := authTypes.NewBaseAccount(propAddr, nil, 1337, 0)
+	app.AccountKeeper.SetAccount(ctx, propAcc)
+
+	// fund it so it can pay fees
+	require.NoError(t,
+		testutil.FundAccount(
+			ctx,
+			app.BankKeeper,
+			propAddr,
+			sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
+		),
+	)
+
+	// addr := sdk.AccAddress(priv.PubKey().Address())
+	// acc := authTypes.NewBaseAccount(addr, priv.PubKey(), 1337, 0)
+	// require.NoError(t, testutil.FundAccount(ctx, app.BankKeeper, addr, sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount))))
+
+	// app.AccountKeeper.SetAccount(ctx, acc)
 
 	txConfig := authtx.NewTxConfig(app.AppCodec(), authtx.DefaultSignModes)
 	defaultSignMode, err := authsigning.APISignModeToInternal(txConfig.SignModeHandler().DefaultMode())
@@ -145,17 +206,6 @@ func TestPrepareProposal(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	deliverCtx := app.BaseApp.NewContext(false) // deliver‐Tx mode
-	app.AccountKeeper.SetAccount(deliverCtx, acc)
-	require.NoError(t,
-		testutil.FundAccount(
-			deliverCtx,
-			app.BankKeeper,
-			addr,
-			sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
-		),
-	)
-
 	// Commit the block
 	_, err = app.Commit()
 	require.NoError(t, err)
@@ -178,39 +228,39 @@ func TestPrepareProposal(t *testing.T) {
 	require.NotEmpty(t, respPrep.Txs)
 
 	// Test ProcessProposal handler
-	// reqProcess := &abci.RequestProcessProposal{
-	// 	Txs:                respPrep.Txs,
-	// 	Height:             4,
-	// 	ProposedLastCommit: abci.CommitInfo{Round: 0},
-	// }
+	reqProcess := &abci.RequestProcessProposal{
+		Txs:                respPrep.Txs,
+		Height:             reqPrep.Height,
+		ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+	}
 
-	// respProc, err := app.NewProcessProposalHandler()(ctx, reqProcess)
-	// require.NoError(t, err)
-	// require.Equal(t, abci.ResponseProcessProposal_ACCEPT, respProc.Status)
+	respProc, err := app.NewProcessProposalHandler()(ctx, reqProcess)
+	require.NoError(t, err)
+	require.Equal(t, abci.ResponseProcessProposal_ACCEPT, respProc.Status)
 
-	// // Test ExtendVote handler
-	// reqExtend := abci.RequestExtendVote{
-	// 	Txs:    respPrep.Txs,
-	// 	Hash:   []byte("test-hash"),
-	// 	Height: 4,
-	// }
-	// respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
-	// require.NoError(t, err)
-	// require.NotNil(t, respExtend.VoteExtension)
+	// Test ExtendVote handler
+	reqExtend := abci.RequestExtendVote{
+		Txs:    respPrep.Txs,
+		Hash:   []byte("test-hash"),
+		Height: 3,
+	}
+	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+	require.NoError(t, err)
+	require.NotNil(t, respExtend.VoteExtension)
 
-	// // Test VerifyVoteExtension handler
-	// reqVerify := abci.RequestVerifyVoteExtension{
-	// 	VoteExtension:      respExtend.VoteExtension,
-	// 	NonRpVoteExtension: respExtend.NonRpExtension,
-	// 	ValidatorAddress:   []byte("validator-1"),
-	// 	Height:             4,
-	// 	Hash:               []byte("test-hash"),
-	// }
-	// respVerify, err := app.VerifyVoteExtensionHandler()(ctx, &reqVerify)
-	// fmt.Println("Hello world")
-	// require.NoError(t, err)
-	// fmt.Println("Helloworld")
-	// require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, respVerify.Status)
+	// Test VerifyVoteExtension handler
+	reqVerify := abci.RequestVerifyVoteExtension{
+		VoteExtension:      respExtend.VoteExtension,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   []byte("validator-1"),
+		Height:             3,
+		Hash:               []byte("test-hash"),
+	}
+	respVerify, err := app.VerifyVoteExtensionHandler()(ctx, &reqVerify)
+	fmt.Println("Hello world")
+	require.NoError(t, err)
+	fmt.Println("Helloworld")
+	require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, respVerify.Status)
 
 	// // Test FinalizeBlock handler
 	// finalizeReq := abci.RequestFinalizeBlock{
