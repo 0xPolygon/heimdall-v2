@@ -132,7 +132,7 @@ func (sp *SpanProcessor) backfillSpans(latestBorBlockNumber uint64, lastSpan *ty
 
 	msg := types.MsgBackfillSpans{
 		Proposer:        addrString,
-		ChainId:         params.ChainParams.HeimdallChainId,
+		ChainId:         params.ChainParams.BorChainId,
 		LatestSpanId:    lastSpan.Id,
 		LatestBorSpanId: borSpanId,
 		LatestBorBlock:  latestBorBlockNumber,

@@ -136,8 +136,8 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 		return nil, errors.Wrapf(err, "failed to get chain params")
 	}
 
-	if chainParams.ChainParams.HeimdallChainId != msg.ChainId {
-		logger.Error("invalid chain id", "expected", chainParams.ChainParams.HeimdallChainId, "got", msg.ChainId)
+	if chainParams.ChainParams.BorChainId != msg.ChainId {
+		logger.Error("invalid bor chain id", "expected", chainParams.ChainParams.BorChainId, "got", msg.ChainId)
 		return nil, types.ErrInvalidChainID
 	}
 
