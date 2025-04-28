@@ -5,20 +5,22 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sync"
 
 	"cosmossdk.io/collections"
 	"cosmossdk.io/core/store"
 	"cosmossdk.io/log"
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	cmttypes "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -33,6 +35,7 @@ type Keeper struct {
 	authority      string
 	ck             types.ChainManagerKeeper
 	sk             types.StakeKeeper
+	mk             types.MilestoneKeeper
 	contractCaller helper.IContractCaller
 
 	Schema           collections.Schema
@@ -40,6 +43,14 @@ type Keeper struct {
 	latestSpan       collections.Item[uint64]
 	seedLastProducer collections.Map[uint64, []byte]
 	Params           collections.Item[types.Params]
+
+	// Should this be stored instead?
+	nextProducer      string
+	nextProducerMutex sync.Mutex
+
+	// Should this be stored instead?
+	preferredProducers      []string
+	timeBasedBlockThreshold uint64
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -49,7 +60,10 @@ func NewKeeper(
 	authority string,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
+	milestoneKeeper types.MilestoneKeeper,
 	caller *helper.ContractCaller,
+	timeBasedBlockThreshold uint64,
+	preferredProducers []string,
 ) Keeper {
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
@@ -63,16 +77,20 @@ func NewKeeper(
 
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
-		cdc:              cdc,
-		storeService:     storeService,
-		authority:        authority,
-		ck:               chainKeeper,
-		sk:               stakingKeeper,
-		contractCaller:   caller,
-		spans:            collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
-		latestSpan:       collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
-		seedLastProducer: collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
-		Params:           collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		cdc:                     cdc,
+		storeService:            storeService,
+		authority:               authority,
+		ck:                      chainKeeper,
+		sk:                      stakingKeeper,
+		mk:                      milestoneKeeper,
+		contractCaller:          caller,
+		preferredProducers:      preferredProducers,
+		timeBasedBlockThreshold: timeBasedBlockThreshold,
+		nextProducerMutex:       sync.Mutex{},
+		spans:                   collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
+		latestSpan:              collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
+		seedLastProducer:        collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
+		Params:                  collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
 
 	schema, err := sb.Build()
@@ -192,7 +210,6 @@ func (k *Keeper) GetLastSpan(ctx context.Context) (types.Span, error) {
 
 // FreezeSet freezes validator set for next span
 func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlock uint64, borChainID string, seed common.Hash) error {
-	logger := k.Logger(ctx)
 
 	var lastSpan types.Span
 	var lastSpanId uint64
@@ -205,6 +222,14 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 	if err != nil {
 		return err
 	}
+
+	if startBlock > k.timeBasedBlockThreshold {
+		return k.freezeSetTimeBasedSpan(ctx, id, startBlock, endBlock, borChainID, seed, &lastSpan)
+	}
+	return k.freezeSetBlockBasedSpan(ctx, id, startBlock, endBlock, borChainID, seed, &lastSpan)
+}
+
+func (k *Keeper) freezeSetBlockBasedSpan(ctx sdk.Context, id uint64, startBlock uint64, endBlock uint64, borChainID string, seed common.Hash, lastSpan *types.Span) error {
 
 	prevVals := make([]staketypes.Validator, 0, len(lastSpan.ValidatorSet.Validators))
 	for _, val := range lastSpan.ValidatorSet.Validators {
@@ -232,7 +257,45 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 		BorChainId:        borChainID,
 	}
 
-	logger.Info("Freezing new span", "id", id, "span", newSpan)
+	k.Logger(ctx).Info("Freezing new block based span", "id", id, "span", newSpan)
+
+	return k.AddNewSpan(ctx, newSpan)
+}
+
+func (k *Keeper) freezeSetTimeBasedSpan(ctx sdk.Context, id uint64, startTime uint64, endBlock uint64, borChainID string, seed common.Hash, lastSpan *types.Span) error {
+
+	lastMilestone, err := k.mk.GetLastMilestone(ctx)
+	if err != nil {
+		return err
+	}
+
+	// start time must be > lastMilestone
+	if startTime < lastMilestone.Timestamp {
+		return fmt.Errorf("span start time cannot be less than last milestone timestamp")
+	}
+
+	// select next producer
+	newProducer, err := k.SelectNextProducer(ctx)
+	if err != nil {
+		return err
+	}
+
+	valSet, err := k.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return err
+	}
+
+	// generate new span
+	newSpan := &types.Span{
+		Id:                id,
+		StartBlock:        startTime,
+		EndBlock:          endBlock,
+		ValidatorSet:      valSet,
+		SelectedProducers: newProducer,
+		BorChainId:        borChainID,
+	}
+
+	k.Logger(ctx).Info("Freezing new time based span", "id", id, "span", newSpan)
 
 	return k.AddNewSpan(ctx, newSpan)
 }
@@ -281,6 +344,23 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 	vals = types.SortValidatorByAddress(vals)
 
 	return vals, nil
+}
+
+// SelectNextProducer NEW VERSION - used to select the primary producer for span
+func (k *Keeper) SelectNextProducer(ctx context.Context) ([]staketypes.Validator, error) {
+	// spanEligibleVals are current validators who are not getting deactivated in between next span
+	spanEligibleVals := k.sk.GetSpanEligibleValidators(ctx)
+	for _, validator := range spanEligibleVals {
+		pub, err := crypto.UnmarshalPubkey(validator.PubKey)
+		if err != nil {
+			return nil, err
+		}
+		addr := crypto.PubkeyToAddress(*pub).Hex()
+		if addr == k.getNextProducer() {
+			return []staketypes.Validator{validator}, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find next producer")
 }
 
 // UpdateLastSpan updates the last span
@@ -500,4 +580,30 @@ func RollbackVotingPowers(valsNew, valsOld []staketypes.Validator) []staketypes.
 	}
 
 	return valsNew
+}
+
+// MaintainSpanProducers updates the next span producer by choosing the most preferred producer present in the extended
+// votes. This makes sure a primary (or otherwise) producer is placed back as preferred producer once they have returned
+func (k *Keeper) MaintainNextSpanProducer(ctx context.Context, extVoteInfo []cmttypes.ExtendedVoteInfo) error {
+	voters := make(map[string]struct{})
+	for _, voteInfo := range extVoteInfo {
+		addr := common.Bytes2Hex(voteInfo.Validator.Address)
+		voters[addr] = struct{}{}
+	}
+	// Pick the first preferred producer that participated in vote extension
+	for _, p := range k.preferredProducers {
+		if _, ok := voters[p]; ok {
+			k.nextProducerMutex.Lock()
+			defer k.nextProducerMutex.Unlock()
+			k.nextProducer = p
+			return nil
+		}
+	}
+	return fmt.Errorf("No preferred span producers present in extended vote info. Expected one of %v", k.preferredProducers)
+}
+
+func (k *Keeper) getNextProducer() string {
+	k.nextProducerMutex.Lock()
+	defer k.nextProducerMutex.Unlock()
+	return k.nextProducer
 }

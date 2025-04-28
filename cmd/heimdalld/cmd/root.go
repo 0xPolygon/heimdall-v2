@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"cosmossdk.io/log"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	db "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -164,6 +165,10 @@ func NewRootCmd() *cobra.Command {
 	if err := autoCliOpts.EnhanceRootCommand(rootCmd); err != nil {
 		panic(err)
 	}
+
+	// Where should these go?
+	rootCmd.PersistentFlags().StringSlice(borTypes.TimeBasedSpanProducersKey, []string{}, "preferred ordered list of block span producers")
+	rootCmd.PersistentFlags().Uint64(borTypes.TimeBasedSpanBlockHeightKey, 0, "block at which time based spans start")
 
 	return rootCmd
 }

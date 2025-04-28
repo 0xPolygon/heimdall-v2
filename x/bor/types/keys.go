@@ -13,6 +13,12 @@ const (
 	RouterKey = ModuleName
 )
 
+// Where is the right place for these?
+const (
+	TimeBasedSpanBlockHeightKey = "time-based-span-block-height"
+	TimeBasedSpanProducersKey   = "time-based-span-producers"
+)
+
 // Keys for store prefixes
 var (
 	LastSpanIDKey            = collections.NewPrefix(0x35) // Key to store last span

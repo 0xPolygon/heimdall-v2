@@ -61,6 +61,7 @@ import (
 	paramproposal "github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/gorilla/mux"
+	"github.com/spf13/cast"
 
 	"github.com/0xPolygon/heimdall-v2/client/docs"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -305,7 +306,7 @@ func NewHeimdallApp(
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
 		govtypes.NewMultiGovHooks(
-		// register the governance hooks
+			// register the governance hooks
 		),
 	)
 
@@ -326,13 +327,20 @@ func NewHeimdallApp(
 		&app.caller,
 	)
 
+	// This smells wrong
+	tbProducers := cast.ToStringSlice(appOpts.Get(borTypes.TimeBasedSpanProducersKey))
+	tbHeight := cast.ToUint64(appOpts.Get(borTypes.TimeBasedSpanBlockHeightKey))
+
 	app.BorKeeper = borKeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[borTypes.StoreKey]),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		&app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		&app.MilestoneKeeper,
 		&app.caller,
+		tbHeight,
+		tbProducers,
 	)
 
 	// HV2: stake and checkpoint keepers are circularly dependent. This workaround solves it

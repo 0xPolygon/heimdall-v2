@@ -5,13 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	abci "github.com/cometbft/cometbft/abci/types"
-	cmtTypes "github.com/cometbft/cometbft/types"
-	"github.com/cosmos/cosmos-sdk/codec/address"
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/cosmos/gogoproto/proto"
-	"github.com/ethereum/go-ethereum/common"
-
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -19,6 +12,12 @@ import (
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	cmtTypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/gogoproto/proto"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
@@ -351,6 +350,11 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, errors.New("non-empty VEs found in the initial height's pre-blocker")
 		}
 		return app.ModuleManager.PreBlock(ctx)
+	}
+
+	err := app.BorKeeper.MaintainNextSpanProducer(ctx, extVoteInfo)
+	if err != nil {
+		logger.Error("Error occurred maintaining bor span producers", "error", err)
 	}
 
 	// Fetch txs from block n-1 so that we can match them with the approved txs in block n to execute sideTxs
