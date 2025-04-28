@@ -8,6 +8,9 @@ import (
 
 var _ sdk.Msg = &MsgProposeSpan{}
 
+// TODO: Add this message to cli
+var _ sdk.Msg = &MsgBackfillSpans{}
+
 // NewMsgProposeSpan creates a new MsgProposeSpan instance
 func NewMsgProposeSpan(
 	spanID uint64,
@@ -32,4 +35,8 @@ func NewMsgProposeSpan(
 // Type returns the type of the x/bor MsgProposeSpan.
 func (msg MsgProposeSpan) Type() string {
 	return EventTypeProposeSpan
+}
+
+func (msg MsgBackfillSpans) Type() string {
+	return EventTypeBackfillSpans
 }

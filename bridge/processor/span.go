@@ -84,8 +84,15 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		sp.Logger.Error("Error fetching current child block", "error", err)
 		return
 	}
-	if latestBlock.Number.Uint64() < lastSpan.StartBlock {
+	latestBorBlockNumber := latestBlock.Number.Uint64()
+
+	if latestBorBlockNumber < lastSpan.StartBlock {
 		sp.Logger.Debug("Current bor block is less than last span start block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanStartBlock", lastSpan.StartBlock)
+		return
+	}
+
+	if types.IsBlockCloseToSpanEnd(latestBorBlockNumber, lastSpan.EndBlock) {
+		sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
 		return
 	}
 
@@ -99,7 +106,47 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 
 	// check if current user is among next span producers
 	if sp.isSpanProposer(nextSpanMsg.SelectedProducers) {
+		if latestBlock.Number.Uint64() > lastSpan.EndBlock {
+			sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+			go sp.backfillSpans(latestBorBlockNumber, lastSpan)
+			return
+		}
 		go sp.propose(ctx, lastSpan, nextSpanMsg)
+	}
+}
+
+func (sp *SpanProcessor) backfillSpans(latestBorBlockNumber uint64, lastSpan *types.Span) {
+	params, err := util.GetChainmanagerParams(sp.cliCtx.Codec)
+	if err != nil {
+		sp.Logger.Error("Error while fetching chainmanager params", "error", err)
+		return
+	}
+
+	addrString, err := helper.GetAddressString()
+	if err != nil {
+		sp.Logger.Info("error converting address to string", "err", err)
+		return
+	}
+
+	borSpanId := types.CalcCurrentBorSpanId(latestBorBlockNumber, lastSpan)
+
+	msg := types.MsgBackfillSpans{
+		Proposer:        addrString,
+		ChainId:         params.ChainParams.HeimdallChainId,
+		LatestSpanId:    lastSpan.Id,
+		LatestBorSpanId: borSpanId,
+		LatestBorBlock:  latestBorBlockNumber,
+	}
+
+	txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
+	if err != nil {
+		sp.Logger.Error("Error while broadcasting spans backfill to heimdall", "spanId", msg.LatestSpanId, "startBlock", msg.LatestBorSpanId, "endBlock", msg.LatestBorBlock, "error", err)
+		return
+	}
+
+	if txRes.Code != abci.CodeTypeOK {
+		sp.Logger.Error("spans backfill tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		return
 	}
 }
 

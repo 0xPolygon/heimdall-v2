@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"errors"
+	"math/big"
 	"strconv"
 
 	cmttypes "github.com/cometbft/cometbft/types"
@@ -16,6 +17,7 @@ import (
 )
 
 var SpanProposeMsgTypeURL = sdk.MsgTypeURL(&types.MsgProposeSpan{})
+var FillMissingSpansMsgTypeURL = sdk.MsgTypeURL(&types.MsgBackfillSpans{})
 
 type sideMsgServer struct {
 	k *Keeper
@@ -35,6 +37,8 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return s.SideHandleMsgSpan
+	case FillMissingSpansMsgTypeURL:
+		return s.SideHandleMsgBackfillSpans
 	default:
 		return nil
 	}
@@ -123,6 +127,51 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	return sidetxs.Vote_VOTE_YES
 }
 
+func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
+	logger := s.k.Logger(ctx)
+
+	msg, ok := msgI.(*types.MsgBackfillSpans)
+	if !ok {
+		logger.Error("MsgFillMissingSpans type mismatch", "msg type received", msgI)
+		return sidetxs.Vote_UNSPECIFIED
+
+	}
+
+	logger.Debug("✅ validating external call for fill missing spans msg",
+		"proposer", msg.Proposer,
+		"chainId", msg.ChainId,
+		"latestSpanId", msg.LatestBorSpanId,
+		"latestBorBlock", msg.LatestBorBlock,
+		"latestHeimdallSpan", msg.LatestBorSpanId,
+	)
+
+	header, err := s.k.contractCaller.GetBorChainBlock(ctx, new(big.Int).SetUint64(msg.LatestBorBlock))
+	if err != nil {
+		logger.Error("error fetching current child block", "error", err)
+		return sidetxs.Vote_UNSPECIFIED
+	}
+
+	if header == nil {
+		logger.Error("error fetching current child block, header is nil")
+		return sidetxs.Vote_UNSPECIFIED
+	}
+
+	latestSpan, err := s.k.GetLastSpan(ctx)
+	if err != nil {
+		logger.Error("failed to get latest span", "error", err)
+		return sidetxs.Vote_UNSPECIFIED
+	}
+
+	if latestSpan.Id != msg.LatestSpanId {
+		logger.Error("invalid span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	logger.Debug("✅ successfully validated external call for fill missing spans msg")
+
+	return sidetxs.Vote_VOTE_YES
+}
+
 // PostTxHandler returns a side handler for span type messages.
 func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
@@ -190,6 +239,59 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 			sdk.NewAttribute(types.AttributeKeySpanID, strconv.FormatUint(msg.SpanId, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanStartBlock, strconv.FormatUint(msg.StartBlock, 10)),
 			sdk.NewAttribute(types.AttributeKeySpanEndBlock, strconv.FormatUint(msg.EndBlock, 10)),
+		),
+	})
+
+	return nil
+}
+
+func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
+	logger := s.k.Logger(ctx)
+
+	msg, ok := msgI.(*types.MsgBackfillSpans)
+	if !ok {
+		err := errors.New("MsgBackfillSpans type mismatch")
+		logger.Error(err.Error(), "msg type received", msg)
+		return err
+	}
+
+	if sideTxResult != sidetxs.Vote_VOTE_YES {
+		logger.Debug("skipping new span since side-tx didn't get yes votes")
+		return errors.New("side-tx didn't get yes votes")
+	}
+
+	latestSpan, err := s.k.GetLastSpan(ctx)
+	if err != nil {
+		logger.Error("failed to get latest span", "error", err)
+		return err
+	}
+
+	if latestSpan.Id != msg.LatestSpanId {
+		logger.Error("invalid span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
+		return errors.New("invalid span id")
+	}
+
+	borSpans := types.GenerateBorCommittedSpans(msg.LatestBorBlock, &latestSpan)
+	for i := range borSpans {
+		if err = s.k.AddNewSpan(ctx, &borSpans[i]); err != nil {
+			logger.Error("Unable to store spans", "error", err)
+			return err
+		}
+	}
+
+	txBytes := ctx.TxBytes()
+	hash := cmttypes.Tx(txBytes).Hash()
+
+	ctx.EventManager().EmitEvents(sdk.Events{
+		sdk.NewEvent(
+			types.EventTypeProposeSpan,
+			sdk.NewAttribute(sdk.AttributeKeyAction, msg.Type()),
+			sdk.NewAttribute(sdk.AttributeKeyModule, types.AttributeValueCategory),
+			sdk.NewAttribute(heimdallTypes.AttributeKeyTxHash, common.BytesToHash(hash).Hex()),
+			sdk.NewAttribute(heimdallTypes.AttributeKeySideTxResult, sideTxResult.String()),
+			sdk.NewAttribute(types.AttributesKeyLatestSpanId, strconv.FormatUint(msg.LatestSpanId, 10)),
+			sdk.NewAttribute(types.AttributesKeyLatestBorBlock, strconv.FormatUint(msg.LatestBorBlock, 10)),
+			sdk.NewAttribute(types.AttributesKeyLatestBorSpanId, strconv.FormatUint(borSpans[0].Id, 10)),
 		),
 	})
 

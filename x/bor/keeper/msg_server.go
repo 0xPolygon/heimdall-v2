@@ -112,3 +112,75 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 
 	return &types.MsgUpdateParamsResponse{}, nil
 }
+
+func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (*types.MsgBackfillSpansResponse, error) {
+	logger := s.Logger(ctx)
+
+	logger.Debug("✅ validating proposed backfill spans msg",
+		"proposer", msg.Proposer,
+		"latestSpanId", msg.LatestSpanId,
+		"latestBorSpanId", msg.LatestBorSpanId,
+		"latestBorBlock", msg.LatestBorBlock,
+		"chainId", msg.ChainId,
+	)
+
+	_, err := sdk.ValAddressFromHex(msg.Proposer)
+	if err != nil {
+		logger.Error("invalid proposer address", "error", err)
+		return nil, errors.Wrapf(err, "invalid proposer address")
+	}
+
+	chainParams, err := s.ck.GetParams(ctx)
+	if err != nil {
+		logger.Error("failed to get chain params", "error", err)
+		return nil, errors.Wrapf(err, "failed to get chain params")
+	}
+
+	if chainParams.ChainParams.HeimdallChainId != msg.ChainId {
+		logger.Error("invalid chain id", "expected", chainParams.ChainParams.HeimdallChainId, "got", msg.ChainId)
+		return nil, types.ErrInvalidChainID
+	}
+
+	latestSpan, err := s.Keeper.GetLastSpan(ctx)
+	if err != nil {
+		logger.Error("failed to get latest span", "error", err)
+		return nil, errors.Wrapf(err, "failed to get latest span")
+	}
+
+	if latestSpan.Id != msg.LatestSpanId {
+		logger.Error("invalid span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
+		return nil, types.ErrInvalidSpan
+	}
+
+	if msg.LatestBorSpanId <= latestSpan.Id {
+		logger.Error("invalid bor span id, expected greater than latest span id",
+			"latestSpanId", latestSpan.Id,
+			"latestBorSpanId", msg.LatestBorSpanId,
+		)
+		return nil, types.ErrInvalidSpan
+	}
+
+	if msg.LatestBorBlock <= latestSpan.EndBlock {
+		logger.Error("invalid bor block, expected greater than latest span end block",
+			"latestSpanEndBlock", latestSpan.EndBlock,
+			"latestBorBlock", msg.LatestBorBlock,
+		)
+		return nil, types.ErrInvalidSpan
+	}
+
+	borSpanId := types.CalcCurrentBorSpanId(msg.LatestBorBlock, &latestSpan)
+	if borSpanId != msg.LatestBorSpanId {
+		logger.Error(
+			"bor span id mismatch",
+			"calculatedBorSpanId", borSpanId,
+			"msgLatestBorSpanId", msg.LatestBorSpanId,
+			"msgLatestBorBlock", msg.LatestBorBlock,
+			"latestSpanStartBlock", latestSpan.StartBlock,
+			"latestSpanEndBlock", latestSpan.EndBlock,
+			"latestSpanId", latestSpan.Id,
+		)
+		return nil, types.ErrInvalidSpan
+	}
+
+	return &types.MsgBackfillSpansResponse{}, nil
+}
