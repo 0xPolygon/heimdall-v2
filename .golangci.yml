@@ -1,10 +1,7 @@
-# This file configures github.com/golangci/golangci-lint.
-
+version: "2"
 run:
-  go: '1.24.2'
-  timeout: 20m
+  go: 1.24.2
   tests: true
-
 linters:
   enable:
     - bodyclose
@@ -13,147 +10,132 @@ linters:
     - copyloopvar
     - decorder
     - durationcheck
-    - errcheck
     - errchkjson
     - errname
     - errorlint
-    # - exhaustive
-    # - gocognit
-    - gci
     - goconst
-    - gofumpt
-    - goimports
-    # - gomnd
-    #- gomoddirectives
     - gosec
     - makezero
     - misspell
-    #- nestif
     - nilerr
     - nilnil
     - noctx
     - nolintlint
-    #- nosprintfhostport
     - paralleltest
     - prealloc
     - predeclared
-    #- promlinter
-    #- revive
-    # - tagliatelle
-    - tenv
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
-    - unused
-    # - wsl
-
-linters-settings:
-  gci:
-    sections:
-      - Standard
-      - Default
-      - Prefix(github.com/0xPolygon/heimdall-v2)
-    skip-generated: true
-
-  gofmt:
-    simplify: true
-
-  gosec:
-    excludes:
-      - G115  # TODO: overflow errors ignored. to review later
-
-  goconst:
-    min-len: 3 # minimum length of string constant
-    min-occurrences: 2 # minimum number of occurrences
-    numbers: true
-
-  nestif:
-    min-complexity: 5
-
-  prealloc:
-    for-loops: true
-
-  gocritic:
-    # Which checks should be enabled; can't be combined with 'disabled-checks';
-    # See https://go-critic.github.io/overview#checks-overview
-    # To check which checks are enabled run `GL_DEBUG=gocritic ./build/bin/golangci-lint run`
-    # By default list of stable checks is used.
-    enabled-checks:
-      - badLock
-      - filepathJoin
-      - sortSlice
-      - sprintfQuotedString
-      - syncMapLoadAndDelete
-      - weakCond
-      - boolExprSimplify
-      - httpNoBody
-      - ioutilDeprecated
-      - nestingReduce
-      - preferFilepathJoin
-      - redundantSprint
-      - stringConcatSimplify
-      - timeExprSimplify
-      - typeAssertChain
-      - yodaStyleExpr
-      - truncateCmp
-      - equalFold
-      - preferDecodeRune
-      - preferFprint
-      - preferStringWriter
-      - preferWriteByte
-      - sliceClear
-      #- ruleguard
-
-    # Which checks should be disabled; can't be combined with 'enabled-checks'; default is empty
-    disabled-checks:
-      - regexpMust
-      - exitAfterDefer
-      - dupBranchBody
-      - singleCaseSwitch
-      - unlambda
-      - captLocal
-      - commentFormatting
-      - ifElseChain
-      - importShadow
-      - builtinShadow
-
-    # Enable multiple checks by tags, run `GL_DEBUG=gocritic golangci-lint run` to see all tags and checks.
-    # Empty list by default. See https://github.com/go-critic/go-critic#usage -> section "Tags".
-    enabled-tags:
-      - performance
-      - diagnostic
-      - opinionated
-      - style
-    disabled-tags:
-      - experimental
-  govet:
-    disable:
-      - deepequalerrors
-      - fieldalignment
-      - shadow
-      - unsafeptr
-    enable-all: true
-    settings:
-      printf:
-        # Run `go tool vet help printf` to see available settings for `printf` analyzer.
-        funcs:
-          - (github.com/ethereum/go-ethereum/log.Logger).Trace
-          - (github.com/ethereum/go-ethereum/log.Logger).Debug
-          - (github.com/ethereum/go-ethereum/log.Logger).Info
-          - (github.com/ethereum/go-ethereum/log.Logger).Warn
-          - (github.com/ethereum/go-ethereum/log.Logger).Error
-          - (github.com/ethereum/go-ethereum/log.Logger).Crit
-
+  settings:
+    goconst:
+      min-len: 3
+      min-occurrences: 2
+      numbers: true
+    gocritic:
+      enabled-checks:
+        - badLock
+        - filepathJoin
+        - sortSlice
+        - sprintfQuotedString
+        - syncMapLoadAndDelete
+        - weakCond
+        - boolExprSimplify
+        - httpNoBody
+        - ioutilDeprecated
+        - nestingReduce
+        - preferFilepathJoin
+        - redundantSprint
+        - stringConcatSimplify
+        - timeExprSimplify
+        - typeAssertChain
+        - yodaStyleExpr
+        - truncateCmp
+        - equalFold
+        - preferDecodeRune
+        - preferFprint
+        - preferStringWriter
+        - preferWriteByte
+        - sliceClear
+      disabled-checks:
+        - regexpMust
+        - exitAfterDefer
+        - dupBranchBody
+        - singleCaseSwitch
+        - unlambda
+        - captLocal
+        - commentFormatting
+        - ifElseChain
+        - importShadow
+        - builtinShadow
+      enabled-tags:
+        - performance
+        - diagnostic
+        - opinionated
+        - style
+      disabled-tags:
+        - experimental
+    gosec:
+      excludes:
+        - G115
+    govet:
+      disable:
+        - deepequalerrors
+        - fieldalignment
+        - shadow
+        - unsafeptr
+      enable-all: true
+      settings:
+        printf:
+          funcs:
+            - (github.com/ethereum/go-ethereum/log.Logger).Trace
+            - (github.com/ethereum/go-ethereum/log.Logger).Debug
+            - (github.com/ethereum/go-ethereum/log.Logger).Info
+            - (github.com/ethereum/go-ethereum/log.Logger).Warn
+            - (github.com/ethereum/go-ethereum/log.Logger).Error
+            - (github.com/ethereum/go-ethereum/log.Logger).Crit
+    nestif:
+      min-complexity: 5
+    prealloc:
+      for-loops: true
+  exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - .*_test\.go
+      - .*\.pb\.go
+      - .*\.pulsar\.go
+      - api/
+      - third_party$
+      - builtin$
+      - examples$
 issues:
-  exclude-generated: strict
-  exclude-dirs:
-    - "api/"
-  exclude-files:
-    - ".*_test\\.go"
-    - ".*\\.pb\\.go"
-    - ".*\\.pulsar\\.go"
   max-issues-per-linter: 0
   max-same-issues: 0
   new-from-rev: origin/develop
+formatters:
+  enable:
+    - gci
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - Standard
+        - Default
+        - Prefix(github.com/0xPolygon/heimdall-v2)
+    gofmt:
+      simplify: true
+  exclusions:
+    paths:
+      - .*_test\.go
+      - .*\.pb\.go
+      - .*\.pulsar\.go
+      - api/
+      - third_party$
+      - builtin$
+      - examples$
