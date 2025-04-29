@@ -696,6 +696,7 @@ func getGenesisAppState(hv2GenesisPath string) (heimdallApp.GenesisState, error)
 }
 
 // countJSONArrayEntries streams through a genesis file to count entries in a nested array.
+// If the array is not found, it assumes zero entries instead of returning an error.
 func countJSONArrayEntries(path, module, key string) (int, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -736,7 +737,8 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 				}
 				delim, ok := t.(json.Delim)
 				if !ok || delim != '[' {
-					return 0, fmt.Errorf("expected array for %s.%s", module, key)
+					// Key found, but not an array → treat as empty
+					return 0, nil
 				}
 				count := 0
 				for dec.More() {
@@ -772,7 +774,8 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 		}
 	}
 
-	return 0, fmt.Errorf("array %s.%s not found", module, key)
+	// Array not found → treat as zero entries
+	return 0, nil
 }
 
 // getValidatorBasicInfo extracts the basic info of a validator from the genesis file
