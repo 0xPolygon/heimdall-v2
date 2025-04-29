@@ -696,7 +696,7 @@ func getGenesisAppState(hv2GenesisPath string) (heimdallApp.GenesisState, error)
 }
 
 // countJSONArrayEntries streams through a genesis file to count entries in a nested array.
-// If the array is not found, it assumes zero entries instead of returning an error.
+// If the array is not found or is null, it assumes zero entries instead of returning an error.
 func countJSONArrayEntries(path, module, key string) (int, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -730,30 +730,37 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 				continue
 			}
 			if inAppState && inModule && keyStr == key {
-				// start array
+				// Read the next token (value associated with the key)
 				t, err := dec.Token()
 				if err != nil {
 					return 0, fmt.Errorf("expected token after key %s: %w", key, err)
 				}
-				delim, ok := t.(json.Delim)
-				if !ok || delim != '[' {
-					// Key found, but not an array → treat as empty
+				switch v := t.(type) {
+				case json.Delim:
+					if v != '[' {
+						return 0, nil // unexpected structure, treat as empty
+					}
+					count := 0
+					for dec.More() {
+						var discard json.RawMessage
+						if err := dec.Decode(&discard); err != nil {
+							return 0, fmt.Errorf("failed to decode item in %s.%s: %w", module, key, err)
+						}
+						count++
+					}
+					// Consume closing ']'
+					_, err = dec.Token()
+					if err != nil {
+						return 0, fmt.Errorf("error finishing array read: %w", err)
+					}
+					return count, nil
+				case nil:
+					// Key explicitly set to null
+					return 0, nil
+				default:
+					// Key is not an array or null → treat as empty
 					return 0, nil
 				}
-				count := 0
-				for dec.More() {
-					var discard json.RawMessage
-					if err := dec.Decode(&discard); err != nil {
-						return 0, fmt.Errorf("failed to decode item in %s.%s: %w", module, key, err)
-					}
-					count++
-				}
-				// Read the closing ']'
-				_, err = dec.Token()
-				if err != nil {
-					return 0, fmt.Errorf("error finishing array read: %w", err)
-				}
-				return count, nil
 			}
 		}
 
@@ -774,7 +781,7 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 		}
 	}
 
-	// Array not found → treat as zero entries
+	// If key not found at all, assume zero entries
 	return 0, nil
 }
 
