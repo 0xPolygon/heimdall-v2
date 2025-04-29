@@ -1,6 +1,6 @@
 module github.com/0xPolygon/heimdall-v2
 
-go 1.24.1
+go 1.24.2
 
 require (
 	cosmossdk.io/api v0.7.5
