@@ -6,7 +6,7 @@ Consensus client of Polygon PoS chain, using a forks of [cometBFT](https://githu
 
 ## Pre-requisites
 
-Make sure you have go1.23+ already installed
+Make sure you have go1.24+ already installed
 
 ## Build
 ```bash 
