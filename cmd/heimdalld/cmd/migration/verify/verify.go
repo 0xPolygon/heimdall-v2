@@ -145,8 +145,24 @@ func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis 
 			return fmt.Errorf("invalid account format at index %d", i)
 		}
 
-		accAddress, _ := accountMap["address"].(string)
-		coins, _ := accountMap["coins"].([]interface{})
+		addressRaw, ok := accountMap["address"]
+		if !ok || addressRaw == nil {
+			return fmt.Errorf("missing address for account at index %d", i)
+		}
+		accAddress, ok := addressRaw.(string)
+		if !ok {
+			return fmt.Errorf("address field is not a string at index %d", i)
+		}
+
+		coinsRaw := accountMap["coins"]
+		var coins []interface{}
+		if coinsRaw != nil {
+			coins, ok = coinsRaw.([]interface{})
+			if !ok {
+				return fmt.Errorf("coins field is not a list at index %d", i)
+			}
+		}
+		// If coinsRaw == nil ➔ coins is nil ➔ zero coins: OK
 
 		for _, coin := range coins {
 			coinMap, ok := coin.(map[string]interface{})
@@ -309,6 +325,7 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 		{"gov", "proposals", "gov", "proposals"},
 		{"staking", "validators", "stake", "validators"},
 		{"topup", "dividend_accounts", "topup", "dividend_accounts"},
+		{"topup", "tx_sequences", "topup", "topup_sequences"},
 	}
 
 	for _, km := range keyMappings {
@@ -349,7 +366,7 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 					km.moduleV1, km.keyV1, count1,
 					km.moduleV2, km.keyV2, count2)
 			} else {
-				fmt.Printf("found %d entries in %s module for v1 and %d entries for %s module in v2", count1, km.moduleV1, count2, km.moduleV2)
+				fmt.Printf("found %d entries for key %s in module %s for v1 and %d entries for key %s in module %s in v2\n", count1, km.keyV1, km.moduleV1, count2, km.keyV2, km.moduleV2)
 			}
 		}
 	}
@@ -364,10 +381,16 @@ func verifyCheckpoints(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genes
 	if !ok {
 		return fmt.Errorf("checkpoint module not found in v1 app_state")
 	}
-	checkpoints, ok := hv1CheckpointData["checkpoints"].([]interface{})
-	if !ok {
-		return fmt.Errorf("checkpoints key missing or not a list")
+
+	checkpointsRaw := hv1CheckpointData["checkpoints"]
+	var checkpoints []interface{}
+	if checkpointsRaw != nil {
+		checkpoints, ok = checkpointsRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("checkpoints key is not a list")
+		}
 	}
+	// If checkpointsRaw == nil → checkpoints will be nil → OK (zero checkpoints)
 
 	// sort v1 checkpoints by start_time
 	sort.Slice(checkpoints, func(i, j int) bool {
@@ -464,15 +487,22 @@ func verifyCheckpoints(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genes
 	return nil
 }
 
+// verifySpans verifies the bor data in the genesis files by comparing the data in both versions
 func verifySpans(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map[string]interface{}) error {
 	hv1SpansData, ok := hv1Genesis["app_state"].(map[string]interface{})["bor"].(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("bor module not found in v1 app_state")
 	}
-	spans, ok := hv1SpansData["spans"].([]interface{})
-	if !ok {
-		return fmt.Errorf("spans key missing or not a list")
+
+	spansRaw := hv1SpansData["spans"]
+	var spans []interface{}
+	if spansRaw != nil {
+		spans, ok = spansRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("spans key is not a list")
+		}
 	}
+	// If spansRaw == nil → spans stays nil → OK (zero spans)
 
 	// Index v1 spans by span_id
 	v1SpansByID := make(map[int]map[string]interface{})
@@ -528,7 +558,7 @@ func verifySpans(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map
 			}
 		}
 		if int(span.Id) != i {
-			return fmt.Errorf("spans in v2 have non-sequential IDs at index %d: expected %d, got %d", i, i+1, span.Id)
+			return fmt.Errorf("spans in v2 have non-sequential IDs at index %d: expected %d, got %d", i, i, span.Id)
 		}
 	}
 
@@ -546,15 +576,25 @@ func verifyTopup(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map
 	if !ok {
 		return fmt.Errorf("topup module not found in v1 app_state")
 	}
-	dividendAccounts, ok := hv1TopupData["dividend_accounts"].([]interface{})
-	if !ok {
-		return fmt.Errorf("dividend accounts key missing or not a list")
+
+	dividendAccountsRaw := hv1TopupData["dividend_accounts"]
+	var dividendAccounts []interface{}
+	if dividendAccountsRaw != nil {
+		dividendAccounts, ok = dividendAccountsRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("dividend accounts key not a list")
+		}
 	}
 
-	txSequences, ok := hv1TopupData["tx_sequences"].([]interface{})
-	if !ok {
-		return fmt.Errorf("tx sequences key missing or not a list")
+	txSequencesRaw := hv1TopupData["tx_sequences"]
+	var txSequences []interface{}
+	if txSequencesRaw != nil {
+		txSequences, ok = txSequencesRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("tx sequences key not a list")
+		}
 	}
+	// If txSequencesRaw == nil, txSequences will stay nil -> treated as empty!
 
 	dbDividendAccounts, err := app.TopupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
@@ -581,10 +621,16 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 	if !ok {
 		return fmt.Errorf("clerk module not found in v1 app_state")
 	}
-	records, ok := hv1ClerkData["event_records"].([]interface{})
-	if !ok {
-		return fmt.Errorf("event_records key missing or not a list")
+
+	recordsRaw := hv1ClerkData["event_records"]
+	var records []interface{}
+	if recordsRaw != nil {
+		records, ok = recordsRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("event_records key is not a list")
+		}
 	}
+	// If recordsRaw == nil → records is nil → OK, treated as zero records
 
 	dbRecords := app.ClerkKeeper.GetAllEventRecords(ctx)
 
@@ -638,12 +684,6 @@ func verifyClerkEventRecords(ctx types.Context, app *heimdallApp.HeimdallApp, hv
 		if dbRecords[i-1].RecordTime.After(dbRecords[i].RecordTime) {
 			return fmt.Errorf("records not ordered correctly at index %d", i)
 		}
-
-		/* TODO HV2: skipping this check
-		if int(dbRecords[i].Id) != i+1 {
-			return fmt.Errorf("event records in v2 have non-sequential IDs at index %d", i)
-		}
-		*/
 	}
 
 	// just log if IDs are not sequential
@@ -702,12 +742,7 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			fmt.Printf("failed to close file: %s", err)
-		}
-	}(f)
+	defer f.Close()
 
 	dec := json.NewDecoder(f)
 	inAppState, inModule := false, false
@@ -720,6 +755,7 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 		} else if err != nil {
 			return 0, fmt.Errorf("json stream error: %w", err)
 		}
+
 		if keyStr, ok := tok.(string); ok {
 			if !inAppState && keyStr == "app_state" {
 				inAppState = true
@@ -730,41 +766,40 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 				continue
 			}
 			if inAppState && inModule && keyStr == key {
-				// Read the next token (value associated with the key)
-				t, err := dec.Token()
-				if err != nil {
-					return 0, fmt.Errorf("expected token after key %s: %w", key, err)
+				// Instead of dec.Token(), decode the full value
+				var raw json.RawMessage
+				if err := dec.Decode(&raw); err != nil {
+					return 0, fmt.Errorf("expected value after key %s: %w", key, err)
 				}
-				switch v := t.(type) {
-				case json.Delim:
-					if v != '[' {
-						return 0, nil // unexpected structure, treat as empty
-					}
-					count := 0
-					for dec.More() {
-						var discard json.RawMessage
-						if err := dec.Decode(&discard); err != nil {
-							return 0, fmt.Errorf("failed to decode item in %s.%s: %w", module, key, err)
-						}
-						count++
-					}
-					// Consume closing ']'
-					_, err = dec.Token()
-					if err != nil {
-						return 0, fmt.Errorf("error finishing array read: %w", err)
-					}
-					return count, nil
-				case nil:
-					// Key explicitly set to null
-					return 0, nil
-				default:
-					// Key is not an array or null → treat as empty
+				if len(raw) == 0 || string(raw) == "null" {
+					// Null or empty
 					return 0, nil
 				}
+				if raw[0] != '[' {
+					// Not an array
+					return 0, nil
+				}
+
+				// It's an array → count elements
+				arrayDec := json.NewDecoder(bytes.NewReader(raw))
+				tok, err := arrayDec.Token()
+				if err != nil || tok != json.Delim('[') {
+					return 0, fmt.Errorf("invalid array structure at %s.%s", module, key)
+				}
+
+				count := 0
+				for arrayDec.More() {
+					var discard json.RawMessage
+					if err := arrayDec.Decode(&discard); err != nil {
+						return 0, fmt.Errorf("failed to decode item in %s.%s: %w", module, key, err)
+					}
+					count++
+				}
+				return count, nil
 			}
 		}
 
-		// Track depth to exit app_state if needed
+		// Track depth
 		if delim, ok := tok.(json.Delim); ok {
 			switch delim {
 			case '{':
@@ -781,7 +816,7 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 		}
 	}
 
-	// If key not found at all, assume zero entries
+	// Key not found
 	return 0, nil
 }
 
