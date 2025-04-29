@@ -154,6 +154,7 @@ jobs:
 
       - name: Upload logs
         if: always()
+        continue-on-error: true
         uses: PaloAltoNetworks/upload-secure-artifact@main
         with:
           name: logs_${{ github.run_id }}
