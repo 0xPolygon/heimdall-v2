@@ -64,7 +64,7 @@ vulncheck:
 .PHONY: lint-deps
 lint-deps:
 	rm -f ./build/bin/golangci-lint
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v1.63.4
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./build/bin v2.1.5
 
 .PHONY: lint
 lint:
