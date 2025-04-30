@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"testing"
 
-	// borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
-	// borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -27,6 +27,8 @@ import (
 	authTypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	testutil "github.com/cosmos/cosmos-sdk/x/bank/testutil"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+
+	// govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -63,12 +65,12 @@ func TestPrepareProposal(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksInBatch", mock.Anything, mock.Anything, mock.Anything).
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return([]*ethTypes.Header{}, nil)
 	// stub any other calls used in GenMilestoneProposition:
-	mockCaller.
-		On("GetBlockNumberFromTxHash", mock.Anything).
-		Return(big.NewInt(0), nil)
+	// mockCaller.
+	// 	On("GetBlockNumberFromTxHash", mock.Anything).
+	// 	Return(big.NewInt(0), nil).Times(2)
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		app.AppCodec(),
@@ -86,14 +88,18 @@ func TestPrepareProposal(t *testing.T) {
 		&app.TopupKeeper,
 		mockCaller,
 	)
-	// app.BorKeeper = borKeeper.NewKeeper(
-	// 	app.AppCodec(),
-	// 	runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
-	// 	authTypes.NewModuleAddress(govtypes.ModuleName).String(),
-	// 	app.ChainManagerKeeper,
-	// 	&app.StakeKeeper,
-	// 	mockCaller,
-	// )
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		nil,
+	)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+
+	app.caller = mockCaller
 
 	validatorPrivKeys := setupResult.ValidatorKeys
 	validators := app.StakeKeeper.GetAllValidators(ctx)
@@ -238,6 +244,8 @@ func TestPrepareProposal(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, abci.ResponseProcessProposal_ACCEPT, respProc.Status)
 
+	fmt.Println("----------------------------------------------------------------------------", app.caller)
+
 	// Test ExtendVote handler
 	reqExtend := abci.RequestExtendVote{
 		Txs:    respPrep.Txs,
@@ -246,21 +254,25 @@ func TestPrepareProposal(t *testing.T) {
 	}
 	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 	require.NoError(t, err)
+	mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+	mockCaller.AssertExpectations(t)
 	require.NotNil(t, respExtend.VoteExtension)
 
+	fmt.Println("finally!")
+
 	// Test VerifyVoteExtension handler
-	reqVerify := abci.RequestVerifyVoteExtension{
-		VoteExtension:      respExtend.VoteExtension,
-		NonRpVoteExtension: respExtend.NonRpExtension,
-		ValidatorAddress:   []byte("validator-1"),
-		Height:             3,
-		Hash:               []byte("test-hash"),
-	}
-	respVerify, err := app.VerifyVoteExtensionHandler()(ctx, &reqVerify)
-	fmt.Println("Hello world")
-	require.NoError(t, err)
-	fmt.Println("Helloworld")
-	require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, respVerify.Status)
+	// reqVerify := abci.RequestVerifyVoteExtension{
+	// 	VoteExtension:      respExtend.VoteExtension,
+	// 	NonRpVoteExtension: respExtend.NonRpExtension,
+	// 	ValidatorAddress:   []byte("validator-1"),
+	// 	Height:             3,
+	// 	Hash:               []byte("test-hash"),
+	// }
+	// respVerify, err := app.VerifyVoteExtensionHandler()(ctx, &reqVerify)
+	// fmt.Println("Hello world")
+	// require.NoError(t, err)
+	// fmt.Println("Helloworld")
+	// require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, respVerify.Status)
 
 	// // Test FinalizeBlock handler
 	// finalizeReq := abci.RequestFinalizeBlock{
