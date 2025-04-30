@@ -228,97 +228,79 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 	require.NoError(err)
 
 	testcases := []struct {
-		name   string
-		span   types.MsgProposeSpan
-		expRes *types.MsgProposeSpanResponse
-		expErr string
+		name          string
+		backfillSpans types.MsgBackfillSpans
+		expRes        *types.MsgBackfillSpansResponse
+		expErr        string
 	}{
 		{
-			name: "correct span gets proposed",
-			span: types.MsgProposeSpan{
-				SpanId:     2,
-				Proposer:   common.HexToAddress("someProposer").String(),
-				StartBlock: 102,
-				EndBlock:   202,
-				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testSeed1").Bytes(),
-			},
-			expRes: &types.MsgProposeSpanResponse{},
-		},
-		{
 			name: "incorrect validator address",
-			span: types.MsgProposeSpan{
-				SpanId:     2,
-				Proposer:   "0x91b54cD48FD796A5d0A120A4C5298a7fAEA59B",
-				StartBlock: 102,
-				EndBlock:   202,
-				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testSeed1").Bytes(),
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        "ValidatorAddress",
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    1,
+				LatestBorBlock:  10000,
+				LatestBorSpanId: 7,
 			},
 			expRes: nil,
 			expErr: "invalid proposer address",
 		},
 		{
 			name: "incorrect chain id",
-			span: types.MsgProposeSpan{
-				SpanId:     2,
-				Proposer:   common.HexToAddress("someProposer").String(),
-				StartBlock: 102,
-				EndBlock:   202,
-				ChainId:    "invalidChainId",
-				Seed:       common.HexToHash("testSeed1").Bytes(),
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         "invalidChainId",
+				LatestSpanId:    1,
+				LatestBorBlock:  10000,
+				LatestBorSpanId: 7,
 			},
 			expRes: nil,
 			expErr: "invalid bor chain id",
 		},
 		{
-			name: "span id not in continuity",
-			span: types.MsgProposeSpan{
-				SpanId:     3,
-				Proposer:   common.HexToAddress("someProposer").String(),
-				StartBlock: 102,
-				EndBlock:   202,
-				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testSeed1").Bytes(),
+			name: "invalid last heimdall span id",
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    2,
+				LatestBorBlock:  10000,
+				LatestBorSpanId: 7,
 			},
 			expRes: nil,
-			expErr: "invalid span",
+			expErr: "invalid last heimdall span id",
 		},
 		{
-			name: "start block not in continuity",
-			span: types.MsgProposeSpan{
-				SpanId:     2,
-				Proposer:   common.HexToAddress("someProposer").String(),
-				StartBlock: 105,
-				EndBlock:   202,
-				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testSeed1").Bytes(),
+			name: "invalid last bor span id",
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    1,
+				LatestBorBlock:  10000,
+				LatestBorSpanId: 0,
+			},
+			expErr: "invalid last bor span id",
+		},
+		{
+			name: "invalid last bor block",
+			backfillSpans: types.MsgBackfillSpans{
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    1,
+				LatestBorBlock:  1,
+				LatestBorSpanId: 2,
 			},
 			expRes: nil,
-			expErr: "invalid span",
+			expErr: "invalid last bor block",
 		},
 		{
-			name: "end block less than start block",
-			span: types.MsgProposeSpan{
-				SpanId:     2,
-				Proposer:   common.HexToAddress("someProposer").String(),
-				StartBlock: 102,
-				EndBlock:   100,
-				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testSeed1").Bytes(),
-			},
-			expRes: nil,
-			expErr: "invalid span",
-		},
-		{
-			name: "end block equal to start block",
-			span: types.MsgProposeSpan{
-				SpanId:     2,
-				Proposer:   common.HexToAddress("someProposer").String(),
-				StartBlock: 102,
-				EndBlock:   102,
-				ChainId:    testChainParams.ChainParams.BorChainId,
-				Seed:       common.HexToHash("testSeed1").Bytes(),
+			name: "mismatch between calculated and provided last span id",
+			backfillSpans: types.MsgBackfillSpans{
+
+				Proposer:        common.HexToAddress("someProposer").String(),
+				ChainId:         testChainParams.ChainParams.BorChainId,
+				LatestSpanId:    1,
+				LatestBorBlock:  1000,
+				LatestBorSpanId: 3,
 			},
 			expRes: nil,
 			expErr: "invalid span",
@@ -329,7 +311,7 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {
-			res, err := msgServer.ProposeSpan(ctx, &tc.span)
+			res, err := msgServer.BackfillSpans(ctx, &tc.backfillSpans)
 			require.Equal(tc.expRes, res)
 			if tc.expErr == "" {
 				require.NoError(err)

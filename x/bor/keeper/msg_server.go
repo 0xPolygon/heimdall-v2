@@ -148,8 +148,8 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 	}
 
 	if latestSpan.Id != msg.LatestSpanId {
-		logger.Error("invalid span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
-		return nil, types.ErrInvalidSpan
+		logger.Error("invalid last heimdall span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
+		return nil, types.ErrInvalidLastHeimdallSpanID
 	}
 
 	if msg.LatestBorSpanId <= latestSpan.Id {
@@ -157,7 +157,7 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 			"latestSpanId", latestSpan.Id,
 			"latestBorSpanId", msg.LatestBorSpanId,
 		)
-		return nil, types.ErrInvalidSpan
+		return nil, types.ErrInvalidLastBorSpanID
 	}
 
 	if msg.LatestBorBlock <= latestSpan.EndBlock {
@@ -165,10 +165,15 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 			"latestSpanEndBlock", latestSpan.EndBlock,
 			"latestBorBlock", msg.LatestBorBlock,
 		)
-		return nil, types.ErrInvalidSpan
+		return nil, types.ErrInvalidLastBorBlock
 	}
 
-	borSpanId := types.CalcCurrentBorSpanId(msg.LatestBorBlock, &latestSpan)
+	borSpanId, err := types.CalcCurrentBorSpanId(msg.LatestBorBlock, &latestSpan)
+	if err != nil {
+		logger.Error("failed to calculate bor span id", "error", err)
+		return nil, errors.Wrapf(err, "failed to calculate bor span id")
+	}
+
 	if borSpanId != msg.LatestBorSpanId {
 		logger.Error(
 			"bor span id mismatch",

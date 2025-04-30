@@ -128,7 +128,11 @@ func (sp *SpanProcessor) backfillSpans(latestBorBlockNumber uint64, lastSpan *ty
 		return
 	}
 
-	borSpanId := types.CalcCurrentBorSpanId(latestBorBlockNumber, lastSpan)
+	borSpanId, err := types.CalcCurrentBorSpanId(latestBorBlockNumber, lastSpan)
+	if err != nil {
+		sp.Logger.Error("Error calculating current bor span id", "error", err)
+		return
+	}
 
 	msg := types.MsgBackfillSpans{
 		Proposer:        addrString,

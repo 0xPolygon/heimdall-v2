@@ -110,6 +110,12 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	currentBlock := childBlock.Number.Uint64()
+
+	if types.IsBlockCloseToSpanEnd(childBlock.Number.Uint64(), lastSpan.EndBlock) {
+		sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+		return
+	}
+
 	// check if span proposed is in-turn or not
 	if !(lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock) {
 		logger.Error(
