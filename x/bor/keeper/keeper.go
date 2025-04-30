@@ -20,7 +20,6 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 const (
@@ -93,11 +92,14 @@ func NewKeeper(
 		Params:                  collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
 	}
 
+	if len(k.preferredProducers) > 0 {
+		k.nextProducer = k.preferredProducers[0]
+	}
+
 	schema, err := sb.Build()
 	if err != nil {
 		panic(err)
 	}
-
 	k.Schema = schema
 	return k
 }
@@ -210,7 +212,6 @@ func (k *Keeper) GetLastSpan(ctx context.Context) (types.Span, error) {
 
 // FreezeSet freezes validator set for next span
 func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlock uint64, borChainID string, seed common.Hash) error {
-
 	var lastSpan types.Span
 	var lastSpanId uint64
 	if id < 2 {
@@ -346,21 +347,22 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 	return vals, nil
 }
 
-// SelectNextProducer NEW VERSION - used to select the primary producer for span
+// SelectNextProducer NEW VERSION - Get the validator for the next time based span.
 func (k *Keeper) SelectNextProducer(ctx context.Context) ([]staketypes.Validator, error) {
-	// spanEligibleVals are current validators who are not getting deactivated in between next span
-	spanEligibleVals := k.sk.GetSpanEligibleValidators(ctx)
-	for _, validator := range spanEligibleVals {
-		pub, err := crypto.UnmarshalPubkey(validator.PubKey)
+	eligible := k.sk.GetSpanEligibleValidators(ctx)
+	if len(eligible) == 0 {
+		return nil, fmt.Errorf("no eligible validators found")
+	}
+	for _, val := range eligible {
+		addr, err := types.GetAddr(val)
 		if err != nil {
 			return nil, err
 		}
-		addr := crypto.PubkeyToAddress(*pub).Hex()
 		if addr == k.getNextProducer() {
-			return []staketypes.Validator{validator}, nil
+			return []staketypes.Validator{val}, nil
 		}
 	}
-	return nil, fmt.Errorf("unable to find next producer")
+	return nil, fmt.Errorf("next producer %s is not eligible", k.getNextProducer())
 }
 
 // UpdateLastSpan updates the last span

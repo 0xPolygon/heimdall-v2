@@ -1,11 +1,11 @@
 package keeper_test
 
 import (
-	"errors"
 	"math/big"
 	"testing"
 
 	storetypes "cosmossdk.io/store/types"
+	milestonetypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmttime "github.com/cometbft/cometbft/types/time"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -19,6 +19,7 @@ import (
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
@@ -26,6 +27,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	bortestutil "github.com/0xPolygon/heimdall-v2/x/bor/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	bortypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -36,6 +38,7 @@ type KeeperTestSuite struct {
 	borKeeper          keeper.Keeper
 	chainManagerKeeper *bortestutil.MockChainManagerKeeper
 	stakeKeeper        *bortestutil.MockStakeKeeper
+	milestoneKeeper    *bortestutil.MockMilestoneKeeper
 	contractCaller     mocks.IContractCaller
 	queryClient        types.QueryClient
 	msgServer          types.MsgServer
@@ -62,8 +65,15 @@ func (s *KeeperTestSuite) SetupTest() {
 	stakeKeeper := bortestutil.NewMockStakeKeeper(ctrl)
 	s.stakeKeeper = stakeKeeper
 
+	milestoneKeeper := bortestutil.NewMockMilestoneKeeper(ctrl)
+	s.milestoneKeeper = milestoneKeeper
+
 	s.contractCaller = mocks.IContractCaller{}
 	s.ctx = ctx
+
+	_, vals := s.genTestValidators()
+	vaddrs, err := bortypes.GetAddrs(vals)
+	require.NoError(s.T(), err)
 
 	s.borKeeper = keeper.NewKeeper(
 		encCfg.Codec,
@@ -71,7 +81,10 @@ func (s *KeeperTestSuite) SetupTest() {
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.chainManagerKeeper,
 		s.stakeKeeper,
+		s.milestoneKeeper,
 		nil,
+		0,
+		vaddrs,
 	)
 
 	s.borKeeper.SetContractCaller(&s.contractCaller)
@@ -194,9 +207,11 @@ func (s *KeeperTestSuite) TestGetAllSpans() {
 }
 
 func (s *KeeperTestSuite) TestFreezeSet() {
-	require, stakeKeeper, borKeeper, ctx := s.Require(), s.stakeKeeper, s.borKeeper, s.ctx
+	require, stakeKeeper, borKeeper, milestoneKeeper, ctx := s.Require(), s.stakeKeeper, s.borKeeper, s.milestoneKeeper, s.ctx
 
 	valSet, vals := s.genTestValidators()
+
+	mstone := milestonetypes.Milestone{}
 
 	// set genesis span
 	err := borKeeper.AddNewSpan(ctx, &types.Span{
@@ -237,16 +252,25 @@ func (s *KeeperTestSuite) TestFreezeSet() {
 	}
 
 	for _, tc := range testcases {
-		stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
-		stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
-		stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (staketypes.Validator, error) {
-			for _, v := range vals {
-				if v.ValId == valID {
-					return v, nil
+
+		// Block based expects
+		/*
+			stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
+			stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+			stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).DoAndReturn(func(ctx sdk.Context, valID uint64) (staketypes.Validator, error) {
+				for _, v := range vals {
+					if v.ValId == valID {
+						return v, nil
+					}
 				}
-			}
-			return staketypes.Validator{}, errors.New("validator not found")
-		}).AnyTimes()
+				return staketypes.Validator{}, errors.New("validator not found")
+			}).AnyTimes()
+		*/
+
+		// Time based expects
+		stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+		stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
+		milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&mstone, nil).Times(1)
 
 		s.T().Run(tc.name, func(t *testing.T) {
 			params := types.DefaultParams()

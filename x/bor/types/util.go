@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // SortValidatorByAddress sorts a slice of validators by address
@@ -22,4 +23,24 @@ func SortSpansById(a []Span) {
 	sort.Slice(a, func(i, j int) bool {
 		return a[i].Id < a[j].Id
 	})
+}
+
+func GetAddr(validator staketypes.Validator) (string, error) {
+	pub, err := crypto.UnmarshalPubkey(validator.PubKey)
+	if err != nil {
+		return "", err
+	}
+	return crypto.PubkeyToAddress(*pub).Hex(), nil
+}
+
+func GetAddrs(validators []staketypes.Validator) ([]string, error) {
+	addrs := make([]string, len(validators))
+	for i, val := range validators {
+		addr, err := GetAddr(val)
+		if err != nil {
+			return nil, err
+		}
+		addrs[i] = addr
+	}
+	return addrs, nil
 }

@@ -4,16 +4,15 @@ import (
 	"math/big"
 	"testing"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
-	ethTypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/mock"
-
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	milestonetypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	ethTypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/stretchr/testify/mock"
 )
 
 func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
@@ -157,11 +156,19 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 }
 
 func (s *KeeperTestSuite) TestPostHandleMsgEventSpan() {
-	require, ctx, stakeKeeper, borKeeper, sideMsgServer, contractCaller := s.Require(), s.ctx, s.stakeKeeper, s.borKeeper, s.sideMsgServer, &s.contractCaller
+	require, ctx, stakeKeeper, borKeeper, milestoneKeeper, sideMsgServer, contractCaller := s.Require(), s.ctx, s.stakeKeeper, s.borKeeper, s.milestoneKeeper, s.sideMsgServer, &s.contractCaller
 
-	stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Times(1)
-	stakeKeeper.EXPECT().GetValidatorSet(ctx).Times(1)
-	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).AnyTimes()
+	valSet, vals := s.genTestValidators()
+
+	// Block based expects
+	//stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Times(1)
+	//stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+	//stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).AnyTimes()
+
+	// Time based expects
+	stakeKeeper.EXPECT().GetSpanEligibleValidators(ctx).Return(vals).Times(1)
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+	milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestonetypes.Milestone{}, nil).Times(1)
 
 	borParams := types.DefaultParams()
 	err := borKeeper.SetParams(ctx, borParams)
