@@ -175,6 +175,12 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, errors.New("error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
 		}
 
+		err := app.BorKeeper.MaintainNextSpanProducer(ctx, extCommitInfo.Votes)
+		if err != nil {
+			logger.Error("Error occurred maintaining bor span producers", "error", err)
+			// return err???
+		}
+
 		dummyVoteExt, err := getDummyNonRpVoteExtension(req.Height, ctx.ChainID())
 		if err != nil {
 			logger.Error("Error occurred while getting dummy vote extension", "error", err)
@@ -350,11 +356,6 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, errors.New("non-empty VEs found in the initial height's pre-blocker")
 		}
 		return app.ModuleManager.PreBlock(ctx)
-	}
-
-	err := app.BorKeeper.MaintainNextSpanProducer(ctx, extVoteInfo)
-	if err != nil {
-		logger.Error("Error occurred maintaining bor span producers", "error", err)
 	}
 
 	// Fetch txs from block n-1 so that we can match them with the approved txs in block n to execute sideTxs

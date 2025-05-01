@@ -353,6 +353,9 @@ func (k *Keeper) SelectNextProducer(ctx context.Context) ([]staketypes.Validator
 	if len(eligible) == 0 {
 		return nil, fmt.Errorf("no eligible validators found")
 	}
+	if k.getNextProducer() == "" { // temp until config setup worked out
+		return []staketypes.Validator{eligible[0]}, nil
+	}
 	for _, val := range eligible {
 		addr, err := types.GetAddr(val)
 		if err != nil {
@@ -587,11 +590,18 @@ func RollbackVotingPowers(valsNew, valsOld []staketypes.Validator) []staketypes.
 // MaintainSpanProducers updates the next span producer by choosing the most preferred producer present in the extended
 // votes. This makes sure a primary (or otherwise) producer is placed back as preferred producer once they have returned
 func (k *Keeper) MaintainNextSpanProducer(ctx context.Context, extVoteInfo []cmttypes.ExtendedVoteInfo) error {
+	// if preferredProducers is empty, build it with the vote extensions (fixme: how to configure this upfront?)
+	buildPreferred := len(k.preferredProducers) == 0
 	voters := make(map[string]struct{})
 	for _, voteInfo := range extVoteInfo {
 		addr := common.Bytes2Hex(voteInfo.Validator.Address)
+		// are there conditions where it should be excluded?
 		voters[addr] = struct{}{}
+		if buildPreferred {
+			k.preferredProducers = append(k.preferredProducers, addr)
+		}
 	}
+
 	// Pick the first preferred producer that participated in vote extension
 	for _, p := range k.preferredProducers {
 		if _, ok := voters[p]; ok {
