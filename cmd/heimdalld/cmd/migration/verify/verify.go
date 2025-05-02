@@ -89,6 +89,13 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 	logger.Info(fmt.Sprintf("verifyCheckpoints took %.2f minutes", time.Since(start).Minutes()))
 	delete(genesisState, "checkpoint")
 
+	logger.Info("Verify milestones")
+	start = time.Now()
+	if err := verifyMilestones(ctx, app, hv1Genesis); err != nil {
+		return err
+	}
+	logger.Info(fmt.Sprintf("verifyMilestones took %.2f minutes", time.Since(start).Minutes()))
+
 	logger.Info("Verify validators")
 	start = time.Now()
 	if err := verifyValidators(ctx, app, hv1Genesis); err != nil {
@@ -392,21 +399,7 @@ func verifyCheckpoints(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genes
 	}
 	// If checkpointsRaw == nil → checkpoints will be nil → OK (zero checkpoints)
 
-	// sort v1 checkpoints by start_time
-	sort.Slice(checkpoints, func(i, j int) bool {
-		vi := checkpoints[i].(map[string]interface{})["start_block"].(string)
-		vj := checkpoints[j].(map[string]interface{})["start_block"].(string)
-
-		viInt, err := strconv.ParseUint(vi, 10, 64)
-		if err != nil {
-			panic(fmt.Sprintf("invalid start_block in v1 checkpoint at index %d: %v", i, err))
-		}
-		vjInt, err := strconv.ParseUint(vj, 10, 64)
-		if err != nil {
-			panic(fmt.Sprintf("invalid start_block in v1 checkpoint at index %d: %v", j, err))
-		}
-		return viInt < vjInt
-	})
+	utils.SortByStartBlock(checkpoints)
 
 	// Get and sort V2 checkpoints by startBlock
 	dbCheckpoints, err := app.CheckpointKeeper.GetCheckpoints(ctx)
@@ -872,4 +865,84 @@ type validatorBasicInfo struct {
 	signer string
 	nonce  uint64
 	jailed bool
+}
+
+// verifyMilestones verifies the milestones in the genesis files by comparing the data in both versions
+func verifyMilestones(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map[string]interface{}) error {
+	checkpointModule, ok := hv1Genesis["app_state"].(map[string]interface{})["checkpoint"]
+	if !ok {
+		return fmt.Errorf("checkpoint module not found in app_state")
+	}
+
+	checkpointData, ok := checkpointModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast checkpoint module data")
+	}
+
+	milestones, ok := checkpointData["milestones"].([]interface{})
+	if !ok {
+		return fmt.Errorf("milestones not found or invalid format")
+	}
+
+	if milestones == nil {
+		milestones = []interface{}{}
+	}
+
+	utils.SortByStartBlock(milestones)
+
+	// Get and sort V2 milestones by startBlock
+	dbMilestones, err := app.MilestoneKeeper.GetMilestones(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get milestones from v2 database: %w", err)
+	}
+	sort.Slice(dbMilestones, func(i, j int) bool {
+		return dbMilestones[i].StartBlock < dbMilestones[j].StartBlock
+	})
+
+	// Compare milestones one by one
+	if len(milestones) != len(dbMilestones) {
+		return fmt.Errorf("number of milestones mismatch: v1 has %d, v2 has %d", len(milestones), len(dbMilestones))
+	}
+
+	for i := 0; i < len(dbMilestones); i++ {
+		cp := milestones[i].(map[string]interface{})
+		milestone := dbMilestones[i]
+
+		startBlock, err := strconv.Atoi(cp["start_block"].(string))
+		if err != nil {
+			return fmt.Errorf("failed to convert start_block to int: %w", err)
+		}
+		if int(milestone.StartBlock) != startBlock {
+			return fmt.Errorf("mismatch in milestone start block at index %d: expected %d, got %d", i, startBlock, milestone.StartBlock)
+		}
+
+		endBlock, err := strconv.Atoi(cp["end_block"].(string))
+		if err != nil {
+			return fmt.Errorf("failed to convert end_block to int: %w", err)
+		}
+		if int(milestone.EndBlock) != endBlock {
+			return fmt.Errorf("mismatch in milestone end block at index %d: expected %d, got %d", i, endBlock, milestone.EndBlock)
+		}
+
+		if milestone.Proposer != cp["proposer"].(string) {
+			return fmt.Errorf("mismatch in milestone proposer at index %d: expected %s, got %s", i, cp["proposer"], milestone.Proposer)
+		}
+
+		hashBytes, err := hex.DecodeString(cp["hash"].(string)[2:])
+		if err != nil {
+			return fmt.Errorf("failed to decode root_hash at index %d: %w", i, err)
+		}
+		if !bytes.Equal(milestone.Hash, hashBytes) {
+			return fmt.Errorf("mismatch in milestone root hash at index %d: expected %x, got %x", i, hashBytes, milestone.Hash)
+		}
+	}
+
+	// Check V2 ordering and sequential ID
+	for i := 1; i < len(dbMilestones); i++ {
+		if dbMilestones[i-1].StartBlock >= dbMilestones[i].StartBlock {
+			return fmt.Errorf("milestones in v2 are not ordered by growing start_block at index %d", i)
+		}
+	}
+
+	return nil
 }

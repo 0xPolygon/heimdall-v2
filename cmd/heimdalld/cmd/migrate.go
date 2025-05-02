@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -386,12 +385,67 @@ func migrateChainManagerModule(genesisData map[string]interface{}, chainId strin
 func migrateMilestoneModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating milestone module...")
 
+	checkpointModule, ok := genesisData["app_state"].(map[string]interface{})["checkpoint"]
+	if !ok {
+		return fmt.Errorf("checkpoint module not found in app_state")
+	}
+
+	checkpointData, ok := checkpointModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast checkpoint module data")
+	}
+
+	milestones, milestonesFound := checkpointData["milestones"].([]interface{})
+	if milestonesFound {
+		utils.SortByTimestamp(milestones)
+
+		for i, milestone := range milestones {
+			milestoneMap, ok := milestone.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("invalid milestone format at index %d", i)
+			}
+
+			hashHex, ok := milestoneMap["hash"].(string)
+			if !ok {
+				return fmt.Errorf("hash not found in milestone at index %d", i)
+			}
+
+			if !strings.HasPrefix(hashHex, "0x") {
+				return fmt.Errorf("invalid hash format at index %d", i)
+			}
+
+			hashHex = hashHex[2:]
+
+			hashBytes, err := hex.DecodeString(hashHex)
+			if err != nil {
+				return fmt.Errorf("failed to decode hash at index %d: %w", i, err)
+			}
+
+			hashBase64 := base64.StdEncoding.EncodeToString(hashBytes)
+
+			milestoneMap["hash"] = hashBase64
+		}
+	}
+
+	if err := utils.DeleteProperty(genesisData, "app_state.checkpoint", "milestones"); err != nil {
+		return fmt.Errorf("failed to delete milestones from checkpoint module: %w", err)
+	}
+
+	genesisData["app_state"].(map[string]interface{})["milestone"] = map[string]interface{}{}
+
+	if !milestonesFound {
+		milestones = []interface{}{}
+	}
+
+	if err := utils.AddProperty(genesisData, "app_state.milestone", "milestones", milestones); err != nil {
+		return fmt.Errorf("failed to add milestones to milestone module: %w", err)
+	}
+
 	params := milestoneTypes.DefaultParams()
-	milestoneState := milestoneTypes.NewGenesisState(params)
 
-	milestoneStateMarshaled := appCodec.MustMarshalJSON(&milestoneState)
-
-	genesisData["app_state"].(map[string]interface{})["milestone"] = json.RawMessage(milestoneStateMarshaled)
+	if err := utils.AddProperty(genesisData, "app_state.milestone", "params", params); err != nil {
+		return fmt.Errorf("failed to add params to milestone module: %w", err)
+	}
 
 	logger.Info("Milestone module migration completed successfully")
 
@@ -693,14 +747,7 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 
 	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
 	if ok {
-		// Sort checkpoints by timestamp
-		sort.Slice(checkpoints, func(i, j int) bool {
-			checkpointI := checkpoints[i].(map[string]interface{})
-			checkpointJ := checkpoints[j].(map[string]interface{})
-			timestampI, _ := strconv.Atoi(checkpointI["timestamp"].(string))
-			timestampJ, _ := strconv.Atoi(checkpointJ["timestamp"].(string))
-			return timestampI < timestampJ
-		})
+		utils.SortByTimestamp(checkpoints)
 
 		for i, checkpoint := range checkpoints {
 			checkpointMap, ok := checkpoint.(map[string]interface{})

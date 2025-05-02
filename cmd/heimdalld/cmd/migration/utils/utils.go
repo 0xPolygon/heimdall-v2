@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -373,4 +374,37 @@ func migratePubKey(pubKeyStr string) (string, error) {
 		return "", fmt.Errorf("failed to decode hex public key: %w", err)
 	}
 	return base64.StdEncoding.EncodeToString(pubKeyBytes), nil
+}
+
+// SortByTimestamp sorts the items by their timestamp field.
+// The timestamp is expected to be in string format.
+// The function modifies the original slice.
+func SortByTimestamp(items []interface{}) {
+	sort.Slice(items, func(i, j int) bool {
+		itemI := items[i].(map[string]interface{})
+		itemJ := items[j].(map[string]interface{})
+		timestampI, _ := strconv.Atoi(itemI["timestamp"].(string))
+		timestampJ, _ := strconv.Atoi(itemJ["timestamp"].(string))
+		return timestampI < timestampJ
+	})
+}
+
+// SortByStartBlock sorts the items by their start_block field.
+// The start_block is expected to be in string format.
+// The function modifies the original slice.
+func SortByStartBlock(items []interface{}) {
+	sort.Slice(items, func(i, j int) bool {
+		vi := items[i].(map[string]interface{})["start_block"].(string)
+		vj := items[j].(map[string]interface{})["start_block"].(string)
+
+		viInt, err := strconv.ParseUint(vi, 10, 64)
+		if err != nil {
+			panic(fmt.Sprintf("invalid start_block at index %d: %v", i, err))
+		}
+		vjInt, err := strconv.ParseUint(vj, 10, 64)
+		if err != nil {
+			panic(fmt.Sprintf("invalid start_block at index %d: %v", j, err))
+		}
+		return viInt < vjInt
+	})
 }
