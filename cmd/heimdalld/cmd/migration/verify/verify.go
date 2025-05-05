@@ -74,7 +74,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyClerkEventRecords took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "clerk")
 
 	logger.Info("Verify spans")
 	start = time.Now()
@@ -82,7 +81,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifySpans took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "bor")
 
 	logger.Info("Verify checkpoints")
 	start = time.Now()
@@ -90,7 +88,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyCheckpoints took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "checkpoint")
 
 	logger.Info("Verify milestones")
 	start = time.Now()
@@ -105,7 +102,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyValidators took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "staking")
 
 	logger.Info("Verify topup")
 	start = time.Now()
@@ -113,7 +109,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyTopup took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "topup")
 
 	logger.Info("Verify balances")
 	start = time.Now()
@@ -121,9 +116,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyBalances took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "auth")
-	delete(genesisState, "bank")
-
 	logger.Info("Migration verified successfully")
 	logger.Info(fmt.Sprintf("performMigrations took %.2f minutes", time.Since(globalStart).Minutes()))
 
