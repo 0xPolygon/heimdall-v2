@@ -10,6 +10,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"cosmossdk.io/log"
@@ -20,6 +21,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 
 	heimdallApp "github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
@@ -879,13 +882,13 @@ func verifyMilestones(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 		return fmt.Errorf("failed to cast checkpoint module data")
 	}
 
-	milestones, ok := checkpointData["milestones"].([]interface{})
-	if !ok {
-		return fmt.Errorf("milestones not found or invalid format")
-	}
-
-	if milestones == nil {
-		milestones = []interface{}{}
+	milestonesRaw := checkpointData["milestones"]
+	var milestones []interface{}
+	if milestonesRaw != nil {
+		milestones, ok = milestonesRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("milestones key not a list")
+		}
 	}
 
 	utils.SortByStartBlock(milestones)
@@ -905,35 +908,54 @@ func verifyMilestones(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 	}
 
 	for i := 0; i < len(dbMilestones); i++ {
-		cp := milestones[i].(map[string]interface{})
-		milestone := dbMilestones[i]
+		milestone := milestones[i].(map[string]interface{})
+		dbMilestone := dbMilestones[i]
 
-		startBlock, err := strconv.Atoi(cp["start_block"].(string))
+		startBlock, err := strconv.Atoi(milestone["start_block"].(string))
 		if err != nil {
 			return fmt.Errorf("failed to convert start_block to int: %w", err)
 		}
-		if int(milestone.StartBlock) != startBlock {
-			return fmt.Errorf("mismatch in milestone start block at index %d: expected %d, got %d", i, startBlock, milestone.StartBlock)
+		if int(dbMilestone.StartBlock) != startBlock {
+			return fmt.Errorf("mismatch in milestone start block at index %d: expected %d, got %d", i, startBlock, dbMilestone.StartBlock)
 		}
 
-		endBlock, err := strconv.Atoi(cp["end_block"].(string))
+		endBlock, err := strconv.Atoi(milestone["end_block"].(string))
 		if err != nil {
 			return fmt.Errorf("failed to convert end_block to int: %w", err)
 		}
-		if int(milestone.EndBlock) != endBlock {
-			return fmt.Errorf("mismatch in milestone end block at index %d: expected %d, got %d", i, endBlock, milestone.EndBlock)
+		if int(dbMilestone.EndBlock) != endBlock {
+			return fmt.Errorf("mismatch in milestone end block at index %d: expected %d, got %d", i, endBlock, dbMilestone.EndBlock)
 		}
 
-		if milestone.Proposer != cp["proposer"].(string) {
-			return fmt.Errorf("mismatch in milestone proposer at index %d: expected %s, got %s", i, cp["proposer"], milestone.Proposer)
+		if dbMilestone.Proposer != milestone["proposer"].(string) {
+			return fmt.Errorf("mismatch in milestone proposer at index %d: expected %s, got %s", i, milestone["proposer"], dbMilestone.Proposer)
 		}
 
-		hashBytes, err := hex.DecodeString(cp["hash"].(string)[2:])
+		hashBytes, err := hex.DecodeString(milestone["hash"].(string)[2:])
 		if err != nil {
 			return fmt.Errorf("failed to decode root_hash at index %d: %w", i, err)
 		}
-		if !bytes.Equal(milestone.Hash, hashBytes) {
-			return fmt.Errorf("mismatch in milestone root hash at index %d: expected %x, got %x", i, hashBytes, milestone.Hash)
+		if !bytes.Equal(dbMilestone.Hash, hashBytes) {
+			return fmt.Errorf("mismatch in milestone root hash at index %d: expected %x, got %x", i, hashBytes, dbMilestone.Hash)
+		}
+
+		if dbMilestone.MilestoneId != milestone["milestone_id"].(string) {
+			return fmt.Errorf("mismatch in milestone id at index %d: expected %s, got %s", i, milestone["milestone_id"], dbMilestone.MilestoneId)
+		}
+
+		// validate that milestoneID is composed by `UUID - HexAddressOfTheProposer`
+		splitMilestoneID := strings.Split(dbMilestone.MilestoneId, " - ")
+		if len(splitMilestoneID) != 2 {
+			return fmt.Errorf("invalid milestoneID %s, it should be composed by `UUID - HexAddressOfTheProposer`", splitMilestoneID)
+		}
+
+		_, err = uuid.Parse(splitMilestoneID[0])
+		if err != nil {
+			return fmt.Errorf("invalid milestoneID, first part is not a valid uuid %s", splitMilestoneID[0])
+		}
+
+		if !common.IsHexAddress(splitMilestoneID[1]) {
+			return fmt.Errorf("invalid milestoneID, second part is not a valid address %s", splitMilestoneID[1])
 		}
 	}
 
