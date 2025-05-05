@@ -10,6 +10,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"cosmossdk.io/log"
@@ -20,6 +21,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/google/uuid"
 
 	heimdallApp "github.com/0xPolygon/heimdall-v2/app"
 	"github.com/0xPolygon/heimdall-v2/cmd/heimdalld/cmd/migration/utils"
@@ -71,7 +74,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyClerkEventRecords took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "clerk")
 
 	logger.Info("Verify spans")
 	start = time.Now()
@@ -79,7 +81,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifySpans took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "bor")
 
 	logger.Info("Verify checkpoints")
 	start = time.Now()
@@ -87,7 +88,13 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyCheckpoints took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "checkpoint")
+
+	logger.Info("Verify milestones")
+	start = time.Now()
+	if err := verifyMilestones(ctx, app, hv1Genesis); err != nil {
+		return err
+	}
+	logger.Info(fmt.Sprintf("verifyMilestones took %.2f minutes", time.Since(start).Minutes()))
 
 	logger.Info("Verify validators")
 	start = time.Now()
@@ -95,7 +102,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyValidators took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "staking")
 
 	logger.Info("Verify topup")
 	start = time.Now()
@@ -103,7 +109,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyTopup took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "topup")
 
 	logger.Info("Verify balances")
 	start = time.Now()
@@ -111,9 +116,6 @@ func RunMigrationVerification(hv1GenesisPath, hv2GenesisPath string, logger log.
 		return err
 	}
 	logger.Info(fmt.Sprintf("verifyBalances took %.2f minutes", time.Since(start).Minutes()))
-	delete(genesisState, "auth")
-	delete(genesisState, "bank")
-
 	logger.Info("Migration verified successfully")
 	logger.Info(fmt.Sprintf("performMigrations took %.2f minutes", time.Since(globalStart).Minutes()))
 
@@ -392,21 +394,7 @@ func verifyCheckpoints(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genes
 	}
 	// If checkpointsRaw == nil → checkpoints will be nil → OK (zero checkpoints)
 
-	// sort v1 checkpoints by start_time
-	sort.Slice(checkpoints, func(i, j int) bool {
-		vi := checkpoints[i].(map[string]interface{})["start_block"].(string)
-		vj := checkpoints[j].(map[string]interface{})["start_block"].(string)
-
-		viInt, err := strconv.ParseUint(vi, 10, 64)
-		if err != nil {
-			panic(fmt.Sprintf("invalid start_block in v1 checkpoint at index %d: %v", i, err))
-		}
-		vjInt, err := strconv.ParseUint(vj, 10, 64)
-		if err != nil {
-			panic(fmt.Sprintf("invalid start_block in v1 checkpoint at index %d: %v", j, err))
-		}
-		return viInt < vjInt
-	})
+	utils.SortByStartBlock(checkpoints)
 
 	// Get and sort V2 checkpoints by startBlock
 	dbCheckpoints, err := app.CheckpointKeeper.GetCheckpoints(ctx)
@@ -872,4 +860,103 @@ type validatorBasicInfo struct {
 	signer string
 	nonce  uint64
 	jailed bool
+}
+
+// verifyMilestones verifies the milestones in the genesis files by comparing the data in both versions
+func verifyMilestones(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis map[string]interface{}) error {
+	checkpointModule, ok := hv1Genesis["app_state"].(map[string]interface{})["checkpoint"]
+	if !ok {
+		return fmt.Errorf("checkpoint module not found in app_state")
+	}
+
+	checkpointData, ok := checkpointModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast checkpoint module data")
+	}
+
+	milestonesRaw := checkpointData["milestones"]
+	var milestones []interface{}
+	if milestonesRaw != nil {
+		milestones, ok = milestonesRaw.([]interface{})
+		if !ok {
+			return fmt.Errorf("milestones key not a list")
+		}
+	}
+
+	utils.SortByStartBlock(milestones)
+
+	// Get and sort V2 milestones by startBlock
+	dbMilestones, err := app.MilestoneKeeper.GetMilestones(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get milestones from v2 database: %w", err)
+	}
+	sort.Slice(dbMilestones, func(i, j int) bool {
+		return dbMilestones[i].StartBlock < dbMilestones[j].StartBlock
+	})
+
+	// Compare milestones one by one
+	if len(milestones) != len(dbMilestones) {
+		return fmt.Errorf("number of milestones mismatch: v1 has %d, v2 has %d", len(milestones), len(dbMilestones))
+	}
+
+	for i := 0; i < len(dbMilestones); i++ {
+		milestone := milestones[i].(map[string]interface{})
+		dbMilestone := dbMilestones[i]
+
+		startBlock, err := strconv.Atoi(milestone["start_block"].(string))
+		if err != nil {
+			return fmt.Errorf("failed to convert start_block to int: %w", err)
+		}
+		if int(dbMilestone.StartBlock) != startBlock {
+			return fmt.Errorf("mismatch in milestone start block at index %d: expected %d, got %d", i, startBlock, dbMilestone.StartBlock)
+		}
+
+		endBlock, err := strconv.Atoi(milestone["end_block"].(string))
+		if err != nil {
+			return fmt.Errorf("failed to convert end_block to int: %w", err)
+		}
+		if int(dbMilestone.EndBlock) != endBlock {
+			return fmt.Errorf("mismatch in milestone end block at index %d: expected %d, got %d", i, endBlock, dbMilestone.EndBlock)
+		}
+
+		if dbMilestone.Proposer != milestone["proposer"].(string) {
+			return fmt.Errorf("mismatch in milestone proposer at index %d: expected %s, got %s", i, milestone["proposer"], dbMilestone.Proposer)
+		}
+
+		hashBytes, err := hex.DecodeString(milestone["hash"].(string)[2:])
+		if err != nil {
+			return fmt.Errorf("failed to decode root_hash at index %d: %w", i, err)
+		}
+		if !bytes.Equal(dbMilestone.Hash, hashBytes) {
+			return fmt.Errorf("mismatch in milestone root hash at index %d: expected %x, got %x", i, hashBytes, dbMilestone.Hash)
+		}
+
+		if dbMilestone.MilestoneId != milestone["milestone_id"].(string) {
+			return fmt.Errorf("mismatch in milestone id at index %d: expected %s, got %s", i, milestone["milestone_id"], dbMilestone.MilestoneId)
+		}
+
+		// validate that milestoneID is composed by `UUID - HexAddressOfTheProposer`
+		splitMilestoneID := strings.Split(dbMilestone.MilestoneId, " - ")
+		if len(splitMilestoneID) != 2 {
+			return fmt.Errorf("invalid milestoneID %s, it should be composed by `UUID - HexAddressOfTheProposer`", splitMilestoneID)
+		}
+
+		_, err = uuid.Parse(splitMilestoneID[0])
+		if err != nil {
+			return fmt.Errorf("invalid milestoneID, first part is not a valid uuid %s", splitMilestoneID[0])
+		}
+
+		if !common.IsHexAddress(splitMilestoneID[1]) {
+			return fmt.Errorf("invalid milestoneID, second part is not a valid address %s", splitMilestoneID[1])
+		}
+	}
+
+	// Check V2 ordering and sequential ID
+	for i := 1; i < len(dbMilestones); i++ {
+		if dbMilestones[i-1].StartBlock >= dbMilestones[i].StartBlock {
+			return fmt.Errorf("milestones in v2 are not ordered by growing start_block at index %d", i)
+		}
+	}
+
+	return nil
 }

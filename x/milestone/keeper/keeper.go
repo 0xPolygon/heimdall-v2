@@ -222,3 +222,26 @@ func (k *Keeper) GetMilestoneCount(ctx context.Context) (uint64, error) {
 
 	return count, nil
 }
+
+// GetMilestones gets all milestones
+func (k *Keeper) GetMilestones(ctx context.Context) ([]types.Milestone, error) {
+	iterator, err := k.milestone.Iterate(ctx, nil)
+	if err != nil {
+		k.Logger(ctx).Error("error in getting the iterator", "err", err)
+		return nil, err
+	}
+	defer func(iterator collections.Iterator[uint64, types.Milestone]) {
+		err := iterator.Close()
+		if err != nil {
+			k.Logger(ctx).Error("error in closing iterator", "err", err)
+		}
+	}(iterator)
+
+	milestones, err := iterator.Values()
+	if err != nil {
+		k.Logger(ctx).Error("error in getting the iterator values", "err", err)
+		return nil, err
+	}
+
+	return milestones, nil
+}
