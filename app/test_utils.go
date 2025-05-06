@@ -183,8 +183,9 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Txs:    [][]byte{commitInfo},
-		Height: height,
+		Txs:             [][]byte{commitInfo},
+		Height:          height,
+		ProposerAddress: common.Hex2Bytes(validators[0].Signer),
 	})
 	require.NoError(t, err)
 }
