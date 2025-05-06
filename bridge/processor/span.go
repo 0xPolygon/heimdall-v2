@@ -91,7 +91,17 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		return
 	}
 
-	if types.IsBlockCloseToSpanEnd(latestBorBlockNumber, lastSpan.EndBlock) {
+	latestMilestone, err := util.GetLatestMilestone(sp.cliCtx.Codec)
+	if err != nil {
+		sp.Logger.Error("Error fetching latest milestone", "error", err)
+		return
+	}
+
+	// Max of latest milestone end block and latest bor block number
+	// Handle cases where bor is syncing and latest milestone end block is greater than latest bor block number
+	maxBlockNumber := max(latestMilestone.EndBlock, latestBorBlockNumber)
+
+	if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
 		sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
 		return
 	}
@@ -104,14 +114,25 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		return
 	}
 
-	// check if current user is among next span producers
-	if sp.isSpanProposer(nextSpanMsg.SelectedProducers) {
-		if latestBlock.Number.Uint64() > lastSpan.EndBlock {
-			sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
-			go sp.backfillSpans(latestBorBlockNumber, lastSpan)
-			return
+	isProposer, err := util.IsProposer(sp.cliCtx.Codec)
+	if err != nil {
+		sp.Logger.Error("Error while checking if proposer", "error", err)
+		return
+	}
+
+	if isProposer {
+		if maxBlockNumber > lastSpan.EndBlock {
+			if latestMilestone.EndBlock > lastSpan.EndBlock {
+				sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+				go sp.backfillSpans(latestBorBlockNumber, lastSpan)
+				return
+			} else {
+				sp.Logger.Debug("Will not backfill heimdall spans, as latest milestone end block is less than last span end block", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+				return
+			}
+		} else {
+			go sp.propose(ctx, lastSpan, nextSpanMsg)
 		}
-		go sp.propose(ctx, lastSpan, nextSpanMsg)
 	}
 }
 
