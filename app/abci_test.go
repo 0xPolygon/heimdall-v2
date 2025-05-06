@@ -182,8 +182,8 @@ func TestPrepareProposal(t *testing.T) {
 		Txs:    [][]byte{extCommitBytes, txBytes},
 	})
 	require.NoError(t, err)
-	_, err = app.Commit()
-	require.NoError(t, err)
+	// _, err = app.Commit()
+	// require.NoError(t, err)
 
 	// Prepare/Process proposal
 	reqPrep := &abci.RequestPrepareProposal{
@@ -494,19 +494,76 @@ func TestPrepareProposal(t *testing.T) {
 		badReqHeight.Height, fakeExtHeight.Height,
 	)
 
+	badSide := []sidetxs.SideTxResponse{
+		{
+			// pick any txHash—this is what validateSideTxResponses will return
+			TxHash: []byte("deadbeef"),
+			// leave other fields nil/zero so validation fails
+		},
+	}
+	var goodExt sidetxs.VoteExtension
+	require.NoError(t,
+		gogoproto.Unmarshal(respExtend.VoteExtension, &goodExt),
+		"should unmarshal the real VoteExtension",
+	)
+	// 3) Build a fake VoteExtension with the bad side‐txs
+	fakeExt2 := &sidetxs.VoteExtension{
+		BlockHash:       goodExt.BlockHash,
+		Height:          goodExt.Height, // keep height correct
+		SideTxResponses: badSide,        // invalid payload
+		// MilestoneProposition: nil,        // optional
+	}
+	fakeBz2, err := gogoproto.Marshal(fakeExt2)
+	require.NoError(t, err, "gogo‐Marshal should succeed")
+
+	// 5) Call the verify handler
+	badReqSide = abci.RequestVerifyVoteExtension{
+		VoteExtension:      fakeBz2,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   voteInfo1.Validator.Address,
+		Height:             reqExtend.Height,
+		Hash:               []byte("test-hash"),
+	}
+	respBadSide, err = app.VerifyVoteExtensionHandler()(ctx, &badReqSide)
+	require.NoError(t, err, "handler should swallow side‐tx validation errors")
+	require.Equal(
+		t,
+		abci.ResponseVerifyVoteExtension_REJECT,
+		respBadSide.Status,
+		"expected REJECT when validateSideTxResponses returns an error and txHash=%X",
+		badSide[0].TxHash,
+	)
+
+	// ---------------------- Non-RP extension validation failure ----------------------
+	badReqNonRp := abci.RequestVerifyVoteExtension{
+		VoteExtension:      respExtend.VoteExtension,       // use the good extension
+		NonRpVoteExtension: []byte{0x01, 0x02, 0x03, 0xFF}, // invalid bytes to force an error
+		ValidatorAddress:   voteInfo1.Validator.Address,    // correct consensus addr
+		Height:             reqExtend.Height,               // keep height/hash correct
+		Hash:               []byte("test-hash"),
+	}
+
+	respNonRp, err := app.VerifyVoteExtensionHandler()(ctx, &badReqNonRp)
+	require.NoError(t, err, "handler should swallow non-RP validation errors and continue")
+	require.Equal(
+		t,
+		abci.ResponseVerifyVoteExtension_ACCEPT,
+		respNonRp.Status,
+		"expected ACCEPT even if ValidateNonRpVoteExtension returns an error",
+	)
 	fmt.Println("finally!")
 
 	// Test FinalizeBlock handler
-	// finalizeReq := abci.RequestFinalizeBlock{
-	// 	Txs:    [][]byte{extCommitBytes, txBytes},
-	// 	Height: 3,
-	// }
-	// _, err = app.PreBlocker(ctx, &finalizeReq)
-	// require.NoError(t, err)
+	finalizeReq := abci.RequestFinalizeBlock{
+		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height: 3,
+	}
+	_, err = app.PreBlocker(ctx, &finalizeReq)
+	require.NoError(t, err)
 
-	// // Commit the block
-	// _, err = app.Commit()
-	// require.NoError(t, err)
+	// Commit the block
+	_, err = app.Commit()
+	require.NoError(t, err)
 }
 
 var defaultFeeAmount = big.NewInt(10).Exp(big.NewInt(10), big.NewInt(15), nil).Int64()
