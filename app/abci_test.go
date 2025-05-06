@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
@@ -16,6 +17,8 @@ import (
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+
+	gogoproto "github.com/gogo/protobuf/proto"
 
 	"github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/runtime"
@@ -190,12 +193,15 @@ func TestPrepareProposal(t *testing.T) {
 		ProposerAddress: common.FromHex(validators[0].Signer),
 		Height:          3,
 	}
+
 	_, err = app.PrepareProposal(reqPrep)
 	require.NoError(t, err)
 
 	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
 	require.NoError(t, err)
 	require.NotEmpty(t, respPrep.Txs)
+
+	// ---------------------- Prepare Proposal for fake No extCommitInfo
 
 	reqProcess := &abci.RequestProcessProposal{
 		Txs:                respPrep.Txs,
@@ -205,6 +211,117 @@ func TestPrepareProposal(t *testing.T) {
 	respProc, err := app.NewProcessProposalHandler()(ctx, reqProcess)
 	require.NoError(t, err)
 	require.Equal(t, abci.ResponseProcessProposal_ACCEPT, respProc.Status)
+
+	// ---------------------------- No transaction test case PrepareProposal --------------------------------------
+	reqPrepNoTx := &abci.RequestProcessProposal{
+		Txs:                [][]byte{},
+		ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+		Height:             3,
+	}
+	respPrepNoTx, err := app.NewProcessProposalHandler()(ctx, reqPrepNoTx)
+	require.NoError(t, err) // handler itself should not error
+	require.Equal(t,
+		abci.ResponseProcessProposal_REJECT,
+		respPrepNoTx.Status,
+		"expected a REJECT status when no txs are provided",
+	)
+
+	// ---------------------------- No transaction test case PrepareProposal --------------------------------------
+
+	// ---------------------------- Excommit info round mismatch  --------------------------------------
+
+	req := &abci.RequestProcessProposal{
+		Txs: [][]byte{
+			{0x01, 0x02, 0x03},
+		},
+		Height:             3,
+		ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+	}
+
+	respExCommit, err := app.NewProcessProposalHandler()(ctx, req)
+	require.NoError(t, err, "handler itself should not error")
+	require.Equal(
+		t,
+		abci.ResponseProcessProposal_REJECT,
+		respExCommit.Status,
+		"expected REJECT when ExtendedCommitInfo.Unmarshal fails",
+	)
+
+	// ---------------------------- Excommit info round mismatch  --------------------------------------
+	// ---------------------------- Excommit Round mismatch  --------------------------------------
+
+	reqExcommitRoundMismatch := &abci.RequestProcessProposal{
+		Txs:                respPrep.Txs,
+		Height:             3,
+		ProposedLastCommit: abci.CommitInfo{Round: 30},
+	}
+	respExCommitRountMismatch, err := app.NewProcessProposalHandler()(ctx, reqExcommitRoundMismatch)
+	require.NoError(t, err, "handler itself should not error")
+	require.Equal(
+		t,
+		abci.ResponseProcessProposal_REJECT,
+		respExCommitRountMismatch.Status,
+		"expected REJECT when ExtendedCommitInfo Round mismatches",
+	)
+
+	// ---------------------------- Excommit Round mismatch  --------------------------------------
+
+	// ------------------------------- Bad transaction ------------------------------------------
+	badTx := []byte{0xDE, 0xAD, 0xBE, 0xEF}
+	reqBadTx := &abci.RequestProcessProposal{
+		Txs: [][]byte{
+			respPrep.Txs[0], // valid commit
+			badTx,           // decode error here
+		},
+		Height:             3,
+		ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+	}
+	respBadTx, err := app.NewProcessProposalHandler()(ctx, reqBadTx)
+	require.NoError(t, err, "handler itself should not error")
+	require.Equal(
+		t,
+		abci.ResponseProcessProposal_REJECT,
+		respBadTx.Status,
+		"expected REJECT when Transaction decoding fails",
+	)
+
+	// ------------------------------------------------------------------------------------------
+	// --------------------------------- Process Proposal Verify --------------------------------
+
+	// msgBadTx := &checkpointTypes.MsgCheckpoint{
+	// 	Proposer:        validators[0].Signer,
+	// 	StartBlock:      1,
+	// 	EndBlock:        2,
+	// 	RootHash:        common.Hex2Bytes("aa"),
+	// 	AccountRootHash: common.Hex2Bytes("bb"),
+	// 	BorChainId:      "test",
+	// }
+	// txBuilderBadTx := txConfig.NewTxBuilder()
+	// require.NoError(t, txBuilderBadTx.SetMsgs(msgBadTx))
+	// require.NoError(t, txBuilderBadTx.SetSignatures(sigV2))
+
+	// txBytesBadTx, err := txConfig.TxEncoder()(txBuilderBadTx.GetTx())
+	// require.NoError(t, err)
+
+	// reqBadTxMsg := &abci.RequestProcessProposal{
+	// 	Txs: [][]byte{
+	// 		respPrep.Txs[0],
+	// 		txBytesBadTx, // decode error here
+	// 	},
+	// 	Height:             3,
+	// 	ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+	// }
+
+	// respBadTxMsg, err := app.NewProcessProposalHandler()(ctx, reqBadTxMsg)
+	// require.NoError(t, err, "handler itself should not error")
+	// require.Equal(
+	// 	t,
+	// 	abci.ResponseProcessProposal_REJECT,
+	// 	respBadTxMsg.Status,
+	// 	"expected REJECT when Transaction decoding fails",
+	// )
+
+	// ------------------------------------------------------------------------------------------
 
 	// ExtendVote
 	reqExtend := abci.RequestExtendVote{
@@ -217,6 +334,35 @@ func TestPrepareProposal(t *testing.T) {
 	require.NotNil(t, respExtend.VoteExtension)
 	mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
+	// ------------------------------- Extend Vote Handler throws error when Unmarshalling of extCommit fails------------------------
+	reqExtendUnmarshalFail := abci.RequestExtendVote{
+		Txs: [][]byte{
+			{0x01, 0x02, 0x03},
+		},
+		Hash:   []byte("test-hash"),
+		Height: 3,
+	}
+	respExtendUnmarshalFail, err := app.ExtendVoteHandler()(ctx, &reqExtendUnmarshalFail)
+	require.Nil(t, respExtendUnmarshalFail, "should not return a response when TxDecode fails")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
+	// ------------------------------- Extend Vote Handler throws error when Unmarshalling of extCommit fails------------------------
+
+	reqExtendTxFail := abci.RequestExtendVote{
+		Txs: [][]byte{
+			respPrep.Txs[0],
+			{0x01, 0x02, 0x03},
+		},
+		Hash:   []byte("test-hash"),
+		Height: 3,
+	}
+	respExtendTxFail, err := app.ExtendVoteHandler()(ctx, &reqExtendTxFail)
+	require.Nil(t, respExtendTxFail, "should not return a response when TxDecode fails")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error occurred while decoding tx bytes in ExtendVoteHandler")
+
+	// ------------------------------- Extend Vote Handler throws error when Unmarshalling of extCommit fails------------------------
+
 	// VerifyVoteExtension — **here’s the fix: pass the consensus address** 🎉
 	reqVerify := abci.RequestVerifyVoteExtension{
 		VoteExtension:      respExtend.VoteExtension,
@@ -228,6 +374,125 @@ func TestPrepareProposal(t *testing.T) {
 	respVerify, err := app.VerifyVoteExtensionHandler()(ctx, &reqVerify)
 	require.NoError(t, err)
 	require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, respVerify.Status)
+
+	// --------------------------------------------------------------------------------------
+	// Test VerifyVoteExtension handler: unmarshal failure
+	badReq := abci.RequestVerifyVoteExtension{
+		VoteExtension:      []byte{0x01, 0x02, 0x03},    // invalid protobuf
+		NonRpVoteExtension: respExtend.NonRpExtension,   // whatever the handler expects
+		ValidatorAddress:   voteInfo1.Validator.Address, // real consensus addr
+		Height:             3,
+		Hash:               []byte("test-hash"),
+	}
+	respBad, err := app.VerifyVoteExtensionHandler()(ctx, &badReq)
+	require.NoError(t, err, "handler should swallow unmarshal errors and return a response")
+	require.Equal(
+		t,
+		abci.ResponseVerifyVoteExtension_REJECT,
+		respBad.Status,
+		"expected REJECT when VoteExtension protobuf unmarshal fails",
+	)
+	// --------------------------------------------------------------------------------------
+
+	// ————————————— height-mismatch branch —————————————
+	badReqHeight := abci.RequestVerifyVoteExtension{
+		VoteExtension:      respExtend.VoteExtension,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   voteInfo1.Validator.Address,
+		Height:             reqExtend.Height + 1, // deliberately wrong (was 3)
+		Hash:               []byte("test-hash"),
+	}
+	respBadHeight, err := app.VerifyVoteExtensionHandler()(ctx, &badReqHeight)
+	require.NoError(t, err, "handler should swallow height-mismatch and return a response")
+	require.Equal(
+		t,
+		abci.ResponseVerifyVoteExtension_REJECT,
+		respBadHeight.Status,
+		"expected REJECT when req.Height (%d) != VoteExtension.Height (%d)",
+		badReqHeight.Height, reqExtend.Height,
+	)
+	// ————————————————————————————————————————————————————————
+
+	// ---------------------- block‐hash mismatch branch ----------------------
+	badReqHash := abci.RequestVerifyVoteExtension{
+		VoteExtension:      respExtend.VoteExtension,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   voteInfo1.Validator.Address,
+		Height:             reqExtend.Height,     // same as before
+		Hash:               []byte("wrong-hash"), // deliberately different
+	}
+	respBadHash, err := app.VerifyVoteExtensionHandler()(ctx, &badReqHash)
+	require.NoError(t, err, "handler should swallow hash‐mismatch and return a response")
+	require.Equal(
+		t,
+		abci.ResponseVerifyVoteExtension_REJECT,
+		respBadHash.Status,
+		"expected REJECT when req.Hash (%x) != blockHash in VoteExtension", badReqHash.Hash,
+	)
+	// -------------------------------------------------------------------------
+
+	// ---------------------- side-tx responses validation failure branch ----------------------
+	// Unmarshal the good VoteExtension so we can mutate its SideTxResponses
+	// var badExt sidetxs.VoteExtension
+	// require.NoError(t, proto.Unmarshal(respExtend.VoteExtension, &badExt), "should unmarshal existing VoteExtension")
+
+	// // Corrupt SideTxResponses to trigger a validation error
+	// badExt.SideTxResponses = nil // or set to a slice with invalid entries
+
+	// badVoteBytes, err := proto.Marshal(&badExt)
+	// require.NoError(t, err, "should marshal corrupted VoteExtension")
+	fakeExt := &sidetxs.VoteExtension{
+		BlockHash:       []byte("whatever"), // keep or change as needed
+		Height:          reqExtend.Height,   // so height‐check passes
+		SideTxResponses: nil,                // nil to force validateSideTxResponses error
+	}
+	fakeBz, err := gogoproto.Marshal(fakeExt)
+	require.NoError(t, err, "gogo-Marshal should work on a Gogo type")
+
+	badReqSide := abci.RequestVerifyVoteExtension{
+		VoteExtension:      fakeBz,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   voteInfo1.Validator.Address,
+		Height:             reqExtend.Height,
+		Hash:               []byte("test-hash"),
+	}
+
+	respBadSide, err := app.VerifyVoteExtensionHandler()(ctx, &badReqSide)
+	require.NoError(t, err, "handler should swallow side-tx validation errors and return a response")
+	require.Equal(
+		t,
+		abci.ResponseVerifyVoteExtension_REJECT,
+		respBadSide.Status,
+		"expected REJECT when validateSideTxResponses returns an error",
+	)
+	// -----------------------------------------------------------------------------------------
+
+	// ------------------ height-mismatch branch ------------------
+	fakeExtHeight := &sidetxs.VoteExtension{
+		BlockHash:            []byte("whatever"),     // you can reuse the real block hash or respExtend data
+		Height:               reqExtend.Height + 100, // deliberately off by +1
+		SideTxResponses:      nil,                    // you can copy the real side-txs so only height trips
+		MilestoneProposition: nil,                    // optional
+	}
+
+	fakeExtBzHeight, err := gogoproto.Marshal(fakeExtHeight)
+	require.NoError(t, err, "gogo‐Marshal should succeed on our fake extension")
+	badReqSideHeight := abci.RequestVerifyVoteExtension{
+		VoteExtension:      fakeExtBzHeight,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   voteInfo1.Validator.Address,
+		Height:             reqExtend.Height,
+		Hash:               []byte("test-hash"),
+	}
+	respBadHeight, err = app.VerifyVoteExtensionHandler()(ctx, &badReqSideHeight)
+	require.NoError(t, err, "handler should swallow height-mismatch and return a response")
+	require.Equal(
+		t,
+		abci.ResponseVerifyVoteExtension_REJECT,
+		respBadHeight.Status,
+		"expected REJECT when req.Height (%d) != VoteExtension.Height (%d)",
+		badReqHeight.Height, fakeExtHeight.Height,
+	)
 
 	fmt.Println("finally!")
 
