@@ -5,18 +5,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"testing"
+	"time"
 
+	"cosmossdk.io/math"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	topUpTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	cmtTypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/types/simulation"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 
@@ -561,9 +568,170 @@ func TestPrepareProposal(t *testing.T) {
 	_, err = app.PreBlocker(ctx, &finalizeReq)
 	require.NoError(t, err)
 
+	// _, err = app.Commit()
+	// require.NoError(t, err)
+
+	msgBor := &borTypes.MsgProposeSpan{
+		SpanId:     2,
+		Proposer:   validators[0].Signer,
+		StartBlock: 26657,
+		EndBlock:   30000,
+		ChainId:    "testChainParams.ChainParams.BorChainId",
+		Seed:       common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		SeedAuthor: "val1Addr.Hex()",
+	}
+
+	require.NoError(t, txBuilder.SetMsgs(msgBor))
+	require.NoError(t, err)
+	require.NoError(t, txBuilder.SetSignatures(sigV2))
+
+	txBytesBor, err := txConfig.TxEncoder()(txBuilder.GetTx())
+	require.NoError(t, err)
+	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytesBor})
+	fmt.Println("#################################################################")
+	fmt.Println(txBytesBor)
+	fmt.Println(app.StakeKeeper.GetLastBlockTxs(ctx))
+
+	// _, err = app.Commit()
+	// require.NoError(t, err)
+	var txBytesBorcmt cmtTypes.Tx = txBytesBor
+
+	voteInfo2 := setupExtendedVoteInfoWithNonRp(
+		t,
+		cmtproto.BlockIDFlagCommit,
+		txBytesBorcmt.Hash(),
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
+		cometVal1,
+		validatorPrivKeys[0],
+		2,
+		app,
+		cmtPubKey.GetEd25519(),
+	)
+
+	extCommit2 := &abci.ExtendedCommitInfo{
+		Round: 1,
+		Votes: []abci.ExtendedVoteInfo{voteInfo2},
+	}
+	extCommitBytes2, err := extCommit2.Marshal()
+	require.NoError(t, err)
+
+	// Test FinalizeBlock handler
+	finalizeReqBorSidetx := abci.RequestFinalizeBlock{
+		Txs:    [][]byte{extCommitBytes2, txBytesBor},
+		Height: 3,
+	}
+	_, err = app.PreBlocker(ctx, &finalizeReqBorSidetx)
+	require.NoError(t, err)
+
 	// Commit the block
+	// -------------------------- PreBlocker for cleck module ------------------
+
+	msgClerk := clerkTypes.NewMsgEventRecord(
+		validators[0].Signer,
+		TxHash1,
+		1,
+		50,
+		1,
+		propAddr,
+		make([]byte, 0),
+		"0",
+	)
+	require.NoError(t, txBuilder.SetMsgs(&msgClerk))
+	require.NoError(t, err)
+	require.NoError(t, txBuilder.SetSignatures(sigV2))
+
+	txBytesClerk, err := txConfig.TxEncoder()(txBuilder.GetTx())
+	require.NoError(t, err)
+	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytesClerk})
+	fmt.Println("#################################################################")
+	fmt.Println(txBytesBor)
+	fmt.Println(app.StakeKeeper.GetLastBlockTxs(ctx))
+
+	// _, err = app.Commit()
+	// require.NoError(t, err)
+	var txBytesClerkcmt cmtTypes.Tx = txBytesBor
+
+	voteInfo3 := setupExtendedVoteInfoWithNonRp(
+		t,
+		cmtproto.BlockIDFlagCommit,
+		txBytesClerkcmt.Hash(),
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
+		cometVal1,
+		validatorPrivKeys[0],
+		2,
+		app,
+		cmtPubKey.GetEd25519(),
+	)
+
+	extCommit3 := &abci.ExtendedCommitInfo{
+		Round: 1,
+		Votes: []abci.ExtendedVoteInfo{voteInfo3},
+	}
+	extCommitBytes3, err := extCommit3.Marshal()
+	require.NoError(t, err)
+
+	// Test FinalizeBlock handler
+	finalizeReqClerkSidetx := abci.RequestFinalizeBlock{
+		Txs:    [][]byte{extCommitBytes3, txBytesClerk},
+		Height: 3,
+	}
+	_, err = app.PreBlocker(ctx, &finalizeReqClerkSidetx)
+	require.NoError(t, err)
+
+	//----------------------------------------------------------------
+
+	// -------------------------- Happy path for topup module ------------------
+	coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+	msgTopUp := topUpTypes.NewMsgTopupTx(
+		validators[0].Signer,
+		validators[0].Signer,
+		coins.AmountOf(authTypes.FeeToken),
+		[]byte(TxHash1),
+		1,
+		1,
+	)
+
+	require.NoError(t, txBuilder.SetMsgs(msgTopUp))
+	require.NoError(t, err)
+	require.NoError(t, txBuilder.SetSignatures(sigV2))
+
+	txBytesTopUp, err := txConfig.TxEncoder()(txBuilder.GetTx())
+	require.NoError(t, err)
+	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytesTopUp})
+
 	_, err = app.Commit()
 	require.NoError(t, err)
+	var txBytesTopUpcmt cmtTypes.Tx = txBytesTopUp
+
+	voteInfo4 := setupExtendedVoteInfoWithNonRp(
+		t,
+		cmtproto.BlockIDFlagCommit,
+		txBytesTopUpcmt.Hash(),
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
+		cometVal1,
+		validatorPrivKeys[0],
+		2,
+		app,
+		cmtPubKey.GetEd25519(),
+	)
+
+	extCommit4 := &abci.ExtendedCommitInfo{
+		Round: 1,
+		Votes: []abci.ExtendedVoteInfo{voteInfo4},
+	}
+	extCommitBytes4, err := extCommit4.Marshal()
+	require.NoError(t, err)
+
+	// Test FinalizeBlock handler
+	finalizeReqTopUpSidetx := abci.RequestFinalizeBlock{
+		Txs:    [][]byte{extCommitBytes4, txBytesTopUp},
+		Height: 3,
+	}
+	_, err = app.PreBlocker(ctx, &finalizeReqTopUpSidetx)
+	require.NoError(t, err)
+
+	//---------------------------------------------------------------------------
+
 }
 
 var defaultFeeAmount = big.NewInt(10).Exp(big.NewInt(10), big.NewInt(15), nil).Int64()
