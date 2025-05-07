@@ -96,6 +96,12 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	var latestMilestoneEndBlock uint64
+	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
+	if err == nil {
+		latestMilestoneEndBlock = latestMilestone.EndBlock
+	}
+
 	// fetch current child block
 	childBlock, err := s.k.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
@@ -111,9 +117,23 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 
 	currentBlock := childBlock.Number.Uint64()
 
-	if types.IsBlockCloseToSpanEnd(childBlock.Number.Uint64(), lastSpan.EndBlock) {
-		sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
-		return
+	maxBlockNumber := max(latestMilestoneEndBlock, currentBlock)
+
+	if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
+		logger.Debug("current block is close to span end", "currentBlock", currentBlock, "lastSpanEndBlock", lastSpan.EndBlock)
+		return sidetxs.Vote_VOTE_NO
+	}
+
+	// If we are past end of the last span, we need to backfill before proposing a new span
+	if msg.StartBlock <= maxBlockNumber {
+		logger.Error("span is already in the past",
+			"currentBlock", currentBlock,
+			"msgStartBlock", msg.StartBlock,
+			"msgEndBlock", msg.EndBlock,
+			"latestMilestoneEndBlock", latestMilestoneEndBlock,
+			"lastSpanEndBlock", lastSpan.EndBlock,
+		)
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check if span proposed is in-turn or not
@@ -171,6 +191,17 @@ func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg)
 	if latestSpan.Id != msg.LatestSpanId {
 		logger.Error("invalid span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
 		return sidetxs.Vote_VOTE_NO
+	}
+
+	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
+	if err == nil {
+		if msg.LatestBorBlock > latestMilestone.EndBlock {
+			logger.Error("invalid bor block, expected less than latest milestone end block",
+				"latestMilestoneEndBlock", latestMilestone.EndBlock,
+				"latestBorBlock", msg.LatestBorBlock,
+			)
+			return sidetxs.Vote_VOTE_NO
+		}
 	}
 
 	logger.Debug("✅ successfully validated external call for fill missing spans msg")

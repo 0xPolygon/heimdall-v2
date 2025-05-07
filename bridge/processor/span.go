@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,13 +8,11 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // SpanProcessor - process span related events
@@ -91,15 +88,15 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		return
 	}
 
+	var latestMilestoneEndBlock uint64
 	latestMilestone, err := util.GetLatestMilestone(sp.cliCtx.Codec)
-	if err != nil {
-		sp.Logger.Error("Error fetching latest milestone", "error", err)
-		return
+	if err == nil {
+		latestMilestoneEndBlock = latestMilestone.EndBlock
 	}
 
 	// Max of latest milestone end block and latest bor block number
 	// Handle cases where bor is syncing and latest milestone end block is greater than latest bor block number
-	maxBlockNumber := max(latestMilestone.EndBlock, latestBorBlockNumber)
+	maxBlockNumber := max(latestMilestoneEndBlock, latestBorBlockNumber)
 
 	if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
 		sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
@@ -122,7 +119,7 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 
 	if isProposer {
 		if maxBlockNumber > lastSpan.EndBlock {
-			if latestMilestone.EndBlock > lastSpan.EndBlock {
+			if latestMilestoneEndBlock > lastSpan.EndBlock {
 				sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
 				go sp.backfillSpans(latestBorBlockNumber, lastSpan)
 				return
@@ -250,23 +247,6 @@ func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, erro
 	}
 
 	return childBlock.Number.Uint64(), nil
-}
-
-// isSpanProposer checks if current user is span proposer
-func (sp *SpanProcessor) isSpanProposer(nextSpanProducers []stakeTypes.Validator) bool {
-	ac := address.NewHexCodec()
-	// anyone among next span producers can become next span proposer
-	for _, val := range nextSpanProducers {
-		signerBytes, err := ac.StringToBytes(val.Signer)
-		if err != nil {
-			return false
-		}
-		if bytes.Equal(signerBytes, helper.GetAddress()) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // fetch next span details from heimdall.
