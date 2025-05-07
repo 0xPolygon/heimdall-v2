@@ -19,8 +19,10 @@ import (
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	topUpTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	abci "github.com/cometbft/cometbft/abci/types"
+	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
@@ -43,8 +45,545 @@ import (
 	"github.com/stretchr/testify/require"
 
 	helpermocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
+	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 )
+
+func buildSignedTx(msg sdk.Msg, signer string, ctx sdk.Context, priv cryptotypes.PrivKey, app HeimdallApp) ([]byte, error) {
+	propBytes := common.FromHex(signer)
+	propAddr := sdk.AccAddress(propBytes)
+	propAcc := authTypes.NewBaseAccount(propAddr, nil, 1337, 0)
+	app.AccountKeeper.SetAccount(ctx, propAcc)
+
+	testutil.FundAccount(ctx, app.BankKeeper, propAddr,
+		sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
+	)
+
+	// Build and sign the tx
+	txConfig := authtx.NewTxConfig(app.AppCodec(), authtx.DefaultSignModes)
+	defaultSignMode, err := authsigning.APISignModeToInternal(txConfig.SignModeHandler().DefaultMode())
+	app.SetTxDecoder(txConfig.TxDecoder())
+
+	txBuilder := txConfig.NewTxBuilder()
+	txBuilder.SetFeeAmount(testdata.NewTestFeeAmount())
+	txBuilder.SetGasLimit(testdata.NewTestGasLimit())
+	txBuilder.SetMsgs(msg)
+
+	sigV2 := signing.SignatureV2{PubKey: priv.PubKey(), Data: &signing.SingleSignatureData{
+		SignMode:  defaultSignMode,
+		Signature: nil,
+	}, Sequence: 0}
+	txBuilder.SetSignatures(sigV2)
+
+	signerData := authsigning.SignerData{
+		ChainID:       "",
+		AccountNumber: 1337,
+		Sequence:      0,
+		PubKey:        priv.PubKey(),
+	}
+	sigV2, err = tx.SignWithPrivKey(context.TODO(), defaultSignMode, signerData,
+		txBuilder, priv, txConfig, 0)
+
+	txBytes, err := txConfig.TxEncoder()(txBuilder.GetTx())
+	return txBytes, err
+}
+
+func buildExtensionCommits(t *testing.T, app *HeimdallApp, txHashBytes []byte, validators []*stakeTypes.Validator, validatorPrivKeys []secp256k1.PrivKey) ([]byte, *abci.ExtendedCommitInfo, *abci.ExtendedVoteInfo, error) {
+
+	cometVal := abci.Validator{
+		Address: common.FromHex(validators[0].Signer),
+		Power:   validators[0].VotingPower,
+	}
+
+	cmtPubKey, err := validators[0].CmtConsPublicKey()
+
+	voteInfo := setupExtendedVoteInfoWithNonRp(
+		t,
+		cmtproto.BlockIDFlagCommit,
+		txHashBytes,
+		common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000002dead"),
+		cometVal,
+		validatorPrivKeys[0],
+		2,
+		app,
+		cmtPubKey.GetEd25519(),
+	)
+
+	extCommit := &abci.ExtendedCommitInfo{
+		Round: 1,
+		Votes: []abci.ExtendedVoteInfo{voteInfo},
+	}
+	extCommitBytes, err := extCommit.Marshal()
+	require.NoError(t, err)
+	return extCommitBytes, extCommit, &voteInfo, err
+}
+
+func SetupAppWithABCIctx(t *testing.T) (cryptotypes.PrivKey, HeimdallApp, sdk.Context, []secp256k1.PrivKey) {
+	priv, _, _ := testdata.KeyTestPubAddr()
+
+	setupResult := SetupApp(t, 1)
+	app := setupResult.App
+
+	genState := app.DefaultGenesis()
+	genBytes, err := json.Marshal(genState)
+	require.NoError(t, err)
+	app.InitChain(&abci.RequestInitChain{
+		Validators:    []abci.ValidatorUpdate{},
+		AppStateBytes: genBytes,
+	})
+
+	// Initialize the application state
+	ctx := app.BaseApp.NewContext(true)
+
+	// Set up consensus params
+	params := cmtproto.ConsensusParams{
+		Abci: &cmtproto.ABCIParams{
+			VoteExtensionsEnableHeight: 1,
+		},
+	}
+	ctx = ctx.WithConsensusParams(params)
+
+	validatorPrivKeys := setupResult.ValidatorKeys
+	return priv, *app, ctx, validatorPrivKeys
+}
+
+func TestPrepareProposalHandler(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Create a checkpoint message
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
+
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
+
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 3,
+		Txs:    [][]byte{extCommitBytes, txBytes},
+	})
+	require.NoError(t, err)
+
+	// Prepare/Process proposal
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          3,
+	}
+
+	_, err = app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+
+	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+	require.NoError(t, err)
+	require.NotEmpty(t, respPrep.Txs)
+}
+
+func TestProcessProposalHandler(t *testing.T) {
+
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Create a checkpoint message
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
+
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
+
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 3,
+		Txs:    [][]byte{extCommitBytes, txBytes},
+	})
+	require.NoError(t, err)
+
+	// Prepare/Process proposal
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          3,
+	}
+
+	_, err = app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+
+	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+	require.NoError(t, err)
+	require.NotEmpty(t, respPrep.Txs)
+
+	reqProcess := &abci.RequestProcessProposal{
+		Txs:                respPrep.Txs,
+		Height:             3,
+		ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+	}
+	respProc, err := app.NewProcessProposalHandler()(ctx, reqProcess)
+	require.NoError(t, err)
+	require.Equal(t, abci.ResponseProcessProposal_ACCEPT, respProc.Status)
+
+	// Table-driven tests for ProcessProposalHandler
+	testCases := []struct {
+		name       string
+		req        *abci.RequestProcessProposal
+		wantStatus abci.ResponseProcessProposal_ProposalStatus
+	}{
+		{
+			name: "valid transactions",
+			req: &abci.RequestProcessProposal{
+				Txs:                respPrep.Txs,
+				Height:             3,
+				ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+			},
+			wantStatus: abci.ResponseProcessProposal_ACCEPT,
+		},
+		{
+			name: "no transactions",
+			req: &abci.RequestProcessProposal{
+				Txs:                [][]byte{},
+				Height:             3,
+				ProposedLastCommit: abci.CommitInfo{Round: reqPrep.LocalLastCommit.Round},
+			},
+			wantStatus: abci.ResponseProcessProposal_REJECT,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			respProc, err := app.NewProcessProposalHandler()(ctx, tc.req)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStatus, respProc.Status)
+		})
+	}
+}
+
+func TestExtendVoteHandler(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Create a checkpoint message
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
+
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
+
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 3,
+		Txs:    [][]byte{extCommitBytes, txBytes},
+	})
+	require.NoError(t, err)
+
+	// Prepare/Process proposal
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          3,
+	}
+
+	_, err = app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+
+	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+	require.NoError(t, err)
+	require.NotEmpty(t, respPrep.Txs)
+
+	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, nil)
+
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		nil,
+	)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	reqExtend := abci.RequestExtendVote{
+		Txs:    respPrep.Txs,
+		Hash:   []byte("test-hash"),
+		Height: 3,
+	}
+	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+	require.NoError(t, err)
+	require.NotNil(t, respExtend.VoteExtension)
+	mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+	terrUnmarshal := "error occurred while decoding ExtendedCommitInfo"
+	terrTxDecode := "error occurred while decoding tx bytes in ExtendVoteHandler"
+	testCases := []struct {
+		name        string
+		req         abci.RequestExtendVote
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid extend vote",
+			req: abci.RequestExtendVote{
+				Txs:    respPrep.Txs,
+				Hash:   []byte("test-hash"),
+				Height: 3,
+			},
+			wantErr: false,
+		},
+		{
+			name: "unmarshal failure",
+			req: abci.RequestExtendVote{
+				Txs:    [][]byte{{0x01, 0x02, 0x03}},
+				Hash:   []byte("test-hash"),
+				Height: 3,
+			},
+			wantErr:     true,
+			errContains: terrUnmarshal,
+		},
+		{
+			name: "tx decode failure",
+			req: abci.RequestExtendVote{
+				Txs:    [][]byte{respPrep.Txs[0], {0x01, 0x02, 0x03}},
+				Hash:   []byte("test-hash"),
+				Height: 3,
+			},
+			wantErr:     true,
+			errContains: terrTxDecode,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			respExtend, err := app.ExtendVoteHandler()(ctx, &tc.req)
+			if tc.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.errContains)
+				require.Nil(t, respExtend)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, respExtend)
+				mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+			}
+		})
+	}
+}
+
+func TestVerifyVoteExtensionHandler(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Create a checkpoint message
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
+
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+
+	extCommitBytes, extCommit, voteInfo, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
+
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 3,
+		Txs:    [][]byte{extCommitBytes, txBytes},
+	})
+	require.NoError(t, err)
+
+	// Prepare/Process proposal
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          3,
+	}
+
+	_, err = app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+
+	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+	require.NoError(t, err)
+	require.NotEmpty(t, respPrep.Txs)
+
+	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, nil)
+
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		nil,
+	)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	reqExtend := abci.RequestExtendVote{
+		Txs:    respPrep.Txs,
+		Hash:   []byte("test-hash"),
+		Height: 3,
+	}
+	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+	require.NoError(t, err)
+	require.NotNil(t, respExtend.VoteExtension)
+	mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+	reqVerify := abci.RequestVerifyVoteExtension{
+		VoteExtension:      respExtend.VoteExtension,
+		NonRpVoteExtension: respExtend.NonRpExtension,
+		ValidatorAddress:   voteInfo.Validator.Address, // <<< use the real consensus addr
+		Height:             3,
+		Hash:               []byte("test-hash"),
+	}
+	respVerify, err := app.VerifyVoteExtensionHandler()(ctx, &reqVerify)
+	require.NoError(t, err)
+	require.Equal(t, abci.ResponseVerifyVoteExtension_ACCEPT, respVerify.Status)
+
+	// Table-driven cases for VerifyVoteExtensionHandler
+	testCases := []struct {
+		name       string
+		req        abci.RequestVerifyVoteExtension
+		wantStatus abci.ResponseVerifyVoteExtension_VerifyStatus
+	}{
+		{
+			name:       "valid extension",
+			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")},
+			wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT,
+		},
+		{
+			name:       "unmarshal fail",
+			req:        abci.RequestVerifyVoteExtension{VoteExtension: []byte{0x01, 0x02, 0x03}, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")},
+			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+		},
+		{
+			name:       "height mismatch",
+			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 4, Hash: []byte("test-hash")},
+			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+		},
+		{
+			name:       "hash mismatch",
+			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("wrong-hash")},
+			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+		},
+		{
+			name: "side-tx validation failure",
+			// construct invalid side extension bytes
+			req: func() abci.RequestVerifyVoteExtension {
+				fake := &sidetxs.VoteExtension{BlockHash: respExtend.VoteExtension, Height: 3, SideTxResponses: nil}
+				bz, _ := gogoproto.Marshal(fake)
+				return abci.RequestVerifyVoteExtension{VoteExtension: bz, NonRpVoteExtension: respExtend.NonRpExtension, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")}
+			}(),
+			wantStatus: abci.ResponseVerifyVoteExtension_REJECT,
+		},
+		{
+			name:       "non-rp validation error",
+			req:        abci.RequestVerifyVoteExtension{VoteExtension: respExtend.VoteExtension, NonRpVoteExtension: []byte{0x01, 0x02, 0x03, 0xFF}, ValidatorAddress: voteInfo.Validator.Address, Height: 3, Hash: []byte("test-hash")},
+			wantStatus: abci.ResponseVerifyVoteExtension_ACCEPT,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := app.VerifyVoteExtensionHandler()(ctx, &tc.req)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantStatus, resp.Status)
+		})
+	}
+}
+
+func TestPreBlocker(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	msg := &borTypes.MsgProposeSpan{
+		// SpanId:     2,
+		Proposer:   validators[0].Signer,
+		StartBlock: 26657,
+		EndBlock:   30000,
+		ChainId:    "testChainParams.ChainParams.BorChainId",
+		Seed:       common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		SeedAuthor: "val1Addr.Hex()",
+	}
+
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+	var txBytesCmt cmtTypes.Tx = txBytes
+
+	extCommitBytes, _, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+
+	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
+
+	finalizeReq := abci.RequestFinalizeBlock{
+		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height: 3,
+	}
+	_, err = app.PreBlocker(ctx, &finalizeReq)
+	require.NoError(t, err)
+
+}
 
 func TestPrepareProposal(t *testing.T) {
 	priv, _, _ := testdata.KeyTestPubAddr()
@@ -571,8 +1110,10 @@ func TestPrepareProposal(t *testing.T) {
 	// _, err = app.Commit()
 	// require.NoError(t, err)
 
+	//-------------------------------- bor Preblock happy path ---------------------------------------------
+	// flag_toget
 	msgBor := &borTypes.MsgProposeSpan{
-		SpanId:     2,
+		// SpanId:     2,
 		Proposer:   validators[0].Signer,
 		StartBlock: 26657,
 		EndBlock:   30000,
@@ -623,6 +1164,7 @@ func TestPrepareProposal(t *testing.T) {
 	_, err = app.PreBlocker(ctx, &finalizeReqBorSidetx)
 	require.NoError(t, err)
 
+	// --------------------- bor unhappy path 1 ----------------------------------------
 	// Commit the block
 	// -------------------------- PreBlocker for cleck module ------------------
 
