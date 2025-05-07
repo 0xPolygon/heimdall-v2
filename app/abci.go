@@ -426,16 +426,18 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			"startBlock", majorityMilestone.StartBlockNumber,
 			"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
 			"proposer", proposer,
+			"totalDifficulty", majorityMilestone.TotalDifficulty,
 		)
 
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
-			Proposer:    proposer,
-			Hash:        majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
-			StartBlock:  majorityMilestone.StartBlockNumber,
-			EndBlock:    majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
-			BorChainId:  params.ChainParams.BorChainId,
-			MilestoneId: common.Bytes2Hex(aggregatedProposers),
-			Timestamp:   uint64(ctx.BlockHeader().Time.Unix()),
+			Proposer:        proposer,
+			Hash:            majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1],
+			StartBlock:      majorityMilestone.StartBlockNumber,
+			EndBlock:        majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
+			BorChainId:      params.ChainParams.BorChainId,
+			MilestoneId:     common.Bytes2Hex(aggregatedProposers),
+			Timestamp:       uint64(ctx.BlockHeader().Time.Unix()),
+			TotalDifficulty: majorityMilestone.TotalDifficulty,
 		}); err != nil {
 			logger.Error("Error occurred while adding milestone", "error", err)
 			return nil, err
