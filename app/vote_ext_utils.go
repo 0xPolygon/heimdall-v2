@@ -649,6 +649,26 @@ func getCheckpointSignatures(extension []byte, extVoteInfo []abciTypes.ExtendedV
 	return result
 }
 
+func getSuccinctSpecialTx(extVoteInfo []abciTypes.ExtendedVoteInfo) (*sidetxs.SuccinctSpecialTx, error) {
+	splTx := new(sidetxs.SuccinctSpecialTx)
+	for _, vote := range extVoteInfo {
+		voteExtension := new(sidetxs.VoteExtension)
+		if err := voteExtension.Unmarshal(vote.VoteExtension); err != nil {
+			return nil, fmt.Errorf("error while unmarshalling vote extension: %w", err)
+		}
+
+		for _, res := range voteExtension.SideTxResponses {
+			if res.Result == sidetxs.Vote_VOTE_YES {
+				splTx.ApprovedTxHash = append(splTx.ApprovedTxHash, res.TxHash)
+			}
+
+		}
+
+		splTx.MilestoneProposition = voteExtension.MilestoneProposition
+	}
+	return splTx, nil
+}
+
 type txDecoder interface {
 	TxDecode(txBytes []byte) (sdk.Tx, error)
 }

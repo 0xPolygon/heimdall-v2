@@ -131,6 +131,9 @@ type HeimdallApp struct {
 	MilestoneKeeper    milestoneKeeper.Keeper
 	BorKeeper          borKeeper.Keeper
 
+	// blobCache is used to cache the blob data for the tx
+	blobCache []byte
+
 	// utility for invoking contracts in Ethereum and Bor chain
 	caller helper.ContractCaller
 

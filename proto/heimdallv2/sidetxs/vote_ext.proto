@@ -21,6 +21,12 @@ message SideTxResponse {
   Vote result = 2 [ (amino.dont_omitempty) = true ];
 }
 
+message SuccinctSpecialTx {
+  repeated bytes approved_tx_hash = 1 [ (amino.dont_omitempty) = true ];
+  heimdallv2.milestone.MilestoneProposition milestone_proposition = 2
+      [ (amino.dont_omitempty) = true ];
+}
+
 enum Vote {
   UNSPECIFIED = 0;
   VOTE_YES = 1;

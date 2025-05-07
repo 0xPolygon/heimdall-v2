@@ -37,11 +37,19 @@ func (app *HeimdallApp) NewPrepareProposalHandler() sdk.PrepareProposalHandler {
 
 		// prepare the proposal with the vote extensions and the validators set's votes
 		var txs [][]byte
-		bz, err := req.LocalLastCommit.Marshal()
+
+		splTx, err := getSuccinctSpecialTx(req.LocalLastCommit.Votes)
 		if err != nil {
-			logger.Error("Error occurred while marshaling the LocalLastCommit in prepare proposal", "error", err)
+			logger.Error("Error occurred while getting approved tx hashes in PrepareProposal", "error", err)
 			return nil, err
 		}
+
+		bz, err := splTx.Marshal()
+		if err != nil {
+			logger.Error("Error occurred while marshalling special tx in PrepareProposal", "error", err)
+			return nil, err
+		}
+
 		txs = append(txs, bz)
 
 		// init totalTxBytes with the actual size of the marshaled vote info in bytes
@@ -97,24 +105,27 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		// extract the ExtendedCommitInfo from the txs (it is encoded at the beginning, index 0)
-		extCommitInfo := new(abci.ExtendedCommitInfo)
+		splTx := new(sidetxs.SuccinctSpecialTx)
 		extendedCommitTx := req.Txs[0]
-		if err := extCommitInfo.Unmarshal(extendedCommitTx); err != nil {
-			logger.Error("Error occurred while decoding ExtendedCommitInfo", "height", req.Height, "error", err)
+		if err := splTx.Unmarshal(extendedCommitTx); err != nil {
+			logger.Error("Error occurred while decoding SuccinctSpecialTx", "height", req.Height, "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
-		if extCommitInfo.Round != req.ProposedLastCommit.Round {
+		// TODO: do we include Round in SuccinctSpecialTx or do we get it from blob?
+		if splTx.Round != req.ProposedLastCommit.Round {
 			logger.Error("Received commit round does not match expected round", "expected", req.ProposedLastCommit.Round, "got", extCommitInfo.Round)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
 		// validate the vote extensions
+		// TODO: verify with blobs
 		if err := ValidateVoteExtensions(ctx, req.Height, extCommitInfo.Votes, req.ProposedLastCommit.Round, app.StakeKeeper); err != nil {
 			logger.Error("Invalid vote extension, rejecting proposal", "error", err)
 			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 		}
 
+		// TODO: verify with blobs
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
 			// We could reject proposal if we fail to query bor, we follow RFC 105 (https://github.com/cometbft/cometbft/blob/main/docs/references/rfc/rfc-105-non-det-process-proposal.md)
 			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
