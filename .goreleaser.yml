@@ -148,6 +148,7 @@ dockers:
     extra_files:
       - docker/entrypoint.sh
       - builder/files/genesis-mainnet-v1.json
+      - builder/files/genesis-testnet-v4.json
       - builder/files/genesis-amoy-v1.json
 
 docker_manifests:
