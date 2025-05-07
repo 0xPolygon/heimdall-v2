@@ -173,11 +173,6 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	user := msg.User
 	topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
 
-	/* HV2: v1's BankKeeper.AddCoins + BankKeeper.SendCoins methods are used,
-	   but the first is no longer available in cosmos-sdk. Hence, we use
-	   BankKeeper.MintCoins + BankKeeper.SendCoinsFromModuleToAccount + BankKeeper.SendCoins
-	*/
-
 	err = s.k.BankKeeper.MintCoins(ctx, types.ModuleName, topupAmount)
 	if err != nil {
 		logger.Error("error while minting coins to x/topup module", "topupAmount", topupAmount, "error", err)

@@ -22,7 +22,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 
 	require.Error(err)
 
-	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).AnyTimes().Return(uint64(1), nil)
 
 	req = &types.QueryCurrentValidatorSetRequest{}
@@ -43,7 +43,7 @@ func (s *KeeperTestSuite) TestHandleQuerySigner() {
 	res, err := queryClient.GetSignerByAddress(ctx, req)
 	require.NotNil(err)
 
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	validators := keeper.GetAllValidators(ctx)
 
@@ -75,7 +75,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 	require.NotNil(err)
 	require.Nil(res)
 
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	validators := keeper.GetAllValidators(ctx)
 
@@ -91,7 +91,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetAllValidators(ctx)

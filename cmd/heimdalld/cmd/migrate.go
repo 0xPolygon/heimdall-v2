@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -31,9 +31,6 @@ import (
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
-// HV2: Since default encoding for bytes in proto is base64 instead of hex encoding (like in heimdall-v1),
-// it could be breaking change for anyone querying the node APIs.
-
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
 	cmd := cobra.Command{
@@ -47,7 +44,7 @@ func MigrateCommand() *cobra.Command {
 	cmd.Flags().String(flagChainId, "", "The new network chain id")
 	cmd.Flags().String(flagGenesisTime, "", "The new network genesis time")
 	cmd.Flags().Uint64(flagInitialHeight, 0, "The new network initial height")
-	cmd.Flags().Bool(flagVerifyHash, true, "Enable or disable remote genesis hash verification")
+	cmd.Flags().Bool(flagVerifyData, true, "Enable or disable data verification")
 
 	if err := cmd.MarkFlagRequired(flagChainId); err != nil {
 		panic(err)
@@ -81,9 +78,9 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	verifyHash, err := cmd.Flags().GetBool(flagVerifyHash)
+	verifyData, err := cmd.Flags().GetBool(flagVerifyData)
 	if err != nil {
-		return fmt.Errorf("failed to parse --verify-hash flag: %w", err)
+		return fmt.Errorf("failed to parse --verify-data flag: %w", err)
 	}
 
 	flagsToCheck := []string{flagChainId, flagGenesisTime, flagInitialHeight}
@@ -110,14 +107,9 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(genesisFileV2); err == nil {
 		logger.Info("Migrated genesis file already exists", "file", genesisFileV2)
 
-		if err := verify.VerifyMigration(genesisFileV1, genesisFileV2, logger); err != nil {
-			logger.Error("Verification failed", "error", err)
-			return err
-		}
-
-		if verifyHash {
-			if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-				logger.Error("Genesis hash verification failed", "error", err)
+		if verifyData {
+			if err := verify.RunMigrationVerification(genesisFileV1, genesisFileV2, logger); err != nil {
+				logger.Error("Verification failed", "error", err)
 				return err
 			}
 		}
@@ -146,19 +138,35 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 	v036gov.RegisterLegacyAminoCodec(legacyAmino)
 	v036params.RegisterLegacyAminoCodec(legacyAmino)
 
-	if err := performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime, initialHeight); err != nil {
-		logger.Error("Migration failed", "error", err)
-		return err
+	{
+		genesisData, err := performMigrations(genesisFileV1, chainId, genesisTime, initialHeight)
+		if err != nil {
+			logger.Error("Migration failed", "error", err)
+			return err
+		}
+
+		logger.Info("Deleting supply")
+		// delete supply (not present in v2)
+		delete(genesisData, "supply")
+		logger.Info("Supply deleted")
+
+		// Recursively replace denom from "matic" to "pol"
+		replaceDenom(genesisData)
+
+		if err := saveGenesisFile(genesisData, genesisFileV2); err != nil {
+			logger.Error("Failed to save migrated genesis file", "error", err)
+			return err
+		}
+
+		//nolint:ineffassign
+		genesisData = nil
+
+		runtime.GC()
 	}
 
-	if err := verify.VerifyMigration(genesisFileV1, genesisFileV2, logger); err != nil {
-		logger.Error("Verification failed", "error", err)
-		return err
-	}
-
-	if verifyHash {
-		if err := verify.VerifyMigratedGenesisHash(genesisFileV2, logger); err != nil {
-			logger.Error("Genesis hash verification failed", "error", err)
+	if verifyData {
+		if err := verify.RunMigrationVerification(genesisFileV1, genesisFileV2, logger); err != nil {
+			logger.Error("Verification failed", "error", err)
 			return err
 		}
 	}
@@ -167,71 +175,116 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 }
 
 // performMigrations loads v1 genesis file, executes all the migration functions on the genesis data.
-// Stores the new v2 genesis file on disk.
-func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string, initialHeight uint64) error {
+func performMigrations(genesisFileV1, chainId, genesisTime string, initialHeight uint64) (map[string]interface{}, error) {
+	globalStart := time.Now()
+
 	logger.Info("Loading genesis file...", "file", genesisFileV1)
 
+	start := time.Now()
 	genesisData, err := utils.LoadJSONFromFile(genesisFileV1)
 	if err != nil {
-		return fmt.Errorf("failed to load genesis file: %w", err)
+		return nil, fmt.Errorf("failed to load genesis file: %w", err)
 	}
+	logger.Info(fmt.Sprintf("LoadJSONFromFile took %.2f minutes", time.Since(start).Minutes()))
 
 	logger.Info("Performing custom migrations...")
 
+	// addMissingCometBFTConsensusParams
+	start = time.Now()
 	if err := addMissingCometBFTConsensusParams(genesisData, initialHeight); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("addMissingCometBFTConsensusParams took %.2f minutes", time.Since(start).Minutes()))
 
+	// removeUnusedTendermintConsensusParams
+	start = time.Now()
 	if err := removeUnusedTendermintConsensusParams(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("removeUnusedTendermintConsensusParams took %.2f minutes", time.Since(start).Minutes()))
 
-	// Bank module should always be before auth module, because it gets accounts balances from the auth module state
-	// they are deleted from the genesis during auth module migration
+	// migrateBankModule
+	start = time.Now()
 	if err := migrateBankModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateBankModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateAuthModule
+	start = time.Now()
 	if err := migrateAuthModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateAuthModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateGovModule
+	start = time.Now()
 	if err := migrateGovModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateGovModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateClerkModule
+	start = time.Now()
 	if err := migrateClerkModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateClerkModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateBorModule
+	start = time.Now()
 	if err := migrateBorModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateBorModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateCheckpointModule
+	start = time.Now()
 	if err := migrateCheckpointModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateCheckpointModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateTopupModule
+	start = time.Now()
 	if err := migrateTopupModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateTopupModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateMilestoneModule
+	start = time.Now()
 	if err := migrateMilestoneModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateMilestoneModule took %.2f minutes", time.Since(start).Minutes()))
 
-	if err := migrateChainmanagerModule(genesisData, chainId); err != nil {
-		return err
+	// migrateChainManagerModule
+	start = time.Now()
+	if err := migrateChainManagerModule(genesisData, chainId); err != nil {
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateChainManagerModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// migrateStakeModule
+	start = time.Now()
 	if err := migrateStakeModule(genesisData); err != nil {
-		return err
+		return nil, err
 	}
+	logger.Info(fmt.Sprintf("migrateStakeModule took %.2f minutes", time.Since(start).Minutes()))
 
+	// Set final values
 	genesisData["chain_id"] = chainId
 	genesisData["genesis_time"] = genesisTime
 	genesisData["initial_height"] = strconv.FormatUint(initialHeight, 10)
 
+	logger.Info(fmt.Sprintf("performMigrations took %.2f minutes", time.Since(globalStart).Minutes()))
+
+	return genesisData, nil
+}
+
+// saveGenesisFile saves the migrated genesis data to a new file.
+func saveGenesisFile(genesisData map[string]interface{}, genesisFileV2 string) error {
 	logger.Info("Saving migrated genesis file...", "file", genesisFileV2)
 
 	if err := utils.SaveJSONToFile(genesisData, genesisFileV2); err != nil {
@@ -248,8 +301,6 @@ func performMigrations(genesisFileV1, genesisFileV2, chainId, genesisTime string
 func migrateStakeModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating stake module...")
 
-	// TODO HV2: TotalVotingPower is never assigned during InitGenesis, maybe at end of the initialization we should call GetTotalVotingPower
-	// because it gets calculated if its zero
 	if err := utils.RenameProperty(genesisData, "app_state", "staking", "stake"); err != nil {
 		return fmt.Errorf("failed to rename staking module: %w", err)
 	}
@@ -295,8 +346,8 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 	return nil
 }
 
-// migrateChainmanagerModule renames the chainmanager module params fields to match the new naming convention.
-func migrateChainmanagerModule(genesisData map[string]interface{}, chainId string) error {
+// migrateChainManagerModule renames the chainmanager module params fields to match the new naming convention.
+func migrateChainManagerModule(genesisData map[string]interface{}, chainId string) error {
 	logger.Info("Migrating chainmanager module...")
 
 	chainmanagerModule, ok := genesisData["app_state"].(map[string]interface{})["chainmanager"]
@@ -334,12 +385,67 @@ func migrateChainmanagerModule(genesisData map[string]interface{}, chainId strin
 func migrateMilestoneModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating milestone module...")
 
+	checkpointModule, ok := genesisData["app_state"].(map[string]interface{})["checkpoint"]
+	if !ok {
+		return fmt.Errorf("checkpoint module not found in app_state")
+	}
+
+	checkpointData, ok := checkpointModule.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("failed to cast checkpoint module data")
+	}
+
+	milestones, milestonesFound := checkpointData["milestones"].([]interface{})
+	if milestonesFound {
+		utils.SortByTimestamp(milestones)
+
+		for i, milestone := range milestones {
+			milestoneMap, ok := milestone.(map[string]interface{})
+			if !ok {
+				return fmt.Errorf("invalid milestone format at index %d", i)
+			}
+
+			hashHex, ok := milestoneMap["hash"].(string)
+			if !ok {
+				return fmt.Errorf("hash not found in milestone at index %d", i)
+			}
+
+			if !strings.HasPrefix(hashHex, "0x") {
+				return fmt.Errorf("invalid hash format at index %d", i)
+			}
+
+			hashHex = hashHex[2:]
+
+			hashBytes, err := hex.DecodeString(hashHex)
+			if err != nil {
+				return fmt.Errorf("failed to decode hash at index %d: %w", i, err)
+			}
+
+			hashBase64 := base64.StdEncoding.EncodeToString(hashBytes)
+
+			milestoneMap["hash"] = hashBase64
+		}
+	}
+
+	if err := utils.DeleteProperty(genesisData, "app_state.checkpoint", "milestones"); err != nil {
+		return fmt.Errorf("failed to delete milestones from checkpoint module: %w", err)
+	}
+
+	genesisData["app_state"].(map[string]interface{})["milestone"] = map[string]interface{}{}
+
+	if !milestonesFound {
+		milestones = []interface{}{}
+	}
+
+	if err := utils.AddProperty(genesisData, "app_state.milestone", "milestones", milestones); err != nil {
+		return fmt.Errorf("failed to add milestones to milestone module: %w", err)
+	}
+
 	params := milestoneTypes.DefaultParams()
-	milestoneState := milestoneTypes.NewGenesisState(params)
 
-	milestoneStateMarshled := appCodec.MustMarshalJSON(&milestoneState)
-
-	genesisData["app_state"].(map[string]interface{})["milestone"] = json.RawMessage(milestoneStateMarshled)
+	if err := utils.AddProperty(genesisData, "app_state.milestone", "params", params); err != nil {
+		return fmt.Errorf("failed to add params to milestone module: %w", err)
+	}
 
 	logger.Info("Milestone module migration completed successfully")
 
@@ -454,7 +560,10 @@ func migrateGovModule(genesisData map[string]interface{}) error {
 		Votes:              newVotes,
 		Proposals:          newProposals,
 		Params:             &params,
-		Constitution:       "This chain has no constitution.", // TODO HV2: This should be updated with the actual constitution
+		Constitution: "Heimdall chain serves as the coordination and consensus layer of the Polygon PoS protocol. " +
+			"Its governance is responsible for managing validator sets, protocol upgrades, and system parameters critical to the network's security and liveness. " +
+			"Decisions must be guided by principles of decentralization, transparency, and the long-term resilience of the Polygon ecosystem. " +
+			"All governance participants are expected to act in good faith and in alignment with the collective interest of the network.",
 	}
 
 	newGovStateMarshaled := appCodec.MustMarshalJSON(&newGovState)
@@ -638,14 +747,7 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 
 	checkpoints, ok := checkpointData["checkpoints"].([]interface{})
 	if ok {
-		// Sort checkpoints by timestamp
-		sort.Slice(checkpoints, func(i, j int) bool {
-			checkpointI := checkpoints[i].(map[string]interface{})
-			checkpointJ := checkpoints[j].(map[string]interface{})
-			timestampI, _ := strconv.Atoi(checkpointI["timestamp"].(string))
-			timestampJ, _ := strconv.Atoi(checkpointJ["timestamp"].(string))
-			return timestampI < timestampJ
-		})
+		utils.SortByTimestamp(checkpoints)
 
 		for i, checkpoint := range checkpoints {
 			checkpointMap, ok := checkpoint.(map[string]interface{})
@@ -882,6 +984,27 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	return nil
 }
 
+// replaceDenom recursively replaces the "denom" key with "pol" if its value is "matic"
+func replaceDenom(v interface{}) {
+	switch val := v.(type) {
+	case map[string]interface{}:
+		for key, item := range val {
+			// Match key "denom" and value "matic"
+			if key == "denom" {
+				if strVal, ok := item.(string); ok && strVal == "matic" {
+					val[key] = "pol"
+				}
+			} else {
+				replaceDenom(item)
+			}
+		}
+	case []interface{}:
+		for _, item := range val {
+			replaceDenom(item)
+		}
+	}
+}
+
 var (
 	appCodec    *codec.ProtoCodec
 	legacyAmino *codec.LegacyAmino
@@ -891,5 +1014,5 @@ const (
 	flagChainId       = "chain-id"
 	flagGenesisTime   = "genesis-time"
 	flagInitialHeight = "initial-height"
-	flagVerifyHash    = "verify-hash"
+	flagVerifyData    = "verify-data"
 )

@@ -95,7 +95,7 @@ type ValidatorAccountFormatter struct {
 }
 
 // GetSignerInfo returns signer information
-func GetSignerInfo(pub crypto.PubKey, privKey []byte, cdc *codec.LegacyAmino) ValidatorAccountFormatter {
+func GetSignerInfo(pub crypto.PubKey, privKey []byte) ValidatorAccountFormatter {
 	privKeyObject := secp256k1.PrivKey(privKey)
 	pubKeyObject := secp256k1.PubKey(pub.Bytes())
 
@@ -153,7 +153,6 @@ func initRootCmd(
 	keyring keyring.Keyring,
 	keyringDir string,
 ) {
-	cdc := codec.NewLegacyAmino()
 	ctx := server.NewDefaultContext()
 
 	cfg := sdk.GetConfig()
@@ -188,7 +187,7 @@ func initRootCmd(
 			case result := <-resultChan:
 				fmt.Println("Fetch successful, received data:", result)
 			case <-timeout:
-				return fmt.Errorf("Fetch operation timed out")
+				return fmt.Errorf("fetch operation timed out")
 			}
 
 			chainParam, err := util.GetChainmanagerParams(clientCtx.Codec)
@@ -223,7 +222,7 @@ func initRootCmd(
 
 	// add custom commands
 	rootCmd.AddCommand(
-		testnetCmd(ctx, cdc, hApp.BasicManager),
+		testnetCmd(ctx, hApp.BasicManager),
 		generateKeystore(),
 		importKeyStore(),
 		generateValidatorKey(),
@@ -253,25 +252,31 @@ func checkServerStatus(ctx client.Context, url string, resultChan chan<- string)
 			fmt.Println("Error fetching the URL:", err)
 			continue
 		}
-		defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK {
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				fmt.Println("Error reading response body:", err)
-				continue
+		func() {
+			defer func(Body io.ReadCloser) {
+				err := Body.Close()
+				if err != nil {
+					fmt.Println("Error closing response body:", err)
+				}
+			}(resp.Body)
+			if resp.StatusCode == http.StatusOK {
+				body, err := io.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Println("Error reading response body:", err)
+					return
+				}
+
+				resultChan <- string(body)
+				return
+			} else {
+				fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
 			}
-
-			resultChan <- string(body)
-			return
-		} else {
-			fmt.Println("Received non-OK HTTP status:", resp.StatusCode)
-		}
+		}()
 	}
 }
 
 // AddCommandsWithStartCmdOptions adds server commands with the provided StartCmdOptions.
-// HV2 - This function is taken from cosmos-sdk
 func AddCommandsWithStartCmdOptions(rootCmd *cobra.Command, defaultNodeHome string, appCreator types.AppCreator, appExport types.AppExporter, opts server.StartCmdOptions) {
 	cometCmd := &cobra.Command{
 		Use:     "comet",
@@ -708,18 +713,6 @@ func InitializeNodeValidatorFiles(
 	return nodeID, valPubKey, FilePv.Key.PrivKey, nil
 }
 
-// WriteDefaultHeimdallConfig writes default heimdall config to the given path
-func WriteDefaultHeimdallConfig(path string, conf helper.CustomConfig) {
-	// Don't write if config file in path already exists
-	if _, err := os.Stat(path); err == nil {
-		logger.Info(fmt.Sprintf("Config file %s already exists. Skip writing default heimdall config.", path))
-	} else if errors.Is(err, os.ErrNotExist) {
-		helper.WriteConfigFile(path, &conf)
-	} else {
-		logger.Error("error while checking for config file", "error", err)
-	}
-}
-
 func createKeyStore(pk *ecdsa.PrivateKey) error {
 	id, err := uuid.NewRandom()
 	if err != nil {
@@ -736,13 +729,13 @@ func createKeyStore(pk *ecdsa.PrivateKey) error {
 		return err
 	}
 
-	keyjson, err := keystore.EncryptKey(key, passphrase, keystore.StandardScryptN, keystore.StandardScryptP)
+	keyJson, err := keystore.EncryptKey(key, passphrase, keystore.StandardScryptN, keystore.StandardScryptP)
 	if err != nil {
 		return err
 	}
 
 	// Then write the new keyfile in place of the old one.
-	if err := os.WriteFile(keyFileName(key.Address), keyjson, 0o600); err != nil {
+	if err := os.WriteFile(keyFileName(key.Address), keyJson, 0o600); err != nil {
 		return err
 	}
 	return nil

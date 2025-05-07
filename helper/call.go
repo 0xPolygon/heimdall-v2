@@ -171,7 +171,7 @@ func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootcha
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the root chain instance from mainchain client", "error", err)
+			Logger.Error("error in fetching the root chain instance from mainChain client", "error", err)
 			return nil, err
 		}
 
@@ -191,7 +191,7 @@ func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*sta
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the stakinginfo instance from mainchain client", "error", err)
+			Logger.Error("error in fetching the stakingInfo instance from mainChain client", "error", err)
 			return nil, err
 		}
 
@@ -211,7 +211,7 @@ func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*v
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the validator set from mainchain client", "error", err)
+			Logger.Error("error in fetching the validator set from mainChain client", "error", err)
 			return nil, err
 		}
 
@@ -231,7 +231,7 @@ func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the stake manager from mainchain client", "error", err)
+			Logger.Error("error in fetching the stake manager from mainChain client", "error", err)
 			return nil, err
 		}
 
@@ -251,7 +251,7 @@ func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*s
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the slash manager from mainchain client", "error", err)
+			Logger.Error("error in fetching the slash manager from mainChain client", "error", err)
 			return nil, err
 		}
 
@@ -271,7 +271,7 @@ func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*sta
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the statesender from mainchain client", "error", err)
+			Logger.Error("error in fetching the stateSender from mainChain client", "error", err)
 			return nil, err
 		}
 
@@ -291,7 +291,7 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (
 		c.ContractInstanceCache[address] = ci
 
 		if err != nil {
-			Logger.Error("error in fetching the statereceiver from mainchain client", "error", err)
+			Logger.Error("error in fetching the stateReceiver from mainChain client", "error", err)
 			return nil, err
 		}
 

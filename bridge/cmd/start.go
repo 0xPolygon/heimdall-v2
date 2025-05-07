@@ -258,7 +258,6 @@ func StartBridge(isStandAlone bool) {
 	for _, service := range services {
 		go func(serv common.Service) {
 			defer wg.Done()
-			// TODO handle error while starting service
 			if err := serv.Start(); err != nil {
 				logger.Error("GetStartCmd | serv.Start", "Error", err)
 			}

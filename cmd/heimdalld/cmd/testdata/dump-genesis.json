@@ -898,6 +898,152 @@
           "bor_chain_id": "15005",
           "timestamp": "1726217488"
         }
+      ],
+      "milestones": [
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "0",
+          "end_block": "26",
+          "hash": "0xca923a36e9bd44f5e4444d17191b83475bef42cb5cedbeb0dbb041030903a4f0",
+          "bor_chain_id": "1994",
+          "milestone_id": "a3cacba7-05f9-4bd5-abb2-e3209c87fbf8 - 0x191b83475bef42cb5cedbeb0dbb041030903a4f0",
+          "timestamp": "1746171871"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "27",
+          "end_block": "41",
+          "hash": "0x7012b6a50018d53264c3bbfbbe4bbc5712bb4325bd56c96fc044779379538a39",
+          "bor_chain_id": "1994",
+          "milestone_id": "d16d17f5-123d-4ae5-ba49-ea8f5f3180e2 - 0xbe4bbc5712bb4325bd56c96fc044779379538a39",
+          "timestamp": "1746171901"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "42",
+          "end_block": "56",
+          "hash": "0x2440a07fbbd01f9e762ad59d1113f47b44f115e79995d11386ad40ade866906d",
+          "bor_chain_id": "1994",
+          "milestone_id": "2522451a-89ef-4b3c-86d3-8791a13bf635 - 0x1113f47b44f115e79995d11386ad40ade866906d",
+          "timestamp": "1746171931"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "57",
+          "end_block": "71",
+          "hash": "0x957912ffcc2034b7f0e4b4b0d88e38bcb5066239e4b0fa5a6490d5f86e00e86a",
+          "bor_chain_id": "1994",
+          "milestone_id": "270613fc-4e69-4fcb-819f-856339adcf9e - 0xd88e38bcb5066239e4b0fa5a6490d5f86e00e86a",
+          "timestamp": "1746171961"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "72",
+          "end_block": "86",
+          "hash": "0x30f68f56262a7b15119a19de7a1421539ed23f4cdc96a4ab99779def1049dfdd",
+          "bor_chain_id": "1994",
+          "milestone_id": "b48b229c-a453-4703-917d-0a7e1b5570a9 - 0x7a1421539ed23f4cdc96a4ab99779def1049dfdd",
+          "timestamp": "1746171991"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "87",
+          "end_block": "101",
+          "hash": "0x01570d6f609c8089d19784d278bf84f56d9899e42e8a39fe328295b4cdf0c6f6",
+          "bor_chain_id": "1994",
+          "milestone_id": "e881b02d-699a-4a20-9209-34cf69c7b638 - 0x78bf84f56d9899e42e8a39fe328295b4cdf0c6f6",
+          "timestamp": "1746172021"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "102",
+          "end_block": "116",
+          "hash": "0x82009f64230deca8c491776d0a2fd5b9abe1acac9e124e54822c972f60a27c9d",
+          "bor_chain_id": "1994",
+          "milestone_id": "248e4519-29ca-4f53-afd9-127c837a2237 - 0x0a2fd5b9abe1acac9e124e54822c972f60a27c9d",
+          "timestamp": "1746172052"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "117",
+          "end_block": "131",
+          "hash": "0xcf3d32809b08e53b0b91e8914bd0e60e48d39381636e702d0c1e46ca06236cc9",
+          "bor_chain_id": "1994",
+          "milestone_id": "50dab939-943e-45c4-9f40-ff47cf967204 - 0x4bd0e60e48d39381636e702d0c1e46ca06236cc9",
+          "timestamp": "1746172082"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "132",
+          "end_block": "146",
+          "hash": "0xd1acaf69996994230fc7172e12388605b00909f94867757a540084f5725a79b9",
+          "bor_chain_id": "1994",
+          "milestone_id": "1e293eb3-0ad2-4e7f-8371-91dc095d04cd - 0x12388605b00909f94867757a540084f5725a79b9",
+          "timestamp": "1746172112"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "147",
+          "end_block": "161",
+          "hash": "0xe29fe8695b761b63662f6719e6e55150e4807dc6c727e78f650e79d215393bd2",
+          "bor_chain_id": "1994",
+          "milestone_id": "064532e0-9aea-46e8-8ec2-0cd37753ae92 - 0xe6e55150e4807dc6c727e78f650e79d215393bd2",
+          "timestamp": "1746172142"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "162",
+          "end_block": "176",
+          "hash": "0x01aaefc05df1e2c17b77631fb83de1aa01a28de37707deec1b09b5bf99d11fa5",
+          "bor_chain_id": "1994",
+          "milestone_id": "fcd1ca49-eac7-47f0-a5c7-90eb37084cd5 - 0xb83de1aa01a28de37707deec1b09b5bf99d11fa5",
+          "timestamp": "1746172172"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "177",
+          "end_block": "191",
+          "hash": "0xef8369561c525ad213f12ccce79220b797c703910413f68398e2dd77fbb39745",
+          "bor_chain_id": "1994",
+          "milestone_id": "2d66308a-23a2-408b-bb0d-66d0417967da - 0xe79220b797c703910413f68398e2dd77fbb39745",
+          "timestamp": "1746172202"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "192",
+          "end_block": "206",
+          "hash": "0xc3925ce690b06dcd0c8db68d894a42f01f195c04e6250cfc15d310dcf5a65654",
+          "bor_chain_id": "1994",
+          "milestone_id": "9b4feee2-eb21-414e-817f-59081800fd8c - 0x894a42f01f195c04e6250cfc15d310dcf5a65654",
+          "timestamp": "1746172232"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "207",
+          "end_block": "221",
+          "hash": "0x953c04a54a0a95e9ac99f33a9e5eda07de2e03a9256b38adf5e1bf515572bd9e",
+          "bor_chain_id": "1994",
+          "milestone_id": "226c75fb-25c7-456b-9131-71158f877846 - 0x9e5eda07de2e03a9256b38adf5e1bf515572bd9e",
+          "timestamp": "1746172262"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "222",
+          "end_block": "236",
+          "hash": "0x664581438c894bd6880c3b9dc081a0b049a34fc944e7fe161741152886ceb64d",
+          "bor_chain_id": "1994",
+          "milestone_id": "7b25e9ac-5835-4cad-b258-78f71139d131 - 0xc081a0b049a34fc944e7fe161741152886ceb64d",
+          "timestamp": "1746172292"
+        },
+        {
+          "proposer": "0x3a716c97d417f818e3e16edbc54665a055ada588",
+          "start_block": "237",
+          "end_block": "251",
+          "hash": "0x04d8ed050415403c62634846c861c602d336813b5abd79d45767886d86ef09a4",
+          "bor_chain_id": "1994",
+          "milestone_id": "eb9437c7-e0d9-49bf-a69a-dfe20c9f029a - 0xc861c602d336813b5abd79d45767886d86ef09a4",
+          "timestamp": "1746172322"
+        }
       ]
     },
     "clerk": {
@@ -1458,7 +1604,7 @@
       }
     },
     "topup": {
-      "tx_sequences": null,
+      "tx_sequences": ["1020617100146"],
       "dividend_accounts": [
         {
           "user": "0x1534f22900cb7fc09019a3dba9b1ee731e10029b",

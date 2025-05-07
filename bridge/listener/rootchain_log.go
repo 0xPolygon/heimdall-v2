@@ -15,7 +15,7 @@ import (
 
 // handleLog handles the given log
 func (rl *RootChainListener) handleLog(vLog types.Log, selectedEvent *abi.Event) {
-	rl.Logger.Debug("ReceivedEvent", "eventname", selectedEvent.Name)
+	rl.Logger.Debug("ReceivedEvent", "eventName", selectedEvent.Name)
 
 	switch selectedEvent.Name {
 	case helper.NewHeaderBlockEvent:

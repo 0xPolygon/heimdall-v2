@@ -90,14 +90,14 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
 	oldSigner := oldValSet.Validators[0]
-	newSigner := testutil.GenRandomVals(1, 0, 10, 10, false, 1)
+	newSigner := testutil.GenRandomVals(1, 0, 10, 10, false, 1, 0)
 	newSigner[0].ValId = oldSigner.ValId
 	newSigner[0].VotingPower = oldSigner.VotingPower
 
@@ -154,7 +154,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
 	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
@@ -189,7 +189,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
 	// pass 0 as time alive to generate non de-activated validators
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)
 
@@ -269,7 +269,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 
 func (s *KeeperTestSuite) TestValidatorPubKey() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
-	testutil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 0)
+	testutil.LoadRandomValidatorSet(require, 1, keeper, ctx, false, 0, 0)
 	valPubKey := keeper.GetAllValidators(ctx)[0].GetPubKey()
 	valAddr := keeper.GetAllValidators(ctx)[0].Signer
 	modPubKey := secp256k1.PubKey{Key: valPubKey}
