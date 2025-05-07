@@ -106,6 +106,9 @@ nfpms:
       - src: builder/files/genesis-testnet-v4.json
         dst: /etc/heimdall/genesis-testnet-v4.json
         type: config
+      - src: builder/files/genesis-amoy-v1.json
+        dst: /etc/heimdall/genesis-amoy-v1.json
+        type: config
       - dst: /var/lib/heimdall
         type: dir
         file_info:
@@ -131,6 +134,7 @@ dockers:
       - docker/entrypoint.sh
       - builder/files/genesis-mainnet-v1.json
       - builder/files/genesis-testnet-v4.json
+      - builder/files/genesis-amoy-v1.json
 
   - image_templates:
       - 0xpolygon/{{ .ProjectName }}:{{ .Version }}-arm64
@@ -144,7 +148,7 @@ dockers:
     extra_files:
       - docker/entrypoint.sh
       - builder/files/genesis-mainnet-v1.json
-      - builder/files/genesis-testnet-v4.json
+      - builder/files/genesis-amoy-v1.json
 
 docker_manifests:
   - name_template: 0xpolygon/{{ .ProjectName }}:{{ .Version }}
