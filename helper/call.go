@@ -60,7 +60,7 @@ type IContractCaller interface {
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
 	GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error)
-	GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (*uint64, error)
+	GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
@@ -581,7 +581,7 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 }
 
 // GetBorChainBlockTd returns total difficulty of a block
-func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (*uint64, error) {
+func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
@@ -589,20 +589,20 @@ func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash commo
 
 	var resp map[string]interface{}
 	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	raw, ok := resp["totalDifficulty"].(string)
 	if !ok {
-		return nil, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
+		return 0, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
 	}
 
 	td, err := hexutil.DecodeUint64(raw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
+		return 0, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
 	}
 
-	return &td, nil
+	return td, nil
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block

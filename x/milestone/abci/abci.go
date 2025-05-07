@@ -72,7 +72,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		BlockHashes:      blockHashes,
 		StartBlockNumber: propStartBlock,
 		ParentHash:       parentHash,
-		TotalDifficulty:  *lastBlockTd,
+		TotalDifficulty:  lastBlockTd,
 	}
 
 	return milestoneProp, nil
@@ -346,12 +346,12 @@ func GetMajorityMilestoneProposition(
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, *uint64, error) {
+func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, uint64, error) {
 	result := make([][]byte, 0)
 
 	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get headers")
+		return nil, nil, 0, fmt.Errorf("failed to get headers: %w", err)
 	}
 
 	var parentHash []byte
@@ -360,7 +360,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		if startBlock-lastMilestoneBlock > 1 {
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
+				return nil, nil, 0, fmt.Errorf("failed to get headers: %w", err)
 			}
 
 			parentHash = header.ParentHash.Bytes()
@@ -371,9 +371,16 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		result = append(result, h.Hash().Bytes())
 	}
 
-	lastBlockHash := headers[len(headers)-1].Hash()
+	var lastBlockTd uint64
+	if len(headers) > 0 {
 
-	lastBlockTd, err := contractCaller.GetBorChainBlockTd(ctx, lastBlockHash)
+		lastBlockHash := headers[len(headers)-1].Hash()
+
+		lastBlockTd, err = contractCaller.GetBorChainBlockTd(ctx, lastBlockHash)
+		if err != nil {
+			return nil, nil, 0, fmt.Errorf("failed to get td: %w", err)
+		}
+	}
 
 	return parentHash, result, lastBlockTd, nil
 }

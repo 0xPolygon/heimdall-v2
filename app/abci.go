@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"runtime"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
@@ -156,6 +157,19 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 	return func(ctx sdk.Context, req *abci.RequestExtendVote) (*abci.ResponseExtendVote, error) {
 		logger := app.Logger()
 		logger.Debug("Extending Vote!", "height", ctx.BlockHeight())
+		defer func() {
+			// better debugging with this panic recover routine printing runtime.Stack
+			if r := recover(); r != nil {
+				buf := make([]byte, 1<<16)
+				n := runtime.Stack(buf, false)
+				logger.Error(
+					"panic in ExtendVoteHandler",
+					"panic", r,
+					"stack", string(buf[:n]),
+				)
+				panic(r)
+			}
+		}()
 
 		// check if VEs are enabled
 		if err := checkIfVoteExtensionsDisabled(ctx, req.Height); err != nil {
@@ -421,12 +435,18 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
+		td, err := app.caller.GetBorChainBlockTd(ctx, common.BytesToHash(majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1]))
+		if err != nil {
+			logger.Error("Error occurred while getting td value from last block", "error", err)
+			return nil, err
+		}
+
 		logger.Debug("Adding milestone", "hashes",
 			strutil.HashesToString(majorityMilestone.BlockHashes),
 			"startBlock", majorityMilestone.StartBlockNumber,
 			"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
 			"proposer", proposer,
-			"totalDifficulty", majorityMilestone.TotalDifficulty,
+			"totalDifficulty", td,
 		)
 
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
@@ -437,7 +457,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			BorChainId:      params.ChainParams.BorChainId,
 			MilestoneId:     common.Bytes2Hex(aggregatedProposers),
 			Timestamp:       uint64(ctx.BlockHeader().Time.Unix()),
-			TotalDifficulty: majorityMilestone.TotalDifficulty,
+			TotalDifficulty: td,
 		}); err != nil {
 			logger.Error("Error occurred while adding milestone", "error", err)
 			return nil, err
