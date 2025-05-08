@@ -449,10 +449,10 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return errors.New("older invalid tx found")
+		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return errors.New("old events are not allowed")
 	}
 
 	s.k.Logger(ctx).Debug("adding validator to state", "sideTxResult", sideTxResult)
@@ -543,10 +543,10 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return errors.New("older invalid tx found")
+		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return errors.New("old events are not allowed")
 	}
 
 	// pull validator from store
@@ -624,10 +624,10 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return errors.New("older invalid tx found")
+		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return errors.New("old events are not allowed")
 	}
 
 	// Generate PubKey from PubKey in message and signer
@@ -769,10 +769,10 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if s.k.HasStakingSequence(ctx, sequence.String()) {
-		s.k.Logger(ctx).Error("Older invalid tx found", "sequence", sequence.String())
-		return errors.New("older invalid tx found")
+		s.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return errors.New("old events are not allowed")
 	}
 
 	validator, err := s.k.GetValidatorFromValID(ctx, msg.ValId)

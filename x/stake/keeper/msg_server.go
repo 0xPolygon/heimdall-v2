@@ -13,6 +13,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -79,10 +80,10 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrOldTx, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -120,10 +121,10 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	// set validator amount
@@ -174,10 +175,10 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	// check if new signer address is same as existing signer
@@ -219,10 +220,10 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	return &types.MsgValidatorExitResponse{}, nil
