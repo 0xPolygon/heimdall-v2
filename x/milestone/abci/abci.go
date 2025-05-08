@@ -2,6 +2,7 @@ package abci
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/big"
@@ -98,10 +99,9 @@ func GetMajorityMilestoneProposition(
 
 	// Track voting power per block number
 	blockVotingPower := make(map[uint64]int64)
-	blockHashVotes := make(map[uint64]map[string]int64) // block -> hash -> voting power
-	blockToHash := make(map[uint64][]byte)
-	blockToTd := make(map[uint64]uint64)
-	validatorVotes := make(map[string]map[uint64][]byte) // validator -> block -> hash
+	blockHashVotes := make(map[uint64]map[string]int64) // block -> (hash + td) -> voting power
+	blockToHashAndTd := make(map[uint64][]byte)
+	validatorVotes := make(map[string]map[uint64][]byte) // validator -> block -> (hash + td)
 	validatorAddresses := make(map[string][]byte)
 	valAddressToVotingPower := make(map[string]int64)
 	parentHashes := make(map[string]struct{})
@@ -158,11 +158,16 @@ func GetMajorityMilestoneProposition(
 		prop := voteExtension.MilestoneProposition
 		for i, blockHash := range prop.BlockHashes {
 			blockTd := prop.BlockTds[i]
+			var buf bytes.Buffer
+			binary.Write(&buf, binary.LittleEndian, blockTd)
+
+			// Hash Bytes + Td Bytes
+			blockHashAndTd := append(blockHash, buf.Bytes()...)
 
 			blockNum := prop.StartBlockNumber + uint64(i)
 
 			// Record this validator's vote for this block
-			validatorVotes[valAddr][blockNum] = blockHash
+			validatorVotes[valAddr][blockNum] = blockHashAndTd
 
 			// Initialize maps if needed
 			if _, ok := blockVotingPower[blockNum]; !ok {
@@ -171,23 +176,22 @@ func GetMajorityMilestoneProposition(
 			}
 
 			// Record block hash -> voting power
-			hashStr := common.BytesToHash(blockHash).String()
+			hashStr := common.Bytes2Hex(blockHashAndTd)
 			blockHashVotes[blockNum][hashStr] += validator.VotingPower
 
 			// Track the hash that currently has the most votes for this block
 			// Use a deterministic comparison to break ties
 			if blockHashVotes[blockNum][hashStr] > blockVotingPower[blockNum] ||
 				(blockHashVotes[blockNum][hashStr] == blockVotingPower[blockNum] &&
-					hashStr < common.BytesToHash(blockToHash[blockNum]).String()) {
+					hashStr < common.Bytes2Hex(blockToHashAndTd[blockNum])) {
 				blockVotingPower[blockNum] = blockHashVotes[blockNum][hashStr]
-				blockToHash[blockNum] = blockHash
-				blockToTd[blockNum] = blockTd
+				blockToHashAndTd[blockNum] = blockHashAndTd
 			}
 
-			key := getParentChildKey(common.BytesToHash(prop.ParentHash).String(), common.BytesToHash(blockHash).String())
+			key := getParentChildKey(common.Bytes2Hex(prop.ParentHash), common.Bytes2Hex(blockHashAndTd))
 			parentHashToVotingPower[key] += validator.VotingPower
 		}
-		parentHashes[common.BytesToHash(prop.ParentHash).String()] = struct{}{}
+		parentHashes[common.Bytes2Hex(prop.ParentHash)] = struct{}{}
 	}
 
 	// Find blocks with majority support - use a slice for deterministic ordering
@@ -215,7 +219,7 @@ func GetMajorityMilestoneProposition(
 	isParentHashMajority := false
 
 	for parentHash := range parentHashes {
-		key := getParentChildKey(parentHash, common.BytesToHash(blockToHash[majorityBlocks[0]]).String())
+		key := getParentChildKey(parentHash, common.Bytes2Hex(blockToHashAndTd[majorityBlocks[0]]))
 		if parentHashToVotingPower[key] >= majorityVP {
 			isParentHashMajority = true
 			majorityParentHash = parentHash
@@ -228,10 +232,10 @@ func GetMajorityMilestoneProposition(
 		return nil, nil, "", nil
 	}
 
-	if majorityParentHash != common.BytesToHash(lastEndBlockHash).String() {
+	if majorityParentHash != common.Bytes2Hex(lastEndBlockHash) {
 		logger.Debug("Parent hash does not match last end block hash",
 			"majorityParentHash", majorityParentHash,
-			"lastEndBlockHash", common.BytesToHash(lastEndBlockHash).String())
+			"lastEndBlockHash", common.Bytes2Hex(lastEndBlockHash))
 		return nil, nil, "", nil
 	}
 
@@ -278,11 +282,9 @@ func GetMajorityMilestoneProposition(
 	}
 
 	blockCount := endBlock - startBlock + 1
-	blockHashes := make([][]byte, 0, blockCount)
-	blockTds := make([]uint64, 0, blockCount)
+	blockHashesAndTds := make([][]byte, 0, blockCount)
 	for i := startBlock; i <= endBlock; i++ {
-		blockHashes = append(blockHashes, blockToHash[i])
-		blockTds = append(blockTds, blockToTd[i])
+		blockHashesAndTds = append(blockHashesAndTds, blockToHashAndTd[i])
 	}
 
 	// Find validators who support the entire winning range
@@ -291,7 +293,7 @@ func GetMajorityMilestoneProposition(
 		supports := true
 		for blockNum := startBlock; blockNum <= endBlock; blockNum++ {
 			hash, hasBlock := blocks[blockNum]
-			if !hasBlock || !bytes.Equal(hash, blockToHash[blockNum]) {
+			if !hasBlock || !bytes.Equal(hash, blockToHashAndTd[blockNum]) {
 				supports = false
 				break
 			}
@@ -334,6 +336,16 @@ func GetMajorityMilestoneProposition(
 			[]byte{'|'},
 			validatorAddresses[valAddr],
 		)
+	}
+
+	// splitting back blockHashAndTd
+	blockHashes := make([][]byte, 0, len(blockHashesAndTds))
+	blockTds := make([]uint64, 0, len(blockHashesAndTds))
+	for _, blockHashAndTd := range blockHashesAndTds {
+		tdBytes := blockHashAndTd[len(blockHashAndTd)-8:] // last 8 bytes are the TD
+		blockTds = append(blockTds, binary.LittleEndian.Uint64(tdBytes))
+
+		blockHashes = append(blockHashes, blockHashAndTd[:len(blockHashAndTd)-8])
 	}
 
 	// Create final proposition
