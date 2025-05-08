@@ -58,6 +58,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 	// Map to track seen validator addresses
 	seenValidators := make(map[string]struct{})
+	var blockHash []byte
 
 	ac := address.HexCodec{}
 
@@ -88,6 +89,17 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 		if voteExtension.Height != reqHeight-1 {
 			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, voteExtension.Height)
+		}
+
+		// blockHash consistency check
+		if blockHash == nil {
+			// store the block hash from the first vote
+			blockHash = voteExtension.BlockHash
+		} else {
+			// compare the current block hash with the stored block hash
+			if !bytes.Equal(blockHash, voteExtension.BlockHash) {
+				return fmt.Errorf("mismatching block hash for vote extension from validator %s", valAddrStr)
+			}
 		}
 
 		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
