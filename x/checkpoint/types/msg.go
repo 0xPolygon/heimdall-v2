@@ -42,6 +42,10 @@ func NewMsgCheckpointBlock(
 }
 
 func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
+	if _, err := strconv.ParseUint(msg.BorChainId, 10, 64); err != nil {
+		return ErrInvalidMsg.Wrapf("Invalid bor chain id %s", msg.BorChainId)
+	}
+
 	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
 	}
