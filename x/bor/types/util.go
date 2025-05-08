@@ -35,7 +35,7 @@ func GenerateBorCommittedSpans(latestBorBlock uint64, latestHeimdallSpan *Span) 
 	spans := []Span{}
 	spanLength := latestHeimdallSpan.EndBlock - latestHeimdallSpan.StartBlock
 	prevSpan := latestHeimdallSpan
-	for latestBorBlock > latestHeimdallSpan.EndBlock {
+	for latestBorBlock > prevSpan.EndBlock {
 		startBlock := prevSpan.EndBlock + 1
 		newSpan := Span{
 			Id:                prevSpan.Id + 1,
