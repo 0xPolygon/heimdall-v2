@@ -26,8 +26,8 @@ import (
 )
 
 const (
-	AccountHash = "0x000000000000000000000000000000000000dEaD"
-	BorChainID  = "1234"
+	AccountHash    = "0x000000000000000000000000000000000000dEaD"
+	TestBorChainID = "1234"
 )
 
 type KeeperTestSuite struct {
@@ -112,7 +112,7 @@ func (s *KeeperTestSuite) TestAddAndGetCheckpoints() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 	err := keeper.AddCheckpoint(ctx, checkpoint)
@@ -131,7 +131,7 @@ func (s *KeeperTestSuite) TestAddAndGetCheckpoints() {
 		endBlock2,
 		rootHash2,
 		proposerAddress2,
-		BorChainID,
+		TestBorChainID,
 		timestamp2,
 	)
 	err = keeper.AddCheckpoint(ctx, checkpoint2)

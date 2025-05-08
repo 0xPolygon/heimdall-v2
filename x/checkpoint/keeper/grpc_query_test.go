@@ -65,7 +65,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 
@@ -100,7 +100,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 	err = keeper.SetCheckpointBuffer(ctx, checkpointBlock)
@@ -148,7 +148,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 
@@ -156,8 +156,14 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	err := keeper.AddCheckpoint(ctx, checkpointBlock)
 	require.NoError(err)
 
-	req := types.QueryNextCheckpointRequest{BorChainId: BorChainID}
+	req := types.QueryNextCheckpointRequest{}
 
+	chainParams := cmTypes.Params{
+		ChainParams: cmTypes.ChainParams{
+			BorChainId: TestBorChainID,
+		},
+	}
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(chainParams, nil)
 	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	res, err := queryClient.GetNextCheckpoint(ctx, &req)
 	require.NoError(err)
