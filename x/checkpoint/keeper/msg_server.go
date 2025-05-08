@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -64,16 +65,6 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 
 	// fetch last checkpoint from store
 	if lastCheckpoint, err := m.GetLastCheckpoint(ctx); err == nil {
-		// make sure new checkpoint is after tip
-		if lastCheckpoint.EndBlock > msg.StartBlock {
-			logger.Error("checkpoint already exists",
-				"currentTip", lastCheckpoint.EndBlock,
-				"startBlock", msg.StartBlock,
-			)
-
-			return nil, types.ErrOldCheckpoint
-		}
-
 		// check if new checkpoint's start block start from current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
 			logger.Error("checkpoint not in continuity",
@@ -82,7 +73,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 
 			return nil, types.ErrDiscontinuousCheckpoint
 		}
-	} else if err.Error() == types.ErrNoCheckpointFound.Error() && msg.StartBlock != 0 {
+	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
 		logger.Error("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock, "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock))
 	}
@@ -174,8 +165,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	}
 
 	// return err if start and end match but contract root hash doesn't match
-	if msg.StartBlock == bufCheckpoint.StartBlock &&
-		msg.EndBlock == bufCheckpoint.EndBlock &&
+	if msg.EndBlock == bufCheckpoint.EndBlock &&
 		!bytes.Equal(msg.RootHash, bufCheckpoint.RootHash) {
 		logger.Error("Invalid ACK",
 			"startExpected", bufCheckpoint.StartBlock,

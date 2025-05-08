@@ -9,7 +9,6 @@ import (
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
@@ -56,7 +55,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	cpNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := testutil.RandomBytes()
+	rootHash := chSim.RandomBytes()
 	proposerAddress := util.FormatAddress(common.HexToAddress(AccountHash).String())
 	timestamp := uint64(time.Now().Unix())
 
@@ -91,7 +90,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := testutil.RandomBytes()
+	rootHash := chSim.RandomBytes()
 	proposerAddress := util.FormatAddress(common.HexToAddress(AccountHash).String())
 	timestamp := uint64(time.Now().Unix())
 
@@ -134,12 +133,12 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	topupKeeper, stakeKeeper, queryClient, contractCaller := s.topupKeeper, s.stakeKeeper, s.queryClient, s.contractCaller
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(chSim.RandDividendAccounts(), nil)
 
 	cpNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := testutil.RandomBytes()
+	rootHash := chSim.RandomBytes()
 	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
 
