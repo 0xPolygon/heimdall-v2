@@ -214,6 +214,8 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case SpanProposeMsgTypeURL:
 		return s.PostHandleMsgSpan
+	case FillMissingSpansMsgTypeURL:
+		return s.PostHandleMsgBackfillSpans
 	default:
 		return nil
 	}
