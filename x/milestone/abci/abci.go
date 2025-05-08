@@ -59,7 +59,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	parentHash, blockHashes, lastBlockTd, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
+	parentHash, blockHashes, tds, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		BlockHashes:      blockHashes,
 		StartBlockNumber: propStartBlock,
 		ParentHash:       parentHash,
-		TotalDifficulty:  lastBlockTd,
+		BlockTds:         tds,
 	}
 
 	return milestoneProp, nil
@@ -100,6 +100,7 @@ func GetMajorityMilestoneProposition(
 	blockVotingPower := make(map[uint64]int64)
 	blockHashVotes := make(map[uint64]map[string]int64) // block -> hash -> voting power
 	blockToHash := make(map[uint64][]byte)
+	blockToTd := make(map[uint64]uint64)
 	validatorVotes := make(map[string]map[uint64][]byte) // validator -> block -> hash
 	validatorAddresses := make(map[string][]byte)
 	valAddressToVotingPower := make(map[string]int64)
@@ -156,6 +157,7 @@ func GetMajorityMilestoneProposition(
 
 		prop := voteExtension.MilestoneProposition
 		for i, blockHash := range prop.BlockHashes {
+			blockTd := prop.BlockTds[i]
 
 			blockNum := prop.StartBlockNumber + uint64(i)
 
@@ -179,6 +181,7 @@ func GetMajorityMilestoneProposition(
 					hashStr < common.BytesToHash(blockToHash[blockNum]).String()) {
 				blockVotingPower[blockNum] = blockHashVotes[blockNum][hashStr]
 				blockToHash[blockNum] = blockHash
+				blockToTd[blockNum] = blockTd
 			}
 
 			key := getParentChildKey(common.BytesToHash(prop.ParentHash).String(), common.BytesToHash(blockHash).String())
@@ -276,8 +279,10 @@ func GetMajorityMilestoneProposition(
 
 	blockCount := endBlock - startBlock + 1
 	blockHashes := make([][]byte, 0, blockCount)
+	blockTds := make([]uint64, 0, blockCount)
 	for i := startBlock; i <= endBlock; i++ {
 		blockHashes = append(blockHashes, blockToHash[i])
+		blockTds = append(blockTds, blockToTd[i])
 	}
 
 	// Find validators who support the entire winning range
@@ -335,6 +340,7 @@ func GetMajorityMilestoneProposition(
 	proposition := &types.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: startBlock,
+		BlockTds:         blockTds,
 	}
 
 	logger.Debug("Found majority milestone proposition",
@@ -346,12 +352,12 @@ func GetMajorityMilestoneProposition(
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
 }
 
-func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, uint64, error) {
+func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, error) {
 	result := make([][]byte, 0)
 
-	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
+	headers, tds, err := contractCaller.GetBorChainBlocksAndTdInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
 	if err != nil {
-		return nil, nil, 0, fmt.Errorf("failed to get headers: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}
 
 	var parentHash []byte
@@ -360,7 +366,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		if startBlock-lastMilestoneBlock > 1 {
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
-				return nil, nil, 0, fmt.Errorf("failed to get headers: %w", err)
+				return nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 			}
 
 			parentHash = header.ParentHash.Bytes()
@@ -371,18 +377,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		result = append(result, h.Hash().Bytes())
 	}
 
-	var lastBlockTd uint64
-	if len(headers) > 0 {
-
-		lastBlockHash := headers[len(headers)-1].Hash()
-
-		lastBlockTd, err = contractCaller.GetBorChainBlockTd(ctx, lastBlockHash)
-		if err != nil {
-			return nil, nil, 0, fmt.Errorf("failed to get td: %w", err)
-		}
-	}
-
-	return parentHash, result, lastBlockTd, nil
+	return parentHash, result, tds, nil
 }
 
 func validateMilestonePropositionFork(parentHash []byte, lastMilestoneHash []byte) error {

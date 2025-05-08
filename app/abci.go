@@ -435,18 +435,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		addMilestoneCtx, msCache := app.cacheTxContext(ctx)
 
-		td, err := app.caller.GetBorChainBlockTd(ctx, common.BytesToHash(majorityMilestone.BlockHashes[len(majorityMilestone.BlockHashes)-1]))
-		if err != nil {
-			logger.Error("Error occurred while getting td value from last block", "error", err)
-			return nil, err
-		}
-
 		logger.Debug("Adding milestone", "hashes",
 			strutil.HashesToString(majorityMilestone.BlockHashes),
 			"startBlock", majorityMilestone.StartBlockNumber,
 			"endBlock", majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1),
 			"proposer", proposer,
-			"totalDifficulty", td,
+			"totalDifficulty", majorityMilestone.BlockTds[len(majorityMilestone.BlockHashes)-1],
 		)
 
 		if err := app.MilestoneKeeper.AddMilestone(addMilestoneCtx, milestoneTypes.Milestone{
@@ -457,7 +451,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			BorChainId:      params.ChainParams.BorChainId,
 			MilestoneId:     common.Bytes2Hex(aggregatedProposers),
 			Timestamp:       uint64(ctx.BlockHeader().Time.Unix()),
-			TotalDifficulty: td,
+			TotalDifficulty: majorityMilestone.BlockTds[len(majorityMilestone.BlockHashes)-1],
 		}); err != nil {
 			logger.Error("Error occurred while adding milestone", "error", err)
 			return nil, err

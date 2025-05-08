@@ -36,7 +36,7 @@ message MilestoneProposition {
   repeated bytes block_hashes = 1 [ (amino.dont_omitempty) = true ];
   uint64 start_block_number = 2 [ (amino.dont_omitempty) = true ];
   bytes parent_hash = 3 [ (amino.dont_omitempty) = true ];
-  uint64 total_difficulty = 4 [ (amino.dont_omitempty) = true ];
+  repeated uint64 block_tds = 4 [ (amino.dont_omitempty) = true ];
 }
 
 message Params {
