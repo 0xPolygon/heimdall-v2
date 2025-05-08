@@ -105,6 +105,11 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	chainParams, err := q.k.ck.GetParams(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	// get validator set
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
@@ -163,7 +168,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		EndBlock:        endBlockNumber,
 		RootHash:        rootHash,
 		AccountRootHash: accRootHash,
-		BorChainId:      req.BorChainId,
+		BorChainId:      chainParams.ChainParams.BorChainId,
 	}
 
 	return &types.QueryNextCheckpointResponse{Checkpoint: checkpointMsg}, nil
@@ -190,6 +195,9 @@ func (q queryServer) GetProposers(ctx context.Context, req *types.QueryProposerR
 	}
 
 	times := int(req.Times)
+	if times == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "times must be greater than 0")
+	}
 	if times > len(validatorSet.Validators) {
 		times = len(validatorSet.Validators)
 	}
