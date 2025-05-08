@@ -299,6 +299,10 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	// track votes of the validator
 	txVoteMap := make(map[string]struct{})
 
+	if len(sideTxResponses) > maxSideTxResponsesCount {
+		return nil, fmt.Errorf("too many side tx responses received: %d, max: %d", len(sideTxResponses), maxSideTxResponsesCount)
+	}
+
 	for _, res := range sideTxResponses {
 		// check txHash is well-formed
 		if len(res.TxHash) != common.HashLength {
@@ -319,6 +323,8 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 
 	return nil, nil
 }
+
+const maxSideTxResponsesCount = 20
 
 // checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
@@ -424,6 +430,10 @@ func ValidateNonRpVoteExtension(
 	checkpointKeeper checkpointKeeper.Keeper,
 	contractCaller helper.IContractCaller,
 ) error {
+	if len(extension) > maxNonRpVoteExtensionSize {
+		return fmt.Errorf("non-rp vote extension size is too large: %d, max: %d", len(extension), maxNonRpVoteExtensionSize)
+	}
+
 	// Check if its dummy vote non rp extension
 	dummyExt, err := getDummyNonRpVoteExtension(height, ctx.ChainID())
 	if err != nil {
@@ -442,6 +452,8 @@ func ValidateNonRpVoteExtension(
 
 	return nil
 }
+
+const maxNonRpVoteExtensionSize = 500
 
 // checkNonRpVoteExtensionsSignatures checks the signatures of the non-rp vote extensions
 func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper) error {
@@ -546,6 +558,10 @@ func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKe
 	chainParams, err := chainManagerKeeper.GetParams(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get chain manager params: %w", err)
+	}
+
+	if chainParams.ChainParams.BorChainId != checkpointMsg.BorChainId {
+		return fmt.Errorf("invalid bor chain id, expected %s, got %s", chainParams.ChainParams.BorChainId, checkpointMsg.BorChainId)
 	}
 
 	borChainTxConfirmations := chainParams.BorChainTxConfirmations
