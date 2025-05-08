@@ -345,14 +345,6 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	extVoteInfo := extCommitInfo.Votes
 
-	if req.Height <= retrieveVoteExtensionsEnableHeight(ctx) {
-		if len(extVoteInfo) != 0 {
-			logger.Error("Unexpected behavior, non-empty VEs found in the initial height's pre-blocker", "height", req.Height)
-			return nil, errors.New("non-empty VEs found in the initial height's pre-blocker")
-		}
-		return app.ModuleManager.PreBlock(ctx)
-	}
-
 	// Fetch txs from block n-1 so that we can match them with the approved txs in block n to execute sideTxs
 	lastBlockTxs, err := app.StakeKeeper.GetLastBlockTxs(ctx)
 	if err != nil {
