@@ -2,7 +2,6 @@ package keeper
 
 import (
 	"context"
-	"github.com/0xPolygon/heimdall-v2/common/hex"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -10,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
