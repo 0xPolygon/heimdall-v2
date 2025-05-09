@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	"math/big"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -104,6 +105,10 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	if !hex.IsValidTxHash(request.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
+	}
+
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -131,6 +136,10 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequenceRequest) (*types.IsClerkTxOldResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if !hex.IsValidTxHash(request.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)

@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
@@ -266,8 +267,8 @@ func (q queryServer) GetCheckpointSignatures(ctx context.Context, req *types.Que
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if req.TxHash == "" {
-		return nil, status.Error(codes.InvalidArgument, "tx hash cannot be empty")
+	if !hex.IsValidTxHash(req.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	txHash, err := q.k.GetCheckpointSignaturesTxHash(ctx)

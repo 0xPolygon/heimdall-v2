@@ -12,15 +12,13 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/mock"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
-
-const MaxProofLength = 1024
 
 func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_Success() {
 	ctx, tk, queryClient, require, contractCaller := s.ctx, s.keeper, s.queryClient, s.Require(), &s.contractCaller
@@ -319,14 +317,14 @@ func (s *KeeperTestSuite) TestGRPCVerifyAccountProofByAddress_InvalidProof_NotMu
 	res, err := queryClient.VerifyAccountProofByAddress(ctx, req)
 	require.Error(err)
 	require.Nil(res)
-	require.Contains(err.Error(), "not multiple of 32 bytes")
+	require.Contains(err.Error(), "proof length must be a multiple of 32 bytes")
 }
 
 func (s *KeeperTestSuite) TestGRPCVerifyAccountProofByAddress_InvalidProof_TooLong() {
 	ctx, _, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
 
 	// Generate a proof longer than MaxProofLength and aligned to 32 bytes
-	tooLongSize := ((MaxProofLength / 32) + 1) * 32
+	tooLongSize := ((util.MaxProofLength / 32) + 1) * 32
 	tooLongProof := common.Bytes2Hex(bytes.Repeat([]byte{0x01}, tooLongSize))
 
 	req := &types.QueryVerifyAccountProofRequest{
@@ -337,7 +335,7 @@ func (s *KeeperTestSuite) TestGRPCVerifyAccountProofByAddress_InvalidProof_TooLo
 	res, err := queryClient.VerifyAccountProofByAddress(ctx, req)
 	require.Error(err)
 	require.Nil(res)
-	require.Contains(err.Error(), "proof length exceeds maximum limit")
+	require.Contains(err.Error(), "proof exceeds maximum allowed size of")
 }
 
 func (s *KeeperTestSuite) TestGRPCGetAccountProofByAddress_Success() {

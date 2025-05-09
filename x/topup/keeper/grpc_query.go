@@ -3,20 +3,17 @@ package keeper
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
-
-const MaxProofLength = 1024
 
 var _ types.QueryServer = queryServer{}
 
@@ -38,7 +35,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if !isValidTxHash(req.TxHash) {
+	if !hex.IsValidTxHash(req.TxHash) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
 	}
 
@@ -80,7 +77,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if !isValidTxHash(req.TxHash) {
+	if !hex.IsValidTxHash(req.TxHash) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
 	}
 
@@ -115,6 +112,10 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 func (q queryServer) GetDividendAccountByAddress(ctx context.Context, req *types.QueryDividendAccountRequest) (*types.QueryDividendAccountResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if !common.IsHexAddress(req.Address) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
 	}
 
 	exists, err := q.k.HasDividendAccount(ctx, req.Address)
@@ -161,7 +162,7 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
 	}
 
-	if err := validateProof(req.Proof); err != nil {
+	if err := hex.ValidateProof(req.Proof); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid proof: %s", err.Error())
 	}
 
@@ -235,22 +236,4 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 	}
 
 	return dividendAccountProof, nil
-}
-
-func isValidTxHash(hash string) bool {
-	return strings.HasPrefix(hash, "0x") && len(hash) == 66
-}
-
-func validateProof(proof string) error {
-	proofBytes := common.FromHex(proof)
-	if proofBytes == nil || len(proofBytes) == 0 {
-		return errors.New("proof is empty")
-	}
-	if len(proofBytes)%32 != 0 {
-		return errors.New("invalid proof length, not multiple of 32 bytes")
-	}
-	if len(proofBytes) > MaxProofLength {
-		return fmt.Errorf("proof length exceeds maximum limit of %d bytes", MaxProofLength)
-	}
-	return nil
 }

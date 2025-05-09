@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"fmt"
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	"math"
 	"math/big"
 
@@ -40,6 +41,10 @@ func (q queryServer) GetCurrentValidatorSet(ctx context.Context, _ *types.QueryC
 func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if !common.IsHexAddress(req.ValAddress) {
+		return nil, status.Error(codes.InvalidArgument, "invalid validator address")
 	}
 
 	validator, err := q.k.GetValidatorInfo(ctx, req.ValAddress)
@@ -87,6 +92,10 @@ func (q queryServer) GetTotalPower(ctx context.Context, _ *types.QueryTotalPower
 func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOldTxRequest) (*types.QueryStakeIsOldTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if !hex.IsValidTxHash(req.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	chainParams, err := q.k.cmKeeper.GetParams(ctx)
