@@ -792,6 +792,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	validator.EndEpoch = msg.DeactivationEpoch
 	validator.LastUpdated = sequence.String()
 	validator.Nonce = msg.Nonce
+	validator.VotingPower = 0
 
 	// add deactivation time for validator
 	if err := s.k.AddValidator(ctx, validator); err != nil {

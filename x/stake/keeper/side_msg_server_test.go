@@ -1299,10 +1299,10 @@ func (s *KeeperTestSuite) TestPostHandleMsgValidatorExit() {
 		)
 		req.NoError(err)
 
-		postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
-
 		currentVals := keeper.GetCurrentValidators(ctx)
 		req.Equal(4, len(currentVals), "Number of current validators should exist before epoch passes")
+
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
 
 		checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(uint64(20), nil).Times(1)
 		currentVals = keeper.GetCurrentValidators(ctx)
