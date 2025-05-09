@@ -353,6 +353,10 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		return nil, nil, fmt.Errorf("failed to get headers")
 	}
 
+	if len(headers) == 0 {
+		return nil, nil, fmt.Errorf("no headers found")
+	}
+
 	var parentHash []byte
 	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
 		parentHash = headers[0].ParentHash.Bytes()
