@@ -164,8 +164,7 @@ func GetMajorityMilestoneProposition(
 			}
 
 			// Hash Bytes + Td Bytes
-			var tdBytes [8]byte
-			tdBytes = [8]byte(buf.Bytes()) // enforce 8 bytes
+			tdBytes := [8]byte(buf.Bytes()) // enforce 8 bytes
 			blockHashAndTd := append(blockHash, tdBytes[:]...)
 
 			blockNum := prop.StartBlockNumber + uint64(i)
