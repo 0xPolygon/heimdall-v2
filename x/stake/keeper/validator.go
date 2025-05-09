@@ -549,7 +549,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		for _, v := range setUpdates {
 			cmtProtoPk, err := v.CmtConsPublicKey()
 			if err != nil {
-				panic(err)
+				k.Logger(ctx).Error("error while getting the public key for validator, skipping it", "error", err, "validatorId", v.ValId)
+				continue
 			}
 
 			cmtValUpdates = append(cmtValUpdates, abci.ValidatorUpdate{
