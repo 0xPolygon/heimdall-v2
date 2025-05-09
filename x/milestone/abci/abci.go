@@ -396,8 +396,12 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 		return fmt.Errorf("too many blocks in proposition")
 	}
 
+	if len(milestoneProp.BlockHashes) == 0 {
+		return fmt.Errorf("no blocks in proposition")
+	}
+
 	for _, blockHash := range milestoneProp.BlockHashes {
-		if len(blockHash) == 0 || len(blockHash) > common.HashLength {
+		if len(blockHash) != common.HashLength {
 			return fmt.Errorf("invalid block hash length")
 		}
 	}
