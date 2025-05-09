@@ -25,6 +25,8 @@ import (
 	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -33,7 +35,7 @@ import (
 // It checks the signature of each vote extension with its signer's public key
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
-func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
+func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper, milestoneKeeper milestoneKeeper.Keeper) error {
 	// check if VEs are enabled
 	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
 		return err
@@ -93,6 +95,10 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
 			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", valAddrStr, common.Bytes2Hex(txHash), err)
+		}
+
+		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+			return fmt.Errorf("invalid milestone proposition detected for validator %s, error: %w", valAddrStr, err)
 		}
 
 		// Check for duplicate votes by the same validator
