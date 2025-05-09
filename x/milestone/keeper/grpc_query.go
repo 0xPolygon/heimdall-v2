@@ -51,6 +51,9 @@ func (q queryServer) GetLatestMilestone(ctx context.Context, _ *types.QueryLates
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	if milestone == nil {
+		return nil, status.Error(codes.NotFound, "milestone not found")
+	}
 	return &types.QueryLatestMilestoneResponse{Milestone: *milestone}, nil
 }
 
@@ -65,5 +68,8 @@ func (q queryServer) GetMilestoneByNumber(ctx context.Context, req *types.QueryM
 		return nil, err
 	}
 
+	if milestone == nil {
+		return nil, status.Error(codes.NotFound, "milestone not found")
+	}
 	return &types.QueryMilestoneResponse{Milestone: *milestone}, nil
 }
