@@ -487,12 +487,19 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 		var txBytes cmtTypes.Tx = rawTx
 
-		if approvedTxsMap[common.Bytes2Hex(txBytes.Hash())] {
+		txHash := common.Bytes2Hex(txBytes.Hash())
+
+		if approvedTxsMap[txHash] {
 
 			// execute post handler for the approved side tx
 			msgs := decodedTx.GetMsgs()
 			executedPostHandlers := 0
 			for _, msg := range msgs {
+				if checkpointTypes.IsCheckpointMsg(msg) && checkpointTxHash != txHash {
+					logger.Debug("Skipping checkpoint message since it is not the one that generated the signatures", "msg", msg)
+					continue
+				}
+
 				postHandler := app.sideTxCfg.GetPostHandler(msg)
 				if postHandler != nil {
 					// Create a new context based off of the existing context with a cache wrapped
