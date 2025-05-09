@@ -16,13 +16,11 @@ service Query {
   // means already submitted)
   rpc IsTopupTxOld(QueryTopupSequenceRequest)
       returns (QueryIsTopupTxOldResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/topup/isoldtx";
   }
   // GetTopupTxSequence queries for a specific topup tx and returns its sequence
   rpc GetTopupTxSequence(QueryTopupSequenceRequest)
       returns (QueryTopupSequenceResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/topup/sequence";
   }
   // GetDividendAccountByAddress queries for a specific DividendAccount by its
@@ -48,7 +46,6 @@ service Query {
   // GetAccountProof queries for the account proof of a given address
   rpc GetAccountProofByAddress(QueryAccountProofRequest)
       returns (QueryAccountProofResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/topup/account-proof/{address}";
   }
 }
