@@ -159,10 +159,14 @@ func GetMajorityMilestoneProposition(
 		for i, blockHash := range prop.BlockHashes {
 			blockTd := prop.BlockTds[i]
 			var buf bytes.Buffer
-			binary.Write(&buf, binary.LittleEndian, blockTd)
+			if err := binary.Write(&buf, binary.LittleEndian, blockTd); err != nil {
+				return nil, nil, "", fmt.Errorf("failed to convert td to binary: %w", err)
+			}
 
 			// Hash Bytes + Td Bytes
-			blockHashAndTd := append(blockHash, buf.Bytes()...)
+			var tdBytes [8]byte
+			tdBytes = [8]byte(buf.Bytes()) // enforce 8 bytes
+			blockHashAndTd := append(blockHash, tdBytes[:]...)
 
 			blockNum := prop.StartBlockNumber + uint64(i)
 
@@ -413,6 +417,10 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 
 	if len(milestoneProp.BlockHashes) > int(params.MaxMilestonePropositionLength) {
 		return fmt.Errorf("too many blocks in proposition")
+	}
+
+	if len(milestoneProp.BlockHashes) != len(milestoneProp.BlockTds) {
+		return fmt.Errorf("len mismatch between hashes and tds: %d != %d", len(milestoneProp.BlockHashes), len(milestoneProp.BlockTds))
 	}
 
 	for _, blockHash := range milestoneProp.BlockHashes {
