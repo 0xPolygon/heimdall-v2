@@ -3,8 +3,10 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
@@ -13,6 +15,8 @@ import (
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
+
+const MaxProofLength = 1024
 
 var _ types.QueryServer = queryServer{}
 
@@ -32,6 +36,10 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryTopupSequenceResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if !isValidTxHash(req.TxHash) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
@@ -70,6 +78,10 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequenceRequest) (*types.QueryIsTopupTxOldResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if !isValidTxHash(req.TxHash) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
@@ -145,6 +157,14 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
+	if !common.IsHexAddress(req.Address) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
+	}
+
+	if err := validateProof(req.Proof); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid proof: %s", err.Error())
+	}
+
 	dividendAccounts, err := q.k.GetAllDividendAccounts(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -163,6 +183,10 @@ func (q queryServer) VerifyAccountProofByAddress(ctx context.Context, req *types
 func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.QueryAccountProofRequest) (*types.QueryAccountProofResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	if !common.IsHexAddress(req.Address) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
 	}
 
 	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from current account
@@ -211,4 +235,22 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 	}
 
 	return dividendAccountProof, nil
+}
+
+func isValidTxHash(hash string) bool {
+	return strings.HasPrefix(hash, "0x") && len(hash) == 66
+}
+
+func validateProof(proof string) error {
+	proofBytes := common.FromHex(proof)
+	if proofBytes == nil || len(proofBytes) == 0 {
+		return errors.New("proof is empty")
+	}
+	if len(proofBytes)%32 != 0 {
+		return errors.New("invalid proof length, not multiple of 32 bytes")
+	}
+	if len(proofBytes) > MaxProofLength {
+		return fmt.Errorf("proof length exceeds maximum limit of %d bytes", MaxProofLength)
+	}
+	return nil
 }
