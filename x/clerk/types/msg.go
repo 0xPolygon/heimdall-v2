@@ -1,11 +1,9 @@
 package types
 
 import (
-	"errors"
 	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
-	"math"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -65,14 +63,6 @@ func (msg MsgEventRecord) ValidateBasic() error {
 
 	if msg.TxHash == "" {
 		return ErrEmptyTxHash
-	}
-
-	if msg.LogIndex > math.MaxUint64 {
-		return errors.New("log index is too large")
-	}
-
-	if msg.Id > math.MaxUint64 {
-		return errors.New("id is too large")
 	}
 
 	// DO NOT REMOVE THIS CHANGE

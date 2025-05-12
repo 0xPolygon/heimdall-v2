@@ -2,7 +2,6 @@ package types
 
 import (
 	"errors"
-	"math"
 
 	sdkmath "cosmossdk.io/math"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
@@ -58,12 +57,6 @@ func (data MsgTopupTx) ValidateBasic() error {
 	_, err = ac.StringToBytes(data.User)
 	if err != nil {
 		return errors.New("invalid user")
-	}
-	if data.LogIndex > math.MaxUint64 {
-		return errors.New("log index is out of range")
-	}
-	if data.BlockNumber > math.MaxUint64 {
-		return errors.New("log index is out of range")
 	}
 	if len(data.TxHash) != 32 {
 		return errors.New("invalid tx hash")

@@ -2,8 +2,6 @@ package types
 
 import (
 	"bytes"
-	"math"
-
 	sdkmath "cosmossdk.io/math"
 	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
@@ -40,7 +38,7 @@ func NewMsgValidatorJoin(
 
 // ValidateBasic validates the validator join msg before it is executed
 func (msg MsgValidatorJoin) ValidateBasic() error {
-	if msg.ValId == uint64(0) || msg.ValId > math.MaxUint64 {
+	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
@@ -64,24 +62,8 @@ func (msg MsgValidatorJoin) ValidateBasic() error {
 		return ErrInvalidMsg.Wrap("signer public key can't be of zero bytes")
 	}
 
-	if msg.ActivationEpoch > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid activation epoch %v", msg.ActivationEpoch)
-	}
-
 	if msg.Amount.IsZero() || msg.Amount.IsNegative() {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.Amount)
-	}
-
-	if msg.BlockNumber > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.BlockNumber)
-	}
-
-	if msg.Nonce > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.Nonce)
-	}
-
-	if msg.LogIndex > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid log index %v", msg.LogIndex)
 	}
 
 	if len(msg.TxHash) != 32 {
@@ -109,7 +91,7 @@ func NewMsgStakeUpdate(from string, id uint64,
 
 // ValidateBasic validates the stake update msg before it is executed
 func (msg MsgStakeUpdate) ValidateBasic() error {
-	if msg.ValId == uint64(0) || msg.ValId > math.MaxUint64 {
+	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
@@ -127,18 +109,6 @@ func (msg MsgStakeUpdate) ValidateBasic() error {
 
 	if msg.NewAmount.IsZero() || msg.NewAmount.IsNegative() {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.NewAmount)
-	}
-
-	if msg.BlockNumber > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.BlockNumber)
-	}
-
-	if msg.Nonce > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.Nonce)
-	}
-
-	if msg.LogIndex > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid log index %v", msg.LogIndex)
 	}
 
 	if len(msg.TxHash) != 32 {
@@ -166,7 +136,7 @@ func NewMsgSignerUpdate(from string, id uint64,
 
 // ValidateBasic validates the signer update msg before it is executed
 func (msg MsgSignerUpdate) ValidateBasic() error {
-	if msg.ValId == uint64(0) || msg.ValId > math.MaxUint64 {
+	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
@@ -188,18 +158,6 @@ func (msg MsgSignerUpdate) ValidateBasic() error {
 
 	if bytes.Equal(msg.NewSignerPubKey, EmptyPubKey[:]) {
 		return ErrInvalidMsg.Wrap("new signer public key can't be of zero bytes")
-	}
-
-	if msg.BlockNumber > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.BlockNumber)
-	}
-
-	if msg.Nonce > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.Nonce)
-	}
-
-	if msg.LogIndex > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid log index %v", msg.LogIndex)
 	}
 
 	if len(msg.TxHash) != 32 {
@@ -228,7 +186,7 @@ func NewMsgValidatorExit(
 
 // ValidateBasic validates the validator exit msg before it is executed
 func (msg MsgValidatorExit) ValidateBasic() error {
-	if msg.ValId == uint64(0) || msg.ValId > math.MaxUint64 {
+	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
@@ -242,22 +200,6 @@ func (msg MsgValidatorExit) ValidateBasic() error {
 
 	if accAddr.Empty() {
 		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
-	}
-
-	if msg.DeactivationEpoch == uint64(0) || msg.DeactivationEpoch > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid deactivation epoch %v", msg.DeactivationEpoch)
-	}
-
-	if msg.BlockNumber > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.BlockNumber)
-	}
-
-	if msg.Nonce > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid block number %v", msg.Nonce)
-	}
-
-	if msg.LogIndex > math.MaxUint64 {
-		return ErrInvalidMsg.Wrapf("invalid log index %v", msg.LogIndex)
 	}
 
 	if len(msg.TxHash) != 32 {
