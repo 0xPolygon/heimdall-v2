@@ -3,8 +3,8 @@ package types
 import (
 	"bytes"
 
-	"cosmossdk.io/core/address"
 	"cosmossdk.io/math"
+	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
@@ -37,12 +37,13 @@ func NewMsgValidatorJoin(
 	}, nil
 }
 
-// Validate validates the validator join msg before it is executed
-func (msg MsgValidatorJoin) Validate(ac address.Codec) error {
+// ValidateBasic validates the validator join msg before it is executed
+func (msg MsgValidatorJoin) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
+	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
@@ -81,12 +82,13 @@ func NewMsgStakeUpdate(from string, id uint64,
 	}, nil
 }
 
-// Validate validates the stake update msg before it is executed
-func (msg MsgStakeUpdate) Validate(ac address.Codec) error {
+// ValidateBasic validates the stake update msg before it is executed
+func (msg MsgStakeUpdate) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
+	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
@@ -117,12 +119,13 @@ func NewMsgSignerUpdate(from string, id uint64,
 	}, nil
 }
 
-// Validate validates the signer update msg before it is executed
-func (msg MsgSignerUpdate) Validate(ac address.Codec) error {
+// ValidateBasic validates the signer update msg before it is executed
+func (msg MsgSignerUpdate) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
+	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
@@ -162,12 +165,13 @@ func NewMsgValidatorExit(
 	}, nil
 }
 
-// Validate validates the validator exit msg before it is executed
-func (msg MsgValidatorExit) Validate(ac address.Codec) error {
+// ValidateBasic validates the validator exit msg before it is executed
+func (msg MsgValidatorExit) ValidateBasic() error {
 	if msg.ValId == uint64(0) {
 		return ErrInvalidMsg.Wrapf("invalid validator id %v", msg.ValId)
 	}
 
+	ac := hexCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)

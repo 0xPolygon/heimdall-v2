@@ -54,26 +54,30 @@ func TestValidateBasic(t *testing.T) {
 	}
 
 	tc := []struct {
-		in  Validator
-		out bool
-		msg string
+		in      Validator
+		expFail bool
+		msg     string
 	}{
 		{
-			in:  Validator{StartEpoch: 1, EndEpoch: 5, Nonce: 0, PubKey: pks[0], Signer: accounts[0].PubKey.Address().String()},
-			out: true,
-			msg: "Valid basic validator test",
+			in:      Validator{StartEpoch: 1, EndEpoch: 5, Nonce: 0, PubKey: pks[0], Signer: accounts[0].PubKey.Address().String()},
+			expFail: false,
+			msg:     "Valid basic validator test",
 		},
 		{
-			in:  Validator{StartEpoch: 1, EndEpoch: 1, Nonce: 0, PubKey: pks[3], Signer: ""},
-			out: false,
-			msg: "Invalid Signer",
+			in:      Validator{StartEpoch: 1, EndEpoch: 1, Nonce: 0, PubKey: pks[3], Signer: ""},
+			expFail: true,
+			msg:     "invalid",
 		},
 	}
 
 	for _, c := range tc {
 		fmt.Println(c.in.Signer)
 		out := c.in.ValidateBasic()
-		assert.Equal(t, c.out, out, c.msg)
-		fmt.Println("done")
+		if c.expFail {
+			assert.NotNil(t, out)
+			assert.Contains(t, out.Error(), c.msg)
+		} else {
+			assert.Equal(t, nil, out, c.msg)
+		}
 	}
 }
