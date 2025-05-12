@@ -55,7 +55,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid")
 	}
 
-	// check if validator has been validator before
+	// check if the validator has been validator before
 	if ok, err := m.k.DoesValIdExist(ctx, msg.ValId); ok {
 		m.k.Logger(ctx).Error("validator has been a validator before, hence cannot join with same id", "validatorId", msg.ValId, "err", err)
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator corresponding to the val id already exists in store")
@@ -64,6 +64,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	signer = util.FormatAddress(signer)
 	// get validator by signer
 	checkVal, err := m.k.GetValidatorInfo(ctx, signer)
+	// not returning error if validator not found because it is a new validator
 	if err == nil && strings.Compare(util.FormatAddress(checkVal.Signer), signer) == 0 {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, fmt.Sprintf("validator %s already exists", signer))
 	}

@@ -501,7 +501,6 @@ func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 }
 
 func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates []abci.ValidatorUpdate, err error) {
-	k.PanicIfSetupIsIncomplete()
 	var cmtValUpdates []abci.ValidatorUpdate
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {

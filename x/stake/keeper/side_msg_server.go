@@ -125,6 +125,16 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
+	// check signer corresponding to pubKey matches signer from event
+	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
+		s.k.Logger(ctx).Error(
+			"Signer address does not match event log signer address",
+			"Validator", signer.String(),
+			"mainChainValidator", eventLog.Signer.Hex(),
+		)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	// check public key first byte
 	if !helper.IsPubKeyFirstByteValid(pubKey.Bytes()[0:1]) {
 		s.k.Logger(ctx).Error(
@@ -134,22 +144,12 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// check signer pubKey in message corresponds
+	// check the correspondence of signer pubKey in the message
 	if !bytes.Equal(pubKey.Bytes()[1:], eventLog.SignerPubkey) {
 		s.k.Logger(ctx).Error(
 			"Signer PubKey does not match",
 			"msgValidator", pubKey.String(),
 			"mainChainValidator", common.Bytes2Hex(eventLog.SignerPubkey),
-		)
-		return sidetxs.Vote_VOTE_NO
-	}
-
-	// check signer corresponding to pubKey matches signer from event
-	if !bytes.Equal(signerBytes, eventLogSignerBytes) {
-		s.k.Logger(ctx).Error(
-			"Signer address does not match event log signer address",
-			"Validator", signer.String(),
-			"mainChainValidator", eventLog.Signer.Hex(),
 		)
 		return sidetxs.Vote_VOTE_NO
 	}
@@ -496,7 +496,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	// Add Validator signing info. It is required for slashing module
 	s.k.Logger(ctx).Debug("adding signing info for new validator")
 
-	// save staking sequence
+	// save the staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
 	if err != nil {
 		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
@@ -556,7 +556,7 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 		return err
 	}
 
-	// Check nonce validity just before applying state update
+	// Check nonce validity just before applying the state update
 	if msg.Nonce != validator.Nonce+1 {
 		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle StakeUpdate", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
 		return errors.New("incorrect validator nonce during PostHandle StakeUpdate")
@@ -582,7 +582,7 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 		return err
 	}
 
-	// save staking sequence
+	// save the staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
 	if err != nil {
 		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
@@ -647,7 +647,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		return err
 	}
 
-	// Check nonce validity just before applying state update
+	// Check nonce validity just before applying the state update
 	if msg.Nonce != validator.Nonce+1 {
 		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle SignerUpdate", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
 		return errors.New("incorrect validator nonce during PostHandle SignerUpdate")
@@ -674,7 +674,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	s.k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
 
-	// remove the old validator from validator set
+	// remove the old validator from the validator set
 	oldValidator.EndEpoch, err = s.k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		s.k.Logger(ctx).Error("unable to get ack count", "error", err)
@@ -700,7 +700,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 		return err
 	}
 
-	// save staking sequence
+	// save the staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
 	if err != nil {
 		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
@@ -781,7 +781,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return err
 	}
 
-	// Check nonce validity just before applying state update
+	// Check nonce validity just before applying the state update
 	if msg.Nonce != validator.Nonce+1 {
 		s.k.Logger(ctx).Error("Incorrect validator nonce during PostHandle ValidatorExit", "ValidatorNonce", validator.Nonce, "MsgNonce", msg.Nonce)
 		return errors.New("incorrect validator nonce during PostHandle ValidatorExit")
@@ -799,7 +799,7 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		return err
 	}
 
-	// save staking sequence
+	// save the staking sequence
 	err = s.k.SetStakingSequence(ctx, sequence.String())
 	if err != nil {
 		s.k.Logger(ctx).Error("unable to set the sequence", "error", err)
