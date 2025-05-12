@@ -26,6 +26,7 @@ const (
 	Query_GetTotalPower_FullMethodName               = "/heimdallv2.stake.Query/GetTotalPower"
 	Query_IsStakeTxOld_FullMethodName                = "/heimdallv2.stake.Query/IsStakeTxOld"
 	Query_GetProposersByTimes_FullMethodName         = "/heimdallv2.stake.Query/GetProposersByTimes"
+	Query_GetCurrentProposer_FullMethodName          = "/heimdallv2.stake.Query/GetCurrentProposer"
 )
 
 // QueryClient is the client API for Query service.
@@ -47,6 +48,8 @@ type QueryClient interface {
 	IsStakeTxOld(ctx context.Context, in *QueryStakeIsOldTxRequest, opts ...grpc.CallOption) (*QueryStakeIsOldTxResponse, error)
 	// GetProposersByTimes queries for the proposers by Tendermint iterations
 	GetProposersByTimes(ctx context.Context, in *QueryProposersRequest, opts ...grpc.CallOption) (*QueryProposersResponse, error)
+	// GetCurrentProposer queries validator info for the current proposer
+	GetCurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error)
 }
 
 type queryClient struct {
@@ -120,6 +123,15 @@ func (c *queryClient) GetProposersByTimes(ctx context.Context, in *QueryProposer
 	return out, nil
 }
 
+func (c *queryClient) GetCurrentProposer(ctx context.Context, in *QueryCurrentProposerRequest, opts ...grpc.CallOption) (*QueryCurrentProposerResponse, error) {
+	out := new(QueryCurrentProposerResponse)
+	err := c.cc.Invoke(ctx, Query_GetCurrentProposer_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -139,6 +151,8 @@ type QueryServer interface {
 	IsStakeTxOld(context.Context, *QueryStakeIsOldTxRequest) (*QueryStakeIsOldTxResponse, error)
 	// GetProposersByTimes queries for the proposers by Tendermint iterations
 	GetProposersByTimes(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error)
+	// GetCurrentProposer queries validator info for the current proposer
+	GetCurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -166,6 +180,9 @@ func (UnimplementedQueryServer) IsStakeTxOld(context.Context, *QueryStakeIsOldTx
 }
 func (UnimplementedQueryServer) GetProposersByTimes(context.Context, *QueryProposersRequest) (*QueryProposersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProposersByTimes not implemented")
+}
+func (UnimplementedQueryServer) GetCurrentProposer(context.Context, *QueryCurrentProposerRequest) (*QueryCurrentProposerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentProposer not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -306,6 +323,24 @@ func _Query_GetProposersByTimes_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetCurrentProposer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCurrentProposerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetCurrentProposer(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetCurrentProposer_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetCurrentProposer(ctx, req.(*QueryCurrentProposerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -340,6 +375,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProposersByTimes",
 			Handler:    _Query_GetProposersByTimes_Handler,
+		},
+		{
+			MethodName: "GetCurrentProposer",
+			Handler:    _Query_GetCurrentProposer_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

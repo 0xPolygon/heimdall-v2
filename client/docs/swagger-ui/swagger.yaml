@@ -861,142 +861,6 @@ paths:
                       format: byte
       tags:
         - Query
-  /checkpoint/proposers/current:
-    get:
-      summary: GetCurrentProposer queries validator info for the current proposer
-      operationId: GetCurrentProposer
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              validator:
-                type: object
-                properties:
-                  val_id:
-                    type: string
-                    format: uint64
-                  start_epoch:
-                    type: string
-                    format: uint64
-                  end_epoch:
-                    type: string
-                    format: uint64
-                  nonce:
-                    type: string
-                    format: uint64
-                  voting_power:
-                    type: string
-                    format: int64
-                  pub_key:
-                    type: string
-                    format: byte
-                  signer:
-                    type: string
-                  last_updated:
-                    type: string
-                  jailed:
-                    type: boolean
-                  proposer_priority:
-                    type: string
-                    format: int64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      tags:
-        - Query
-  /checkpoint/proposers/{times}:
-    get:
-      summary: GetProposers queries for the proposers
-      operationId: GetProposers
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              proposers:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    val_id:
-                      type: string
-                      format: uint64
-                    start_epoch:
-                      type: string
-                      format: uint64
-                    end_epoch:
-                      type: string
-                      format: uint64
-                    nonce:
-                      type: string
-                      format: uint64
-                    voting_power:
-                      type: string
-                      format: int64
-                    pub_key:
-                      type: string
-                      format: byte
-                    signer:
-                      type: string
-                    last_updated:
-                      type: string
-                    jailed:
-                      type: boolean
-                    proposer_priority:
-                      type: string
-                      format: int64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: times
-          in: path
-          required: true
-          type: string
-          format: uint64
-      tags:
-        - Query
   /checkpoint/signatures/{tx_hash}:
     get:
       summary: GetCheckpointSignatures queries signatures for latest checkpoint
@@ -2220,6 +2084,70 @@ paths:
           required: true
           type: string
           format: uint64
+      tags:
+        - Query
+  /checkpoint/proposers/current:
+    get:
+      summary: GetCurrentProposer queries validator info for the current proposer
+      operationId: GetCurrentProposer
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              validator:
+                type: object
+                properties:
+                  val_id:
+                    type: string
+                    format: uint64
+                  start_epoch:
+                    type: string
+                    format: uint64
+                  end_epoch:
+                    type: string
+                    format: uint64
+                  nonce:
+                    type: string
+                    format: uint64
+                  voting_power:
+                    type: string
+                    format: int64
+                  pub_key:
+                    type: string
+                    format: byte
+                  signer:
+                    type: string
+                  last_updated:
+                    type: string
+                  jailed:
+                    type: boolean
+                  proposer_priority:
+                    type: string
+                    format: int64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
       tags:
         - Query
   /stake/is-old-tx:
@@ -4199,39 +4127,6 @@ definitions:
     title: |-
       QueryCheckpointSignaturesResponse is response type for
       QueryCheckpointSignatures RPC method
-  heimdallv2.checkpoint.QueryCurrentProposerResponse:
-    type: object
-    properties:
-      validator:
-        type: object
-        properties:
-          val_id:
-            type: string
-            format: uint64
-          start_epoch:
-            type: string
-            format: uint64
-          end_epoch:
-            type: string
-            format: uint64
-          nonce:
-            type: string
-            format: uint64
-          voting_power:
-            type: string
-            format: int64
-          pub_key:
-            type: string
-            format: byte
-          signer:
-            type: string
-          last_updated:
-            type: string
-          jailed:
-            type: boolean
-          proposer_priority:
-            type: string
-            format: int64
   heimdallv2.checkpoint.QueryLastNoAckResponse:
     type: object
     properties:
@@ -4277,41 +4172,6 @@ definitions:
           child_chain_block_interval:
             type: string
             format: uint64
-  heimdallv2.checkpoint.QueryProposerResponse:
-    type: object
-    properties:
-      proposers:
-        type: array
-        items:
-          type: object
-          properties:
-            val_id:
-              type: string
-              format: uint64
-            start_epoch:
-              type: string
-              format: uint64
-            end_epoch:
-              type: string
-              format: uint64
-            nonce:
-              type: string
-              format: uint64
-            voting_power:
-              type: string
-              format: int64
-            pub_key:
-              type: string
-              format: byte
-            signer:
-              type: string
-            last_updated:
-              type: string
-            jailed:
-              type: boolean
-            proposer_priority:
-              type: string
-              format: int64
   heimdallv2.clerk.EventRecord:
     type: object
     properties:
@@ -4522,6 +4382,39 @@ definitions:
           ff_milestone_block_interval:
             type: string
             format: uint64
+  heimdallv2.stake.QueryCurrentProposerResponse:
+    type: object
+    properties:
+      validator:
+        type: object
+        properties:
+          val_id:
+            type: string
+            format: uint64
+          start_epoch:
+            type: string
+            format: uint64
+          end_epoch:
+            type: string
+            format: uint64
+          nonce:
+            type: string
+            format: uint64
+          voting_power:
+            type: string
+            format: int64
+          pub_key:
+            type: string
+            format: byte
+          signer:
+            type: string
+          last_updated:
+            type: string
+          jailed:
+            type: boolean
+          proposer_priority:
+            type: string
+            format: int64
   heimdallv2.stake.QueryCurrentValidatorSetResponse:
     type: object
     properties:

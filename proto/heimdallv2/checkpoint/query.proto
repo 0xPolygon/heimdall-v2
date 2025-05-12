@@ -60,19 +60,6 @@ service Query {
     option (google.api.http).get = "/checkpoints/prepare-next";
   }
 
-  // GetCurrentProposer queries validator info for the current proposer
-  rpc GetCurrentProposer(QueryCurrentProposerRequest)
-      returns (QueryCurrentProposerResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoint/proposers/current";
-  }
-
-  // GetProposers queries for the proposers
-  rpc GetProposers(QueryProposerRequest) returns (QueryProposerResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoint/proposers/{times}";
-  }
-
   // GetCheckpointList queries for the list of checkpoints
   rpc GetCheckpointList(QueryCheckpointListRequest)
       returns (QueryCheckpointListResponse) {
@@ -153,22 +140,6 @@ message QueryNextCheckpointRequest {}
 
 message QueryNextCheckpointResponse {
   MsgCheckpoint checkpoint = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-}
-
-message QueryCurrentProposerRequest {}
-
-message QueryCurrentProposerResponse {
-  heimdallv2.stake.Validator validator = 1
-      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
-}
-
-message QueryProposerRequest {
-  uint64 times = 1 [ (amino.dont_omitempty) = true ];
-}
-
-message QueryProposerResponse {
-  repeated heimdallv2.stake.Validator proposers = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
