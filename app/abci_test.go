@@ -10,9 +10,14 @@ import (
 	"time"
 
 	"cosmossdk.io/math"
+	stakinginfo "github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+
+	// chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	chainmanagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
+	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -20,6 +25,7 @@ import (
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topUpTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
@@ -48,6 +54,159 @@ import (
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 )
+
+func buildSignedTx2(
+	msg sdk.Msg,
+	ctx sdk.Context,
+	priv cryptotypes.PrivKey,
+	app *HeimdallApp,
+) ([]byte, error) {
+	// 1) derive the fee-payer address (also your only signer)
+	feePayerAddr := sdk.AccAddress(priv.PubKey().Address())
+
+	// 2) create & register the account in state
+	acct := authTypes.NewBaseAccount(feePayerAddr, priv.PubKey(), 1337, 0)
+	app.AccountKeeper.SetAccount(ctx, acct)
+
+	// 3) fund it so it can actually pay fees
+	testutil.FundAccount(
+		ctx,
+		app.BankKeeper,
+		feePayerAddr,
+		sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
+	)
+
+	// 4) set up the TxBuilder
+	txConfig := authtx.NewTxConfig(app.AppCodec(), authtx.DefaultSignModes)
+	defaultSignMode, _ := authsigning.APISignModeToInternal(
+		txConfig.SignModeHandler().DefaultMode(),
+	)
+	app.SetTxDecoder(txConfig.TxDecoder())
+
+	txBuilder := txConfig.NewTxBuilder()
+	txBuilder.SetFeeAmount(testdata.NewTestFeeAmount())
+	txBuilder.SetGasLimit(testdata.NewTestGasLimit())
+	txBuilder.SetMsgs(msg)
+
+	// 5) force this account to be the explicit fee-payer
+	txBuilder.SetFeePayer(feePayerAddr)
+
+	// 6) now tell the SDK “I’m going to sign two slots”
+	emptySig := signing.SignatureV2{
+		PubKey:   priv.PubKey(),
+		Data:     &signing.SingleSignatureData{SignMode: defaultSignMode},
+		Sequence: 0,
+	}
+	txBuilder.SetSignatures(emptySig, emptySig) // ← two placeholders
+
+	// 7) prepare your signer metadata
+	signerData := authsigning.SignerData{
+		ChainID:       "test-chain", // use your actual chain ID
+		AccountNumber: 1337,
+		Sequence:      0,
+		PubKey:        priv.PubKey(),
+	}
+
+	// 8) sign slot #0 (the “message” signer)
+	sigMsg, err := tx.SignWithPrivKey(
+		context.TODO(),
+		defaultSignMode,
+		signerData,
+		txBuilder,
+		priv,
+		txConfig,
+		0, // index 0
+	)
+	if err != nil {
+		return nil, err
+	}
+	// re-apply with slot 0 filled
+	txBuilder.SetSignatures(sigMsg, emptySig)
+
+	// 9) sign slot #1 (the “fee-payer” signer)
+	sigFee, err := tx.SignWithPrivKey(
+		context.TODO(),
+		defaultSignMode,
+		signerData,
+		txBuilder,
+		priv,
+		txConfig,
+		1, // index 1
+	)
+	if err != nil {
+		return nil, err
+	}
+	// now we have both
+	txBuilder.SetSignatures(sigMsg, sigFee)
+
+	// 10) finally encode
+	return txConfig.TxEncoder()(txBuilder.GetTx())
+}
+
+func genTestValidators() (stakeTypes.ValidatorSet, []stakeTypes.Validator) {
+	var TestValidators = []stakeTypes.Validator{
+		{
+			ValId:       3,
+			StartEpoch:  0,
+			EndEpoch:    0,
+			VotingPower: 10000,
+			PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
+			Signer:      "0x1c4f0f054a0d6a1415382dc0fd83c6535188b220",
+			LastUpdated: "0",
+		},
+		{
+			ValId:       4,
+			StartEpoch:  0,
+			EndEpoch:    0,
+			VotingPower: 10000,
+			PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
+			Signer:      "0x461295d3d9249215e758e939a150ab180950720b",
+			LastUpdated: "0",
+		},
+		{
+			ValId:       5,
+			StartEpoch:  0,
+			EndEpoch:    0,
+			VotingPower: 10000,
+			PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
+			Signer:      "0x836fe3e3dd0a5f77d9d5b0f67e48048aaafcd5a0",
+			LastUpdated: "0",
+		},
+		{
+			ValId:       1,
+			StartEpoch:  0,
+			EndEpoch:    0,
+			VotingPower: 10000,
+			PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
+			Signer:      "0x925a91f8003aaeabea6037103123b93c50b86ca3",
+			LastUpdated: "0",
+		},
+		{
+			ValId:       2,
+			StartEpoch:  0,
+			EndEpoch:    0,
+			VotingPower: 10000,
+			PubKey:      secp256k1.GenPrivKey().PubKey().Bytes(),
+			Signer:      "0xc787af4624cb3e80ee23ae7faac0f2acea2be34c",
+			LastUpdated: "0",
+		},
+	}
+
+	validators := make([]*stakeTypes.Validator, 0, len(TestValidators))
+	for _, v := range TestValidators {
+		validators = append(validators, &v)
+	}
+	valSet := stakeTypes.ValidatorSet{
+		Validators: validators,
+	}
+
+	vals := make([]stakeTypes.Validator, 0, len(validators))
+	for _, v := range validators {
+		vals = append(vals, *v)
+	}
+
+	return valSet, vals
+}
 
 func buildSignedTx(msg sdk.Msg, signer string, ctx sdk.Context, priv cryptotypes.PrivKey, app HeimdallApp) ([]byte, error) {
 	propBytes := common.FromHex(signer)
@@ -583,6 +742,492 @@ func TestPreBlocker(t *testing.T) {
 	_, err = app.PreBlocker(ctx, &finalizeReq)
 	require.NoError(t, err)
 
+}
+
+func TestSidetxsHappyPath(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// logIndex := uint64(10)
+	blockNumber := uint64(599)
+
+	_, _, addr2 := testdata.KeyTestPubAddr()
+
+	txReceipt := &ethTypes.Receipt{
+		BlockNumber: new(big.Int).SetUint64(blockNumber),
+	}
+
+	event := &stakinginfo.StakinginfoTopUpFee{
+		User: common.Address(sdk.AccAddress(addr2.String())),
+		Fee:  new(big.Int).SetUint64(1),
+	}
+
+	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, nil)
+
+	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.AnythingOfType("int64")).Return(txReceipt, nil)
+	mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		app.BankKeeper,
+		app.ChainManagerKeeper,
+		mockCaller,
+	)
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		nil,
+	)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	propBytes := common.FromHex(validators[0].Signer)
+	propAddr := sdk.AccAddress(propBytes)
+	propAcc := authTypes.NewBaseAccount(propAddr, nil, 1337, 0)
+	app.AccountKeeper.SetAccount(ctx, propAcc)
+	require.NoError(t,
+		testutil.FundAccount(ctx, app.BankKeeper, propAddr,
+			sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
+		),
+	)
+
+	coins, _ := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+
+	testCases := []struct {
+		name string
+		msg  sdk.Msg
+	}{
+		{
+			name: "bor [MsgProposeSpan]] happy path",
+			msg: &borTypes.MsgProposeSpan{
+				SpanId:     2,
+				Proposer:   validators[0].Signer,
+				StartBlock: 26657,
+				EndBlock:   30000,
+				ChainId:    "testChainParams.ChainParams.BorChainId",
+				Seed:       common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+				SeedAuthor: "val1Addr.Hex()",
+			},
+		},
+		// {
+		// 	name: "Clerk Module Happy Path",
+		// 	msg: func() *clerkTypes.MsgEventRecord {
+		// 		rec := clerkTypes.NewMsgEventRecord(
+		// 			validators[0].Signer,
+		// 			TxHash1,
+		// 			1,
+		// 			50,
+		// 			1,
+		// 			propAddr,
+		// 			make([]byte, 0),
+		// 			"0",
+		// 		)
+		// 		return &rec
+		// 	}(),
+		// },
+		{
+			name: "topup [MsgProposeSpan]] happy path",
+			msg: func() *topUpTypes.MsgTopupTx {
+				rec := topUpTypes.NewMsgTopupTx(
+					validators[0].Signer,
+					validators[0].Signer,
+					coins.AmountOf(authTypes.FeeToken),
+					[]byte(TxHash1),
+					1,
+					1,
+				)
+				return rec
+			}(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			txBytes, err := buildSignedTx(tc.msg, validators[0].Signer, ctx, priv, app)
+			var txBytesCmt cmtTypes.Tx = txBytes
+
+			extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+			_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+				Height: 3,
+				Txs:    [][]byte{extCommitBytes, txBytes},
+			})
+			require.NoError(t, err)
+
+			// Prepare/Process proposal
+			reqPrep := &abci.RequestPrepareProposal{
+				Txs:             [][]byte{txBytes},
+				MaxTxBytes:      1_000_000,
+				LocalLastCommit: *extCommit,
+				ProposerAddress: common.FromHex(validators[0].Signer),
+				Height:          3,
+			}
+
+			_, err = app.PrepareProposal(reqPrep)
+			require.NoError(t, err)
+
+			respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+			require.NoError(t, err)
+			require.NotEmpty(t, respPrep.Txs)
+
+			reqExtend := abci.RequestExtendVote{
+				Txs:    [][]byte{extCommitBytes, txBytes},
+				Hash:   []byte("test-hash"),
+				Height: 3,
+			}
+			respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+			require.NoError(t, err)
+			require.NotNil(t, respExtend.VoteExtension)
+			mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+			app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
+
+			extCommitBytes2, _, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+
+			finalizeReq := abci.RequestFinalizeBlock{
+				Txs:    [][]byte{extCommitBytes2, txBytes},
+				Height: 3,
+			}
+			_, err = app.PreBlocker(ctx, &finalizeReq)
+			require.NoError(t, err)
+
+		})
+	}
+
+}
+
+func TestAllUnhappyPathBorSideTxs(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	valSet, vals := genTestValidators()
+
+	mockCaller := new(helpermocks.IContractCaller)
+
+	app.ChainManagerKeeper = chainmanagerKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		app.BankKeeper,
+		app.ChainManagerKeeper,
+		mockCaller,
+	)
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		mockCaller,
+	)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	// app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	// ——— wire up side-msg server ———
+	borKeeper.NewSideMsgServerImpl(&app.BorKeeper)
+	app.sideTxCfg = sidetxs.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(app.sideTxCfg)
+
+	// ◀── **move this here**, after your server is registered:
+	app.BorKeeper.SetContractCaller(mockCaller)
+
+	propBytes := common.FromHex(validators[0].Signer)
+	propAddr := sdk.AccAddress(propBytes)
+	propAcc := authTypes.NewBaseAccount(propAddr, nil, 1337, 0)
+	app.AccountKeeper.SetAccount(ctx, propAcc)
+	require.NoError(t,
+		testutil.FundAccount(ctx, app.BankKeeper, propAddr,
+			sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
+		),
+	)
+	spans := []borTypes.Span{
+		{
+			Id:                0,
+			StartBlock:        0,
+			EndBlock:          256,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			BorChainId:        "test-chain",
+		},
+		{
+			Id:                1,
+			StartBlock:        257,
+			EndBlock:          6656,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			BorChainId:        "test-chain",
+		},
+		{
+			Id:                2,
+			StartBlock:        6657,
+			EndBlock:          16656,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			BorChainId:        "test-chain",
+		},
+		{
+			Id:                3,
+			StartBlock:        16657,
+			EndBlock:          26656,
+			ValidatorSet:      valSet,
+			SelectedProducers: vals,
+			BorChainId:        "test-chain",
+		},
+	}
+
+	seedBlock1 := spans[3].EndBlock
+	val1Addr := common.HexToAddress(vals[0].GetOperator())
+	blockHeader1 := ethTypes.Header{Number: big.NewInt(int64(seedBlock1))}
+	blockHash1 := blockHeader1.Hash()
+
+	mockCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil).Times(100)
+
+	mockCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil).Times(100)
+	mockCaller.
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.Anything, mock.Anything).
+		Return([]*ethTypes.Header{&blockHeader1}, nil).Times(100)
+
+	for _, span := range spans {
+		err := app.BorKeeper.AddNewSpan(ctx, &span)
+		require.NoError(t, err)
+		err = app.BorKeeper.StoreSeedProducer(ctx, span.Id, &val1Addr)
+	}
+	testChainParams := chainmanagertypes.DefaultParams()
+
+	t.Run("seed mismatch", func(t *testing.T) {
+
+		msg := &borTypes.MsgProposeSpan{
+			SpanId:     4,
+			Proposer:   validators[0].Signer,
+			StartBlock: 26657,
+			EndBlock:   30000,
+			ChainId:    testChainParams.ChainParams.BorChainId,
+			Seed:       []byte("someWrongSeed"),
+		}
+
+		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+		mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+	})
+
+	t.Run("span is not in turn", func(t *testing.T) {
+		msg := &borTypes.MsgProposeSpan{
+			SpanId:     4,
+			Proposer:   val1Addr.String(),
+			StartBlock: 26657,
+			EndBlock:   30000,
+			ChainId:    testChainParams.ChainParams.BorChainId,
+			Seed:       blockHash1.Bytes(),
+		}
+
+		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+		mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+	})
+
+	t.Run("correct span is proposed", func(t *testing.T) {
+		msg := &borTypes.MsgProposeSpan{
+			SpanId:     4,
+			Proposer:   val1Addr.String(),
+			StartBlock: 26657,
+			EndBlock:   30000,
+			ChainId:    testChainParams.ChainParams.BorChainId,
+			Seed:       blockHash1.Bytes(),
+		}
+
+		txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+		mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+	})
+
+}
+
+func TestSomething(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Create a checkpoint message
+	msg := &borTypes.MsgProposeSpan{
+		SpanId:     2,
+		Proposer:   validators[0].Signer,
+		StartBlock: 26657,
+		EndBlock:   30000,
+		ChainId:    "testChainParams.ChainParams.BorChainId",
+		Seed:       common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		SeedAuthor: "val1Addr.Hex()",
+	}
+
+	txBytes, err := buildSignedTx2(msg, ctx, priv, &app)
+	var txBytesCmt cmtTypes.Tx = txBytes
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+
+	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 3,
+		Txs:    [][]byte{extCommitBytes, txBytes},
+	})
+	require.NoError(t, err)
+
+	// Prepare/Process proposal
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          3,
+	}
+
+	_, err = app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+
+	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+	require.NoError(t, err)
+	require.NotEmpty(t, respPrep.Txs)
 }
 
 func TestPrepareProposal(t *testing.T) {
@@ -1156,6 +1801,8 @@ func TestPrepareProposal(t *testing.T) {
 	extCommitBytes2, err := extCommit2.Marshal()
 	require.NoError(t, err)
 
+	// ---------------------- unhappy path of bor side transaction ------------------------
+
 	// Test FinalizeBlock handler
 	finalizeReqBorSidetx := abci.RequestFinalizeBlock{
 		Txs:    [][]byte{extCommitBytes2, txBytesBor},
@@ -1273,6 +1920,7 @@ func TestPrepareProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	//---------------------------------------------------------------------------
+	//--------------------happy path for
 
 }
 
