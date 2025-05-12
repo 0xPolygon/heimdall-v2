@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -27,6 +28,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 	// Add finalised checkpoints to state
 	if len(data.Checkpoints) != 0 {
+		ac := address.HexCodec{}
 		// check if we are provided all the checkpoints
 		if int(data.AckCount) != len(data.Checkpoints) {
 			k.Logger(ctx).Error("incorrect state in state-dump", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)
@@ -36,9 +38,21 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		data.Checkpoints = types.SortCheckpoints(data.Checkpoints)
 		// load checkpoints to state
 		for i, checkpoint := range data.Checkpoints {
+			// create checkpoint message for the purpose of validation
+			msg := types.NewMsgCheckpointBlock(checkpoint.Proposer,
+				checkpoint.StartBlock,
+				checkpoint.EndBlock,
+				checkpoint.RootHash,
+				nil, // account root hash is not used to validate checkpoint
+				checkpoint.BorChainId)
+
+			if err := msg.ValidateBasic(ac); err != nil {
+				k.Logger(ctx).Error("error in validating checkpoint message while InitGenesis", "error", err)
+				panic(err)
+			}
 			checkpointIndex := uint64(i) + 1
 			checkpoint.Id = checkpointIndex
-			if err := k.AddCheckpoint(ctx, checkpoint); err != nil {
+			if err = k.AddCheckpoint(ctx, checkpoint); err != nil {
 				k.Logger(ctx).Error("error while adding the checkpoint to store",
 					"checkpointIndex", checkpointIndex,
 					"checkpoint", checkpoint.String(),
