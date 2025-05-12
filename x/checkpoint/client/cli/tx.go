@@ -213,7 +213,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 				return fmt.Errorf("invalid transaction for header block. Error: %w", err)
 			}
 
-			msg := types.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
+			msg := types.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:])
 
 			return cli.BroadcastMsg(clientCtx, proposer, &msg, logger)
 		},
