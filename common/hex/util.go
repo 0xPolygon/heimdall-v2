@@ -17,12 +17,12 @@ func FormatAddress(hexAddr string) string {
 	return "0x" + strings.TrimPrefix(hexAddr, "0x")
 }
 
-// IsValidTxHash returns true if the input is a valid 32-byte Ethereum tx hash (0x-prefixed, 64 hex chars).
+// IsValidTxHash returns true if the input is a valid 32-byte Cosmos SDK tx hash (64 hex characters, no prefix).
 func IsValidTxHash(s string) bool {
-	if !strings.HasPrefix(s, "0x") || len(s) != 66 {
+	if len(s) != 64 {
 		return false
 	}
-	_, err := hex.DecodeString(s[2:])
+	_, err := hex.DecodeString(s)
 	return err == nil
 }
 
