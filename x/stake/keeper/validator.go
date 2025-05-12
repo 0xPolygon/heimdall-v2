@@ -232,13 +232,6 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 		return err
 	}
 
-	// When there is any update in checkpoint validator set, we assign it to milestone validator set too.
-	err = k.validatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
-	if err != nil {
-		k.Logger(ctx).Error("error in setting the current milestone validator set in store", "err", err)
-		return err
-	}
-
 	return nil
 }
 

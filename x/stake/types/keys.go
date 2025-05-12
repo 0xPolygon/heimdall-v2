@@ -19,14 +19,13 @@ const (
 )
 
 var (
-	ValidatorsKey                   = []byte{0x21} // prefix for each key to a validator
-	ValidatorSetKey                 = []byte{0x22} // prefix for each key for validator map
-	CurrentValidatorSetKey          = []byte{0x23} // key to store current validator set
-	StakeSequenceKey                = []byte{0x24} // prefix for each key for staking sequence map
-	SignerKey                       = []byte{0x25} // prefix for signer address for signer map
-	CurrentMilestoneValidatorSetKey = []byte{0x25} // Key to store current validator set for milestone
-	LastBlockTxsKey                 = []byte{0x26} // key to store last block's txs
-	PreviousBlockValidatorSetKey    = []byte{0x27} // key to store the previous block's validator set
+	ValidatorsKey                = []byte{0x21} // prefix for each key to a validator
+	ValidatorSetKey              = []byte{0x22} // prefix for each key for validator map
+	CurrentValidatorSetKey       = []byte{0x23} // key to store current validator set
+	StakeSequenceKey             = []byte{0x24} // prefix for each key for staking sequence map
+	SignerKey                    = []byte{0x25} // prefix for signer address for signer map
+	LastBlockTxsKey              = []byte{0x26} // key to store last block's txs
+	PreviousBlockValidatorSetKey = []byte{0x27} // key to store the previous block's validator set
 )
 
 type PubKey [65]byte
