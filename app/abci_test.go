@@ -12,6 +12,7 @@ import (
 	"cosmossdk.io/math"
 	stakinginfo "github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 
@@ -952,7 +953,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		&app.TopupKeeper,
 		mockCaller,
 	)
-	app.BorKeeper = borKeeper.NewKeeper(
+	mockBorKeeper := borKeeper.NewKeeper(
 		app.AppCodec(),
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -960,6 +961,8 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		&app.StakeKeeper,
 		mockCaller,
 	)
+	app.BorKeeper = mockBorKeeper
+
 	app.BorKeeper.SetContractCaller(mockCaller)
 	// app.BorKeeper.SetContractCaller(mockCaller)
 	app.MilestoneKeeper.IContractCaller = mockCaller
@@ -968,13 +971,10 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 	app.MilestoneKeeper.IContractCaller = mockCaller
 	app.caller = mockCaller
 
-	// ——— wire up side-msg server ———
-	borKeeper.NewSideMsgServerImpl(&app.BorKeeper)
+	app.ModuleManager.Modules[borTypes.ModuleName] = bor.NewAppModule(mockBorKeeper, mockCaller)
+	app.BorKeeper.SetContractCaller(mockCaller)
 	app.sideTxCfg = sidetxs.NewSideTxConfigurator()
 	app.RegisterSideMsgServices(app.sideTxCfg)
-
-	// ◀── **move this here**, after your server is registered:
-	app.BorKeeper.SetContractCaller(mockCaller)
 
 	propBytes := common.FromHex(validators[0].Signer)
 	propAddr := sdk.AccAddress(propBytes)
@@ -1025,12 +1025,12 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 	blockHeader1 := ethTypes.Header{Number: big.NewInt(int64(seedBlock1))}
 	blockHash1 := blockHeader1.Hash()
 
-	mockCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil).Times(100)
+	mockCaller.On("GetBorChainBlockAuthor", mock.Anything).Return(&val1Addr, nil)
 
-	mockCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil).Times(100)
+	mockCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 	mockCaller.
 		On("GetBorChainBlocksInBatch", mock.Anything, mock.Anything, mock.Anything).
-		Return([]*ethTypes.Header{&blockHeader1}, nil).Times(100)
+		Return([]*ethTypes.Header{&blockHeader1}, nil)
 
 	for _, span := range spans {
 		err := app.BorKeeper.AddNewSpan(ctx, &span)
