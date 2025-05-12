@@ -62,13 +62,13 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 
 	// set the last block txs
 	if len(data.LastBlockTxs.Txs) > 0 {
-		err := k.SetLastBlockTxs(sdk.UnwrapSDKContext(ctx), data.LastBlockTxs.Txs)
+		err := k.SetLastBlockTxs(ctx, data.LastBlockTxs.Txs)
 		if err != nil {
 			panic(fmt.Errorf("error in getting last block txs while initializing stake genesis: %w", err))
 		}
 	} else {
 		// if no last block txs are provided, set it to empty
-		err := k.SetLastBlockTxs(sdk.UnwrapSDKContext(ctx), [][]byte{})
+		err := k.SetLastBlockTxs(ctx, [][]byte{})
 		if err != nil {
 			panic(fmt.Errorf("error in setting last block txs while initializing stake genesis: %w", err))
 		}
