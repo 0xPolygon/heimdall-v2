@@ -51,7 +51,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			name: "ves disabled with non-empty vote extension",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 0),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.FromHex(TxHash1), common.FromHex(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
@@ -61,7 +61,7 @@ func TestValidateVoteExtensions(t *testing.T) {
 			name: "function executed and signature verified successfully",
 			ctx:  setupContextWithVoteExtensionsEnableHeight(ctx, 1),
 			extVoteInfo: []abci.ExtendedVoteInfo{
-				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.Hex2Bytes(TxHash1), common.Hex2Bytes(TxHash2), cometVal, validatorPrivKeys[0]),
+				setupExtendedVoteInfo(t, cmtTypes.BlockIDFlagCommit, common.FromHex(TxHash1), common.FromHex(TxHash2), cometVal, validatorPrivKeys[0]),
 			},
 			round:       1,
 			keeper:      hApp.StakeKeeper,
@@ -139,7 +139,7 @@ func TestTallyVotes(t *testing.T) {
 						Power:   1,
 					}),
 			},
-			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
+			expectedApprove: [][]byte{common.FromHex(TxHash1)},
 			expectedReject:  make([][]byte, 0, 3),
 			expectedSkip:    make([][]byte, 0, 3),
 			expectError:     false,
@@ -197,9 +197,9 @@ func TestTallyVotes(t *testing.T) {
 						Power:   5,
 					}),
 			},
-			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
-			expectedReject:  [][]byte{common.Hex2Bytes(TxHash2)},
-			expectedSkip:    [][]byte{common.Hex2Bytes(TxHash3)},
+			expectedApprove: [][]byte{common.FromHex(TxHash1)},
+			expectedReject:  [][]byte{common.FromHex(TxHash2)},
+			expectedSkip:    [][]byte{common.FromHex(TxHash3)},
 			expectError:     false,
 		},
 		{
@@ -231,7 +231,7 @@ func TestTallyVotes(t *testing.T) {
 						Power:   3332,
 					}),
 			},
-			expectedApprove: [][]byte{common.Hex2Bytes(TxHash1)},
+			expectedApprove: [][]byte{common.FromHex(TxHash1)},
 			expectedReject:  make([][]byte, 0, 2),
 			expectedSkip:    make([][]byte, 0, 2),
 			expectError:     false,
@@ -333,7 +333,7 @@ func TestTallyVotes(t *testing.T) {
 			},
 			expectedApprove: make([][]byte, 0, 2),
 			expectedReject:  make([][]byte, 0, 2),
-			expectedSkip:    [][]byte{common.Hex2Bytes(TxHash1)},
+			expectedSkip:    [][]byte{common.FromHex(TxHash1)},
 		},
 	}
 
@@ -390,8 +390,8 @@ func TestTallyVotesErrorDuplicateVote(t *testing.T) {
 }
 
 func TestAggregateVotes(t *testing.T) {
-	txHashBytes := common.Hex2Bytes(TxHash1)
-	blockHashBytes := common.Hex2Bytes(TxHash2)
+	txHashBytes := common.FromHex(TxHash1)
+	blockHashBytes := common.FromHex(TxHash2)
 
 	// create a protobuf msg for ConsolidatedSideTxResponse
 	voteExtensionProto := sidetxs.VoteExtension{
@@ -446,9 +446,9 @@ func TestValidateSideTxResponses(t *testing.T) {
 		{
 			name: "no duplicates",
 			sideTxResponses: []sidetxs.SideTxResponse{
-				{TxHash: common.Hex2Bytes(TxHash1)},
-				{TxHash: common.Hex2Bytes(TxHash2)},
-				{TxHash: common.Hex2Bytes(TxHash3)},
+				{TxHash: common.FromHex(TxHash1)},
+				{TxHash: common.FromHex(TxHash2)},
+				{TxHash: common.FromHex(TxHash3)},
 			},
 			expectedError:  false,
 			expectedTxHash: nil,
@@ -456,13 +456,13 @@ func TestValidateSideTxResponses(t *testing.T) {
 		{
 			name: "one duplicate",
 			sideTxResponses: []sidetxs.SideTxResponse{
-				{TxHash: common.Hex2Bytes(TxHash1)},
-				{TxHash: common.Hex2Bytes(TxHash2)},
-				{TxHash: common.Hex2Bytes(TxHash3)},
-				{TxHash: common.Hex2Bytes(TxHash3)},
+				{TxHash: common.FromHex(TxHash1)},
+				{TxHash: common.FromHex(TxHash2)},
+				{TxHash: common.FromHex(TxHash3)},
+				{TxHash: common.FromHex(TxHash3)},
 			},
 			expectedError:  true,
-			expectedTxHash: common.Hex2Bytes(TxHash3),
+			expectedTxHash: common.FromHex(TxHash3),
 		},
 	}
 
