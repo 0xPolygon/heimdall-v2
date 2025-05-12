@@ -16,6 +16,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/common/cli"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
@@ -213,7 +214,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 				return fmt.Errorf("invalid transaction for header block. Error: %w", err)
 			}
 
-			msg := checkpointTypes.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
+			msg := types.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:])
 
 			return cli.BroadcastMsg(clientCtx, proposer, &msg, logger)
 		},

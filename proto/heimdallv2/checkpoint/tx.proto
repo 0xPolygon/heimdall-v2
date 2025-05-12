@@ -56,8 +56,6 @@ message MsgCpAck {
   uint64 start_block = 4 [ (amino.dont_omitempty) = true ];
   uint64 end_block = 5 [ (amino.dont_omitempty) = true ];
   bytes root_hash = 6 [ (amino.dont_omitempty) = true ];
-  bytes tx_hash = 7 [ (amino.dont_omitempty) = true ];
-  uint64 log_index = 8 [ (amino.dont_omitempty) = true ];
 }
 
 message MsgCpAckResponse {}

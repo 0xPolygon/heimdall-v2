@@ -154,8 +154,6 @@ func NewMsgCpAck(
 	startBlock uint64,
 	endBlock uint64,
 	rootHash []byte,
-	txHash []byte,
-	logIndex uint64,
 ) MsgCpAck {
 	return MsgCpAck{
 		From:       util.FormatAddress(from),
@@ -164,8 +162,6 @@ func NewMsgCpAck(
 		StartBlock: startBlock,
 		EndBlock:   endBlock,
 		RootHash:   rootHash,
-		TxHash:     txHash,
-		LogIndex:   logIndex,
 	}
 }
 

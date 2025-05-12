@@ -10,7 +10,6 @@ import (
 
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
-	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
@@ -38,7 +37,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpoint() {
 	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
-	checkpoint := chSim.GenRandCheckpoint(start, params.MaxCheckpointLength, lastCheckpoint.Id+1)
+	checkpoint := testutil.GenRandCheckpoint(start, params.MaxCheckpointLength, lastCheckpoint.Id+1)
 
 	// add current proposer to checkpoint
 	checkpoint.Proposer = validatorSet.Proposer.Signer
@@ -150,7 +149,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
-	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
+	checkpoint := testutil.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to checkpoint
 	checkpoint.Proposer = validatorSet.Proposer.Signer
@@ -211,7 +210,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointExistInBuffer() {
 	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
-	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
+	checkpoint := testutil.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to checkpoint
 	checkpoint.Proposer = validatorSet.Proposer.Signer
@@ -258,7 +257,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
-	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
+	checkpoint := testutil.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to checkpoint
 	checkpoint.Proposer = validatorSet.Proposer.Signer
@@ -273,8 +272,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -292,8 +289,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -311,8 +306,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(123),
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -327,8 +320,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			testutil.RandomBytes(),
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -359,7 +350,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointNoAck() {
 	require.NotNil(&lastCheckpoint)
 	require.NotNil(lastCheckpoint.Id)
 
-	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
+	checkpoint := testutil.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to checkpoint
 	checkpoint.Proposer = validatorSet.Proposer.Signer
