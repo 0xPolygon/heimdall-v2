@@ -1,7 +1,6 @@
 package hex
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -17,13 +16,9 @@ func FormatAddress(hexAddr string) string {
 	return "0x" + strings.TrimPrefix(hexAddr, "0x")
 }
 
-// IsValidTxHash returns true if the input is a valid 32-byte Cosmos SDK tx hash (64 hex characters, no prefix).
+// IsValidTxHash returns true if the input is a non-empty string.
 func IsValidTxHash(s string) bool {
-	if len(s) != 64 {
-		return false
-	}
-	_, err := hex.DecodeString(s)
-	return err == nil
+	return strings.TrimSpace(s) != ""
 }
 
 // ValidateProof checks if the proof is a valid hex string representing N 32-byte chunks, and not too long.
