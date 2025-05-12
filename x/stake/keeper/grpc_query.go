@@ -109,7 +109,7 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if req.LogIndex < 0 || req.LogIndex >= math.MaxInt64 {
+	if req.LogIndex >= math.MaxInt64 {
 		return nil, status.Error(codes.InvalidArgument, "invalid log index")
 	}
 
