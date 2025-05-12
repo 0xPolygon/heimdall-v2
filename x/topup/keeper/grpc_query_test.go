@@ -58,7 +58,7 @@ func (s *KeeperTestSuite) TestGRPCGetTopupTxSequence_InvalidTxHash() {
 	contractCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   TxHash + "invalid",
+		TxHash:   "",
 		LogIndex: logIndex,
 	}
 
@@ -127,7 +127,7 @@ func (s *KeeperTestSuite) TestGRPCIsTopupTxOld_InvalidTxHash() {
 	tk.ChainKeeper.(*testutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 	req := &types.QueryTopupSequenceRequest{
-		TxHash:   TxHash + "invalid",
+		TxHash:   "",
 		LogIndex: logIndex,
 	}
 
