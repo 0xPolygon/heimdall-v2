@@ -169,38 +169,6 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	require.Equal(checkpointBlock.BorChainId, res.Checkpoint.BorChainId)
 }
 
-func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
-	ctx, require, stakeKeeper, queryClient := s.ctx, s.Require(), s.stakeKeeper, s.queryClient
-
-	validatorSet := stakeSim.GetRandomValidatorSet(2)
-
-	stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
-	req := &types.QueryCurrentProposerRequest{}
-
-	res, err := queryClient.GetCurrentProposer(ctx, req)
-	require.NoError(err)
-	require.NotNil(res)
-
-	require.Equal(res.Validator.Signer, validatorSet.Proposer.Signer)
-}
-
-func (s *KeeperTestSuite) TestHandleQueryProposer() {
-	ctx, require, queryClient, stakeKeeper := s.ctx, s.Require(), s.queryClient, s.stakeKeeper
-
-	validatorSet := stakeSim.GetRandomValidatorSet(2)
-
-	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	req := &types.QueryProposerRequest{Times: 2}
-
-	res, err := queryClient.GetProposers(ctx, req)
-	require.NoError(err)
-	require.NotNil(res)
-
-	require.Equal(len(res.Proposers), 2)
-
-	require.Equal(res.Proposers[0].Signer, validatorSet.Proposer.Signer)
-}
-
 func (s *KeeperTestSuite) TestGetCheckpointList() {
 	ctx, keeper, cmKeeper, queryClient, require := s.ctx, s.checkpointKeeper, s.cmKeeper, s.queryClient, s.Require()
 

@@ -50,6 +50,13 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/stake/proposers/{times}";
   }
+
+  // GetCurrentProposer queries validator info for the current proposer
+  rpc GetCurrentProposer(QueryCurrentProposerRequest)
+      returns (QueryCurrentProposerResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/checkpoint/proposers/current";
+  }
 }
 
 message QueryCurrentValidatorSetRequest {}
@@ -106,5 +113,12 @@ message QueryProposersRequest {
 
 message QueryProposersResponse {
   repeated heimdallv2.stake.Validator proposers = 1
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+}
+
+message QueryCurrentProposerRequest {}
+
+message QueryCurrentProposerResponse {
+  heimdallv2.stake.Validator validator = 1
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }

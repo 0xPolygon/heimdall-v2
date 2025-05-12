@@ -16,7 +16,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/common/cli"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var logger = helper.Logger.With("module", "checkpoint/client/cli")
@@ -24,7 +25,7 @@ var logger = helper.Logger.With("module", "checkpoint/client/cli")
 // NewTxCmd returns a root CLI command handler for all x/checkpoint transaction commands.
 func NewTxCmd() *cobra.Command {
 	txCmd := &cobra.Command{
-		Use:                        checkpointTypes.ModuleName,
+		Use:                        types.ModuleName,
 		Short:                      "Checkpoint module commands",
 		DisableFlagParsing:         true,
 		SuggestionsMinimumDistance: 2,
@@ -59,8 +60,9 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 			}
 
 			if viper.GetBool(FlagAutoConfigure) {
-				queryClient := checkpointTypes.NewQueryClient(clientCtx)
-				proposer, err := queryClient.GetCurrentProposer(cmd.Context(), &checkpointTypes.QueryCurrentProposerRequest{})
+				stakeQueryClient := stakeTypes.NewQueryClient(clientCtx)
+				checkpointQueryClient := types.NewQueryClient(clientCtx)
+				proposer, err := stakeQueryClient.GetCurrentProposer(cmd.Context(), &stakeTypes.QueryCurrentProposerRequest{})
 				if err != nil {
 					return err
 				}
@@ -74,14 +76,12 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 					return fmt.Errorf("please wait for your turn to propose checkpoint. Checkpoint proposer: %v", proposer.Validator.Signer)
 				}
 
-				nextCheckpoint, err := queryClient.GetNextCheckpoint(cmd.Context(), &checkpointTypes.QueryNextCheckpointRequest{
-					BorChainId: borChainID,
-				})
+				nextCheckpoint, err := checkpointQueryClient.GetNextCheckpoint(cmd.Context(), &types.QueryNextCheckpointRequest{})
 				if err != nil {
 					return err
 				}
 
-				msg := checkpointTypes.NewMsgCheckpointBlock(proposer.Validator.Signer, nextCheckpoint.Checkpoint.StartBlock, nextCheckpoint.Checkpoint.EndBlock, nextCheckpoint.Checkpoint.RootHash, nextCheckpoint.Checkpoint.AccountRootHash, borChainID)
+				msg := types.NewMsgCheckpointBlock(proposer.Validator.Signer, nextCheckpoint.Checkpoint.StartBlock, nextCheckpoint.Checkpoint.EndBlock, nextCheckpoint.Checkpoint.RootHash, nextCheckpoint.Checkpoint.AccountRootHash, borChainID)
 
 				return cli.BroadcastMsg(clientCtx, proposer.Validator.Signer, msg, logger)
 			}
@@ -129,7 +129,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("account root hash cannot be empty")
 			}
 
-			msg := checkpointTypes.NewMsgCheckpointBlock(proposer, startBlock, endBlock, common.Hex2Bytes(rootHashStr), common.Hex2Bytes(accountRootHashStr), borChainID)
+			msg := types.NewMsgCheckpointBlock(proposer, startBlock, endBlock, common.Hex2Bytes(rootHashStr), common.Hex2Bytes(accountRootHashStr), borChainID)
 
 			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
 		},
@@ -213,7 +213,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 				return fmt.Errorf("invalid transaction for header block. Error: %w", err)
 			}
 
-			msg := checkpointTypes.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
+			msg := types.NewMsgCpAck(proposer, headerBlock, res.Proposer.String(), res.Start.Uint64(), res.End.Uint64(), res.Root[:], txHash.Bytes(), uint64(viper.GetInt64(FlagCheckpointLogIndex)))
 
 			return cli.BroadcastMsg(clientCtx, proposer, &msg, logger)
 		},
