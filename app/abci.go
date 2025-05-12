@@ -324,6 +324,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 
+	// handle the case when the VEs are disabled starting from the next block
 	if err := checkIfVoteExtensionsDisabled(ctx, req.Height+1); err != nil {
 		return nil, err
 	}
@@ -344,6 +345,15 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 	}
 
 	extVoteInfo := extCommitInfo.Votes
+
+	// handle the case when the VEs are enabled at the initial height
+	if req.Height <= retrieveVoteExtensionsEnableHeight(ctx) {
+		if len(extVoteInfo) != 0 {
+			logger.Error("Unexpected behavior, non-empty VEs found in the initial height's pre-blocker", "height", req.Height)
+			return nil, errors.New("non-empty VEs found in the initial height's pre-blocker")
+		}
+		return app.ModuleManager.PreBlock(ctx)
+	}
 
 	// Fetch txs from block n-1 so that we can match them with the approved txs in block n to execute sideTxs
 	lastBlockTxs, err := app.StakeKeeper.GetLastBlockTxs(ctx)
