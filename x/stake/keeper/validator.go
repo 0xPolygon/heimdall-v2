@@ -32,22 +32,24 @@ func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) er
 }
 
 // IsCurrentValidatorByAddress check if validator is in current validator set by signer address
-func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) bool {
+func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) (bool, error) {
 	k.PanicIfSetupIsIncomplete()
 	// get ack count
 	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
-		return false
+		k.Logger(ctx).Error("error in getting ack count", "error", err)
+		return false, err
 	}
 
 	// get validator info
 	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(address))
 	if err != nil {
-		return false
+		k.Logger(ctx).Error("error in getting validator info", "error", err)
+		return false, err
 	}
 
 	// check if validator is current validator
-	return validator.IsCurrentValidator(ackCount)
+	return validator.IsCurrentValidator(ackCount), nil
 }
 
 // GetValidatorInfo returns the validator info given its address

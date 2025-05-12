@@ -44,7 +44,7 @@ func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySig
 
 	validator, err := q.k.GetValidatorInfo(ctx, req.ValAddress)
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "error in getting validator corresponding to the given address %s", req.ValAddress)
+		return nil, status.Errorf(codes.NotFound, "error in getting validator corresponding to the given address %s. error: %v", req.ValAddress, err)
 	}
 
 	return &types.QuerySignerResponse{Validator: validator}, nil
@@ -70,7 +70,13 @@ func (q queryServer) GetValidatorStatusByAddress(ctx context.Context, req *types
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	return &types.QueryValidatorStatusResponse{IsOld: q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)}, nil
+	isCurrentValidator, err := q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)
+	if err != nil {
+		// error already logged, but returning without an error to keep the response non-nil
+		return &types.QueryValidatorStatusResponse{IsOld: false}, nil
+	}
+
+	return &types.QueryValidatorStatusResponse{IsOld: isCurrentValidator}, nil
 }
 
 // GetTotalPower queries the total power of a validator set

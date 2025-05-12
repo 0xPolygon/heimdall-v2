@@ -101,7 +101,6 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	}
 	res, err := queryClient.GetValidatorStatusByAddress(ctx, req)
 	require.NoError(err)
-
 	require.NotNil(res)
 	require.True(res.IsOld)
 
@@ -110,6 +109,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	}
 	res, err = queryClient.GetValidatorStatusByAddress(ctx, req)
 	require.Nil(err)
+	require.NotNil(res)
 	require.False(res.IsOld)
 }
 
