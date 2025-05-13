@@ -157,7 +157,7 @@ func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 
 func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validators []stakeTypes.Validator) {
 	t.Helper()
-	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
+	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
 	require.NoError(t, err)
 	consolidatedSideTxRes := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{},

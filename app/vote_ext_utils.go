@@ -349,8 +349,8 @@ func retrieveVoteExtensionsEnableHeight(ctx sdk.Context) int64 {
 	return consensusParams.GetAbci().GetVoteExtensionsEnableHeight()
 }
 
-// getDummyNonRpVoteExtension returns a dummy non-rp vote extension for given height and chain id
-func getDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
+// GetDummyNonRpVoteExtension returns a dummy non-rp vote extension for given height and chain id
+func GetDummyNonRpVoteExtension(height int64, chainID string) ([]byte, error) {
 	var buf bytes.Buffer
 
 	writtenBytes, err := buf.Write(dummyNonRpVoteExtension)
@@ -425,7 +425,7 @@ func ValidateNonRpVoteExtension(
 	contractCaller helper.IContractCaller,
 ) error {
 	// Check if its dummy vote non rp extension
-	dummyExt, err := getDummyNonRpVoteExtension(height, ctx.ChainID())
+	dummyExt, err := GetDummyNonRpVoteExtension(height, ctx.ChainID())
 	if err != nil {
 		return err
 	}

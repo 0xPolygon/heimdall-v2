@@ -61,6 +61,7 @@ func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:           "heimdalld",
 		Short:         "Heimdall Daemon (server)",
+		SilenceUsage:  true,
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// set the default command outputs

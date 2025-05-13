@@ -17,6 +17,7 @@ require (
 	github.com/bufbuild/buf v1.50.0
 	github.com/cbergoon/merkletree v0.2.0
 	github.com/cometbft/cometbft v0.38.17
+	github.com/cometbft/cometbft-db v0.14.1
 	github.com/cosmos/cosmos-db v1.0.2
 	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.50.13
@@ -96,7 +97,6 @@ require (
 	github.com/cockroachdb/pebble v1.1.2 // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
-	github.com/cometbft/cometbft-db v0.14.1 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/containerd/cgroups/v3 v3.0.5 // indirect
@@ -320,7 +320,7 @@ require (
 
 // HV2 related packages
 replace (
-	cosmossdk.io/api => github.com/0xPolygon/cosmos-sdk/api v0.7.5
+	cosmossdk.io/api => github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e
 	cosmossdk.io/client/v2 => github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.6
 	cosmossdk.io/collections => github.com/0xPolygon/cosmos-sdk/collections v0.4.0
 	cosmossdk.io/core => github.com/0xPolygon/cosmos-sdk/core v0.11.3-0.20241126102051-89dc71d02611
@@ -330,8 +330,8 @@ replace (
 	cosmossdk.io/store => github.com/0xPolygon/cosmos-sdk/store v1.1.2-0.20241126102051-89dc71d02611
 	cosmossdk.io/tools/confix => github.com/0xPolygon/cosmos-sdk/tools/confix v0.1.1
 	cosmossdk.io/x/tx => github.com/0xPolygon/cosmos-sdk/x/tx v0.13.6-0.20241126102051-89dc71d02611
-	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.4-beta-polygon
-	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.1.16-beta-polygon
+	github.com/cometbft/cometbft => github.com/0xPolygon/cometbft v0.1.6-beta-polygon
+	github.com/cosmos/cosmos-sdk => github.com/0xPolygon/cosmos-sdk v0.1.17-beta-polygon
 	github.com/ethereum/go-ethereum => github.com/maticnetwork/bor v1.5.5
 	// following versions might cause unexpected behavior
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7

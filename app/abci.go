@@ -176,7 +176,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, errors.New("error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
 		}
 
-		dummyVoteExt, err := getDummyNonRpVoteExtension(req.Height, ctx.ChainID())
+		dummyVoteExt, err := GetDummyNonRpVoteExtension(req.Height, ctx.ChainID())
 		if err != nil {
 			logger.Error("Error occurred while getting dummy vote extension", "error", err)
 			return nil, err
