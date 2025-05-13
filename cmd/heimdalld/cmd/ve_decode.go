@@ -6,9 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net"
 	"net/http"
-	"net/url"
 	"path"
 	"strconv"
 
@@ -111,15 +109,8 @@ func getVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.Exten
 	if endpoint < 1 || endpoint > 65535 {
 		return nil, fmt.Errorf("invalid RPC port: %d", endpoint)
 	}
-	u := url.URL{
-		Scheme: "http",
-		Host:   net.JoinHostPort(host, strconv.FormatUint(endpoint, 10)),
-		Path:   "/block",
-	}
-	q := u.Query()
-	q.Set("height", strconv.FormatInt(height, 10))
-	u.RawQuery = q.Encode()
-	resp, err := http.Get(u.String())
+	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, endpoint, height) // #nosec G107
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +173,7 @@ func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 		return nil, fmt.Errorf("block at height %d not found", height)
 	}
 
-	ves := block.Data.Txs[0]
+	ves := block.Data.Txs[0] // nolint:staticcheck
 	if ves == nil {
 		return nil, fmt.Errorf("no vote extensions found in the block")
 	}
