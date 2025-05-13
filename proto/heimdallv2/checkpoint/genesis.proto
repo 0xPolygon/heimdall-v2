@@ -6,6 +6,7 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/checkpoint/types";
 import "gogoproto/gogo.proto";
 import "amino/amino.proto";
 import "heimdallv2/checkpoint/checkpoint.proto";
+import "heimdallv2/checkpoint/checkpoint_signatures.proto";
 
 message GenesisState {
   Params params = 1
@@ -16,4 +17,7 @@ message GenesisState {
   uint64 ack_count = 4 [ (amino.dont_omitempty) = true ];
   repeated Checkpoint checkpoints = 5
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  CheckpointSignatures checkpoint_signatures = 6
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  string checkpoint_signatures_txhash = 7 [ (amino.dont_omitempty) = true ];
 }
