@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"net/url"
 	"path"
 	"strconv"
 
@@ -34,6 +36,7 @@ func veDecodeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().String("chain-id", "", "Heimdall-v2 network chain id")
+	cmd.Flags().String("host", "localhost", "RPC host")
 	cmd.Flags().Uint64P("endpoint", "e", 26657, "Cometbft RPC endpoint")
 
 	if err := cmd.MarkFlagRequired("chain-id"); err != nil {
@@ -46,10 +49,10 @@ func veDecodeCmd() *cobra.Command {
 func runVeDecode(cmd *cobra.Command, args []string) error {
 	height, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		return fmt.Errorf("Invalid height: %v", err)
+		return fmt.Errorf("invalid height: %w", err)
 	}
 	if height < 1 {
-		return fmt.Errorf("Block height number must be greater than VoteExtEnableHeight (1)")
+		return fmt.Errorf("block height number must be greater than VoteExtEnableHeight (1)")
 	}
 
 	chainId, err := cmd.Flags().GetString("chain-id")
@@ -57,33 +60,38 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if chainId == "" {
-		return fmt.Errorf("Non-empty chain ID is required")
+		return fmt.Errorf("non-empty chain ID is required")
+	}
+
+	host, err := cmd.Flags().GetString("host")
+	if err != nil {
+		return fmt.Errorf("error parsing host flag: %w", err)
 	}
 
 	endpoint, err := cmd.Flags().GetUint64("endpoint")
 	if err != nil {
-		return fmt.Errorf("Error parsing endpoint flag: %v", err)
+		return fmt.Errorf("error parsing endpoint flag: %w", err)
 	}
 
 	// Get VoteExtension from the block at the specified height.
-	voteExts, err := getVEs(height, endpoint)
+	voteExts, err := getVEs(height, host, endpoint)
 	if err != nil {
-		return fmt.Errorf("Error getting VEs: %v", err)
+		return fmt.Errorf("error getting VEs: %w", err)
 	}
 	if voteExts == nil {
-		return fmt.Errorf("No VEs found for block height %d", height)
+		return fmt.Errorf("no VEs found for block height %d", height)
 	}
 
 	// Decode and print the extended commit info.
 	if err := decodeAndPrintExtendedCommitInfo(height, voteExts); err != nil {
-		return fmt.Errorf("Error decoding and printing extended commit info: %v", err)
+		return fmt.Errorf("error decoding and printing extended commit info: %w", err)
 	}
 	return nil
 }
 
-func getVEs(height int64, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
+func getVEs(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
 	// 1) Try the RPC endpoint first.
-	voteExt, err1 := getVEsFromEndpoint(height, endpoint)
+	voteExt, err1 := getVEsFromEndpoint(height, host, endpoint)
 	if err1 == nil {
 		return voteExt, nil
 	}
@@ -96,12 +104,22 @@ func getVEs(height int64, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
 	}
 
 	// 3) Both failed, report both the errors.
-	return nil, fmt.Errorf("Failed to fetch VEs:\n- endpoint (port %d): %v\n- block store: %v", endpoint, err1, err2)
+	return nil, fmt.Errorf("failed to fetch VEs:\n- endpoint (port %d): %w\n- block store: %w", endpoint, err1, err2)
 }
 
-func getVEsFromEndpoint(height int64, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
-	url := fmt.Sprintf("http://localhost:%d/block?height=%d", endpoint, height)
-	resp, err := http.Get(url)
+func getVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
+	if endpoint < 1 || endpoint > 65535 {
+		return nil, fmt.Errorf("invalid RPC port: %d", endpoint)
+	}
+	u := url.URL{
+		Scheme: "http",
+		Host:   net.JoinHostPort(host, strconv.FormatUint(endpoint, 10)),
+		Path:   "/block",
+	}
+	q := u.Query()
+	q.Set("height", strconv.FormatInt(height, 10))
+	u.RawQuery = q.Encode()
+	resp, err := http.Get(u.String())
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +130,7 @@ func getVEsFromEndpoint(height int64, endpoint uint64) (*abci.ExtendedCommitInfo
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Failed to fetch block: %s", resp.Status)
+		return nil, fmt.Errorf("failed to fetch block: %s", resp.Status)
 	}
 
 	type BlockResponse struct {
@@ -132,7 +150,7 @@ func getVEsFromEndpoint(height int64, endpoint uint64) (*abci.ExtendedCommitInfo
 	}
 
 	if len(br.Result.Block.Data.Txs) == 0 {
-		return nil, fmt.Errorf("No vote extensions found in the block")
+		return nil, fmt.Errorf("no vote extensions found in the block")
 	}
 
 	veB64Str := br.Result.Block.Data.Txs[0]
@@ -151,7 +169,7 @@ func getVEsFromEndpoint(height int64, endpoint uint64) (*abci.ExtendedCommitInfo
 func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 	homeDir := viper.GetString(flags.FlagHome)
 	if homeDir == "" {
-		return nil, fmt.Errorf("Home directory not set")
+		return nil, fmt.Errorf("home directory not set")
 	}
 
 	db, err := db.NewGoLevelDB("blockstore", path.Join(homeDir, "data"))
@@ -161,12 +179,12 @@ func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 	blockStore := store.NewBlockStore(db)
 	block := blockStore.LoadBlock(height)
 	if block == nil {
-		return nil, fmt.Errorf("Block at height %d not found", height)
+		return nil, fmt.Errorf("block at height %d not found", height)
 	}
 
 	ves := block.Data.Txs[0]
 	if ves == nil {
-		return nil, fmt.Errorf("No vote extensions found in the block")
+		return nil, fmt.Errorf("no vote extensions found in the block")
 	}
 
 	var voteExt abci.ExtendedCommitInfo
