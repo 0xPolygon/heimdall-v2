@@ -308,10 +308,7 @@ func NewHeimdallApp(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-			// register the governance hooks
-		),
-	)
+		govtypes.NewMultiGovHooks())
 
 	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
 		appCodec,
