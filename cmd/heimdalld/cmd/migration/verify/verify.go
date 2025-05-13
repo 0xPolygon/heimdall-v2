@@ -855,7 +855,6 @@ func getValidatorBasicInfo(validator interface{}) (*validatorBasicInfo, error) {
 
 // validatorBasicInfo contains the basic info of a validator
 type validatorBasicInfo struct {
-	// TODO HV2: is this all we want to validate? Probably to be extended
 	power  int64
 	signer string
 	nonce  uint64
