@@ -109,8 +109,8 @@ func getVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.Exten
 	if endpoint < 1 || endpoint > 65535 {
 		return nil, fmt.Errorf("invalid RPC port: %d", endpoint)
 	}
-	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, endpoint, height) // #nosec G107
-	resp, err := http.Get(url)
+	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, endpoint, height)
+	resp, err := http.Get(url) // #nosec G107
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 		return nil, fmt.Errorf("block at height %d not found", height)
 	}
 
-	ves := block.Data.Txs[0] // nolint:staticcheck
+	ves := block.Data.Txs[0] //nolint:staticcheck
 	if ves == nil {
 		return nil, fmt.Errorf("no vote extensions found in the block")
 	}
