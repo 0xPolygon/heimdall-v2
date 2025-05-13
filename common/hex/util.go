@@ -16,8 +16,8 @@ func FormatAddress(hexAddr string) string {
 	return "0x" + strings.TrimPrefix(hexAddr, "0x")
 }
 
-// IsValidTxHash returns true if the input is a non-empty string.
-func IsValidTxHash(s string) bool {
+// IsTxHashNonEmpty returns true if the input is a non-empty string.
+func IsTxHashNonEmpty(s string) bool {
 	return strings.TrimSpace(s) != ""
 }
 

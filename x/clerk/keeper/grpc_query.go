@@ -105,7 +105,7 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if !hex.IsValidTxHash(request.TxHash) {
+	if !hex.IsTxHashNonEmpty(request.TxHash) {
 		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
@@ -138,7 +138,7 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if !hex.IsValidTxHash(request.TxHash) {
+	if !hex.IsTxHashNonEmpty(request.TxHash) {
 		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 

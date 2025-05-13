@@ -35,7 +35,7 @@ func (q queryServer) GetTopupTxSequence(ctx context.Context, req *types.QueryTop
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if !hex.IsValidTxHash(req.TxHash) {
+	if !hex.IsTxHashNonEmpty(req.TxHash) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
 	}
 
@@ -77,7 +77,7 @@ func (q queryServer) IsTopupTxOld(ctx context.Context, req *types.QueryTopupSequ
 		return nil, status.Errorf(codes.InvalidArgument, "empty request")
 	}
 
-	if !hex.IsValidTxHash(req.TxHash) {
+	if !hex.IsTxHashNonEmpty(req.TxHash) {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid tx hash")
 	}
 

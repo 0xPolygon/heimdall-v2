@@ -94,7 +94,7 @@ func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOl
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if !hex.IsValidTxHash(req.TxHash) {
+	if !hex.IsTxHashNonEmpty(req.TxHash) {
 		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 

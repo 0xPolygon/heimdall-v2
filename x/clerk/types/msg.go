@@ -55,7 +55,7 @@ func (msg MsgEventRecord) ValidateBasic() error {
 		return sdkerrors.ErrInvalidAddress
 	}
 
-	if !util.IsValidTxHash(msg.TxHash) {
+	if !util.IsTxHashNonEmpty(msg.TxHash) {
 		return ErrInvalidTxHash
 	}
 
