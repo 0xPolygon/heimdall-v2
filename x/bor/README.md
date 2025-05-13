@@ -109,7 +109,7 @@ return k.AddNewSpan(ctx, newSpan)
 A validator can leverage the CLI to propose a span like so :
 
 ```bash
-./build/heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
+heimdalld tx bor propose-span --proposer <VALIDATOR_ADDRESS> --start-block <BOR_START_BLOCK> --span-id <SPAN_ID> --bor-chain-id <BOR_CHAIN_ID>
 ```
 
 ## Query commands
@@ -126,27 +126,27 @@ One can run the following query commands from the bor module:
 ### CLI commands
 
 ```bash
-./build/heimdalld query bor span-by-id <SPAN_ID>
+heimdalld query bor span-by-id <SPAN_ID>
 ```
 
 ```bash
-./build/heimdalld query bor span-list
+heimdalld query bor span-list
 ```
 
 ```bash
-./build/heimdalld query bor latest-span
+heimdalld query bor latest-span
 ```
 
 ```bash
-./build/heimdalld query bor next-span-seed [id]
+heimdalld query bor next-span-seed [id]
 ```
 
 ```bash
-./build/heimdalld query bor next-span
+heimdalld query bor next-span
 ```
 
 ```bash
-./build/heimdalld query bor params
+heimdalld query bor params
 ```
 
 ### GRPC Endpoints

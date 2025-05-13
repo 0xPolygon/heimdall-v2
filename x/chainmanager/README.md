@@ -45,7 +45,7 @@ One can run the following query commands from the chainmanager module :
 ### CLI commands
 
 ```bash
-./build/heimdalld query chainmanager params
+heimdalld query chainmanager params
 ```
 
 ### GRPC Endpoints

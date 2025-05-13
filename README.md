@@ -14,8 +14,11 @@ This will produce the binary `heimdalld` in the `build` directory.
 
 ## Initialize heimdall
 ```bash 
-$ heimdalld init --moniker=<NODE_NAME> --chain=<NETWORK_NAME>
+$ heimdalld init --moniker=<NODE_NAME> --chain-id=<NETWORK_NAME>
 ```
+You can skip `--chain` flag if you want to run this locally (it will default to `heimdall-local`).
+
+This command will generate some folders and files in the heimdall home directory (default /var/lib/heimdall).
 
 ## Run heimdall
 ```bash 

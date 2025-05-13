@@ -88,7 +88,7 @@ message Milestone {
 
 #### Send Milestone Transaction 
 ```bash
-./build/heimdalld tx milestone milestone [proposer] [startBlock] [endBlock] [hash] [borChainId] [milestoneId]
+heimdalld tx milestone milestone [proposer] [startBlock] [endBlock] [hash] [borChainId] [milestoneId]
 ```
 
 ### CLI Query Commands
@@ -104,31 +104,31 @@ One can run the following query commands from the milestone module:
 * `get-no-ack-milestone-by-id` - Get no ack milestone by id
 
 ```bash
-./build/heimdalld query milestone get-params
+heimdalld query milestone get-params
 ```
 
 ```bash
-./build/heimdalld query milestone get-count
+heimdalld query milestone get-count
 ```
 
 ```bash
-./build/heimdalld query milestone get-latest-milestone
+heimdalld query milestone get-latest-milestone
 ```
 
 ```bash
-./build/heimdalld query milestone get-milestone-by-number
+heimdalld query milestone get-milestone-by-number
 ```
 
 ```bash
-./build/heimdalld query milestone get-milestone-proposer
+heimdalld query milestone get-milestone-proposer
 ```
 
 ```bash
-./build/heimdalld query milestone get-latest-no-ack-milestone
+heimdalld query milestone get-latest-no-ack-milestone
 ```
 
 ```bash
-./build/heimdalld query milestone get-no-ack-milestone-by-id
+heimdalld query milestone get-no-ack-milestone-by-id
 ```
 
 ### GRPC Endpoints

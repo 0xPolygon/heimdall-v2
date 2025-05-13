@@ -43,7 +43,7 @@ To start bridge as a validator you just have to add `--bridge` command to your h
 To run all the service :
 
 ```bash
-./build/heimdalld start --bridge --all
+heimdalld start --bridge --all
 ```
 
 ## Reset

@@ -169,22 +169,22 @@ message MsgValidatorExit {
 
 #### Validator Join
 ```bash
-./build/heimdalld tx stake validator-join --proposer {proposer address} --signer-pubkey {signer pubkey with 04 prefix} --tx-hash {tx hash} --block-number {L1 block number} --staked-amount {total stake amount} --activation-epoch {activation epoch} --home="{path to home}"
+heimdalld tx stake validator-join --proposer {proposer address} --signer-pubkey {signer pubkey with 04 prefix} --tx-hash {tx hash} --block-number {L1 block number} --staked-amount {total stake amount} --activation-epoch {activation epoch} --home="{path to home}"
 ```
 
 #### Signer Update
 ```bash
-./build/heimdalld tx stake signer-update --proposer {proposer address} --id {val id} --new-pubkey {new pubkey with 04 prefix} --tx-hash {tx hash}  --log-index {log index} --block-number {L1 block number} --nonce {nonce} --home="{path to home}"
+heimdalld tx stake signer-update --proposer {proposer address} --id {val id} --new-pubkey {new pubkey with 04 prefix} --tx-hash {tx hash}  --log-index {log index} --block-number {L1 block number} --nonce {nonce} --home="{path to home}"
 ```
 
 #### Stake Update
 ```bash
-./build/heimdalld tx stake stake-update [valAddress] [valId] [amount] [txHash] [logIndex] [blockNumber] [nonce]
+heimdalld tx stake stake-update [valAddress] [valId] [amount] [txHash] [logIndex] [blockNumber] [nonce]
 ```
 
 #### Validator Exit
 ```bash
-./build/heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]
+heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]
 ```
 
 ### CLI Query Commands
@@ -199,27 +199,27 @@ One can run the following query commands from the stake module:
 * `is-old-tx` - Check if a tx is old (already submitted)
 
 ```bash
-./build/heimdalld query stake current-validator-set
+heimdalld query stake current-validator-set
 ```
 
 ```bash
-./build/heimdalld query stake signer [val_address]
+heimdalld query stake signer [val_address]
 ```
 
 ```bash
-./build/heimdalld query stake validator [id]
+heimdalld query stake validator [id]
 ```
 
 ```bash
-./build/heimdalld query stake validator-status [val_address]
+heimdalld query stake validator-status [val_address]
 ```
 
 ```bash
-./build/heimdalld query stake total-power
+heimdalld query stake total-power
 ```
 
 ```bash
-./build/heimdalld query stake is-old-tx [txHash] [logIndex]
+heimdalld query stake is-old-tx [txHash] [logIndex]
 ```
 
 ### GRPC Endpoints
