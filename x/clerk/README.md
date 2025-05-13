@@ -36,18 +36,20 @@ An `EventRecord` is defined by the data structure :
 message EventRecord {
   option (gogoproto.goproto_getters) = false;
   option (gogoproto.equal) = false;
-
-  uint64 id = 1;
+  uint64 id = 1 [ (amino.dont_omitempty) = true ];
   string contract = 2 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  bytes data = 3;
-  string tx_hash = 4;
-  uint64 log_index = 5;
-  string bor_chain_id = 6;
-  google.protobuf.Timestamp record_time = 7
-  [ (gogoproto.stdtime) = true, (gogoproto.nullable) = false ];
+  bytes data = 3 [ (amino.dont_omitempty) = true ];
+  string tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  string bor_chain_id = 6 [ (amino.dont_omitempty) = true ];
+  google.protobuf.Timestamp record_time = 7 [
+    (gogoproto.stdtime) = true,
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true
+  ];
 }
 ```
 
@@ -63,23 +65,25 @@ The bridge will listen to the state-sync events from L1 and generate a txn with 
 
 ```protobuf
 message MsgEventRecord {
+  option (amino.name) = "heimdallv2/clerk/MsgEventRecord";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = false;
+  option (cosmos.msg.v1.signer) = "from";
 
   string from = 1 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  string tx_hash = 2;
-  uint64 log_index = 3;
-  uint64 block_number = 4;
+  string tx_hash = 2 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 3 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 4 [ (amino.dont_omitempty) = true ];
   string contract_address = 5 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
-  bytes data = 6;
-  uint64 id = 7;
-  string chain_id = 8;
+  bytes data = 6 [ (amino.dont_omitempty) = true ];
+  uint64 id = 7 [ (amino.dont_omitempty) = true ];
+  string chain_id = 8 [ (amino.dont_omitempty) = true ];
 }
 ```
 
@@ -133,11 +137,11 @@ One can run the following query commands from the clerk module :
 The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file. Please refer them for more information about the optional params.
 
 ```bash
-grpcurl -plaintext -d '{"record_id": <>}' localhost:9090 heimdallv2.clerk.Query/GetRecordById
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordList
 ```
 
 ```bash
-grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordList
+grpcurl -plaintext -d '{"record_id": <>}' localhost:9090 heimdallv2.clerk.Query/GetRecordById
 ```
 
 ```bash
@@ -157,11 +161,11 @@ grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdall
 The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file. Please refer them for more information about the optional params.
 
 ```bash
-curl localhost:1317/clerk/event-record/<event-id>
+curl localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>
 ```
 
 ```bash
-curl localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>
+curl localhost:1317/clerk/event-record/<event-id>
 ```
 
 ```bash

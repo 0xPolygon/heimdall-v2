@@ -1,7 +1,5 @@
 # heimdall-v2
 
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 Consensus client of Polygon PoS chain, using a forks of [cometBFT](https://github.com/0xPolygon/cometBFT) and [cosmos-sdk](https://github.com/0xPolygon/cosmos-sdk).
 
 ## Pre-requisites

@@ -308,10 +308,7 @@ func NewHeimdallApp(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-		// register the governance hooks
-		),
-	)
+		govtypes.NewMultiGovHooks())
 
 	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
 		appCodec,
@@ -555,7 +552,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		}
 	}
 
-	// TODO: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
 	// update validators
 	return &abci.ResponseInitChain{
 		Validators: valUpdates,

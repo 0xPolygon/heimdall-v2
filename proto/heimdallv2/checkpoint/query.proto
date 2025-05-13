@@ -20,7 +20,7 @@ service Query {
     option (google.api.http).get = "/checkpoints/params";
   }
 
-  // GetChekpointOverview queries for the checkpoint overview
+  // GetCheckpointOverview queries for the checkpoint overview
   rpc GetCheckpointOverview(QueryCheckpointOverviewRequest)
       returns (QueryCheckpointOverviewResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
