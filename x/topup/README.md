@@ -126,13 +126,13 @@ message MsgWithdrawFeeTx {
 #### Topup fee
 
 ```bash
-./build/heimdalld tx topup handle-topup-tx [proposer] [user] [fee] [tx_hash] [log_index] [block_number]
+heimdalld tx topup handle-topup-tx [proposer] [user] [fee] [tx_hash] [log_index] [block_number]
 ```
 
 #### Withdraw fee
 
 ```bash
-./build/heimdalld tx topup withdraw-fee [proposer] [amount]
+heimdalld tx topup withdraw-fee [proposer] [amount]
 ```
 
 ### CLI Query Commands
@@ -147,27 +147,27 @@ One can run the following query commands from the topup module:
 * `verify-account-proof` - Verify account proof
 
 ```bash
-./build/heimdalld query topup topup-sequence [tx_hash] [log_index]
+heimdalld query topup topup-sequence [tx_hash] [log_index]
 ```
 
 ```bash
-./build/heimdalld query topup is-old-tx [tx_hash] [log_index]
+heimdalld query topup is-old-tx [tx_hash] [log_index]
 ```
 
 ```bash
-./build/heimdalld query topup dividend-account [address]
+heimdalld query topup dividend-account [address]
 ```
 
 ```bash
-./build/heimdalld query topup dividend-account-root
+heimdalld query topup dividend-account-root
 ```
 
 ```bash
-./build/heimdalld query topup account-proof [address]
+heimdalld query topup account-proof [address]
 ```
 
 ```bash
-./build/heimdalld query topup verify-account-proof [address] [proof]
+heimdalld query topup verify-account-proof [address] [proof]
 ```
 
 ### GRPC Endpoints

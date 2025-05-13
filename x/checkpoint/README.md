@@ -133,19 +133,19 @@ message MsgCpNoAck {
 
 #### Send checkpoint
 ```bash
-./build/heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-block=<start-block-number> --end-block=<end-block-number> --root-hash=<root-hash> --account-root=<account-root> --bor-chain-id=<bor-chain-id> --chain-id=<chain-id> --auto-configure=true/false
+heimdalld tx checkpoint send-checkpoint --proposer=<proposer-address> --start-block=<start-block-number> --end-block=<end-block-number> --root-hash=<root-hash> --account-root=<account-root> --bor-chain-id=<bor-chain-id> --chain-id=<chain-id> --auto-configure=true/false
 ```
 
 #### Send checkpoint ack
 
 ```bash
-./build/heimdalld tx checkpoint send-ack --tx-hash=<checkpoint-tx-hash> --log-index=<log-index> --header=<header> --proposer=<proposer-address> --chain-id=<heimdall-chainid>
+heimdalld tx checkpoint send-ack --tx-hash=<checkpoint-tx-hash> --log-index=<log-index> --header=<header> --proposer=<proposer-address> --chain-id=<heimdall-chainid>
 ```
 
 #### Send checkpoint no-ack
 
 ```bash
-./build/heimdalld tx checkpoint checkpoint-no-ack --from <from>
+heimdalld tx checkpoint checkpoint-no-ack --from <from>
 ```
 
 ## CLI Query Commands
@@ -165,47 +165,47 @@ One can run the following query commands from the checkpoint module:
 * `get-checkpoint-list` - Get the list of checkpoints
 
 ```bash
-./build/heimdalld query checkpoint get-params
+heimdalld query checkpoint get-params
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-overview
+heimdalld query checkpoint get-overview
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-ack-count
+heimdalld query checkpoint get-ack-count
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-checkpoint
+heimdalld query checkpoint get-checkpoint
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-checkpoint-latest
+heimdalld query checkpoint get-checkpoint-latest
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-checkpoint-buffer
+heimdalld query checkpoint get-checkpoint-buffer
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-last-no-ack
+heimdalld query checkpoint get-last-no-ack
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-next-checkpoint
+heimdalld query checkpoint get-next-checkpoint
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-current-proposer
+heimdalld query checkpoint get-current-proposer
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-proposers
+heimdalld query checkpoint get-proposers
 ```
 
 ```bash
-./build/heimdalld query checkpoint get-checkpoint-list
+heimdalld query checkpoint get-checkpoint-list
 ```
 
 ## GRPC Endpoints

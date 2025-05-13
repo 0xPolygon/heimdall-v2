@@ -98,7 +98,7 @@ Only when there is a majority of `YES` votes, The event will be processed by `Po
 A validator can leverage the CLI to add an event to the state in case it's missing and not processed by the bridge, The CLI command is :
 
 ```bash
-./build/heimdalld tx clerk handle-msg-event-record [from] [tx-hash] [log-index] [block-number] [contract-address] [data] [id] [chain-id]
+heimdalld tx clerk handle-msg-event-record [from] [tx-hash] [log-index] [block-number] [contract-address] [data] [id] [chain-id]
 ```
 
 ## Query commands
@@ -113,23 +113,23 @@ One can run the following query commands from the clerk module :
 ### CLI commands
 
 ```bash
-./build/heimdalld query clerk record [record-id]
+heimdalld query clerk record [record-id]
 ```
 
 ```bash
-./build/heimdalld query clerk record-list [page] [limit]
+heimdalld query clerk record-list [page] [limit]
 ```
 
 ```bash
-./build/heimdalld query clerk record-list-with-time [from-id] [to-time]
+heimdalld query clerk record-list-with-time [from-id] [to-time]
 ```
 
 ```bash
-./build/heimdalld query clerk record-sequence [tx-hash] [log-index]
+heimdalld query clerk record-sequence [tx-hash] [log-index]
 ```
 
 ```bash
-./build/heimdalld query clerk is-old-tx [tx-hash] [log-index]
+heimdalld query clerk is-old-tx [tx-hash] [log-index]
 ```
 
 ### GRPC Endpoints
