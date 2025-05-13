@@ -389,8 +389,8 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 			expectedDiff = expectedDiff - 1
 		}
 		// cap with max checkpoint length
-		if expectedDiff > checkpointParams.MaxCheckpointLength-1 {
-			expectedDiff = checkpointParams.MaxCheckpointLength - 1
+		if expectedDiff >= checkpointParams.MaxCheckpointLength {
+			expectedDiff = checkpointParams.MaxCheckpointLength
 		}
 		// get end result
 		end = expectedDiff + start
