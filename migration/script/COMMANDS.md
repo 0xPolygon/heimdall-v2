@@ -1,7 +1,7 @@
 # Download migration script
 
 ```bash
-curl -O https://raw.githubusercontent.com/<user>/<repo>/<branch>/migration.sh
+curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/POS-3015/migration/script/migration.sh
 ```
 
 # Verify checksum 

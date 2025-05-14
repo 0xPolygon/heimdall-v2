@@ -15,7 +15,7 @@ INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=true
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/marcello33/test-genesis/main/genesis.json"
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/POS-3015/migration/networks/devnet/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
