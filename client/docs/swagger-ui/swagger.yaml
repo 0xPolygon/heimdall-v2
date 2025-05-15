@@ -2091,7 +2091,53 @@ paths:
           format: uint64
       tags:
         - Query
-  /checkpoint/proposers/current:
+  /stake/is-old-tx:
+    get:
+      summary: IsStakeTxOld queries for the staking sequence
+      operationId: IsStakeTxOld
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              is_old:
+                type: boolean
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: tx_hash
+          in: query
+          required: false
+          type: string
+        - name: log_index
+          in: query
+          required: false
+          type: string
+          format: uint64
+      tags:
+        - Query
+  /stake/proposers/current:
     get:
       summary: GetCurrentProposer queries validator info for the current proposer
       operationId: GetCurrentProposer
@@ -2153,52 +2199,6 @@ paths:
                     value:
                       type: string
                       format: byte
-      tags:
-        - Query
-  /stake/is-old-tx:
-    get:
-      summary: IsStakeTxOld queries for the staking sequence
-      operationId: IsStakeTxOld
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              is_old:
-                type: boolean
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: tx_hash
-          in: query
-          required: false
-          type: string
-        - name: log_index
-          in: query
-          required: false
-          type: string
-          format: uint64
       tags:
         - Query
   /stake/proposers/{times}:

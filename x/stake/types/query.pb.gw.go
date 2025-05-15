@@ -748,7 +748,7 @@ var (
 
 	pattern_Query_GetProposersByTimes_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"stake", "proposers", "times"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetCurrentProposer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"checkpoint", "proposers", "current"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetCurrentProposer_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"stake", "proposers", "current"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

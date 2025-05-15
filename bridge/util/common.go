@@ -39,7 +39,7 @@ const (
 	BufferedCheckpointURL   = "/checkpoints/buffer"
 	LatestCheckpointURL     = "/checkpoints/latest"
 	CountCheckpointURL      = "/checkpoints/count"
-	CurrentProposerURL      = "/checkpoint/proposers/current"
+	CurrentProposerURL      = "/stake/proposers/current"
 	LatestSpanURL           = "/bor/span/latest"
 	NextSpanInfoURL         = "/bor/span/prepare"
 	NextSpanSeedURL         = "/bor/span/seed/%v"
