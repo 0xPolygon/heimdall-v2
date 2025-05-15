@@ -59,12 +59,10 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod: "GetNextCheckpoint",
-					Use:       "get-next-checkpoint",
-					Short:     "Get the next checkpoint",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "bor_chain_id"},
-					},
+					RpcMethod:      "GetNextCheckpoint",
+					Use:            "get-next-checkpoint",
+					Short:          "Get the next checkpoint",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
 					RpcMethod:      "GetCurrentProposer",
