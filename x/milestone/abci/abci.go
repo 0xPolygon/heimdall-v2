@@ -86,10 +86,6 @@ func getFastForwardMilestoneStartBlock(latestHeaderNumber, latestMilestoneEndBlo
 	return latestMilestoneEndBlock + latestHeaderMilestoneDistanceInBlocks + 1
 }
 
-func getMajorityBlocks() {
-
-}
-
 func GetMajorityMilestoneProposition(
 	validatorSet *stakeTypes.ValidatorSet,
 	extVoteInfo []abciTypes.ExtendedVoteInfo,
