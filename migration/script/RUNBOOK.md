@@ -31,7 +31,7 @@ This transition requires a structured and coordinated approach across multiple t
 
 ### Execution
 
-The majority of the steps below are automated in the [migration script](migration.sh), the following is just a runbook for manual execution.
+The majority of the steps below are automated in the [migration script](migrate.sh), the following is just a runbook for manual execution.
 
 1. Node operators confirm to be on latest Bor/Erigon version (compatible with v1 and v2)
 2. Node operators confirm to be on latest Heimdall-v1 version (with `halt_height` embedded)
