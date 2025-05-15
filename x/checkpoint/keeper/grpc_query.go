@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"context"
+	"math"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"google.golang.org/grpc/codes"
@@ -194,10 +195,13 @@ func (q queryServer) GetProposers(ctx context.Context, req *types.QueryProposerR
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	times := int(req.Times)
-	if times == 0 {
+	if req.Times > uint64(math.MaxInt) {
+		return nil, status.Errorf(codes.InvalidArgument, "times exceeds MaxInt")
+	}
+	if req.Times == 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "times must be greater than 0")
 	}
+	times := int(req.Times)
 	if times > len(validatorSet.Validators) {
 		times = len(validatorSet.Validators)
 	}
