@@ -173,6 +173,12 @@ version_ge() {
     [[ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" == "$2" ]]
 }
 
+# Normalize versions: strip leading 'v' if present
+normalize_version() {
+  local raw="$1"
+  echo "${raw#v}"  # removes leading 'v' if it exists
+}
+
 # Helper to set or insert a key=value pair in a TOML file (top-level only)
 set_toml_key() {
   local file="$1"
@@ -241,28 +247,50 @@ HEIMDALLCLI_VERSION=$("$HEIMDALL_CLI_PATH" version 2>/dev/null)
 if [[ -z "$HEIMDALLCLI_VERSION" ]]; then
     handle_error $STEP "HEIMDALLCLI_PATH is invalid or heimdallcli is not executable."
 fi
-if [[ "$DRY_RUN" != "true" && "$HEIMDALLCLI_VERSION" != "$APOCALYPSE_TAG" ]]; then
+# Compare heimdallcli version
+if [[ "$DRY_RUN" != "true" ]]; then
+  NORMALIZED_HEIMDALLCLI_VERSION=$(normalize_version "$HEIMDALLCLI_VERSION")
+  NORMALIZED_EXPECTED_VERSION=$(normalize_version "$APOCALYPSE_TAG")
+
+  if [[ "$NORMALIZED_HEIMDALLCLI_VERSION" != "$NORMALIZED_EXPECTED_VERSION" ]]; then
     handle_error $STEP "heimdallcli version mismatch! Expected: $APOCALYPSE_TAG, Found: $HEIMDALLCLI_VERSION"
+  fi
 fi
-# HEIMDALLD_PATH
+# Validate heimdalld path and version
 validate_absolute_path "$HEIMDALLD_PATH" "HEIMDALLD_PATH"
 HEIMDALLD_VERSION=$("$HEIMDALLD_PATH" version 2>/dev/null)
 if [[ -z "$HEIMDALLD_VERSION" ]]; then
     handle_error $STEP "HEIMDALLD_PATH is invalid or heimdalld is not executable."
 fi
-if [[ "$DRY_RUN" != "true" && "$HEIMDALLD_VERSION" != "$APOCALYPSE_TAG" ]]; then
+
+if [[ "$DRY_RUN" != "true" ]]; then
+  NORMALIZED_HEIMDALLD_VERSION=$(normalize_version "$HEIMDALLD_VERSION")
+  if [[ "$NORMALIZED_HEIMDALLD_VERSION" != "$NORMALIZED_EXPECTED_VERSION" ]]; then
     handle_error $STEP "heimdalld version mismatch! Expected: $APOCALYPSE_TAG, Found: $HEIMDALLD_VERSION"
+  fi
 fi
 # BOR_PATH (optional)
 if [[ -n "$BOR_PATH" ]]; then
     validate_absolute_path "$BOR_PATH" "BOR_PATH"
     if [[ "$DRY_RUN" != "true" ]]; then
         RAW_BOR_VERSION=$("$BOR_PATH" version 2>/dev/null)
-        BOR_VERSION=$(echo "$RAW_BOR_VERSION" | grep -i '^Version:' | awk '{print $2}')
-        if [[ -z "$BOR_VERSION" ]]; then
-            handle_error $STEP "Could not parse bor version."
+        # Try to extract the version:
+        # 1. If it's in "Version: x.y.z" format (multi-line), useful for commits/branches on unreleased versions
+        # 2. Else fallback to assuming RAW_BOR_VERSION is the version string directly
+        if echo "$RAW_BOR_VERSION" | grep -qi '^Version:'; then
+            BOR_VERSION=$(echo "$RAW_BOR_VERSION" | grep -i '^Version:' | awk '{print $2}')
+        else
+            # Fallback: take first word in raw output
+            BOR_VERSION=$(echo "$RAW_BOR_VERSION" | awk '{print $1}')
         fi
-        if [[ "$BOR_VERSION" != "$REQUIRED_BOR_VERSION" ]]; then
+        if [[ -z "$BOR_VERSION" ]]; then
+            handle_error $STEP "Could not parse bor version. Output: $RAW_BOR_VERSION"
+        fi
+        # Normalize both expected and actual versions (strip leading 'v')
+        NORMALIZED_BOR_VERSION=$(normalize_version "$BOR_VERSION")
+        NORMALIZED_REQUIRED_BOR_VERSION=$(normalize_version "$REQUIRED_BOR_VERSION")
+
+        if [[ "$NORMALIZED_BOR_VERSION" != "$NORMALIZED_REQUIRED_BOR_VERSION" ]]; then
             handle_error $STEP "bor version mismatch! Expected: $REQUIRED_BOR_VERSION, Found: $BOR_VERSION"
         fi
     fi
