@@ -3,19 +3,19 @@
 umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
-APOCALYPSE_TAG="v1.2.1-0.20250304070426-dbac1723c8c2"
-REQUIRED_BOR_VERSION="2.0.3"
-CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
-MIGRATED_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
-HEIMDALL_V2_VERSION="0.1.13"
+APOCALYPSE_TAG="1.2.3-27-g74c8af58"
+REQUIRED_BOR_VERSION="2.0.0"
+CHECKSUM="07d8634fd2c14bf3ad1b1f6f6646ee632b9279339c8f77ccc1cea0f2e64b389a97d2c443f42e345210be59a58e574bdfb4e425e8e998f83dd8383239b031dd03"
+MIGRATED_CHECKSUM="bf7a2a4b99c96eaa4246c1932bfdae28a821b6f90b68209ccbc1da49d5689e28f8bbd6433939523d5d362551d6baa56d1c448a178fc8ee82061177e3b7539060"
+HEIMDALL_V2_VERSION="0.1.15"
 CHAIN_ID="devnet"
-GENESIS_TIME="2025-05-14T16:30:00Z"
+GENESIS_TIME="2025-05-15T14:15:00Z"
 APOCALYPSE_HEIGHT=200
 INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
-DRY_RUN=true
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/POS-3015/migration/networks/devnet/dump-genesis.json"
+DRY_RUN=false
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/networks/devnet/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
@@ -258,7 +258,7 @@ if [[ -n "$BOR_PATH" ]]; then
     validate_absolute_path "$BOR_PATH" "BOR_PATH"
     if [[ "$DRY_RUN" != "true" ]]; then
         RAW_BOR_VERSION=$("$BOR_PATH" version 2>/dev/null)
-        BOR_VERSION=$(echo "$RAW_BOR_VERSION" | grep -oE 'v?[0-9]+\\.[0-9]+\\.[0-9]+' | head -n1 | sed 's/^v//')
+        BOR_VERSION=$(echo "$RAW_BOR_VERSION" | grep -i '^Version:' | awk '{print $2}')
         if [[ -z "$BOR_VERSION" ]]; then
             handle_error $STEP "Could not parse bor version."
         fi
