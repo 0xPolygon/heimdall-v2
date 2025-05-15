@@ -98,7 +98,10 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 		} else {
 			// compare the current block hash with the stored block hash
 			if !bytes.Equal(blockHash, voteExtension.BlockHash) {
-				return fmt.Errorf("mismatching block hash for vote extension from validator %s", valAddrStr)
+				return fmt.Errorf("invalid block hash found for vote extension",
+					"expectedBlockHash", common.Bytes2Hex(blockHash),
+					"receivedBlockHash", common.Bytes2Hex(voteExtension.BlockHash),
+					"validator", valAddrStr)
 			}
 		}
 
