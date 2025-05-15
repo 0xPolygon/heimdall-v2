@@ -616,18 +616,22 @@ if [[ ! -x "$HEIMDALLD_PATH" ]]; then
     handle_error $STEP "Heimdalld binary is missing or not executable: $HEIMDALLD_PATH"
 fi
 # Check heimdalld version
-HEIMDALLD_V2_VERSION=$($HEIMDALLD_PATH version 2>/dev/null | tail -n 1)
-if [[ -z "$HEIMDALLD_V2_VERSION" ]]; then
+# Extract version from last non-empty line of heimdalld output
+HEIMDALLD_V2_VERSION_RAW=$($HEIMDALLD_PATH version 2>/dev/null | awk 'NF' | tail -n 1)
+if [[ -z "$HEIMDALLD_V2_VERSION_RAW" ]]; then
     handle_error $STEP "Failed to retrieve Heimdall v2 version. Installation may have failed."
 fi
-if [[ "$HEIMDALLD_V2_VERSION" != "$HEIMDALL_V2_VERSION" ]]; then
-    handle_error $STEP "Heimdall v2 version mismatch! Expected: $HEIMDALL_V2_VERSION, Found: $HEIMDALLD_V2_VERSION"
+# Normalize actual and expected versions
+NORMALIZED_HEIMDALLD_V2_VERSION=$(normalize_version "$HEIMDALLD_V2_VERSION_RAW")
+NORMALIZED_EXPECTED_HEIMDALL_V2_VERSION=$(normalize_version "$HEIMDALL_V2_VERSION")
+if [[ "$NORMALIZED_HEIMDALLD_V2_VERSION" != "$NORMALIZED_EXPECTED_HEIMDALL_V2_VERSION" ]]; then
+    handle_error $STEP "Heimdall v2 version mismatch! Expected: $HEIMDALL_V2_VERSION, Found: $HEIMDALLD_V2_VERSION_RAW"
 fi
 # Ensure HEIMDALL_HOME exists
 if [[ ! -d "$HEIMDALL_HOME" ]]; then
     handle_error $STEP "HEIMDALL_HOME does not exist after installation."
 fi
-echo "[INFO] heimdall-v2 is using the correct version $HEIMDALLD_V2_VERSION"
+echo "[INFO] heimdall-v2 is using the correct version $HEIMDALL_V2_VERSION"
 
 
 # Step 14: migrate genesis file
