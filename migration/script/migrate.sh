@@ -796,7 +796,7 @@ done
 echo "[INFO] All required directories are present in $HEIMDALL_HOME"
 
 
-# Step 20: Restore bridge directory from backup (if exists, for validators, will be skipped for sentries)
+# Step 20: Restore bridge directory from backup
 STEP=20
 print_step $STEP "Restoring bridge directory from backup if present"
 ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for restore
@@ -951,11 +951,15 @@ echo -e "   - external_address"
 echo -e "   - seeds"
 echo -e "   - persistent_peers"
 echo -e "   - max_num_inbound_peers"
-echo -e "   - max_num_outbound_peers\n"
+echo -e "   - max_num_outbound_peers"
+echo -e "   - proxy_app"
+echo -e "   - addr_book_strict\n"
 echo -e "📁 From v1 \033[1mheimdall-config.toml\033[0m → v2 app.toml:"
 echo -e "   - eth_rpc_url"
 echo -e "   - bor_rpc_url"
-echo -e "   - bor_grpc_flag\n"
+echo -e "   - bor_grpc_flag"
+echo -e "   - bor_grpc_url"
+echo -e "   - amqp_url\n"
 echo -e "📁 Into \033[1mclient.toml\033[0m:"
 echo -e "   - chain-id = \"$CHAIN_ID\"\n"
 echo -e "💡 You may manually edit other parameters (e.g. ports, metrics, logging) after migration."
@@ -966,10 +970,7 @@ echo -e "\n     [heimdall]"
 echo -e "     ws-address = \"ws://localhost:26657/websocket\"\n"
 echo -e "   ✅ This setting is recommended, as it improves performance by reducing the number of HTTP polling requests from Heimdall to Bor."
 echo -e "   🔄 After updating the config, make sure to restart your Bor node for changes to take effect.\n"
-
-# ----------------------------------------
 # 1. Set chain-id in client.toml
-# ----------------------------------------
 CLIENT_TOML="$HEIMDALL_HOME/config/client.toml"
 echo "[INFO] Setting chain-id in client.toml..."
 set_toml_key "$CLIENT_TOML" "chain-id" "$CHAIN_ID"
@@ -978,9 +979,7 @@ if [[ "$actual_chain_id" != "$CHAIN_ID" ]]; then
     handle_error $STEP "Validation failed: expected chain-id = $CHAIN_ID, found $actual_chain_id"
 fi
 echo "[OK]   client.toml: chain-id = $CHAIN_ID"
-# ----------------------------------------
 # 2. Migrate config.toml keys
-# ----------------------------------------
 OLD_CONFIG_TOML="$BACKUP_DIR/config/config.toml"
 NEW_CONFIG_TOML="$HEIMDALL_HOME/config/config.toml"
 CONFIG_KEYS=(
@@ -990,6 +989,8 @@ CONFIG_KEYS=(
     "persistent_peers"
     "max_num_inbound_peers"
     "max_num_outbound_peers"
+    "proxy_app"
+    "addr_book_strict"
 )
 echo "[INFO] Copying selected values from v1 config.toml to v2..."
 for key in "${CONFIG_KEYS[@]}"; do
@@ -1010,15 +1011,15 @@ for key in "${CONFIG_KEYS[@]}"; do
     fi
 done
 echo "[INFO] config.toml values migrated successfully."
-# ----------------------------------------
 # 3. Migrate heimdall-config.toml → app.toml
-# ----------------------------------------
 OLD_HEIMDALL_CONFIG_TOML="$BACKUP_DIR/config/heimdall-config.toml"
 NEW_APP_TOML="$HEIMDALL_HOME/config/app.toml"
 APP_KEYS=(
     "eth_rpc_url"
     "bor_rpc_url"
     "bor_grpc_flag"
+    "bor_grpc_url"
+    "amqp_url"
 )
 echo "[INFO] Copying selected values from v1 heimdall-config.toml to app.toml..."
 for key in "${APP_KEYS[@]}"; do
@@ -1086,30 +1087,58 @@ fi
 
 # Step 29: Clean up .bak files in HEIMDALL_HOME
 STEP=29
-print_step $STEP "Cleaning up .bak files in $HEIMDALL_HOME"
+print_step $STEP "Cleaning up .bak files in parent directory of $HEIMDALL_HOME"
 ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for cleanup
-
-# Find and delete all .bak files within config/ and data/
-BAK_FILES=$(find "$HEIMDALL_HOME" -type f -name "*.bak")
-
+# Determine the parent directory of HEIMDALL_HOME
+HEIMDALL_PARENT_DIR=$(dirname "$HEIMDALL_HOME")
+# Find and delete all .bak files within the parent directory
+BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak")
 if [[ -n "$BAK_FILES" ]]; then
     echo "[INFO] Removing the following backup files:"
     echo "$BAK_FILES"
-    find "$HEIMDALL_HOME" -type f -name "*.bak" -exec rm -f {} \;
+    find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak" -exec rm -f {} \;
     echo "[INFO] Cleanup complete."
 else
-    echo "[INFO] No .bak files found in $HEIMDALL_HOME"
+    echo "[INFO] No .bak files found in $HEIMDALL_PARENT_DIR"
 fi
 
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 MINUTES=$((DURATION / 60))
 SECONDS=$((DURATION % 60))
+
+echo -e "\n⚠️  \033[1mManual Verification Required\033[0m:"
+echo -e "   Please review the updated configuration files under:"
+echo -e "     \033[1m$HEIMDALL_HOME/config/\033[0m"
+echo -e "   and ensure that they match your expected custom values from:"
+echo -e "     \033[1m$BACKUP_DIR/config/\033[0m"
+echo -e "   Especially if you had non-standard settings (e.g., ports, metrics, logging, pruning)."
+echo -e "   The migration only carried over a minimal and safe subset of parameters:\n"
+echo -e "📁 \033[1mconfig.toml\033[0m:"
+echo -e "   - moniker"
+echo -e "   - external_address"
+echo -e "   - seeds"
+echo -e "   - persistent_peers"
+echo -e "   - max_num_inbound_peers"
+echo -e "   - max_num_outbound_peers"
+echo -e "   - proxy_app"
+echo -e "   - addr_book_strict\n"
+echo -e "📁 \033[1mapp.toml\033[0m:"
+echo -e "   - eth_rpc_url"
+echo -e "   - bor_rpc_url"
+echo -e "   - bor_grpc_flag"
+echo -e "   - bor_grpc_url"
+echo -e "   - amqp_url\n"
+echo -e "📁 \033[1mclient.toml\033[0m:"
+echo -e "   - chain-id = \"$CHAIN_ID\"\n"
+
 echo -e "\n✅ [SUCCESS] Heimdall v2 migration completed successfully! ✅"
 echo -e "🕓 Migration completed in ${MINUTES}m ${SECONDS}s."
 echo -e "When notified to start heimdall-v2, please run: "
-echo -e "sudo systemctl daemon-reload && sudo systemctl start heimdalld && sudo systemctl restart telemetry"
-echo -e "Then - to verify everything is running correctly - check the logs using:"
+echo -e "sudo systemctl daemon-reload && sudo systemctl start heimdalld"
+echo -e "if you are running telemetry, also restart that service with: "
+echo -e "sudo systemctl restart telemetry"
+echo -e "Then - once heimdall is running, to verify everything is correct - check the logs using:"
 echo -e "📌 journalctl -fu heimdalld"
 
 # Don't remove next line!

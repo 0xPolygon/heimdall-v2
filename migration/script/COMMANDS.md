@@ -1,8 +1,10 @@
-# Pilot—First execution (internal)
+# Pilot — First execution (internal)
 
 This is run by the Polygon team on a synced `heimdall` node with `bor` running on the same machine  
 
-1. Adjust the env vars of the [script](migrate.sh) to something like:
+1. Check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted  
+
+2. Adjust the env vars of the [script](migrate.sh) to something like:
     ```bash
     APOCALYPSE_TAG="1.2.3-27-g74c8af58"
     REQUIRED_BOR_VERSION="2.0.0"
@@ -15,13 +17,13 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
     DRY_RUN=false
     ```
-2. ssh into the node machine (as the user running the `heimdalld` service)
-3. create the script with `sudo`
+3. ssh into the node machine (as the user running the `heimdalld` service)
+4. create the script with `sudo`
     ```bash
     sudo nano migrate.sh
     ```
-4. paste the content of the [script](migrate.sh) into the created file
-5. retrieve the parameters needed by the script
+5. paste the content of the [script](migrate.sh) into the created file
+6. retrieve the parameters needed by the script
 
    | Flag                 | Description                                                                                                    |
    |----------------------|----------------------------------------------------------------------------------------------------------------|
@@ -41,7 +43,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    |                      | This happens when the node was not able to commit to the latest block's heigh needed for the migration,        |
    |                      | hence generate-genesis will be set to false and the genesis.json file downloaded from trusted source.          |
 
-6. run the script with a command like the following (after modifying the parameters based on the previous step):
+7. run the script with a command like the following (after modifying the parameters based on the previous step):
     ```bash
       sudo bash migrate.sh \
     --heimdall-home=/var/lib/heimdall \
@@ -55,55 +57,56 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     --generate-genesis=true \
     --bor-path=/home/ubuntu/go/bin/bor
     ```
-7. copy the following files to the local machine (they are located under `/var/lib/heimdall.backup/`):
+8. copy the following files to the local machine (they are located under `/var/lib/heimdall.backup/`):
    - `dump-genesis.json`
    - `dump-genesis.json.sha512`
    - `migrated_dump-genesis.json`
    - `migrated_dump-genesis.json.sha512`
-8. copy/move such files under the respective files in the appropriate [network folder](../networks/) in `heimdall-v2` repo
-9. update the following configs in the script:
-    ```bash
-    CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
-    MIGRATED_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
-    TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/networks/devnet/dump-genesis.json"
-    ```
-    where `CHECKSUM` is the content of `dump-genesis.json.sha512`, and `MIGRATED_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
-10. generate the checksum of the [script](migrate.sh) by running
+9. copy/move such files under the respective files in the appropriate [network folder](../networks/) in `heimdall-v2` repo
+10. update the following configs in the script:
+     ```bash
+     CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
+     MIGRATED_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
+     TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/networks/devnet/dump-genesis.json"
+     ```
+     where `CHECKSUM` is the content of `dump-genesis.json.sha512`, and `MIGRATED_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
+11. generate the checksum of the [script](migrate.sh) by running
      ```bash
      sha512sum migrate.sh > migrate.sh.sha512
      ```
-11. commit and push the changes on `heimdall-v2` repo (they need to be available on the branch mentioned in `TRUSTED_GENESIS_URL`)   
-12. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
+12. commit and push the changes on `heimdall-v2` repo (they need to be available on the branch mentioned in `TRUSTED_GENESIS_URL`)   
+13. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
     ```bash
     sudo systemctl daemon-reload 
     sudo systemctl start heimdalld
     sudo systemctl restart telemetry
     ```
-13. check the logs by running
+14. check the logs by running
    ```bash
       journalctl -fu heimdalld
    ```
-14. The genesis time is most probably set in the future so `heimdalld` will print something like:
+15. The genesis time is most probably set in the future so `heimdalld` will print something like:
     ```bash
     heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
     ```
-15. Wait until the genesis time is reached, and the node will start syncing.
-16. Now other node operators can run the migration.
+16. Wait until the genesis time is reached, and the node will start syncing.
+17. Now other node operators can run the migration.
 
 
 # Other executions (internal and external)
 
 This can be run by any node operator.  
 
-1. download the script
+1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted  
+2. download the script
    ```bash
    curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/script/migrate.sh
    ```
-2. download the checksum
+3. download the checksum
    ```bash
    curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/script/migrate.sh.sha512
    ```
-3. verify the script checksum 
+4. verify the script checksum 
    ```bash
    sha512sum -c migrate.sh.sha512
    ```
@@ -111,7 +114,7 @@ This can be run by any node operator.
    ```bash
    migrate.sh: OK
    ```
-4. retrieve the parameters needed by the script
+5. retrieve the parameters needed by the script
 
    | Flag                 | Description                                                                                                    |
       |----------------------|----------------------------------------------------------------------------------------------------------------|
@@ -131,7 +134,7 @@ This can be run by any node operator.
    |                      | This happens when the node was not able to commit to the latest block's heigh needed for the migration,        |
    |                      | hence generate-genesis will be set to false and the genesis.json file downloaded from trusted source.          |
 
-5. if checksum verification is correct, launch the migration script (after adjusting the parameters)
+6. if checksum verification is correct, launch the migration script (after adjusting the parameters)
    ```bash
      sudo bash migrate.sh \
        --heimdall-home=/var/lib/heimdall \
@@ -145,18 +148,18 @@ This can be run by any node operator.
        --generate-genesis=true \
        --bor-path=/home/ubuntu/go/bin/bor
    ```
-6. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
+7. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
    ```bash
    sudo systemctl daemon-reload 
    sudo systemctl start heimdalld
    sudo systemctl restart telemetry
    ```
-7. check the logs by running
+8. check the logs by running
    ```bash
       journalctl -fu heimdalld
    ```
-8. The genesis time is most probably set in the future so `heimdalld` will print something like:
+9. The genesis time is most probably set in the future so `heimdalld` will print something like:
     ```bash
     heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
     ```
-9. Wait until the genesis time is reached, and the node will start syncing.
+10. Wait until the genesis time is reached, and the node will start syncing.
