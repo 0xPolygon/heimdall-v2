@@ -108,9 +108,8 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 		ValAddress: common.Address{}.String(),
 	}
 	res, err = queryClient.GetValidatorStatusByAddress(ctx, req)
-	require.Nil(err)
-	require.NotNil(res)
-	require.False(res.IsOld)
+	require.NotNil(err)
+	require.Nil(res)
 }
 
 func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {

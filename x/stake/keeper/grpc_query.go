@@ -72,9 +72,7 @@ func (q queryServer) GetValidatorStatusByAddress(ctx context.Context, req *types
 
 	isCurrentValidator, err := q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)
 	if err != nil {
-		// error already logged, but returning without an error to keep the response non-nil
-		//nolint:nilerr
-		return &types.QueryValidatorStatusResponse{IsOld: false}, nil
+		return &types.QueryValidatorStatusResponse{IsOld: false}, err
 	}
 
 	return &types.QueryValidatorStatusResponse{IsOld: isCurrentValidator}, nil
