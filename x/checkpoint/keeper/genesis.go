@@ -5,7 +5,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -102,9 +101,6 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 	// set checkpoint signatures txhash
 	if data.CheckpointSignaturesTxhash != "" {
-		if len(data.CheckpointSignaturesTxhash) != common.HashLength*2 {
-			panic("checkpoint signatures txhash is not of correct length")
-		}
 		if err = k.SetCheckpointSignaturesTxHash(ctx, data.CheckpointSignaturesTxhash); err != nil {
 			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
 			panic(err)

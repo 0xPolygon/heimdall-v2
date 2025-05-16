@@ -7,7 +7,6 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // Default parameter values
@@ -88,9 +87,7 @@ func (gs GenesisState) ValidateGenesis() error {
 	}
 
 	if gs.CheckpointSignaturesTxhash != "" {
-		if len(gs.CheckpointSignaturesTxhash) != common.HashLength*2 {
-			return errors.New("checkpoint signatures txhash is not valid")
-		}
+		return errors.New("checkpoint signatures txhash is not valid")
 	}
 
 	return nil
