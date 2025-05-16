@@ -100,11 +100,11 @@ This can be run by any node operator.
 1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted  
 2. download the script
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/script/migrate.sh
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/script/migrate.sh
    ```
 3. download the checksum
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/script/migrate.sh.sha512
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/script/migrate.sh.sha512
    ```
 4. verify the script checksum 
    ```bash
@@ -141,9 +141,9 @@ This can be run by any node operator.
        --cli-path=/home/ubuntu/go/bin/heimdallcli \
        --d-path=/home/ubuntu/go/bin/heimdalld \
        --network=amoy \
-       --nodetype=validator \
+       --nodetype=sentry \
        --backup-dir=/var/lib/heimdall.backup \
-       --moniker=heimdall1 \
+       --moniker=heimdall3 \
        --service-user=ubuntu \
        --generate-genesis=true \
        --bor-path=/home/ubuntu/go/bin/bor

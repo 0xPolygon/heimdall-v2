@@ -5,17 +5,17 @@ umask 0022
 # -------------------- Env variables, to be adjusted before rolling out --------------------
 APOCALYPSE_TAG="1.2.3-27-g74c8af58"
 REQUIRED_BOR_VERSION="2.0.0"
-CHECKSUM="07d8634fd2c14bf3ad1b1f6f6646ee632b9279339c8f77ccc1cea0f2e64b389a97d2c443f42e345210be59a58e574bdfb4e425e8e998f83dd8383239b031dd03"
-MIGRATED_CHECKSUM="bf7a2a4b99c96eaa4246c1932bfdae28a821b6f90b68209ccbc1da49d5689e28f8bbd6433939523d5d362551d6baa56d1c448a178fc8ee82061177e3b7539060"
-HEIMDALL_V2_VERSION="0.1.15"
+CHECKSUM="bb03425f30197c51d4a762dfd4f8068c8b3bb94c01c42b1da2c4b97db309e834775737d6502642ac5042e59117d97a3d593bc89e5c9084bbefb1994f14353af4"
+MIGRATED_CHECKSUM="ca45005fc462d074816bd2926823ca11540c0dd45aac5a02fdfb9505b819f353c1e67c4394abf177c89c21cc517f9660793db306feab2b937b76fc50b9440bc3"
+HEIMDALL_V2_VERSION="0.1.16"
 CHAIN_ID="devnet"
-GENESIS_TIME="2025-05-15T14:15:00Z"
+GENESIS_TIME="2025-05-16T16:00:00Z"
 APOCALYPSE_HEIGHT=200
 INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/networks/devnet/dump-genesis.json"
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/networks/devnet/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
@@ -133,7 +133,7 @@ handle_error() {
     local step_number=$1
     local message=$2
     echo -e "\n[ERROR] Step $step_number failed: $message"
-    #rollback
+    rollback
     exit 1
 }
 
@@ -143,7 +143,7 @@ rollback() {
     for (( i=LAST_STEP_EXECUTED; i>=1; i-- )); do
         if [[ -n "${ROLLBACK_ACTIONS[i]}" && "${ROLLBACK_ACTIONS[i]}" != ":" ]]; then
             echo "[ROLLBACK] Executing rollback for Step $i: ${ROLLBACK_ACTIONS[i]}"
-            eval "${ROLLBACK_ACTIONS[i]}"
+            eval "${ROLLBACK_ACTIONS[i]}" || echo "[WARN] Rollback for Step $i failed"
         else
             echo "[ROLLBACK] Step $i has no rollback action. Skipping."
         fi
@@ -454,7 +454,7 @@ fi
 # Step 8: move heimdall-v1 to backup location
 STEP=8
 print_step $STEP "Moving $HEIMDALL_HOME to $BACKUP_DIR"
-ROLLBACK_ACTIONS["$STEP"]="mv \"$BACKUP_DIR\" \"$HEIMDALL_HOME\" || (mkdir -p \"$HEIMDALL_HOME\" && cp -a \"$BACKUP_DIR/.\" \"$HEIMDALL_HOME\")"
+ROLLBACK_ACTIONS["$STEP"]="if [ -d \"$HEIMDALL_HOME\" ]; then rm -rf \"$HEIMDALL_HOME\"; fi && cp -a \"$BACKUP_DIR\" \"$HEIMDALL_HOME\""
 # Create parent directory in case it doesn't exist
 sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
 # Move Heimdall home to backup location
@@ -1091,15 +1091,15 @@ print_step $STEP "Cleaning up .bak files in parent directory of $HEIMDALL_HOME"
 ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for cleanup
 # Determine the parent directory of HEIMDALL_HOME
 HEIMDALL_PARENT_DIR=$(dirname "$HEIMDALL_HOME")
-# Find and delete all .bak files within the parent directory
-BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak")
+# Find and delete all .bak files or directories
+BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -name "*.bak")
 if [[ -n "$BAK_FILES" ]]; then
-    echo "[INFO] Removing the following backup files:"
+    echo "[INFO] Removing the following backup files or directories:"
     echo "$BAK_FILES"
-    find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak" -exec rm -f {} \;
+    find "$HEIMDALL_PARENT_DIR" -name "*.bak" -exec rm -rf {} \;
     echo "[INFO] Cleanup complete."
 else
-    echo "[INFO] No .bak files found in $HEIMDALL_PARENT_DIR"
+    echo "[INFO] No .bak files or directories found in $HEIMDALL_PARENT_DIR"
 fi
 
 END_TIME=$(date +%s)
