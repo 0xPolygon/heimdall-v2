@@ -11,17 +11,24 @@ import (
 
 	"cosmossdk.io/math"
 	stakinginfo "github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
+	"github.com/0xPolygon/heimdall-v2/contracts/statesender"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor"
 	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
+	"github.com/0xPolygon/heimdall-v2/x/clerk"
+	"github.com/0xPolygon/heimdall-v2/x/topup"
+	"github.com/golang/mock/gomock"
 
+	clerktestutil "github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 	// chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	chainmanagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	clerkKeeper "github.com/0xPolygon/heimdall-v2/x/clerk/keeper"
 	clerkTypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -32,7 +39,12 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	cmtTypes "github.com/cometbft/cometbft/types"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
+
+	// clerktestutil "github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
+
+	addressUtils "github.com/0xPolygon/heimdall-v2/common/address"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 
@@ -792,7 +804,7 @@ func TestSidetxsHappyPath(t *testing.T) {
 		&app.TopupKeeper,
 		mockCaller,
 	)
-	app.BorKeeper = borKeeper.NewKeeper(
+	mockBorKeeper := borKeeper.NewKeeper(
 		app.AppCodec(),
 		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
@@ -800,9 +812,23 @@ func TestSidetxsHappyPath(t *testing.T) {
 		&app.StakeKeeper,
 		nil,
 	)
+
+	mockClerkKeeper := clerkKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		app.ChainManagerKeeper,
+		mockCaller,
+	)
 	app.BorKeeper.SetContractCaller(mockCaller)
 	app.MilestoneKeeper.IContractCaller = mockCaller
 	app.caller = mockCaller
+
+	app.ModuleManager.Modules[borTypes.ModuleName] = bor.NewAppModule(mockBorKeeper, mockCaller)
+	app.BorKeeper.SetContractCaller(mockCaller)
+
+	app.ModuleManager.Modules[clerkTypes.ModuleName] = clerk.NewAppModule(mockClerkKeeper)
+	app.sideTxCfg = sidetxs.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(app.sideTxCfg)
 
 	propBytes := common.FromHex(validators[0].Signer)
 	propAddr := sdk.AccAddress(propBytes)
@@ -814,7 +840,7 @@ func TestSidetxsHappyPath(t *testing.T) {
 		),
 	)
 
-	coins, _ := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+	// coins, _ := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
 
 	testCases := []struct {
 		name string
@@ -832,37 +858,41 @@ func TestSidetxsHappyPath(t *testing.T) {
 				SeedAuthor: "val1Addr.Hex()",
 			},
 		},
-		// {
-		// 	name: "Clerk Module Happy Path",
-		// 	msg: func() *clerkTypes.MsgEventRecord {
-		// 		rec := clerkTypes.NewMsgEventRecord(
-		// 			validators[0].Signer,
-		// 			TxHash1,
-		// 			1,
-		// 			50,
-		// 			1,
-		// 			propAddr,
-		// 			make([]byte, 0),
-		// 			"0",
-		// 		)
-		// 		return &rec
-		// 	}(),
-		// },
 		{
-			name: "topup [MsgProposeSpan]] happy path",
-			msg: func() *topUpTypes.MsgTopupTx {
-				rec := topUpTypes.NewMsgTopupTx(
+			name: "Clerk Module Happy Path",
+			msg: func() *clerkTypes.MsgEventRecord {
+				rec := clerkTypes.NewMsgEventRecord(
 					validators[0].Signer,
-					validators[0].Signer,
-					coins.AmountOf(authTypes.FeeToken),
-					[]byte(TxHash1),
+					TxHash1,
 					1,
+					50,
 					1,
+					propAddr,
+					make([]byte, 0),
+					"0",
 				)
-				return rec
+				return &rec
 			}(),
 		},
+		// {
+		// 	name: "topup [MsgProposeSpan]] happy path",
+		// 	msg: func() *topUpTypes.MsgTopupTx {
+		// 		rec := topUpTypes.NewMsgTopupTx(
+		// 			validators[0].Signer,
+		// 			validators[0].Signer,
+		// 			coins.AmountOf(authTypes.FeeToken),
+		// 			[]byte(TxHash1),
+		// 			1,
+		// 			1,
+		// 		)
+		// 		return rec
+		// 	}(),
+		// },
 	}
+
+	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+
+	mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1184,7 +1214,775 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 
 	})
 
-}
+} // completed
+
+func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockCaller := new(helpermocks.IContractCaller)
+	mockChainKeeper := clerktestutil.NewMockChainKeeper(ctrl)
+
+	app.ChainManagerKeeper = chainmanagerKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		app.BankKeeper,
+		app.ChainManagerKeeper,
+		mockCaller,
+	)
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	mockBorKeeper := borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = mockBorKeeper
+
+	mockClerkKeeper := clerkKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		mockChainKeeper,
+		mockCaller,
+	)
+
+	app.BorKeeper.SetContractCaller(mockCaller)
+	// app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	app.ModuleManager.Modules[clerkTypes.ModuleName] = clerk.NewAppModule(mockClerkKeeper)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.sideTxCfg = sidetxs.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(app.sideTxCfg)
+
+	propBytes := common.FromHex(validators[0].Signer)
+	propAddr := sdk.AccAddress(propBytes)
+	propAcc := authTypes.NewBaseAccount(propAddr, nil, 1337, 0)
+	app.AccountKeeper.SetAccount(ctx, propAcc)
+	require.NoError(t,
+		testutil.FundAccount(ctx, app.BankKeeper, propAddr,
+			sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
+		),
+	)
+
+	mockChainKeeper.
+		EXPECT().
+		GetParams(gomock.Any()).
+		Return(chainmanagertypes.DefaultParams(), nil).
+		AnyTimes()
+
+	t.Run("no reciept", func(t *testing.T) {
+
+		logIndex := uint64(200)
+		blockNumber := uint64(51)
+
+		ac := address.NewHexCodec()
+		Address2 := "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+
+		addrBz2, err := ac.StringToBytes(Address2)
+		msg := clerkTypes.NewMsgEventRecord(
+			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
+			TxHash1,
+			logIndex,
+			blockNumber,
+			10,
+			addrBz2,
+			make([]byte, 0),
+			"101",
+		)
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+	})
+
+	t.Run("NoLog", func(t *testing.T) {
+
+		logIndex := uint64(100)
+		blockNumber := uint64(510)
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
+		}
+
+		ac := address.NewHexCodec()
+		Address2 := "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+
+		addrBz2, err := ac.StringToBytes(Address2)
+
+		msg := clerkTypes.NewMsgEventRecord(
+			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
+			TxHash1,
+			logIndex,
+			blockNumber,
+			10,
+			addrBz2,
+			make([]byte, 0),
+			"0",
+		)
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+	})
+
+	t.Run("EventDataExceed", func(t *testing.T) {
+
+		id := uint64(111)
+		logIndex := uint64(1)
+		blockNumber := uint64(1000)
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber),
+		}
+
+		const letterBytes = "abcdefABCDEF"
+		b := make([]byte, helper.MaxStateSyncSize+3)
+		for i := range b {
+			b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		}
+
+		ac := address.NewHexCodec()
+		Address2 := "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+
+		addrBz2, err := ac.StringToBytes(Address2)
+
+		msg := clerkTypes.NewMsgEventRecord(
+			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
+			TxHash1,
+			logIndex,
+			blockNumber,
+			id,
+			addrBz2,
+			[]byte("123"),
+			"0",
+		)
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		event := &statesender.StatesenderStateSynced{
+			Id:              new(big.Int).SetUint64(msg.Id),
+			ContractAddress: common.BytesToAddress([]byte(msg.ContractAddress)),
+			Data:            b,
+		}
+		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+	})
+
+	t.Run("Post Handler should fail for no vote", func(t *testing.T) {
+
+		id := uint64(111)
+		logIndex := uint64(1)
+		blockNumber := uint64(1000)
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber),
+		}
+
+		const letterBytes = "abcdefABCDEF"
+		b := make([]byte, helper.MaxStateSyncSize+3)
+		for i := range b {
+			b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		}
+
+		ac := address.NewHexCodec()
+		Address2 := "0xb316fa9fa91700d7084d377bfdc81eb9f232f5ff"
+
+		addrBz2, err := ac.StringToBytes(Address2)
+
+		msg := clerkTypes.NewMsgEventRecord(
+			addressUtils.FormatAddress("0xa316fa9fa91700d7084d377bfdc81eb9f232f5ff"),
+			TxHash1,
+			logIndex,
+			blockNumber,
+			id,
+			addrBz2,
+			make([]byte, 0),
+			"0",
+		)
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+
+		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
+		//clerkKeeper.Keeper.ChainKeeper.(*clerktestutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+		finalizeReq := abci.RequestFinalizeBlock{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height: 3,
+		}
+		_, err = app.PreBlocker(ctx, &finalizeReq)
+		require.NoError(t, err)
+
+	})
+
+} // Completed
+
+func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
+
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockCaller := new(helpermocks.IContractCaller)
+	mockChainKeeper := clerktestutil.NewMockChainKeeper(ctrl)
+
+	app.ChainManagerKeeper = chainmanagerKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+	)
+	app.TopupKeeper = topupKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		app.BankKeeper,
+		mockChainKeeper,
+		mockCaller,
+	)
+	mockTopupKeeper := app.TopupKeeper
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	mockBorKeeper := borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = mockBorKeeper
+
+	app.BorKeeper.SetContractCaller(mockCaller)
+	// app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	app.ModuleManager.Modules[topUpTypes.ModuleName] = topup.NewAppModule(mockTopupKeeper, mockCaller)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.sideTxCfg = sidetxs.NewSideTxConfigurator()
+	app.RegisterSideMsgServices(app.sideTxCfg)
+
+	propBytes := common.FromHex(validators[0].Signer)
+	propAddr := sdk.AccAddress(propBytes)
+	propAcc := authTypes.NewBaseAccount(propAddr, nil, 1337, 0)
+	app.AccountKeeper.SetAccount(ctx, propAcc)
+	require.NoError(t,
+		testutil.FundAccount(ctx, app.BankKeeper, propAddr,
+			sdk.NewCoins(sdk.NewInt64Coin("pol", 43*defaultFeeAmount)),
+		),
+	)
+
+	mockChainKeeper.
+		EXPECT().
+		GetParams(gomock.Any()).
+		Return(chainmanagertypes.DefaultParams(), nil).
+		AnyTimes()
+
+	_, _, addr1 := testdata.KeyTestPubAddr()
+	_, _, addr2 := testdata.KeyTestPubAddr()
+
+	t.Run("no reciept", func(t *testing.T) {
+
+		logIndex := uint64(10)
+		blockNumber := uint64(599)
+		hash := []byte(TxHash1)
+
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+
+		msg := *topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
+		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+	})
+
+	t.Run("No Log", func(t *testing.T) {
+
+		logIndex := uint64(10)
+		blockNumber := uint64(599)
+		hash := []byte(TxHash1)
+
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber),
+		}
+
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+
+		msg := *topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+	})
+
+	t.Run("block mismatch", func(t *testing.T) {
+
+		logIndex := uint64(10)
+		blockNumber := uint64(600)
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber + 1),
+		}
+		hash := []byte(TxHash1)
+
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+
+		msg := *topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)
+		event := &stakinginfo.StakinginfoTopUpFee{
+			User: common.Address(sdk.AccAddress(addr1.String())),
+			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
+		}
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil).Once()
+		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+	})
+
+	t.Run("user mismatch", func(t *testing.T) {
+
+		logIndex := uint64(10)
+		blockNumber := uint64(700)
+		txReceipt := &ethTypes.Receipt{
+			BlockNumber: new(big.Int).SetUint64(blockNumber),
+		}
+		hash := []byte(TxHash1)
+
+		coins, err := simulation.RandomFees(rand.New(rand.NewSource(time.Now().UnixNano())), ctx, sdk.Coins{sdk.NewCoin(authTypes.FeeToken, math.NewInt(1000000000000000000))})
+
+		msg := *topUpTypes.NewMsgTopupTx(
+			addr1.String(),
+			addr1.String(),
+			coins.AmountOf(authTypes.FeeToken),
+			hash,
+			logIndex,
+			blockNumber,
+		)
+		event := &stakinginfo.StakinginfoTopUpFee{
+			User: common.Address(sdk.AccAddress(addr2.String())),
+			Fee:  coins.AmountOf(authTypes.FeeToken).BigInt(),
+		}
+		fmt.Println("habaka", txReceipt)
+
+		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
+		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
+
+		mockCaller.
+			On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, nil)
+
+		// mockChainKeeper.EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).AnyTimes()
+
+		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
+		var txBytesCmt cmtTypes.Tx = txBytes
+
+		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
+		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+			Height: 3,
+			Txs:    [][]byte{extCommitBytes, txBytes},
+		})
+		require.NoError(t, err)
+
+		// Prepare/Process proposal
+		reqPrep := &abci.RequestPrepareProposal{
+			Txs:             [][]byte{txBytes},
+			MaxTxBytes:      1_000_000,
+			LocalLastCommit: *extCommit,
+			ProposerAddress: common.FromHex(validators[0].Signer),
+			Height:          3,
+		}
+
+		_, err = app.PrepareProposal(reqPrep)
+		require.NoError(t, err)
+
+		respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+		require.NoError(t, err)
+		require.NotEmpty(t, respPrep.Txs)
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+
+		var ve sidetxs.VoteExtension
+
+		ve.Unmarshal(respExtend.VoteExtension)
+		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
+
+	})
+
+} // completed
 
 func TestSomething(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
@@ -1229,6 +2027,185 @@ func TestSomething(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, respPrep.Txs)
 }
+
+func TestMilestone(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+	// Create a checkpoint message
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
+
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
+
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 3,
+		Txs:    [][]byte{extCommitBytes, txBytes},
+	})
+	require.NoError(t, err)
+
+	// Prepare/Process proposal
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          3,
+	}
+
+	_, err = app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+
+	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+	require.NoError(t, err)
+	require.NotEmpty(t, respPrep.Txs)
+
+	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, nil)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(
+			&ethTypes.Header{
+				Number: big.NewInt(10000000000000000),
+			},
+			nil,
+		)
+
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		nil,
+	)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	// create a milestone
+	testMilestone1 := milestoneTypes.Milestone{
+		Proposer:    validators[0].Signer,
+		StartBlock:  1,
+		EndBlock:    2,
+		Hash:        []byte(TxHash1),
+		BorChainId:  "1",
+		MilestoneId: "milestoneID",
+		Timestamp:   144,
+	}
+
+	app.MilestoneKeeper.AddMilestone(ctx, testMilestone1)
+	fmt.Println("aktln")
+
+	reqExtend := abci.RequestExtendVote{
+		Txs:    respPrep.Txs,
+		Hash:   []byte("test-hash"),
+		Height: 3,
+	}
+	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+	require.NoError(t, err)
+	require.NotNil(t, respExtend.VoteExtension)
+	mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+	// terrUnmarshal := "error occurred while decoding ExtendedCommitInfo"
+	// terrTxDecode := "error occurred while decoding tx bytes in ExtendVoteHandler"
+	testCases := []struct {
+		name        string
+		req         abci.RequestExtendVote
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name: "valid extend vote",
+			req: abci.RequestExtendVote{
+				Txs:    respPrep.Txs,
+				Hash:   []byte("test-hash"),
+				Height: 3,
+			},
+			wantErr: false,
+		},
+		// {
+		// 	name: "unmarshal failure",
+		// 	req: abci.RequestExtendVote{
+		// 		Txs:    [][]byte{{0x01, 0x02, 0x03}},
+		// 		Hash:   []byte("test-hash"),
+		// 		Height: 3,
+		// 	},
+		// 	wantErr:     true,
+		// 	errContains: terrUnmarshal,
+		// },
+		// {
+		// 	name: "tx decode failure",
+		// 	req: abci.RequestExtendVote{
+		// 		Txs:    [][]byte{respPrep.Txs[0], {0x01, 0x02, 0x03}},
+		// 		Hash:   []byte("test-hash"),
+		// 		Height: 3,
+		// 	},
+		// 	wantErr:     true,
+		// 	errContains: terrTxDecode,
+		// },
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			respExtend, err := app.ExtendVoteHandler()(ctx, &tc.req)
+			if tc.wantErr {
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tc.errContains)
+				require.Nil(t, respExtend)
+			} else {
+				require.NoError(t, err)
+				require.NotNil(t, respExtend)
+				mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+			}
+		})
+	}
+}
+
+// func TestMilestoneSetup(t *testing.T) {
+// 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+// 	validators := app.StakeKeeper.GetAllValidators(ctx)
+
+// 	// Create a checkpoint message
+// 	msg := &types.MsgCheckpoint{
+// 		Proposer:        validators[0].Signer,
+// 		StartBlock:      100,
+// 		EndBlock:        200,
+// 		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+// 		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+// 		BorChainId:      "test",
+// 	}
+
+// 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+
+// 	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
+
+// }
 
 func TestPrepareProposal(t *testing.T) {
 	priv, _, _ := testdata.KeyTestPubAddr()
