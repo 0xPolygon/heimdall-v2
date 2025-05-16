@@ -62,15 +62,31 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	}
 
 	// set checkpoint signatures
-	if err = k.SetCheckpointSignatures(ctx, data.CheckpointSignatures); err != nil {
-		k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
-		panic(err)
+	if len(data.CheckpointSignatures.Signatures) > 0 {
+		if err = k.SetCheckpointSignatures(ctx, data.CheckpointSignatures); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
+			panic(err)
+		}
+	} else {
+		// if checkpoint signatures are empty, set it to nil
+		if err = k.SetCheckpointSignatures(ctx, types.CheckpointSignatures{Signatures: make([]types.CheckpointSignature, 0)}); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
+			panic(err)
+		}
 	}
 
 	// set checkpoint signatures txhash
-	if err = k.SetCheckpointSignaturesTxHash(ctx, data.CheckpointSignaturesTxhash); err != nil {
-		k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
-		panic(err)
+	if data.CheckpointSignaturesTxhash != "" {
+		if err = k.SetCheckpointSignaturesTxHash(ctx, data.CheckpointSignaturesTxhash); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
+			panic(err)
+		}
+	} else {
+		// if checkpoint signatures txhash are empty, set it to nil
+		if err = k.SetCheckpointSignaturesTxHash(ctx, ""); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
+			panic(err)
+		}
 	}
 }
 

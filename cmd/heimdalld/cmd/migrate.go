@@ -806,6 +806,16 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 		bufferedCheckpoint["id"] = strconv.Itoa(len(checkpoints) + 1)
 	}
 
+	emptyCheckpointSignatures := make([]interface{}, 0)
+	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures", emptyCheckpointSignatures); err != nil {
+		return fmt.Errorf("failed to add empty checkpoint signatures to checkpoint module: %w", err)
+	}
+
+	emptyCheckpointSignaturesTxhash := ""
+	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures_txhash", emptyCheckpointSignaturesTxhash); err != nil {
+		return fmt.Errorf("failed to add empty checkpoint signatures tx hash to checkpoint module: %w", err)
+	}
+
 	logger.Info("Checkpoint module migration completed successfully")
 
 	return nil
