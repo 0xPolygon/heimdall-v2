@@ -5,17 +5,17 @@ umask 0022
 # -------------------- Env variables, to be adjusted before rolling out --------------------
 APOCALYPSE_TAG="1.2.3-27-g74c8af58"
 REQUIRED_BOR_VERSION="2.0.0"
-CHECKSUM="07d8634fd2c14bf3ad1b1f6f6646ee632b9279339c8f77ccc1cea0f2e64b389a97d2c443f42e345210be59a58e574bdfb4e425e8e998f83dd8383239b031dd03"
-MIGRATED_CHECKSUM="bf7a2a4b99c96eaa4246c1932bfdae28a821b6f90b68209ccbc1da49d5689e28f8bbd6433939523d5d362551d6baa56d1c448a178fc8ee82061177e3b7539060"
-HEIMDALL_V2_VERSION="0.1.15"
+CHECKSUM="cf103d618a67d463b082904448b6b7a0ab82864c2a1de40f49483a5993ccbb4761682c712971c1f76db69e2a8bc941cfc2583fdda19dc0bf8867d3f50aae6134"
+MIGRATED_CHECKSUM="9fb061885028306841260c8c6eb90a0a7fb92037dce198c93c7d20160f741746990bc4ab82d6148f509cb36c119fb296cec2277a464f7a53c749b61e59695ced"
+HEIMDALL_V2_VERSION="0.1.16"
 CHAIN_ID="devnet"
-GENESIS_TIME="2025-05-15T14:15:00Z"
+GENESIS_TIME="2025-06-16T15:00:00Z"
 APOCALYPSE_HEIGHT=200
 INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/networks/devnet/dump-genesis.json"
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/networks/devnet/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
