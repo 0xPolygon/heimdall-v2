@@ -133,7 +133,7 @@ handle_error() {
     local step_number=$1
     local message=$2
     echo -e "\n[ERROR] Step $step_number failed: $message"
-    #rollback
+    rollback
     exit 1
 }
 
@@ -143,7 +143,7 @@ rollback() {
     for (( i=LAST_STEP_EXECUTED; i>=1; i-- )); do
         if [[ -n "${ROLLBACK_ACTIONS[i]}" && "${ROLLBACK_ACTIONS[i]}" != ":" ]]; then
             echo "[ROLLBACK] Executing rollback for Step $i: ${ROLLBACK_ACTIONS[i]}"
-            eval "${ROLLBACK_ACTIONS[i]}"
+            eval "${ROLLBACK_ACTIONS[i]}" || echo "[WARN] Rollback for Step $i failed"
         else
             echo "[ROLLBACK] Step $i has no rollback action. Skipping."
         fi
@@ -454,7 +454,7 @@ fi
 # Step 8: move heimdall-v1 to backup location
 STEP=8
 print_step $STEP "Moving $HEIMDALL_HOME to $BACKUP_DIR"
-ROLLBACK_ACTIONS["$STEP"]="mv \"$BACKUP_DIR\" \"$HEIMDALL_HOME\" || (mkdir -p \"$HEIMDALL_HOME\" && cp -a \"$BACKUP_DIR/.\" \"$HEIMDALL_HOME\")"
+ROLLBACK_ACTIONS["$STEP"]="if [ -d \"$HEIMDALL_HOME\" ]; then rm -rf \"$HEIMDALL_HOME\"; fi && cp -a \"$BACKUP_DIR\" \"$HEIMDALL_HOME\""
 # Create parent directory in case it doesn't exist
 sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
 # Move Heimdall home to backup location
@@ -1091,15 +1091,15 @@ print_step $STEP "Cleaning up .bak files in parent directory of $HEIMDALL_HOME"
 ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for cleanup
 # Determine the parent directory of HEIMDALL_HOME
 HEIMDALL_PARENT_DIR=$(dirname "$HEIMDALL_HOME")
-# Find and delete all .bak files within the parent directory
-BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak")
+# Find and delete all .bak files or directories
+BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -name "*.bak")
 if [[ -n "$BAK_FILES" ]]; then
-    echo "[INFO] Removing the following backup files:"
+    echo "[INFO] Removing the following backup files or directories:"
     echo "$BAK_FILES"
-    find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak" -exec rm -f {} \;
+    find "$HEIMDALL_PARENT_DIR" -name "*.bak" -exec rm -rf {} \;
     echo "[INFO] Cleanup complete."
 else
-    echo "[INFO] No .bak files found in $HEIMDALL_PARENT_DIR"
+    echo "[INFO] No .bak files or directories found in $HEIMDALL_PARENT_DIR"
 fi
 
 END_TIME=$(date +%s)
