@@ -74,6 +74,34 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		k.Logger(ctx).Error("error in updating the ack count value in store", "error", err)
 		panic(err)
 	}
+
+	// set checkpoint signatures
+	if len(data.CheckpointSignatures.Signatures) > 0 {
+		if err = k.SetCheckpointSignatures(ctx, data.CheckpointSignatures); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
+			panic(err)
+		}
+	} else {
+		// if checkpoint signatures are empty, set it to nil
+		if err = k.SetCheckpointSignatures(ctx, types.CheckpointSignatures{Signatures: make([]types.CheckpointSignature, 0)}); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
+			panic(err)
+		}
+	}
+
+	// set checkpoint signatures txhash
+	if data.CheckpointSignaturesTxhash != "" {
+		if err = k.SetCheckpointSignaturesTxHash(ctx, data.CheckpointSignaturesTxhash); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
+			panic(err)
+		}
+	} else {
+		// if checkpoint signatures txhash are empty, set it to nil
+		if err = k.SetCheckpointSignaturesTxHash(ctx, ""); err != nil {
+			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
+			panic(err)
+		}
+	}
 }
 
 // ExportGenesis returns a GenesisState for a given context and keeper of
@@ -104,11 +132,25 @@ func (k Keeper) ExportGenesis(ctx sdk.Context) *types.GenesisState {
 		return nil
 	}
 
+	checkpointSignatures, err := k.GetCheckpointSignatures(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in getting checkpoint signatures in export genesis call", "error", err)
+		return nil
+	}
+
+	checkpointSignaturesTxhash, err := k.GetCheckpointSignaturesTxHash(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error in getting checkpoint signatures txhash in export genesis call", "error", err)
+		return nil
+	}
+
 	return &types.GenesisState{
-		Params:             params,
-		BufferedCheckpoint: &bufferedCheckpoint,
-		LastNoAck:          lastNoAck,
-		AckCount:           ackCount,
-		Checkpoints:        types.SortCheckpoints(checkpoints),
+		Params:                     params,
+		BufferedCheckpoint:         &bufferedCheckpoint,
+		LastNoAck:                  lastNoAck,
+		AckCount:                   ackCount,
+		Checkpoints:                types.SortCheckpoints(checkpoints),
+		CheckpointSignatures:       checkpointSignatures,
+		CheckpointSignaturesTxhash: checkpointSignaturesTxhash,
 	}
 }
