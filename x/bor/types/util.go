@@ -31,19 +31,19 @@ func IsBlockCloseToSpanEnd(blockNumber, spanEnd uint64) bool {
 	return blockNumber <= spanEnd && blockNumber >= (spanEnd-100)
 }
 
-func GenerateBorCommittedSpans(latestBorBlock uint64, latestHeimdallSpan *Span) []Span {
+func GenerateBorCommittedSpans(latestBorBlock uint64, latestBorUsedSpan *Span) []Span {
 	spans := []Span{}
-	spanLength := latestHeimdallSpan.EndBlock - latestHeimdallSpan.StartBlock
-	prevSpan := latestHeimdallSpan
+	spanLength := latestBorUsedSpan.EndBlock - latestBorUsedSpan.StartBlock
+	prevSpan := latestBorUsedSpan
 	for latestBorBlock > prevSpan.EndBlock {
 		startBlock := prevSpan.EndBlock + 1
 		newSpan := Span{
 			Id:                prevSpan.Id + 1,
 			StartBlock:        startBlock,
 			EndBlock:          startBlock + spanLength,
-			BorChainId:        latestHeimdallSpan.BorChainId,
-			SelectedProducers: latestHeimdallSpan.SelectedProducers,
-			ValidatorSet:      latestHeimdallSpan.ValidatorSet,
+			BorChainId:        latestBorUsedSpan.BorChainId,
+			SelectedProducers: latestBorUsedSpan.SelectedProducers,
+			ValidatorSet:      latestBorUsedSpan.ValidatorSet,
 		}
 		spans = append(spans, newSpan)
 		prevSpan = &newSpan

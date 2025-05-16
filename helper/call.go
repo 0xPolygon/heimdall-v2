@@ -542,6 +542,25 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	return latestBlock, nil
 }
 
+// GetStartBlockHeimdallSpanID returns which heimdall span id was used for given bor span
+func (c *ContractCaller) GetStartBlockHeimdallSpanID(ctx context.Context, startBlock uint64) (spanID uint64, err error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
+
+	if c.BorChainGrpcFlag {
+		spanID, err = c.BorChainGrpcClient.GetStartBlockHeimdallSpanID(ctx, startBlock)
+	} else {
+		spanID, err = c.BorChainClient.GetStartBlockHeimdallSpanID(ctx, startBlock)
+	}
+
+	if err != nil {
+		Logger.Error("unable to connect to bor chain", "error", err)
+		return
+	}
+
+	return spanID, nil
+}
+
 // GetBorChainBlocksInBatch returns bor chain block headers via single RPC Batch call
 func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)

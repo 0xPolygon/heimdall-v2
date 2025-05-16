@@ -182,15 +182,9 @@ func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg)
 		return sidetxs.Vote_UNSPECIFIED
 	}
 
-	latestSpan, err := s.k.GetLastSpan(ctx)
-	if err != nil {
+	if _, err = s.k.GetSpan(ctx, msg.LatestSpanId); err != nil {
 		logger.Error("failed to get latest span", "error", err)
 		return sidetxs.Vote_UNSPECIFIED
-	}
-
-	if latestSpan.Id != msg.LatestSpanId {
-		logger.Error("invalid span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
-		return sidetxs.Vote_VOTE_NO
 	}
 
 	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
@@ -299,15 +293,10 @@ func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg,
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	latestSpan, err := s.k.GetLastSpan(ctx)
+	latestSpan, err := s.k.GetSpan(ctx, msg.LatestSpanId)
 	if err != nil {
 		logger.Error("failed to get latest span", "error", err)
 		return err
-	}
-
-	if latestSpan.Id != msg.LatestSpanId {
-		logger.Error("invalid span id", "expected", latestSpan.Id, "got", msg.LatestSpanId)
-		return errors.New("invalid span id")
 	}
 
 	borSpans := types.GenerateBorCommittedSpans(msg.LatestBorBlock, &latestSpan)
