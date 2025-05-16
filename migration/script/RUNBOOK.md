@@ -31,43 +31,44 @@ This transition requires a structured and coordinated approach across multiple t
 
 ### Execution
 
-The majority of the steps below are automated in the [migration script](migration.sh), the following is just a runbook for manual execution.
+The majority of the steps below are automated in the [migration script](migrate.sh), the following is just a runbook for manual execution.
 
 1. Node operators confirm to be on latest Bor/Erigon version (compatible with v1 and v2)
 2. Node operators confirm to be on latest Heimdall-v1 version (with `halt_height` embedded)
 3. Node operators confirm to be on latest `heimdallcli` version (with `get-last-committed-height` embedded)
 4. Node operators confirm they can execute `heimdalld` and `heimdallcli` by running `version` command for both of them
-5. Node operators confirm heimdall-v1 is down due to hitting `halt_height`  
+5. Node operators confirm the heimdall config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
+6. Node operators confirm heimdall-v1 is down due to hitting `halt_height`  
    - This can be achieved with `heimdallcli get-last-committed-height --home HEIMDALLD_HOME --quiet` command
    - The output of this command should match the `halt_height`
    - If some nodes are not down, or a block's height mismatch is detected, it means they did not reach the apocalypse height  
    - This can happen, and the migration script handles this case by downloading the genesis.json from a trusted source (instead of generating it, to avoid risks of checksum mismatches and especially app hash errors in v2).  
-6. Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
-7. **Genesis Export from Heimdall-v1**
+7. Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
+8. **Genesis Export from Heimdall-v1**
    `heimdallcli export-heimdall --home HEIMDALLD_HOME`
    - operators should use the latest version of `heimdallcli`
    - `HEIMDALLD_HOME` is usually `/var/lib/heimdall` directory, and the command will generate `dump-genesis.json` there  
      It's recommended to run the process first on a fully synced pilot node.
-8. **v1 Checksum Generation**
+9. **v1 Checksum Generation**
    The exported genesis file is checksummed.
-9. **Backup Heimdall v1 Data** - Node operators back up their Heimdall v1 `HEIMDALL_HOME` directory (containing `config`, `data` and – for validators - `bridge`).
-10. **Install Heimdall-v2** – Node operators install heimdall-v2 with the install script available at https://github.com/maticnetwork/install/blob/heimdall-v2/heimdall-v2.sh
-11. **Verify Heimdall-v2 installation** – Node operators make sure `heimdall-v2` is successfully installed by running the `version` command
-12. **Run Migration Command** - Converts the old genesis to v2 format using:
+10. **Backup Heimdall v1 Data** - Node operators back up their Heimdall v1 `HEIMDALL_HOME` directory (containing `config`, `data` and – for validators - `bridge`).
+11. **Install Heimdall-v2** – Node operators install heimdall-v2 with the install script available at https://github.com/maticnetwork/install/blob/heimdall-v2/heimdall-v2.sh
+12. **Verify Heimdall-v2 installation** – Node operators make sure `heimdall-v2` is successfully installed by running the `version` command
+13. **Run Migration Command** - Converts the old genesis to v2 format using:
     ```bash
     heimdalld migrate dump-genesis.json --chain-id=<CHAIN_ID> --genesis-time=<TIME_IN_FORMAT_YYYY-MM-DDTHH:MM:SSZ) --initial-height=<H>
     ```
     where `H = v1_halt_height + 1`, whilst `--chain-id` and `genesis-time` are pre-agreed offline via governance proposal on v1.
-13. **v2 Checksum Generation**
+14. **v2 Checksum Generation**
     The migrated genesis is used to generate its checksum.  
     At this point, script env vars can be set, then the script can be checksummed and distributed to the community (via git on heimdall-v2 repo).
     The genesis exports (v1 and migrated) will be made available to the community together with their checksums.
     The script will be distributed to the community together with its checksum.
-14. Node operators delete (or rename) their `HEIMDALL_HOME` directory (**make sure it was backed up earlier**)
-15. Node operators create a new `HEIMDALL_HOME` directory with the new Heimdall v2 binary by running `heimdalld init [moniker-name] --home=<V2_HOME> --chain-id=<CHAIN_ID>`.  
+15. Node operators delete (or rename) their `HEIMDALL_HOME` directory (**make sure it was backed up earlier**)
+16. Node operators create a new `HEIMDALL_HOME` directory with the new Heimdall v2 binary by running `heimdalld init [moniker-name] --home=<V2_HOME> --chain-id=<CHAIN_ID>`.  
     The moniker is available in v1 at `HEIMDALL_HOME/config/config.toml`.
     The service file `heimdall.service` should reflect the same `User` (and possibly `Group`) coming from v1 service file.
-16. Node operators edit their configuration files with config information from their backup, plus default values. For detailed info, see [here](../configs).
+17. Node operators edit their configuration files with config information from their backup, plus default values. For detailed info, see [here](../configs).
     1. v2 `app.toml` must reflect the “merge” from v1 `app.toml` and `heimdall-config.toml`
        - All values from v1 `app.toml` should NOT be carried over.
        - For `heimdall-config.toml`:
@@ -84,17 +85,17 @@ The majority of the steps below are automated in the [migration script](migratio
     - v2 `addrbook.json` must match v1 `addrbook.json` (this is not mandatory but will help heimdall to peer faster)
     - v2 `node_key.json` must reflect v1 values (`priv_key.value`) and preserve v2 types
     - v2 `priv_validator_key.json` must reflect v1 values (`pub_key.value`, `priv_key.value` and `address`) and preserve v2 types
-17. **Move New Genesis File** – Make sure the migrated genesis file is placed it in the correct directory.
-18. **Reload daemon with** `sudo systemctl daemon-reload`
-19. **Start Heimdall-v2 with** `sudo systemctl start heimdalld`
-20. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
-21. **Internal Monitoring**
-22. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
+18. **Move New Genesis File** – Make sure the migrated genesis file is placed it in the correct directory.
+19. **Reload daemon with** `sudo systemctl daemon-reload`
+20. **Start Heimdall-v2 with** `sudo systemctl start heimdalld`
+21. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
+22. **Internal Monitoring**
+23. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
     ```toml
     [heimdall]
     ws-address = "ws://localhost:26657/websocket"
     ```
-23. **Restart bor** Only in case the step above was done.  
+24. **Restart bor** Only in case the step above was done.  
 
 ### Rollback strategy to restore v1
 We decided not to enforce a HF in heimdall-v1, to avoid issues with rolling back to previous versions if the migration doesn’t work out as planned.  

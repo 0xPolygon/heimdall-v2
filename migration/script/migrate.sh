@@ -3,19 +3,19 @@
 umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
-APOCALYPSE_TAG="v1.2.1-0.20250304070426-dbac1723c8c2"
-REQUIRED_BOR_VERSION="2.0.3"
-CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
-MIGRATED_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
-HEIMDALL_V2_VERSION="0.1.13"
+APOCALYPSE_TAG="1.2.3-27-g74c8af58"
+REQUIRED_BOR_VERSION="2.0.0"
+CHECKSUM="07d8634fd2c14bf3ad1b1f6f6646ee632b9279339c8f77ccc1cea0f2e64b389a97d2c443f42e345210be59a58e574bdfb4e425e8e998f83dd8383239b031dd03"
+MIGRATED_CHECKSUM="bf7a2a4b99c96eaa4246c1932bfdae28a821b6f90b68209ccbc1da49d5689e28f8bbd6433939523d5d362551d6baa56d1c448a178fc8ee82061177e3b7539060"
+HEIMDALL_V2_VERSION="0.1.15"
 CHAIN_ID="devnet"
-GENESIS_TIME="2025-05-14T16:30:00Z"
+GENESIS_TIME="2025-05-15T14:15:00Z"
 APOCALYPSE_HEIGHT=200
 INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
-DRY_RUN=true
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/POS-3015/migration/networks/devnet/dump-genesis.json"
+DRY_RUN=false
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/networks/devnet/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
@@ -173,6 +173,12 @@ version_ge() {
     [[ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" == "$2" ]]
 }
 
+# Normalize versions: strip leading 'v' if present
+normalize_version() {
+  local raw="$1"
+  echo "${raw#v}"  # removes leading 'v' if it exists
+}
+
 # Helper to set or insert a key=value pair in a TOML file (top-level only)
 set_toml_key() {
   local file="$1"
@@ -241,28 +247,50 @@ HEIMDALLCLI_VERSION=$("$HEIMDALL_CLI_PATH" version 2>/dev/null)
 if [[ -z "$HEIMDALLCLI_VERSION" ]]; then
     handle_error $STEP "HEIMDALLCLI_PATH is invalid or heimdallcli is not executable."
 fi
-if [[ "$DRY_RUN" != "true" && "$HEIMDALLCLI_VERSION" != "$APOCALYPSE_TAG" ]]; then
+# Compare heimdallcli version
+if [[ "$DRY_RUN" != "true" ]]; then
+  NORMALIZED_HEIMDALLCLI_VERSION=$(normalize_version "$HEIMDALLCLI_VERSION")
+  NORMALIZED_EXPECTED_VERSION=$(normalize_version "$APOCALYPSE_TAG")
+
+  if [[ "$NORMALIZED_HEIMDALLCLI_VERSION" != "$NORMALIZED_EXPECTED_VERSION" ]]; then
     handle_error $STEP "heimdallcli version mismatch! Expected: $APOCALYPSE_TAG, Found: $HEIMDALLCLI_VERSION"
+  fi
 fi
-# HEIMDALLD_PATH
+# Validate heimdalld path and version
 validate_absolute_path "$HEIMDALLD_PATH" "HEIMDALLD_PATH"
 HEIMDALLD_VERSION=$("$HEIMDALLD_PATH" version 2>/dev/null)
 if [[ -z "$HEIMDALLD_VERSION" ]]; then
     handle_error $STEP "HEIMDALLD_PATH is invalid or heimdalld is not executable."
 fi
-if [[ "$DRY_RUN" != "true" && "$HEIMDALLD_VERSION" != "$APOCALYPSE_TAG" ]]; then
+
+if [[ "$DRY_RUN" != "true" ]]; then
+  NORMALIZED_HEIMDALLD_VERSION=$(normalize_version "$HEIMDALLD_VERSION")
+  if [[ "$NORMALIZED_HEIMDALLD_VERSION" != "$NORMALIZED_EXPECTED_VERSION" ]]; then
     handle_error $STEP "heimdalld version mismatch! Expected: $APOCALYPSE_TAG, Found: $HEIMDALLD_VERSION"
+  fi
 fi
 # BOR_PATH (optional)
 if [[ -n "$BOR_PATH" ]]; then
     validate_absolute_path "$BOR_PATH" "BOR_PATH"
     if [[ "$DRY_RUN" != "true" ]]; then
         RAW_BOR_VERSION=$("$BOR_PATH" version 2>/dev/null)
-        BOR_VERSION=$(echo "$RAW_BOR_VERSION" | grep -oE 'v?[0-9]+\\.[0-9]+\\.[0-9]+' | head -n1 | sed 's/^v//')
-        if [[ -z "$BOR_VERSION" ]]; then
-            handle_error $STEP "Could not parse bor version."
+        # Try to extract the version:
+        # 1. If it's in "Version: x.y.z" format (multi-line), useful for commits/branches on unreleased versions
+        # 2. Else fallback to assuming RAW_BOR_VERSION is the version string directly
+        if echo "$RAW_BOR_VERSION" | grep -qi '^Version:'; then
+            BOR_VERSION=$(echo "$RAW_BOR_VERSION" | grep -i '^Version:' | awk '{print $2}')
+        else
+            # Fallback: take first word in raw output
+            BOR_VERSION=$(echo "$RAW_BOR_VERSION" | awk '{print $1}')
         fi
-        if [[ "$BOR_VERSION" != "$REQUIRED_BOR_VERSION" ]]; then
+        if [[ -z "$BOR_VERSION" ]]; then
+            handle_error $STEP "Could not parse bor version. Output: $RAW_BOR_VERSION"
+        fi
+        # Normalize both expected and actual versions (strip leading 'v')
+        NORMALIZED_BOR_VERSION=$(normalize_version "$BOR_VERSION")
+        NORMALIZED_REQUIRED_BOR_VERSION=$(normalize_version "$REQUIRED_BOR_VERSION")
+
+        if [[ "$NORMALIZED_BOR_VERSION" != "$NORMALIZED_REQUIRED_BOR_VERSION" ]]; then
             handle_error $STEP "bor version mismatch! Expected: $REQUIRED_BOR_VERSION, Found: $BOR_VERSION"
         fi
     fi
@@ -588,18 +616,22 @@ if [[ ! -x "$HEIMDALLD_PATH" ]]; then
     handle_error $STEP "Heimdalld binary is missing or not executable: $HEIMDALLD_PATH"
 fi
 # Check heimdalld version
-HEIMDALLD_V2_VERSION=$($HEIMDALLD_PATH version 2>/dev/null | tail -n 1)
-if [[ -z "$HEIMDALLD_V2_VERSION" ]]; then
+# Extract version from last non-empty line of heimdalld output
+HEIMDALLD_V2_VERSION_RAW=$($HEIMDALLD_PATH version 2>/dev/null | awk 'NF' | tail -n 1)
+if [[ -z "$HEIMDALLD_V2_VERSION_RAW" ]]; then
     handle_error $STEP "Failed to retrieve Heimdall v2 version. Installation may have failed."
 fi
-if [[ "$HEIMDALLD_V2_VERSION" != "$HEIMDALL_V2_VERSION" ]]; then
-    handle_error $STEP "Heimdall v2 version mismatch! Expected: $HEIMDALL_V2_VERSION, Found: $HEIMDALLD_V2_VERSION"
+# Normalize actual and expected versions
+NORMALIZED_HEIMDALLD_V2_VERSION=$(normalize_version "$HEIMDALLD_V2_VERSION_RAW")
+NORMALIZED_EXPECTED_HEIMDALL_V2_VERSION=$(normalize_version "$HEIMDALL_V2_VERSION")
+if [[ "$NORMALIZED_HEIMDALLD_V2_VERSION" != "$NORMALIZED_EXPECTED_HEIMDALL_V2_VERSION" ]]; then
+    handle_error $STEP "Heimdall v2 version mismatch! Expected: $HEIMDALL_V2_VERSION, Found: $HEIMDALLD_V2_VERSION_RAW"
 fi
 # Ensure HEIMDALL_HOME exists
 if [[ ! -d "$HEIMDALL_HOME" ]]; then
     handle_error $STEP "HEIMDALL_HOME does not exist after installation."
 fi
-echo "[INFO] heimdall-v2 is using the correct version $HEIMDALLD_V2_VERSION"
+echo "[INFO] heimdall-v2 is using the correct version $HEIMDALL_V2_VERSION"
 
 
 # Step 14: migrate genesis file
@@ -764,7 +796,7 @@ done
 echo "[INFO] All required directories are present in $HEIMDALL_HOME"
 
 
-# Step 20: Restore bridge directory from backup (if exists, for validators, will be skipped for sentries)
+# Step 20: Restore bridge directory from backup
 STEP=20
 print_step $STEP "Restoring bridge directory from backup if present"
 ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for restore
@@ -919,11 +951,15 @@ echo -e "   - external_address"
 echo -e "   - seeds"
 echo -e "   - persistent_peers"
 echo -e "   - max_num_inbound_peers"
-echo -e "   - max_num_outbound_peers\n"
+echo -e "   - max_num_outbound_peers"
+echo -e "   - proxy_app"
+echo -e "   - addr_book_strict\n"
 echo -e "📁 From v1 \033[1mheimdall-config.toml\033[0m → v2 app.toml:"
 echo -e "   - eth_rpc_url"
 echo -e "   - bor_rpc_url"
-echo -e "   - bor_grpc_flag\n"
+echo -e "   - bor_grpc_flag"
+echo -e "   - bor_grpc_url"
+echo -e "   - amqp_url\n"
 echo -e "📁 Into \033[1mclient.toml\033[0m:"
 echo -e "   - chain-id = \"$CHAIN_ID\"\n"
 echo -e "💡 You may manually edit other parameters (e.g. ports, metrics, logging) after migration."
@@ -934,10 +970,7 @@ echo -e "\n     [heimdall]"
 echo -e "     ws-address = \"ws://localhost:26657/websocket\"\n"
 echo -e "   ✅ This setting is recommended, as it improves performance by reducing the number of HTTP polling requests from Heimdall to Bor."
 echo -e "   🔄 After updating the config, make sure to restart your Bor node for changes to take effect.\n"
-
-# ----------------------------------------
 # 1. Set chain-id in client.toml
-# ----------------------------------------
 CLIENT_TOML="$HEIMDALL_HOME/config/client.toml"
 echo "[INFO] Setting chain-id in client.toml..."
 set_toml_key "$CLIENT_TOML" "chain-id" "$CHAIN_ID"
@@ -946,9 +979,7 @@ if [[ "$actual_chain_id" != "$CHAIN_ID" ]]; then
     handle_error $STEP "Validation failed: expected chain-id = $CHAIN_ID, found $actual_chain_id"
 fi
 echo "[OK]   client.toml: chain-id = $CHAIN_ID"
-# ----------------------------------------
 # 2. Migrate config.toml keys
-# ----------------------------------------
 OLD_CONFIG_TOML="$BACKUP_DIR/config/config.toml"
 NEW_CONFIG_TOML="$HEIMDALL_HOME/config/config.toml"
 CONFIG_KEYS=(
@@ -958,6 +989,8 @@ CONFIG_KEYS=(
     "persistent_peers"
     "max_num_inbound_peers"
     "max_num_outbound_peers"
+    "proxy_app"
+    "addr_book_strict"
 )
 echo "[INFO] Copying selected values from v1 config.toml to v2..."
 for key in "${CONFIG_KEYS[@]}"; do
@@ -978,15 +1011,15 @@ for key in "${CONFIG_KEYS[@]}"; do
     fi
 done
 echo "[INFO] config.toml values migrated successfully."
-# ----------------------------------------
 # 3. Migrate heimdall-config.toml → app.toml
-# ----------------------------------------
 OLD_HEIMDALL_CONFIG_TOML="$BACKUP_DIR/config/heimdall-config.toml"
 NEW_APP_TOML="$HEIMDALL_HOME/config/app.toml"
 APP_KEYS=(
     "eth_rpc_url"
     "bor_rpc_url"
     "bor_grpc_flag"
+    "bor_grpc_url"
+    "amqp_url"
 )
 echo "[INFO] Copying selected values from v1 heimdall-config.toml to app.toml..."
 for key in "${APP_KEYS[@]}"; do
@@ -1054,30 +1087,58 @@ fi
 
 # Step 29: Clean up .bak files in HEIMDALL_HOME
 STEP=29
-print_step $STEP "Cleaning up .bak files in $HEIMDALL_HOME"
+print_step $STEP "Cleaning up .bak files in parent directory of $HEIMDALL_HOME"
 ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for cleanup
-
-# Find and delete all .bak files within config/ and data/
-BAK_FILES=$(find "$HEIMDALL_HOME" -type f -name "*.bak")
-
+# Determine the parent directory of HEIMDALL_HOME
+HEIMDALL_PARENT_DIR=$(dirname "$HEIMDALL_HOME")
+# Find and delete all .bak files within the parent directory
+BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak")
 if [[ -n "$BAK_FILES" ]]; then
     echo "[INFO] Removing the following backup files:"
     echo "$BAK_FILES"
-    find "$HEIMDALL_HOME" -type f -name "*.bak" -exec rm -f {} \;
+    find "$HEIMDALL_PARENT_DIR" -type f -name "*.bak" -exec rm -f {} \;
     echo "[INFO] Cleanup complete."
 else
-    echo "[INFO] No .bak files found in $HEIMDALL_HOME"
+    echo "[INFO] No .bak files found in $HEIMDALL_PARENT_DIR"
 fi
 
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 MINUTES=$((DURATION / 60))
 SECONDS=$((DURATION % 60))
+
+echo -e "\n⚠️  \033[1mManual Verification Required\033[0m:"
+echo -e "   Please review the updated configuration files under:"
+echo -e "     \033[1m$HEIMDALL_HOME/config/\033[0m"
+echo -e "   and ensure that they match your expected custom values from:"
+echo -e "     \033[1m$BACKUP_DIR/config/\033[0m"
+echo -e "   Especially if you had non-standard settings (e.g., ports, metrics, logging, pruning)."
+echo -e "   The migration only carried over a minimal and safe subset of parameters:\n"
+echo -e "📁 \033[1mconfig.toml\033[0m:"
+echo -e "   - moniker"
+echo -e "   - external_address"
+echo -e "   - seeds"
+echo -e "   - persistent_peers"
+echo -e "   - max_num_inbound_peers"
+echo -e "   - max_num_outbound_peers"
+echo -e "   - proxy_app"
+echo -e "   - addr_book_strict\n"
+echo -e "📁 \033[1mapp.toml\033[0m:"
+echo -e "   - eth_rpc_url"
+echo -e "   - bor_rpc_url"
+echo -e "   - bor_grpc_flag"
+echo -e "   - bor_grpc_url"
+echo -e "   - amqp_url\n"
+echo -e "📁 \033[1mclient.toml\033[0m:"
+echo -e "   - chain-id = \"$CHAIN_ID\"\n"
+
 echo -e "\n✅ [SUCCESS] Heimdall v2 migration completed successfully! ✅"
 echo -e "🕓 Migration completed in ${MINUTES}m ${SECONDS}s."
 echo -e "When notified to start heimdall-v2, please run: "
-echo -e "sudo systemctl daemon-reload && sudo systemctl start heimdalld && sudo systemctl restart telemetry"
-echo -e "Then - to verify everything is running correctly - check the logs using:"
+echo -e "sudo systemctl daemon-reload && sudo systemctl start heimdalld"
+echo -e "if you are running telemetry, also restart that service with: "
+echo -e "sudo systemctl restart telemetry"
+echo -e "Then - once heimdall is running, to verify everything is correct - check the logs using:"
 echo -e "📌 journalctl -fu heimdalld"
 
 # Don't remove next line!

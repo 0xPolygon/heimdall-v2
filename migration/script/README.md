@@ -1,12 +1,13 @@
 # Heimdall v1 -> v2 README
 
 ## ⚠️ Important notice on the migration process
-The script will be executed the very first time on a node managed by Polygon team.  
+The script will be executed for the very first time on a node managed by the Polygon team (pilot node).  
 Once the migration on that node is successful:
 - The v1 genesis will be exported and made available for the community on heimdall-v2 repo together with a checksum
 - The v2 genesis will be created and made available for the community on heimdall-v2 repo together with a checksum
 - The script will be distributed with the checksum, to prevent any tampering, and made available for the community on heimdall-v2 repo
 - Node operators can perform the migration on their own nodes using the script (or a modified version of it if the architecture is not supported)
+For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script](migrate.sh).
 
 ## Migration script
 
@@ -100,23 +101,23 @@ For a possible output, see [output.log](./output.log)
 
 ### 🧩 Required Arguments
 
-| Flag                 | Description                                                                                             |
-|----------------------|---------------------------------------------------------------------------------------------------------|
-| `--heimdall-home`    | Path to Heimdall v1 home (must contain `config` and `data`)                                             |
-| `--cli-path`         | Path to `heimdallcli` (must be latest stable version)                                                   |
-| `--d-path`           | Path to `heimdalld` (must be latest stable version)                                                     |
-| `--network`          | `mainnet` or `amoy`                                                                                     |
-| `--nodetype`         | `sentry` or `validator`                                                                                 |
-| `--backup-dir`       | Directory where a backup of Heimdall v1 will be stored                                                  |
-| `--moniker`          | Node moniker (must match the value in v1 `config.toml`)                                                 |
-| `--service-user`     | System user running Heimdall (e.g., `heimdall`).                                                        |
-|                      | 👉 Check with: `systemctl status heimdalld` and inspect the `User=` field.                              |
-|                      | Confirm it's correct by checking the user currently running the process.                                |
-|                      | This is critical to avoid permission issues in v2!                                                      |
-| `--generate-genesis` | Whether to generate genesis using `heimdalld` (recommended: `true`).                                    |
-|                      | Note that this value will be anyway overwritten by the script.                                          |
-|                      | This happens when the node was not able to commit to the latest block's heigh needed for the migration, |
-|                      | hence generate-genesis will be set to false and the genesis.json file downloaded from trusted source.   |
+| Flag                 | Description                                                                                                    |
+|----------------------|----------------------------------------------------------------------------------------------------------------|
+| `--heimdall-home`    | Path to Heimdall v1 home (must contain `config` and `data`)                                                    |
+| `--cli-path`         | Path to `heimdallcli` (must be latest stable version). It can be retrieved with `which heimdallcli`            |
+| `--d-path`           | Path to `heimdalld` (must be latest stable version). It can be retrieved with `which heimdalld`                |
+| `--network`          | `mainnet` or `amoy`                                                                                            |
+| `--nodetype`         | `sentry` or `validator`                                                                                        |
+| `--backup-dir`       | Directory where a backup of Heimdall v1 will be stored. Recommended to use `<HEIMDALL_HOME>.backup`            |
+| `--moniker`          | Node moniker (must match the value in v1 `<HEIMDALL_V1_HOME>/config/config.toml`)                              |
+| `--service-user`     | System user running Heimdall (e.g., `heimdall`).                                                               |
+|                      | Check with: `systemctl status heimdalld` and inspect the `User=` field.                                        |
+|                      | Confirm it's correct by checking the user currently running the process (e.g., with `ps -o user= -C heimdalld` |
+|                      | This is critical to avoid permission issues in v2!                                                             |
+| `--generate-genesis` | Whether to generate genesis using `heimdalld` (recommended: `true`).                                           |
+|                      | Note that this value will be anyway overwritten by the script.                                                 |
+|                      | This happens when the node was not able to commit to the latest block's heigh needed for the migration,        |
+|                      | hence generate-genesis will be set to false and the genesis.json file downloaded from trusted source.          |
 
 
 ### ⚙️ Optional Arguments
