@@ -5,6 +5,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -77,6 +78,16 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 	// set checkpoint signatures
 	if len(data.CheckpointSignatures.Signatures) > 0 {
+		for _, s := range data.CheckpointSignatures.Signatures {
+			if err = address.VerifyAddressFormat(s.ValidatorAddress); err != nil {
+				k.Logger(ctx).Error("error in validating checkpoint signature address", "error", err)
+				panic(err)
+			}
+
+			if len(s.Signature) == 0 {
+				panic("checkpoint signature cannot be empty")
+			}
+		}
 		if err = k.SetCheckpointSignatures(ctx, data.CheckpointSignatures); err != nil {
 			k.Logger(ctx).Error("error in setting checkpoint signatures", "error", err)
 			panic(err)
@@ -91,6 +102,9 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 	// set checkpoint signatures txhash
 	if data.CheckpointSignaturesTxhash != "" {
+		if len(data.CheckpointSignaturesTxhash) != common.HashLength*2 {
+			panic("checkpoint signatures txhash is not of correct length")
+		}
 		if err = k.SetCheckpointSignaturesTxHash(ctx, data.CheckpointSignaturesTxhash); err != nil {
 			k.Logger(ctx).Error("error in setting checkpoint signatures txhash", "error", err)
 			panic(err)
