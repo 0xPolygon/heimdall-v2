@@ -6,6 +6,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
@@ -58,7 +59,7 @@ func (data MsgTopupTx) ValidateBasic() error {
 	if err != nil {
 		return errors.New("invalid user")
 	}
-	if len(data.TxHash) != 32 {
+	if len(data.TxHash) != common.HashLength {
 		return errors.New("invalid tx hash")
 	}
 

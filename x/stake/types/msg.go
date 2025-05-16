@@ -2,10 +2,12 @@ package types
 
 import (
 	"bytes"
+
 	sdkmath "cosmossdk.io/math"
 	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	cryptotypes "github.com/cosmos/cosmos-sdk/crypto/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/address"
 )
@@ -66,7 +68,7 @@ func (msg MsgValidatorJoin) ValidateBasic() error {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.Amount)
 	}
 
-	if len(msg.TxHash) != 32 {
+	if len(msg.TxHash) != common.HashLength {
 		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
 	}
 
@@ -111,7 +113,7 @@ func (msg MsgStakeUpdate) ValidateBasic() error {
 		return ErrInvalidMsg.Wrapf("invalid amount %v", msg.NewAmount)
 	}
 
-	if len(msg.TxHash) != 32 {
+	if len(msg.TxHash) != common.HashLength {
 		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
 	}
 
@@ -160,7 +162,7 @@ func (msg MsgSignerUpdate) ValidateBasic() error {
 		return ErrInvalidMsg.Wrap("new signer public key can't be of zero bytes")
 	}
 
-	if len(msg.TxHash) != 32 {
+	if len(msg.TxHash) != common.HashLength {
 		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
 	}
 
@@ -202,7 +204,7 @@ func (msg MsgValidatorExit) ValidateBasic() error {
 		return ErrInvalidMsg.Wrapf("invalid proposer %v", msg.From)
 	}
 
-	if len(msg.TxHash) != 32 {
+	if len(msg.TxHash) != common.HashLength {
 		return ErrInvalidMsg.Wrapf("invalid tx hash %v", msg.TxHash)
 	}
 
