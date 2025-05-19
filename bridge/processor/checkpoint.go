@@ -18,7 +18,6 @@ import (
 	authlegacytx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	ethTypes "github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
@@ -106,7 +105,7 @@ func (cp *CheckpointProcessor) startPollingForNoAck(ctx context.Context, interva
 // 2. check if checkpoint has to be proposed for given header block
 // 3. if so, propose checkpoint to heimdall.
 func (cp *CheckpointProcessor) sendCheckpointToHeimdall(headerBlockStr string) (err error) {
-	header := types.Header{}
+	header := ethTypes.Header{}
 	if err := header.UnmarshalJSON([]byte(headerBlockStr)); err != nil {
 		cp.Logger.Error("Error while unmarshalling the header block", "error", err)
 		return err
@@ -248,7 +247,7 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 		return err
 	}
 
-	log := types.Log{}
+	log := ethTypes.Log{}
 	if err = json.Unmarshal([]byte(checkpointAckStr), &log); err != nil {
 		cp.Logger.Error("Error while unmarshalling event from rootChain", "error", err)
 		return err
@@ -391,8 +390,8 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 			expectedDiff = expectedDiff - 1
 		}
 		// cap with max checkpoint length
-		if expectedDiff > checkpointParams.MaxCheckpointLength-1 {
-			expectedDiff = checkpointParams.MaxCheckpointLength - 1
+		if expectedDiff > checkpointParams.MaxCheckpointLength {
+			expectedDiff = checkpointParams.MaxCheckpointLength
 		}
 		// get end result
 		end = expectedDiff + start
@@ -538,27 +537,20 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 		return err
 	}
 
-	shouldSend, err := cp.shouldSendCheckpoint(checkpointContext, start, end)
+	// chain manager params
+	chainParams := checkpointContext.ChainmanagerParams.ChainParams
+	// root chain address
+	rootChainAddress := chainParams.RootChainAddress
+	// root chain instance
+	rootChainInstance, err := cp.contractCaller.GetRootChainInstance(rootChainAddress)
 	if err != nil {
+		cp.Logger.Info("Error while creating rootChain instance", "error", err)
 		return err
 	}
 
-	if shouldSend {
-		// chain manager params
-		chainParams := checkpointContext.ChainmanagerParams.ChainParams
-		// root chain address
-		rootChainAddress := chainParams.RootChainAddress
-		// root chain instance
-		rootChainInstance, err := cp.contractCaller.GetRootChainInstance(rootChainAddress)
-		if err != nil {
-			cp.Logger.Info("Error while creating rootChain instance", "error", err)
-			return err
-		}
-
-		if err := cp.contractCaller.SendCheckpoint(sideTxData, sigs, common.HexToAddress(rootChainAddress), rootChainInstance); err != nil {
-			cp.Logger.Info("Error submitting checkpoint to rootChain", "error", err)
-			return err
-		}
+	if err := cp.contractCaller.SendCheckpoint(sideTxData, sigs, common.HexToAddress(rootChainAddress), rootChainInstance); err != nil {
+		cp.Logger.Info("Error submitting checkpoint to rootChain", "error", err)
+		return err
 	}
 
 	return nil
@@ -588,7 +580,7 @@ func (cp *CheckpointProcessor) parseCheckpointSignatures(signatures []checkpoint
 		return bytes.Compare(sideTxSigs[i].address, sideTxSigs[j].address) < 0
 	})
 
-	dummyLegacyTxn := ethTypes.NewTx(&types.LegacyTx{
+	dummyLegacyTxn := ethTypes.NewTx(&ethTypes.LegacyTx{
 		Nonce:    0,
 		To:       &common.Address{},
 		Value:    nil,

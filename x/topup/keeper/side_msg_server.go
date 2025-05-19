@@ -144,11 +144,11 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	// check if incoming tx is older
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
+	// check if the event has already been processed
 	exists, err := s.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
 		logger.Error("error while fetching older topup sequence",

@@ -14,7 +14,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
@@ -86,7 +86,7 @@ func (k Keeper) GetAuthority() string {
 
 // SetParams sets the x/milestone module parameters.
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
-	err := params.Validate()
+	err := params.ValidateBasic()
 	if err != nil {
 		k.Logger(ctx).Error("error while validating params", "err", err)
 		return err
@@ -178,7 +178,7 @@ func (k *Keeper) GetLastMilestone(ctx context.Context) (*types.Milestone, error)
 	}
 
 	if lastMilestoneNumber == 0 {
-		k.Logger(ctx).Error("milestone doesn't exist in store")
+		k.Logger(ctx).Warn("no milestones found in store yet")
 		return nil, types.ErrNoMilestoneFound
 	}
 

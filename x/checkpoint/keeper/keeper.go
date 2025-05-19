@@ -14,7 +14,7 @@ import (
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -208,7 +208,7 @@ func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) error {
 func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint, error) {
 	var checkpoint types.Checkpoint
 
-	exists, err := k.bufferedCheckpoint.Has(ctx)
+	exists, err := k.HasCheckpointInBuffer(ctx)
 	if err != nil {
 		k.Logger(ctx).Error("error while checking for existence of the buffered checkpoint in store", "err", err)
 		return checkpoint, err
