@@ -351,6 +351,10 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		return nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}
 
+	if len(headers) == 0 {
+		return nil, nil, fmt.Errorf("no headers found")
+	}
+
 	result := make([][]byte, 0, len(headers))
 
 	var parentHash []byte
