@@ -6,13 +6,12 @@ import (
 	"math/big"
 	"strconv"
 
-	"cosmossdk.io/core/address"
 	addressCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/gogoproto/proto"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/types"
 )
 
@@ -41,7 +40,11 @@ func NewMsgCheckpointBlock(
 	}
 }
 
-func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
+func (msg MsgCheckpoint) ValidateBasic() error {
+	if _, err := strconv.ParseUint(msg.BorChainId, 10, 64); err != nil {
+		return ErrInvalidMsg.Wrapf("Invalid bor chain id %s", msg.BorChainId)
+	}
+
 	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
 	}
@@ -50,6 +53,7 @@ func (msg MsgCheckpoint) ValidateBasic(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash))
 	}
 
+	ac := addressCodec.NewHexCodec()
 	addrBytes, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
@@ -166,7 +170,9 @@ func NewMsgCpAck(
 }
 
 // ValidateBasic validate basic
-func (msg MsgCpAck) ValidateBasic(ac address.Codec) error {
+func (msg MsgCpAck) ValidateBasic() error {
+	ac := addressCodec.NewHexCodec()
+
 	// Validate sender (msg.From)
 	fromBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
@@ -189,8 +195,16 @@ func (msg MsgCpAck) ValidateBasic(ac address.Codec) error {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
+	if msg.StartBlock >= msg.EndBlock {
+		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%d,end block=%d", msg.StartBlock, msg.EndBlock)
+	}
+
 	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
+	}
+
+	if len(msg.RootHash) != common.HashLength {
+		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash))
 	}
 
 	return nil
@@ -209,7 +223,9 @@ func NewMsgCheckpointNoAck(from string) MsgCpNoAck {
 	}
 }
 
-func (msg MsgCpNoAck) ValidateBasic(ac address.Codec) error {
+func (msg MsgCpNoAck) ValidateBasic() error {
+	ac := addressCodec.NewHexCodec()
+
 	addrBytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return ErrInvalidMsg.Wrapf("Invalid sender %s", msg.From)

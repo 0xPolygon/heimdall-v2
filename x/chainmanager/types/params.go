@@ -40,8 +40,8 @@ func NewParams(mainChainTxConfirmations uint64, borChainTxConfirmations uint64, 
 	}
 }
 
-// Validate checks that the parameters have valid values.
-func (p Params) Validate() error {
+// ValidateBasic checks that the parameters have valid values.
+func (p Params) ValidateBasic() error {
 	if err := validateHeimdallAddress("pol_token_address", p.ChainParams.PolTokenAddress); err != nil {
 		return err
 	}

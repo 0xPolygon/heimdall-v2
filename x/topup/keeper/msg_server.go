@@ -98,6 +98,13 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 		"amount", msg.Amount.String(),
 	)
 
+	// check if amount is negative
+	if msg.Amount.IsNegative() {
+		logger.Error("negative amount to withdraw")
+		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
+			"amount %s is negative", msg.Amount.String())
+	}
+
 	// partial withdraw
 	amount := msg.Amount
 

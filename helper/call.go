@@ -544,7 +544,7 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 
 // GetBorChainBlocksInBatch returns bor chain block headers via single RPC Batch call
 func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
 	rpcClient := c.BorChainClient.Client()
@@ -563,7 +563,7 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 	}
 
 	// Execute the batch call.
-	if err := rpcClient.BatchCallContext(ctx, batchElems); err != nil {
+	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
 		return nil, err
 	}
 

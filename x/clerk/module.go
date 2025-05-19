@@ -57,7 +57,7 @@ func (AppModule) ValidateGenesis(cdc codec.JSONCodec, _ client.TxEncodingConfig,
 		return fmt.Errorf("failed to unmarshal %s genesis state: %w", types.ModuleName, err)
 	}
 
-	return types.ValidateGenesis(data)
+	return types.Validate(data)
 }
 
 // RegisterGRPCGatewayRoutes registers the gRPC Gateway routes for the clerk module.

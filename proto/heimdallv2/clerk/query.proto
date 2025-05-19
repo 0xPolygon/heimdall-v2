@@ -31,14 +31,12 @@ service Query {
   // GetRecordSequence queries the sequence of the record
   rpc GetRecordSequence(RecordSequenceRequest)
       returns (RecordSequenceResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/sequence";
   }
 
   // IsClerkTxOld queries for a specific clerk tx to check its status (old
   // means already submitted)
   rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/isoldtx";
   }
 }

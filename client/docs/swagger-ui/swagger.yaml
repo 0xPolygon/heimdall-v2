@@ -1611,11 +1611,6 @@ paths:
                     value:
                       type: string
                       format: byte
-      parameters:
-        - name: bor_chain_id
-          in: query
-          required: false
-          type: string
       tags:
         - Query
   /checkpoints/{number}:

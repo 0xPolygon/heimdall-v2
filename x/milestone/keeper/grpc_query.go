@@ -51,6 +51,9 @@ func (q queryServer) GetLatestMilestone(ctx context.Context, _ *types.QueryLates
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	if milestone == nil {
+		return nil, status.Error(codes.NotFound, "milestone not found")
+	}
 	return &types.QueryLatestMilestoneResponse{Milestone: *milestone}, nil
 }
 
@@ -60,10 +63,21 @@ func (q queryServer) GetMilestoneByNumber(ctx context.Context, req *types.QueryM
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	count, err := q.k.GetMilestoneCount(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get milestone count")
+	}
+	if req.Number == 0 || req.Number > count {
+		return nil, status.Error(codes.NotFound, "milestone number out of range")
+	}
+
 	milestone, err := q.k.GetMilestoneByNumber(ctx, req.Number)
 	if err != nil {
 		return nil, err
 	}
 
+	if milestone == nil {
+		return nil, status.Error(codes.NotFound, "milestone not found")
+	}
 	return &types.QueryMilestoneResponse{Milestone: *milestone}, nil
 }
