@@ -228,6 +228,14 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 					Result: res,
 				}
 				sideTxRes = append(sideTxRes, ve)
+
+				if len(sideTxRes) == maxSideTxResponsesCount {
+					break
+				}
+			}
+
+			if len(sideTxRes) == maxSideTxResponsesCount {
+				break
 			}
 		}
 
