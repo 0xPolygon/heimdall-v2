@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )

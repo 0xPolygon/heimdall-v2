@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
@@ -61,8 +61,8 @@ func (msg MsgEventRecord) ValidateBasic() error {
 		return sdkerrors.ErrInvalidAddress
 	}
 
-	if msg.TxHash == "" {
-		return ErrEmptyTxHash
+	if !util.IsTxHashNonEmpty(msg.TxHash) {
+		return ErrInvalidTxHash
 	}
 
 	// DO NOT REMOVE THIS CHANGE

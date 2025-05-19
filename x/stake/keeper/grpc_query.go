@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -42,6 +43,10 @@ func (q queryServer) GetCurrentValidatorSet(ctx context.Context, _ *types.QueryC
 func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if !common.IsHexAddress(req.ValAddress) {
+		return nil, status.Error(codes.InvalidArgument, "invalid validator address")
 	}
 
 	// validate address
@@ -112,6 +117,10 @@ func (q queryServer) GetTotalPower(ctx context.Context, _ *types.QueryTotalPower
 func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOldTxRequest) (*types.QueryStakeIsOldTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if !hex.IsTxHashNonEmpty(req.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	if req.LogIndex >= math.MaxInt64 {

@@ -15,7 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )

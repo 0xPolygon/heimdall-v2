@@ -14,7 +14,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )

@@ -9,7 +9,7 @@ import (
 	addresscodec "cosmossdk.io/core/address"
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 

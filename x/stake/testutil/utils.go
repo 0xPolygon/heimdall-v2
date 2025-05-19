@@ -8,7 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/require"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	stakingKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )

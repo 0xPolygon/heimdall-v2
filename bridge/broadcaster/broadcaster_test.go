@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	"github.com/0xPolygon/heimdall-v2/app"
-	addressUtil "github.com/0xPolygon/heimdall-v2/common/address"
+	addressUtil "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	helperMocks "github.com/0xPolygon/heimdall-v2/helper/mocks"
 	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"

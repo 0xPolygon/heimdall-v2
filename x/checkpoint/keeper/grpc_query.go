@@ -7,6 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -266,8 +267,8 @@ func (q queryServer) GetCheckpointSignatures(ctx context.Context, req *types.Que
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if req.TxHash == "" {
-		return nil, status.Error(codes.InvalidArgument, "tx hash cannot be empty")
+	if !hex.IsTxHashNonEmpty(req.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	txHash, err := q.k.GetCheckpointSignaturesTxHash(ctx)
