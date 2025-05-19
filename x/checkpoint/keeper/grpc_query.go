@@ -222,7 +222,7 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 		},
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "paginate: %v", err)
+		return nil, status.Errorf(codes.Internal, "error in pagination; please verify the pagination params: %v", err)
 	}
 
 	return &types.QueryCheckpointListResponse{CheckpointList: checkpoints, Pagination: *pageRes}, nil
@@ -234,22 +234,22 @@ func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCh
 	// get validator set
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to get validator set: %v", err)
 	}
 
 	ackCount, err := q.k.GetAckCount(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to get checkpoint ack count: %v", err)
 	}
 
 	lastNoAck, err := q.k.GetLastNoAck(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to get last checkpoint no-ack: %v", err)
 	}
 
 	bufferCheckpoint, err := q.k.GetCheckpointFromBuffer(ctx)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, "failed to get checkpoint from buffer: %v", err)
 	}
 
 	return &types.QueryCheckpointOverviewResponse{
