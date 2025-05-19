@@ -10,7 +10,7 @@ import (
 	"path"
 	"strconv"
 
-	db "github.com/cometbft/cometbft-db"
+	cometbftDB "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/store"
 	"github.com/cosmos/cosmos-sdk/client/flags"
@@ -35,7 +35,7 @@ func veDecodeCmd() *cobra.Command {
 
 	cmd.Flags().String("chain-id", "", "Heimdall-v2 network chain id")
 	cmd.Flags().String("host", "localhost", "RPC host")
-	cmd.Flags().Uint64P("endpoint", "e", 26657, "Cometbft RPC endpoint")
+	cmd.Flags().Uint64("cometbft-port", 26657, "Cometbft RPC endpoint")
 
 	if err := cmd.MarkFlagRequired("chain-id"); err != nil {
 		panic(err)
@@ -53,11 +53,11 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("block height number must be greater than VoteExtEnableHeight (1)")
 	}
 
-	chainId, err := cmd.Flags().GetString("chain-id")
+	chainID, err := cmd.Flags().GetString("chain-id")
 	if err != nil {
 		return err
 	}
-	if chainId == "" {
+	if chainID == "" {
 		return fmt.Errorf("non-empty chain ID is required")
 	}
 
@@ -66,25 +66,93 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error parsing host flag: %w", err)
 	}
 
-	endpoint, err := cmd.Flags().GetUint64("endpoint")
+	port, err := cmd.Flags().GetUint64("cometbft-port")
 	if err != nil {
-		return fmt.Errorf("error parsing endpoint flag: %w", err)
+		return fmt.Errorf("error parsing cometbft-port flag: %w", err)
 	}
 
-	// Get VoteExtension from the block at the specified height.
-	voteExts, err := getVEs(height, host, endpoint)
+	// Fetch vote extension info
+	extInfo, err := getVEs(height, host, port)
 	if err != nil {
-		return fmt.Errorf("error getting VEs: %w", err)
-	}
-	if voteExts == nil {
-		return fmt.Errorf("no VEs found for block height %d", height)
+		return fmt.Errorf("error getting vote extensions: %w", err)
 	}
 
-	// Decode and print the extended commit info.
-	if err := decodeAndPrintExtendedCommitInfo(height, voteExts); err != nil {
-		return fmt.Errorf("error decoding and printing extended commit info: %w", err)
+	// Encode to JSON and print
+	out, err := buildCommitJSON(height, extInfo)
+	if err != nil {
+		return fmt.Errorf("error marshalling to JSON: %w", err)
 	}
+
+	fmt.Println(string(out))
 	return nil
+}
+
+// buildCommitJSON builds a JSON representation for the given ExtendedCommitInfo and block height.
+func buildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
+	data := CommitData{
+		Height: height,
+		Round:  ext.Round,
+		Votes:  make([]VoteData, len(ext.Votes)),
+	}
+
+	for i, v := range ext.Votes {
+		// Unmarshal sideTx extension
+		var stxs sidetxs.VoteExtension
+		if err := goproto.Unmarshal(v.VoteExtension, &stxs); err != nil {
+			return nil, err
+		}
+
+		vote := VoteData{
+			ValidatorAddr: "0x" + hex.EncodeToString(v.Validator.Address),
+			Power:         v.Validator.Power,
+			ExtSignature:  "0x" + hex.EncodeToString(v.ExtensionSignature),
+			BlockIDFlag:   v.BlockIdFlag.String(),
+		}
+
+		// SideTxResponses
+		for _, r := range stxs.SideTxResponses {
+			vote.SideTxs = append(vote.SideTxs, SideTxData{
+				TxHash: "0x" + hex.EncodeToString(r.TxHash),
+				Result: r.Result.String(),
+			})
+		}
+
+		// Milestone
+		if mp := stxs.MilestoneProposition; mp != nil {
+			hashes := make([]string, len(mp.BlockHashes))
+			for j, bh := range mp.BlockHashes {
+				hashes[j] = "0x" + hex.EncodeToString(bh)
+			}
+			vote.Milestone = &MilestoneData{
+				BlockHashes:      hashes,
+				StartBlockNumber: mp.StartBlockNumber,
+				ParentHash:       "0x" + hex.EncodeToString(mp.ParentHash),
+			}
+		}
+
+		// Non-RP vote extension: dummy vs checkpoint
+		if isDummy, _ := isDummyNonRpVoteExtension(height, v.NonRpVoteExtension); isDummy {
+			vote.NonRpData = "0x" + hex.EncodeToString(v.NonRpVoteExtension)
+		} else {
+			msg, err := getCheckpointMsg(v.NonRpVoteExtension)
+			if err != nil {
+				return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
+			}
+			vote.NonRpData = NonRpData{
+				Proposer:        msg.Proposer,
+				StartBlock:      msg.StartBlock,
+				EndBlock:        msg.EndBlock,
+				RootHash:        "0x" + hex.EncodeToString(msg.RootHash),
+				AccountRootHash: "0x" + hex.EncodeToString(msg.AccountRootHash),
+				BorChainID:      msg.BorChainId,
+			}
+		}
+
+		vote.NonRpSignature = "0x" + hex.EncodeToString(v.NonRpExtensionSignature)
+		data.Votes[i] = vote
+	}
+
+	return json.MarshalIndent(data, "", "  ")
 }
 
 func getVEs(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
@@ -93,7 +161,6 @@ func getVEs(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInf
 	if err1 == nil {
 		return voteExt, nil
 	}
-	fmt.Printf("Error fetching VEs from endpoint %d: %v\n", endpoint, err1)
 
 	// 2) Fallback to the local block store.
 	voteExt, err2 := getVEsFromBlockStore(height)
@@ -110,7 +177,7 @@ func getVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.Exten
 		return nil, fmt.Errorf("invalid RPC port: %d", endpoint)
 	}
 	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, endpoint, height)
-	resp, err := http.Get(url) // #nosec G107
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -163,11 +230,11 @@ func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 		return nil, fmt.Errorf("home directory not set")
 	}
 
-	db, err := db.NewGoLevelDB("blockstore", path.Join(homeDir, "data"))
+	cometbftdb, err := cometbftDB.NewGoLevelDB("blockstore", path.Join(homeDir, "data"))
 	if err != nil {
 		return nil, err
 	}
-	blockStore := store.NewBlockStore(db)
+	blockStore := store.NewBlockStore(cometbftdb)
 	block := blockStore.LoadBlock(height)
 	if block == nil {
 		return nil, fmt.Errorf("block at height %d not found", height)
@@ -184,122 +251,6 @@ func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 	}
 
 	return &voteExt, nil
-}
-
-func decodeAndPrintExtendedCommitInfo(height int64, info *abci.ExtendedCommitInfo) error {
-	voteExts := make([]sidetxs.VoteExtension, len(info.Votes))
-	for i, v := range info.Votes {
-		if err := goproto.Unmarshal(v.VoteExtension, &voteExts[i]); err != nil {
-			return err
-		}
-	}
-
-	printHeader(height, info.Round)
-
-	for i, v := range info.Votes {
-		err := printVote(height, i+1, v, voteExts[i])
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func printHeader(height int64, round int32) {
-	fmt.Println()
-	fmt.Println("================ Extended Commit Info ================")
-	fmt.Printf("Height: %d\n", height)
-	fmt.Printf("Round: %d\n", round)
-	fmt.Println("======================================================")
-	fmt.Println()
-}
-
-func printVote(height int64, index int, voteInfo abci.ExtendedVoteInfo, voteExt sidetxs.VoteExtension) error {
-	fmt.Printf("Vote %d:\n", index)
-	fmt.Println("------------------------------------------------------")
-
-	printValidatorInfo(voteInfo)
-	printVoteExtensionInfo(voteExt)
-	err := printNonRpVoteExtAndSignatures(height, voteInfo)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("------------------------------------------------------")
-	fmt.Println()
-
-	return nil
-}
-
-func printValidatorInfo(v abci.ExtendedVoteInfo) {
-	fmt.Printf("Validator: %s\n", hex.EncodeToString(v.Validator.Address))
-	fmt.Printf("Power: %d\n", v.Validator.Power)
-	fmt.Printf("BlockIdFlag: %s\n", v.BlockIdFlag.String())
-}
-
-func printVoteExtensionInfo(voteExt sidetxs.VoteExtension) {
-	fmt.Println("VoteExtension:")
-	fmt.Printf("  BlockHash: %s\n", hex.EncodeToString(voteExt.BlockHash))
-	fmt.Printf("  Height: %d\n", voteExt.Height)
-
-	if len(voteExt.SideTxResponses) == 0 {
-		fmt.Println("  SideTxResponses: []")
-	} else {
-		fmt.Println("  SideTxResponses:")
-		for j, resp := range voteExt.SideTxResponses {
-			fmt.Printf("    Response %d:\n", j+1)
-			fmt.Printf("      TxHash: %s\n", hex.EncodeToString(resp.TxHash))
-			fmt.Printf("      Result: %s\n", resp.Result.String())
-		}
-	}
-
-	if voteExt.MilestoneProposition != nil {
-		mp := voteExt.MilestoneProposition
-		fmt.Println("  MilestoneProposition:")
-		for k, bh := range mp.BlockHashes {
-			fmt.Printf("    BlockHash[%d]: %s\n", k, hex.EncodeToString(bh))
-		}
-		fmt.Printf("    StartBlockNumber: %d\n", mp.StartBlockNumber)
-		fmt.Printf("    ParentHash: %s\n", hex.EncodeToString(mp.ParentHash))
-	} else {
-		fmt.Println("  MilestoneProposition: nil")
-	}
-}
-
-func printNonRpVoteExtAndSignatures(height int64, v abci.ExtendedVoteInfo) error {
-	fmt.Printf("ExtensionSignature: %s\n", hex.EncodeToString(v.ExtensionSignature))
-	err := printNonRpVoteExtension(height, v.NonRpVoteExtension)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("NonRpExtensionSignature: %s\n", hex.EncodeToString(v.NonRpExtensionSignature))
-
-	return nil
-}
-
-func printNonRpVoteExtension(height int64, nonRpVoteExt []byte) error {
-	dummy, err := isDummyNonRpVoteExtension(height, nonRpVoteExt)
-	if err != nil {
-		return err
-	}
-	if dummy {
-		fmt.Printf("NonRpVoteExtension [DUMMY #HEIMDALL-VOTE-EXTENSION#]: %s\n", hex.EncodeToString(nonRpVoteExt))
-	} else {
-		msg, err := getCheckpointMsg(nonRpVoteExt)
-		if err != nil {
-			return err
-		}
-		fmt.Println("NonRpVoteExtension [CHECKPOINT MSG]:")
-		fmt.Printf("  Proposer: %s\n", msg.Proposer)
-		fmt.Printf("  StartBlock: %d\n", msg.StartBlock)
-		fmt.Printf("  EndBlock: %d\n", msg.EndBlock)
-		fmt.Printf("  RootHash: %s\n", hex.EncodeToString(msg.RootHash))
-		fmt.Printf("  AccountRootHash: %s\n", hex.EncodeToString(msg.AccountRootHash))
-		fmt.Printf("  BorChainId: %s\n", msg.BorChainId)
-	}
-
-	return nil
 }
 
 func isDummyNonRpVoteExtension(height int64, nonRpVoteExt []byte) (bool, error) {
@@ -322,4 +273,48 @@ func getCheckpointMsg(nonRpVoteExt []byte) (*checkpointTypes.MsgCheckpoint, erro
 	}
 
 	return checkpointMsg, nil
+}
+
+// Helper structs for JSON encoding and decoding.
+
+// CommitData represents the JSON output for an extended commit.
+type CommitData struct {
+	Height int64      `json:"height"`
+	Round  int32      `json:"round"`
+	Votes  []VoteData `json:"votes"`
+}
+
+// VoteData contains per-validator vote extension details.
+type VoteData struct {
+	ValidatorAddr  string         `json:"validator_address"`
+	Power          int64          `json:"power"`
+	SideTxs        []SideTxData   `json:"side_tx_responses"`
+	Milestone      *MilestoneData `json:"milestone_proposition,omitempty"`
+	ExtSignature   string         `json:"extension_signature"`
+	BlockIDFlag    string         `json:"block_id_flag"`
+	NonRpData      any            `json:"non_rp_vote_extension"`
+	NonRpSignature string         `json:"non_rp_extension_signature"`
+}
+
+// SideTxData describes a single side transaction response.
+type SideTxData struct {
+	TxHash string `json:"tx_hash"`
+	Result string `json:"result"`
+}
+
+// MilestoneData represents proposed milestone information.
+type MilestoneData struct {
+	BlockHashes      []string `json:"block_hashes"`
+	StartBlockNumber uint64   `json:"start_block_number"`
+	ParentHash       string   `json:"parent_hash"`
+}
+
+// NonRpData holds decoded non-RP vote extension details.
+type NonRpData struct {
+	Proposer        string `json:"proposer"`
+	StartBlock      uint64 `json:"start_block"`
+	EndBlock        uint64 `json:"end_block"`
+	RootHash        string `json:"root_hash"`
+	AccountRootHash string `json:"account_root_hash"`
+	BorChainID      string `json:"bor_chain_id"`
 }
