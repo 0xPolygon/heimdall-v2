@@ -324,6 +324,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.ResponsePreBlock, error) {
 	logger := app.Logger()
 
+	// handle the case when the VEs are disabled starting from the next block
 	if err := checkIfVoteExtensionsDisabled(ctx, req.Height+1); err != nil {
 		return nil, err
 	}
@@ -345,6 +346,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	extVoteInfo := extCommitInfo.Votes
 
+	// handle the case when the VEs are enabled at the initial height
 	if req.Height <= retrieveVoteExtensionsEnableHeight(ctx) {
 		if len(extVoteInfo) != 0 {
 			logger.Error("Unexpected behavior, non-empty VEs found in the initial height's pre-blocker", "height", req.Height)
@@ -499,8 +501,11 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 					// multi-store in case message processing fails.
 					postHandlerCtx, msCache := app.cacheTxContext(ctx)
 					postHandlerCtx = postHandlerCtx.WithTxBytes(txBytes.Hash())
-					if err := postHandler(postHandlerCtx, msg, sidetxs.Vote_VOTE_YES); err == nil {
+					err = postHandler(postHandlerCtx, msg, sidetxs.Vote_VOTE_YES)
+					if err == nil {
 						msCache.Write()
+					} else {
+						logger.Error("Error occurred while executing post handler", "error", err, "msg", msg)
 					}
 
 					executedPostHandlers++
@@ -508,11 +513,28 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 				// make sure only one post handler is executed
 				if executedPostHandlers > 0 {
+					logger.Info("One post handler already executed, skipping others", "msg", msg)
 					break
 				}
 			}
 
 		}
+	}
+
+	// set the block proposer
+	addr, err := sdk.HexifyAddressBytes(req.ProposerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := sdk.AccAddressFromHex(addr)
+	if err != nil {
+		return nil, err
+	}
+	err = app.AccountKeeper.SetBlockProposer(ctx, account)
+	if err != nil {
+		app.Logger().Error("error while setting the block proposer", "error", err)
+		return nil, err
 	}
 
 	return app.ModuleManager.PreBlock(ctx)

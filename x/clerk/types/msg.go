@@ -45,13 +45,19 @@ func (msg MsgEventRecord) Type() string { return "event-record" }
 
 // ValidateBasic Implements Msg
 func (msg MsgEventRecord) ValidateBasic() error {
-	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
+	ac := hexCodec.NewHexCodec()
+	bytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return sdkerrors.ErrInvalidAddress
 	}
 
 	tempFrom := sdk.AccAddress(bytes)
 	if tempFrom.Empty() {
+		return sdkerrors.ErrInvalidAddress
+	}
+
+	_, err = ac.StringToBytes(msg.ContractAddress)
+	if err != nil {
 		return sdkerrors.ErrInvalidAddress
 	}
 
