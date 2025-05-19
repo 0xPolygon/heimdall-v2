@@ -259,7 +259,8 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 
 			checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).Return(item.ackCount, nil).Times(1)
 
-			isCurrentVal := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer)
+			isCurrentVal, err := keeper.IsCurrentValidatorByAddress(ctx, newVal.Signer)
+			require.NoError(err)
 			require.Equal(item.result, isCurrentVal, item.resultMsg)
 		})
 	}
