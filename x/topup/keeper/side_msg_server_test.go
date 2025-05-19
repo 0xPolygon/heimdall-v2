@@ -339,7 +339,6 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 			blockNumber,
 		)
 
-		// check if incoming tx is older
 		bn := new(big.Int).SetUint64(msg.BlockNumber)
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
@@ -349,7 +348,7 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 
 		postHandler(ctx, &msg, sidetxs.Vote_VOTE_YES)
 
-		// there should be stored sequence
+		// there should be a stored sequence
 		ok, err := keeper.HasTopupSequence(ctx, sequence.String())
 		require.NoError(err)
 		require.True(ok)
@@ -382,7 +381,6 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 			blockNumber,
 		)
 
-		// check if incoming tx is older
 		bn := new(big.Int).SetUint64(msg.BlockNumber)
 		sequence := new(big.Int).Mul(bn, big.NewInt(types.DefaultLogIndexUnit))
 		sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
