@@ -2,6 +2,7 @@ package heimdalld
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -119,7 +120,13 @@ func GetVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.Exten
 		return nil, fmt.Errorf("invalid RPC port: %d", endpoint)
 	}
 	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, endpoint, height)
-	resp, err := http.Get(url)
+
+	ctx := context.Background()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
