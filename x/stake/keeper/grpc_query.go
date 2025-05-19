@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/big"
 
+	hexCodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,16 +31,24 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 // GetCurrentValidatorSet queries all validators which are currently active in validator set
 func (q queryServer) GetCurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
 	validatorSet, err := q.k.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 
-	return &types.QueryCurrentValidatorSetResponse{
-		ValidatorSet: validatorSet,
-	}, err
+	return &types.QueryCurrentValidatorSetResponse{ValidatorSet: validatorSet}, nil
 }
 
 // GetSignerByAddress queries validator info for given validator address.
 func (q queryServer) GetSignerByAddress(ctx context.Context, req *types.QuerySignerRequest) (*types.QuerySignerResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// validate address
+	ac := hexCodec.NewHexCodec()
+	_, err := ac.StringToBytes(req.ValAddress)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid validator address %s", req.ValAddress)
 	}
 
 	validator, err := q.k.GetValidatorInfo(ctx, req.ValAddress)
@@ -56,9 +65,13 @@ func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValid
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	if req.Id <= 0 {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid validator id %d", req.Id))
+	}
+
 	validator, err := q.k.GetValidatorFromValID(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given id %d", req.Id))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("error in getting validator corresponding to the given id %d. error: %v", req.Id, err))
 	}
 
 	return &types.QueryValidatorResponse{Validator: validator}, nil
@@ -68,6 +81,13 @@ func (q queryServer) GetValidatorById(ctx context.Context, req *types.QueryValid
 func (q queryServer) GetValidatorStatusByAddress(ctx context.Context, req *types.QueryValidatorStatusRequest) (*types.QueryValidatorStatusResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	// validate address
+	ac := hexCodec.NewHexCodec()
+	_, err := ac.StringToBytes(req.ValAddress)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid validator address %s", req.ValAddress)
 	}
 
 	isCurrentValidator, err := q.k.IsCurrentValidatorByAddress(ctx, req.ValAddress)
@@ -92,6 +112,10 @@ func (q queryServer) GetTotalPower(ctx context.Context, _ *types.QueryTotalPower
 func (q queryServer) IsStakeTxOld(ctx context.Context, req *types.QueryStakeIsOldTxRequest) (*types.QueryStakeIsOldTxResponse, error) {
 	if req == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if req.LogIndex >= math.MaxInt64 {
+		return nil, status.Error(codes.InvalidArgument, "invalid log index")
 	}
 
 	chainParams, err := q.k.cmKeeper.GetParams(ctx)
@@ -127,6 +151,10 @@ func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryPr
 
 	if req.Times >= math.MaxInt64 {
 		return nil, status.Error(codes.InvalidArgument, "times exceeds MaxInt64")
+	}
+
+	if req.Times == 0 {
+		return nil, status.Error(codes.InvalidArgument, "times is 0")
 	}
 
 	validatorSet, err := q.k.GetValidatorSet(ctx)
