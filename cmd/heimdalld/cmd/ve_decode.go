@@ -82,13 +82,16 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("error marshalling to JSON: %w", err)
 	}
+	fmt.Println("Vote Extension:")
 	fmt.Println(string(out))
+	fmt.Println()
 
 	// Print summary
-	summary, err := buildSummaryJSON(extInfo)
+	summary, err := buildSummaryJSON(height, extInfo)
 	if err != nil {
 		return fmt.Errorf("error marshalling summary to JSON: %w", err)
 	}
+	fmt.Println("Summary:")
 	fmt.Println(string(summary))
 
 	return nil
@@ -243,7 +246,7 @@ func buildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 			if err != nil {
 				return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
 			}
-			vote.NonRpData = NonRpData{
+			vote.NonRpData = CheckpointData{
 				Proposer:        msg.Proposer,
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
@@ -261,7 +264,7 @@ func buildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 }
 
 // buildSummaryJSON builds a JSON summary from ExtendedCommitInfo.
-func buildSummaryJSON(ext *abci.ExtendedCommitInfo) ([]byte, error) {
+func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
 	var totalPower int64
 	for _, v := range ext.Votes {
 		totalPower += v.Validator.Power
@@ -274,43 +277,48 @@ func buildSummaryJSON(ext *abci.ExtendedCommitInfo) ([]byte, error) {
 
 	milestoneVP := make(map[string]int64)
 	sideTxVP := make(map[string]map[string]int64)
-	nonRpVP := make(map[string]int64)
+	nonRpVP := make(map[any]int64)
 
 	for _, v := range ext.Votes {
 		power := v.Validator.Power
 
-		// Milestones
 		var stxs sidetxs.VoteExtension
 		if err := goproto.Unmarshal(v.VoteExtension, &stxs); err != nil {
 			return nil, err
 		}
-		if m := stxs.MilestoneProposition; m != nil {
-			for _, h := range m.BlockHashes {
+		if mp := stxs.MilestoneProposition; mp != nil {
+			for _, h := range mp.BlockHashes {
 				milestoneVP["0x"+hex.EncodeToString(h)] += power
 			}
 		}
-		// Side-txs
 		for _, r := range stxs.SideTxResponses {
-			key := "0x" + hex.EncodeToString(r.TxHash)
-			if _, ok := sideTxVP[key]; !ok {
-				sideTxVP[key] = make(map[string]int64)
+			txKey := "0x" + hex.EncodeToString(r.TxHash)
+			if sideTxVP[txKey] == nil {
+				sideTxVP[txKey] = make(map[string]int64)
 			}
-			sideTxVP[key][r.Result.String()] += power
+			sideTxVP[txKey][r.Result.String()] += power
 		}
-		// Non-RP Data
-		var key string
-		if isDummy, _ := isDummyNonRpVoteExtension(0, v.NonRpVoteExtension); isDummy {
+
+		var key any
+		isDummy, err := isDummyNonRpVoteExtension(height, v.NonRpVoteExtension)
+		if err != nil {
+			return nil, fmt.Errorf("error checking dummy non-RP extension: %w", err)
+		}
+		if isDummy {
 			key = "0x" + hex.EncodeToString(v.NonRpVoteExtension)
 		} else {
 			msg, err := getCheckpointMsg(v.NonRpVoteExtension)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
 			}
-			b, err := json.Marshal(msg)
-			if err != nil {
-				return nil, err
+			key = CheckpointData{
+				Proposer:        msg.Proposer,
+				StartBlock:      msg.StartBlock,
+				EndBlock:        msg.EndBlock,
+				RootHash:        "0x" + hex.EncodeToString(msg.RootHash),
+				AccountRootHash: "0x" + hex.EncodeToString(msg.AccountRootHash),
+				BorChainID:      msg.BorChainId,
 			}
-			key = string(b)
 		}
 		nonRpVP[key] += power
 	}
@@ -318,8 +326,9 @@ func buildSummaryJSON(ext *abci.ExtendedCommitInfo) ([]byte, error) {
 	summary := SummaryData{
 		Milestone: make(map[string]string),
 		SideTx:    make(map[string]map[string]string),
-		NonRp:     make(map[string]string),
+		NonRp:     make(map[any]string),
 	}
+
 	for h, vp := range milestoneVP {
 		summary.Milestone[h] = format(vp)
 	}
@@ -392,8 +401,8 @@ type MilestoneData struct {
 	ParentHash       string   `json:"parent_hash"`
 }
 
-// NonRpData holds decoded non-RP vote extension details.
-type NonRpData struct {
+// CheckpointData holds the decoded checkpoint data from non-RP vote extension details.
+type CheckpointData struct {
 	Proposer        string `json:"proposer"`
 	StartBlock      uint64 `json:"start_block"`
 	EndBlock        uint64 `json:"end_block"`
@@ -406,5 +415,5 @@ type NonRpData struct {
 type SummaryData struct {
 	Milestone map[string]string            `json:"milestone_voting_power"`
 	SideTx    map[string]map[string]string `json:"side_tx_voting_power"`
-	NonRp     map[string]string            `json:"non_rp_voting_power"`
+	NonRp     map[any]string               `json:"non_rp_voting_power"`
 }
