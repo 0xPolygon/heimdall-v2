@@ -195,16 +195,6 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	// fetch last checkpoint from store
 	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err == nil {
-		// make sure new checkpoint is after tip
-		if lastCheckpoint.EndBlock > msg.StartBlock {
-			logger.Error("checkpoint already exists",
-				"currentTip", lastCheckpoint.EndBlock,
-				"startBlock", msg.StartBlock,
-			)
-
-			return errors.New("checkpoint already exists")
-		}
-
 		// check if new checkpoint's start block start from current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
 			logger.Error("checkpoint not in continuity",
@@ -213,7 +203,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 
 			return errors.New("checkpoint not in continuity")
 		}
-	} else if err.Error() == types.ErrNoCheckpointFound.Error() && msg.StartBlock != 0 {
+	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
 		logger.Error("first checkpoint to start from block 0", "error", err)
 		return err
 	}
@@ -225,7 +215,12 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 	}
 
 	checkpointBuffer, err := srv.GetCheckpointFromBuffer(ctx)
-	if err == nil && doExist {
+	if err != nil {
+		logger.Error("error in getting checkpoint from buffer", "error", err)
+		return err
+	}
+
+	if doExist {
 		logger.Debug("checkpoint already exists in buffer")
 
 		// get checkpoint buffer time from params
@@ -316,12 +311,12 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 	}
 
 	// return err if start and end matches but contract root hash doesn't match
-	if msg.StartBlock == checkpointObj.StartBlock && msg.EndBlock == checkpointObj.EndBlock && !bytes.Equal(msg.RootHash, checkpointObj.RootHash) {
+	if msg.EndBlock == checkpointObj.EndBlock && !bytes.Equal(msg.RootHash, checkpointObj.RootHash) {
 		logger.Error("invalid ACK",
 			"startExpected", checkpointObj.StartBlock,
 			"startReceived", msg.StartBlock,
 			"endExpected", checkpointObj.EndBlock,
-			"endReceived", msg.StartBlock,
+			"endReceived", msg.EndBlock,
 			"rootExpected", common.Bytes2Hex(checkpointObj.RootHash),
 			"rootReceived", common.Bytes2Hex(msg.RootHash),
 		)

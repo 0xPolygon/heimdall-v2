@@ -538,27 +538,20 @@ func (cp *CheckpointProcessor) createAndSendCheckpointToRootChain(checkpointCont
 		return err
 	}
 
-	shouldSend, err := cp.shouldSendCheckpoint(checkpointContext, start, end)
+	// chain manager params
+	chainParams := checkpointContext.ChainmanagerParams.ChainParams
+	// root chain address
+	rootChainAddress := chainParams.RootChainAddress
+	// root chain instance
+	rootChainInstance, err := cp.contractCaller.GetRootChainInstance(rootChainAddress)
 	if err != nil {
+		cp.Logger.Info("Error while creating rootChain instance", "error", err)
 		return err
 	}
 
-	if shouldSend {
-		// chain manager params
-		chainParams := checkpointContext.ChainmanagerParams.ChainParams
-		// root chain address
-		rootChainAddress := chainParams.RootChainAddress
-		// root chain instance
-		rootChainInstance, err := cp.contractCaller.GetRootChainInstance(rootChainAddress)
-		if err != nil {
-			cp.Logger.Info("Error while creating rootChain instance", "error", err)
-			return err
-		}
-
-		if err := cp.contractCaller.SendCheckpoint(sideTxData, sigs, common.HexToAddress(rootChainAddress), rootChainInstance); err != nil {
-			cp.Logger.Info("Error submitting checkpoint to rootChain", "error", err)
-			return err
-		}
+	if err := cp.contractCaller.SendCheckpoint(sideTxData, sigs, common.HexToAddress(rootChainAddress), rootChainInstance); err != nil {
+		cp.Logger.Info("Error submitting checkpoint to rootChain", "error", err)
+		return err
 	}
 
 	return nil

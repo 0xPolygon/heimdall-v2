@@ -61,7 +61,7 @@ func (msg MsgCheckpoint) ValidateBasic() error {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
-	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
+	if msg.StartBlock >= msg.EndBlock {
 		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%d,end block=%d", msg.StartBlock, msg.EndBlock)
 	}
 
@@ -201,6 +201,10 @@ func (msg MsgCpAck) ValidateBasic() error {
 
 	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
+	}
+
+	if len(msg.RootHash) != common.HashLength {
+		return ErrInvalidMsg.Wrapf("Invalid roothash length %v", len(msg.RootHash))
 	}
 
 	return nil
