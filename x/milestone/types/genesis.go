@@ -11,9 +11,9 @@ func DefaultGenesisState() *GenesisState {
 	return &GenesisState{Params: params}
 }
 
-// ValidateGenesis validates the provided checkpoint data
-func (gs GenesisState) ValidateGenesis() error {
-	if err := gs.Params.Validate(); err != nil {
+// Validate validates the provided checkpoint data
+func (gs GenesisState) Validate() error {
+	if err := gs.Params.ValidateBasic(); err != nil {
 		return err
 	}
 	return nil

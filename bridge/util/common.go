@@ -39,7 +39,7 @@ const (
 	BufferedCheckpointURL   = "/checkpoints/buffer"
 	LatestCheckpointURL     = "/checkpoints/latest"
 	CountCheckpointURL      = "/checkpoints/count"
-	CurrentProposerURL      = "/checkpoint/proposers/current"
+	CurrentProposerURL      = "/stake/proposers/current"
 	LatestSpanURL           = "/bor/span/latest"
 	NextSpanInfoURL         = "/bor/span/prepare"
 	NextSpanSeedURL         = "/bor/span/seed/%v"
@@ -117,7 +117,7 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	}
 
 	// unmarshall data from buffer
-	var proposers checkpointTypes.QueryProposerResponse
+	var proposers staketypes.QueryProposersResponse
 	if err := cdc.UnmarshalJSON(response, &proposers); err != nil {
 		logger.Error("Error unmarshalling validator data ", "error", err)
 		return false, err
@@ -195,7 +195,7 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
-	var response checkpointTypes.QueryCurrentProposerResponse
+	var response staketypes.QueryCurrentProposerResponse
 
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(CurrentProposerURL))
 	if err != nil {

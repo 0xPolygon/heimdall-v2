@@ -15,7 +15,7 @@ import (
 	cosmosTypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 )
 
 // NewValidator func creates a new validator
@@ -59,16 +59,20 @@ func (v *Validator) IsCurrentValidator(ackCount uint64) bool {
 }
 
 // ValidateBasic validates a validator struct
-func (v *Validator) ValidateBasic() bool {
+func (v *Validator) ValidateBasic() error {
 	if bytes.Equal(v.PubKey, EmptyPubKey[:]) {
-		return false
+		return ErrInvalidMsg
 	}
 
 	pk := secp256k1.PubKey{
 		Key: v.PubKey,
 	}
 
-	return util.FormatAddress(v.Signer) == util.FormatAddress(pk.Address().String())
+	if util.FormatAddress(v.Signer) != util.FormatAddress(pk.Address().String()) {
+		return ErrInvalidMsg
+	}
+
+	return nil
 }
 
 // Copy creates a new copy of the validator, so we can mutate accum

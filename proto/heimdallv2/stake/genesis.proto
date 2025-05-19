@@ -5,6 +5,7 @@ option go_package = "github.com/0xPolygon/heimdall-v2/x/stake/types";
 
 import "gogoproto/gogo.proto";
 import "amino/amino.proto";
+import "heimdallv2/stake/last_block_txs.proto";
 import "heimdallv2/stake/validator.proto";
 
 message GenesisState {
@@ -13,4 +14,8 @@ message GenesisState {
   ValidatorSet current_validator_set = 2
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
   repeated string staking_sequences = 3 [ (amino.dont_omitempty) = true ];
+  ValidatorSet previous_block_validator_set = 4
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
+  LastBlockTxs last_block_txs = 5
+      [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
