@@ -53,7 +53,6 @@ func (gs GenesisState) Validate() error {
 			return errors.New("incorrect state in state-dump , please Check")
 		}
 
-		ac := address.HexCodec{}
 		for i, checkpoint := range gs.Checkpoints {
 			// create checkpoint message for the purpose of validation
 			msg := NewMsgCheckpointBlock(
@@ -64,7 +63,7 @@ func (gs GenesisState) Validate() error {
 				nil, // account root hash is not used to validate checkpoint
 				checkpoint.BorChainId,
 			)
-			if err := msg.ValidateBasic(ac); err != nil {
+			if err := msg.ValidateBasic(); err != nil {
 				return err
 			}
 			checkpointIndex := uint64(i) + 1

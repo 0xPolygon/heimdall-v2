@@ -28,7 +28,6 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 
 	// Add finalised checkpoints to state
 	if len(data.Checkpoints) != 0 {
-		ac := address.HexCodec{}
 		// check if we are provided all the checkpoints
 		if int(data.AckCount) != len(data.Checkpoints) {
 			k.Logger(ctx).Error("incorrect state in state-dump", "ack count", data.AckCount, "checkpoints length", data.Checkpoints)
@@ -46,7 +45,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 				nil, // account root hash is not used to validate checkpoint
 				checkpoint.BorChainId)
 
-			if err := msg.ValidateBasic(ac); err != nil {
+			if err := msg.ValidateBasic(); err != nil {
 				k.Logger(ctx).Error("error in validating checkpoint message while InitGenesis", "error", err)
 				panic(err)
 			}
