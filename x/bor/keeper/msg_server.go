@@ -141,7 +141,7 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 		return nil, types.ErrInvalidChainID
 	}
 
-	latestSpan, err := s.Keeper.GetLastSpan(ctx)
+	latestSpan, err := s.Keeper.GetSpan(ctx, msg.LatestSpanId)
 	if err != nil {
 		logger.Error("failed to get latest span", "error", err)
 		return nil, errors.Wrapf(err, "failed to get latest span")
