@@ -250,19 +250,24 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	stakeKeeper.EXPECT().GetCurrentProposer(gomock.Any()).AnyTimes().Return(validatorSet.Proposer)
 
-	lastCheckpoint, err := keeper.GetLastCheckpoint(ctx)
-	if err == nil {
-		start = start + lastCheckpoint.EndBlock + 1
-	}
-	require.NotNil(&lastCheckpoint)
-	require.NotNil(lastCheckpoint.Id)
+	lastCheckpoint := chSim.GenRandCheckpoint(start, maxSize, 1)
+	err := keeper.AddCheckpoint(ctx, lastCheckpoint)
+	require.NoError(err)
 
-	checkpoint := chSim.GenRandCheckpoint(start, maxSize, lastCheckpoint.Id+1)
+	err = keeper.IncrementAckCount(ctx)
+	require.NoError(err)
+
+	lastCheckpoint, err = keeper.GetLastCheckpoint(ctx)
+	require.NoError(err)
+	require.NotEmpty(&lastCheckpoint)
+	require.NotEmpty(lastCheckpoint.Id)
+
+	checkpoint := chSim.GenRandCheckpoint(maxSize+1, maxSize, lastCheckpoint.Id+1)
 
 	// add current proposer to checkpoint
 	checkpoint.Proposer = validatorSet.Proposer.Signer
 
-	cpNumber := uint64(1)
+	cpNumber := lastCheckpoint.Id + 1
 
 	s.Run("No checkpoint in buffer", func() {
 		MsgCpAck := types.NewMsgCpAck(
@@ -277,7 +282,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
-		require.NoError(err)
+		require.ErrorContains(err, types.ErrBadAck.Error())
 	})
 
 	err = keeper.SetCheckpointBuffer(ctx, checkpoint)

@@ -15,7 +15,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -152,6 +152,29 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*types.MsgCpAckResponse, error) {
 	logger := m.Logger(ctx)
 
+	if msg.StartBlock >= msg.EndBlock {
+		logger.Error("end block should be greater than start block",
+			"startBlock", msg.StartBlock,
+			"endBlock", msg.EndBlock,
+			"rootHash", common.Bytes2Hex(msg.RootHash),
+		)
+		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid ack")
+	}
+
+	lastCheckpoint, err := m.GetLastCheckpoint(ctx)
+	if err != nil {
+		logger.Error("unable to get last checkpoint", "error", err)
+		return nil, err
+	}
+
+	if msg.Number != lastCheckpoint.Id+1 {
+		logger.Error("checkpoint number in ack is not sequential",
+			"lastCheckpointNumber", lastCheckpoint.Id,
+			"checkpointNumber", msg.Number,
+		)
+		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid checkpoint number")
+
+	}
 	// get last checkpoint from buffer
 	bufCheckpoint, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
@@ -320,7 +343,7 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
 	}
 
-	if err := msg.Params.Validate(); err != nil {
+	if err := msg.Params.ValidateBasic(); err != nil {
 		return nil, err
 	}
 

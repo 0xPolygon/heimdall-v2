@@ -25,6 +25,8 @@ import (
 	chainManagerKeeper "github.com/0xPolygon/heimdall-v2/x/chainmanager/keeper"
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -33,7 +35,7 @@ import (
 // It checks the signature of each vote extension with its signer's public key
 // Also, it checks if the vote extensions are enabled, valid and have >2/3 voting power
 // It returns an error in case the validation fails
-func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper) error {
+func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abciTypes.ExtendedVoteInfo, round int32, stakeKeeper stakeKeeper.Keeper, milestoneKeeper milestoneKeeper.Keeper) error {
 	// check if VEs are enabled
 	if err := checkIfVoteExtensionsDisabled(ctx, reqHeight+1); err != nil {
 		return err
@@ -58,6 +60,7 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 
 	// Map to track seen validator addresses
 	seenValidators := make(map[string]struct{})
+	var blockHash []byte
 
 	ac := address.HexCodec{}
 
@@ -90,9 +93,25 @@ func ValidateVoteExtensions(ctx sdk.Context, reqHeight int64, extVoteInfo []abci
 			return fmt.Errorf("invalid height received for vote extension, expected %d, got %d", reqHeight-1, voteExtension.Height)
 		}
 
+		// blockHash consistency check
+		if blockHash == nil {
+			// store the block hash from the first vote
+			blockHash = voteExtension.BlockHash
+		} else {
+			// compare the current block hash with the stored block hash
+			if !bytes.Equal(blockHash, voteExtension.BlockHash) {
+				return fmt.Errorf("invalid block hash found for vote extension, expected %s, received %s, validator %s",
+					common.Bytes2Hex(blockHash), common.Bytes2Hex(voteExtension.BlockHash), valAddrStr)
+			}
+		}
+
 		txHash, err := validateSideTxResponses(voteExtension.SideTxResponses)
 		if err != nil {
 			return fmt.Errorf("invalid sideTxResponses detected for validator %s and tx %s, error: %w", valAddrStr, common.Bytes2Hex(txHash), err)
+		}
+
+		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &milestoneKeeper, voteExtension.MilestoneProposition); err != nil {
+			return fmt.Errorf("invalid milestone proposition detected for validator %s, error: %w", valAddrStr, err)
 		}
 
 		// Check for duplicate votes by the same validator
@@ -187,19 +206,19 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 			logger.Debug("Approved side-tx", "txHash", txHash)
 
 			// append to approved tx slice
-			approvedTxs = append(approvedTxs, common.Hex2Bytes(txHash))
+			approvedTxs = append(approvedTxs, common.FromHex(txHash))
 		} else if voteMap[sidetxs.Vote_VOTE_NO] > majorityVP {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
 
 			// append to rejected tx slice
-			rejectedTxs = append(rejectedTxs, common.Hex2Bytes(txHash))
+			rejectedTxs = append(rejectedTxs, common.FromHex(txHash))
 		} else {
 			// skipped
 			logger.Debug("Skipped side-tx", "txHash", txHash)
 
 			// append to rejected tx slice
-			skippedTxs = append(skippedTxs, common.Hex2Bytes(txHash))
+			skippedTxs = append(skippedTxs, common.FromHex(txHash))
 		}
 	}
 
@@ -299,6 +318,10 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 	// track votes of the validator
 	txVoteMap := make(map[string]struct{})
 
+	if len(sideTxResponses) > maxSideTxResponsesCount {
+		return nil, fmt.Errorf("too many side tx responses received: %d, max: %d", len(sideTxResponses), maxSideTxResponsesCount)
+	}
+
 	for _, res := range sideTxResponses {
 		// check txHash is well-formed
 		if len(res.TxHash) != common.HashLength {
@@ -319,6 +342,8 @@ func validateSideTxResponses(sideTxResponses []sidetxs.SideTxResponse) ([]byte, 
 
 	return nil, nil
 }
+
+const maxSideTxResponsesCount = 50
 
 // checkIfVoteExtensionsDisabled indicates whether the proposer must include VEs from previous height in the block proposal as a special transaction.
 // Since we are using a hard fork approach for the heimdall migration, VEs will be enabled from v2 genesis' initial height (v1 last height +1).
@@ -424,6 +449,10 @@ func ValidateNonRpVoteExtension(
 	checkpointKeeper checkpointKeeper.Keeper,
 	contractCaller helper.IContractCaller,
 ) error {
+	if len(extension) > maxNonRpVoteExtensionSize {
+		return fmt.Errorf("non-rp vote extension size is too large: %d, max: %d", len(extension), maxNonRpVoteExtensionSize)
+	}
+
 	// Check if its dummy vote non rp extension
 	dummyExt, err := getDummyNonRpVoteExtension(height, ctx.ChainID())
 	if err != nil {
@@ -442,6 +471,8 @@ func ValidateNonRpVoteExtension(
 
 	return nil
 }
+
+const maxNonRpVoteExtensionSize = 500
 
 // checkNonRpVoteExtensionsSignatures checks the signatures of the non-rp vote extensions
 func checkNonRpVoteExtensionsSignatures(ctx sdk.Context, extVoteInfo []abciTypes.ExtendedVoteInfo, stakeKeeper stakeKeeper.Keeper) error {
@@ -546,6 +577,10 @@ func validateCheckpointMsgData(ctx sdk.Context, extension []byte, chainManagerKe
 	chainParams, err := chainManagerKeeper.GetParams(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get chain manager params: %w", err)
+	}
+
+	if chainParams.ChainParams.BorChainId != checkpointMsg.BorChainId {
+		return fmt.Errorf("invalid bor chain id, expected %s, got %s", chainParams.ChainParams.BorChainId, checkpointMsg.BorChainId)
 	}
 
 	borChainTxConfirmations := chainParams.BorChainTxConfirmations

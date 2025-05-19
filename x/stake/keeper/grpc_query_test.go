@@ -101,7 +101,6 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	}
 	res, err := queryClient.GetValidatorStatusByAddress(ctx, req)
 	require.NoError(err)
-
 	require.NotNil(res)
 	require.True(res.IsOld)
 
@@ -109,8 +108,8 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 		ValAddress: common.Address{}.String(),
 	}
 	res, err = queryClient.GetValidatorStatusByAddress(ctx, req)
-	require.Nil(err)
-	require.False(res.IsOld)
+	require.NotNil(err)
+	require.Nil(res)
 }
 
 func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
@@ -121,14 +120,12 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	chainParams, err := s.cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	txHash := make([]byte, 32)
-
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	logIndex := uint64(simulation.RandIntBetween(r, 0, 100))
 
 	req := &types.QueryStakeIsOldTxRequest{
-		TxHash:   common.Bytes2Hex(txHash),
+		TxHash:   TxHash1,
 		LogIndex: logIndex,
 	}
 
@@ -138,7 +135,7 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	err = keeper.SetStakingSequence(ctx, sequence.String())
 	require.NoError(err)
 
-	contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+	contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(common.FromHex(TxHash1)), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 	res, err := queryClient.IsStakeTxOld(ctx, req)
 
