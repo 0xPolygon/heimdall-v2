@@ -13,8 +13,9 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
@@ -41,6 +42,12 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
+
 	// Generate PubKey from PubKey in message and signer
 	pubKey := msg.SignerPubKey
 	pk := secp256k1.PubKey{Key: pubKey}
@@ -55,7 +62,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "signer is invalid")
 	}
 
-	// check if validator has been validator before
+	// check if the validator has been validator before
 	if ok, err := m.k.DoesValIdExist(ctx, msg.ValId); ok {
 		m.k.Logger(ctx).Error("validator has been a validator before, hence cannot join with same id", "validatorId", msg.ValId, "err", err)
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, "validator corresponding to the val id already exists in store")
@@ -64,6 +71,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	signer = util.FormatAddress(signer)
 	// get validator by signer
 	checkVal, err := m.k.GetValidatorInfo(ctx, signer)
+	// not returning error if validator not found because it is a new validator
 	if err == nil && strings.Compare(util.FormatAddress(checkVal.Signer), signer) == 0 {
 		return nil, errorsmod.Wrap(sdkerrors.ErrInvalidRequest, fmt.Sprintf("validator %s already exists", signer))
 	}
@@ -79,10 +87,10 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrOldTx, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
@@ -108,8 +116,14 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
+
 	// pull validator from store
-	_, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
+	_, err = m.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
 		m.k.Logger(ctx).Error("failed to fetch validator from store", "validatorId", msg.ValId, "error", err)
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
@@ -120,10 +134,10 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	// set validator amount
@@ -144,6 +158,12 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
+
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
 
 	// Generate PubKey from PubKey in message and signer
 	pubKey := msg.NewSignerPubKey
@@ -174,10 +194,10 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	// check if new signer address is same as existing signer
@@ -201,6 +221,12 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
+
 	validator, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
 		m.k.Logger(ctx).Error("failed to fetch validator from store", "validatorID", msg.ValId, "error", err)
@@ -219,10 +245,10 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if m.k.HasStakingSequence(ctx, sequence.String()) {
-		m.k.Logger(ctx).Error("older invalid tx found", "sequence", sequence.String())
-		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "older invalid tx found")
+		m.k.Logger(ctx).Error("Event already processed", "sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	return &types.MsgValidatorExitResponse{}, nil

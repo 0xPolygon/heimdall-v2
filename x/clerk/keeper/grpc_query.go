@@ -9,6 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/0xPolygon/heimdall-v2/common/hex"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
@@ -104,6 +105,10 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	if !hex.IsTxHashNonEmpty(request.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
+	}
+
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -131,6 +136,10 @@ func (q queryServer) GetRecordSequence(ctx context.Context, request *types.Recor
 func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequenceRequest) (*types.IsClerkTxOldResponse, error) {
 	if request == nil {
 		return nil, status.Error(codes.InvalidArgument, "empty request")
+	}
+
+	if !hex.IsTxHashNonEmpty(request.TxHash) {
+		return nil, status.Error(codes.InvalidArgument, "invalid tx hash")
 	}
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)

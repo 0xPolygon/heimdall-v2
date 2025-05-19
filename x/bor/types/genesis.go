@@ -22,10 +22,10 @@ func DefaultGenesisState() *GenesisState {
 	return NewGenesisState(DefaultParams(), nil)
 }
 
-// Validate performs basic validation of bor genesis data returning an
+// Validate performs basic validation of bor genesis data, returning an
 // error for any failed validation criteria.
 func (gs GenesisState) Validate() error {
-	if err := gs.Params.Validate(); err != nil {
+	if err := gs.Params.ValidateBasic(); err != nil {
 		return err
 	}
 
@@ -47,8 +47,7 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 	return &genesisState
 }
 
-// SetGenesisStateToAppState sets x/bor GenesisState into raw application
-// genesis state.
+// SetGenesisStateToAppState sets x/bor GenesisState into the raw application genesis state.
 func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, currentValSet staketypes.ValidatorSet) (map[string]json.RawMessage, error) {
 	// set state to bor state
 	borState := GetGenesisStateFromAppState(cdc, appState)
@@ -64,7 +63,7 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 	return appState, nil
 }
 
-// genFirstSpan generates default first span using the validators producer set
+// genFirstSpan generates the default first span using the validators producer set
 func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 	var (
 		firstSpan         []Span
