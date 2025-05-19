@@ -56,7 +56,6 @@ service Query {
   // GetNextCheckpoint queries for the next checkpoint
   rpc GetNextCheckpoint(QueryNextCheckpointRequest)
       returns (QueryNextCheckpointResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/prepare-next";
   }
 
