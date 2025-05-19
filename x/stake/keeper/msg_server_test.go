@@ -34,7 +34,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pk1.Bytes(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -53,7 +53,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(1000000000000000000)),
 		SignerPubKey:    pk1.Bytes(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(1),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -105,7 +105,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 		From:            oldSigner.Signer,
 		ValId:           oldSigner.ValId,
 		NewSignerPubKey: oldSigner.GetPubKey(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(0),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -119,7 +119,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 		From:            newSigner[0].Signer,
 		ValId:           uint64(1),
 		NewSignerPubKey: newSigner[0].GetPubKey(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        uint64(0),
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),
@@ -158,7 +158,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetCurrentValidators(ctx)
-	msgTxHash := common.Hex2Bytes(TxHash1)
+	msgTxHash := common.FromHex(TxHash1)
 
 	validators[0].EndEpoch = 10
 	msgValidatorExit := stakingtypes.MsgValidatorExit{
@@ -195,7 +195,7 @@ func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 
 	oldVal := oldValSet.Validators[0]
 
-	msgTxHash := common.Hex2Bytes(TxHash1)
+	msgTxHash := common.FromHex(TxHash1)
 	newAmount := math.NewInt(2000000000000000000)
 
 	msgStakeUpdate := stakingtypes.MsgStakeUpdate{
@@ -257,7 +257,7 @@ func (s *KeeperTestSuite) TestExitedValidatorJoiningAgain() {
 		ActivationEpoch: uint64(1),
 		Amount:          math.NewInt(int64(100000)),
 		SignerPubKey:    pk1.Bytes(),
-		TxHash:          []byte{},
+		TxHash:          common.FromHex(TxHash1),
 		LogIndex:        logIndex,
 		BlockNumber:     uint64(0),
 		Nonce:           uint64(1),

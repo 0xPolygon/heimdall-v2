@@ -129,7 +129,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 				return fmt.Errorf("account root hash cannot be empty")
 			}
 
-			msg := checkpointTypes.NewMsgCheckpointBlock(proposer, startBlock, endBlock, common.Hex2Bytes(rootHashStr), common.Hex2Bytes(accountRootHashStr), borChainID)
+			msg := checkpointTypes.NewMsgCheckpointBlock(proposer, startBlock, endBlock, common.FromHex(rootHashStr), common.FromHex(accountRootHashStr), borChainID)
 
 			return cli.BroadcastMsg(clientCtx, proposer, msg, logger)
 		},

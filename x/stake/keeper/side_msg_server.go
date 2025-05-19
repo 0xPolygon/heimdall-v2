@@ -83,6 +83,12 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate MsgValidatorJoin", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	contractCaller := s.k.contractCaller
 
 	// chainManager params
@@ -218,6 +224,12 @@ func (s *sideMsgServer) SideHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg) 
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate MsgStakeUpdate", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	params, err := s.k.cmKeeper.GetParams(ctx)
 	if err != nil {
 		s.k.Logger(ctx).Error("error in fetching params from store", "err", err)
@@ -289,6 +301,12 @@ func (s *sideMsgServer) SideHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg)
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
+
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate MsgSignerUpdate", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
 
 	// chainManager params
 	params, err := s.k.cmKeeper.GetParams(ctx)
@@ -378,6 +396,12 @@ func (s *sideMsgServer) SideHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate MsgValidatorExit", "error", err)
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	contractCaller := s.k.contractCaller
 
 	// chainManager params
@@ -442,6 +466,12 @@ func (s *sideMsgServer) PostHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		s.k.Logger(ctx).Debug("skipping new validator-join since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
+	}
+
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return errors.New("invalid side-tx msg for MsgValidatorJoin")
 	}
 
 	// Check for replay attack
@@ -538,6 +568,12 @@ func (s *sideMsgServer) PostHandleMsgStakeUpdate(ctx sdk.Context, msgI sdk.Msg, 
 		return errors.New("side-tx didn't get yes votes")
 	}
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return errors.New("invalid side-tx msg for MsgStakeUpdate")
+	}
+
 	// check for replay attack
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
@@ -618,6 +654,12 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		s.k.Logger(ctx).Debug("skipping signer update since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
+	}
+
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return errors.New("invalid side-tx msg for MsgSignerUpdate")
 	}
 
 	// Check for replay attack
@@ -768,6 +810,12 @@ func (s *sideMsgServer) PostHandleMsgValidatorExit(ctx sdk.Context, msgI sdk.Msg
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		s.k.Logger(ctx).Debug("skipping validator exit since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")
+	}
+
+	err := msg.ValidateBasic()
+	if err != nil {
+		s.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return errors.New("invalid side-tx msg for MsgValidatorExit")
 	}
 
 	// check for replay attack

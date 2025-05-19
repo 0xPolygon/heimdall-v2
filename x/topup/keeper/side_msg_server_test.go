@@ -241,6 +241,12 @@ func (s *KeeperTestSuite) TestPostHandleTopupTx() {
 	ctx, require, keeper, postHandler, t := s.ctx, s.Require(), s.keeper, s.postHandler, s.T()
 
 	var msg types.MsgTopupTx
+	msg.BlockNumber = 100
+	msg.LogIndex = 10
+	msg.TxHash = common.FromHex(TxHash)
+	msg.Proposer = AccountHash
+	msg.User = AccountHash
+	msg.Fee = math.NewInt(1000000000000000000)
 
 	_, _, addr1 := testdata.KeyTestPubAddr()
 	_, _, addr2 := testdata.KeyTestPubAddr()

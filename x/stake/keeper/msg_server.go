@@ -42,6 +42,12 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
+
 	// Generate PubKey from PubKey in message and signer
 	pubKey := msg.SignerPubKey
 	pk := secp256k1.PubKey{Key: pubKey}
@@ -109,8 +115,14 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 		"blockNumber", msg.BlockNumber,
 	)
 
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
+
 	// pull validator from store
-	_, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
+	_, err = m.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
 		m.k.Logger(ctx).Error("failed to fetch validator from store", "validatorId", msg.ValId, "error", err)
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
@@ -145,6 +157,12 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
+
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
 
 	// Generate PubKey from PubKey in message and signer
 	pubKey := msg.NewSignerPubKey
@@ -201,6 +219,12 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 		"logIndex", msg.LogIndex,
 		"blockNumber", msg.BlockNumber,
 	)
+
+	err := msg.ValidateBasic()
+	if err != nil {
+		m.k.Logger(ctx).Error("failed to validate msg", "error", err)
+		return nil, errorsmod.Wrap(types.ErrInvalidMsg, "failed to validate msg")
+	}
 
 	validator, err := m.k.GetValidatorFromValID(ctx, msg.ValId)
 	if err != nil {
