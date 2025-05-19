@@ -148,9 +148,7 @@ message QueryCheckpointLatestResponse {
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-message QueryNextCheckpointRequest {
-  string bor_chain_id = 1 [ (amino.dont_omitempty) = true ];
-}
+message QueryNextCheckpointRequest {}
 
 message QueryNextCheckpointResponse {
   MsgCheckpoint checkpoint = 1

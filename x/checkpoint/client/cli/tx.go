@@ -74,9 +74,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 					return fmt.Errorf("please wait for your turn to propose checkpoint. Checkpoint proposer: %v", proposer.Validator.Signer)
 				}
 
-				nextCheckpoint, err := queryClient.GetNextCheckpoint(cmd.Context(), &checkpointTypes.QueryNextCheckpointRequest{
-					BorChainId: borChainID,
-				})
+				nextCheckpoint, err := queryClient.GetNextCheckpoint(cmd.Context(), &checkpointTypes.QueryNextCheckpointRequest{})
 				if err != nil {
 					return err
 				}
