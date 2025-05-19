@@ -346,12 +346,12 @@ func GetMajorityMilestoneProposition(
 }
 
 func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, error) {
-	result := make([][]byte, 0)
-
 	headers, err := contractCaller.GetBorChainBlocksInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to get headers")
+		return nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}
+
+	result := make([][]byte, 0, len(headers))
 
 	var parentHash []byte
 	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
@@ -359,7 +359,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		if startBlock-lastMilestoneBlock > 1 {
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
-				return nil, nil, fmt.Errorf("failed to get headers")
+				return nil, nil, fmt.Errorf("failed to get headers: %w", err)
 			}
 
 			parentHash = header.ParentHash.Bytes()
