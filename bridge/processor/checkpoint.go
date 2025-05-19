@@ -288,8 +288,6 @@ func (cp *CheckpointProcessor) sendCheckpointAckToHeimdall(eventName string, che
 			event.Start.Uint64(),
 			event.End.Uint64(),
 			event.Root[:],
-			log.TxHash.Bytes(),
-			uint64(log.Index),
 		)
 
 		// return broadcast to heimdall

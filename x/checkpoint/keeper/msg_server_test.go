@@ -277,8 +277,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			chSim.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -296,8 +294,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			chSim.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -315,8 +311,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			uint64(123),
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			chSim.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
@@ -331,8 +325,6 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			chSim.RandomBytes(),
-			chSim.RandomBytes(),
-			uint64(1),
 		)
 
 		_, err = msgServer.CheckpointAck(ctx, &MsgCpAck)
