@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/codec/address"
 )
 
 // Default parameter values
@@ -51,6 +52,42 @@ func (gs GenesisState) Validate() error {
 		if int(gs.AckCount) != len(gs.Checkpoints) {
 			return errors.New("incorrect state in state-dump , please Check")
 		}
+
+		ac := address.HexCodec{}
+		for i, checkpoint := range gs.Checkpoints {
+			// create checkpoint message for the purpose of validation
+			msg := NewMsgCheckpointBlock(
+				checkpoint.Proposer,
+				checkpoint.StartBlock,
+				checkpoint.EndBlock,
+				checkpoint.RootHash,
+				nil, // account root hash is not used to validate checkpoint
+				checkpoint.BorChainId,
+			)
+			if err := msg.ValidateBasic(ac); err != nil {
+				return err
+			}
+			checkpointIndex := uint64(i) + 1
+			if checkpoint.Id != checkpointIndex {
+				return errors.New("checkpoint id mismatch")
+			}
+		}
+	}
+
+	if len(gs.CheckpointSignatures.Signatures) > 0 {
+		for _, s := range gs.CheckpointSignatures.Signatures {
+			if err := address.VerifyAddressFormat(s.ValidatorAddress); err != nil {
+				return err
+			}
+
+			if len(s.Signature) == 0 {
+				return errors.New("checkpoint signature is empty")
+			}
+		}
+	}
+
+	if gs.CheckpointSignaturesTxhash != "" {
+		return errors.New("checkpoint signatures txhash is not valid")
 	}
 
 	return nil
