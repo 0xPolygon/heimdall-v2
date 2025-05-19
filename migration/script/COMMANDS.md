@@ -8,7 +8,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     ```bash
     APOCALYPSE_TAG="1.2.3-27-g74c8af58"
     REQUIRED_BOR_VERSION="2.0.0"
-    HEIMDALL_V2_VERSION="0.1.15"
+    HEIMDALL_V2_VERSION="0.1.18"
     CHAIN_ID="devnet"
     GENESIS_TIME="2025-05-15T14:15:00Z"
     APOCALYPSE_HEIGHT=200
