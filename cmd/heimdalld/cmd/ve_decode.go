@@ -78,7 +78,7 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	}
 
 	// Encode to JSON and print
-	out, err := buildCommitJSON(height, extInfo)
+	out, err := BuildCommitJSON(height, extInfo)
 	if err != nil {
 		return fmt.Errorf("error marshalling to JSON: %w", err)
 	}
@@ -87,7 +87,7 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 
 	// Print summary
-	summary, err := buildSummaryJSON(height, extInfo)
+	summary, err := BuildSummaryJSON(height, extInfo)
 	if err != nil {
 		return fmt.Errorf("error marshalling summary to JSON: %w", err)
 	}
@@ -99,13 +99,13 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 
 func getVEs(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
 	// 1) Try the RPC endpoint first.
-	voteExt, err1 := getVEsFromEndpoint(height, host, endpoint)
+	voteExt, err1 := GetVEsFromEndpoint(height, host, endpoint)
 	if err1 == nil {
 		return voteExt, nil
 	}
 
 	// 2) Fallback to the local block store.
-	voteExt, err2 := getVEsFromBlockStore(height)
+	voteExt, err2 := GetVEsFromBlockStore(height)
 	if err2 == nil {
 		return voteExt, nil
 	}
@@ -114,7 +114,7 @@ func getVEs(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInf
 	return nil, fmt.Errorf("failed to fetch VEs:\n- endpoint (port %d): %w\n- block store: %w", endpoint, err1, err2)
 }
 
-func getVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
+func GetVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
 	if endpoint < 1 || endpoint > 65535 {
 		return nil, fmt.Errorf("invalid RPC port: %d", endpoint)
 	}
@@ -166,7 +166,7 @@ func getVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.Exten
 	return &voteExt, nil
 }
 
-func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
+func GetVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 	homeDir := viper.GetString(flags.FlagHome)
 	if homeDir == "" {
 		return nil, fmt.Errorf("home directory not set")
@@ -195,8 +195,8 @@ func getVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 	return &voteExt, nil
 }
 
-// buildCommitJSON builds a JSON representation for the given ExtendedCommitInfo and block height.
-func buildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
+// BuildCommitJSON builds a JSON representation for the given ExtendedCommitInfo and block height.
+func BuildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
 	data := CommitData{
 		Height: height,
 		Round:  ext.Round,
@@ -239,10 +239,10 @@ func buildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 		}
 
 		// Non-RP vote extension: dummy vs checkpoint
-		if isDummy, _ := isDummyNonRpVoteExtension(height, v.NonRpVoteExtension); isDummy {
+		if isDummy, _ := IsDummyNonRpVoteExtension(height, v.NonRpVoteExtension); isDummy {
 			vote.NonRpData = "0x" + hex.EncodeToString(v.NonRpVoteExtension)
 		} else {
-			msg, err := getCheckpointMsg(v.NonRpVoteExtension)
+			msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
 			if err != nil {
 				return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
 			}
@@ -263,8 +263,8 @@ func buildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 	return json.MarshalIndent(data, "", "  ")
 }
 
-// buildSummaryJSON builds a JSON summary from ExtendedCommitInfo.
-func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
+// BuildSummaryJSON builds a JSON summary from ExtendedCommitInfo.
+func BuildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
 	var totalPower int64
 	for _, v := range ext.Votes {
 		totalPower += v.Validator.Power
@@ -300,14 +300,14 @@ func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 		}
 
 		var key string
-		isDummy, err := isDummyNonRpVoteExtension(height, v.NonRpVoteExtension)
+		isDummy, err := IsDummyNonRpVoteExtension(height, v.NonRpVoteExtension)
 		if err != nil {
 			return nil, fmt.Errorf("error checking dummy non-RP extension: %w", err)
 		}
 		if isDummy {
 			key = "0x" + hex.EncodeToString(v.NonRpVoteExtension)
 		} else {
-			msg, err := getCheckpointMsg(v.NonRpVoteExtension)
+			msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
 			if err != nil {
 				return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
 			}
@@ -350,7 +350,7 @@ func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 	return json.MarshalIndent(summary, "", "  ")
 }
 
-func isDummyNonRpVoteExtension(height int64, nonRpVoteExt []byte) (bool, error) {
+func IsDummyNonRpVoteExtension(height int64, nonRpVoteExt []byte) (bool, error) {
 	chainID := viper.GetString(flags.FlagChainID)
 	if chainID == "" {
 		return false, fmt.Errorf("chain ID not set")
@@ -362,7 +362,7 @@ func isDummyNonRpVoteExtension(height int64, nonRpVoteExt []byte) (bool, error) 
 	return bytes.Equal(nonRpVoteExt, dummyVoteExt), nil
 }
 
-func getCheckpointMsg(nonRpVoteExt []byte) (*checkpointTypes.MsgCheckpoint, error) {
+func GetCheckpointMsg(nonRpVoteExt []byte) (*checkpointTypes.MsgCheckpoint, error) {
 	// Skip leading marker byte
 	checkpointMsg, err := checkpointTypes.UnpackCheckpointSideSignBytes(nonRpVoteExt[1:])
 	if err != nil {
