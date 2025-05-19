@@ -22,6 +22,7 @@ import (
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
@@ -39,13 +40,14 @@ func TestValidateVoteExtensions(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		ctx         sdk.Context
-		extVoteInfo []abci.ExtendedVoteInfo
-		round       int32
-		keeper      stakeKeeper.Keeper
-		shouldError bool
-		expectedErr string
+		name            string
+		ctx             sdk.Context
+		extVoteInfo     []abci.ExtendedVoteInfo
+		round           int32
+		keeper          stakeKeeper.Keeper
+		milestoneKeeper milestoneKeeper.Keeper
+		shouldError     bool
+		expectedErr     string
 	}{
 		{
 			name: "ves disabled with non-empty vote extension",
@@ -73,9 +75,9 @@ func TestValidateVoteExtensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.shouldError {
-				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper))
+				require.Error(t, ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper, tt.milestoneKeeper))
 			} else {
-				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper)
+				err := ValidateVoteExtensions(tt.ctx, CurrentHeight, tt.extVoteInfo, tt.round, tt.keeper, tt.milestoneKeeper)
 				require.NoError(t, err)
 			}
 		})
