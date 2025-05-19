@@ -277,7 +277,7 @@ func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 
 	milestoneVP := make(map[string]int64)
 	sideTxVP := make(map[string]map[string]int64)
-	nonRpVP := make(map[any]int64)
+	nonRpVP := make(map[string]int64)
 
 	for _, v := range ext.Votes {
 		power := v.Validator.Power
@@ -299,7 +299,7 @@ func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 			sideTxVP[txKey][r.Result.String()] += power
 		}
 
-		var key any
+		var key string
 		isDummy, err := isDummyNonRpVoteExtension(height, v.NonRpVoteExtension)
 		if err != nil {
 			return nil, fmt.Errorf("error checking dummy non-RP extension: %w", err)
@@ -311,14 +311,11 @@ func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 			if err != nil {
 				return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
 			}
-			key = CheckpointData{
-				Proposer:        msg.Proposer,
-				StartBlock:      msg.StartBlock,
-				EndBlock:        msg.EndBlock,
-				RootHash:        "0x" + hex.EncodeToString(msg.RootHash),
-				AccountRootHash: "0x" + hex.EncodeToString(msg.AccountRootHash),
-				BorChainID:      msg.BorChainId,
+			b, err := json.Marshal(msg)
+			if err != nil {
+				return nil, err
 			}
+			key = string(b)
 		}
 		nonRpVP[key] += power
 	}
@@ -326,7 +323,7 @@ func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 	summary := SummaryData{
 		Milestone: make(map[string]string),
 		SideTx:    make(map[string]map[string]string),
-		NonRp:     make(map[any]string),
+		NonRp:     make(map[string]string),
 	}
 
 	for h, vp := range milestoneVP {
@@ -415,5 +412,5 @@ type CheckpointData struct {
 type SummaryData struct {
 	Milestone map[string]string            `json:"milestone_voting_power"`
 	SideTx    map[string]map[string]string `json:"side_tx_voting_power"`
-	NonRp     map[any]string               `json:"non_rp_voting_power"`
+	NonRp     map[string]string            `json:"non_rp_voting_power"`
 }
