@@ -3,7 +3,6 @@ package keeper_test
 import (
 	"encoding/json"
 	"errors"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -19,6 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github.com/0xPolygon/heimdall-v2/contracts/stakinginfo"
 	"github.com/0xPolygon/heimdall-v2/helper"
@@ -1189,16 +1189,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	stakeSim.LoadRandomValidatorSet(req, 4, keeper, ctx, false, 0, nonce.Uint64()-1)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
-	amount := math.NewInt(1)
-
-	coin := sdk.Coin{
-		Denom:  "pol",
-		Amount: amount,
-	}
-
-	bankKeeper.EXPECT().GetBalance(ctx, gomock.Any(), gomock.Any()).AnyTimes().Return(coin)
-	bankKeeper.EXPECT().SendCoins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes().Return(nil)
-
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	req.NoError(err)
 
@@ -1212,6 +1202,13 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 	msgTxHash := common.Hash{}.Bytes()
 
 	s.Run("No Success", func() {
+		amount := math.NewInt(1)
+		coin := sdk.Coin{
+			Denom:  "pol",
+			Amount: amount,
+		}
+		bankKeeper.EXPECT().GetBalance(ctx, gomock.Any(), gomock.Any()).Times(1).Return(coin)
+		bankKeeper.EXPECT().SendCoins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 		contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 		req.NoError(err)
@@ -1219,7 +1216,30 @@ func (s *KeeperTestSuite) TestPostHandleMsgSignerUpdate() {
 		postHandler(ctx, msg, sidetxs.Vote_VOTE_NO)
 	})
 
+	s.Run("Negative amount", func() {
+		amount := math.NewInt(-1)
+		coin := sdk.Coin{
+			Denom:  "pol",
+			Amount: amount,
+		}
+		bankKeeper.EXPECT().GetBalance(ctx, gomock.Any(), gomock.Any()).Times(1).Return(coin)
+
+		contractCaller.Mock = mock.Mock{}
+		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
+		req.NoError(err)
+
+		postHandler(ctx, msg, sidetxs.Vote_VOTE_YES)
+	})
+
 	s.Run("Success", func() {
+		amount := math.NewInt(1)
+		coin := sdk.Coin{
+			Denom:  "pol",
+			Amount: amount,
+		}
+		bankKeeper.EXPECT().GetBalance(ctx, gomock.Any(), gomock.Any()).Times(1).Return(coin)
+		bankKeeper.EXPECT().SendCoins(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+		
 		contractCaller.Mock = mock.Mock{}
 		msg, err := types.NewMsgSignerUpdate(newSigner[0].Signer, oldSigner.ValId, newSigner[0].PubKey, msgTxHash, 0, blockNumber.Uint64(), nonce.Uint64())
 

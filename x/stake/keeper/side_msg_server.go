@@ -674,7 +674,7 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 
 	s.k.Logger(ctx).Debug("removing old validator", "validator", oldValidator.String())
 
-	// remove the old validator from validator set
+	// remove the old validator from the validator set
 	oldValidator.EndEpoch, err = s.k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
 		s.k.Logger(ctx).Error("unable to get ack count", "error", err)
@@ -721,6 +721,12 @@ func (s *sideMsgServer) PostHandleMsgSignerUpdate(ctx sdk.Context, msgI sdk.Msg,
 	}
 
 	coins := s.k.bankKeeper.GetBalance(ctx, oldAccAddress, authTypes.FeeToken)
+
+	// validate balance
+	if coins.IsNegative() {
+		s.k.Logger(ctx).Error("negative balance for fee token", "address", oldValidator.Signer, "balance", coins.String())
+		return errors.New("negative balance for fee token")
+	}
 
 	polTokensBalance := coins.Amount.Abs()
 	if !polTokensBalance.IsZero() {
