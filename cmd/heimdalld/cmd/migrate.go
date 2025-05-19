@@ -150,11 +150,24 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		delete(genesisData, "supply")
 		logger.Info("Supply deleted")
 
-		// Recursively replace denom from "matic" to "pol"
-		replaceDenom(genesisData)
+		// Re-marshal to JSON and unmarshal into a plain interface{}
+		raw, err := json.Marshal(genesisData)
+		if err != nil {
+			return fmt.Errorf("failed to marshal genesis data: %w", err)
+		}
 
-		if err := saveGenesisFile(genesisData, genesisFileV2); err != nil {
+		var generic interface{}
+		if err := json.Unmarshal(raw, &generic); err != nil {
+			return fmt.Errorf("failed to unmarshal into generic map: %w", err)
+		}
+
+		// Perform the replacement
+		replaceMaticWithPol(generic)
+
+		// Save the updated generic version
+		if err := saveGenesisFile(generic.(map[string]interface{}), genesisFileV2); err != nil {
 			logger.Error("Failed to save migrated genesis file", "error", err)
+
 			return err
 		}
 
@@ -1009,23 +1022,30 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	return nil
 }
 
-// replaceDenom recursively replaces the "denom" key with "pol" if its value is "matic"
-func replaceDenom(v interface{}) {
+func replaceMaticWithPol(v interface{}) {
+	const matic = "matic"
+	const pol = "pol"
+
 	switch val := v.(type) {
 	case map[string]interface{}:
 		for key, item := range val {
-			// Match key "denom" and value "matic"
-			if key == "denom" {
-				if strVal, ok := item.(string); ok && strVal == "matic" {
-					val[key] = "pol"
-				}
-			} else {
-				replaceDenom(item)
+			// If the value is exactly "matic", replace it
+			if strVal, ok := item.(string); ok && strVal == matic {
+				val[key] = pol
+				continue
 			}
+			// Recurse
+			replaceMaticWithPol(item)
 		}
 	case []interface{}:
-		for _, item := range val {
-			replaceDenom(item)
+		for i := range val {
+			// If the element is exactly "matic", replace it
+			if strVal, ok := val[i].(string); ok && strVal == matic {
+				val[i] = pol
+				continue
+			}
+			// Recurse
+			replaceMaticWithPol(val[i])
 		}
 	}
 }
