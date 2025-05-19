@@ -56,7 +56,6 @@ service Query {
   // GetNextCheckpoint queries for the next checkpoint
   rpc GetNextCheckpoint(QueryNextCheckpointRequest)
       returns (QueryNextCheckpointResponse) {
-    option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/checkpoints/prepare-next";
   }
 
@@ -136,9 +135,7 @@ message QueryCheckpointLatestResponse {
       [ (gogoproto.nullable) = false, (amino.dont_omitempty) = true ];
 }
 
-message QueryNextCheckpointRequest {
-  string bor_chain_id = 1 [ (amino.dont_omitempty) = true ];
-}
+message QueryNextCheckpointRequest {}
 
 message QueryNextCheckpointResponse {
   MsgCheckpoint checkpoint = 1

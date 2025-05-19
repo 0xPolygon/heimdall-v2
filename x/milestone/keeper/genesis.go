@@ -13,7 +13,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		panic("genesis state cannot be nil")
 	}
 
-	err := data.Params.Validate()
+	err := data.Params.ValidateBasic()
 	if err != nil {
 		panic(fmt.Sprintf("error in validating milestone params: err = %v", err))
 	}

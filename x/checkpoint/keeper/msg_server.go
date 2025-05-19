@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -14,7 +15,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	hmTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -64,16 +65,6 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 
 	// fetch last checkpoint from store
 	if lastCheckpoint, err := m.GetLastCheckpoint(ctx); err == nil {
-		// make sure new checkpoint is after tip
-		if lastCheckpoint.EndBlock > msg.StartBlock {
-			logger.Error("checkpoint already exists",
-				"currentTip", lastCheckpoint.EndBlock,
-				"startBlock", msg.StartBlock,
-			)
-
-			return nil, types.ErrOldCheckpoint
-		}
-
 		// check if new checkpoint's start block start from current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
 			logger.Error("checkpoint not in continuity",
@@ -82,7 +73,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 
 			return nil, types.ErrDiscontinuousCheckpoint
 		}
-	} else if err.Error() == types.ErrNoCheckpointFound.Error() && msg.StartBlock != 0 {
+	} else if errors.Is(err, types.ErrNoCheckpointFound) && msg.StartBlock != 0 {
 		logger.Error("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock, "error", err)
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock))
 	}
@@ -161,6 +152,29 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*types.MsgCpAckResponse, error) {
 	logger := m.Logger(ctx)
 
+	if msg.StartBlock >= msg.EndBlock {
+		logger.Error("end block should be greater than start block",
+			"startBlock", msg.StartBlock,
+			"endBlock", msg.EndBlock,
+			"rootHash", common.Bytes2Hex(msg.RootHash),
+		)
+		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid ack")
+	}
+
+	lastCheckpoint, err := m.GetLastCheckpoint(ctx)
+	if err != nil {
+		logger.Error("unable to get last checkpoint", "error", err)
+		return nil, err
+	}
+
+	if msg.Number != lastCheckpoint.Id+1 {
+		logger.Error("checkpoint number in ack is not sequential",
+			"lastCheckpointNumber", lastCheckpoint.Id,
+			"checkpointNumber", msg.Number,
+		)
+		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid checkpoint number")
+
+	}
 	// get last checkpoint from buffer
 	bufCheckpoint, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
@@ -174,8 +188,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 	}
 
 	// return err if start and end match but contract root hash doesn't match
-	if msg.StartBlock == bufCheckpoint.StartBlock &&
-		msg.EndBlock == bufCheckpoint.EndBlock &&
+	if msg.EndBlock == bufCheckpoint.EndBlock &&
 		!bytes.Equal(msg.RootHash, bufCheckpoint.RootHash) {
 		logger.Error("Invalid ACK",
 			"startExpected", bufCheckpoint.StartBlock,
@@ -330,7 +343,7 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", m.authority, msg.Authority)
 	}
 
-	if err := msg.Params.Validate(); err != nil {
+	if err := msg.Params.ValidateBasic(); err != nil {
 		return nil, err
 	}
 

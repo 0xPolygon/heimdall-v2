@@ -341,6 +341,18 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to migrate proposer: %w", err)
 	}
 
+	if err := utils.AddProperty(genesisData, "app_state.stake", "previous_block_validator_set", currentValidatorSet); err != nil {
+		return fmt.Errorf("failed to add previous blocks validators set to stake module: %w", err)
+	}
+
+	emptyLastBlockTxs := map[string]interface{}{
+		"txs": []interface{}{},
+	}
+
+	if err := utils.AddProperty(genesisData, "app_state.stake", "last_block_txs", emptyLastBlockTxs); err != nil {
+		return fmt.Errorf("failed to add empty last_block_txs to stake module: %w", err)
+	}
+
 	logger.Info("Stake module migration completed successfully")
 
 	return nil
@@ -804,6 +816,18 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 	// assign id to bufferedCheckpoint if present
 	if bufferedCheckpoint != nil {
 		bufferedCheckpoint["id"] = strconv.Itoa(len(checkpoints) + 1)
+	}
+
+	emptyCheckpointSignatures := map[string]interface{}{
+		"signatures": []interface{}{},
+	}
+	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures", emptyCheckpointSignatures); err != nil {
+		return fmt.Errorf("failed to add empty checkpoint signatures to checkpoint module: %w", err)
+	}
+
+	emptyCheckpointSignaturesTxhash := ""
+	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures_txhash", emptyCheckpointSignaturesTxhash); err != nil {
+		return fmt.Errorf("failed to add empty checkpoint signatures tx hash to checkpoint module: %w", err)
 	}
 
 	logger.Info("Checkpoint module migration completed successfully")

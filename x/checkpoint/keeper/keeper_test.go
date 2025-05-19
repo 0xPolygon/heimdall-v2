@@ -23,12 +23,11 @@ import (
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 const (
-	AccountHash = "0x000000000000000000000000000000000000dEaD"
-	BorChainID  = "1234"
+	AccountHash    = "0x000000000000000000000000000000000000dEaD"
+	TestBorChainID = "1234"
 )
 
 type KeeperTestSuite struct {
@@ -40,8 +39,8 @@ type KeeperTestSuite struct {
 	contractCaller   *mocks.IContractCaller
 	topupKeeper      *testutil.MockTopupKeeper
 	cmKeeper         *testutil.MockChainManagerKeeper
-	queryClient      checkpointTypes.QueryClient
-	msgServer        checkpointTypes.MsgServer
+	queryClient      types.QueryClient
+	msgServer        types.MsgServer
 	sideMsgCfg       sidetxs.SideTxConfigurator
 }
 
@@ -50,7 +49,7 @@ func (s *KeeperTestSuite) Run(_ string, fn func()) {
 }
 
 func (s *KeeperTestSuite) SetupTest() {
-	key := storetypes.NewKVStoreKey(checkpointTypes.StoreKey)
+	key := storetypes.NewKVStoreKey(types.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
 
 	testCtx := cosmosTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
@@ -83,10 +82,10 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.checkpointKeeper = &keeper
 
-	checkpointTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
+	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	checkpointTypes.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(&keeper))
-	s.queryClient = checkpointTypes.NewQueryClient(queryHelper)
+	types.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(&keeper))
+	s.queryClient = types.NewQueryClient(queryHelper)
 	s.msgServer = checkpointKeeper.NewMsgServerImpl(&keeper)
 
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
@@ -113,7 +112,7 @@ func (s *KeeperTestSuite) TestAddAndGetCheckpoints() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 	err := keeper.AddCheckpoint(ctx, checkpoint)
@@ -132,7 +131,7 @@ func (s *KeeperTestSuite) TestAddAndGetCheckpoints() {
 		endBlock2,
 		rootHash2,
 		proposerAddress2,
-		BorChainID,
+		TestBorChainID,
 		timestamp2,
 	)
 	err = keeper.AddCheckpoint(ctx, checkpoint2)

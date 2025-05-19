@@ -2,7 +2,8 @@ package types
 
 import "fmt"
 
-func (p Params) Validate() error {
+// ValidateBasic checks that the checkpoint parameters have valid values
+func (p Params) ValidateBasic() error {
 	if p.MaxCheckpointLength == 0 {
 		return fmt.Errorf("max checkpoint length should be non-zero")
 	}
