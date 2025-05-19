@@ -669,8 +669,9 @@ func migrateAuthModule(genesisData map[string]interface{}) error {
 	}
 
 	newParams := authTypes.Params{
-		MaxMemoCharacters:      utils.ParseUint(paramsData["max_memo_characters"]),
-		TxSigLimit:             utils.ParseUint(paramsData["tx_sig_limit"]),
+		MaxMemoCharacters: utils.ParseUint(paramsData["max_memo_characters"]),
+		// Override tx_sig_limit to "1" explicitly to comply with new v2 params
+		TxSigLimit:             authTypes.DefaultTxSigLimit,
 		TxSizeCostPerByte:      utils.ParseUint(paramsData["tx_size_cost_per_byte"]),
 		SigVerifyCostED25519:   utils.ParseUint(paramsData["sig_verify_cost_ed25519"]),
 		SigVerifyCostSecp256k1: utils.ParseUint(paramsData["sig_verify_cost_secp256k1"]),
