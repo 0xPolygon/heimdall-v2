@@ -60,6 +60,14 @@ func (q queryServer) GetMilestoneByNumber(ctx context.Context, req *types.QueryM
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
+	count, err := q.k.GetMilestoneCount(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get milestone count")
+	}
+	if req.Number == 0 || req.Number > count {
+		return nil, status.Error(codes.NotFound, "milestone number out of range")
+	}
+
 	milestone, err := q.k.GetMilestoneByNumber(ctx, req.Number)
 	if err != nil {
 		return nil, err

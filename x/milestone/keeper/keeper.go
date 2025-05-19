@@ -178,7 +178,7 @@ func (k *Keeper) GetLastMilestone(ctx context.Context) (*types.Milestone, error)
 	}
 
 	if lastMilestoneNumber == 0 {
-		k.Logger(ctx).Error("milestone doesn't exist in store")
+		k.Logger(ctx).Warn("no milestones found in store yet")
 		return nil, types.ErrNoMilestoneFound
 	}
 
