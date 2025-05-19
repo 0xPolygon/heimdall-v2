@@ -311,7 +311,15 @@ func buildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 			if err != nil {
 				return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
 			}
-			b, err := json.Marshal(msg)
+			checkpointData := CheckpointData{
+				Proposer:        msg.Proposer,
+				StartBlock:      msg.StartBlock,
+				EndBlock:        msg.EndBlock,
+				RootHash:        "0x" + hex.EncodeToString(msg.RootHash),
+				AccountRootHash: "0x" + hex.EncodeToString(msg.AccountRootHash),
+				BorChainID:      msg.BorChainId,
+			}
+			b, err := json.Marshal(checkpointData)
 			if err != nil {
 				return nil, err
 			}
