@@ -94,6 +94,18 @@ func (s *KeeperTestSuite) TestWithdrawFeeTx() {
 		require.NotNil(res)
 	})
 
+	t.Run("fail with negative amount", func(t *testing.T) {
+		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.NewInt(-1))
+
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SpendableCoin(gomock.Any(), gomock.Any(), gomock.Any()).Return(sdk.NewCoin(authTypes.FeeToken, math.ZeroInt())).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().SendCoinsFromAccountToModule(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		keeper.BankKeeper.(*testutil.MockBankKeeper).EXPECT().BurnCoins(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+		res, err := msgServer.WithdrawFeeTx(ctx, &msg)
+		require.Error(err)
+		require.Nil(res)
+	})
+
 	t.Run("fail with insufficient funds", func(t *testing.T) {
 		msg = *types.NewMsgWithdrawFeeTx(addr.String(), math.ZeroInt())
 

@@ -187,19 +187,19 @@ func tallyVotes(extVoteInfo []abciTypes.ExtendedVoteInfo, logger log.Logger, tot
 			logger.Debug("Approved side-tx", "txHash", txHash)
 
 			// append to approved tx slice
-			approvedTxs = append(approvedTxs, common.Hex2Bytes(txHash))
+			approvedTxs = append(approvedTxs, common.FromHex(txHash))
 		} else if voteMap[sidetxs.Vote_VOTE_NO] > majorityVP {
 			// rejected
 			logger.Debug("Rejected side-tx", "txHash", txHash)
 
 			// append to rejected tx slice
-			rejectedTxs = append(rejectedTxs, common.Hex2Bytes(txHash))
+			rejectedTxs = append(rejectedTxs, common.FromHex(txHash))
 		} else {
 			// skipped
 			logger.Debug("Skipped side-tx", "txHash", txHash)
 
 			// append to rejected tx slice
-			skippedTxs = append(skippedTxs, common.Hex2Bytes(txHash))
+			skippedTxs = append(skippedTxs, common.FromHex(txHash))
 		}
 	}
 

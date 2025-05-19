@@ -85,7 +85,7 @@ func (s *KeeperTestSuite) TestHandleMsgEventRecord() {
 
 		msg.Data = b
 
-		err := msg.ValidateBasic()
+		err = msg.ValidateBasic()
 		require.Error(t, err)
 	})
 }

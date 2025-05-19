@@ -86,7 +86,7 @@ func (k Keeper) GetAuthority() string {
 
 // SetParams sets the x/milestone module parameters.
 func (k Keeper) SetParams(ctx context.Context, params types.Params) error {
-	err := params.Validate()
+	err := params.ValidateBasic()
 	if err != nil {
 		k.Logger(ctx).Error("error while validating params", "err", err)
 		return err
