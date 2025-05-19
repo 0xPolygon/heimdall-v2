@@ -1023,12 +1023,15 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 }
 
 func replaceMaticWithPol(v interface{}) {
+	const matic = "matic"
+	const pol = "pol"
+
 	switch val := v.(type) {
 	case map[string]interface{}:
 		for key, item := range val {
 			// If the value is exactly "matic", replace it
-			if strVal, ok := item.(string); ok && strVal == "matic" {
-				val[key] = "pol"
+			if strVal, ok := item.(string); ok && strVal == matic {
+				val[key] = pol
 				continue
 			}
 			// Recurse
@@ -1037,8 +1040,8 @@ func replaceMaticWithPol(v interface{}) {
 	case []interface{}:
 		for i := range val {
 			// If the element is exactly "matic", replace it
-			if strVal, ok := val[i].(string); ok && strVal == "matic" {
-				val[i] = "pol"
+			if strVal, ok := val[i].(string); ok && strVal == matic {
+				val[i] = pol
 				continue
 			}
 			// Recurse
