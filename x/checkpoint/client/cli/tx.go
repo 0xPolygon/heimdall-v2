@@ -17,6 +17,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 	chainmanagerTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 var logger = helper.Logger.With("module", "checkpoint/client/cli")
@@ -59,8 +60,9 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 			}
 
 			if viper.GetBool(FlagAutoConfigure) {
-				queryClient := types.NewQueryClient(clientCtx)
-				proposer, err := queryClient.GetCurrentProposer(cmd.Context(), &types.QueryCurrentProposerRequest{})
+				stakeQueryClient := stakeTypes.NewQueryClient(clientCtx)
+				checkpointQueryClient := types.NewQueryClient(clientCtx)
+				proposer, err := stakeQueryClient.GetCurrentProposer(cmd.Context(), &stakeTypes.QueryCurrentProposerRequest{})
 				if err != nil {
 					return err
 				}
@@ -74,7 +76,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 					return fmt.Errorf("please wait for your turn to propose checkpoint. Checkpoint proposer: %v", proposer.Validator.Signer)
 				}
 
-				nextCheckpoint, err := queryClient.GetNextCheckpoint(cmd.Context(), &types.QueryNextCheckpointRequest{})
+				nextCheckpoint, err := checkpointQueryClient.GetNextCheckpoint(cmd.Context(), &types.QueryNextCheckpointRequest{})
 				if err != nil {
 					return err
 				}

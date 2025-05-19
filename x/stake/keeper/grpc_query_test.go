@@ -143,3 +143,16 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	require.NotNil(res)
 	require.True(res.IsOld)
 }
+
+func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
+	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.stakeKeeper, s.queryClient
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
+	val := keeper.GetCurrentProposer(ctx)
+	req := &types.QueryCurrentProposerRequest{}
+
+	res, err := queryClient.GetCurrentProposer(ctx, req)
+	require.NoError(err)
+	require.NotNil(res)
+
+	require.Equal(res.Validator.Signer, val.Signer)
+}

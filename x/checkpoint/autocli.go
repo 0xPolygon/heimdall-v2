@@ -65,20 +65,6 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
 				},
 				{
-					RpcMethod:      "GetCurrentProposer",
-					Use:            "get-current-proposer",
-					Short:          "Get the current proposer",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
-				},
-				{
-					RpcMethod: "GetProposers",
-					Use:       "get-proposers",
-					Short:     "Get the proposers",
-					PositionalArgs: []*autocliv1.PositionalArgDescriptor{
-						{ProtoField: "times"},
-					},
-				},
-				{
 					RpcMethod:      "GetCheckpointList",
 					Use:            "get-checkpoint-list",
 					Short:          "Get the list of checkpoints",

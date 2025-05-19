@@ -187,3 +187,10 @@ func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryPr
 
 	return &types.QueryProposersResponse{Proposers: proposers}, nil
 }
+
+// GetCurrentProposer queries validator info for the current proposer
+func (q queryServer) GetCurrentProposer(ctx context.Context, _ *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
+	proposer := q.k.GetCurrentProposer(ctx)
+
+	return &types.QueryCurrentProposerResponse{Validator: *proposer}, nil
+}
