@@ -7,10 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
-	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
 )
@@ -211,7 +210,7 @@ func (s *KeeperTestSuite) TestGetCheckpointList() {
 
 	var checkpoints []*types.Checkpoint
 	for i := 0; i < 5; i++ {
-		checkpoint := chSim.GenRandCheckpoint(start, maxSize, uint64(i))
+		checkpoint := testutil.GenRandCheckpoint(start, maxSize, uint64(i))
 		checkpoints = append(checkpoints, &checkpoint)
 	}
 

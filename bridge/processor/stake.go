@@ -147,7 +147,7 @@ func (sp *StakingProcessor) sendValidatorJoinToHeimdall(eventName string, logByt
 		// return broadcast to heimdall
 		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(msg, event)
 		if err != nil {
-			sp.Logger.Error("Error while broadcasting unStakeInit to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
+			sp.Logger.Error("Error while broadcasting sendValidatorJoin to heimdall", "validatorId", event.ValidatorId.Uint64(), "error", err)
 			return err
 		}
 
