@@ -41,6 +41,10 @@ func NewMsgCheckpointBlock(
 }
 
 func (msg MsgCheckpoint) ValidateBasic() error {
+	if _, err := strconv.ParseUint(msg.BorChainId, 10, 64); err != nil {
+		return ErrInvalidMsg.Wrapf("Invalid bor chain id %s", msg.BorChainId)
+	}
+
 	if bytes.Equal(msg.RootHash, common.Hash{}.Bytes()) {
 		return ErrInvalidMsg.Wrapf("Invalid roothash %v", string(msg.RootHash))
 	}
@@ -61,7 +65,7 @@ func (msg MsgCheckpoint) ValidateBasic() error {
 		return ErrInvalidMsg.Wrapf("Invalid proposer %s", msg.Proposer)
 	}
 
-	if msg.StartBlock >= msg.EndBlock {
+	if msg.StartBlock >= msg.EndBlock || msg.EndBlock == 0 {
 		return ErrInvalidMsg.Wrapf("End should be greater than to start block start block=%d,end block=%d", msg.StartBlock, msg.EndBlock)
 	}
 
