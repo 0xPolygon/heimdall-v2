@@ -2014,196 +2014,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 } // completed
 
-func TestSomething(t *testing.T) {
-	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
-	validators := app.StakeKeeper.GetAllValidators(ctx)
-
-	// Create a checkpoint message
-	msg := &borTypes.MsgProposeSpan{
-		SpanId:     2,
-		Proposer:   validators[0].Signer,
-		StartBlock: 26657,
-		EndBlock:   30000,
-		ChainId:    "testChainParams.ChainParams.BorChainId",
-		Seed:       common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
-		SeedAuthor: "val1Addr.Hex()",
-	}
-
-	txBytes, err := buildSignedTx2(msg, ctx, priv, &app)
-	var txBytesCmt cmtTypes.Tx = txBytes
-
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
-
-	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
-	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
-	})
-	require.NoError(t, err)
-
-	// Prepare/Process proposal
-	reqPrep := &abci.RequestPrepareProposal{
-		Txs:             [][]byte{txBytes},
-		MaxTxBytes:      1_000_000,
-		LocalLastCommit: *extCommit,
-		ProposerAddress: common.FromHex(validators[0].Signer),
-		Height:          3,
-	}
-
-	_, err = app.PrepareProposal(reqPrep)
-	require.NoError(t, err)
-
-	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
-	require.NoError(t, err)
-	require.NotEmpty(t, respPrep.Txs)
-}
-
-func TestMilestone(t *testing.T) {
-	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
-	validators := app.StakeKeeper.GetAllValidators(ctx)
-
-	// Create a checkpoint message
-	msg := &types.MsgCheckpoint{
-		Proposer:        validators[0].Signer,
-		StartBlock:      100,
-		EndBlock:        200,
-		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
-		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
-		BorChainId:      "test",
-	}
-
-	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
-
-	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
-
-	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
-	})
-	require.NoError(t, err)
-
-	// Prepare/Process proposal
-	reqPrep := &abci.RequestPrepareProposal{
-		Txs:             [][]byte{txBytes},
-		MaxTxBytes:      1_000_000,
-		LocalLastCommit: *extCommit,
-		ProposerAddress: common.FromHex(validators[0].Signer),
-		Height:          3,
-	}
-
-	_, err = app.PrepareProposal(reqPrep)
-	require.NoError(t, err)
-
-	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
-	require.NoError(t, err)
-	require.NotEmpty(t, respPrep.Txs)
-
-	mockCaller := new(helpermocks.IContractCaller)
-	mockCaller.
-		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-		Return([]*ethTypes.Header{}, nil)
-	mockCaller.
-		On("GetBorChainBlock", mock.Anything, mock.Anything).
-		Return(
-			&ethTypes.Header{
-				Number: big.NewInt(10000000000000000),
-			},
-			nil,
-		)
-
-	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
-		app.AppCodec(),
-		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
-		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
-		mockCaller,
-	)
-	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
-		app.AppCodec(),
-		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
-		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
-		&app.StakeKeeper,
-		app.ChainManagerKeeper,
-		&app.TopupKeeper,
-		mockCaller,
-	)
-	app.BorKeeper = borKeeper.NewKeeper(
-		app.AppCodec(),
-		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
-		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
-		app.ChainManagerKeeper,
-		&app.StakeKeeper,
-		nil,
-	)
-	app.BorKeeper.SetContractCaller(mockCaller)
-	app.MilestoneKeeper.IContractCaller = mockCaller
-	app.caller = mockCaller
-
-	// create a milestone
-	testMilestone1 := milestoneTypes.Milestone{
-		Proposer:    validators[0].Signer,
-		StartBlock:  1,
-		EndBlock:    2,
-		Hash:        []byte(TxHash1),
-		BorChainId:  "1",
-		MilestoneId: "milestoneID",
-		Timestamp:   144,
-	}
-
-	app.MilestoneKeeper.AddMilestone(ctx, testMilestone1)
-	fmt.Println("aktln")
-
-	reqExtend := abci.RequestExtendVote{
-		Txs:    respPrep.Txs,
-		Hash:   []byte("test-hash"),
-		Height: 3,
-	}
-	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
-	require.NoError(t, err)
-	require.NotNil(t, respExtend.VoteExtension)
-	mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
-
-	// terrUnmarshal := "error occurred while decoding ExtendedCommitInfo"
-	// terrTxDecode := "error occurred while decoding tx bytes in ExtendVoteHandler"
-	testCases := []struct {
-		name        string
-		req         abci.RequestExtendVote
-		wantErr     bool
-		errContains string
-	}{
-		{
-			name: "valid extend vote",
-			req: abci.RequestExtendVote{
-				Txs:    respPrep.Txs,
-				Hash:   []byte("test-hash"),
-				Height: 3,
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			respExtend, err := app.ExtendVoteHandler()(ctx, &tc.req)
-			if tc.wantErr {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.errContains)
-				require.Nil(t, respExtend)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, respExtend)
-				mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
-			}
-			finalizeReq := abci.RequestFinalizeBlock{
-				Txs:    [][]byte{extCommitBytes, txBytes},
-				Height: 3,
-			}
-
-			_, err = app.PreBlocker(ctx, &finalizeReq)
-		})
-	}
-}
-
-func TestMilestoneGetMajority(t *testing.T) {
+func TestMilestoneHappyPath(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 
@@ -2311,7 +2122,6 @@ func TestMilestoneGetMajority(t *testing.T) {
 	}
 
 	app.MilestoneKeeper.AddMilestone(ctx, testMilestone1)
-	fmt.Println("aktln")
 
 	reqExtend := abci.RequestExtendVote{
 		Txs:    respPrep.Txs,
@@ -2321,7 +2131,6 @@ func TestMilestoneGetMajority(t *testing.T) {
 	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 	require.NoError(t, err)
 	require.NotNil(t, respExtend.VoteExtension)
-	fmt.Println("lama2")
 
 	var ve sidetxs.VoteExtension
 	ve.Unmarshal(respExtend.VoteExtension)
@@ -2337,25 +2146,138 @@ func TestMilestoneGetMajority(t *testing.T) {
 
 }
 
-// func TestMilestoneSetup(t *testing.T) {
-// 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
-// 	validators := app.StakeKeeper.GetAllValidators(ctx)
+func TestMilestoneUnhappyPaths(t *testing.T) {
+	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
+	validators := app.StakeKeeper.GetAllValidators(ctx)
 
-// 	// Create a checkpoint message
-// 	msg := &types.MsgCheckpoint{
-// 		Proposer:        validators[0].Signer,
-// 		StartBlock:      100,
-// 		EndBlock:        200,
-// 		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
-// 		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
-// 		BorChainId:      "test",
-// 	}
+	// Create a checkpoint message
+	msg := &types.MsgCheckpoint{
+		Proposer:        validators[0].Signer,
+		StartBlock:      100,
+		EndBlock:        200,
+		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
+		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
+		BorChainId:      "test",
+	}
 
-// 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
+	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
 
-// 	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
+	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
 
-// }
+	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
+		Height: 3,
+		Txs:    [][]byte{extCommitBytes, txBytes},
+	})
+	require.NoError(t, err)
+
+	// Prepare/Process proposal
+	reqPrep := &abci.RequestPrepareProposal{
+		Txs:             [][]byte{txBytes},
+		MaxTxBytes:      1_000_000,
+		LocalLastCommit: *extCommit,
+		ProposerAddress: common.FromHex(validators[0].Signer),
+		Height:          3,
+	}
+
+	_, err = app.PrepareProposal(reqPrep)
+	require.NoError(t, err)
+
+	respPrep, err := app.NewPrepareProposalHandler()(ctx, reqPrep)
+	require.NoError(t, err)
+	require.NotEmpty(t, respPrep.Txs)
+
+	mockCaller := new(helpermocks.IContractCaller)
+	mockCaller.
+		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, nil)
+	mockCaller.
+		On("GetBorChainBlock", mock.Anything, mock.Anything).
+		Return(
+			&ethTypes.Header{
+				Number: big.NewInt(10000000000000000),
+			},
+			nil,
+		)
+
+	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
+		app.AppCodec(),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		runtime.NewKVStoreService(app.GetKey(milestoneTypes.StoreKey)),
+		mockCaller,
+	)
+	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(checkpointTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		&app.StakeKeeper,
+		app.ChainManagerKeeper,
+		&app.TopupKeeper,
+		mockCaller,
+	)
+	app.BorKeeper = borKeeper.NewKeeper(
+		app.AppCodec(),
+		runtime.NewKVStoreService(app.GetKey(borTypes.StoreKey)),
+		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
+		app.ChainManagerKeeper,
+		&app.StakeKeeper,
+		nil,
+	)
+	app.BorKeeper.SetContractCaller(mockCaller)
+	app.MilestoneKeeper.IContractCaller = mockCaller
+	app.caller = mockCaller
+
+	t.Run("No milestone", func(t *testing.T) {
+		reqExtend := abci.RequestExtendVote{
+			Txs:    respPrep.Txs,
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+		mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+		finalizeReq := abci.RequestFinalizeBlock{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height: 3,
+		}
+
+		_, err = app.PreBlocker(ctx, &finalizeReq)
+	})
+
+	t.Run("No block with Majority Support", func(t *testing.T) {
+		testMilestone1 := milestoneTypes.Milestone{
+			Proposer:    validators[0].Signer,
+			StartBlock:  1,
+			EndBlock:    2,
+			Hash:        []byte(TxHash1),
+			BorChainId:  "1",
+			MilestoneId: "milestoneID",
+			Timestamp:   144,
+		}
+
+		app.MilestoneKeeper.AddMilestone(ctx, testMilestone1)
+		fmt.Println("aktln")
+
+		reqExtend := abci.RequestExtendVote{
+			Txs:    respPrep.Txs,
+			Hash:   []byte("test-hash"),
+			Height: 3,
+		}
+		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
+		require.NoError(t, err)
+		require.NotNil(t, respExtend.VoteExtension)
+		mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+
+		finalizeReq := abci.RequestFinalizeBlock{
+			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height: 3,
+		}
+
+		_, err = app.PreBlocker(ctx, &finalizeReq)
+	})
+
+}
 
 func TestPrepareProposal(t *testing.T) {
 	priv, _, _ := testdata.KeyTestPubAddr()

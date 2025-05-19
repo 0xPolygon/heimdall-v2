@@ -313,7 +313,7 @@ func (app *HeimdallApp) VerifyVoteExtensionHandler() sdk.VerifyVoteExtensionHand
 		}
 
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, voteExtension.MilestoneProposition); err != nil {
-			logger.Error("ALERT, MILESTONE PROPOSITION VOTE EXTENSION REJECTEDiiiiiiiiii. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
+			logger.Error("ALERT, MILESTONE PROPOSITION VOTE EXTENSION REJECTED. THIS SHOULD NOT HAPPEN; THE VALIDATOR COULD BE MALICIOUS!", "validator", valAddr, "error", err)
 			return &abci.ResponseVerifyVoteExtension{Status: abci.ResponseVerifyVoteExtension_REJECT}, nil
 		}
 
