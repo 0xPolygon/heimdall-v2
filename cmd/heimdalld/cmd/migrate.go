@@ -341,6 +341,18 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 		return fmt.Errorf("failed to migrate proposer: %w", err)
 	}
 
+	if err := utils.AddProperty(genesisData, "app_state.stake", "previous_block_validator_set", currentValidatorSet); err != nil {
+		return fmt.Errorf("failed to add previous blocks validators set to stake module: %w", err)
+	}
+
+	emptyLastBlockTxs := map[string]interface{}{
+		"txs": []interface{}{},
+	}
+
+	if err := utils.AddProperty(genesisData, "app_state.stake", "last_block_txs", emptyLastBlockTxs); err != nil {
+		return fmt.Errorf("failed to add empty last_block_txs to stake module: %w", err)
+	}
+
 	logger.Info("Stake module migration completed successfully")
 
 	return nil

@@ -27,7 +27,7 @@ func (srv msgServer) UpdateParams(ctx context.Context, req *types.MsgUpdateParam
 		return nil, errorsmod.Wrapf(govtypes.ErrInvalidSigner, "invalid authority; expected %s, got %s", srv.GetAuthority(), req.Authority)
 	}
 
-	if err := req.Params.Validate(); err != nil {
+	if err := req.Params.ValidateBasic(); err != nil {
 		return nil, errorsmod.Wrapf(types.ErrInvalidParams, "invalid chainmanager params; %s", err)
 	}
 

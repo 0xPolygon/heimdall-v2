@@ -15,7 +15,7 @@ var (
 	ErrNoValidator = errorsmod.Register(ModuleName, 4, "no respective validator found")
 
 	// ErrNoSignerChange returned when the new signer address is same as old one
-	ErrNoSignerChange = errorsmod.Register(ModuleName, 5, "new singer is same as old one")
+	ErrNoSignerChange = errorsmod.Register(ModuleName, 5, "new signer is same as old one")
 
 	// ErrValUnBonded is returned when the respective validator is already unBonded
 	ErrValUnBonded = errorsmod.Register(ModuleName, 6, "validator already unBonded")

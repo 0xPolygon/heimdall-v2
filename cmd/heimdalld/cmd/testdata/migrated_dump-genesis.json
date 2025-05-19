@@ -30,7 +30,7 @@
     },
     "bank": {
       "params": {
-        "send_enabled": [],
+            "send_enabled": [],
         "default_send_enabled": true
       },
       "balances": [
@@ -53,9 +53,9 @@
           ]
         }
       ],
-      "supply": [],
-      "denom_metadata": [],
-      "send_enabled": []
+        "supply": [],
+        "denom_metadata": [],
+        "send_enabled": []
     },
     "bor": {
       "params": {
@@ -981,8 +981,8 @@
     },
     "gov": {
       "starting_proposal_id": "13",
-      "deposits": [],
-      "votes": [],
+        "deposits": [],
+        "votes": [],
       "proposals": [
         {
           "id": "1",
@@ -1715,12 +1715,12 @@
       }
     },
     "sidechannel": {
-      "past_commits": []
+        "past_commits": []
     },
     "slashing": {
       "buffer_val_slash_info": null,
       "missed_blocks": {
-        "1": []
+            "1": []
       },
       "params": {
         "downtime_jail_duration": "600000000000",
@@ -1756,6 +1756,37 @@
           "startEpoch": "0",
           "val_id": "1",
           "voting_power": "10000"
+        },
+        "validators":[
+          {
+            "endEpoch":"0",
+            "jailed":false,
+            "last_updated":"",
+            "nonce":"1",
+            "proposer_priority":"0",
+            "pubKey":"BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo=",
+            "signer":"0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
+            "startEpoch":"0",
+            "val_id":"1",
+            "voting_power":"10000"
+          }
+        ]
+      },
+      "last_block_txs":{
+        "txs":[]
+      },
+      "previous_block_validator_set":{
+        "proposer":{
+          "endEpoch":"0",
+          "jailed":false,
+          "last_updated":"",
+          "nonce":"1",
+          "proposer_priority":"0",
+          "pubKey":"BM45lDLjj7cp+htRLVkXRUrbfEBOglKzOcWxJPIOVam+5W3eCw6BMNr/UZO4yrDfVTkngwYnUaaULFYbyptESGo=",
+          "signer":"0x1534f22900cb7fc09019a3dba9b1ee731e10029b",
+          "startEpoch":"0",
+          "val_id":"1",
+          "voting_power":"10000"
         },
         "validators": [
           {

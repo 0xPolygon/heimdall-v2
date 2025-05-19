@@ -23,7 +23,6 @@ import (
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 const (
@@ -40,8 +39,8 @@ type KeeperTestSuite struct {
 	contractCaller   *mocks.IContractCaller
 	topupKeeper      *testutil.MockTopupKeeper
 	cmKeeper         *testutil.MockChainManagerKeeper
-	queryClient      checkpointTypes.QueryClient
-	msgServer        checkpointTypes.MsgServer
+	queryClient      types.QueryClient
+	msgServer        types.MsgServer
 	sideMsgCfg       sidetxs.SideTxConfigurator
 }
 
@@ -50,7 +49,7 @@ func (s *KeeperTestSuite) Run(_ string, fn func()) {
 }
 
 func (s *KeeperTestSuite) SetupTest() {
-	key := storetypes.NewKVStoreKey(checkpointTypes.StoreKey)
+	key := storetypes.NewKVStoreKey(types.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
 
 	testCtx := cosmosTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
@@ -83,10 +82,10 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.checkpointKeeper = &keeper
 
-	checkpointTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
+	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	checkpointTypes.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(&keeper))
-	s.queryClient = checkpointTypes.NewQueryClient(queryHelper)
+	types.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(&keeper))
+	s.queryClient = types.NewQueryClient(queryHelper)
 	s.msgServer = checkpointKeeper.NewMsgServerImpl(&keeper)
 
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
