@@ -67,7 +67,7 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse genesis: %w", err)
 	}
-	if height < enableHeight {
+	if height <= enableHeight {
 		return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
 	}
 
