@@ -115,7 +115,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
-			logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
+			logger.Error("Invalid non-rp vote extension proposal", "error", err)
 		}
 
 		for _, tx := range req.Txs[1:] {
