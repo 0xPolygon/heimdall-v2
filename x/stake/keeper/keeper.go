@@ -82,14 +82,14 @@ func (k Keeper) Logger(ctx context.Context) log.Logger {
 }
 
 // SetLastBlockTxs sets the last block's txs in the store
-func (k Keeper) SetLastBlockTxs(ctx sdk.Context, txs [][]byte) error {
+func (k Keeper) SetLastBlockTxs(ctx context.Context, txs [][]byte) error {
 	k.PanicIfSetupIsIncomplete()
 	blockTxs := types.LastBlockTxs{Txs: txs}
 	return k.lastBlockTxs.Set(ctx, blockTxs)
 }
 
 // GetLastBlockTxs gets the last block's txs from the store
-func (k Keeper) GetLastBlockTxs(ctx sdk.Context) (types.LastBlockTxs, error) {
+func (k Keeper) GetLastBlockTxs(ctx context.Context) (types.LastBlockTxs, error) {
 	k.PanicIfSetupIsIncomplete()
 	return k.lastBlockTxs.Get(ctx)
 }

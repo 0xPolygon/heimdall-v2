@@ -18,13 +18,12 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/suite"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 const (
@@ -37,8 +36,8 @@ type KeeperTestSuite struct {
 	ctx             sdk.Context
 	milestoneKeeper *milestoneKeeper.Keeper
 	contractCaller  *mocks.IContractCaller
-	queryClient     milestoneTypes.QueryClient
-	msgServer       milestoneTypes.MsgServer
+	queryClient     types.QueryClient
+	msgServer       types.MsgServer
 	sideMsgCfg      sidetxs.SideTxConfigurator
 }
 
@@ -47,7 +46,7 @@ func (s *KeeperTestSuite) Run(_ string, fn func()) {
 }
 
 func (s *KeeperTestSuite) SetupTest() {
-	key := storetypes.NewKVStoreKey(milestoneTypes.StoreKey)
+	key := storetypes.NewKVStoreKey(types.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
 	testCtx := cosmosTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
@@ -72,10 +71,10 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	keeper.InitGenesis(ctx, milestoneGenesis)
 
-	milestoneTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
+	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	milestoneTypes.RegisterQueryServer(queryHelper, milestoneKeeper.NewQueryServer(&keeper))
-	s.queryClient = milestoneTypes.NewQueryClient(queryHelper)
+	types.RegisterQueryServer(queryHelper, milestoneKeeper.NewQueryServer(&keeper))
+	s.queryClient = types.NewQueryClient(queryHelper)
 	s.msgServer = milestoneKeeper.NewMsgServerImpl(&keeper)
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
 }

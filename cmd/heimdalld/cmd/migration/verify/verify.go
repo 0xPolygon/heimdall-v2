@@ -172,7 +172,11 @@ func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis 
 				return fmt.Errorf("invalid coin format at index %d", i)
 			}
 
+			// normalize "matic" to "pol"
 			denom, _ := coinMap["denom"].(string)
+			if denom == "matic" {
+				denom = "pol"
+			}
 			amountStr, _ := coinMap["amount"].(string)
 
 			amount, ok := math.NewIntFromString(amountStr)

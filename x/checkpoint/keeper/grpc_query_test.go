@@ -7,9 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/golang/mock/gomock"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	cmTypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	chSim "github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	stakeSim "github.com/0xPolygon/heimdall-v2/x/stake/testutil"
@@ -56,7 +55,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 	cpNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := testutil.RandomBytes()
+	rootHash := chSim.RandomBytes()
 	proposerAddress := util.FormatAddress(common.HexToAddress(AccountHash).String())
 	timestamp := uint64(time.Now().Unix())
 
@@ -66,7 +65,7 @@ func (s *KeeperTestSuite) TestQueryCheckpoint() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 
@@ -91,7 +90,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 
 	startBlock := uint64(0)
 	endBlock := uint64(255)
-	rootHash := testutil.RandomBytes()
+	rootHash := chSim.RandomBytes()
 	proposerAddress := util.FormatAddress(common.HexToAddress(AccountHash).String())
 	timestamp := uint64(time.Now().Unix())
 
@@ -101,7 +100,7 @@ func (s *KeeperTestSuite) TestQueryCheckpointBuffer() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 	err = keeper.SetCheckpointBuffer(ctx, checkpointBlock)
@@ -134,12 +133,12 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	topupKeeper, stakeKeeper, queryClient, contractCaller := s.topupKeeper, s.stakeKeeper, s.queryClient, s.contractCaller
 
 	validatorSet := stakeSim.GetRandomValidatorSet(2)
-	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(testutil.RandDividendAccounts(), nil)
+	topupKeeper.EXPECT().GetAllDividendAccounts(gomock.Any()).AnyTimes().Return(chSim.RandDividendAccounts(), nil)
 
 	cpNumber := uint64(1)
 	startBlock := uint64(0)
 	endBlock := uint64(256)
-	rootHash := testutil.RandomBytes()
+	rootHash := chSim.RandomBytes()
 	proposerAddress := common.HexToAddress(AccountHash).String()
 	timestamp := uint64(time.Now().Unix())
 
@@ -149,7 +148,7 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 
@@ -157,8 +156,14 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	err := keeper.AddCheckpoint(ctx, checkpointBlock)
 	require.NoError(err)
 
-	req := types.QueryNextCheckpointRequest{BorChainId: BorChainID}
+	req := types.QueryNextCheckpointRequest{}
 
+	chainParams := cmTypes.Params{
+		ChainParams: cmTypes.ChainParams{
+			BorChainId: TestBorChainID,
+		},
+	}
+	s.cmKeeper.EXPECT().GetParams(gomock.Any()).AnyTimes().Return(chainParams, nil)
 	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
 	res, err := queryClient.GetNextCheckpoint(ctx, &req)
 	require.NoError(err)
@@ -167,38 +172,6 @@ func (s *KeeperTestSuite) TestQueryNextCheckpoint() {
 	require.Equal(checkpointBlock.EndBlock, res.Checkpoint.EndBlock)
 	require.Equal(checkpointBlock.RootHash, res.Checkpoint.RootHash)
 	require.Equal(checkpointBlock.BorChainId, res.Checkpoint.BorChainId)
-}
-
-func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
-	ctx, require, stakeKeeper, queryClient := s.ctx, s.Require(), s.stakeKeeper, s.queryClient
-
-	validatorSet := stakeSim.GetRandomValidatorSet(2)
-
-	stakeKeeper.EXPECT().GetCurrentProposer(ctx).AnyTimes().Return(validatorSet.Proposer)
-	req := &types.QueryCurrentProposerRequest{}
-
-	res, err := queryClient.GetCurrentProposer(ctx, req)
-	require.NoError(err)
-	require.NotNil(res)
-
-	require.Equal(res.Validator.Signer, validatorSet.Proposer.Signer)
-}
-
-func (s *KeeperTestSuite) TestHandleQueryProposer() {
-	ctx, require, queryClient, stakeKeeper := s.ctx, s.Require(), s.queryClient, s.stakeKeeper
-
-	validatorSet := stakeSim.GetRandomValidatorSet(2)
-
-	stakeKeeper.EXPECT().GetValidatorSet(gomock.Any()).AnyTimes().Return(validatorSet, nil)
-	req := &types.QueryProposerRequest{Times: 2}
-
-	res, err := queryClient.GetProposers(ctx, req)
-	require.NoError(err)
-	require.NotNil(res)
-
-	require.Equal(len(res.Proposers), 2)
-
-	require.Equal(res.Proposers[0].Signer, validatorSet.Proposer.Signer)
 }
 
 func (s *KeeperTestSuite) TestGetCheckpointList() {

@@ -150,11 +150,24 @@ func runMigrate(cmd *cobra.Command, args []string) error {
 		delete(genesisData, "supply")
 		logger.Info("Supply deleted")
 
-		// Recursively replace denom from "matic" to "pol"
-		replaceDenom(genesisData)
+		// Re-marshal to JSON and unmarshal into a plain interface{}
+		raw, err := json.Marshal(genesisData)
+		if err != nil {
+			return fmt.Errorf("failed to marshal genesis data: %w", err)
+		}
 
-		if err := saveGenesisFile(genesisData, genesisFileV2); err != nil {
+		var generic interface{}
+		if err := json.Unmarshal(raw, &generic); err != nil {
+			return fmt.Errorf("failed to unmarshal into generic map: %w", err)
+		}
+
+		// Perform the replacement
+		replaceMaticWithPol(generic)
+
+		// Save the updated generic version
+		if err := saveGenesisFile(generic.(map[string]interface{}), genesisFileV2); err != nil {
 			logger.Error("Failed to save migrated genesis file", "error", err)
+
 			return err
 		}
 
@@ -339,6 +352,18 @@ func migrateStakeModule(genesisData map[string]interface{}) error {
 
 	if err := utils.MigrateValidator(proposer); err != nil {
 		return fmt.Errorf("failed to migrate proposer: %w", err)
+	}
+
+	if err := utils.AddProperty(genesisData, "app_state.stake", "previous_block_validator_set", currentValidatorSet); err != nil {
+		return fmt.Errorf("failed to add previous blocks validators set to stake module: %w", err)
+	}
+
+	emptyLastBlockTxs := map[string]interface{}{
+		"txs": []interface{}{},
+	}
+
+	if err := utils.AddProperty(genesisData, "app_state.stake", "last_block_txs", emptyLastBlockTxs); err != nil {
+		return fmt.Errorf("failed to add empty last_block_txs to stake module: %w", err)
 	}
 
 	logger.Info("Stake module migration completed successfully")
@@ -657,8 +682,9 @@ func migrateAuthModule(genesisData map[string]interface{}) error {
 	}
 
 	newParams := authTypes.Params{
-		MaxMemoCharacters:      utils.ParseUint(paramsData["max_memo_characters"]),
-		TxSigLimit:             utils.ParseUint(paramsData["tx_sig_limit"]),
+		MaxMemoCharacters: utils.ParseUint(paramsData["max_memo_characters"]),
+		// Override tx_sig_limit to "1" explicitly to comply with new v2 params
+		TxSigLimit:             authTypes.DefaultTxSigLimit,
 		TxSizeCostPerByte:      utils.ParseUint(paramsData["tx_size_cost_per_byte"]),
 		SigVerifyCostED25519:   utils.ParseUint(paramsData["sig_verify_cost_ed25519"]),
 		SigVerifyCostSecp256k1: utils.ParseUint(paramsData["sig_verify_cost_secp256k1"]),
@@ -804,6 +830,18 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 	// assign id to bufferedCheckpoint if present
 	if bufferedCheckpoint != nil {
 		bufferedCheckpoint["id"] = strconv.Itoa(len(checkpoints) + 1)
+	}
+
+	emptyCheckpointSignatures := map[string]interface{}{
+		"signatures": []interface{}{},
+	}
+	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures", emptyCheckpointSignatures); err != nil {
+		return fmt.Errorf("failed to add empty checkpoint signatures to checkpoint module: %w", err)
+	}
+
+	emptyCheckpointSignaturesTxhash := ""
+	if err := utils.AddProperty(genesisData, "app_state.checkpoint", "checkpoint_signatures_txhash", emptyCheckpointSignaturesTxhash); err != nil {
+		return fmt.Errorf("failed to add empty checkpoint signatures tx hash to checkpoint module: %w", err)
 	}
 
 	logger.Info("Checkpoint module migration completed successfully")
@@ -984,23 +1022,30 @@ func removeUnusedTendermintConsensusParams(genesisData map[string]interface{}) e
 	return nil
 }
 
-// replaceDenom recursively replaces the "denom" key with "pol" if its value is "matic"
-func replaceDenom(v interface{}) {
+func replaceMaticWithPol(v interface{}) {
+	const matic = "matic"
+	const pol = "pol"
+
 	switch val := v.(type) {
 	case map[string]interface{}:
 		for key, item := range val {
-			// Match key "denom" and value "matic"
-			if key == "denom" {
-				if strVal, ok := item.(string); ok && strVal == "matic" {
-					val[key] = "pol"
-				}
-			} else {
-				replaceDenom(item)
+			// If the value is exactly "matic", replace it
+			if strVal, ok := item.(string); ok && strVal == matic {
+				val[key] = pol
+				continue
 			}
+			// Recurse
+			replaceMaticWithPol(item)
 		}
 	case []interface{}:
-		for _, item := range val {
-			replaceDenom(item)
+		for i := range val {
+			// If the element is exactly "matic", replace it
+			if strVal, ok := val[i].(string); ok && strVal == matic {
+				val[i] = pol
+				continue
+			}
+			// Recurse
+			replaceMaticWithPol(val[i])
 		}
 	}
 }

@@ -560,19 +560,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
-		account, err := sdk.AccAddressFromHex(proposer.String())
-		if err != nil {
-			app.Logger().Error("error while converting the proposer from hex to account address", "error", err)
-			return sdk.BeginBlock{}, err
-		}
-		err = app.AccountKeeper.SetBlockProposer(ctx, account)
-		if err != nil {
-			app.Logger().Error("error while setting the block proposer", "error", err)
-			return sdk.BeginBlock{}, err
-		}
-	}
-
 	return app.ModuleManager.BeginBlock(ctx)
 }
 
