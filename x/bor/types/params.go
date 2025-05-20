@@ -20,8 +20,8 @@ func DefaultParams() Params {
 	}
 }
 
-// Validate checks that the bor parameters have valid values.
-func (p Params) Validate() error {
+// ValidateBasic checks that the bor parameters have valid values.
+func (p Params) ValidateBasic() error {
 	if err := validatePositiveIntForParam(p.SprintDuration, "sprint duration"); err != nil {
 		return err
 	}

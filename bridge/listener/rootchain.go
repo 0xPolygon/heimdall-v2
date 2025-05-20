@@ -22,7 +22,7 @@ type RootChainListenerContext struct {
 	ChainmanagerParams *chainmanagerTypes.Params
 }
 
-// RootChainListener - Listens to and process events from rootchain
+// RootChainListener - Listens to and process events from RootChain
 type RootChainListener struct {
 	BaseListener
 	// ABIs
@@ -75,7 +75,7 @@ func (rl *RootChainListener) Start() error {
 	go rl.StartHeaderProcess(headerCtx)
 
 	// start go routine to poll for new header using client object
-	rl.Logger.Info("Start polling for rootchain header blocks", "pollInterval", helper.GetConfig().SyncerPollInterval)
+	rl.Logger.Info("Start polling for rootChain header blocks", "pollInterval", helper.GetConfig().SyncerPollInterval)
 
 	// start polling for the finalized block in main chain (available post-merge)
 	go rl.StartPolling(ctx, helper.GetConfig().SyncerPollInterval, big.NewInt(int64(rpc.FinalizedBlockNumber)))
@@ -86,17 +86,17 @@ func (rl *RootChainListener) Start() error {
 	return nil
 }
 
-// ProcessHeader - process headerblock from rootchain
+// ProcessHeader - process header block from rootChain
 func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 	rl.Logger.Debug("New block detected", "blockNumber", newHeader.header.Number)
 
 	// fetch context
-	rootchainContext, err := rl.getRootChainContext()
+	rootChainContext, err := rl.getRootChainContext()
 	if err != nil {
 		return
 	}
 
-	requiredConfirmations := rootchainContext.ChainmanagerParams.MainChainTxConfirmations
+	requiredConfirmations := rootChainContext.ChainmanagerParams.MainChainTxConfirmations
 	headerNumber := newHeader.header.Number
 	from := headerNumber
 
@@ -154,20 +154,20 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 	}
 
 	// Handle events
-	rl.queryAndBroadcastEvents(rootchainContext, from, to)
+	rl.queryAndBroadcastEvents(rootChainContext, from, to)
 }
 
-// queryAndBroadcastEvents fetches supported events from the rootchain and handles all of them
-func (rl *RootChainListener) queryAndBroadcastEvents(rootchainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) {
-	rl.Logger.Info("Query rootchain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
+// queryAndBroadcastEvents fetches supported events from the rootChain and handles all of them
+func (rl *RootChainListener) queryAndBroadcastEvents(rootChainContext *RootChainListenerContext, fromBlock *big.Int, toBlock *big.Int) {
+	rl.Logger.Info("Query rootChain event logs", "fromBlock", fromBlock, "toBlock", toBlock)
 
 	ctx, cancel := context.WithTimeout(context.Background(), rl.contractCaller.MainChainTimeout)
 	defer cancel()
 
 	// get chain params
-	chainParams := rootchainContext.ChainmanagerParams.ChainParams
+	chainParams := rootChainContext.ChainmanagerParams.ChainParams
 
-	// Fetch events from the rootchain
+	// Fetch events from the rootChain
 	logs, err := rl.contractCaller.MainChainClient.FilterLogs(ctx, ethereum.FilterQuery{
 		FromBlock: fromBlock,
 		ToBlock:   toBlock,

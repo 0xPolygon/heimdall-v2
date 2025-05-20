@@ -14,7 +14,7 @@ type SideTxHandler func(ctx sdk.Context, msg sdk.Msg) Vote
 // PostTxHandler defines the core of the state transition function of an application after side-tx execution
 type PostTxHandler func(ctx sdk.Context, msg sdk.Msg, sideTxResult Vote) error
 
-// SideMsgServer defines the interface to implement the sidetxs and post handlers.
+// SideMsgServer defines the interface to implement the side txs and post handlers.
 type SideMsgServer interface {
 	// SideTxHandler to register specific sideHandler based on methodName
 	SideTxHandler(methodName string) SideTxHandler

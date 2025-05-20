@@ -10,7 +10,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -51,7 +51,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
 		logger.Error("MsgProposeSpan type mismatch", "msg type received", msgI)
-		return sidetxs.Vote_UNSPECIFIED
+		return sidetxs.Vote_VOTE_NO
 
 	}
 
@@ -67,7 +67,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	nextSpanSeed, nextSpanSeedAuthor, err := s.k.FetchNextSpanSeed(ctx, msg.SpanId)
 	if err != nil {
 		logger.Error("error fetching next span seed from mainChain", "error", err)
-		return sidetxs.Vote_UNSPECIFIED
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	// check if span seed matches or not
@@ -89,8 +89,8 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 			"chainID", msg.ChainId,
 			"msgSeed", msg.Seed,
 			"msgSeedAuthor", msg.SeedAuthor,
-			"mainchainSeedAuthor", nextSpanSeedAuthor.Hex(),
-			"mainchainSeed", nextSpanSeed,
+			"mainChainSeedAuthor", nextSpanSeedAuthor.Hex(),
+			"mainChainSeed", nextSpanSeed,
 		)
 
 		return sidetxs.Vote_VOTE_NO
@@ -106,13 +106,13 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	childBlock, err := s.k.contractCaller.GetBorChainBlock(ctx, nil)
 	if err != nil {
 		logger.Error("error fetching current child block", "error", err)
-		return sidetxs.Vote_UNSPECIFIED
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	lastSpan, err := s.k.GetLastSpan(ctx)
 	if err != nil {
 		logger.Error("error fetching last span", "error", err)
-		return sidetxs.Vote_UNSPECIFIED
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	currentBlock := childBlock.Number.Uint64()

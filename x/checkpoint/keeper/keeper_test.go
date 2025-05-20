@@ -23,12 +23,11 @@ import (
 	checkpointKeeper "github.com/0xPolygon/heimdall-v2/x/checkpoint/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/testutil"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
-	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
 
 const (
-	AccountHash = "0x000000000000000000000000000000000000dEaD"
-	BorChainID  = "1234"
+	AccountHash    = "0x000000000000000000000000000000000000dEaD"
+	TestBorChainID = "1234"
 )
 
 type KeeperTestSuite struct {
@@ -40,8 +39,8 @@ type KeeperTestSuite struct {
 	contractCaller   *mocks.IContractCaller
 	topupKeeper      *testutil.MockTopupKeeper
 	cmKeeper         *testutil.MockChainManagerKeeper
-	queryClient      checkpointTypes.QueryClient
-	msgServer        checkpointTypes.MsgServer
+	queryClient      types.QueryClient
+	msgServer        types.MsgServer
 	sideMsgCfg       sidetxs.SideTxConfigurator
 }
 
@@ -50,7 +49,7 @@ func (s *KeeperTestSuite) Run(_ string, fn func()) {
 }
 
 func (s *KeeperTestSuite) SetupTest() {
-	key := storetypes.NewKVStoreKey(checkpointTypes.StoreKey)
+	key := storetypes.NewKVStoreKey(types.StoreKey)
 	storeService := runtime.NewKVStoreService(key)
 
 	testCtx := cosmosTestutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
@@ -83,10 +82,10 @@ func (s *KeeperTestSuite) SetupTest() {
 
 	s.checkpointKeeper = &keeper
 
-	checkpointTypes.RegisterInterfaces(encCfg.InterfaceRegistry)
+	types.RegisterInterfaces(encCfg.InterfaceRegistry)
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
-	checkpointTypes.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(&keeper))
-	s.queryClient = checkpointTypes.NewQueryClient(queryHelper)
+	types.RegisterQueryServer(queryHelper, checkpointKeeper.NewQueryServer(&keeper))
+	s.queryClient = types.NewQueryClient(queryHelper)
 	s.msgServer = checkpointKeeper.NewMsgServerImpl(&keeper)
 
 	s.sideMsgCfg = sidetxs.NewSideTxConfigurator()
@@ -97,7 +96,7 @@ func TestKeeperTestSuite(t *testing.T) {
 	suite.Run(t, new(KeeperTestSuite))
 }
 
-func (s *KeeperTestSuite) TestAddCheckpoint() {
+func (s *KeeperTestSuite) TestAddAndGetCheckpoints() {
 	ctx, require, keeper := s.ctx, s.Require(), s.checkpointKeeper
 
 	cpNumber := uint64(2000)
@@ -113,15 +112,42 @@ func (s *KeeperTestSuite) TestAddCheckpoint() {
 		endBlock,
 		rootHash,
 		proposerAddress,
-		BorChainID,
+		TestBorChainID,
 		timestamp,
 	)
 	err := keeper.AddCheckpoint(ctx, checkpoint)
 	require.NoError(err)
 
+	cpNumber2 := uint64(2001)
+	startBlock2 := uint64(257)
+	endBlock2 := uint64(513)
+	rootHash2 := testutil.RandomBytes()
+	proposerAddress2 := common.Address{}.String()
+	timestamp2 := uint64(time.Now().Unix())
+
+	checkpoint2 := types.CreateCheckpoint(
+		cpNumber2,
+		startBlock2,
+		endBlock2,
+		rootHash2,
+		proposerAddress2,
+		TestBorChainID,
+		timestamp2,
+	)
+	err = keeper.AddCheckpoint(ctx, checkpoint2)
+	require.NoError(err)
+
 	result, err := keeper.GetCheckpointByNumber(ctx, cpNumber)
 	require.NoError(err)
 	require.True(checkpoint.Equal(result))
+
+	result2, err := keeper.GetCheckpointByNumber(ctx, cpNumber2)
+	require.NoError(err)
+	require.True(checkpoint2.Equal(result2))
+
+	checkpoints, err := keeper.GetCheckpoints(ctx)
+	require.NoError(err)
+	require.Equal(2, len(checkpoints))
 }
 
 func (s *KeeperTestSuite) TestFlushCheckpointBuffer() {

@@ -14,7 +14,7 @@ var (
 	ErrBadAck                  = errorsmod.Register(ModuleName, 10, "checkpoint ack is not valid")
 	ErrInvalidNoAck            = errorsmod.Register(ModuleName, 11, "invalid no-ack, waiting for the last checkpoint ack")
 	ErrInvalidNoAckProposer    = errorsmod.Register(ModuleName, 12, "invalid no-ack proposer")
-	ErrTooManyNoAck            = errorsmod.Register(ModuleName, 13, "too many no-acks")
+	ErrTooManyNoAck            = errorsmod.Register(ModuleName, 13, "too many no-ack messages")
 	ErrCheckpointParams        = errorsmod.Register(ModuleName, 14, "checkpoint params not found")
 	ErrBufferFlush             = errorsmod.Register(ModuleName, 15, "flushing buffer failed")
 	ErrAccountHash             = errorsmod.Register(ModuleName, 16, "error while fetching account root hash")

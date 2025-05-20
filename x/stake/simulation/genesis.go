@@ -22,7 +22,7 @@ func RandomizedGenState(simState *module.SimulationState) {
 		stakingSequence[i] = strconv.Itoa(simulation.RandIntBetween(r1, 1000, 100000))
 	}
 
-	randValidators := stakeSim.GenRandomVals(n, 0, 10, uint64(10), false, 1)
+	randValidators := stakeSim.GenRandomVals(n, 0, 10, uint64(10), false, 1, 0)
 
 	validators := make([]*types.Validator, n)
 

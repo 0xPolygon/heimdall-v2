@@ -22,7 +22,7 @@ func (s *KeeperTestSuite) TestHandleQueryCurrentValidatorSet() {
 
 	require.Error(err)
 
-	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	validatorSet := testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).AnyTimes().Return(uint64(1), nil)
 
 	req = &types.QueryCurrentValidatorSetRequest{}
@@ -43,7 +43,7 @@ func (s *KeeperTestSuite) TestHandleQuerySigner() {
 	res, err := queryClient.GetSignerByAddress(ctx, req)
 	require.NotNil(err)
 
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	validators := keeper.GetAllValidators(ctx)
 
@@ -75,7 +75,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 	require.NotNil(err)
 	require.Nil(res)
 
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	validators := keeper.GetAllValidators(ctx)
 
@@ -91,7 +91,7 @@ func (s *KeeperTestSuite) TestHandleQueryValidator() {
 func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	ctx, keeper, queryClient, require := s.ctx, s.stakeKeeper, s.queryClient, s.Require()
 
-	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10)
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	s.checkpointKeeper.EXPECT().GetAckCount(gomock.Any()).AnyTimes().Return(uint64(1), nil)
 
 	validators := keeper.GetAllValidators(ctx)
@@ -101,7 +101,6 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 	}
 	res, err := queryClient.GetValidatorStatusByAddress(ctx, req)
 	require.NoError(err)
-
 	require.NotNil(res)
 	require.True(res.IsOld)
 
@@ -109,8 +108,8 @@ func (s *KeeperTestSuite) TestHandleQueryValidatorStatus() {
 		ValAddress: common.Address{}.String(),
 	}
 	res, err = queryClient.GetValidatorStatusByAddress(ctx, req)
-	require.Nil(err)
-	require.False(res.IsOld)
+	require.NotNil(err)
+	require.Nil(res)
 }
 
 func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
@@ -121,14 +120,12 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	chainParams, err := s.cmKeeper.GetParams(ctx)
 	require.NoError(err)
 
-	txHash := make([]byte, 32)
-
 	txReceipt := &ethTypes.Receipt{BlockNumber: big.NewInt(10)}
 
 	logIndex := uint64(simulation.RandIntBetween(r, 0, 100))
 
 	req := &types.QueryStakeIsOldTxRequest{
-		TxHash:   common.Bytes2Hex(txHash),
+		TxHash:   TxHash1,
 		LogIndex: logIndex,
 	}
 
@@ -138,11 +135,24 @@ func (s *KeeperTestSuite) TestHandleQueryStakingSequence() {
 	err = keeper.SetStakingSequence(ctx, sequence.String())
 	require.NoError(err)
 
-	contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(txHash), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
+	contractCaller.On("GetConfirmedTxReceipt", common.BytesToHash(common.FromHex(TxHash1)), chainParams.MainChainTxConfirmations).Return(txReceipt, nil)
 
 	res, err := queryClient.IsStakeTxOld(ctx, req)
 
 	require.NoError(err)
 	require.NotNil(res)
 	require.True(res.IsOld)
+}
+
+func (s *KeeperTestSuite) TestHandleCurrentQueryProposer() {
+	ctx, require, keeper, queryClient := s.ctx, s.Require(), s.stakeKeeper, s.queryClient
+	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
+	val := keeper.GetCurrentProposer(ctx)
+	req := &types.QueryCurrentProposerRequest{}
+
+	res, err := queryClient.GetCurrentProposer(ctx, req)
+	require.NoError(err)
+	require.NotNil(res)
+
+	require.Equal(res.Validator.Signer, val.Signer)
 }

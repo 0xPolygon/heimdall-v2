@@ -340,7 +340,7 @@ func (sp *SpanProcessor) fetchNextSpanSeed(id uint64) (common.Hash, string, erro
 
 	response, err := helper.FetchFromAPI(fmt.Sprintf(helper.GetHeimdallServerEndpoint(util.NextSpanSeedURL), strconv.FormatUint(id, 10)))
 	if err != nil {
-		sp.Logger.Error("Error Fetching nextspanseed from HeimdallServer ", "error", err)
+		sp.Logger.Error("Error Fetching next span seed from HeimdallServer ", "error", err)
 		return common.Hash{}, "", err
 	}
 

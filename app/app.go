@@ -88,6 +88,10 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
+const (
+	HeimdallAppName = "heimdallapp"
+)
+
 var (
 	DefaultNodeHome string
 	// maccPerms represent the module accounts' permissions
@@ -304,10 +308,7 @@ func NewHeimdallApp(
 	// Set legacy router for backwards compatibility with gov v1beta1
 	govKeeper.SetLegacyRouter(govRouter)
 	app.GovKeeper = *govKeeper.SetHooks(
-		govtypes.NewMultiGovHooks(
-		// register the governance hooks
-		),
-	)
+		govtypes.NewMultiGovHooks())
 
 	app.CheckpointKeeper = checkpointKeeper.NewKeeper(
 		appCodec,
@@ -552,7 +553,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 		}
 	}
 
-	// TODO: make sure old validators don't go in validator updates i.e. deactivated validators have to be removed
 	// update validators
 	return &abci.ResponseInitChain{
 		Validators: valUpdates,
@@ -561,19 +561,6 @@ func (app *HeimdallApp) InitChainer(ctx sdk.Context, req *abci.RequestInitChain)
 
 // BeginBlocker application updates every begin block
 func (app *HeimdallApp) BeginBlocker(ctx sdk.Context) (sdk.BeginBlock, error) {
-	if proposer, ok := app.AccountKeeper.GetBlockProposer(ctx); ok {
-		account, err := sdk.AccAddressFromHex(proposer.String())
-		if err != nil {
-			app.Logger().Error("error while converting the proposer from hex to account address", "error", err)
-			return sdk.BeginBlock{}, err
-		}
-		err = app.AccountKeeper.SetBlockProposer(ctx, account)
-		if err != nil {
-			app.Logger().Error("error while setting the block proposer", "error", err)
-			return sdk.BeginBlock{}, err
-		}
-	}
-
 	return app.ModuleManager.BeginBlock(ctx)
 }
 

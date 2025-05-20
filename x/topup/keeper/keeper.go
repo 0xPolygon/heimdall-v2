@@ -11,7 +11,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	hTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/topup/types"
@@ -48,8 +48,6 @@ func NewKeeper(
 		ChainKeeper:    chainKeeper,
 		contractCaller: contractCaller,
 
-		// HV2: Compared to v1, we are not using prefixes as they are handled by collections directly.
-		// Also, `sequences` is a KeySet (despite being implemented as a `Map` in v1) because it only holds keys (no values).
 		sequences:        collections.NewKeySet(sb, types.TopupSequencePrefixKey, "topup_sequence", collections.StringKey),
 		dividendAccounts: collections.NewMap(sb, types.DividendAccountMapKey, "dividend_account", collections.StringKey, codec.CollValue[hTypes.DividendAccount](cdc)),
 	}

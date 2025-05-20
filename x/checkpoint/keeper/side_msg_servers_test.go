@@ -152,8 +152,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 		rootChainInstance := &rootchain.Rootchain{}
 
@@ -175,8 +173,6 @@ func (s *KeeperTestSuite) TestSideHandleMsgCpAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			testutil.RandomBytes(),
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 		rootChainInstance := &rootchain.Rootchain{}
 
@@ -283,8 +279,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		postHandler(ctx, &MsgCpAck, sidetxs.Vote_VOTE_NO)
@@ -324,9 +318,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-
-			uint64(1),
 		)
 
 		postHandler(ctx, &MsgCpAck, sidetxs.Vote_VOTE_YES)
@@ -354,8 +345,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 			checkpoint.StartBlock,
 			checkpoint.EndBlock,
 			checkpoint.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		postHandler(ctx, &MsgCpAck, sidetxs.Vote_VOTE_YES)
@@ -396,8 +385,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 			checkpoint2.StartBlock,
 			checkpoint2.EndBlock,
 			checkpoint2.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		postHandler(ctx, &MsgCpAck, sidetxs.Vote_VOTE_YES)
@@ -438,8 +425,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 			checkpoint5.StartBlock,
 			checkpoint5.EndBlock-1,
 			checkpoint5.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		postHandler(ctx, &msgCpAck, sidetxs.Vote_VOTE_YES)
@@ -485,8 +470,6 @@ func (s *KeeperTestSuite) TestPostHandleMsgCpAck() {
 			checkpoint6.StartBlock,
 			checkpoint6.EndBlock+1,
 			checkpoint6.RootHash,
-			testutil.RandomBytes(),
-			uint64(1),
 		)
 
 		postHandler(ctx, &msgCheckpointAck, sidetxs.Vote_VOTE_YES)

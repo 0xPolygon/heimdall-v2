@@ -1,5 +1,3 @@
-[//]: # (TODO HV2: https://polygon.atlassian.net/browse/POS-2757)
-
 # Bridge
 
 ## Table of Contents
@@ -45,13 +43,7 @@ To start bridge as a validator you just have to add `--bridge` command to your h
 To run all the service :
 
 ```bash
-./build/heimdalld start --bridge --all
-```
-
-To use specific services :
-
-```bash
-./build/heimdalld start --bridge --only clerk,stake
+heimdalld start --bridge --all
 ```
 
 ## Reset
@@ -60,16 +52,15 @@ To use specific services :
 
 If you want to reset the bridge server data, you can use the following command:
 
-[//]: # (TODO HV2: unknown command "unsafe-reset-all" for "heimdalld")
 ```bash
-./heimdalld unsafe-reset-all
+./heimdalld comet unsafe-reset-all
 ```
 
 ## Common Issues (FAQ)
 
 ### Connection reset by peer
 
-If the node shows up the logs in below pattern
+If the node shows up the logs in pattern below
 
 ```
 panic: Exception (501) Reason: "read tcp 127.0.0.1:35218->127.0.0.1:5672: read: connection reset by peer"
@@ -79,9 +70,9 @@ github.com/0xPolygon/heimdall-v2/bridge/queue. NewQueueConnector({0xc0002ccf60,0
 Your Heimdall Bridge has issues please follow the steps below to fix this
 
 ```
-stop rabbitmq-server
+sudo service rabbitmq-server stop
 rm /var/lib/rabbitmq/mnesia
-start rabbitmq-server
+sudo service rabbitmq-server start
 ```
 
 ### Validator is unable to propose checkpoints
@@ -92,7 +83,7 @@ Please check the validator heimdall service and ensure the below flag is set and
 --bridge --all
 ```
 
-Once done restart the services.
+Once done, restart the services.
 
 
 

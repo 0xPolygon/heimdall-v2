@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/rand"
 	"errors"
@@ -14,7 +13,6 @@ import (
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/input"
 	clienttx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	cosmossecp256k1 "github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -170,7 +168,6 @@ func IsPubKeyFirstByteValid(pubKey []byte) bool {
 // BroadcastTx attempts to generate, sign and broadcast a transaction with the
 // given set of messages. It will also simulate gas requirements if necessary.
 // It will return an error upon failure.
-// HV2 - This function is taken from cosmos-sdk, and it now returns TxResponse as well
 func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg) (*sdk.TxResponse, error) {
 	txf, err := txf.Prepare(clientCtx)
 	if err != nil {
@@ -209,28 +206,6 @@ func BroadcastTx(clientCtx client.Context, txf clienttx.Factory, msgs ...sdk.Msg
 
 	if !clientCtx.SkipConfirm {
 		panic("this should not happen as SkipConfirm is set to true")
-		//nolint:govet //ignoring the unreachable code linter error
-		encoder := clientCtx.TxConfig.TxEncoder()
-
-		txBytes, err := encoder(tx.GetTx())
-		if err != nil {
-			return nil, fmt.Errorf("failed to encode transaction: %w", err)
-		}
-
-		if err := clientCtx.PrintRaw(txBytes); err != nil {
-			Logger.Error("error while printing raw tx", "error", err, "txBytes", txBytes)
-		}
-
-		buf := bufio.NewReader(os.Stdin)
-		ok, err := input.GetConfirmation("confirm transaction before signing and broadcasting", buf, os.Stderr)
-		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "error: %v\ncanceled transaction\n", err)
-			return nil, err
-		}
-		if !ok {
-			_, _ = fmt.Fprintln(os.Stderr, "canceled transaction")
-			return nil, errors.New("transaction canceled by user")
-		}
 	}
 
 	cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: GetPrivKey()}

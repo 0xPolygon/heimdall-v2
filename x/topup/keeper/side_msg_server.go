@@ -144,11 +144,11 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	// check if incoming tx is older
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
+	// check if the event has already been processed
 	exists, err := s.k.HasTopupSequence(ctx, sequence.String())
 	if err != nil {
 		logger.Error("error while fetching older topup sequence",
@@ -172,11 +172,6 @@ func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 	// create topup event
 	user := msg.User
 	topupAmount := sdk.Coins{sdk.Coin{Denom: authTypes.FeeToken, Amount: msg.Fee}}
-
-	/* HV2: v1's BankKeeper.AddCoins + BankKeeper.SendCoins methods are used,
-	   but the first is no longer available in cosmos-sdk. Hence, we use
-	   BankKeeper.MintCoins + BankKeeper.SendCoinsFromModuleToAccount + BankKeeper.SendCoins
-	*/
 
 	err = s.k.BankKeeper.MintCoins(ctx, types.ModuleName, topupAmount)
 	if err != nil {

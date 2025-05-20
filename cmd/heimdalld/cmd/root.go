@@ -38,7 +38,7 @@ type EncodingConfig struct {
 // main function.
 func NewRootCmd() *cobra.Command {
 	// we "pre"-instantiate the application for getting the injected/configured encoding configuration
-	// note, this is not necessary when using app wiring, as depinject can be directly used (see root_v2.go)
+	// note, this is not necessary when using app wiring, as depInject can be directly used (see root_v2.go)
 
 	tempApp := app.NewHeimdallApp(logger, db.NewMemDB(), nil, true, simtestutil.NewAppOptionsWithFlagHome(tempDir()))
 	encodingConfig := EncodingConfig{
