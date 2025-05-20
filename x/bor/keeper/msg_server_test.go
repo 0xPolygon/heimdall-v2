@@ -267,7 +267,7 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 				LatestBorSpanId: 7,
 			},
 			expRes: nil,
-			expErr: "invalid last heimdall span id",
+			expErr: "span not found for id: 2",
 		},
 		{
 			name: "invalid last bor span id",
