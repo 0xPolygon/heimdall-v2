@@ -180,3 +180,33 @@ func (q queryServer) GetSpanList(ctx context.Context, req *types.QuerySpanListRe
 
 	return &types.QuerySpanListResponse{SpanList: spans, Pagination: *pageRes}, nil
 }
+
+func (q queryServer) GetProducerVotesByValidatorId(ctx context.Context, req *types.QueryProducerVotesByValidatorIdRequest) (*types.QueryProducerVotesByValidatorIdResponse, error) {
+	if req == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "empty request")
+	}
+
+	producerVotes, err := q.k.GetProducerVotes(ctx, req.ValidatorId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &types.QueryProducerVotesByValidatorIdResponse{Votes: producerVotes.Votes}, nil
+}
+
+func (q queryServer) GetProducerVotes(ctx context.Context, req *types.QueryProducerVotesRequest) (*types.QueryProducerVotesResponse, error) {
+	validatorSet, err := q.k.sk.GetValidatorSet(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	producerVotes := make(map[uint64]types.ProducerVotes)
+	for _, validator := range validatorSet.Validators {
+		producerVotes[validator.ValId], err = q.k.GetProducerVotes(ctx, validator.ValId)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &types.QueryProducerVotesResponse{AllVotes: producerVotes}, nil
+}

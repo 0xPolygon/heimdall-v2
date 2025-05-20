@@ -48,6 +48,21 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/bor/params";
   }
+
+  // GetProducerVotes queries producer votes from all validators.
+  rpc GetProducerVotes(QueryProducerVotesRequest)
+      returns (QueryProducerVotesResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/producer-votes";
+  }
+
+  // GetProducerVotesByValidatorId queries the producer votes for a given
+  // validator id.
+  rpc GetProducerVotesByValidatorId(QueryProducerVotesByValidatorIdRequest)
+      returns (QueryProducerVotesByValidatorIdResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/bor/producer-votes/{validator_id}";
+  }
 }
 
 message QuerySpanByIdRequest {
@@ -100,4 +115,19 @@ message QueryParamsRequest {}
 message QueryParamsResponse {
   Params params = 1
       [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}
+
+message QueryProducerVotesRequest {}
+
+message QueryProducerVotesResponse {
+  map<uint64, ProducerVotes> all_votes = 1
+      [ (amino.dont_omitempty) = true, (gogoproto.nullable) = false ];
+}
+
+message QueryProducerVotesByValidatorIdRequest {
+  uint64 validator_id = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message QueryProducerVotesByValidatorIdResponse {
+  repeated uint64 votes = 1 [ (amino.dont_omitempty) = true ];
 }

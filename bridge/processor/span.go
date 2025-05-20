@@ -57,6 +57,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 		select {
 		case <-ticker.C:
 			sp.checkAndPropose(ctx)
+			sp.checkAndVoteProducers(ctx)
 		case <-ctx.Done():
 			sp.Logger.Info("Polling stopped")
 			ticker.Stop()
@@ -101,6 +102,89 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	if sp.isSpanProposer(nextSpanMsg.SelectedProducers) {
 		go sp.propose(ctx, lastSpan, nextSpanMsg)
 	}
+}
+
+func (sp *SpanProcessor) checkAndVoteProducers(ctx context.Context) {
+	validatorPubKey := helper.GetPubKey()
+
+	lastSpan, err := sp.getLastSpan()
+	if err != nil {
+		sp.Logger.Error("Unable to fetch last span", "error", err)
+		return
+	}
+
+	found := false
+	validatorId := uint64(0)
+
+	for _, validator := range lastSpan.ValidatorSet.Validators {
+		if bytes.Equal(validator.PubKey, validatorPubKey) {
+			validatorId = validator.ValId
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		sp.Logger.Error("Validator not found in last span", "validatorPubKey", validatorPubKey)
+		return
+	}
+
+	producerVotes, err := sp.getProducerVotesByValidatorId(validatorId)
+	if err != nil {
+		sp.Logger.Error("Unable to fetch producer votes", "error", err)
+		return
+	}
+
+	sp.Logger.Debug("Current producer votes", "votes", producerVotes)
+
+	localProducers := helper.GetProducerVotes()
+
+	sp.Logger.Debug("Local producers", "producers", localProducers)
+
+	needToUpdateVotes := false
+	if len(localProducers) != len(producerVotes.Votes) {
+		needToUpdateVotes = true
+	} else {
+		for i, producer := range localProducers {
+			if producer != producerVotes.Votes[i] {
+				needToUpdateVotes = true
+				break
+			}
+		}
+	}
+
+	if needToUpdateVotes {
+		sp.sendProducerVotes(ctx, validatorId, localProducers)
+	}
+}
+
+func (sp *SpanProcessor) sendProducerVotes(ctx context.Context, validatorId uint64, producerVotes []uint64) error {
+	sp.Logger.Debug("Updating producer votes", "producers", producerVotes)
+
+	addrString, err := helper.GetAddressString()
+	if err != nil {
+		sp.Logger.Error("error converting address to string", "err", err)
+		return err
+	}
+
+	msg := types.MsgVoteProducers{
+		Voter:   addrString,
+		VoterId: validatorId,
+		Votes:   types.ProducerVotes{Votes: producerVotes},
+	}
+
+	txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
+	if err != nil {
+		sp.Logger.Error("Error while broadcasting span to heimdall", "error", err)
+		return err
+	}
+
+	if txRes.Code != abci.CodeTypeOK {
+		sp.Logger.Error("producer votes tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
+		return fmt.Errorf("producer votes tx failed on heimdall, code: %d", txRes.Code)
+	}
+
+	return nil
 }
 
 // propose producers for next span if needed
@@ -168,6 +252,29 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 		sp.Logger.Error("Error unmarshalling span", "error", err)
 	}
 	return &lastSpan.Span, nil
+}
+
+// getProducerVotes gets the producer votes for a given voter id
+func (sp *SpanProcessor) getProducerVotesByValidatorId(validatorId uint64) (*types.ProducerVotes, error) {
+	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.ProducerVotesURL, validatorId)), nil)
+	if err != nil {
+		sp.Logger.Error("Error creating a new request", "error", err)
+		return nil, err
+	}
+
+	result, err := helper.FetchFromAPI(req.URL.String())
+	if err != nil {
+		sp.Logger.Error("Error fetching producer votes", "error", err)
+		return nil, err
+	}
+
+	var res types.QueryProducerVotesByValidatorIdResponse
+	if err = sp.cliCtx.Codec.UnmarshalJSON(result, &res); err != nil {
+		sp.Logger.Error("Error unmarshalling producer votes", "error", err)
+		return nil, err
+	}
+
+	return &types.ProducerVotes{Votes: res.Votes}, nil
 }
 
 // getCurrentChildBlock gets the current child block

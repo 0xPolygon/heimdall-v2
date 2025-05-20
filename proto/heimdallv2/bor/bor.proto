@@ -24,3 +24,7 @@ message Params {
   uint64 span_duration = 2 [ (amino.dont_omitempty) = true ];
   uint64 producer_count = 3 [ (amino.dont_omitempty) = true ];
 }
+
+message ProducerVotes {
+  repeated uint64 votes = 1 [ (amino.dont_omitempty) = true ];
+}

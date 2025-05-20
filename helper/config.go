@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,6 +63,7 @@ const (
 
 	NoACKWaitTimeFlag = "no_ack_wait_time"
 	ChainFlag         = "chain"
+	ProducerVotesFlag = "producer_votes"
 
 	DefaultMainRPCUrl  = "http://localhost:9545"
 	DefaultBorRPCUrl   = "http://localhost:8545"
@@ -111,6 +113,12 @@ const (
 	// Deprecated: Mumbai Testnet is deprecated
 	DefaultMumbaiTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
 
+	DefaultMainnetProducers = "91,92,93"
+
+	DefaultAmoyTestnetProducers = "1,2,3"
+
+	DefaultLocalTestnetProducers = "1,2,3"
+
 	secretFilePerm = 0o600
 
 	// MaxStateSyncSize is the new max state sync size after SpanOverrideHeight hard fork
@@ -159,6 +167,8 @@ type CustomConfig struct {
 	LogsWriterFile string `mapstructure:"logs_writer_file"` // if given, Logs will be written to this file else os.Stdout
 
 	Chain string `mapstructure:"chain"`
+
+	ProducerVotes string `mapstructure:"producer_votes"`
 }
 
 type CustomAppConfig struct {
@@ -185,6 +195,8 @@ var (
 var privKeyObject secp256k1.PrivKey
 
 var pubKeyObject secp256k1.PubKey
+
+var producerVotes []uint64
 
 // Logger stores global logger object
 var Logger logger.Logger
@@ -337,6 +349,43 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
+	// Set default producers based on chain if not already set by config or flags
+	if conf.Custom.ProducerVotes == "" {
+		switch conf.Custom.Chain {
+		case MainChain:
+			conf.Custom.ProducerVotes = DefaultMainnetProducers
+			Logger.Debug("Using default mainnet producers", "producers", DefaultMainnetProducers)
+		case AmoyChain:
+			conf.Custom.ProducerVotes = DefaultAmoyTestnetProducers
+			Logger.Debug("Using default amoy producers", "producers", DefaultAmoyTestnetProducers)
+		default:
+			conf.Custom.ProducerVotes = DefaultLocalTestnetProducers
+			Logger.Debug("Using default local producers", "producers", DefaultLocalTestnetProducers)
+		}
+	}
+
+	producerStrings := strings.Split(conf.Custom.ProducerVotes, ",")
+	// if conf.Custom.Producers was empty and no default was set, producerStrings will be [""]
+	// which will cause ParseUint to fail for the first element.
+	// So, only parse if producerStrings has actual content beyond just an empty string from split.
+	if len(producerStrings) > 0 && producerStrings[0] != "" {
+		producerVotes = make([]uint64, len(producerStrings))
+		for i, p := range producerStrings {
+			pTrimmed := strings.TrimSpace(p)
+			if pTrimmed == "" { // handle cases like "1,,2" or trailing comma
+				log.Fatalf("Empty producer ID found in producer votes list: '%s'", conf.Custom.ProducerVotes)
+			}
+			var parseErr error
+			producerVotes[i], parseErr = strconv.ParseUint(pTrimmed, 10, 64)
+			if parseErr != nil {
+				log.Fatalf("Failed to parse producer ID '%s': %v", pTrimmed, parseErr)
+			}
+		}
+	} else {
+		producerVotes = []uint64{} // Ensure producerVotes is an empty slice, not nil, if no producerVotes are configured.
+		Logger.Info("No producer votes configured or parsed.")
+	}
+
 	// load pv file, unmarshall and set to privKeyObject
 	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
 	if err != nil {
@@ -360,6 +409,8 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		BorRPCUrl:   DefaultBorRPCUrl,
 		BorGRPCFlag: DefaultBorGRPCFlag,
 		BorGRPCUrl:  DefaultBorGRPCUrl,
+
+		ProducerVotes: DefaultMainnetProducers,
 
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
 
@@ -460,6 +511,10 @@ func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigrati
 	result, found := chainMigration[blockNum]
 
 	return result, found
+}
+
+func GetProducerVotes() []uint64 {
+	return producerVotes
 }
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command
@@ -683,6 +738,17 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	if err := v.BindPFlag(LogsWriterFileFlag, cmd.PersistentFlags().Lookup(LogsWriterFileFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, LogsWriterFileFlag), "Error", err)
 	}
+
+	// add producers flag
+	cmd.PersistentFlags().String(
+		ProducerVotesFlag,
+		"",
+		"Set comma-separated list of producer IDs",
+	)
+
+	if err := v.BindPFlag(ProducerVotesFlag, cmd.PersistentFlags().Lookup(ProducerVotesFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, ProducerVotesFlag), "Error", err)
+	}
 }
 
 func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
@@ -827,6 +893,12 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.LogsWriterFile = stringConfigValue
 	}
 
+	// get producer votes from viper/cobra flag
+	stringConfigValue = v.GetString(ProducerVotesFlag)
+	if stringConfigValue != "" {
+		c.Custom.ProducerVotes = stringConfigValue
+	}
+
 	return nil
 }
 
@@ -897,6 +969,13 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 
 	if cc.LogsWriterFile != "" {
 		c.Custom.LogsWriterFile = cc.LogsWriterFile
+	}
+
+	// Add merge logic for Producers if necessary, though flags and direct config usually take precedence.
+	// If direct config file sets it, it's already in c.Custom.Producers before merge.
+	// If override file (cc) sets it, we might want to let it override.
+	if cc.ProducerVotes != "" {
+		c.Custom.ProducerVotes = cc.ProducerVotes
 	}
 }
 

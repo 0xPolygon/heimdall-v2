@@ -1,14 +1,19 @@
 package keeper_test
 
 import (
+	"encoding/hex"
+	"fmt"
 	"testing"
 
+	"github.com/cometbft/cometbft/crypto/secp256k1"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 func (s *KeeperTestSuite) TestProposeSpan() {
@@ -214,6 +219,138 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 				res, err := queryClient.GetBorParams(ctx, &types.QueryParamsRequest{})
 				require.NoError(err)
 				require.Equal(params, res.Params)
+			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestVoteProducers() {
+	require, ctx, borKeeper, skMock, msgServer := s.Require(), s.ctx, s.borKeeper, s.stakeKeeper, s.msgServer
+
+	// Generate a key pair for the voter and validator
+	voterPrivKey := secp256k1.GenPrivKey()
+	voterPubKey := voterPrivKey.PubKey()
+	voterAccAddress := sdk.AccAddress(voterPubKey.Address())
+	voterAccAddressHex := hex.EncodeToString(voterAccAddress.Bytes()) // Expected format for msg.Voter
+
+	// Validator whose PubKey matches voterAccAddress
+	matchingVal := staketypes.Validator{
+		ValId:  1,
+		Signer: voterAccAddress.String(), // Bech32 representation
+		PubKey: voterPubKey.Bytes(),      // Raw public key bytes
+	}
+
+	// Validator with a different PubKey
+	differentPrivKey := secp256k1.GenPrivKey()
+	differentPubKey := differentPrivKey.PubKey()
+	differentVal := staketypes.Validator{
+		ValId:  2,
+		Signer: sdk.AccAddress(differentPubKey.Address()).String(),
+		PubKey: differentPubKey.Bytes(),
+	}
+
+	sampleVotes := types.ProducerVotes{
+		Votes: []uint64{10, 20, 30}, // Slice of uint64 as per bor.pb.go
+	}
+
+	testCases := []struct {
+		name          string
+		msg           types.MsgVoteProducers
+		mockSetup     func(tc types.MsgVoteProducers)
+		expectError   bool
+		errorContains string
+		verifyState   func(tc types.MsgVoteProducers)
+	}{
+		{
+			name: "successful vote",
+			msg: types.MsgVoteProducers{
+				Voter:   voterAccAddressHex,
+				VoterId: matchingVal.ValId,
+				Votes:   sampleVotes,
+			},
+			mockSetup: func(tc types.MsgVoteProducers) {
+				skMock.EXPECT().GetValidatorFromValID(ctx, matchingVal.ValId).Return(matchingVal, nil).Times(1)
+			},
+			expectError: false,
+			verifyState: func(tc types.MsgVoteProducers) {
+				storedVotes, err := borKeeper.GetProducerVotes(ctx, tc.VoterId)
+				require.NoError(err)
+				require.Equal(tc.Votes, storedVotes)
+			},
+		},
+		{
+			name: "invalid voter hex address string",
+			msg: types.MsgVoteProducers{
+				Voter:   "not-a-hex-string",
+				VoterId: matchingVal.ValId,
+				Votes:   sampleVotes,
+			},
+			mockSetup:     func(tc types.MsgVoteProducers) {},
+			expectError:   true,
+			errorContains: "invalid voter address: addresses cannot be empty: unknown address",
+		},
+		{
+			name: "validator not found for VoterId",
+			msg: types.MsgVoteProducers{
+				Voter:   voterAccAddressHex,
+				VoterId: 99,
+				Votes:   sampleVotes,
+			},
+			mockSetup: func(tc types.MsgVoteProducers) {
+				skMock.EXPECT().GetValidatorFromValID(ctx, uint64(99)).Return(staketypes.Validator{}, fmt.Errorf("validator with id 99 not found")).Times(1)
+			},
+			expectError:   true,
+			errorContains: "invalid voter id: validator with id 99 not found",
+		},
+		{
+			name: "voter address does not match validator's pubkey address",
+			msg: types.MsgVoteProducers{
+				Voter:   voterAccAddressHex, // Voter derived from voterPrivKey
+				VoterId: differentVal.ValId, // Validator derived from differentPrivKey
+				Votes:   sampleVotes,
+			},
+			mockSetup: func(tc types.MsgVoteProducers) {
+				skMock.EXPECT().GetValidatorFromValID(ctx, differentVal.ValId).Return(differentVal, nil).Times(1)
+			},
+			expectError:   true,
+			errorContains: "does not match validator address",
+		},
+		{
+			name: "duplicate votes",
+			msg: types.MsgVoteProducers{
+				Voter:   voterAccAddressHex,
+				VoterId: matchingVal.ValId,
+				Votes: types.ProducerVotes{
+					Votes: []uint64{10, 20, 10}, // Duplicate vote for 10
+				},
+			},
+			mockSetup: func(tc types.MsgVoteProducers) {
+				skMock.EXPECT().GetValidatorFromValID(ctx, matchingVal.ValId).Return(matchingVal, nil).Times(1)
+			},
+			expectError:   true,
+			errorContains: fmt.Sprintf("duplicate vote for validator id %d", 10),
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			_ = borKeeper.SetProducerVotes(ctx, tc.msg.VoterId, types.ProducerVotes{})
+
+			tc.mockSetup(tc.msg)
+
+			res, err := msgServer.VoteProducers(ctx, &tc.msg)
+
+			if tc.expectError {
+				require.Error(err)
+				require.Contains(err.Error(), tc.errorContains)
+				require.Nil(res)
+			} else {
+				require.NoError(err)
+				require.NotNil(res)
+				require.Equal(&types.MsgVoteProducersResponse{}, res)
+				if tc.verifyState != nil {
+					tc.verifyState(tc.msg)
+				}
 			}
 		})
 	}

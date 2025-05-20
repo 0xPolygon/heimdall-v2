@@ -40,6 +40,7 @@ type Keeper struct {
 	latestSpan       collections.Item[uint64]
 	seedLastProducer collections.Map[uint64, []byte]
 	Params           collections.Item[types.Params]
+	ProducerVotes    collections.Map[uint64, types.ProducerVotes]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -73,6 +74,7 @@ func NewKeeper(
 		latestSpan:       collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
 		seedLastProducer: collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
 		Params:           collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		ProducerVotes:    collections.NewMap(sb, types.ProducerVotesKey, "producerVotes", collections.Uint64Key, codec.CollValue[types.ProducerVotes](cdc)),
 	}
 
 	schema, err := sb.Build()
@@ -382,6 +384,26 @@ func (k *Keeper) FetchParams(ctx context.Context) (types.Params, error) {
 		return types.Params{}, err
 	}
 	return params, nil
+}
+
+func (k *Keeper) GetProducerVotes(ctx context.Context, id uint64) (types.ProducerVotes, error) {
+	hasVote, err := k.ProducerVotes.Has(ctx, id)
+	if err != nil {
+		return types.ProducerVotes{}, err
+	}
+	if !hasVote {
+		return types.ProducerVotes{}, nil
+	}
+
+	votes, err := k.ProducerVotes.Get(ctx, id)
+	if err != nil {
+		return types.ProducerVotes{}, err
+	}
+	return votes, nil
+}
+
+func (k *Keeper) SetProducerVotes(ctx context.Context, id uint64, votes types.ProducerVotes) error {
+	return k.ProducerVotes.Set(ctx, id, votes)
 }
 
 // getBorBlockForSpanSeed returns the bor block number and its producer whose hash is used as seed for the next span
