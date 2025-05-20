@@ -348,14 +348,8 @@ func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootc
 
 // GetRootHash get root hash from bor chain for the corresponding start and end block
 func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byte, error) {
-	noOfBlock := end - start + 1
-
 	if start > end {
 		return nil, errors.New("start is greater than end")
-	}
-
-	if noOfBlock > checkpointLength {
-		return nil, errors.New("number of headers requested exceeds checkpoint length")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
