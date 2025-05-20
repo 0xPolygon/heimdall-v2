@@ -18,6 +18,9 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     DRY_RUN=false
     ```
 3. ssh into the node machine (as the user running the `heimdalld` service)
+   ```bash
+    ssh <USER>@<NODE_IP>
+   ```
 4. create the script with `sudo`
     ```bash
     sudo nano migrate.sh
@@ -57,41 +60,58 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     --generate-genesis=true \
     --bor-path=/home/ubuntu/go/bin/bor
     ```
-   # cd into the proper directory
-8. copy the following files to the local machine (they are located under `/var/lib/heimdall.backup/`):
+8. cd into `heimdall-v2/migration/networks/<NETWORK>` where `<NETWORK>` is the `CHAIN_ID` from step 2
+   ```bash
+   cd heimdall-v2/migration/networks/<NETWORK>
+   ```
+9. copy the following files to the local machine (they are located under `backup-dir`, recommended to be `/var/lib/heimdall.backup/`):
    - `dump-genesis.json`
    - `dump-genesis.json.sha512`
    - `migrated_dump-genesis.json`
    - `migrated_dump-genesis.json.sha512`
-9. copy/move such files under the respective files in the appropriate [network folder](../networks/) in `heimdall-v2` repo
+   ```bash
+    scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json ./
+    scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json.sha512 ./
+    scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json ./
+    scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json.sha512 ./
+   ```
 10. update the following configs in the script:
      ```bash
      CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
      MIGRATED_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
      TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/e2e-test/migration/networks/devnet/dump-genesis.json"
      ```
-     where `CHECKSUM` is the content of `dump-genesis.json.sha512`, and `MIGRATED_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
-11. generate the checksum of the [script](migrate.sh) by running
+     where `CHECKSUM` is the content of `dump-genesis.json.sha512`, and `MIGRATED_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`  
+     and `TRUSTED_GENESIS_URL` is the URL of the genesis file (branch you are currently using).  
+11. cd into the migration script folder
+    ```bash
+    cd heimdall-v2/migration/script
+    ```
+12. generate the checksum of the [script](migrate.sh) by running
      ```bash
      sha512sum migrate.sh > migrate.sh.sha512
      ```
-12. commit and push the changes on `heimdall-v2` repo (they need to be available on the branch mentioned in `TRUSTED_GENESIS_URL`)   
-13. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
+13. cd into the root of the `heimdall-v2` repo
+    ```bash
+    cd ../..
+    ```
+14. commit and push the changes on `heimdall-v2` repo (they need to be available on the branch mentioned in `TRUSTED_GENESIS_URL`)   
+15. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
     ```bash
     sudo systemctl daemon-reload 
     sudo systemctl start heimdalld
     sudo systemctl restart telemetry
     ```
-14. check the logs by running
+16. check the logs by running
    ```bash
       journalctl -fu heimdalld
    ```
-15. The genesis time is most probably set in the future so `heimdalld` will print something like:
+17. The genesis time is most probably set in the future so `heimdalld` will print something like:
     ```bash
     heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
     ```
-16. Wait until the genesis time is reached, and the node will start syncing.
-17. Now other node operators can run the migration.
+18. Wait until the genesis time is reached, and the node will start syncing.
+19. Now other node operators can run the migration.
 
 
 # Other executions (internal and external)
