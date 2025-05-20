@@ -57,6 +57,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     --generate-genesis=true \
     --bor-path=/home/ubuntu/go/bin/bor
     ```
+   # cd into the proper directory
 8. copy the following files to the local machine (they are located under `/var/lib/heimdall.backup/`):
    - `dump-genesis.json`
    - `dump-genesis.json.sha512`
