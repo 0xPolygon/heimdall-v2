@@ -96,6 +96,7 @@ The majority of the steps below are automated in the [migration script](migrate.
     ws-address = "ws://localhost:26657/websocket"
     ```
 24. **Restart bor** Only in case the step above was done.  
+25. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic   
 
 ### Rollback strategy to restore v1
 We decided not to enforce a HF in heimdall-v1, to avoid issues with rolling back to previous versions if the migration doesn’t work out as planned.  

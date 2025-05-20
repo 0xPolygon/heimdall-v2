@@ -5,17 +5,20 @@ umask 0022
 # -------------------- Env variables, to be adjusted before rolling out --------------------
 APOCALYPSE_TAG="1.2.3-27-g74c8af58"
 REQUIRED_BOR_VERSION="2.0.0"
-CHECKSUM="bb03425f30197c51d4a762dfd4f8068c8b3bb94c01c42b1da2c4b97db309e834775737d6502642ac5042e59117d97a3d593bc89e5c9084bbefb1994f14353af4"
-MIGRATED_CHECKSUM="ca45005fc462d074816bd2926823ca11540c0dd45aac5a02fdfb9505b819f353c1e67c4394abf177c89c21cc517f9660793db306feab2b937b76fc50b9440bc3"
-HEIMDALL_V2_VERSION="0.1.16"
+CHECKSUM="df281267cdf558da41903037c37ed0cbea44228d5e409ba892738d9d5dfcad1a1ea95fee518746d67bf918c12826a241c429c50f22d75328f8aa739091c080f7"
+MIGRATED_CHECKSUM="0c376e42fef49ec9544b3d8aabe1e4cd4bbac04e0e269bcd099e31f67ba310464a18e5d08b85881855046c08072f3281e3df41617b33b10d99d5e090223d9c0e"
+HEIMDALL_V2_VERSION="0.1.18"
 CHAIN_ID="devnet"
-GENESIS_TIME="2025-05-16T16:00:00Z"
+GENESIS_TIME="2025-05-20T09:15:00Z"
 APOCALYPSE_HEIGHT=200
+BRANCH_NAME="mardizzone/migration-tests"
+
+# -------------------- const env variables --------------------
 INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/networks/devnet/dump-genesis.json"
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${BRANCH_NAME}/migration/networks/${CHAIN_ID}/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
@@ -299,6 +302,22 @@ fi
 if [[ "$NETWORK" != "amoy" && "$NETWORK" != "mainnet" ]]; then
     handle_error $STEP "Invalid network! Must be 'amoy' or 'mainnet'."
 fi
+# CHAIN_ID validation
+case "$NETWORK" in
+    mainnet)
+        EXPECTED_CHAIN_ID="heimdall-137"
+        ;;
+    amoy)
+        EXPECTED_CHAIN_ID="heimdall-80002"
+        ;;
+    *)
+        # For any other network, fallback to devnet
+        EXPECTED_CHAIN_ID="devnet"
+        ;;
+esac
+if [[ "$CHAIN_ID" != "$EXPECTED_CHAIN_ID" ]]; then
+  handle_error $STEP "Invalid CHAIN_ID for network '$NETWORK'. Expected: $EXPECTED_CHAIN_ID, Found: $CHAIN_ID"
+fi
 # NODETYPE
 if [[ "$NODETYPE" != "sentry" && "$NODETYPE" != "validator" ]]; then
     handle_error $STEP "Invalid node type! Must be 'sentry' or 'validator'."
@@ -336,6 +355,7 @@ echo "       BACKUP_DIR:            $BACKUP_DIR"
 echo "       MONIKER_NODE_NAME:     $MONIKER_NODE_NAME"
 echo "       HEIMDALL_SERVICE_USER: $HEIMDALL_SERVICE_USER"
 echo "       GENERATE_GENESIS:      $GENERATE_GENESIS"
+echo "       CHAIN_ID:              $CHAIN_ID"
 echo ""
 
 
