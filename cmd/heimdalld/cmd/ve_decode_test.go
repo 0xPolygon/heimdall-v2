@@ -93,7 +93,7 @@ func TestBuildCommitJSON_MockVe(t *testing.T) {
 	extInfo, err := GetVEsFromEndpoint(1189, host, port)
 	require.NoError(t, err)
 
-	out, err := BuildCommitJSON(1189, extInfo)
+	out, err := BuildCommitJSON(1189, "heimdall-9976", extInfo)
 	require.NoError(t, err)
 
 	expectedBytes, err := os.ReadFile("testdata/mock-decoded-ve.json")
@@ -132,5 +132,5 @@ func TestGetVEsFromEndpoint_NoTxs(t *testing.T) {
 
 	_, err = GetVEsFromEndpoint(1189, host, port)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "no vote extensions found in the block")
+	require.Contains(t, err.Error(), "no txs found in the block")
 }

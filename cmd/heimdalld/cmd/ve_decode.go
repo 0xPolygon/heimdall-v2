@@ -8,18 +8,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 
 	cometbftDB "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/store"
+	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	goproto "github.com/cosmos/gogoproto/proto"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	app "github.com/0xPolygon/heimdall-v2/app"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 )
@@ -34,13 +38,9 @@ func veDecodeCmd() *cobra.Command {
 		RunE:  runVeDecode,
 	}
 
-	cmd.Flags().String("chain-id", "", "Heimdall-v2 network chain id")
+	cmd.Flags().String("genesis", "", "Path to genesis.json file")
 	cmd.Flags().String("host", "localhost", "RPC host")
 	cmd.Flags().Uint64("cometbft-port", 26657, "Cometbft RPC endpoint")
-
-	if err := cmd.MarkFlagRequired("chain-id"); err != nil {
-		panic(err)
-	}
 
 	return cmd
 }
@@ -48,28 +48,37 @@ func veDecodeCmd() *cobra.Command {
 func runVeDecode(cmd *cobra.Command, args []string) error {
 	height, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		return fmt.Errorf("invalid height: %w", err)
-	}
-	if height < 1 {
-		return fmt.Errorf("block height number must be greater than VoteExtEnableHeight (1)")
+		return fmt.Errorf("error parsing height: %w", err)
 	}
 
-	chainID, err := cmd.Flags().GetString("chain-id")
+	// Determine genesis file path, default from SDK client context, override if flag provided.
+	ctx := client.GetClientContextFromCmd(cmd)
+	defaultGenPath := filepath.Join(ctx.HomeDir, "config", "genesis.json")
+	genPath, err := cmd.Flags().GetString("genesis")
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading genesis flag: %w", err)
 	}
-	if chainID == "" {
-		return fmt.Errorf("non-empty chain ID is required")
+	if genPath == "" {
+		genPath = defaultGenPath
+	}
+
+	// Parse chain_id and vote_extensions_enable_height from genesis file.
+	chainId, enableHeight, err := parseGenesis(genPath)
+	if err != nil {
+		return fmt.Errorf("failed to parse genesis: %w", err)
+	}
+	if height < enableHeight {
+		return fmt.Errorf("block height must be > vote_extensions_enable_height (%d)", enableHeight)
 	}
 
 	host, err := cmd.Flags().GetString("host")
 	if err != nil {
-		return fmt.Errorf("error parsing host flag: %w", err)
+		return fmt.Errorf("error reading host flag: %w", err)
 	}
 
 	port, err := cmd.Flags().GetUint64("cometbft-port")
 	if err != nil {
-		return fmt.Errorf("error parsing cometbft-port flag: %w", err)
+		return fmt.Errorf("error reading cometbft-port flag: %w", err)
 	}
 
 	// Fetch vote extension info
@@ -79,16 +88,16 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	}
 
 	// Encode to JSON and print
-	out, err := BuildCommitJSON(height, extInfo)
+	out, err := BuildCommitJSON(height, chainId, extInfo)
 	if err != nil {
-		return fmt.Errorf("error marshalling to JSON: %w", err)
+		return fmt.Errorf("error marshalling ExtendedCommitInfo to JSON: %w", err)
 	}
 	fmt.Println("Vote Extension:")
 	fmt.Println(string(out))
 	fmt.Println()
 
 	// Print summary
-	summary, err := BuildSummaryJSON(height, extInfo)
+	summary, err := BuildSummaryJSON(height, chainId, extInfo)
 	if err != nil {
 		return fmt.Errorf("error marshalling summary to JSON: %w", err)
 	}
@@ -98,28 +107,61 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func getVEs(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
+// parseGenesis reads the genesis.json file and extracts chain_id and vote_extensions_enable_height.
+func parseGenesis(path string) (chainID string, voteExtHeight int64, err error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", 0, err
+	}
+	var genesis struct {
+		ChainID   string `json:"chain_id"`
+		Consensus struct {
+			Params struct {
+				ABCI struct {
+					VoteExtHeight string `json:"vote_extensions_enable_height"`
+				} `json:"abci"`
+			} `json:"params"`
+		} `json:"consensus"`
+	}
+	if err := json.Unmarshal(data, &genesis); err != nil {
+		return "", 0, err
+	}
+	if genesis.ChainID == "" {
+		return "", 0, fmt.Errorf("empty chain_id found in genesis.json")
+	}
+	enableHeight, err := strconv.ParseInt(genesis.Consensus.Params.ABCI.VoteExtHeight, 10, 64)
+	if err != nil {
+		return genesis.ChainID, 0, fmt.Errorf("invalid vote_extensions_enable_height: %w", err)
+	}
+	return genesis.ChainID, enableHeight, nil
+}
+
+func getVEs(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, error) {
 	// 1) Try the RPC endpoint first.
-	voteExt, err1 := GetVEsFromEndpoint(height, host, endpoint)
-	if err1 == nil {
+	voteExt, err1 := GetVEsFromEndpoint(height, host, port)
+	if err1 != nil {
+		fmt.Printf("warning: RPC fetch failed on %s:%d: %v, falling back to block store", host, port, err1)
+	} else {
 		return voteExt, nil
 	}
 
 	// 2) Fallback to the local block store.
 	voteExt, err2 := GetVEsFromBlockStore(height)
-	if err2 == nil {
+	if err2 != nil {
+		fmt.Printf("warning: Block store fetch failed: %v", err2)
+	} else {
 		return voteExt, nil
 	}
 
-	// 3) Both failed, report both the errors.
-	return nil, fmt.Errorf("failed to fetch VEs:\n- endpoint (port %d): %w\n- block store: %w", endpoint, err1, err2)
+	// 3) Both failed, report generic error
+	return nil, fmt.Errorf("cannot fetch vote extensions: RPC error: %w; Block store error: %w", err1, err2)
 }
 
-func GetVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.ExtendedCommitInfo, error) {
-	if endpoint < 1 || endpoint > 65535 {
-		return nil, fmt.Errorf("invalid RPC port: %d", endpoint)
+func GetVEsFromEndpoint(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, error) {
+	if port < 1 || port > 65535 {
+		return nil, fmt.Errorf("invalid RPC port: %d", port)
 	}
-	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, endpoint, height)
+	url := fmt.Sprintf("http://%s:%d/block?height=%d", host, port, height)
 
 	ctx := context.Background()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -157,7 +199,7 @@ func GetVEsFromEndpoint(height int64, host string, endpoint uint64) (*abci.Exten
 	}
 
 	if len(br.Result.Block.Data.Txs) == 0 {
-		return nil, fmt.Errorf("no vote extensions found in the block")
+		return nil, fmt.Errorf("no txs found in the block")
 	}
 
 	veB64Str := br.Result.Block.Data.Txs[0]
@@ -188,12 +230,11 @@ func GetVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 	if block == nil {
 		return nil, fmt.Errorf("block at height %d not found", height)
 	}
-
-	ves := block.Data.Txs[0] //nolint:staticcheck
-	if ves == nil {
-		return nil, fmt.Errorf("no vote extensions found in the block")
+	if len(block.Txs) == 0 {
+		return nil, fmt.Errorf("no txs found in the block %d", height)
 	}
 
+	ves := block.Txs[0]
 	var voteExt abci.ExtendedCommitInfo
 	if err := voteExt.Unmarshal(ves); err != nil {
 		return nil, err
@@ -203,7 +244,7 @@ func GetVEsFromBlockStore(height int64) (*abci.ExtendedCommitInfo, error) {
 }
 
 // BuildCommitJSON builds a JSON representation for the given ExtendedCommitInfo and block height.
-func BuildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
+func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo) ([]byte, error) {
 	data := CommitData{
 		Height: height,
 		Round:  ext.Round,
@@ -218,16 +259,16 @@ func BuildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 		}
 
 		vote := VoteData{
-			ValidatorAddr: "0x" + hex.EncodeToString(v.Validator.Address),
+			ValidatorAddr: util.FormatHex(v.Validator.Address),
 			Power:         v.Validator.Power,
-			ExtSignature:  "0x" + hex.EncodeToString(v.ExtensionSignature),
+			ExtSignature:  util.FormatHex(v.ExtensionSignature),
 			BlockIDFlag:   v.BlockIdFlag.String(),
 		}
 
 		// SideTxResponses
 		for _, r := range stxs.SideTxResponses {
 			vote.SideTxs = append(vote.SideTxs, SideTxData{
-				TxHash: "0x" + hex.EncodeToString(r.TxHash),
+				TxHash: util.FormatHex(r.TxHash),
 				Result: r.Result.String(),
 			})
 		}
@@ -236,18 +277,18 @@ func BuildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 		if mp := stxs.MilestoneProposition; mp != nil {
 			hashes := make([]string, len(mp.BlockHashes))
 			for j, bh := range mp.BlockHashes {
-				hashes[j] = "0x" + hex.EncodeToString(bh)
+				hashes[j] = util.FormatHex(bh)
 			}
 			vote.Milestone = &MilestoneData{
 				BlockHashes:      hashes,
 				StartBlockNumber: mp.StartBlockNumber,
-				ParentHash:       "0x" + hex.EncodeToString(mp.ParentHash),
+				ParentHash:       util.FormatHex(mp.ParentHash),
 			}
 		}
 
 		// Non-RP vote extension: dummy vs checkpoint
-		if isDummy, _ := IsDummyNonRpVoteExtension(height, v.NonRpVoteExtension); isDummy {
-			vote.NonRpData = "0x" + hex.EncodeToString(v.NonRpVoteExtension)
+		if isDummy, _ := IsDummyNonRpVoteExtension(height, chainId, v.NonRpVoteExtension); isDummy {
+			vote.NonRpData = util.FormatHex(v.NonRpVoteExtension)
 		} else {
 			msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
 			if err != nil {
@@ -257,13 +298,13 @@ func BuildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 				Proposer:        msg.Proposer,
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
-				RootHash:        "0x" + hex.EncodeToString(msg.RootHash),
-				AccountRootHash: "0x" + hex.EncodeToString(msg.AccountRootHash),
+				RootHash:        util.FormatHex(msg.RootHash),
+				AccountRootHash: util.FormatHex(msg.AccountRootHash),
 				BorChainID:      msg.BorChainId,
 			}
 		}
 
-		vote.NonRpSignature = "0x" + hex.EncodeToString(v.NonRpExtensionSignature)
+		vote.NonRpSignature = util.FormatHex(v.NonRpExtensionSignature)
 		data.Votes[i] = vote
 	}
 
@@ -271,7 +312,7 @@ func BuildCommitJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error)
 }
 
 // BuildSummaryJSON builds a JSON summary from ExtendedCommitInfo.
-func BuildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error) {
+func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo) ([]byte, error) {
 	var totalPower int64
 	for _, v := range ext.Votes {
 		totalPower += v.Validator.Power
@@ -299,7 +340,7 @@ func BuildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 			}
 		}
 		for _, r := range stxs.SideTxResponses {
-			txKey := "0x" + hex.EncodeToString(r.TxHash)
+			txKey := util.FormatHex(r.TxHash)
 			if sideTxVP[txKey] == nil {
 				sideTxVP[txKey] = make(map[string]int64)
 			}
@@ -307,12 +348,12 @@ func BuildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 		}
 
 		var key string
-		isDummy, err := IsDummyNonRpVoteExtension(height, v.NonRpVoteExtension)
+		isDummy, err := IsDummyNonRpVoteExtension(height, chainId, v.NonRpVoteExtension)
 		if err != nil {
 			return nil, fmt.Errorf("error checking dummy non-RP extension: %w", err)
 		}
 		if isDummy {
-			key = "0x" + hex.EncodeToString(v.NonRpVoteExtension)
+			key = util.FormatHex(v.NonRpVoteExtension)
 		} else {
 			msg, err := GetCheckpointMsg(v.NonRpVoteExtension)
 			if err != nil {
@@ -322,8 +363,8 @@ func BuildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 				Proposer:        msg.Proposer,
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
-				RootHash:        "0x" + hex.EncodeToString(msg.RootHash),
-				AccountRootHash: "0x" + hex.EncodeToString(msg.AccountRootHash),
+				RootHash:        util.FormatHex(msg.RootHash),
+				AccountRootHash: util.FormatHex(msg.AccountRootHash),
 				BorChainID:      msg.BorChainId,
 			}
 			b, err := json.Marshal(checkpointData)
@@ -357,12 +398,8 @@ func BuildSummaryJSON(height int64, ext *abci.ExtendedCommitInfo) ([]byte, error
 	return json.MarshalIndent(summary, "", "  ")
 }
 
-func IsDummyNonRpVoteExtension(height int64, nonRpVoteExt []byte) (bool, error) {
-	chainID := viper.GetString(flags.FlagChainID)
-	if chainID == "" {
-		return false, fmt.Errorf("chain ID not set")
-	}
-	dummyVoteExt, err := app.GetDummyNonRpVoteExtension(height-1, chainID)
+func IsDummyNonRpVoteExtension(height int64, chainId string, nonRpVoteExt []byte) (bool, error) {
+	dummyVoteExt, err := app.GetDummyNonRpVoteExtension(height-1, chainId)
 	if err != nil {
 		return false, err
 	}
