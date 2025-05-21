@@ -21,7 +21,7 @@
       "extension_signature": "0xa0e36729b9d98de29979df344c6afd6d8d31ea4b984112a067a450e30f1255cf337adea5826c7b2fbc79104651651c87711ab9800674b2b6f44dbcfb6395be5201",
       "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
       "non_rp_vote_extension": {
-        "proposer": "0xc18ca4343e2f3fc4400986ec26968f8cf77675e8",
+        "proposer": "0xC18Ca4343E2F3fc4400986Ec26968f8Cf77675e8",
         "start_block": 127,
         "end_block": 382,
         "root_hash": "0xc935746d666dc31470b50255f3b9d5f841532250133c59d3825c2008dd3a3180",
@@ -49,7 +49,7 @@
       "extension_signature": "0x7dbf03141e8cf00977f44a17cb09d969597ad394130789f99b8ff9ad868e36ed1eb42f1786689634b854bb51271f5194c365065f3e4db217e0645c4e5bf88d7c01",
       "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
       "non_rp_vote_extension": {
-        "proposer": "0xc18ca4343e2f3fc4400986ec26968f8cf77675e8",
+        "proposer": "0xC18Ca4343E2F3fc4400986Ec26968f8Cf77675e8",
         "start_block": 127,
         "end_block": 382,
         "root_hash": "0xc935746d666dc31470b50255f3b9d5f841532250133c59d3825c2008dd3a3180",

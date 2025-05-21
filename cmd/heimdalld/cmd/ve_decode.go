@@ -296,7 +296,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 				return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
 			}
 			vote.NonRpData = CheckpointData{
-				Proposer:        util.FormatAddress(msg.Proposer),
+				Proposer:        common.HexToAddress(msg.Proposer).Hex(),
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
 				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
@@ -361,7 +361,7 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 				return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
 			}
 			checkpointData := CheckpointData{
-				Proposer:        util.FormatAddress(msg.Proposer),
+				Proposer:        common.HexToAddress(msg.Proposer).Hex(),
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
 				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
