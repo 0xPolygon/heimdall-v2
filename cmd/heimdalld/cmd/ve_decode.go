@@ -19,10 +19,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	goproto "github.com/cosmos/gogoproto/proto"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"github.com/ethereum/go-ethereum/common"
 
 	app "github.com/0xPolygon/heimdall-v2/app"
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
@@ -297,7 +296,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 				return nil, fmt.Errorf("error unpacking checkpoint: %w", err)
 			}
 			vote.NonRpData = CheckpointData{
-				Proposer:        msg.Proposer,
+				Proposer:        util.FormatAddress(msg.Proposer),
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
 				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
@@ -362,7 +361,7 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 				return nil, fmt.Errorf("error unpacking checkpoint message: %w", err)
 			}
 			checkpointData := CheckpointData{
-				Proposer:        msg.Proposer,
+				Proposer:        util.FormatAddress(msg.Proposer),
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
 				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
