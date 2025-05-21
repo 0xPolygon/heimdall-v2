@@ -365,7 +365,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 	currentHeaderBlockNumber := big.NewInt(0).SetUint64(_currentHeaderBlock)
 
 	// get header info
-	_, currentStart, currentEnd, lastCheckpointTime, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
+	_, _, currentEnd, _, _, err := cp.contractCaller.GetHeaderInfo(currentHeaderBlockNumber.Uint64(), rootChainInstance, checkpointParams.ChildChainBlockInterval)
 	if err != nil {
 		cp.Logger.Error("Error while fetching current header block object from rootChain", "error", err)
 		return nil, err
@@ -389,7 +389,7 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 		}
 		// cap with max checkpoint length
 		if expectedDiff > checkpointParams.MaxCheckpointLength {
-			expectedDiff = checkpointParams.MaxCheckpointLength
+			expectedDiff = checkpointParams.MaxCheckpointLength - 1
 		}
 		// get end result
 		end = expectedDiff + start
@@ -400,27 +400,9 @@ func (cp *CheckpointProcessor) nextExpectedCheckpoint(checkpointContext *Checkpo
 		)
 	}
 
-	// Handle when block producers go down
-	if end == 0 || end == start || (0 < diff && diff < checkpointParams.AvgCheckpointLength) {
-		cp.Logger.Debug("Fetching last header block to calculate time")
-
-		currentTime := time.Now().UTC().Unix()
-		defaultForcePushInterval := checkpointParams.MaxCheckpointLength * 2 // in seconds (1024 * 2 seconds)
-
-		if currentTime-int64(lastCheckpointTime) > int64(defaultForcePushInterval) {
-			end = latestChildBlock
-			cp.Logger.Info("Force push checkpoint",
-				"currentTime", currentTime,
-				"lastCheckpointTime", lastCheckpointTime,
-				"defaultForcePushInterval", defaultForcePushInterval,
-				"start", start,
-				"end", end,
-			)
-		}
-	}
 	return NewContractCheckpoint(start, end, &HeaderBlock{
-		start:  currentStart,
-		end:    currentEnd,
+		start:  start,
+		end:    end,
 		number: currentHeaderBlockNumber,
 	}), nil
 }
