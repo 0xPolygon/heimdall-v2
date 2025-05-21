@@ -10,10 +10,11 @@ import (
 
 const MaxProofLength = 1024
 
-// FormatAddress makes sure the address is compliant with the heimdall-v2 format
+// FormatAddress normalizes a hexadecimal Ethereum address string.
+// It trims whitespaces, and returns the checksummed (EIP-55) version of the address
 func FormatAddress(hexAddr string) string {
-	hexAddr = strings.TrimSpace(strings.ToLower(hexAddr))
-	return "0x" + strings.TrimPrefix(hexAddr, "0x")
+	hexAddr = strings.TrimSpace(hexAddr)
+	return common.HexToAddress(hexAddr).Hex()
 }
 
 // IsTxHashNonEmpty returns true if the input is a non-empty string.
