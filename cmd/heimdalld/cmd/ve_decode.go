@@ -22,6 +22,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	app "github.com/0xPolygon/heimdall-v2/app"
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
@@ -38,9 +40,9 @@ func veDecodeCmd() *cobra.Command {
 		RunE:  runVeDecode,
 	}
 
-	cmd.Flags().String("genesis", "", "Path to genesis.json file")
+	cmd.Flags().String("genesis-file", "", "Path to the genesis.json file")
 	cmd.Flags().String("host", "localhost", "RPC host")
-	cmd.Flags().Uint64("cometbft-port", 26657, "Cometbft RPC endpoint")
+	cmd.Flags().Uint64("cometbft-rpc-port", 26657, "Port for CometBFT RPC endpoint (default: 26657)")
 
 	return cmd
 }
@@ -54,16 +56,16 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	// Determine genesis file path, default from SDK client context, override if flag provided.
 	ctx := client.GetClientContextFromCmd(cmd)
 	defaultGenPath := filepath.Join(ctx.HomeDir, "config", "genesis.json")
-	genPath, err := cmd.Flags().GetString("genesis")
+	genPath, err := cmd.Flags().GetString("genesis-file")
 	if err != nil {
-		return fmt.Errorf("error reading genesis flag: %w", err)
+		return fmt.Errorf("error reading genesis-file flag: %w", err)
 	}
 	if genPath == "" {
 		genPath = defaultGenPath
 	}
 
 	// Parse chain_id and vote_extensions_enable_height from genesis file.
-	chainId, enableHeight, err := parseGenesis(genPath)
+	chainId, enableHeight, err := extractGenesisMetadata(genPath)
 	if err != nil {
 		return fmt.Errorf("failed to parse genesis: %w", err)
 	}
@@ -76,9 +78,9 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error reading host flag: %w", err)
 	}
 
-	port, err := cmd.Flags().GetUint64("cometbft-port")
+	port, err := cmd.Flags().GetUint64("cometbft-rpc-port")
 	if err != nil {
-		return fmt.Errorf("error reading cometbft-port flag: %w", err)
+		return fmt.Errorf("error reading cometbft-rpc-port flag: %w", err)
 	}
 
 	// Fetch vote extension info
@@ -107,8 +109,8 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// parseGenesis reads the genesis.json file and extracts chain_id and vote_extensions_enable_height.
-func parseGenesis(path string) (chainID string, voteExtHeight int64, err error) {
+// extractGenesisMetadata extracts the chain_id and vote_extensions_enable_height from the genesis.json file.
+func extractGenesisMetadata(path string) (chainID string, voteExtHeight int64, err error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return "", 0, err
@@ -131,7 +133,7 @@ func parseGenesis(path string) (chainID string, voteExtHeight int64, err error) 
 	}
 	enableHeight, err := strconv.ParseInt(genesis.Consensus.Params.ABCI.VoteExtHeight, 10, 64)
 	if err != nil {
-		return genesis.ChainID, 0, fmt.Errorf("invalid vote_extensions_enable_height: %w", err)
+		return "", 0, fmt.Errorf("invalid vote_extensions_enable_height: %w", err)
 	}
 	return genesis.ChainID, enableHeight, nil
 }
@@ -154,7 +156,7 @@ func getVEs(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, e
 	}
 
 	// 3) Both failed, report generic error
-	return nil, fmt.Errorf("cannot fetch vote extensions: RPC error: %w; Block store error: %w", err1, err2)
+	return nil, fmt.Errorf("cannot fetch vote extensions:\nRPC error: %w\nBlock store error: %w", err1, err2)
 }
 
 func GetVEsFromEndpoint(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, error) {
@@ -259,7 +261,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 		}
 
 		vote := VoteData{
-			ValidatorAddr: util.FormatHex(v.Validator.Address),
+			ValidatorAddr: common.BytesToAddress(v.Validator.Address).Hex(),
 			Power:         v.Validator.Power,
 			ExtSignature:  util.FormatHex(v.ExtensionSignature),
 			BlockIDFlag:   v.BlockIdFlag.String(),
@@ -268,7 +270,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 		// SideTxResponses
 		for _, r := range stxs.SideTxResponses {
 			vote.SideTxs = append(vote.SideTxs, SideTxData{
-				TxHash: util.FormatHex(r.TxHash),
+				TxHash: common.BytesToHash(r.TxHash).Hex(),
 				Result: r.Result.String(),
 			})
 		}
@@ -277,12 +279,12 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 		if mp := stxs.MilestoneProposition; mp != nil {
 			hashes := make([]string, len(mp.BlockHashes))
 			for j, bh := range mp.BlockHashes {
-				hashes[j] = util.FormatHex(bh)
+				hashes[j] = common.BytesToHash(bh).Hex()
 			}
 			vote.Milestone = &MilestoneData{
 				BlockHashes:      hashes,
 				StartBlockNumber: mp.StartBlockNumber,
-				ParentHash:       util.FormatHex(mp.ParentHash),
+				ParentHash:       common.BytesToHash(mp.ParentHash).Hex(),
 			}
 		}
 
@@ -298,8 +300,8 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 				Proposer:        msg.Proposer,
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
-				RootHash:        util.FormatHex(msg.RootHash),
-				AccountRootHash: util.FormatHex(msg.AccountRootHash),
+				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
+				AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
 				BorChainID:      msg.BorChainId,
 			}
 		}
@@ -340,7 +342,7 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 			}
 		}
 		for _, r := range stxs.SideTxResponses {
-			txKey := util.FormatHex(r.TxHash)
+			txKey := common.BytesToHash(r.TxHash).Hex()
 			if sideTxVP[txKey] == nil {
 				sideTxVP[txKey] = make(map[string]int64)
 			}
@@ -363,8 +365,8 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 				Proposer:        msg.Proposer,
 				StartBlock:      msg.StartBlock,
 				EndBlock:        msg.EndBlock,
-				RootHash:        util.FormatHex(msg.RootHash),
-				AccountRootHash: util.FormatHex(msg.AccountRootHash),
+				RootHash:        common.BytesToHash(msg.RootHash).Hex(),
+				AccountRootHash: common.BytesToHash(msg.AccountRootHash).Hex(),
 				BorChainID:      msg.BorChainId,
 			}
 			b, err := json.Marshal(checkpointData)

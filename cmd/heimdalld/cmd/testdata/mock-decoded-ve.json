@@ -3,7 +3,7 @@
   "round": 0,
   "votes": [
     {
-      "validator_address": "0x3f254be2c967818e1523c79e52272a55ce5c355a",
+      "validator_address": "0x3f254BE2C967818E1523C79E52272a55Ce5C355A",
       "power": 10000,
       "side_tx_responses": [
         {
@@ -31,7 +31,7 @@
       "non_rp_extension_signature": "0xd0dba213084d96843f9811f9d2b7441e657c967d67237816220f3064667ab0bb64baee66cb29447caf75ab660d20026257ac5aec8c2ac5c4ba7fac511111c62b01"
     },
     {
-      "validator_address": "0xc18ca4343e2f3fc4400986ec26968f8cf77675e8",
+      "validator_address": "0xC18Ca4343E2F3fc4400986Ec26968f8Cf77675e8",
       "power": 10000,
       "side_tx_responses": [
         {
