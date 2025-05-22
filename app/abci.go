@@ -14,7 +14,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
@@ -116,13 +115,7 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		}
 
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, &app.caller, logger); err != nil {
-			// We could reject proposal if we fail to query bor, we follow RFC 105 (https://github.com/cometbft/cometbft/blob/main/docs/references/rfc/rfc-105-non-det-process-proposal.md)
-			if errors.Is(err, borTypes.ErrFailedToQueryBor) {
-				logger.Error("Failed to query bor, rejecting proposal", "error", err)
-			} else {
-				logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err)
-			}
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			logger.Error("Invalid non-rp vote extension proposal", "error", err)
 		}
 
 		for _, tx := range req.Txs[1:] {
@@ -176,7 +169,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return nil, errors.New("error occurred while decoding ExtendedCommitInfo, they should have be encoded in the beginning of txs slice")
 		}
 
-		dummyVoteExt, err := getDummyNonRpVoteExtension(req.Height, ctx.ChainID())
+		dummyVoteExt, err := GetDummyNonRpVoteExtension(req.Height, ctx.ChainID())
 		if err != nil {
 			logger.Error("Error occurred while getting dummy vote extension", "error", err)
 			return nil, err

@@ -1,0 +1,62 @@
+{
+  "height": 1189,
+  "round": 0,
+  "votes": [
+    {
+      "validator_address": "0x3f254BE2C967818E1523C79E52272a55Ce5C355A",
+      "power": 10000,
+      "side_tx_responses": [
+        {
+          "tx_hash": "0xe516f0e547a4eb471dfd3665d6e3ee5e9afee3839dba3f2808ec541af54be90e",
+          "result": "VOTE_YES"
+        }
+      ],
+      "milestone_proposition": {
+        "block_hashes": [
+          "0x3f9595cdf764ebbac5cf9e334ce22bc9046e73afec9574f4fea3a15619e10f82"
+        ],
+        "start_block_number": 438,
+        "parent_hash": "0x54edb3ede8ecb92e9173e2954fb60ddf464c60255bc2113122f88ae073e62260"
+      },
+      "extension_signature": "0xa0e36729b9d98de29979df344c6afd6d8d31ea4b984112a067a450e30f1255cf337adea5826c7b2fbc79104651651c87711ab9800674b2b6f44dbcfb6395be5201",
+      "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+      "non_rp_vote_extension": {
+        "proposer": "0xC18Ca4343E2F3fc4400986Ec26968f8Cf77675e8",
+        "start_block": 127,
+        "end_block": 382,
+        "root_hash": "0xc935746d666dc31470b50255f3b9d5f841532250133c59d3825c2008dd3a3180",
+        "account_root_hash": "0x334649adddbfd996956d6c49baaae1663a804ec97f7b6d7500253042a9843b1a",
+        "bor_chain_id": "9976"
+      },
+      "non_rp_extension_signature": "0xd0dba213084d96843f9811f9d2b7441e657c967d67237816220f3064667ab0bb64baee66cb29447caf75ab660d20026257ac5aec8c2ac5c4ba7fac511111c62b01"
+    },
+    {
+      "validator_address": "0xC18Ca4343E2F3fc4400986Ec26968f8Cf77675e8",
+      "power": 10000,
+      "side_tx_responses": [
+        {
+          "tx_hash": "0xe516f0e547a4eb471dfd3665d6e3ee5e9afee3839dba3f2808ec541af54be90e",
+          "result": "VOTE_YES"
+        }
+      ],
+      "milestone_proposition": {
+        "block_hashes": [
+          "0x3f9595cdf764ebbac5cf9e334ce22bc9046e73afec9574f4fea3a15619e10f82"
+        ],
+        "start_block_number": 438,
+        "parent_hash": "0x54edb3ede8ecb92e9173e2954fb60ddf464c60255bc2113122f88ae073e62260"
+      },
+      "extension_signature": "0x7dbf03141e8cf00977f44a17cb09d969597ad394130789f99b8ff9ad868e36ed1eb42f1786689634b854bb51271f5194c365065f3e4db217e0645c4e5bf88d7c01",
+      "block_id_flag": "BLOCK_ID_FLAG_COMMIT",
+      "non_rp_vote_extension": {
+        "proposer": "0xC18Ca4343E2F3fc4400986Ec26968f8Cf77675e8",
+        "start_block": 127,
+        "end_block": 382,
+        "root_hash": "0xc935746d666dc31470b50255f3b9d5f841532250133c59d3825c2008dd3a3180",
+        "account_root_hash": "0x334649adddbfd996956d6c49baaae1663a804ec97f7b6d7500253042a9843b1a",
+        "bor_chain_id": "9976"
+      },
+      "non_rp_extension_signature": "0x32ce43b088b8dcd1baa24e032c1da6b5863289be3b2ab3de4c996147b86eb45f2a76105301581117182e01e73488b292358f02f0d81ac31e43a981d2babc331d01"
+    }
+  ]
+}

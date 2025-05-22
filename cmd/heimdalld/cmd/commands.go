@@ -235,6 +235,8 @@ func initRootCmd(
 	rootCmd.AddCommand(showPrivateKeyCmd())
 	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
+
+	rootCmd.AddCommand(veDecodeCmd())
 }
 
 func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
