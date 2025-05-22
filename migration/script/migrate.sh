@@ -29,10 +29,10 @@ if ! tail -n 10 "$SCRIPT_PATH" | grep -q "# End of script"; then
   exit 1
 fi
 
-#if [[ "$(id -u)" -ne 0 ]]; then
-#  echo "[ERROR] This script must be run as root. Use sudo."
-#  exit 1
-#fi
+if [[ "$(id -u)" -ne 0 ]]; then
+  echo "[ERROR] This script must be run as root. Use sudo."
+  exit 1
+fi
 
 # CLI-provided values
 HEIMDALL_HOME=""
