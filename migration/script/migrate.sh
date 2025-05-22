@@ -10,7 +10,7 @@ MIGRATED_CHECKSUM="0c376e42fef49ec9544b3d8aabe1e4cd4bbac04e0e269bcd099e31f67ba31
 HEIMDALL_V2_VERSION="0.1.18"
 CHAIN_ID="devnet"
 GENESIS_TIME="2025-05-20T09:15:00Z"
-APOCALYPSE_HEIGHT=200
+APOCALYPSE_HEIGHT=900
 BRANCH_NAME="mardizzone/migration-tests"
 
 # -------------------- const env variables --------------------
