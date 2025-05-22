@@ -3,22 +3,22 @@
 umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
-APOCALYPSE_TAG="1.2.3-27-g74c8af58"
+APOCALYPSE_TAG="1.2.3-34-g020f6c0d"
 REQUIRED_BOR_VERSION="2.0.0"
 CHECKSUM="df281267cdf558da41903037c37ed0cbea44228d5e409ba892738d9d5dfcad1a1ea95fee518746d67bf918c12826a241c429c50f22d75328f8aa739091c080f7"
-MIGRATED_CHECKSUM="0c376e42fef49ec9544b3d8aabe1e4cd4bbac04e0e269bcd099e31f67ba310464a18e5d08b85881855046c08072f3281e3df41617b33b10d99d5e090223d9c0e"
+MIGRATED_CHECKSUM="37c6ee2667b9b97f770469c5096e467c2afd6bb3852ce1292a0c22e95a3aeb315408bea2b98f2f67dcfb39228c7fb565b011e10a3bcd1e186bfd81e5a04ed300"
 HEIMDALL_V2_VERSION="0.1.20"
-CHAIN_ID="devnet"
-GENESIS_TIME="2025-05-20T09:15:00Z"
+CHAIN_ID="heimdall-80002"
+GENESIS_TIME="2025-05-22T13:50:00Z"
 APOCALYPSE_HEIGHT=900
-BRANCH_NAME="mardizzone/migration-tests"
+BRANCH_NAME="raneet10/migration-tests"
 
 # -------------------- const env variables --------------------
 INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${BRANCH_NAME}/migration/networks/${CHAIN_ID}/dump-genesis.json"
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${BRANCH_NAME}/migration/networks/devnet/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
