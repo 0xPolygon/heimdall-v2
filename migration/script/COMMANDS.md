@@ -27,7 +27,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    - `APOCALYPSE_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed during the gov proposal, it should match the height defined in `APOCALYPSE_TAG`)  
    - `BRANCH_NAME` is the branch of the heimdall-v2 repo where the script will be pushed after the migration of the pilot node is completed.  
      
-3. ssh into the node machine  
+3. ssh into the node machine by using the user that runs `heimdalld` service (for devnet, it is `ubuntu`):
    ```bash
     ssh <USER>@<NODE_IP>
    ```

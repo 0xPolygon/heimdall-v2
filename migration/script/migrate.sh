@@ -371,9 +371,9 @@ echo ""
 STEP=3
 print_step $STEP "Stopping heimdall-v1"
 ROLLBACK_ACTIONS["$STEP"]=":"
-if sudo systemctl list-units --type=service | grep -q heimdalld.service; then
-    if sudo systemctl is-active --quiet heimdalld; then
-        sudo systemctl stop heimdalld
+if systemctl list-units --type=service | grep -q heimdalld.service; then
+    if systemctl is-active --quiet heimdalld; then
+        systemctl stop heimdalld
     else
         echo "[INFO] heimdalld service is already stopped."
     fi
@@ -1094,7 +1094,7 @@ echo "[INFO] Ownership and permissions successfully enforced under $HEIMDALL_HOM
 # Step 28: Automatically update the systemd unit file to set the correct user
 STEP=28
 print_step $STEP "Patching systemd service file to enforce user: $HEIMDALL_SERVICE_USER"
-SERVICE_FILE=$(sudo systemctl status heimdalld | grep 'Loaded:' | awk '{print $3}' | tr -d '();')
+SERVICE_FILE=$(systemctl status heimdalld | grep 'Loaded:' | awk '{print $3}' | tr -d '();')
 if [[ -z "$SERVICE_FILE" || ! -f "$SERVICE_FILE" ]]; then
     echo "[WARNING] Could not detect systemd unit file for heimdalld. Please update it manually to set the correct 'User=' value."
     handle_error $STEP "system unit not detected"
@@ -1108,7 +1108,7 @@ else
     sudo sed -i "/^\[Service\]/,/^\[/{s/^\(\s*User=\).*/\1$HEIMDALL_SERVICE_USER/}" "$SERVICE_FILE"
 
     echo "[INFO] Reloading systemd daemon"
-    sudo sudo systemctl daemon-reload
+    sudo systemctl daemon-reload
     echo "[INFO] Systemd unit patched."
 fi
 
