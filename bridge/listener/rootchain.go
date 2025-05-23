@@ -122,7 +122,11 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 	}
 
 	// get last block from storage
-	hasLastBlock, _ := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
+	hasLastBlock, err := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
+	if err != nil {
+		rl.Logger.Error("Error while checking last block from storage", "error", err)
+		return
+	}
 	if hasLastBlock {
 		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
 		if err != nil {
@@ -139,6 +143,8 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 
 			from = big.NewInt(0).SetUint64(result + 1)
 		}
+	} else {
+		rl.Logger.Error("RootChain last block not found in storage")
 	}
 
 	to := headerNumber
