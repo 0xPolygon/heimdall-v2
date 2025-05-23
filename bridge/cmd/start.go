@@ -106,11 +106,11 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 			return nil
 		case <-time.After(waitDuration):
 			if !util.IsCatchingUp(clientCtx, shutdownCtx) {
-				logger.Info("Node up to date, starting bridge services")
+				logger.Error("Node up to date, starting bridge services")
 
 				loop = false
 			} else {
-				logger.Info("Waiting for heimdall to be synced")
+				logger.Error("Waiting for heimdall to be synced")
 			}
 		}
 	}

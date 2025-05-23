@@ -107,7 +107,11 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 	toBlock = uint64(nodeStatus.SyncInfo.LatestBlockHeight)
 
 	// fromBlock - get last block from storage
-	hasLastBlock, _ := hl.storageClient.Has([]byte(heimdallLastBlockKey), nil)
+	hasLastBlock, err := hl.storageClient.Has([]byte(heimdallLastBlockKey), nil)
+	if err != nil {
+		hl.Logger.Error("Error while checking last block from storage", "error", err)
+		return fromBlock, toBlock, err
+	}
 	if hasLastBlock {
 		lastBlockBytes, err := hl.storageClient.Get([]byte(heimdallLastBlockKey), nil)
 		if err != nil {
@@ -124,6 +128,8 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 
 			return fromBlock, toBlock, err
 		}
+	} else {
+		hl.Logger.Error("Heimdall last block not found in storage")
 	}
 
 	return fromBlock, toBlock, err
