@@ -5,7 +5,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
@@ -45,7 +45,8 @@ func (msg MsgEventRecord) Type() string { return "event-record" }
 
 // ValidateBasic Implements Msg
 func (msg MsgEventRecord) ValidateBasic() error {
-	bytes, err := hexCodec.NewHexCodec().StringToBytes(msg.From)
+	ac := hexCodec.NewHexCodec()
+	bytes, err := ac.StringToBytes(msg.From)
 	if err != nil {
 		return sdkerrors.ErrInvalidAddress
 	}
@@ -55,8 +56,13 @@ func (msg MsgEventRecord) ValidateBasic() error {
 		return sdkerrors.ErrInvalidAddress
 	}
 
-	if msg.TxHash == "" {
-		return ErrEmptyTxHash
+	_, err = ac.StringToBytes(msg.ContractAddress)
+	if err != nil {
+		return sdkerrors.ErrInvalidAddress
+	}
+
+	if !util.IsTxHashNonEmpty(msg.TxHash) {
+		return ErrInvalidTxHash
 	}
 
 	// DO NOT REMOVE THIS CHANGE

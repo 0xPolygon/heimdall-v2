@@ -545,7 +545,7 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 
 // GetBorChainBlocksAndTdInBatch returns bor chain block headers and TD via single RPC Batch call. It tries to get blocks from the range interval but returns only the ones found on chain
 func (c *ContractCaller) GetBorChainBlocksAndTdInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
 	totalBlocks := end - start + 1
@@ -580,7 +580,7 @@ func (c *ContractCaller) GetBorChainBlocksAndTdInBatch(ctx context.Context, star
 		})
 	}
 
-	if err := rpcClient.BatchCallContext(ctx, batchElems); err != nil {
+	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
 		return nil, nil, err
 	}
 

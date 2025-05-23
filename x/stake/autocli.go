@@ -52,6 +52,12 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					Short:          "Check if a tx is old (already submitted)",
 					PositionalArgs: []*autocliv1.PositionalArgDescriptor{{ProtoField: "tx_hash"}, {ProtoField: "log_index"}},
 				},
+				{
+					RpcMethod:      "GetCurrentProposer",
+					Use:            "get-current-proposer",
+					Short:          "Get the current proposer",
+					PositionalArgs: []*autocliv1.PositionalArgDescriptor{},
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{

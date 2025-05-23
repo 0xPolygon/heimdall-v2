@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"errors"
 
 	"github.com/cosmos/cosmos-sdk/codec"
 )
@@ -44,4 +45,22 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 	appState[ModuleName] = cdc.MustMarshalJSON(stakeState)
 
 	return appState, nil
+}
+
+// Validate validates the provided stake genesis state to ensure that listed
+// validators and staking sequences are valid
+func (data GenesisState) Validate() error {
+	for _, validator := range data.Validators {
+		if err := validator.ValidateBasic(); err != nil {
+			return errors.New("invalid validator")
+		}
+	}
+
+	for _, sq := range data.StakingSequences {
+		if sq == "" {
+			return errors.New("invalid sequence")
+		}
+	}
+
+	return nil
 }

@@ -368,12 +368,16 @@ func GetMajorityMilestoneProposition(
 }
 
 func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, error) {
-	result := make([][]byte, 0)
-
 	headers, tds, err := contractCaller.GetBorChainBlocksAndTdInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}
+
+	if len(headers) == 0 {
+		return nil, nil, nil, fmt.Errorf("no headers found: %w", err)
+	}
+
+	result := make([][]byte, 0, len(headers))
 
 	var parentHash []byte
 	if len(headers) > 0 && len(lastMilestoneHash) > 0 {
@@ -418,12 +422,16 @@ func ValidateMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keepe
 		return fmt.Errorf("too many blocks in proposition")
 	}
 
+	if len(milestoneProp.BlockHashes) == 0 {
+		return fmt.Errorf("no blocks in proposition")
+	}
+
 	if len(milestoneProp.BlockHashes) != len(milestoneProp.BlockTds) {
 		return fmt.Errorf("len mismatch between hashes and tds: %d != %d", len(milestoneProp.BlockHashes), len(milestoneProp.BlockTds))
 	}
 
 	for _, blockHash := range milestoneProp.BlockHashes {
-		if len(blockHash) == 0 || len(blockHash) > common.HashLength {
+		if len(blockHash) != common.HashLength {
 			return fmt.Errorf("invalid block hash length")
 		}
 	}

@@ -172,7 +172,11 @@ func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis 
 				return fmt.Errorf("invalid coin format at index %d", i)
 			}
 
+			// normalize "matic" to "pol"
 			denom, _ := coinMap["denom"].(string)
+			if denom == "matic" {
+				denom = "pol"
+			}
 			amountStr, _ := coinMap["amount"].(string)
 
 			amount, ok := math.NewIntFromString(amountStr)
@@ -855,7 +859,6 @@ func getValidatorBasicInfo(validator interface{}) (*validatorBasicInfo, error) {
 
 // validatorBasicInfo contains the basic info of a validator
 type validatorBasicInfo struct {
-	// TODO HV2: is this all we want to validate? Probably to be extended
 	power  int64
 	signer string
 	nonce  uint64

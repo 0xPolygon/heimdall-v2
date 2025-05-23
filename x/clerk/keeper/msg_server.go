@@ -62,10 +62,10 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(hmTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// check if incoming tx is older
+	// check if the event has already been processed
 	if srv.HasRecordSequence(ctx, sequence.String()) {
-		logger.Error("Older invalid tx found", "Sequence", sequence.String())
-		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old tx hash not allowed")
+		logger.Error("Event already processed", "Sequence", sequence.String())
+		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
 	// add events
