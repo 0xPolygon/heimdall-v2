@@ -79,6 +79,8 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 		panic(fmt.Sprintf("Error connecting to server %v", err))
 	}
 
+	logger.Error("Creating listeners")
+
 	// selected services to start
 	var services []common.Service
 	services = append(services,
@@ -95,6 +97,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 
 	clientCtx.BroadcastMode = flags.BroadcastAsync
 
+	logger.Error("Starting bridge services")
 	// start bridge services only when node fully synced
 	loop := true
 	for loop {
@@ -112,6 +115,7 @@ func StartBridgeWithCtx(shutdownCtx context.Context, clientCtx client.Context) e
 		}
 	}
 
+	logger.Error("Starting bridge services 1")
 	// start services
 	var g errgroup.Group
 

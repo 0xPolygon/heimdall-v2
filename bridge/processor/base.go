@@ -93,6 +93,8 @@ func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClie
 		logger = log.NewNopLogger()
 	}
 
+	logger.Error("Opening storage db", "db", viper.GetString(util.BridgeDBFlag))
+
 	// creating syncer object
 	return &BaseProcessor{
 		Logger: logger,

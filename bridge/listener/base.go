@@ -98,6 +98,7 @@ func NewBaseListener(cdc codec.Codec, queueConnector *queue.Connector, httpClien
 	}
 	cliCtx = cliCtx.WithClient(rpc)
 
+	logger.Error("Opening storage db", "db", viper.GetString(util.BridgeDBFlag))
 	// creating syncer object
 	return &BaseListener{
 		Logger:        logger,
