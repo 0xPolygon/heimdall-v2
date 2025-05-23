@@ -28,9 +28,10 @@ type Keeper struct {
 
 	IContractCaller helper.IContractCaller
 
-	milestone collections.Map[uint64, types.Milestone]
-	params    collections.Item[types.Params]
-	count     collections.Item[uint64]
+	milestone          collections.Map[uint64, types.Milestone]
+	params             collections.Item[types.Params]
+	count              collections.Item[uint64]
+	lastMilestoneBlock collections.Item[uint64]
 }
 
 // NewKeeper creates a new milestone Keeper instance
@@ -58,9 +59,10 @@ func NewKeeper(
 		cdc:             cdc,
 		IContractCaller: contractCaller,
 
-		milestone: collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
-		params:    collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
-		count:     collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
+		milestone:          collections.NewMap(sb, types.MilestoneMapPrefixKey, "milestone", collections.Uint64Key, codec.CollValue[types.Milestone](cdc)),
+		params:             collections.NewItem(sb, types.ParamsPrefixKey, "params", codec.CollValue[types.Params](cdc)),
+		count:              collections.NewItem(sb, types.CountPrefixKey, "count", collections.Uint64Value),
+		lastMilestoneBlock: collections.NewItem(sb, types.LastMilestoneBlockPrefixKey, "lastMilestoneBlock", collections.Uint64Value),
 	}
 
 	// build the schema and set it in the keeper
@@ -71,6 +73,35 @@ func NewKeeper(
 	k.schema = s
 
 	return k
+}
+
+func (k Keeper) SetLastMilestoneBlock(ctx context.Context, block uint64) error {
+	err := k.lastMilestoneBlock.Set(ctx, block)
+	if err != nil {
+		k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+func (k Keeper) GetLastMilestoneBlock(ctx context.Context) (uint64, error) {
+	doExist, err := k.lastMilestoneBlock.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the existence of last milestone block in store", "err", err)
+		return 0, err
+	}
+
+	if !doExist {
+		return 0, nil
+	}
+	block, err := k.lastMilestoneBlock.Get(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while getting last milestone block from store", "err", err)
+		return 0, err
+	}
+
+	return block, nil
 }
 
 // Logger returns a module-specific logger.
@@ -113,7 +144,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 }
 
 // AddMilestone adds a milestone to the store
-func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) error {
+func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone, block uint64) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// GetMilestoneCount gives the number of previous milestone
@@ -134,6 +165,12 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) er
 	err = k.SetMilestoneCount(ctx, milestoneNumber)
 	if err != nil {
 		k.Logger(ctx).Error("error while storing milestone count in store", "err", err)
+		return err
+	}
+
+	err = k.SetLastMilestoneBlock(ctx, block)
+	if err != nil {
+		k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
 		return err
 	}
 

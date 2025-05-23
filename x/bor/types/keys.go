@@ -20,4 +20,6 @@ var (
 	SeedLastBlockProducerKey = collections.NewPrefix(0x37) // key to store the last bor blocks producer seed
 	ParamsKey                = collections.NewPrefix(0x38) // Key to store the params in the store
 	ProducerVotesKey         = collections.NewPrefix(0x39) // Key to store the producer votes in the store
+	PerformanceScoreKey      = collections.NewPrefix(0x3A) // Key to store the performance score in the store
+	LatestActiveValidatorKey = collections.NewPrefix(0x3B) // Key to store the latest active validator in the store
 )

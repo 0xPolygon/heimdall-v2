@@ -63,7 +63,7 @@ func (s *KeeperTestSuite) TestQueryLatestMilestone() {
 	require.Error(err)
 	require.Nil(res)
 
-	err = keeper.AddMilestone(ctx, milestoneBlock)
+	err = keeper.AddMilestone(ctx, milestoneBlock, 0)
 	require.NoError(err)
 
 	res, err = queryClient.GetLatestMilestone(ctx, reqLatest)

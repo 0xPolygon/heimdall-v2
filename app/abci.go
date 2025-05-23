@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -407,7 +408,7 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 		lastEndHash = lastMilestone.Hash
 	}
 
-	majorityMilestone, aggregatedProposers, proposer, err := milestoneAbci.GetMajorityMilestoneProposition(
+	majorityMilestone, aggregatedProposers, proposer, supportingValidatorIDs, err := milestoneAbci.GetMajorityMilestoneProposition(
 		validatorSet,
 		extVoteInfo,
 		logger,
@@ -453,14 +454,125 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			EndBlock:        majorityMilestone.StartBlockNumber + uint64(len(majorityMilestone.BlockHashes)-1),
 			BorChainId:      params.ChainParams.BorChainId,
 			MilestoneId:     common.Bytes2Hex(aggregatedProposers),
-			Timestamp:       uint64(ctx.BlockHeader().Time.Unix()),
+			Timestamp:       uint64(ctx.BlockTime().Unix()),
 			TotalDifficulty: majorityMilestone.BlockTds[len(majorityMilestone.BlockHashes)-1],
-		}); err != nil {
+		}, uint64(ctx.BlockHeight())); err != nil {
 			logger.Error("Error occurred while adding milestone", "error", err)
 			return nil, err
 		}
 
+		err = app.BorKeeper.UpdateValidatorPerformanceScore(addMilestoneCtx, supportingValidatorIDs, uint64(len(majorityMilestone.BlockHashes)))
+		if err != nil {
+			logger.Error("Error occurred while updating validator performance score", "error", err)
+			return nil, err
+		}
+
+		err = app.BorKeeper.UpdateLatestActiveValidator(addMilestoneCtx, supportingValidatorIDs)
+		if err != nil {
+			logger.Error("Error occurred while updating latest active validator", "error", err)
+			return nil, err
+		}
+
+		lastSpan, err := app.BorKeeper.GetLastSpan(ctx)
+		if err != nil {
+			logger.Error("Error occurred while fetching the last span", "error", err)
+			return nil, err
+		}
+
+		if majorityMilestone.StartBlockNumber+uint64(len(majorityMilestone.BlockHashes)-1) >= lastSpan.StartBlock && ctx.BlockHeight() >= helper.GetVeblopHeight() {
+			logger.Info("New milestone is greater than the last span, creating a new veblop span", "lastSpan", lastSpan, "newMilestone", majorityMilestone)
+
+			params, err := app.BorKeeper.GetParams(ctx)
+			if err != nil {
+				logger.Error("Error occurred while getting bor params", "error", err)
+				return nil, err
+			}
+
+			endBlock := lastSpan.EndBlock + params.SpanDuration - 1
+
+			err = app.BorKeeper.AddNewVeblopSpan(addMilestoneCtx, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs)
+			if err != nil {
+				logger.Error("Error occurred while adding new veblop span", "error", err)
+				return nil, err
+			}
+		}
 		msCache.Write()
+	} else {
+		hasMilestone, err := app.MilestoneKeeper.HasMilestone(ctx)
+		if err != nil {
+			logger.Error("Error occurred while checking for the last milestone", "error", err)
+			return nil, err
+		}
+
+		var lastMilestone *milestoneTypes.Milestone = nil
+
+		if hasMilestone {
+			lastMilestone, err = app.MilestoneKeeper.GetLastMilestone(ctx)
+			if err != nil {
+				logger.Error("Error occurred while fetching the last milestone", "error", err)
+				return nil, err
+			}
+		}
+
+		lastMilestoneBlock, err := app.MilestoneKeeper.GetLastMilestoneBlock(ctx)
+		if err != nil {
+			logger.Error("Error occurred while fetching the last milestone block", "error", err)
+			return nil, err
+		}
+
+		diff := uint64(ctx.BlockHeight()) - lastMilestoneBlock
+
+		if lastMilestone != nil && lastMilestoneBlock != 0 && diff > 4 && ctx.BlockHeight() >= helper.GetVeblopHeight() {
+			logger.Warn("Block finalization time is greater than 4 seconds, creating a new veblop span", "lastMilestone", lastMilestone, "currentBlockTime", ctx.BlockTime().Unix())
+
+			addSpanCtx, spanCache := app.cacheTxContext(ctx)
+
+			latestActiveValidator, err := app.BorKeeper.GetLatestActiveValidator(ctx)
+			if err != nil {
+				logger.Error("Error occurred while getting latest active validator", "error", err)
+				return nil, err
+			}
+
+			lastSpan, err := app.BorKeeper.GetLastSpan(ctx)
+			if err != nil {
+				logger.Error("Error occurred while getting last span", "error", err)
+				return nil, err
+			}
+
+			params, err := app.BorKeeper.GetParams(ctx)
+			if err != nil {
+				logger.Error("Error occurred while getting bor params", "error", err)
+				return nil, err
+			}
+
+			endBlock := lastSpan.EndBlock
+
+			for endBlock-lastMilestone.EndBlock > 2*params.SpanDuration {
+				endBlock -= params.SpanDuration
+			}
+
+			if endBlock <= lastMilestone.EndBlock {
+				endBlock = lastSpan.EndBlock
+				for endBlock <= lastMilestone.EndBlock {
+					endBlock += params.SpanDuration
+				}
+			}
+
+			err = app.BorKeeper.AddNewVeblopSpan(addSpanCtx, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveValidator)
+			if err != nil {
+				logger.Error("Error occurred while adding new veblop span", "error", err)
+				return nil, err
+			}
+
+			// update the last milestone block to the current block height to avoid creating a new span in the next block
+			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight()))
+			if err != nil {
+				logger.Error("Error occurred while setting last milestone block", "error", err)
+				return nil, err
+			}
+
+			spanCache.Write()
+		}
 	}
 
 	// tally votes

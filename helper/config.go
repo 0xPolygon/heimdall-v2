@@ -201,6 +201,8 @@ var producerVotes []uint64
 // Logger stores global logger object
 var Logger logger.Logger
 
+var veblopHeight int64 = 0
+
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
 	RootChainAddress      string
@@ -215,6 +217,32 @@ var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigr
 	MumbaiChain: {},
 	AmoyChain:   {},
 	"default":   {},
+}
+
+// parseProducerVotes parses a comma-separated string of producer IDs into a slice of uint64
+func parseProducerVotes(producerVotesStr string) []uint64 {
+	if producerVotesStr == "" {
+		return []uint64{}
+	}
+
+	producerStrings := strings.Split(producerVotesStr, ",")
+	if len(producerStrings) > 0 && producerStrings[0] != "" {
+		votes := make([]uint64, len(producerStrings))
+		for i, p := range producerStrings {
+			pTrimmed := strings.TrimSpace(p)
+			if pTrimmed == "" {
+				log.Fatalf("Empty producer ID found in producer votes list: '%s'", producerVotesStr)
+			}
+			var parseErr error
+			votes[i], parseErr = strconv.ParseUint(pTrimmed, 10, 64)
+			if parseErr != nil {
+				log.Fatalf("Failed to parse producer ID '%s': %v", pTrimmed, parseErr)
+			}
+		}
+		return votes
+	}
+
+	return []uint64{}
 }
 
 // InitHeimdallConfig initializes with viper config (from heimdall configuration)
@@ -364,25 +392,8 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 		}
 	}
 
-	producerStrings := strings.Split(conf.Custom.ProducerVotes, ",")
-	// if conf.Custom.Producers was empty and no default was set, producerStrings will be [""]
-	// which will cause ParseUint to fail for the first element.
-	// So, only parse if producerStrings has actual content beyond just an empty string from split.
-	if len(producerStrings) > 0 && producerStrings[0] != "" {
-		producerVotes = make([]uint64, len(producerStrings))
-		for i, p := range producerStrings {
-			pTrimmed := strings.TrimSpace(p)
-			if pTrimmed == "" { // handle cases like "1,,2" or trailing comma
-				log.Fatalf("Empty producer ID found in producer votes list: '%s'", conf.Custom.ProducerVotes)
-			}
-			var parseErr error
-			producerVotes[i], parseErr = strconv.ParseUint(pTrimmed, 10, 64)
-			if parseErr != nil {
-				log.Fatalf("Failed to parse producer ID '%s': %v", pTrimmed, parseErr)
-			}
-		}
-	} else {
-		producerVotes = []uint64{} // Ensure producerVotes is an empty slice, not nil, if no producerVotes are configured.
+	producerVotes = parseProducerVotes(conf.Custom.ProducerVotes)
+	if len(producerVotes) == 0 {
 		Logger.Info("No producer votes configured or parsed.")
 	}
 
@@ -397,8 +408,14 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
 	switch conf.Custom.Chain {
-	case MainChain, MumbaiChain, AmoyChain:
+	case MainChain:
+		veblopHeight = 1000000
+	case MumbaiChain:
+		veblopHeight = 1000000
+	case AmoyChain:
+		veblopHeight = 1000000
 	default:
+		veblopHeight = 256
 	}
 }
 
@@ -502,6 +519,10 @@ func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
 }
 
+func GetVeblopHeight() int64 {
+	return veblopHeight
+}
+
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
@@ -515,6 +536,17 @@ func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigrati
 
 func GetProducerVotes() []uint64 {
 	return producerVotes
+}
+
+func GetFallbackProducerVotes() []uint64 {
+	switch conf.Custom.Chain {
+	case MainChain:
+		return parseProducerVotes(DefaultMainnetProducers)
+	case AmoyChain:
+		return parseProducerVotes(DefaultAmoyTestnetProducers)
+	default:
+		return parseProducerVotes(DefaultLocalTestnetProducers)
+	}
 }
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command

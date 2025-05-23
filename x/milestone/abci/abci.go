@@ -94,7 +94,7 @@ func GetMajorityMilestoneProposition(
 	logger log.Logger,
 	lastEndBlock *uint64,
 	lastEndBlockHash []byte,
-) (*types.MilestoneProposition, []byte, string, error) {
+) (*types.MilestoneProposition, []byte, string, map[uint64]struct{}, error) {
 	ac := address.HexCodec{}
 
 	// Track voting power per block number
@@ -125,7 +125,7 @@ func GetMajorityMilestoneProposition(
 
 		voteExtension := new(sidetxs.VoteExtension)
 		if err := voteExtension.Unmarshal(vote.VoteExtension); err != nil {
-			return nil, nil, "", fmt.Errorf("error while unmarshalling vote extension: %w", err)
+			return nil, nil, "", nil, fmt.Errorf("error while unmarshalling vote extension: %w", err)
 		}
 
 		if voteExtension.MilestoneProposition == nil {
@@ -134,7 +134,7 @@ func GetMajorityMilestoneProposition(
 
 		valAddr, err := ac.BytesToString(vote.Validator.Address)
 		if err != nil {
-			return nil, nil, "", err
+			return nil, nil, "", nil, err
 		}
 
 		// Skip if we've already processed a vote from this validator
@@ -148,7 +148,7 @@ func GetMajorityMilestoneProposition(
 
 		_, validator := validatorSet.GetByAddress(valAddr)
 		if validator == nil {
-			return nil, nil, "", fmt.Errorf("failed to get validator %s", valAddr)
+			return nil, nil, "", nil, fmt.Errorf("failed to get validator %s", valAddr)
 		}
 
 		validatorAddresses[valAddr] = vote.Validator.Address
@@ -160,7 +160,7 @@ func GetMajorityMilestoneProposition(
 			blockTd := prop.BlockTds[i]
 			var buf bytes.Buffer
 			if err := binary.Write(&buf, binary.LittleEndian, blockTd); err != nil {
-				return nil, nil, "", fmt.Errorf("failed to convert td to binary: %w", err)
+				return nil, nil, "", nil, fmt.Errorf("failed to convert td to binary: %w", err)
 			}
 
 			// Hash Bytes + Td Bytes
@@ -215,7 +215,7 @@ func GetMajorityMilestoneProposition(
 
 	if len(majorityBlocks) == 0 {
 		logger.Debug("No blocks found with majority support")
-		return nil, nil, "", nil
+		return nil, nil, "", nil, nil
 	}
 
 	var majorityParentHash string
@@ -232,14 +232,14 @@ func GetMajorityMilestoneProposition(
 
 	if !isParentHashMajority {
 		logger.Debug("No parent hash found with majority support")
-		return nil, nil, "", nil
+		return nil, nil, "", nil, nil
 	}
 
 	if majorityParentHash != common.Bytes2Hex(lastEndBlockHash) {
 		logger.Debug("Parent hash does not match last end block hash",
 			"majorityParentHash", majorityParentHash,
 			"lastEndBlockHash", common.Bytes2Hex(lastEndBlockHash))
-		return nil, nil, "", nil
+		return nil, nil, "", nil, nil
 	}
 
 	startBlock := uint64(0)
@@ -265,7 +265,7 @@ func GetMajorityMilestoneProposition(
 	if !startBlockFound {
 		logger.Debug("No blocks with majority support starting at requested block",
 			"requestedStartBlock", startBlock)
-		return nil, nil, "", nil
+		return nil, nil, "", nil, nil
 	}
 
 	// Find the first continuous range starting from startBlock
@@ -292,6 +292,8 @@ func GetMajorityMilestoneProposition(
 
 	// Find validators who support the entire winning range
 	var supportingValidatorList []string
+	supportingValidatorIDs := make(map[uint64]struct{})
+
 	for valAddr, blocks := range validatorVotes {
 		supports := true
 		for blockNum := startBlock; blockNum <= endBlock; blockNum++ {
@@ -303,6 +305,10 @@ func GetMajorityMilestoneProposition(
 		}
 		if supports {
 			supportingValidatorList = append(supportingValidatorList, valAddr)
+			_, validator := validatorSet.GetByAddress(valAddr)
+			if validator != nil {
+				supportingValidatorIDs[validator.ValId] = struct{}{}
+			}
 		}
 	}
 
@@ -319,7 +325,7 @@ func GetMajorityMilestoneProposition(
 		logger.Debug("After filtering validators, no range has 2/3 majority support",
 			"totalSupportingPower", totalSupportingPower,
 			"requiredPower", majorityVP)
-		return nil, nil, "", nil
+		return nil, nil, "", nil, nil
 	}
 
 	// Additional sort by voting power (stable to preserve string order when tied)
@@ -328,7 +334,7 @@ func GetMajorityMilestoneProposition(
 	})
 
 	if len(supportingValidatorList) == 0 {
-		return nil, nil, "", fmt.Errorf("no validators support the winning range")
+		return nil, nil, "", nil, fmt.Errorf("no validators support the winning range")
 	}
 
 	// Generate aggregated proposers hash from supporting validators
@@ -364,7 +370,7 @@ func GetMajorityMilestoneProposition(
 		"blockCount", blockCount,
 		"supportingValidators", len(supportingValidatorList))
 
-	return proposition, aggregatedProposersHash, supportingValidatorList[0], nil
+	return proposition, aggregatedProposersHash, supportingValidatorList[0], supportingValidatorIDs, nil
 }
 
 func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, error) {

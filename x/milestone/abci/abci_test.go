@@ -188,7 +188,7 @@ func TestGetMajorityMilestoneProposition_MajorityWins(t *testing.T) {
 	lastEndBlock := startBlock - 1
 	lastEndHash := parentHash
 
-	resultProp, _, _, err := GetMajorityMilestoneProposition(
+	resultProp, _, _, _, err := GetMajorityMilestoneProposition(
 		validatorSet,
 		extVotes,
 		logger,

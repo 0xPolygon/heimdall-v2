@@ -26,7 +26,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 	if len(data.Milestones) > 0 {
 		sortedMilestones := types.SortMilestones(data.Milestones)
 		for _, milestone := range sortedMilestones {
-			if err := k.AddMilestone(ctx, milestone); err != nil {
+			if err := k.AddMilestone(ctx, milestone, 0); err != nil {
 				k.Logger(ctx).Error("error while adding the milestone to store",
 					"milestone", milestone.String(),
 					"error", err)

@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -43,6 +44,11 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 // SideHandleMsgSpan validates external calls required for processing proposed span
 func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	logger := s.k.Logger(ctx)
+
+	if ctx.BlockHeight() >= helper.GetVeblopHeight() {
+		logger.Debug("skipping span msg since block height is greater than veblop height", "block height", ctx.BlockHeight(), "veblop height", helper.GetVeblopHeight())
+		return sidetxs.Vote_VOTE_NO
+	}
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
@@ -136,6 +142,11 @@ func (s sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 // PostHandleMsgSpan handles state persisting span msg
 func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	logger := s.k.Logger(ctx)
+
+	if ctx.BlockHeight() >= helper.GetVeblopHeight() {
+		logger.Debug("skipping span msg since block height is greater than veblop height", "block height", ctx.BlockHeight(), "veblop height", helper.GetVeblopHeight())
+		return nil
+	}
 
 	msg, ok := msgI.(*types.MsgProposeSpan)
 	if !ok {
