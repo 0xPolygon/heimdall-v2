@@ -45,10 +45,11 @@ The majority of the steps below are automated in the [migration script](migrate.
    - This can happen, and the migration script handles this case by downloading the genesis.json from a trusted source (instead of generating it, to avoid risks of checksum mismatches and especially app hash errors in v2).  
 7. Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
 8. **Genesis Export from Heimdall-v1**
-   `heimdallcli export-heimdall --home HEIMDALLD_HOME`
+   `heimdallcli export-heimdall --home HEIMDALLD_HOME --chain-id V1_CHAIN_ID`
    - operators should use the latest version of `heimdallcli`
-   - `HEIMDALLD_HOME` is usually `/var/lib/heimdall` directory, and the command will generate `dump-genesis.json` there  
-     It's recommended to run the process first on a fully synced pilot node.
+   - `HEIMDALLD_HOME` is usually `/var/lib/heimdall` directory, 
+   - `V1_CHAIN_ID` is the heimdall-v1 chain id, (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
+      The command will generate `dump-genesis.json` there. This process must be run first on a fully synced pilot node.
 9. **v1 Checksum Generation**
    The exported genesis file is checksummed.
 10. **Backup Heimdall v1 Data** - Node operators back up their Heimdall v1 `HEIMDALL_HOME` directory (containing `config`, `data` and – for validators - `bridge`).
@@ -56,16 +57,16 @@ The majority of the steps below are automated in the [migration script](migrate.
 12. **Verify Heimdall-v2 installation** – Node operators make sure `heimdall-v2` is successfully installed by running the `version` command
 13. **Run Migration Command** - Converts the old genesis to v2 format using:
     ```bash
-    heimdalld migrate dump-genesis.json --chain-id=<CHAIN_ID> --genesis-time=<TIME_IN_FORMAT_YYYY-MM-DDTHH:MM:SSZ) --initial-height=<H>
+    heimdalld migrate dump-genesis.json --chain-id=<V2_CHAIN_ID> --genesis-time=<TIME_IN_FORMAT_YYYY-MM-DDTHH:MM:SSZ) --initial-height=<H>
     ```
-    where `H = v1_halt_height + 1`, whilst `--chain-id` and `genesis-time` are pre-agreed offline via governance proposal on v1.
+    where `H = v1_halt_height + 1`, whilst `--chain-id` and `genesis-time` are pre-agreed offline via the governance proposal on v1.
 14. **v2 Checksum Generation**
     The migrated genesis is used to generate its checksum.  
     At this point, script env vars can be set, then the script can be checksummed and distributed to the community (via git on heimdall-v2 repo).
     The genesis exports (v1 and migrated) will be made available to the community together with their checksums.
     The script will be distributed to the community together with its checksum.
 15. Node operators delete (or rename) their `HEIMDALL_HOME` directory (**make sure it was backed up earlier**)
-16. Node operators create a new `HEIMDALL_HOME` directory with the new Heimdall v2 binary by running `heimdalld init [moniker-name] --home=<V2_HOME> --chain-id=<CHAIN_ID>`.  
+16. Node operators create a new `HEIMDALL_HOME` directory with the new Heimdall v2 binary by running `heimdalld init [moniker-name] --home=<V2_HOME> --chain-id=<V2_CHAIN_ID>`.  
     The moniker is available in v1 at `HEIMDALL_HOME/config/config.toml`.
     The service file `heimdall.service` should reflect the same `User` (and possibly `Group`) coming from v1 service file.
 17. Node operators edit their configuration files with config information from their backup, plus default values. For detailed info, see [here](../configs).
