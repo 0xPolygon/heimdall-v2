@@ -59,7 +59,8 @@ type IContractCaller interface {
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
-	GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error)
+	GetBorChainBlocksAndTdInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, error)
+	GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
@@ -542,16 +543,17 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	return latestBlock, nil
 }
 
-// GetBorChainBlocksInBatch returns bor chain block headers via single RPC Batch call
-func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error) {
+// GetBorChainBlocksAndTdInBatch returns bor chain block headers and TD via single RPC Batch call. It tries to get blocks from the range interval but returns only the ones found on chain
+func (c *ContractCaller) GetBorChainBlocksAndTdInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
+	totalBlocks := end - start + 1
 	rpcClient := c.BorChainClient.Client()
+	batchElems := make([]rpc.BatchElem, 0, 2*(totalBlocks))
 
-	// Prepare a slice of batch elements.
-	batchElems := make([]rpc.BatchElem, 0, end-start+1)
-	result := make([]*ethTypes.Header, end-start+1)
+	// Header Batch
+	result := make([]*ethTypes.Header, totalBlocks)
 	for i := start; i <= end; i++ {
 		blockNumHex := fmt.Sprintf("0x%x", i)
 
@@ -562,21 +564,66 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 		})
 	}
 
-	// Execute the batch call.
-	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
-		return nil, err
+	type tdResp struct {
+		TotalDifficulty hexutil.Uint64 `json:"totalDifficulty"`
 	}
 
-	// Collect the results.
-	response := make([]*ethTypes.Header, 0, len(batchElems))
-	for i, elem := range batchElems {
-		if elem.Error != nil || result[i] == nil {
+	// TD Batch
+	resultTd := make([]*tdResp, totalBlocks)
+	for i := start; i <= end; i++ {
+		blockNumHex := fmt.Sprintf("0x%x", i)
+
+		batchElems = append(batchElems, rpc.BatchElem{
+			Method: "eth_getTdByNumber",
+			Args:   []interface{}{blockNumHex},
+			Result: &resultTd[i-start],
+		})
+	}
+
+	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
+		return nil, nil, err
+	}
+
+	// Get results until capture an error (header not found)
+	tds := make([]uint64, 0, totalBlocks)
+	headers := make([]*ethTypes.Header, 0, totalBlocks)
+	for i := range totalBlocks {
+		elemHeader := batchElems[i]
+		elemTd := batchElems[i+totalBlocks]
+		if elemHeader.Error != nil || elemTd.Error != nil || result[i] == nil || resultTd[i] == nil {
 			break
 		}
-		response = append(response, result[i])
+
+		headers = append(headers, result[i])
+		tds = append(tds, uint64(resultTd[i].TotalDifficulty))
 	}
 
-	return response, nil
+	return headers, tds, nil
+}
+
+// GetBorChainBlockTd returns total difficulty of a block
+func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
+
+	rpcClient := c.BorChainClient.Client()
+
+	var resp map[string]interface{}
+	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
+		return 0, err
+	}
+
+	raw, ok := resp["totalDifficulty"].(string)
+	if !ok {
+		return 0, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
+	}
+
+	td, err := hexutil.DecodeUint64(raw)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
+	}
+
+	return td, nil
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block
