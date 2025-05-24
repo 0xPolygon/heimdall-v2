@@ -353,7 +353,7 @@ func (k *Keeper) GetSeedProducer(ctx context.Context, id uint64) (*common.Addres
 	}
 
 	if !ok {
-		return nil, fmt.Errorf("last seed producer not found")
+		return nil, nil //nolint: nilnil
 	}
 
 	// get last seed producer

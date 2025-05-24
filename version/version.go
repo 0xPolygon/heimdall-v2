@@ -28,9 +28,9 @@ var (
 	// Name is the application's name
 	Name = ""
 	// ServerName is the server binary name
-	ServerName = "<appd>"
+	ServerName = "heimdalld"
 	// ClientName is the client binary name
-	ClientName = "<appcli>"
+	ClientName = "heimdalld"
 	// Version is the app's version string
 	Version = ""
 	// Commit is the app's commit hash

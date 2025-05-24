@@ -157,7 +157,7 @@ func RequestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64) {
 
 func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validators []stakeTypes.Validator) {
 	t.Helper()
-	dummyExt, err := getDummyNonRpVoteExtension(height, app.ChainID())
+	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
 	require.NoError(t, err)
 	consolidatedSideTxRes := sidetxs.VoteExtension{
 		SideTxResponses: []sidetxs.SideTxResponse{},
@@ -175,7 +175,7 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 			NonRpVoteExtension: dummyExt,
 			BlockIdFlag:        cmtTypes.BlockIDFlagCommit,
 			Validator: abci.Validator{
-				Address: common.Hex2Bytes(validator.Signer),
+				Address: common.FromHex(validator.Signer),
 				Power:   validator.VotingPower,
 			},
 		})
@@ -183,8 +183,9 @@ func requestFinalizeBlock(t *testing.T, app *HeimdallApp, height int64, validato
 	commitInfo, err := extCommitInfo.Marshal()
 	require.NoError(t, err)
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Txs:    [][]byte{commitInfo},
-		Height: height,
+		Txs:             [][]byte{commitInfo},
+		Height:          height,
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 }
@@ -225,7 +226,7 @@ func createSideTxResponses(vote sidetxs.Vote, txHashes ...string) []sidetxs.Side
 	responses := make([]sidetxs.SideTxResponse, len(txHashes))
 	for i, txHash := range txHashes {
 		responses[i] = sidetxs.SideTxResponse{
-			TxHash: common.Hex2Bytes(txHash),
+			TxHash: common.FromHex(txHash),
 			Result: vote,
 		}
 	}

@@ -44,7 +44,7 @@ import (
 
 	// clerktestutil "github.com/0xPolygon/heimdall-v2/x/clerk/testutil"
 
-	addressUtils "github.com/0xPolygon/heimdall-v2/common/address"
+	addressUtils "github.com/0xPolygon/heimdall-v2/common/hex"
 
 	gogoproto "github.com/gogo/protobuf/proto"
 
@@ -368,8 +368,9 @@ func TestPrepareProposalHandler(t *testing.T) {
 	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 
@@ -402,7 +403,7 @@ func TestProcessProposalHandler(t *testing.T) {
 		EndBlock:        200,
 		RootHash:        common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000dead"),
 		AccountRootHash: common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000003dead"),
-		BorChainId:      "test",
+		BorChainId:      "1",
 	}
 
 	txBytes, err := buildSignedTx(msg, validators[0].Signer, ctx, priv, app)
@@ -410,8 +411,9 @@ func TestProcessProposalHandler(t *testing.T) {
 	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 
@@ -494,8 +496,9 @@ func TestExtendVoteHandler(t *testing.T) {
 	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 
@@ -631,8 +634,9 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	extCommitBytes, extCommit, voteInfo, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 
@@ -779,8 +783,9 @@ func TestPreBlocker(t *testing.T) {
 	app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
 
 	finalizeReq := abci.RequestFinalizeBlock{
-		Txs:    [][]byte{extCommitBytes, txBytes},
-		Height: 3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 	_, err = app.PreBlocker(ctx, &finalizeReq)
 	require.NoError(t, err)
@@ -931,8 +936,9 @@ func TestSidetxsHappyPath(t *testing.T) {
 
 			extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 			_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-				Height: 3,
-				Txs:    [][]byte{extCommitBytes, txBytes},
+				Height:          3,
+				Txs:             [][]byte{extCommitBytes, txBytes},
+				ProposerAddress: common.FromHex(validators[0].Signer),
 			})
 			require.NoError(t, err)
 
@@ -967,8 +973,9 @@ func TestSidetxsHappyPath(t *testing.T) {
 			extCommitBytes2, _, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 
 			finalizeReq := abci.RequestFinalizeBlock{
-				Txs:    [][]byte{extCommitBytes2, txBytes},
-				Height: 3,
+				Txs:             [][]byte{extCommitBytes2, txBytes},
+				Height:          3,
+				ProposerAddress: common.FromHex(validators[0].Signer),
 			}
 			_, err = app.PreBlocker(ctx, &finalizeReq)
 			require.NoError(t, err)
@@ -1115,8 +1122,9 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1163,8 +1171,9 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1211,8 +1220,9 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1360,8 +1370,9 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1433,8 +1444,9 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1518,8 +1530,9 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1600,8 +1613,9 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1636,8 +1650,9 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		require.Equal(t, ve.SideTxResponses[0].Result, sidetxs.Vote_VOTE_NO, "expected at least one vote == VOTE_NO in the results")
 
 		finalizeReq := abci.RequestFinalizeBlock{
-			Txs:    [][]byte{extCommitBytes, txBytes},
-			Height: 3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		}
 		_, err = app.PreBlocker(ctx, &finalizeReq)
 		require.NoError(t, err)
@@ -1756,8 +1771,9 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1826,8 +1842,9 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1899,8 +1916,9 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -1975,8 +1993,9 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 
 		extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, txBytesCmt.Hash(), validators, validatorPrivKeys)
 		_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-			Height: 3,
-			Txs:    [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		})
 		require.NoError(t, err)
 
@@ -2033,8 +2052,9 @@ func TestMilestoneHappyPath(t *testing.T) {
 	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 
@@ -2138,8 +2158,9 @@ func TestMilestoneHappyPath(t *testing.T) {
 	extCommitBytesWithMilestone, _, _, err := buildExtensionCommitsWithMilestoneProposition(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys, *ve.MilestoneProposition)
 
 	finalizeReq := abci.RequestFinalizeBlock{
-		Txs:    [][]byte{extCommitBytesWithMilestone, txBytes},
-		Height: 3,
+		Txs:             [][]byte{extCommitBytesWithMilestone, txBytes},
+		Height:          3,
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 
 	_, err = app.PreBlocker(ctx, &finalizeReq)
@@ -2165,8 +2186,9 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 	extCommitBytes, extCommit, _, err := buildExtensionCommits(t, &app, common.Hex2Bytes("000000000000000000000000000000000000000000000000000000000001dead"), validators, validatorPrivKeys)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 
@@ -2238,8 +2260,9 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 		mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 		finalizeReq := abci.RequestFinalizeBlock{
-			Txs:    [][]byte{extCommitBytes, txBytes},
-			Height: 3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		}
 
 		_, err = app.PreBlocker(ctx, &finalizeReq)
@@ -2270,8 +2293,9 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 		mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 		finalizeReq := abci.RequestFinalizeBlock{
-			Txs:    [][]byte{extCommitBytes, txBytes},
-			Height: 3,
+			Txs:             [][]byte{extCommitBytes, txBytes},
+			Height:          3,
+			ProposerAddress: common.FromHex(validators[0].Signer),
 		}
 
 		_, err = app.PreBlocker(ctx, &finalizeReq)

@@ -11,11 +11,50 @@
 
 ## Overview
 
-This module manages validators related transactions and state for Heimdall.  
-validators stake their tokens on the Ethereum chain and send the transactions on Heimdall using necessary parameters to acknowledge the Ethereum stake change.  
+This module manages the validators' related transactions and state for Heimdall.  
+Validators stake their tokens on the Ethereum chain and send the transactions on Heimdall using necessary parameters to acknowledge the Ethereum stake change.  
 Once the majority of the validators agree on the change on the stake, this module saves the validator information on Heimdall state.  
 
 ![Stake Flow.png](stake_flow.png)
+
+## Flow
+
+The x/stake module manages validator-related transactions and validator set management for Heimdall v2.  
+Validators stake their tokens on the Ethereum chain to participate in consensus.  
+To synchronize these changes with Heimdall, the bridge processor broadcasts the corresponding transaction for an Ethereum-emitted event, choosing from one of the following messages each with the necessary parameters:  
+- `MsgValidatorJoin`: This message is triggered when a new validator joins the system by interacting with `StakingManager.sol` on Ethereum. The action emits a `Staked` event to recognize and process the validator’s participation.  
+- `MsgStakeUpdate`: Used to handle stake modifications, this message is sent when a validator re-stakes or receives additional delegation. Both scenarios trigger a `StakeUpdate` event on Ethereum, ensuring Heimdall accurately updates the validator’s stake information.  
+- `MsgValidatorExit`: When a validator decides to exit, they initiate the process on Ethereum, leading to the emission of a `UnstakeInit` event. This message ensures that Heimdall records the validator’s departure accordingly.  
+- `MsgSignerUpdate`: This message is responsible for processing changes to a validator’s signer key. When a validator updates their signer key on Ethereum, it emits a `SignerUpdate` event, prompting Heimdall to reflect the new signer key in its records.  
+Each of these transactions in Heimdall v2 follows the same processing mechanisms, leveraging ABCI++ phases.  
+During the `PreCommit` phase, side transaction handlers are triggered, and a vote is injected after validating the Ethereum-emitted event and ensuring its alignment with the data in the processed message.  
+Once a majority of validators confirm that the action described in the message has occurred on Ethereum, the x/stake module updates the validator’s state in Heimdall during the `FinalizeBlock`’s `PreBlocker` execution.  
+
+### Replay Prevention Mechanism
+Heimdall v2 employs a replay prevention mechanism in the post-tx handler functions to ensure that validator update messages derived from Ethereum events are not processed multiple times.  
+This mechanism prevents replay attacks by assigning a unique sequence number to each transaction and verifying whether it has already been processed.  
+The sequence number is constructed using the Ethereum block number and log index, following the formula:  
+- `sequence = (block number × DefaultLogIndexUnit) + log index`
+where:  
+- `msg.BlockNumber` represents the Ethereum block where the event was emitted.  
+- `msg.LogIndex` is the position of the log entry within that block.  
+- `DefaultLogIndexUnit` ensures uniqueness when combining block numbers and log indexes.  
+Before processing a transaction, Heimdall checks its stake keeper to determine if the sequence number has been recorded.
+If the sequence is found, the transaction is rejected as a duplicate.  
+Once the post-tx handler completes successfully, the sequence is stored, ensuring that any future message with the same sequence is recognized and ignored.  
+This approach guarantees that Heimdall only processes each valid Ethereum signer update once, preventing unintended state changes due to replayed messages.  
+
+### Updating the Validator Set
+In the x/stake `EndBlocker`, Heimdall updates the validator set (through the `ApplyAndReturnValidatorSetUpdates`function), ensuring consensus reflects the latest validator changes.  
+Before any updates, the current block’s validator set is stored as the previous block’s set. The system retrieves all existing validators, the current validator set, and the acknowledgment count from the x/checkpoint state.  
+Using `GetUpdatedValidators`, a list of validators that require updates (`setUpdates`) is identified and applied through `UpdateWithChangeSet`, storing the new set under `CurrentValidatorSetKey`.  
+To maintain fair block proposer selection, Heimdall implements a proposer priority system, ensuring all validators have a fair chance to propose new blocks.  
+The proposer priority is dynamically adjusted using `IncrementProposerPriority(times int)`, which prevents any validator from monopolizing block proposals.  
+This function limits priority differences by re-scaling priorities (`RescalePriorities(diffMax)`) and shifting values based on the average proposer priority (`shiftByAvgProposerPriority()`).  
+During each round, the validator with the highest priority is selected as the proposer, after which their priority is adjusted to prevent indefinite accumulation.  
+These mechanisms collectively ensure efficient and fair validator rotation, maintaining a balanced consensus process while preventing priority overflows and unfair selection biases.
+
+![Stake ABCI_Diagram.png](stake_diagram.png)
 
 ## Messages
 
@@ -26,29 +65,28 @@ Once the majority of the validators agree on the change on the stake, this modul
 Here is the structure for the transaction message:
 
 ```protobuf
+//  MsgValidatorJoin defines a message for a new validator to join the network
 message MsgValidatorJoin {
-option (amino.name) = "heimdallv2/MsgValidatorJoin";
-
-option (gogoproto.equal) = false;
-option (gogoproto.goproto_getters) = true;
-
-string from = 1 [
-(amino.dont_omitempty) = true,
-(cosmos_proto.scalar) = "cosmos.AddressString"
-];
-uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
-uint64 activation_epoch = 3 [ (amino.dont_omitempty) = true ];
-string amount = 4 [
-(gogoproto.nullable) = false,
-(gogoproto.customtype) = "cosmossdk.io/math.Int",
-(amino.dont_omitempty) = true
-];
-google.protobuf.Any signer_pub_key = 5
-[ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
-bytes tx_hash = 6 [ (amino.dont_omitempty) = true ];
-uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
-uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
-uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
+  option (cosmos.msg.v1.signer) = "from";
+  option (amino.name) = "heimdallv2/stake/MsgValidatorJoin";
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
+  uint64 activation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  string amount = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.customtype) = "cosmossdk.io/math.Int",
+    (amino.dont_omitempty) = true
+  ];
+  bytes signer_pub_key = 5 [ (amino.dont_omitempty) = true ];
+  bytes tx_hash = 6 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 7 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 8 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
 }
 ```
 
@@ -58,25 +96,24 @@ uint64 nonce = 9 [ (amino.dont_omitempty) = true ];
 
 ```protobuf
 message MsgStakeUpdate {
-option (amino.name) = "heimdallv2/MsgStakeUpdate";
-
-option (gogoproto.equal) = false;
-option (gogoproto.goproto_getters) = true;
-
-string from = 1 [
-(amino.dont_omitempty) = true,
-(cosmos_proto.scalar) = "cosmos.AddressString"
-];
-uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
-string new_amount = 3 [
-(gogoproto.nullable) = false,
-(amino.dont_omitempty) = true,
-(gogoproto.customtype) = "cosmossdk.io/math.Int"
-];
-bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
-uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
-uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
-uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
+  option (cosmos.msg.v1.signer) = "from";
+  option (amino.name) = "heimdallv2/stake/MsgStakeUpdate";
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
+  string new_amount = 3 [
+    (gogoproto.nullable) = false,
+    (amino.dont_omitempty) = true,
+    (gogoproto.customtype) = "cosmossdk.io/math.Int"
+  ];
+  bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 ```
 
@@ -86,18 +123,16 @@ uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 
 ```protobuf
 message MsgSignerUpdate {
-  option (amino.name) = "heimdallv2/MsgSignerUpdate";
-
+  option (cosmos.msg.v1.signer) = "from";
+  option (amino.name) = "heimdallv2/stake/MsgSignerUpdate";
   option (gogoproto.equal) = false;
   option (gogoproto.goproto_getters) = true;
-
   string from = 1 [
     (amino.dont_omitempty) = true,
     (cosmos_proto.scalar) = "cosmos.AddressString"
   ];
   uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
-  google.protobuf.Any new_signer_pub_key = 3
-      [ (cosmos_proto.accepts_interface) = "cosmos.crypto.PubKey" ];
+  bytes new_signer_pub_key = 3 [ (amino.dont_omitempty) = true ];
   bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
   uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
   uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
@@ -111,21 +146,20 @@ message MsgSignerUpdate {
 
 ```protobuf
 message MsgValidatorExit {
-option (amino.name) = "heimdallv2/MsgValidatorExit";
-
-option (gogoproto.equal) = false;
-option (gogoproto.goproto_getters) = true;
-
-string from = 1 [
-(amino.dont_omitempty) = true,
-(cosmos_proto.scalar) = "cosmos.AddressString"
-];
-uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
-uint64 deactivation_epoch = 3 [ (amino.dont_omitempty) = true ];
-bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
-uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
-uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
-uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
+  option (cosmos.msg.v1.signer) = "from";
+  option (amino.name) = "heimdallv2/stake/MsgValidatorExit";
+  option (gogoproto.equal) = false;
+  option (gogoproto.goproto_getters) = true;
+  string from = 1 [
+    (amino.dont_omitempty) = true,
+    (cosmos_proto.scalar) = "cosmos.AddressString"
+  ];
+  uint64 val_id = 2 [ (amino.dont_omitempty) = true ];
+  uint64 deactivation_epoch = 3 [ (amino.dont_omitempty) = true ];
+  bytes tx_hash = 4 [ (amino.dont_omitempty) = true ];
+  uint64 log_index = 5 [ (amino.dont_omitempty) = true ];
+  uint64 block_number = 6 [ (amino.dont_omitempty) = true ];
+  uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 }
 ```
 
@@ -135,22 +169,22 @@ uint64 nonce = 7 [ (amino.dont_omitempty) = true ];
 
 #### Validator Join
 ```bash
-./build/heimdalld tx stake validator-join --proposer {proposer address} --signer-pubkey {signer pubkey with 04 prefix} --tx-hash {tx hash} --block-number {L1 block number} --staked-amount {total stake amount} --activation-epoch {activation epoch} --home="{path to home}"
+heimdalld tx stake validator-join --proposer {proposer address} --signer-pubkey {signer pubkey with 04 prefix} --tx-hash {tx hash} --block-number {L1 block number} --staked-amount {total stake amount} --activation-epoch {activation epoch} --home="{path to home}"
 ```
 
 #### Signer Update
 ```bash
-./build/heimdalld tx stake signer-update --proposer {proposer address} --id {val id} --new-pubkey {new pubkey with 04 prefix} --tx-hash {tx hash}  --log-index {log index} --block-number {L1 block number} --nonce {nonce} --home="{path to home}"
+heimdalld tx stake signer-update --proposer {proposer address} --id {val id} --new-pubkey {new pubkey with 04 prefix} --tx-hash {tx hash}  --log-index {log index} --block-number {L1 block number} --nonce {nonce} --home="{path to home}"
 ```
 
 #### Stake Update
 ```bash
-./build/heimdalld tx stake stake-update [valAddress] [valId] [amount] [txHash] [logIndex] [blockNumber] [nonce]
+heimdalld tx stake stake-update [valAddress] [valId] [amount] [txHash] [logIndex] [blockNumber] [nonce]
 ```
 
 #### Validator Exit
 ```bash
-./build/heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]
+heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHash] [logIndex] [blockNumber] [nonce]
 ```
 
 ### CLI Query Commands
@@ -165,27 +199,27 @@ One can run the following query commands from the stake module:
 * `is-old-tx` - Check if a tx is old (already submitted)
 
 ```bash
-./build/heimdalld query stake current-validator-set
+heimdalld query stake current-validator-set
 ```
 
 ```bash
-./build/heimdalld query stake signer [val_address]
+heimdalld query stake signer [val_address]
 ```
 
 ```bash
-./build/heimdalld query stake validator [id]
+heimdalld query stake validator [id]
 ```
 
 ```bash
-./build/heimdalld query stake validator-status [val_address]
+heimdalld query stake validator-status [val_address]
 ```
 
 ```bash
-./build/heimdalld query stake total-power
+heimdalld query stake total-power
 ```
 
 ```bash
-./build/heimdalld query stake is-old-tx [txHash] [logIndex]
+heimdalld query stake is-old-tx [txHash] [logIndex]
 ```
 
 ### GRPC Endpoints

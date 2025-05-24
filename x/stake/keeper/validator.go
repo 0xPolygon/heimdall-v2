@@ -9,7 +9,7 @@ import (
 	addresscodec "cosmossdk.io/core/address"
 	abci "github.com/cometbft/cometbft/abci/types"
 
-	util "github.com/0xPolygon/heimdall-v2/common/address"
+	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -32,22 +32,24 @@ func (k *Keeper) AddValidator(ctx context.Context, validator types.Validator) er
 }
 
 // IsCurrentValidatorByAddress check if validator is in current validator set by signer address
-func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) bool {
+func (k *Keeper) IsCurrentValidatorByAddress(ctx context.Context, address string) (bool, error) {
 	k.PanicIfSetupIsIncomplete()
 	// get ack count
 	ackCount, err := k.checkpointKeeper.GetAckCount(ctx)
 	if err != nil {
-		return false
+		k.Logger(ctx).Error("error in getting ack count", "error", err)
+		return false, err
 	}
 
 	// get validator info
 	validator, err := k.GetValidatorInfo(ctx, util.FormatAddress(address))
 	if err != nil {
-		return false
+		k.Logger(ctx).Error("error in getting validator info", "error", err)
+		return false, err
 	}
 
 	// check if validator is current validator
-	return validator.IsCurrentValidator(ackCount)
+	return validator.IsCurrentValidator(ackCount), nil
 }
 
 // GetValidatorInfo returns the validator info given its address
@@ -229,13 +231,6 @@ func (k *Keeper) UpdateValidatorSetInStore(ctx context.Context, newValidatorSet 
 	err := k.validatorSet.Set(ctx, types.CurrentValidatorSetKey, newValidatorSet)
 	if err != nil {
 		k.Logger(ctx).Error("error in setting the current validator set in store", "err", err)
-		return err
-	}
-
-	// When there is any update in checkpoint validator set, we assign it to milestone validator set too.
-	err = k.validatorSet.Set(ctx, types.CurrentMilestoneValidatorSetKey, newValidatorSet)
-	if err != nil {
-		k.Logger(ctx).Error("error in setting the current milestone validator set in store", "err", err)
 		return err
 	}
 
@@ -501,7 +496,6 @@ func (k *Keeper) ValidatorAddressCodec() addresscodec.Codec {
 }
 
 func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates []abci.ValidatorUpdate, err error) {
-	k.PanicIfSetupIsIncomplete()
 	var cmtValUpdates []abci.ValidatorUpdate
 	currentValidatorSet, err := k.GetValidatorSet(ctx)
 	if err != nil {
@@ -549,7 +543,8 @@ func (k Keeper) ApplyAndReturnValidatorSetUpdates(ctx context.Context) (updates 
 		for _, v := range setUpdates {
 			cmtProtoPk, err := v.CmtConsPublicKey()
 			if err != nil {
-				panic(err)
+				k.Logger(ctx).Error("error while getting the public key for validator, skipping it", "error", err, "validatorId", v.ValId)
+				continue
 			}
 
 			cmtValUpdates = append(cmtValUpdates, abci.ValidatorUpdate{
