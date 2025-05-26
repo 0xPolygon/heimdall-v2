@@ -150,12 +150,7 @@ type HeimdallApp struct {
 }
 
 func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-
-	DefaultNodeHome = filepath.Join(userHomeDir, "/var/lib/heimdall")
+	DefaultNodeHome = filepath.Join("/var/lib/heimdall")
 }
 
 func NewHeimdallApp(
