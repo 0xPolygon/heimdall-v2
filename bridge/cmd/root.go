@@ -129,7 +129,6 @@ func initMetrics() {
 // AdjustBridgeDBValue function is called to set appropriate bridge db path
 func AdjustBridgeDBValue(cmd *cobra.Command) {
 	cometbftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
-	homeValue, _ := cmd.Flags().GetString(flags.FlagHome)
 	withHeimdallConfigValue, _ := cmd.Flags().GetString(helper.WithHeimdallConfigFlag)
 	bridgeDBValue, _ := cmd.Flags().GetString(bridgeDBFlag)
 	borChainIDValue, _ := cmd.Flags().GetString(borChainIDFlag)
@@ -137,12 +136,11 @@ func AdjustBridgeDBValue(cmd *cobra.Command) {
 
 	// bridge-db directory (default storage)
 	if bridgeDBValue == "" {
-		bridgeDBValue = filepath.Join(homeValue, "bridge", "storage")
+		bridgeDBValue = filepath.Join(viper.GetString(flags.FlagHome), "bridge", "storage")
 	}
 
 	// set to viper
 	viper.Set(helper.CometBFTNodeFlag, cometbftNode)
-	viper.Set(flags.FlagHome, homeValue)
 	viper.Set(helper.WithHeimdallConfigFlag, withHeimdallConfigValue)
 	viper.Set(bridgeDBFlag, bridgeDBValue)
 	viper.Set(borChainIDFlag, borChainIDValue)
