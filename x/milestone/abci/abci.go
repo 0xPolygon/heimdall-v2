@@ -23,7 +23,7 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller) (*types.MilestoneProposition, error) {
+func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, logger log.Logger) (*types.MilestoneProposition, error) {
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
@@ -60,6 +60,7 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
+	logger.Error(fmt.Sprintf("propStartBlock: %d, maxMilestonePropositionLength: %d, lastMilestoneHash: %s, lastMilestoneBlockNumber: %d", propStartBlock, params.MaxMilestonePropositionLength, common.Bytes2Hex(lastMilestoneHash), lastMilestoneBlockNumber))
 	parentHash, blockHashes, tds, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
 	if err != nil {
 		return nil, err
