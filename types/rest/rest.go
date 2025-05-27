@@ -1,5 +1,5 @@
 // Package rest provides HTTP types and primitives for REST
-// requests validation and responses handling.
+// requests validation and response handling.
 package rest
 
 import (

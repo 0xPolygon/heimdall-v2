@@ -16,7 +16,7 @@ service Query {
   // means already submitted)
   rpc IsTopupTxOld(QueryTopupSequenceRequest)
       returns (QueryIsTopupTxOldResponse) {
-    option (google.api.http).get = "/topup/isoldtx";
+    option (google.api.http).get = "/topup/is-old-tx";
   }
   // GetTopupTxSequence queries for a specific topup tx and returns its sequence
   rpc GetTopupTxSequence(QueryTopupSequenceRequest)

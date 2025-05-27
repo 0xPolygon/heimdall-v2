@@ -500,7 +500,7 @@ func migrateTopupModule(genesisData map[string]interface{}) error {
 	return nil
 }
 
-// migrateGovModule migrates the proposals vote and content to new format and adds new params.
+// migrateGovModule migrates the proposals' votes and content to the new format and adds the new params.
 func migrateGovModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating gov module...")
 
@@ -850,7 +850,7 @@ func migrateCheckpointModule(genesisData map[string]interface{}) error {
 }
 
 // migrateBorModule will iterate over the spans to migrate all the validators and proposers.
-// It will also rename some of the fields to new names.
+// It will also rename some fields to new names.
 func migrateBorModule(genesisData map[string]interface{}) error {
 	logger.Info("Migrating bor module...")
 

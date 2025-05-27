@@ -29,12 +29,12 @@ const (
 	ValidatorSetAddress   = "validator_set_address"
 )
 
-// genMainChainTxConfirmations returns a randomized mainChain tx confirmations
+// genMainChainTxConfirmations returns randomized mainChain tx confirmations
 func genMainChainTxConfirmations(r *rand.Rand) uint64 {
 	return uint64(r.Intn(100) + 1)
 }
 
-// genBorChainTxConfirmations returns a randomized mainChain tx confirmations
+// genBorChainTxConfirmations returns randomized mainChain tx confirmations
 func genBorChainTxConfirmations(r *rand.Rand) uint64 {
 	return uint64(r.Intn(100) + 1)
 }

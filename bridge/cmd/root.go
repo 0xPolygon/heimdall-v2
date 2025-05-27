@@ -60,7 +60,7 @@ func BridgeCommands(v *viper.Viper, loggerInstance log.Logger, caller string) *c
 	return rootCmd
 }
 
-// DecorateWithBridgeRootFlags is called when bridge flags needs to be added to command
+// DecorateWithBridgeRootFlags is called when bridge flags need to be added to the command
 func DecorateWithBridgeRootFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance log.Logger, caller string) {
 	cmd.PersistentFlags().StringP(helper.CometBFTNodeFlag, "n", helper.DefaultCometBFTNode, "Node to connect to")
 
@@ -126,7 +126,7 @@ func initMetrics() {
 	}()
 }
 
-// AdjustBridgeDBValue function is called to set appropriate bridge db path
+// AdjustBridgeDBValue function is called to set the appropriate bridge db path
 func AdjustBridgeDBValue(cmd *cobra.Command) {
 	cometbftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
 	withHeimdallConfigValue, _ := cmd.Flags().GetString(helper.WithHeimdallConfigFlag)
@@ -149,7 +149,7 @@ func AdjustBridgeDBValue(cmd *cobra.Command) {
 
 // initCometBFTViperConfig sets global viper configuration needed to heimdall
 func initCometBFTViperConfig(cmd *cobra.Command) {
-	// set appropriate bridge DB
+	// set the appropriate bridge DB
 	AdjustBridgeDBValue(cmd)
 
 	// start heimdall config

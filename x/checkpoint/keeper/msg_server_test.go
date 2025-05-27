@@ -180,8 +180,7 @@ func (s *KeeperTestSuite) TestHandleMsgCheckpointAfterBufferTimeOut() {
 	newTime := checkpointBuffer.Timestamp + uint64(checkpointBufferTime)
 	ctx = ctx.WithBlockTime(time.Unix(int64(newTime), 0))
 
-	// send new checkpoint which should replace old one
-	// send checkpoint to handler
+	// send the new checkpoint which should replace the old one
 	_, err = msgServer.Checkpoint(ctx, msgCheckpoint)
 	require.NoError(err)
 }

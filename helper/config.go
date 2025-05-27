@@ -108,8 +108,6 @@ const (
 
 	DefaultMainnetSeeds     = "e019e16d4e376723f3adc58eb1761809fea9bee0@35.234.150.253:26656,7f3049e88ac7f820fd86d9120506aaec0dc54b27@34.89.75.187:26656,1f5aff3b4f3193404423c3dd1797ce60cd9fea43@34.142.43.249:26656,2d5484feef4257e56ece025633a6ea132d8cadca@35.246.99.203:26656,17e9efcbd173e81a31579310c502e8cdd8b8ff2e@35.197.233.240:26656,72a83490309f9f63fdca3a0bef16c290e5cbb09c@35.246.95.65:26656,00677b1b2c6282fb060b7bb6e9cc7d2d05cdd599@34.105.180.11:26656,721dd4cebfc4b78760c7ee5d7b1b44d29a0aa854@34.147.169.102:26656,4760b3fc04648522a0bcb2d96a10aadee141ee89@34.89.55.74:26656"
 	DefaultAmoyTestnetSeeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
-	// Deprecated: Mumbai Testnet is deprecated
-	DefaultMumbaiTestnetSeeds = "9df7ae4bf9b996c0e3436ed4cd3050dbc5742a28@43.200.206.40:26656,d9275750bc877b0276c374307f0fd7eae1d71e35@54.216.248.9:26656,1a3258eb2b69b235d4749cf9266a94567d6c0199@52.214.83.78:26656"
 
 	secretFilePerm = 0o600
 
@@ -135,13 +133,13 @@ type CustomConfig struct {
 
 	AmqpURL string `mapstructure:"amqp_url"` // amqp url
 
-	MainChainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas limit to mainChain transaction, e.g. submit checkpoint.
+	MainChainGasLimit uint64 `mapstructure:"main_chain_gas_limit"` // gas-limit for main chain txs, e.g., submit checkpoint
 
-	MainChainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max gas price to mainChain transaction, e.g. submit checkpoint.
+	MainChainMaxGasPrice int64 `mapstructure:"main_chain_max_gas_price"` // max-gas-price for main chain txs
 
 	// config related to bridge
 	CheckpointPollInterval time.Duration `mapstructure:"checkpoint_poll_interval"` // Poll interval for checkpointer service to send new checkpoints or missing ACK
-	SyncerPollInterval     time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncer service to sync for changes on main chain
+	SyncerPollInterval     time.Duration `mapstructure:"syncer_poll_interval"`     // Poll interval for syncer service to sync for changes on the main chain
 	NoACKPollInterval      time.Duration `mapstructure:"noack_poll_interval"`      // Poll interval for ack service to send no-ack in case of no checkpoints
 	ClerkPollInterval      time.Duration `mapstructure:"clerk_poll_interval"`
 	SpanPollInterval       time.Duration `mapstructure:"span_poll_interval"`
@@ -151,7 +149,7 @@ type CustomConfig struct {
 	SHStakeUpdateInterval  time.Duration `mapstructure:"sh_stake_update_interval"` // Interval to self-heal StakeUpdate events if missing
 	SHMaxDepthDuration     time.Duration `mapstructure:"sh_max_depth_duration"`    // Max duration that allows to suggest self-healing is not needed
 
-	// wait time related options
+	// wait-time-related options
 	NoACKWaitTime time.Duration `mapstructure:"no_ack_wait_time"` // Time ack service waits to clear buffer and elect new proposer
 
 	// Log related options
@@ -212,7 +210,7 @@ func InitHeimdallConfig(homeDir string) {
 		homeDir = viper.GetString(flags.FlagHome)
 	}
 
-	// get heimdall config filepath from viper/cobra flag
+	// get heimdall config filepath from the viper/cobra flag
 	heimdallConfigFileFromFlag := viper.GetString(WithHeimdallConfigFlag)
 
 	// init heimdall with changed config files
@@ -238,10 +236,10 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	heimdallViper.AutomaticEnv()
 
 	if heimdallConfigFileFromFlag == "" {
-		heimdallViper.SetConfigName("app")     // name of config file (without extension)
+		heimdallViper.SetConfigName("app")     // name of the config file (without extension)
 		heimdallViper.AddConfigPath(configDir) // call multiple times to add many search paths
 	} else {
-		heimdallViper.SetConfigFile(heimdallConfigFileFromFlag) // set config file explicitly
+		heimdallViper.SetConfigFile(heimdallConfigFileFromFlag) // set the config file explicitly
 	}
 
 	// Handle errors reading the config file
@@ -257,7 +255,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	//  if there is a file with overrides submitted via flags => read it and merge it with the already read standard configuration
 	if heimdallConfigFileFromFlag != "" {
 		heimdallViperFromFlag := viper.New()
-		heimdallViperFromFlag.SetConfigFile(heimdallConfigFileFromFlag) // set flag config file explicitly
+		heimdallViperFromFlag.SetConfigFile(heimdallConfigFileFromFlag) // set the flag config file explicitly
 
 		err = heimdallViperFromFlag.ReadInConfig()
 		if err != nil { // Handle errors reading the config file submitted as a flag
@@ -391,7 +389,7 @@ func GetDefaultHeimdallConfig() CustomConfig {
 	}
 }
 
-// GetConfig returns cached configuration object
+// GetConfig returns the cached configuration object
 func GetConfig() CustomConfig {
 	return conf.Custom
 }
@@ -435,7 +433,7 @@ func GetAddress() []byte {
 	return GetPubKey().Address()
 }
 
-// GetAddressString returns address object as string
+// GetAddressString returns the address object as string
 func GetAddressString() (string, error) {
 	address := GetAddress()
 	ac := addressCodec.NewHexCodec()
@@ -464,7 +462,7 @@ func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigrati
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command
 func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, caller string) {
-	// add with-app-config flag
+	// add the with-app-config flag
 	cmd.PersistentFlags().String(
 		WithHeimdallConfigFlag,
 		"",
@@ -688,7 +686,7 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
 	const logErrMsg = "Unable to read flag."
 
-	// get endpoint for ethereum chain from viper/cobra
+	// get the endpoint for the ethereum chain from viper/cobra
 	stringConfigValue := v.GetString(MainRPCUrlFlag)
 	if stringConfigValue != "" {
 		c.Custom.EthRPCUrl = stringConfigValue
@@ -741,7 +739,7 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 	// need this error for parsing Duration values
 	var err error
 
-	// get check point pull interval from viper/cobra
+	// get the checkpoint poll interval from viper/cobra
 	stringConfigValue = v.GetString(CheckpointerPollIntervalFlag)
 	if stringConfigValue != "" {
 		if c.Custom.CheckpointPollInterval, err = time.ParseDuration(stringConfigValue); err != nil {
@@ -759,7 +757,7 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		}
 	}
 
-	// get poll interval for ack service to send no-ack in case of no checkpoints from viper/cobra
+	// get the poll interval for ack service to send no-ack in case of no checkpoints from viper/cobra
 	stringConfigValue = v.GetString(NoACKPollIntervalFlag)
 	if stringConfigValue != "" {
 		if c.Custom.NoACKPollInterval, err = time.ParseDuration(stringConfigValue); err != nil {
@@ -795,7 +793,7 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		}
 	}
 
-	// get time that ack service waits to clear buffer and elect new proposer from viper/cobra
+	// get time that ack service waits to clear buffer and elect the new proposer from viper/cobra
 	stringConfigValue = v.GetString(NoACKWaitTimeFlag)
 	if stringConfigValue != "" {
 		if c.Custom.NoACKWaitTime, err = time.ParseDuration(stringConfigValue); err != nil {
@@ -810,7 +808,7 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.MainChainGasLimit = uint64ConfigValue
 	}
 
-	// get mainChain max gas price from viper/cobra. if it is greater than  zero => set it as configuration parameter
+	// get mainChain max gas price from viper/cobra. if it is greater than zero, set it as a configuration parameter
 	int64ConfigValue := v.GetInt64(MainChainMaxGasPriceFlag)
 	if int64ConfigValue > 0 {
 		c.Custom.MainChainMaxGasPrice = int64ConfigValue
@@ -900,7 +898,7 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 	}
 }
 
-// DecorateWithCometBFTFlags creates cometBFT flags for desired command and bind them to viper
+// DecorateWithCometBFTFlags creates cometBFT flags for the desired command and binds them to viper
 func DecorateWithCometBFTFlags(cmd *cobra.Command, v *viper.Viper, loggerInstance logger.Logger, message string) {
 	// add seeds flag
 	cmd.PersistentFlags().String(
@@ -926,8 +924,6 @@ func UpdateCometBFTConfig(cometBFTConfig *cfg.Config, v *viper.Viper) {
 		switch conf.Custom.Chain {
 		case MainChain:
 			cometBFTConfig.P2P.Seeds = DefaultMainnetSeeds
-		case MumbaiChain:
-			cometBFTConfig.P2P.Seeds = DefaultMumbaiTestnetSeeds
 		case AmoyChain:
 			cometBFTConfig.P2P.Seeds = DefaultAmoyTestnetSeeds
 		}
@@ -980,7 +976,7 @@ func SetTestConfig(_conf CustomAppConfig) {
 	conf = _conf
 }
 
-// SetTestPrivPubKey sets test priv and pub key for testing
+// SetTestPrivPubKey sets test the private and public keys for testing
 func SetTestPrivPubKey(privKey secp256k1.PrivKey) {
 	privKeyObject = privKey
 	privKeyObject.PubKey()

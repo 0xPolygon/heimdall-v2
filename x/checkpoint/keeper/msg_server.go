@@ -63,9 +63,9 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		}
 	}
 
-	// fetch last checkpoint from store
+	// fetch the last checkpoint from the store
 	if lastCheckpoint, err := m.GetLastCheckpoint(ctx); err == nil {
-		// check if new checkpoint's start block start from current tip
+		// check if the new checkpoint's start block starts from the current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
 			logger.Error("checkpoint not in continuity",
 				"currentTip", lastCheckpoint.EndBlock,
@@ -78,7 +78,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, fmt.Sprint("first checkpoint to start from block 0", "checkpoint start block", msg.StartBlock))
 	}
 
-	// Make sure latest AccountRootHash matches
+	// Make sure the latest AccountRootHash matches
 	// Calculate new account root hash
 	dividendAccounts, err := m.topupKeeper.GetAllDividendAccounts(ctx)
 	if err != nil {
@@ -107,7 +107,7 @@ func (m msgServer) Checkpoint(ctx context.Context, msg *types.MsgCheckpoint) (*t
 		return nil, errorsmod.Wrap(types.ErrBadBlockDetails, "accountRootHash of current state doesn't match from msg")
 	}
 
-	// Check proposer in message
+	// Check the proposer in the message
 	validatorSet, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		logger.Error("no proposer in validator set", "msgProposer", msg.Proposer)
@@ -175,7 +175,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 		return nil, errorsmod.Wrap(types.ErrBadAck, "invalid checkpoint number")
 
 	}
-	// get last checkpoint from buffer
+	// get the last checkpoint from the buffer
 	bufCheckpoint, err := m.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint", "error", err)
@@ -187,7 +187,7 @@ func (m msgServer) CheckpointAck(ctx context.Context, msg *types.MsgCpAck) (*typ
 		return nil, errorsmod.Wrap(types.ErrBadAck, fmt.Sprint("invalid start block", "startExpected", bufCheckpoint.StartBlock, "startReceived", msg.StartBlock))
 	}
 
-	// return err if start and end match but contract root hash doesn't match
+	// return err if start and end match, but contract root hash doesn't match
 	if msg.EndBlock == bufCheckpoint.EndBlock &&
 		!bytes.Equal(msg.RootHash, bufCheckpoint.RootHash) {
 		logger.Error("Invalid ACK",
@@ -240,7 +240,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 		lastCheckpointTime = time.Unix(int64(lastCheckpoint.Timestamp), 0)
 	}
 
-	// If last checkpoint is not present or last checkpoint happens before checkpoint buffer time,throw an error
+	// If the last checkpoint is not present or the last checkpoint happens before checkpoint buffer time,throw an error
 	if lastCheckpointTime.After(currentTime) || (currentTime.Sub(lastCheckpointTime) < bufferTime) {
 		logger.Debug("invalid no ack, waiting for last checkpoint ack",
 			"lastCheckpointTime", lastCheckpointTime,
@@ -311,7 +311,7 @@ func (m msgServer) CheckpointNoAck(ctx context.Context, msg *types.MsgCpNoAck) (
 		return nil, errorsmod.Wrap(err, "error in incrementing the accum number")
 	}
 
-	// get new proposer
+	// get the new proposer
 	vs, err := m.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, errorsmod.Wrap(err, "error in fetching the validator set")

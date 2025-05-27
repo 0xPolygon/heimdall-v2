@@ -22,14 +22,14 @@ type queryServer struct {
 }
 
 // NewQueryServer creates a new querier for stake clients.
-// It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
+// It uses the underlying keeper and its contractCaller to interact with the Ethereum chain.
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
 	}
 }
 
-// GetCurrentValidatorSet queries all validators which are currently active in validator set
+// GetCurrentValidatorSet queries all validators that are currently active in the validator set
 func (q queryServer) GetCurrentValidatorSet(ctx context.Context, _ *types.QueryCurrentValidatorSetRequest) (*types.QueryCurrentValidatorSetResponse, error) {
 	validatorSet, err := q.k.GetValidatorSet(ctx)
 	if err != nil {
@@ -188,7 +188,7 @@ func (q queryServer) GetProposersByTimes(ctx context.Context, req *types.QueryPr
 	return &types.QueryProposersResponse{Proposers: proposers}, nil
 }
 
-// GetCurrentProposer queries validator info for the current proposer
+// GetCurrentProposer queries the validator info for the current proposer
 func (q queryServer) GetCurrentProposer(ctx context.Context, _ *types.QueryCurrentProposerRequest) (*types.QueryCurrentProposerResponse, error) {
 	proposer := q.k.GetCurrentProposer(ctx)
 

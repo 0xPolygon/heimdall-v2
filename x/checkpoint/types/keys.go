@@ -21,7 +21,7 @@ var (
 
 	// CheckpointMapPrefixKey represents the key for each key for the checkpoint map
 	CheckpointMapPrefixKey = collections.NewPrefix([]byte{0x81})
-	// BufferedCheckpointPrefixKey represents the prefix for buffered checkpoint
+	// BufferedCheckpointPrefixKey represents the prefix for the buffered checkpoint
 	BufferedCheckpointPrefixKey = collections.NewPrefix([]byte{0x82})
 
 	// AckCountPrefixKey represents the prefix for ack count

@@ -63,7 +63,7 @@ func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.Raw
 	return appState, nil
 }
 
-// genFirstSpan generates the default first span using the validators producer set
+// genFirstSpan generates the default first span using the validators' producer set
 func genFirstSpan(valSet staketypes.ValidatorSet, chainId string) []Span {
 	var (
 		firstSpan         []Span

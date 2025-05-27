@@ -14,7 +14,7 @@ import (
 func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abci.ValidatorUpdate {
 	k.PanicIfSetupIsIncomplete()
 
-	// get current val set
+	// get the current validators' set
 	var vals []*types.Validator
 	if len(data.CurrentValidatorSet.Validators) == 0 {
 		vals = data.Validators
@@ -33,7 +33,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) []abc
 
 		// add validators in store
 		for _, validator := range resultValSet.Validators {
-			// Add individual validator to state
+			// Add individual validator to the state
 			if err := k.AddValidator(ctx, *validator); err != nil {
 				panic(fmt.Errorf("error adding the validator while initializing stake genesis: %w", err))
 			}

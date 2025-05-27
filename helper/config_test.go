@@ -41,7 +41,6 @@ func TestHeimdallConfigUpdateCometBFTConfig(t *testing.T) {
 		{chain: "mumbai", viper: "viper", def: "default", value: "viper"},
 		{chain: "mumbai", viper: "viper", def: "", value: "viper"},
 		{chain: "mumbai", viper: "", def: "default", value: "default"},
-		{chain: "mumbai", viper: "", def: "", value: DefaultMumbaiTestnetSeeds},
 		{chain: "amoy", viper: "viper", def: "default", value: "viper"},
 		{chain: "amoy", viper: "viper", def: "", value: "viper"},
 		{chain: "amoy", viper: "", def: "default", value: "default"},
@@ -115,7 +114,7 @@ func TestGetChainManagerAddressMigration(t *testing.T) {
 		t.Errorf("Expected migration to not be found")
 	}
 
-	// test for non-existing chain
+	// test for the non-existing chain
 	conf.Custom.BorRPCUrl = ""
 	conf.Custom.Chain = ""
 

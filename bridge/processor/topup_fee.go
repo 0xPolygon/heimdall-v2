@@ -15,13 +15,13 @@ import (
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
 )
 
-// FeeProcessor - process fee related events
+// FeeProcessor processes the fee-related events
 type FeeProcessor struct {
 	BaseProcessor
 	stakingInfoAbi *abi.ABI
 }
 
-// NewFeeProcessor - add  abi to clerk processor
+// NewFeeProcessor adds the abi to the clerk processor
 func NewFeeProcessor(stakingInfoAbi *abi.ABI) *FeeProcessor {
 	return &FeeProcessor{
 		stakingInfoAbi: stakingInfoAbi,
@@ -34,7 +34,7 @@ func (fp *FeeProcessor) Start() error {
 	return nil
 }
 
-// RegisterTasks - Registers clerk related tasks with machinery
+// RegisterTasks registers the clerk-related tasks with machinery
 func (fp *FeeProcessor) RegisterTasks() {
 	fp.Logger.Info("Registering fee related tasks")
 

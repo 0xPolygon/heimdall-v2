@@ -39,7 +39,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 	}
 }
 
-// PostTxHandler returns a post handler for clerk type messages.
+// PostTxHandler returns a post-handler for clerk type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case msgEventRecord:
@@ -166,7 +166,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(heimdallTypes.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
 
-	// create event record
+	// create the event record
 	record := types.NewEventRecord(
 		msg.TxHash,
 		msg.LogIndex,
@@ -183,7 +183,7 @@ func (srv *sideMsgServer) PostHandleMsgEventRecord(ctx sdk.Context, _msg sdk.Msg
 		return err
 	}
 
-	// save record sequence
+	// save the record sequence
 	srv.SetRecordSequence(ctx, sequence.String())
 
 	// tx bytes

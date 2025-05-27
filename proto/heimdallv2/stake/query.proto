@@ -14,7 +14,7 @@ service Query {
   rpc GetCurrentValidatorSet(QueryCurrentValidatorSetRequest)
       returns (QueryCurrentValidatorSetResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/stake/validator-set";
+    option (google.api.http).get = "/stake/validators-set";
   }
   // GetSignerByAddress queries validator info for a given validator address
   rpc GetSignerByAddress(QuerySignerRequest) returns (QuerySignerResponse) {

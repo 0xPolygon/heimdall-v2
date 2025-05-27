@@ -70,7 +70,7 @@ service Query {
   rpc GetCheckpointSignatures(QueryCheckpointSignaturesRequest)
       returns (QueryCheckpointSignaturesResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/checkpoint/signatures/{tx_hash}";
+    option (google.api.http).get = "/checkpoints/signatures/{tx_hash}";
   }
 
   // GetCheckpoint queries for the checkpoint based on the number

@@ -66,7 +66,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 			// num of validators = validators in genesis files
 			numValidators := viper.GetInt(flagNumValidators)
 
-			// get total number of validators to be generated
+			// get the total number of validators to be generated
 			totalValidators := getTotalNumberOfNodes()
 
 			// first validators start ID
@@ -127,7 +127,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				cosmosPrivKey := &cosmossecp256k1.PrivKey{Key: privKeys[i].Bytes()}
 
 				if i < numValidators {
-					// create validator account
+					// create the validator account
 					validators[i], err = stakeTypes.NewValidator(
 						uint64(startID+int64(i)),
 						0,
@@ -141,7 +141,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 						return err
 					}
 
-					// create dividend account for validator
+					// create the dividend account for the validator
 					dividendAccounts[i] = hmTypes.DividendAccount{
 						User:      validators[i].Signer,
 						FeeAmount: big.NewInt(0).String(),
@@ -155,7 +155,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 					return err
 				}
 
-				// write config file
+				// write the config file
 				err = os.WriteFile(filepath.Join(config.RootDir, "config/app.toml"), cf, 0o600)
 				if err != nil {
 					return err
@@ -245,7 +245,7 @@ testnet --v 4 --n 8 --output-dir ./output --starting-ip-address 192.168.10.2
 				}
 			}
 
-			// dump signer information in a json file
+			// dump signer information into a JSON file
 			// this is required when setting up node dirs for devnet
 			dump := viper.GetBool("signer-dump")
 			if dump {

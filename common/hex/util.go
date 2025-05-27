@@ -10,7 +10,7 @@ import (
 
 const MaxProofLength = 1024
 
-// FormatHex returns a checksummed hex string prefixed with 0x.
+// FormatHex returns a checksum hex string prefixed with 0x.
 func FormatHex(data []byte) string {
 	return "0x" + common.Bytes2Hex(data)
 }

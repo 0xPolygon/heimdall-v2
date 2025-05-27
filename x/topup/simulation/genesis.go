@@ -45,7 +45,7 @@ func RandomizeGenState(simState *module.SimulationState) {
 
 		sequences[i] = sequenceNumber
 
-		// create dividend account for validator
+		// create the dividend account for validator
 		dividendAccounts[i] = types.DividendAccount{
 			User:      accounts[i].Address.String(),
 			FeeAmount: big.NewInt(0).String(),

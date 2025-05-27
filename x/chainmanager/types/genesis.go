@@ -18,7 +18,7 @@ func DefaultGenesisState() *GenesisState {
 	return NewGenesisState(DefaultParams())
 }
 
-// Validate performs basic validation of chainmanager genesis data returning an
+// Validate performs basic validation of chainmanager genesis data, returning an
 // error for any failed validation criteria.
 func (gs GenesisState) Validate() error {
 	return nil

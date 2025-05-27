@@ -9,7 +9,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/helper"
 )
 
-// BorChainListener - Listens to and process headerBlocks from bor chain
+// BorChainListener - Listens to and processes headerBlocks from the bor chain
 type BorChainListener struct {
 	BaseListener
 }
@@ -26,19 +26,19 @@ func (ml *BorChainListener) Start() error {
 	headerCtx, cancelHeaderProcess := context.WithCancel(context.Background())
 	ml.cancelHeaderProcess = cancelHeaderProcess
 
-	// start header process
+	// start the header process
 	go ml.StartHeaderProcess(headerCtx)
 
-	// start go routine to poll for new header using client object
+	// start go routine to poll for the new header using the client object
 	ml.Logger.Info("Start polling for header blocks", "pollInterval", helper.GetConfig().CheckpointPollInterval)
 
-	// start polling for the latest block in child chain (replace with finalized block once we have it implemented)
+	// start polling for the latest block in the bor child chain (replace with finalized block once we have it implemented)
 	go ml.StartPolling(ctx, helper.GetConfig().CheckpointPollInterval, nil)
 
 	return nil
 }
 
-// ProcessHeader - process header block from bor chain
+// ProcessHeader - process header block from the bor chain
 func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
 	ml.Logger.Debug("New block detected", "blockNumber", newHeader.header.Number)
 	// Marshall header block and publish to queue
@@ -52,7 +52,7 @@ func (ml *BorChainListener) ProcessHeader(newHeader *blockHeader) {
 }
 
 func (ml *BorChainListener) sendTaskWithDelay(taskName string, headerBytes []byte, delay time.Duration) {
-	// create machinery task
+	// create the machinery task
 	signature := &tasks.Signature{
 		Name: taskName,
 		Args: []tasks.Arg{
@@ -64,7 +64,7 @@ func (ml *BorChainListener) sendTaskWithDelay(taskName string, headerBytes []byt
 	}
 	signature.RetryCount = 3
 
-	// add delay for task so that multiple validators won't send same transaction at same time
+	// add delay for the task so that multiple validators won't send same transaction at same time
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
 

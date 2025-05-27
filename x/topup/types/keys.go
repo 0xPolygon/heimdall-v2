@@ -12,7 +12,7 @@ const (
 	// RouterKey is the msg router key for the topup module
 	RouterKey = ModuleName
 
-	// DefaultLogIndexUnit represents the default unit for txHash + logIndex
+	// DefaultLogIndexUnit represents the default unit for (txHash + logIndex)
 	DefaultLogIndexUnit = 100000
 )
 

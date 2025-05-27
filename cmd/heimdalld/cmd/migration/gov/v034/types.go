@@ -1,5 +1,5 @@
 // DONTCOVER
-//nolint
+// nolint
 package v034
 
 import (
@@ -323,7 +323,7 @@ func (pt ProposalKind) String() string {
 // Content defines an interface that a proposal must implement. It contains
 // information such as the title and description along with the type and routing
 // information for the appropriate handler to process the proposal. Content can
-// have additional fields, which will handled by a proposal's Handler.
+// have additional fields which handle the proposal's Handler.
 type Content interface {
 	GetTitle() string
 	GetDescription() string

@@ -7,7 +7,6 @@ import (
 var (
 	ErrInvalidMsg              = errorsmod.Register(ModuleName, 2, "invalid message")
 	ErrNoCheckpointFound       = errorsmod.Register(ModuleName, 4, "checkpoint not found")
-	ErrOldCheckpoint           = errorsmod.Register(ModuleName, 6, "checkpoint already received for given start and end blocks")
 	ErrDiscontinuousCheckpoint = errorsmod.Register(ModuleName, 7, "checkpoint is not in continuity")
 	ErrBadBlockDetails         = errorsmod.Register(ModuleName, 8, "checkpoint not found in buffer")
 	ErrNoAck                   = errorsmod.Register(ModuleName, 9, "no-ack invalid")

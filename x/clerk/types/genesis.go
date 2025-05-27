@@ -10,7 +10,7 @@ func DefaultGenesisState() *GenesisState {
 	}
 }
 
-// Validate performs basic validation of clerk genesis data returning an
+// Validate performs basic validation of the clerk genesis data, returning an
 // error for any failed validation criteria.
 func Validate(data GenesisState) error {
 	for _, sq := range data.RecordSequences {

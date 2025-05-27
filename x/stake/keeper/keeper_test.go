@@ -134,7 +134,7 @@ func (s *KeeperTestSuite) TestValidator() {
 	// get random validator ID
 	valId := simulation.RandIntBetween(r, 0, n)
 
-	// get validator info from state
+	// get validator info from the state
 	valInfo, err := keeper.GetValidatorInfo(ctx, validators[valId].Signer)
 	require.NoErrorf(err, "Error while fetching Validator")
 
@@ -142,7 +142,7 @@ func (s *KeeperTestSuite) TestValidator() {
 	mappedSignerAddress, err := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
 	require.Nilf(err, "Signer Address not mapped to Validator Id")
 
-	// check if validator matches in state
+	// check if the validator matches in the state
 	require.Equal(valInfo, *validators[valId], "Validators in state doesn't match")
 	require.Equal(mappedSignerAddress, validators[0].Signer, "Signer address doesn't match")
 }
@@ -190,13 +190,13 @@ func (s *KeeperTestSuite) TestUpdateSigner() {
 
 	require.Equal(int64(0), prevSignerValInfo.VotingPower, "VotingPower of Prev Signer should be zero")
 
-	// check validator info of updated signer
+	// check validator info of the updated signer
 	updatedSignerValInfo, err := keeper.GetValidatorInfo(ctx, addr2)
 	require.NoError(err, "Error while fetching Validator Info for Updater Signer")
 
 	require.Equal(validators[0].VotingPower, updatedSignerValInfo.VotingPower, "VotingPower of updated signer should match with prev signer VotingPower")
 
-	// check if validatorId is mapped to updated signer
+	// check if validatorId is mapped to the updated signer
 	signerAddress, err := keeper.GetSignerFromValidatorID(ctx, validators[0].ValId)
 	require.Nilf(err, "Signer Address not mapped to Validator Id")
 	require.Equal(addr2, signerAddress, "Validator ID should be mapped to Updated Signer Address")
@@ -269,7 +269,7 @@ func (s *KeeperTestSuite) TestCurrentValidator() {
 func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	// load 4 validators from state
+	// load 4 validators from the state
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	initValSet, err := keeper.GetValidatorSet(ctx)
 
@@ -303,7 +303,7 @@ func (s *KeeperTestSuite) TestRemoveValidatorSetChange() {
 func (s *KeeperTestSuite) TestAddValidatorSetChange() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	// load 4 validators from state
+	// load 4 validators from the state
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 	initValSet, err := keeper.GetValidatorSet(ctx)
 
@@ -382,7 +382,7 @@ func (s *KeeperTestSuite) TestGetCurrentValidators() {
 func (s *KeeperTestSuite) TestGetPreviousBlockValidatorSet() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	// Load 4 validators into state
+	// Load 4 validators into the state
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	// Get the current validator set
@@ -422,7 +422,7 @@ func (s *KeeperTestSuite) TestGetPreviousBlockValidatorSet() {
 func (s *KeeperTestSuite) TestUpdatePreviousBlockValidatorSetInStore() {
 	ctx, keeper, require := s.ctx, s.stakeKeeper, s.Require()
 
-	// Load 4 validators into state
+	// Load 4 validators into the state
 	testUtil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 10, 0)
 
 	// Get the current validator set
@@ -454,7 +454,7 @@ func (s *KeeperTestSuite) TestUpdatePreviousBlockValidatorSetInStore() {
 	// Check if the updated previous block validator set matches the modified current validator set
 	require.Equal(currentValSet, updatedPrevValSet, "Updated previous block validator set should match the modified current validator set")
 
-	// Call IncrementAccum which affects the current validator set but not the previous one
+	// call IncrementAccum, which affects the current validator set but not the previous one
 	err = keeper.IncrementAccum(ctx, 1)
 	require.NoError(err)
 
@@ -499,7 +499,7 @@ func (s *KeeperTestSuite) TestSetAndGetLastBlockTxs() {
 		[]byte("tx4"),
 	}
 
-	// set and get txs for second height
+	// set and get txs for the second height
 	err = keeper.SetLastBlockTxs(ctx, secondHeightTxs)
 	require.NoError(err, "Setting last block txs should not produce an error")
 	retrievedSecondBlockTxs, err := keeper.GetLastBlockTxs(ctx)
