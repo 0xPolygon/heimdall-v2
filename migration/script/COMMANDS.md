@@ -178,9 +178,9 @@ This can be run by any node operator.
        --cli-path=/home/ubuntu/go/bin/heimdallcli \
        --d-path=/home/ubuntu/go/bin/heimdalld \
        --network=amoy \
-       --nodetype=sentry \
+       --nodetype=validator \
        --backup-dir=/var/lib/heimdall.backup \
-       --moniker=heimdall3 \
+       --moniker=heimdall1 \
        --service-user=ubuntu \
        --generate-genesis=true \
        --bor-path=/home/ubuntu/go/bin/bor
