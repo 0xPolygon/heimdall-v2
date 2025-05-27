@@ -7,7 +7,7 @@ import (
 	"github.com/streadway/amqp"
 )
 
-// Connector is used to connect to the queue
+// The Connector is used to connect to the queue
 type Connector struct {
 	logger log.Logger
 	Server *machinery.Server

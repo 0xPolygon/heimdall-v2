@@ -10,7 +10,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-// EndBlocker called at the end of every block, and returns validator updates
+// EndBlocker called at the end of every block and returns the validator updates
 func (k *Keeper) EndBlocker(ctx context.Context) ([]abci.ValidatorUpdate, error) {
 	k.PanicIfSetupIsIncomplete()
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)

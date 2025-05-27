@@ -164,7 +164,7 @@ func verifyBalances(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesis 
 				return fmt.Errorf("coins field is not a list at index %d", i)
 			}
 		}
-		// If coinsRaw == nil ➔ coins is nil ➔ zero coins: OK
+		// If coinsRaw == nil ➔ coins == nil ➔ zero coins: OK
 
 		for _, coin := range coins {
 			coinMap, ok := coin.(map[string]interface{})
@@ -314,7 +314,7 @@ func compareValidators(validatorDB hmTypes.Validator, validatorGenesis *validato
 	return nil
 }
 
-// verifyDataLists checks list counts in v1 vs v2 using potentially different keys.
+// verifyDataLists checks list counts in v1 vs. v2 using potentially different keys.
 func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 	type keyMapping struct {
 		moduleV1 string
@@ -344,7 +344,7 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 			return fmt.Errorf("v2 %s.%s: %w", km.moduleV2, km.keyV2, err)
 		}
 		if km.moduleV1 == "auth" && km.keyV1 == "accounts" {
-			// in v1 the accounts also consider the module accounts, which are not present in v2
+			// in v1, the accounts also consider the module accounts, which are not present in v2
 			if count1 < count2 {
 				logger.Error("count mismatch",
 					"v1_module", km.moduleV1, "v1_key", km.keyV1, "v1_count", count1,
@@ -354,7 +354,7 @@ func verifyDataLists(hv1Path, hv2Path string, logger log.Logger) error {
 					km.moduleV2, km.keyV2, count2)
 			}
 		} else if km.moduleV1 == "staking" && km.keyV1 == "validators" {
-			// in v1 the accounts also consider the module accounts, which are not present in v2
+			// in v1, the accounts also consider the module accounts, which are not present in v2
 			if count1 < count2 {
 				logger.Error("count mismatch",
 					"v1_module", km.moduleV1, "v1_key", km.keyV1, "v1_count", count1,
@@ -409,7 +409,7 @@ func verifyCheckpoints(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genes
 		return dbCheckpoints[i].StartBlock < dbCheckpoints[j].StartBlock
 	})
 
-	// Compare checkpoints one by one
+	// Compare the checkpoints one by one
 	if len(checkpoints) != len(dbCheckpoints) {
 		return fmt.Errorf("number of checkpoints mismatch: v1 has %d, v2 has %d", len(checkpoints), len(dbCheckpoints))
 	}
@@ -734,7 +734,12 @@ func countJSONArrayEntries(path, module, key string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer f.Close()
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			fmt.Printf("Error closing file %s: %v\n", path, err)
+		}
+	}(f)
 
 	dec := json.NewDecoder(f)
 	inAppState, inModule := false, false
@@ -897,7 +902,7 @@ func verifyMilestones(ctx types.Context, app *heimdallApp.HeimdallApp, hv1Genesi
 		return dbMilestones[i].StartBlock < dbMilestones[j].StartBlock
 	})
 
-	// Compare milestones one by one
+	// Compare the milestones one by one
 	if len(milestones) != len(dbMilestones) {
 		return fmt.Errorf("number of milestones mismatch: v1 has %d, v2 has %d", len(milestones), len(dbMilestones))
 	}

@@ -13,25 +13,25 @@ service Query {
   // GetMilestoneParams queries for the x/milestone parameters
   rpc GetMilestoneParams(QueryParamsRequest) returns (QueryParamsResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/params";
+    option (google.api.http).get = "/milestones/params";
   }
 
   // GetMilestoneCount queries for the milestone count
   rpc GetMilestoneCount(QueryCountRequest) returns (QueryCountResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/count";
+    option (google.api.http).get = "/milestones/count";
   }
   // GetLatestMilestone queries for the latest milestone
   rpc GetLatestMilestone(QueryLatestMilestoneRequest)
       returns (QueryLatestMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/latest";
+    option (google.api.http).get = "/milestones/latest";
   }
   // GetMilestoneByNumber queries for the milestone based on the number
   rpc GetMilestoneByNumber(QueryMilestoneRequest)
       returns (QueryMilestoneResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/milestone/{number}";
+    option (google.api.http).get = "/milestones/{number}";
   }
 }
 

@@ -44,7 +44,7 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 			"send for denom %s is not enabled in bank keeper", sdk.DefaultBondDenom)
 	}
 
-	// check feasibility of topup tx based on msg fee
+	// check the feasibility of topup tx based on msg fee
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
 		logger.Error("default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
@@ -73,7 +73,7 @@ func (m msgServer) HandleTopupTx(ctx context.Context, msg *types.MsgTopupTx) (*t
 			"tx with hash %s already exists", txHash.String())
 	}
 
-	// emit event if tx is valid, then return
+	// emit the event if tx is valid, then return
 	sdkCtx.EventManager().EmitEvents(sdk.Events{
 		sdk.NewEvent(
 			types.EventTypeTopup,
@@ -98,14 +98,14 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 		"amount", msg.Amount.String(),
 	)
 
-	// check if amount is negative
+	// check if the amount is negative
 	if msg.Amount.IsNegative() {
 		logger.Error("negative amount to withdraw")
 		return nil, errors.Wrapf(sdkerrors.ErrInvalidRequest,
 			"amount %s is negative", msg.Amount.String())
 	}
 
-	// partial withdraw
+	// partial withdrawal
 	amount := msg.Amount
 
 	// full withdraw
@@ -135,7 +135,7 @@ func (m msgServer) WithdrawFeeTx(ctx context.Context, msg *types.MsgWithdrawFeeT
 			"err", err)
 		return nil, errors.Wrapf(sdkerrors.ErrLogic, "%v", err)
 	}
-	// burn coins from module
+	// burn coins from the module
 	err = m.k.BankKeeper.BurnCoins(ctx, types.ModuleName, coins)
 	if err != nil {
 		logger.Error("error while burning coins",

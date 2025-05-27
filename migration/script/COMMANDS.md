@@ -6,7 +6,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    ```bash
    git clone https://github.com/0xPolygon/heimdall-v2.git
    ```
-2. Adjust the following env vars of the [script](migrate.sh):
+2. Adjust the following environment vars of the [script](migrate.sh):
     ```bash
     APOCALYPSE_TAG="1.2.3-34-g020f6c0d"
     REQUIRED_BOR_VERSION="2.0.0"
@@ -204,7 +204,7 @@ This can be run by any node operator.
 
 # Rollback procedure
 The script is already equipped with rollback actions (if it fails during the execution).  
-However, if the migration itself doesn't go as planned (despite the script was executed successfully),
+However, if the migration itself doesn't go as planned (despite the script executed successfully),
 you can roll back to the previous state by following this procedure:
 1. Stop v2 `heimdalld` service
    ```bash

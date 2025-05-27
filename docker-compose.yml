@@ -1,5 +1,5 @@
-# This is an example compose file for starting up heimdall-v2 required components
-# to run standalone without Bor for development and testing purposes.
+# This is an example docker-compose file for starting up heimdall-v2 required components.
+# To run standalone without Bor for development and testing purposes.
 # Do not use this for production.
 version: "3"
 

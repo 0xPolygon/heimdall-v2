@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"crypto/rand"
+
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 

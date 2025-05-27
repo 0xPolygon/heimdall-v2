@@ -62,7 +62,7 @@ func (rl *RootChainListener) querySubGraph(query []byte, ctx context.Context) (d
 	return io.ReadAll(response.Body)
 }
 
-// getLatestStateID returns state ID from the latest StateSynced event
+// getLatestStateID returns the state ID from the latest StateSynced event
 func (rl *RootChainListener) getLatestStateID(ctx context.Context) (*big.Int, error) {
 	query := map[string]string{
 		"query": `

@@ -28,11 +28,13 @@ The checkpointing process is managed by the `bridge processor` which generates a
 - Due to Bor’s finality time, the root hash may not always reflect the latest Bor tip.  
 
 ### Checkpoint Processing in Heimdall
-Once the checkpoint message is included in a Heimdall block, it undergoes processing through the message handling  system.  
-Each validator node independently verifies the checkpoint by checking the Bor root hash provided in the message against its local Bor chain.  
+Once the checkpoint message is included in a Heimdall block,
+it undergoes processing through the message handling system.  
+Each validator node independently verifies the checkpoint
+by checking the Bor root hash provided in the message against its local Bor chain.  
 
 ### ABCI++ Processing Flow for the checkpoint submission on Heimdall
-- `Prepare Proposal`: During the proposal phase, the checkpoint message `MsgCheckpoint` is included in the  proposed block only if dry-running this tx does not return any errors.
+- `Prepare Proposal`: During the proposal phase, the checkpoint message `MsgCheckpoint` is included in the proposed block only if dry-running this tx does not return any errors.
 - `Process Proposal`: The proposal is validated to ensure correctness.  
 - `Pre-Commit`: As part of the voting process, validators execute a side transaction to verify the checkpoint against their local Bor data.
 If the checkpoint is valid, validators include a vote extension confirming their approval.  
@@ -45,7 +47,7 @@ Once approved, the checkpoint is added to a checkpoint buffer and an event is em
 
 ### Acknowledgment from Ethereum (L1)
 After the checkpoint is successfully included on the Ethereum chain, an acknowledgment `MsgCpAck` is sent back to Heimdall from the bridge processor.  
-This acknowledgment, once processed through the ABCI++ flow with side and post-tx handlers: updates the state, flushes processed checkpoints from the buffer, and increments number of ACK counters to track confirmations of checkpoints.  
+This acknowledgment, once processed through the ABCI++ flow with side and post-tx handlers: updates the state, flushes processed checkpoints from the buffer, and increments the number of ACK counters to track confirmations of checkpoints.  
 Additionally, the selection of the next checkpoint proposer is adjusted based on the updated state.  
 
 ### Missing Checkpoint Acknowledgment from Ethereum (L1)
@@ -210,7 +212,8 @@ heimdalld query checkpoint get-checkpoint-list
 
 ## GRPC Endpoints
 
-The endpoints and the params are defined in the [checkpoint/query.proto](/proto/heimdallv2/checkpoint/query.proto) file. Please refer them for more information about the optional params.
+The endpoints and the params are defined in the [checkpoint/query.proto](/proto/heimdallv2/checkpoint/query.proto) file.
+Please refer to them for more information about the optional params.
 
 ```bash
 grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.checkpoint.Query/GetCheckpointParams
@@ -262,7 +265,8 @@ grpcurl -plaintext -d '{"number": <>}' localhost:9090 heimdallv2.checkpoint.Quer
 
 ## REST Endpoints
 
-The endpoints and the params are defined in the [checkpoint/query.proto](/proto/heimdallv2/checkpoint/query.proto) file. Please refer them for more information about the optional params.
+The endpoints and the params are defined in the [checkpoint/query.proto](/proto/heimdallv2/checkpoint/query.proto) file.
+Please refer to them for more information about the optional params.
 
 
 ```bash
@@ -314,7 +318,7 @@ curl localhost:1317/checkpoints/list
 ```
 
 ```bash
-curl localhost:1317/checkpoint/signatures/{tx_hash}
+curl localhost:1317/checkpoints/signatures/{tx_hash}
 ```
 
 ```bash

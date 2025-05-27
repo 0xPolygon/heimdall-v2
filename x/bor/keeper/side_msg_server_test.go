@@ -151,7 +151,7 @@ func (s *KeeperTestSuite) TestSideHandleMsgSpan() {
 			res := sideHandler(s.ctx, tc.msg)
 			require.Equal(tc.expVote, res)
 		})
-		// cleanup the contract caller to update the mocked expected calls
+		// clean up the contract caller to update the mocked expected calls
 		s.contractCaller = mocks.IContractCaller{}
 	}
 }

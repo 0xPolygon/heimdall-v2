@@ -142,7 +142,7 @@ func (k *Keeper) AddCheckpoint(ctx context.Context, checkpoint types.Checkpoint)
 	return nil
 }
 
-// SetCheckpointBuffer sets the checkpoint in buffer
+// SetCheckpointBuffer sets the checkpoint in the buffer
 func (k *Keeper) SetCheckpointBuffer(ctx context.Context, checkpoint types.Checkpoint) error {
 	checkpoint.Proposer = util.FormatAddress(checkpoint.Proposer)
 	if checkpoint.Id == 0 {
@@ -173,7 +173,7 @@ func (k *Keeper) GetCheckpointByNumber(ctx context.Context, number uint64) (type
 	return checkpoint, nil
 }
 
-// GetLastCheckpoint gets last checkpoint, where its number is equal to the ack count
+// GetLastCheckpoint gets the last checkpoint, where its number is equal to the ack count
 func (k *Keeper) GetLastCheckpoint(ctx context.Context) (checkpoint types.Checkpoint, err error) {
 	ackCount, err := k.GetAckCount(ctx)
 	if err != nil {
@@ -204,7 +204,7 @@ func (k *Keeper) FlushCheckpointBuffer(ctx context.Context) error {
 	return nil
 }
 
-// GetCheckpointFromBuffer gets the buffered checkpoint from store
+// GetCheckpointFromBuffer gets the buffered checkpoint from the store
 func (k *Keeper) GetCheckpointFromBuffer(ctx context.Context) (types.Checkpoint, error) {
 	var checkpoint types.Checkpoint
 

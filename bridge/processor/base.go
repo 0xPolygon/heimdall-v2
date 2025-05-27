@@ -93,7 +93,7 @@ func NewBaseProcessor(cdc codec.Codec, queueConnector *queue.Connector, httpClie
 		logger = log.NewNopLogger()
 	}
 
-	// creating syncer object
+	// creating the syncer object
 	return &BaseProcessor{
 		Logger: logger,
 		name:   name,
@@ -220,10 +220,10 @@ func (bp *BaseProcessor) checkTxAgainstMempool(msg types.Msg, event interface{})
 		return false, err
 	}
 
-	// Iterate over txs present in the mempool
+	// Iterate over txs present in the mempool.
 	// We can verify if the message we're about to send is present by
 	// checking the type of transaction, the transaction hash and log index
-	// present in the data of transaction
+	// present in the data of the transaction
 
 	status := false
 Loop:
@@ -244,25 +244,24 @@ Loop:
 		txMsg := decodedTx.GetMsgs()[0]
 
 		// We only need to check for `event-record` type transactions.
-		// If required, add case for others here.
 		switch txMsg.String() {
 		case "event-record":
 
-			// typecast the txs for clerk type message
+			// typecast the txs for the clerk type message
 			mempoolTxMsg, ok := txMsg.(*clerkTypes.MsgEventRecord)
 			if !ok {
 				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
 				continue Loop
 			}
 
-			// typecast the msg for clerk type message
+			// typecast the msg for the clerk type message
 			clerkMsg, ok := msg.(*clerkTypes.MsgEventRecord)
 			if !ok {
 				bp.Logger.Error("Unable to typecast message to clerk event record while checking against mempool")
 				continue Loop
 			}
 
-			// check the transaction hash in message
+			// check the transaction hash in the message
 			if clerkMsg.GetTxHash() != mempoolTxMsg.GetTxHash() {
 				continue Loop
 			}
