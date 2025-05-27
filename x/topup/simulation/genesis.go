@@ -1,13 +1,13 @@
 package simulation
 
 import (
+	"math"
 	"math/big"
 	"math/rand"
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/simulation"
-	"github.com/ethereum/go-ethereum/common/math"
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/types"
