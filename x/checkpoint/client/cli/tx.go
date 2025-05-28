@@ -202,7 +202,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 					return fmt.Errorf("failed to get current header block number: %w", err)
 				}
 
-				block, err := rootChainInstance.HeaderBlocks(nil, big.NewInt(int64(blockNum-1)))
+				block, err := rootChainInstance.HeaderBlocks(nil, big.NewInt(int64(blockNum*checkpointParams.Params.ChildChainBlockInterval)))
 				if err != nil {
 					return fmt.Errorf("failed to get header block: %w", err)
 				}
