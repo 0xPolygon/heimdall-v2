@@ -184,7 +184,6 @@ func SendCheckpointAckCmd() *cobra.Command {
 					return fmt.Errorf("failed to fetch chain manager params: %w", err)
 				}
 
-				fmt.Printf("Using Root Chain Address: %s\n", chainManagerParams.Params.ChainParams.RootChainAddress)
 				rootChainInstance, err := contractCaller.GetRootChainInstance(chainManagerParams.Params.ChainParams.RootChainAddress)
 				if err != nil {
 					return fmt.Errorf("failed to get root chain instance: %w", err)
@@ -196,7 +195,6 @@ func SendCheckpointAckCmd() *cobra.Command {
 					return fmt.Errorf("failed to fetch checkpoint params: %w", err)
 				}
 
-				fmt.Printf("Using Child Chain Block Interval: %d\n", checkpointParams.Params.ChildChainBlockInterval)
 				blockNum, err := contractCaller.CurrentHeaderBlock(rootChainInstance, checkpointParams.Params.ChildChainBlockInterval)
 				if err != nil {
 					return fmt.Errorf("failed to get current header block number: %w", err)
@@ -206,13 +204,11 @@ func SendCheckpointAckCmd() *cobra.Command {
 				if err != nil {
 					return fmt.Errorf("failed to get header block: %w", err)
 				}
-				fmt.Printf("Current header block: %v\n", block)
 
 				proposerAddress, err := helper.GetAddressString()
 				if err != nil {
 					return fmt.Errorf("failed to get proposer address: %w", err)
 				}
-				fmt.Printf("Using Proposer Address: %s\n", proposerAddress)
 
 				msg := types.NewMsgCpAck(
 					proposerAddress,
@@ -222,12 +218,6 @@ func SendCheckpointAckCmd() *cobra.Command {
 					block.End.Uint64(),
 					block.Root[:],
 				)
-				fmt.Printf("Proposer Address: %v\n", proposerAddress)
-				fmt.Printf("Header Block Number: %v\n", blockNum)
-				fmt.Printf("Checkpoint Proposer: %v\n", block.Proposer.Hex())
-				fmt.Printf("Checkpoint Start: %v\n", block.Start.Uint64())
-				fmt.Printf("Checkpoint End: %v\n", block.End.Uint64())
-				fmt.Printf("Checkpoint Root: %v\n", common.Bytes2Hex(block.Root[:]))
 
 				return cli.BroadcastMsg(clientCtx, proposerAddress, &msg, logger)
 			}
