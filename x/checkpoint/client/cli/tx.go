@@ -202,7 +202,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 					return fmt.Errorf("failed to get current header block number: %w", err)
 				}
 
-				block, err := rootChainInstance.HeaderBlocks(nil, big.NewInt(int64(blockNum)))
+				block, err := rootChainInstance.HeaderBlocks(nil, big.NewInt(int64(blockNum-1)))
 				if err != nil {
 					return fmt.Errorf("failed to get header block: %w", err)
 				}
@@ -222,7 +222,12 @@ func SendCheckpointAckCmd() *cobra.Command {
 					block.End.Uint64(),
 					block.Root[:],
 				)
-				fmt.Printf("Checkpoint Ack Message: %s\n", msg.String())
+				fmt.Printf("Proposer Address: %v\n", proposerAddress)
+				fmt.Printf("Header Block Number: %v\n", blockNum)
+				fmt.Printf("Checkpoint Proposer: %v\n", block.Proposer.Hex())
+				fmt.Printf("Checkpoint Start: %v\n", block.Start.Uint64())
+				fmt.Printf("Checkpoint End: %v\n", block.End.Uint64())
+				fmt.Printf("Checkpoint Root: %v\n", common.Bytes2Hex(block.Root[:]))
 
 				return cli.BroadcastMsg(clientCtx, proposerAddress, &msg, logger)
 			}
