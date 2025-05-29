@@ -1245,7 +1245,7 @@ paths:
         - Query
   /checkpoints/overview:
     get:
-      summary: GetChekpointOverview queries for the checkpoint overview
+      summary: GetCheckpointOverview queries for the checkpoint overview
       operationId: GetCheckpointOverview
       responses:
         '200':

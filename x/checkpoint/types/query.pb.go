@@ -1012,7 +1012,7 @@ const _ = grpc.SupportPackageIsVersion4
 type QueryClient interface {
 	// GetCheckpointParams queries for the x/checkpoint params
 	GetCheckpointParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
-	// GetChekpointOverview queries for the checkpoint overview
+	// GetCheckpointOverview queries for the checkpoint overview
 	GetCheckpointOverview(ctx context.Context, in *QueryCheckpointOverviewRequest, opts ...grpc.CallOption) (*QueryCheckpointOverviewResponse, error)
 	// GetAckCount queries for the ack count
 	GetAckCount(ctx context.Context, in *QueryAckCountRequest, opts ...grpc.CallOption) (*QueryAckCountResponse, error)
@@ -1134,7 +1134,7 @@ func (c *queryClient) GetCheckpoint(ctx context.Context, in *QueryCheckpointRequ
 type QueryServer interface {
 	// GetCheckpointParams queries for the x/checkpoint params
 	GetCheckpointParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
-	// GetChekpointOverview queries for the checkpoint overview
+	// GetCheckpointOverview queries for the checkpoint overview
 	GetCheckpointOverview(context.Context, *QueryCheckpointOverviewRequest) (*QueryCheckpointOverviewResponse, error)
 	// GetAckCount queries for the ack count
 	GetAckCount(context.Context, *QueryAckCountRequest) (*QueryAckCountResponse, error)

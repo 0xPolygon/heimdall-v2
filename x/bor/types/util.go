@@ -54,13 +54,16 @@ func GenerateBorCommittedSpans(latestBorBlock uint64, latestBorUsedSpan *Span) [
 // CalcCurrentBorSpanId computes the Bor span ID corresponding to latestBorBlock,
 // using latestHeimdallSpan as the reference.  It returns an error if inputs are invalid
 // (nil span, zero or negative span length) or if arithmetic overflow is detected.
+// CalcCurrentBorSpanId computes the Bor span ID corresponding to latestBorBlock,
+// using latestHeimdallSpan as the reference. It returns an error if inputs are invalid
+// (nil span, zero or negative span length) or if arithmetic overflow is detected.
 func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint64, error) {
 	if latestHeimdallSpan == nil {
 		return 0, fmt.Errorf("nil Heimdall span provided")
 	}
-	if latestHeimdallSpan.EndBlock <= latestHeimdallSpan.StartBlock {
+	if latestHeimdallSpan.EndBlock < latestHeimdallSpan.StartBlock {
 		return 0, fmt.Errorf(
-			"invalid Heimdall span: EndBlock (%d) must be > StartBlock (%d)",
+			"invalid Heimdall span: EndBlock (%d) must be >= StartBlock (%d)",
 			latestHeimdallSpan.EndBlock,
 			latestHeimdallSpan.StartBlock,
 		)
@@ -74,24 +77,17 @@ func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint
 		)
 	}
 
-	if latestHeimdallSpan.StartBlock <= latestBorBlock && latestBorBlock <= latestHeimdallSpan.EndBlock {
+	if latestBorBlock <= latestHeimdallSpan.EndBlock {
 		return latestHeimdallSpan.Id, nil
 	}
 
-	spanLength := latestHeimdallSpan.EndBlock - latestHeimdallSpan.StartBlock
+	spanLength := latestHeimdallSpan.EndBlock - latestHeimdallSpan.StartBlock + 1
 
-	// Compute how many whole spans have elapsed
 	offset := latestBorBlock - latestHeimdallSpan.StartBlock
 	quotient := offset / spanLength
-	remainder := offset % spanLength
 
-	// Build new span ID, handling any remainder
 	spanId := latestHeimdallSpan.Id + quotient
-	if remainder != 0 {
-		spanId++
-	}
 
-	// Detect overflow wrap-around
 	if spanId < latestHeimdallSpan.Id {
 		return 0, fmt.Errorf(
 			"overflow detected computing span ID: reference ID=%d quotient=%d",

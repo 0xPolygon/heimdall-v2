@@ -113,7 +113,7 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	if maxBlockNumber > lastSpan.EndBlock {
 		if latestMilestoneEndBlock > lastSpan.EndBlock {
 			sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
-			go sp.backfillSpans(ctx, latestBorBlockNumber, lastSpan)
+			go sp.backfillSpans(ctx, latestMilestoneEndBlock, lastSpan)
 			return
 		} else {
 			sp.Logger.Debug("Will not backfill heimdall spans, as latest milestone end block is less than last span end block", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
@@ -136,7 +136,7 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 
 }
 
-func (sp *SpanProcessor) backfillSpans(ctx context.Context, latestBorBlockNumber uint64, lastHeimdallSpan *types.Span) {
+func (sp *SpanProcessor) backfillSpans(ctx context.Context, latestFinalizedBorBlockNumber uint64, lastHeimdallSpan *types.Span) {
 	// Get what span bor used when heimdall was down and it tried to fetch the next span from heimdall
 	// We need to know if it managed to fetch the latest span or it used the previous one
 	// We will take it from the next start block after the last heimdall span end block
@@ -174,7 +174,7 @@ func (sp *SpanProcessor) backfillSpans(ctx context.Context, latestBorBlockNumber
 		return
 	}
 
-	borSpanId, err := types.CalcCurrentBorSpanId(latestBorBlockNumber, borLastUsedSpan)
+	borSpanId, err := types.CalcCurrentBorSpanId(latestFinalizedBorBlockNumber, borLastUsedSpan)
 	if err != nil {
 		sp.Logger.Error("Error calculating current bor span id", "error", err)
 		return
@@ -185,12 +185,11 @@ func (sp *SpanProcessor) backfillSpans(ctx context.Context, latestBorBlockNumber
 		ChainId:         params.ChainParams.BorChainId,
 		LatestSpanId:    borLastUsedSpan.Id,
 		LatestBorSpanId: borSpanId,
-		LatestBorBlock:  latestBorBlockNumber,
 	}
 
 	txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
 	if err != nil {
-		sp.Logger.Error("Error while broadcasting spans backfill to heimdall", "spanId", msg.LatestSpanId, "startBlock", msg.LatestBorSpanId, "endBlock", msg.LatestBorBlock, "error", err)
+		sp.Logger.Error("Error while broadcasting spans backfill to heimdall", "error", err, "msg", msg.String())
 		return
 	}
 

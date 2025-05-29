@@ -1,6 +1,7 @@
 package types
 
 import (
+	math "math"
 	"testing"
 )
 
@@ -20,79 +21,65 @@ func TestCalcCurrentBorSpanId(t *testing.T) {
 			wantErr:        true,
 		},
 		{
-			name:           "Zero-length span",
+			name:           "Valid span length 16, at start block",
 			latestBorBlock: 100,
-			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 100},
-			want:           0,
-			wantErr:        true,
-		},
-		{
-			name:           "Underflow latestBorBlock < start",
-			latestBorBlock: 50,
-			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 110},
-			want:           0,
-			wantErr:        true,
-		},
-		{
-			name:           "At start block",
-			latestBorBlock: 100,
-			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 200},
+			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 115}, // len = 16
 			want:           1,
 			wantErr:        false,
 		},
 		{
-			name:           "Within span",
-			latestBorBlock: 150,
-			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 200},
+			name:           "Valid span length 16, at end block",
+			latestBorBlock: 115,
+			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 115},
 			want:           1,
 			wantErr:        false,
 		},
 		{
-			name:           "At end block",
-			latestBorBlock: 200,
-			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 200},
-			want:           1,
+			name:           "Valid span length 16, just after end block",
+			latestBorBlock: 116,
+			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 115},
+			want:           2,
 			wantErr:        false,
 		},
 		{
-			name:           "Just after end block",
-			latestBorBlock: 201,
-			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 200},
-			want:           3,
-			wantErr:        false,
-		},
-		{
-			name:           "Multiple spans exact",
-			latestBorBlock: 500,
-			span:           &Span{Id: 10, StartBlock: 100, EndBlock: 200},
-			want:           14, // (500-100)/100 = 4
+			name:           "Multiple spans exact division",
+			latestBorBlock: 196,
+			span:           &Span{Id: 5, StartBlock: 100, EndBlock: 115}, // len = 16, (196-100)/16 = 6
+			want:           11,
 			wantErr:        false,
 		},
 		{
 			name:           "Multiple spans with remainder",
-			latestBorBlock: 550,
-			span:           &Span{Id: 10, StartBlock: 100, EndBlock: 200},
-			want:           15, // (550-100)/100 = 4 + 1 remainder
+			latestBorBlock: 198,
+			span:           &Span{Id: 5, StartBlock: 100, EndBlock: 115}, // len = 16, (198-100)/16 = 6.125
+			want:           11,
 			wantErr:        false,
 		},
 		{
-			name:           "Span length one multiple",
-			latestBorBlock: 105,
-			span:           &Span{Id: 5, StartBlock: 100, EndBlock: 101},
-			want:           10, // (105-100)/1 = 5
-			wantErr:        false,
-		},
-		{
-			name:           "Max values within range",
-			latestBorBlock: ^uint64(0),
-			span:           &Span{Id: 0, StartBlock: 0, EndBlock: ^uint64(0)},
+			name:           "Underflow latestBorBlock < start",
+			latestBorBlock: 50,
+			span:           &Span{Id: 1, StartBlock: 100, EndBlock: 115},
 			want:           0,
+			wantErr:        true,
+		},
+		{
+			name:           "Single span length 16 with large Id",
+			latestBorBlock: 115,
+			span:           &Span{Id: 123456, StartBlock: 100, EndBlock: 115},
+			want:           123456,
 			wantErr:        false,
 		},
 		{
-			name:           "Overflow wrap-around",
-			latestBorBlock: 3,
-			span:           &Span{Id: ^uint64(0) - 2, StartBlock: 0, EndBlock: 1},
+			name:           "Overflow when computing span ID",
+			latestBorBlock: 100,                                                       // offset = 0
+			span:           &Span{Id: math.MaxUint64, StartBlock: 100, EndBlock: 115}, // spanId = MaxUint64
+			want:           math.MaxUint64,
+			wantErr:        false,
+		},
+		{
+			name:           "Overflow wrap-around with actual overflow",
+			latestBorBlock: 132,                                                           // offset = 32 -> 2 spans, spanId = MaxUint64 - 1 + 2 = wrap
+			span:           &Span{Id: math.MaxUint64 - 1, StartBlock: 100, EndBlock: 115}, // len = 16
 			want:           0,
 			wantErr:        true,
 		},

@@ -64,6 +64,7 @@ type IContractCaller interface {
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
+	GetStartBlockHeimdallSpanID(ctx context.Context, startBlock uint64) (spanID uint64, err error)
 
 	DecodeNewHeaderBlockEvent(string, *ethTypes.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)
 
