@@ -78,7 +78,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 					}
 				}
 
-				// set last block to storage
+				// set the last block to storage
 				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(toBlock, 10)), nil); err != nil {
 					hl.Logger.Error("hl.storageClient.Put", "Error", err)
 				}
@@ -94,7 +94,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 }
 
 func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, uint64, error) {
-	// toBlock - get latest blockheight from heimdall node
+	// toBlock - get the latest block height from heimdall node
 	fromBlock := uint64(0)
 	toBlock := uint64(0)
 
@@ -129,7 +129,7 @@ func (hl *HeimdallListener) fetchFromAndToBlock(ctx context.Context) (uint64, ui
 	return fromBlock, toBlock, err
 }
 
-// ProcessBlockEvent - process Blockevents (BeginBlock, EndBlock events) from heimdall.
+// ProcessBlockEvent - process the block events (BeginBlock, EndBlock events) from heimdall.
 func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight int64) {
 	hl.Logger.Info("Received block event from Heimdall", "eventType", event.Type)
 
@@ -148,7 +148,7 @@ func (hl *HeimdallListener) ProcessBlockEvent(event sdk.StringEvent, blockHeight
 }
 
 func (hl *HeimdallListener) sendBlockTask(taskName string, eventBytes []byte, blockHeight int64) {
-	// create machinery task
+	// create the machinery task
 	signature := &tasks.Signature{
 		Name: taskName,
 		Args: []tasks.Arg{
@@ -166,7 +166,7 @@ func (hl *HeimdallListener) sendBlockTask(taskName string, eventBytes []byte, bl
 
 	hl.Logger.Info("Sending block level task", "taskName", taskName, "currentTime", time.Now(), "blockHeight", blockHeight)
 
-	// send task
+	// send the task
 	_, err := hl.queueConnector.Server.SendTask(signature)
 	if err != nil {
 		hl.Logger.Error("Error sending block level task", "taskName", taskName, "blockHeight", blockHeight, "error", err)

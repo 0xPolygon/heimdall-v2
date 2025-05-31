@@ -244,7 +244,7 @@ func GetMajorityMilestoneProposition(
 
 	startBlock := uint64(0)
 
-	// Check if we have a block that starts exactly from lastEndBlock + 1
+	// Check if we have a block that starts exactly from the (last end block + 1)
 	if lastEndBlock != nil {
 		startBlock = *lastEndBlock + 1
 
@@ -315,7 +315,7 @@ func GetMajorityMilestoneProposition(
 	// Sort validators deterministically
 	sort.Strings(supportingValidatorList)
 
-	// Verify that we still have 2/3 majority after filtering
+	// Verify that we still have a 2/3 majority after filtering
 	totalSupportingPower := int64(0)
 	for _, valAddr := range supportingValidatorList {
 		totalSupportingPower += valAddressToVotingPower[valAddr]
@@ -351,13 +351,13 @@ func GetMajorityMilestoneProposition(
 	blockHashes := make([][]byte, 0, len(blockHashesAndTds))
 	blockTds := make([]uint64, 0, len(blockHashesAndTds))
 	for _, blockHashAndTd := range blockHashesAndTds {
-		tdBytes := blockHashAndTd[len(blockHashAndTd)-8:] // last 8 bytes are the TD
+		tdBytes := blockHashAndTd[len(blockHashAndTd)-8:] // the last 8 bytes are the TD
 		blockTds = append(blockTds, binary.LittleEndian.Uint64(tdBytes))
 
 		blockHashes = append(blockHashes, blockHashAndTd[:len(blockHashAndTd)-8])
 	}
 
-	// Create final proposition
+	// Create a final proposition
 	proposition := &types.MilestoneProposition{
 		BlockHashes:      blockHashes,
 		StartBlockNumber: startBlock,

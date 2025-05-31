@@ -82,7 +82,7 @@ func (m msgServer) ValidatorJoin(ctx context.Context, msg *types.MsgValidatorJoi
 		return nil, errorsmod.Wrap(types.ErrInvalidMsg, fmt.Sprintf("Invalid amount %s for validator %d", msg.Amount, msg.ValId))
 	}
 
-	// add sequence
+	// add the sequence
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
@@ -129,7 +129,7 @@ func (m msgServer) StakeUpdate(ctx context.Context, msg *types.MsgStakeUpdate) (
 		return nil, errorsmod.Wrap(types.ErrNoValidator, "failed to fetch validator from store")
 	}
 
-	// add sequence
+	// add the sequence
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
@@ -189,7 +189,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 	// make oldSigner address compatible with newSigner address
 	oldSigner := util.FormatAddress(validator.Signer)
 
-	// add sequence
+	// add the sequence
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))
@@ -200,7 +200,7 @@ func (m msgServer) SignerUpdate(ctx context.Context, msg *types.MsgSignerUpdate)
 		return nil, errors.Wrapf(sdkerrors.ErrConflict, "old events are not allowed")
 	}
 
-	// check if new signer address is same as existing signer
+	// check if the new signer address is the same as the existing signer
 	if newSigner == oldSigner {
 		// No signer change
 		m.k.Logger(ctx).Error("new signer is the same as old signer")
@@ -234,13 +234,13 @@ func (m msgServer) ValidatorExit(ctx context.Context, msg *types.MsgValidatorExi
 	}
 
 	m.k.Logger(ctx).Debug("validator in store", "validator", validator)
-	// check if validator deactivation period is set
+	// check if the validator deactivation period is set
 	if validator.EndEpoch != 0 {
 		m.k.Logger(ctx).Error("validator already unBonded")
 		return nil, errorsmod.Wrap(types.ErrValUnBonded, "validator already unBonded")
 	}
 
-	// add sequence
+	// add the sequence
 	blockNumber := new(big.Int).SetUint64(msg.BlockNumber)
 	sequence := new(big.Int).Mul(blockNumber, big.NewInt(types.DefaultLogIndexUnit))
 	sequence.Add(sequence, new(big.Int).SetUint64(msg.LogIndex))

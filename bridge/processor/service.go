@@ -26,14 +26,14 @@ type Service struct {
 	processors []Processor
 }
 
-// NewProcessorService returns new service object for processing queue msg
+// NewProcessorService returns a new service object for processing queue msg
 func NewProcessorService(
 	cdc codec.Codec,
 	queueConnector *queue.Connector,
 	httpClient *rpchttp.HTTP,
 	txBroadcaster *broadcaster.TxBroadcaster,
 ) *Service {
-	// creating processor object
+	// creating the processor object
 	processorService := &Service{
 		queueConnector: queueConnector,
 	}
@@ -78,7 +78,7 @@ func NewProcessorService(
 	// Select processors
 	//
 
-	// add into processor list
+	// add into the processor list
 	startAll := viper.GetBool(helper.AllProcessesFlag)
 	onlyServices := viper.GetStringSlice(helper.OnlyProcessesFlag)
 
@@ -114,7 +114,7 @@ func NewProcessorService(
 	return processorService
 }
 
-// OnStart starts new block subscription
+// OnStart starts the new block subscription
 func (processorService *Service) OnStart() error {
 	if err := processorService.BaseService.OnStart(); err != nil {
 		processorService.Logger.Error("OnStart | OnStart", "Error", err)
@@ -136,7 +136,7 @@ func (processorService *Service) OnStart() error {
 
 // OnStop stops all necessary go routines
 func (processorService *Service) OnStop() {
-	processorService.BaseService.OnStop() // Always call the overridden method.
+	processorService.BaseService.OnStop() // always call the overridden method.
 	// start chain listeners
 	for _, processor := range processorService.processors {
 		processor.Stop()

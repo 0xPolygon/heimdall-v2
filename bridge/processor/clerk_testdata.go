@@ -47,7 +47,7 @@ const (
 	}
 	}`
 
-	isOldTxUrl      = dummyHeimdallServerUrl + "/clerk/isoldtx?logindex=0&txhash=0x6d428739815d7c84cf89db055158861b089e0fd649676a0243a2a2d204c1d854"
+	isOldTxUrl      = dummyHeimdallServerUrl + "/clerk/is-old-tx?logindex=0&txhash=0x6d428739815d7c84cf89db055158861b089e0fd649676a0243a2a2d204c1d854"
 	isOldTxResponse = `
 	{
 		"result": false
@@ -79,7 +79,7 @@ const (
 		}
 	}`
 
-	getValidatorSetUrl      = dummyHeimdallServerUrl + "/staking/validator-set"
+	getValidatorSetUrl      = dummyHeimdallServerUrl + "/stake/validators-set"
 	getValidatorSetResponse = `
 	{
 	"result": {

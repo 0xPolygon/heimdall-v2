@@ -96,7 +96,7 @@ func (q queryServer) GetNextSpan(ctx context.Context, req *types.QueryNextSpanRe
 
 	selectedProducers = types.SortValidatorByAddress(selectedProducers)
 
-	// create next span
+	// create the next span
 	nextSpan := &types.Span{
 		Id:                req.SpanId,
 		StartBlock:        req.StartBlock,
@@ -116,7 +116,7 @@ func (q queryServer) GetNextSpanSeed(ctx context.Context, req *types.QueryNextSp
 	}
 	spanId := req.GetId()
 
-	// fetch next span seed
+	// fetch the next span seed
 	nextSpanSeed, nextSpanSeedAuthor, err := q.k.FetchNextSpanSeed(ctx, spanId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

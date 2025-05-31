@@ -51,9 +51,8 @@ func init() {
 	Client = &http.Client{}
 }
 
-// ToBytes32 is a convenience method for converting a byte slice to a fix
-// sized 32 byte array. This method will truncate the input if it is larger
-// than 32 bytes.
+// ToBytes32 is a convenience method for converting a byte slice to a fixed-sized 32-byte array.
+// This method will truncate the input if it is larger than 32 bytes.
 func ToBytes32(x []byte) [32]byte {
 	var y [32]byte
 
@@ -62,7 +61,7 @@ func ToBytes32(x []byte) [32]byte {
 	return y
 }
 
-// GetPowerFromAmount returns power from amount -- note that this will populate amount object
+// GetPowerFromAmount returns power from amount -- note that this will populate the amount object
 func GetPowerFromAmount(amount *big.Int) (*big.Int, error) {
 	decimals18 := big.NewInt(0).Exp(big.NewInt(10), big.NewInt(18), nil)
 	if amount.Cmp(decimals18) == -1 {
@@ -104,9 +103,9 @@ func UnpackSigAndVotes(payload []byte, abi abi.ABI) (votes []byte, sigs []byte, 
 }
 
 // EventByID looks up an event by the topic id
-func EventByID(abiObject *abi.ABI, sigdata []byte) *abi.Event {
+func EventByID(abiObject *abi.ABI, sigData []byte) *abi.Event {
 	for _, event := range abiObject.Events {
-		if bytes.Equal(event.ID.Bytes(), sigdata) {
+		if bytes.Equal(event.ID.Bytes(), sigData) {
 			return &event
 		}
 	}
@@ -124,7 +123,7 @@ func GetHeimdallServerEndpoint(endpoint string) string {
 	return addr
 }
 
-// FetchFromAPI fetches data from any URL with limited read size
+// FetchFromAPI fetches data from any URL with a limited read size
 func FetchFromAPI(URL string) ([]byte, error) {
 	resp, err := Client.Get(URL)
 	if err != nil {
@@ -156,7 +155,7 @@ func FetchFromAPI(URL string) ([]byte, error) {
 	return nil, fmt.Errorf("error while fetching data from url: %s, status: %d, error: %w", URL, resp.StatusCode, err)
 }
 
-// IsPubKeyFirstByteValid checks the validity of the first byte of the public key.
+// IsPubKeyFirstByteValid checks the validity of the public key's first byte.
 // It must be 0x04 for uncompressed public keys
 func IsPubKeyFirstByteValid(pubKey []byte) bool {
 	prefix := make([]byte, 1)

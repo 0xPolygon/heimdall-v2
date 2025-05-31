@@ -14,13 +14,13 @@ service Query {
   // GetSpanList queries a list of spans.
   rpc GetSpanList(QuerySpanListRequest) returns (QuerySpanListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/list";
+    option (google.api.http).get = "/bor/spans/list";
   }
 
   // GetLatestSpan queries the latest span.
   rpc GetLatestSpan(QueryLatestSpanRequest) returns (QueryLatestSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/latest";
+    option (google.api.http).get = "/bor/spans/latest";
   }
 
   // GetNextSpanSeed queries the next span seed given a
@@ -28,19 +28,19 @@ service Query {
   rpc GetNextSpanSeed(QueryNextSpanSeedRequest)
       returns (QueryNextSpanSeedResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/seed/{id}";
+    option (google.api.http).get = "/bor/spans/seed/{id}";
   }
 
   // GetNextSpan queries the next span given a QueryNextSpanRequest.
   rpc GetNextSpan(QueryNextSpanRequest) returns (QueryNextSpanResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/prepare";
+    option (google.api.http).get = "/bor/spans/prepare";
   }
 
   // GetSpanById retrieves a span by its id.
   rpc GetSpanById(QuerySpanByIdRequest) returns (QuerySpanByIdResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/bor/span/{id}";
+    option (google.api.http).get = "/bor/spans/{id}";
   }
 
   // GetBorParams queries the parameters of x/bor module.

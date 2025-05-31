@@ -43,7 +43,7 @@ func (srv *sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler
 	}
 }
 
-// PostTxHandler returns a post handler for "checkpoint" type messages.
+// PostTxHandler returns a post-handler for "checkpoint" type messages.
 func (srv *sideMsgServer) PostTxHandler(methodName string) sidetxs.PostTxHandler {
 	switch methodName {
 	case checkpointTypeUrl:
@@ -192,10 +192,10 @@ func (srv *sideMsgServer) PostHandleMsgCheckpoint(ctx sdk.Context, sdkMsg sdk.Ms
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	// fetch last checkpoint from store
+	// fetch the last checkpoint from the store
 	lastCheckpoint, err := srv.GetLastCheckpoint(ctx)
 	if err == nil {
-		// check if new checkpoint's start block start from current tip
+		// check if the new checkpoint's start block starts from the current tip
 		if lastCheckpoint.EndBlock+1 != msg.StartBlock {
 			logger.Error("checkpoint not in continuity",
 				"currentTip", lastCheckpoint.EndBlock,
@@ -297,7 +297,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return errors.New("side-tx didn't get yes votes")
 	}
 
-	// get last checkpoint from buffer
+	// get the last checkpoint from the buffer
 	checkpointObj, err := srv.GetCheckpointFromBuffer(ctx)
 	if err != nil {
 		logger.Error("unable to get checkpoint buffer", "error", err)
@@ -310,7 +310,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return errors.New("invalid start block")
 	}
 
-	// return err if start and end matches but contract root hash doesn't match
+	// return err if start and end match, but contract root hash doesn't match
 	if msg.EndBlock == checkpointObj.EndBlock && !bytes.Equal(msg.RootHash, checkpointObj.RootHash) {
 		logger.Error("invalid ACK",
 			"startExpected", checkpointObj.StartBlock,
@@ -324,8 +324,7 @@ func (srv *sideMsgServer) PostHandleMsgCheckpointAck(ctx sdk.Context, sdkMsg sdk
 		return errors.New("invalid ACK")
 	}
 
-	// adjust checkpoint data if latest checkpoint is already submitted
-
+	// adjust checkpoint data if the latest checkpoint is already submitted
 	if checkpointObj.EndBlock != msg.EndBlock {
 		logger.Info("adjusting endBlock to one already submitted on chain", "endBlock", checkpointObj.EndBlock, "adjustedEndBlock", msg.EndBlock)
 		checkpointObj.EndBlock = msg.EndBlock

@@ -141,7 +141,7 @@ func (s *sideMsgServer) SideHandleMsgValidatorJoin(ctx sdk.Context, msgI sdk.Msg
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	// check public key first byte
+	// check the public key first byte
 	if !helper.IsPubKeyFirstByteValid(pubKey.Bytes()[0:1]) {
 		s.k.Logger(ctx).Error(
 			"public key first byte mismatch",

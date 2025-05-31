@@ -26,7 +26,7 @@ const (
 	blockProducerMaxSpanLookback = 50
 )
 
-// Keeper stores all bor module related data
+// Keeper stores all the bor related data
 type Keeper struct {
 	cdc            codec.BinaryCodec
 	storeService   store.KVStoreService
@@ -116,7 +116,7 @@ func (k *Keeper) AddNewSpan(ctx context.Context, span *types.Span) error {
 	return k.UpdateLastSpan(ctx, span.Id)
 }
 
-// AddNewRawSpan adds new span for bor to store
+// AddNewRawSpan adds the new span for bor to store
 func (k *Keeper) AddNewRawSpan(ctx context.Context, span *types.Span) error {
 	return k.spans.Set(ctx, span.Id, *span)
 }
@@ -128,7 +128,7 @@ func (k *Keeper) GetSpan(ctx context.Context, id uint64) (types.Span, error) {
 		return types.Span{}, err
 	}
 
-	// If we are starting from 0 there will be no spanKey present
+	// If we are starting from zero, there will be no span key present
 	if !ok {
 		return types.Span{}, fmt.Errorf("span not found for id: %v", id)
 	}
@@ -176,7 +176,7 @@ func (k *Keeper) GetAllSpans(ctx context.Context) ([]*types.Span, error) {
 	return spans, err
 }
 
-// GetLastSpan fetches last span from store
+// GetLastSpan fetches the last span from the store
 func (k *Keeper) GetLastSpan(ctx context.Context) (types.Span, error) {
 	ok, err := k.latestSpan.Has(ctx)
 	if err != nil {
@@ -247,9 +247,9 @@ func (k *Keeper) FreezeSet(ctx sdk.Context, id uint64, startBlock uint64, endBlo
 	return k.AddNewSpan(ctx, newSpan)
 }
 
-// SelectNextProducers selects producers for next span
+// SelectNextProducers selects producers for the next span
 func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prevVals []staketypes.Validator) ([]staketypes.Validator, error) {
-	// spanEligibleVals are current validators who are not getting deactivated in between next span
+	// spanEligibleVals are current validators who are not getting deactivated in between the next span
 	spanEligibleVals := k.sk.GetSpanEligibleValidators(ctx)
 	params, err := k.FetchParams(ctx)
 	if err != nil {
@@ -257,7 +257,7 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 	}
 	producerCount := params.ProducerCount
 
-	// if producers to be selected is more than current validators no need to select/shuffle
+	// if producers to be selected are more than current validators, no need to select/shuffle
 	if len(spanEligibleVals) <= int(producerCount) {
 		return spanEligibleVals, nil
 	}
@@ -267,7 +267,7 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 		spanEligibleVals = RollbackVotingPowers(spanEligibleVals, prevVals)
 	}
 
-	// select next producers using seed as block header hash
+	// select the next producers using seed as block header hash
 	newProducersIds := selectNextProducers(seed, spanEligibleVals, producerCount)
 
 	vals := make([]staketypes.Validator, 0, len(newProducersIds))
@@ -298,7 +298,7 @@ func (k *Keeper) UpdateLastSpan(ctx context.Context, id uint64) error {
 	return k.latestSpan.Set(ctx, id)
 }
 
-// FetchNextSpanSeed gets the eth block hash which serves as seed for random selection of producer set
+// FetchNextSpanSeed gets the eth block hash which serves as seed for random selection of the producer set
 // for the next span
 func (k *Keeper) FetchNextSpanSeed(ctx context.Context, id uint64) (common.Hash, common.Address, error) {
 	logger := k.Logger(ctx)

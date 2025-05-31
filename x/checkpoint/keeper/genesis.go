@@ -26,7 +26,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		}
 	}
 
-	// Add finalised checkpoints to state
+	// Add finalized checkpoints to the state
 	if len(data.Checkpoints) != 0 {
 		// check if we are provided all the checkpoints
 		if int(data.AckCount) != len(data.Checkpoints) {
@@ -37,7 +37,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		data.Checkpoints = types.SortCheckpoints(data.Checkpoints)
 		// load checkpoints to state
 		for i, checkpoint := range data.Checkpoints {
-			// create checkpoint message for the purpose of validation
+			// create the checkpoint message for validation
 			msg := types.NewMsgCheckpointBlock(checkpoint.Proposer,
 				checkpoint.StartBlock,
 				checkpoint.EndBlock,
@@ -60,7 +60,7 @@ func (k Keeper) InitGenesis(ctx context.Context, data *types.GenesisState) {
 		}
 	}
 
-	// add checkpoint in buffer
+	// add checkpoint in the buffer
 	if data.BufferedCheckpoint != nil {
 		if err := k.SetCheckpointBuffer(ctx, *data.BufferedCheckpoint); err != nil {
 			k.Logger(ctx).Error("error while setting the checkpoint in buffer", "error", err)

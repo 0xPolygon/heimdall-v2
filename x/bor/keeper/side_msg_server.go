@@ -41,7 +41,7 @@ func (s sideMsgServer) SideTxHandler(methodName string) sidetxs.SideTxHandler {
 	}
 }
 
-// SideHandleMsgSpan validates external calls required for processing proposed span
+// SideHandleMsgSpan validates external calls required for processing the proposed span
 func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.Vote {
 	logger := s.k.Logger(ctx)
 
@@ -112,7 +112,7 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	}
 
 	currentBlock := childBlock.Number.Uint64()
-	// check if span proposed is in-turn or not
+	// check if the proposed span is in-turn or not
 	if !(lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock) {
 		logger.Error(
 			"span proposed is not in-turn",
@@ -155,7 +155,7 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		return err
 	}
 
-	// Skip handler if span is not approved
+	// Skip handler if the span is not approved
 	if sideTxResult != sidetxs.Vote_VOTE_YES {
 		logger.Debug("skipping new span since side-tx didn't get yes votes")
 		return errors.New("side-tx didn't get yes votes")

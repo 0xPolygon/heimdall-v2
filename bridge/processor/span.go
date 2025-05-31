@@ -47,7 +47,7 @@ func (sp *SpanProcessor) Start() error {
 func (sp *SpanProcessor) RegisterTasks() {
 }
 
-// startPolling - polls heimdall and checks if new span needs to be proposed
+// startPolling polls heimdall and checks if a new span needs to be proposed
 func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duration) {
 	ticker := time.NewTicker(interval)
 	// stop ticker when everything done
@@ -67,7 +67,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 	}
 }
 
-// checkAndPropose - will check if current user is span proposer and proposes the span
+// checkAndPropose checks if the current user is the span proposer and proposes the span
 func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	lastSpan, err := sp.getLastSpan()
 	if err != nil {
@@ -187,9 +187,9 @@ func (sp *SpanProcessor) sendProducerVotes(ctx context.Context, validatorId uint
 	return nil
 }
 
-// propose producers for next span if needed
+// propose producers for the next span if needed
 func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, nextSpanMsg *types.Span) {
-	// call with last span on record + new span duration and see if it has been proposed
+	// call with the last span on record plus new span duration and see if it has been proposed
 	currentBlock, err := sp.getCurrentChildBlock(ctx)
 	if err != nil {
 		sp.Logger.Error("Unable to fetch current block", "error", err)
@@ -240,7 +240,7 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 
 // checks span status
 func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
-	// fetch latest start block from heimdall via rest query
+	// fetch the latest start block from heimdall using the rest query
 	result, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(util.LatestSpanURL))
 	if err != nil {
 		sp.Logger.Error("Error while fetching latest span")
@@ -290,7 +290,7 @@ func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, erro
 // isSpanProposer checks if current user is span proposer
 func (sp *SpanProcessor) isSpanProposer(nextSpanProducers []stakeTypes.Validator) bool {
 	ac := address.NewHexCodec()
-	// anyone among next span producers can become next span proposer
+	// anyone among the next span producers can become the next span proposer
 	for _, val := range nextSpanProducers {
 		signerBytes, err := ac.StringToBytes(val.Signer)
 		if err != nil {

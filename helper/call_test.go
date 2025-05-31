@@ -62,7 +62,7 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 
 	signersList := make([]string, len(sigInput))
 
-	// Calculate total stake Power of all Signers.
+	// Calculate the total stake power of all the signers.
 	for i := 0; i < len(sigInput); i += sigLength {
 		signature := sigInput[i : i+sigLength]
 
@@ -78,7 +78,7 @@ func FetchSigners(voteBytes []byte, sigInput []byte) ([]string, error) {
 }
 
 // TestPopulateABIs tests that package level ABIs cache works as expected
-// by not invoking json methods after contracts ABIs' init
+// by not invoking JSON methods after contracts ABIs' init
 func TestPopulateABIs(t *testing.T) {
 	t.Log("ABIs map should be empty and all ABIs not found")
 	assert.True(t, len(ContractsABIsMap) == 0)

@@ -5,33 +5,33 @@ The script will be executed for the very first time on a node managed by the Pol
 Once the migration on that node is successful:
 - The v1 genesis will be exported and made available for the community on heimdall-v2 repo together with a checksum
 - The v2 genesis will be created and made available for the community on heimdall-v2 repo together with a checksum
-- The script will be distributed with the checksum, to prevent any tampering, and made available for the community on heimdall-v2 repo
+- The script will be distributed with the checksum to prevent any tampering and made available for the community on heimdall-v2 repo
 - Node operators can perform the migration on their own nodes using the script (or a modified version of it if the architecture is not supported)
 For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script](migrate.sh).
 
 ## Migration script
 
-- Validates dependencies and prerequisites
-- Halts your current Heimdall v1
-- Makes sure the latest committed height is reached
+- Validate dependencies and prerequisites
+- Halt your current Heimdall v1
+- Make sure the latest committed height is reached
   - If yes, it exports the genesis from v1
   - If no, it downloads the v1 genesis from a trusted source
-- Generates the genesis checksum and validates it
-- Backs up Heimdall v1
-- Installs Heimdall v2 and verifies binaries
-- Migrates the genesis format to v2
-- Generates the migrated genesis checksum and validates it
-- Initializes Heimdall v2
-- Restores and updates keys, configuration, and validator state
-- Assigns ownership permissions
-- Updates the systemd unit file
-- Cleans up backups (heimdall v1 data will be kept in the backup directory and can manually deleted later on)
+- Generate the genesis checksum and validates it
+- Back up Heimdall v1
+- Install Heimdall v2 and verifies binaries
+- Migrate the genesis format to v2
+- Generate the migrated genesis checksum and validates it
+- Initialize Heimdall v2
+- Restore and update keys, configuration, and validator state
+- Assign ownership permissions
+- Update the systemd unit file
+- Clean up backups (heimdall v1 data will be kept in the backup directory and can be manually deleted later on)
 ---
 
 ## 🛡️ Built-In Safety
 
 - ✅ **Script integrity check**: Prevents partial executions
-- 🛡️ **Script checksum**: The script will be delivered with checksum , to prevent any tampering
+- 🛡️ **Script checksum**: The script will be delivered with checksum to prevent any tampering
 - 🔐 **`sudo` enforcement**: Ensures system permissions
 - 🧱 **Checksum validation**: Protects against tampered genesis
 - 🧠 **Rollback logic**: Allows partial undo of dangerous steps
@@ -97,7 +97,7 @@ sudo bash migrate.sh \
   --bor-path=/usr/bin/bor
 ```
 
-For a possible output, see [output.log](./output.log)
+For a possible output, see [output.log](./output-example.txt)
 
 ### 🧩 Required Arguments
 
@@ -142,7 +142,7 @@ If your machine doesn't match any supported platform (or if you are using docker
 
 ### Optional: use WebSocket for Bor–Heimdall communication
 After the migration, to optimize communication between Heimdall and Bor, you can optionally enable WebSocket support in your bor `config.toml` file.  
-By default, Heimdall polls Bor using frequent HTTP requests, which can be inefficient. Enabling WebSocket support reduces overhead and improves sync responsiveness.  
+By default, heimdall polls bor by using frequent HTTP requests, which can be inefficient. Enabling WebSocket support reduces overhead and improves sync responsiveness.  
 Edit your bor `config.toml` file and add the following under the [heimdall] section:
 
 ```toml

@@ -497,15 +497,15 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_GetRecordList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"clerk", "event-record", "list"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetRecordList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"clerk", "event-records", "list"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetRecordById_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"clerk", "event-record", "record_id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetRecordById_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"clerk", "event-records", "record_id"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetRecordListWithTime_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"clerk", "time"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetRecordSequence_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"clerk", "sequence"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_IsClerkTxOld_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"clerk", "isoldtx"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_IsClerkTxOld_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"clerk", "is-old-tx"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (

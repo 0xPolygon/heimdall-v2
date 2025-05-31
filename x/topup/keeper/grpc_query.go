@@ -22,7 +22,7 @@ type queryServer struct {
 }
 
 // NewQueryServer creates a new querier for topup clients.
-// It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
+// It uses the underlying keeper and its contractCaller to interact with the Ethereum chain.
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
@@ -190,7 +190,7 @@ func (q queryServer) GetAccountProofByAddress(ctx context.Context, req *types.Qu
 		return nil, status.Errorf(codes.InvalidArgument, "invalid address")
 	}
 
-	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from current account
+	// Fetch the AccountRoot from RootChainContract, then the AccountRoot from the current account
 	// Finally, if they are equal, calculate the merkle path using GetAllDividendAccounts
 
 	chainParams, err := q.k.ChainKeeper.GetParams(ctx)

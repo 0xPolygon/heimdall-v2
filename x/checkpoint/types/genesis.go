@@ -11,7 +11,7 @@ import (
 
 // Default parameter values
 const (
-	// DefaultCheckpointBufferTime represents the time a checkpoint is allowed to stay in the buffer (1000s ~ 17m)
+	// DefaultCheckpointBufferTime represents the time a checkpoint is allowed to stay in the buffer (the 1000 s~17 m)
 	DefaultCheckpointBufferTime           = 1000 * time.Second
 	DefaultAvgCheckpointLength     uint64 = 256
 	DefaultMaxCheckpointLength     uint64 = 1024
@@ -35,7 +35,7 @@ func NewGenesisState(
 	}
 }
 
-// DefaultGenesisState gets the raw genesis raw message for testing
+// DefaultGenesisState gets the raw genesis message for testing
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{
 		Params: DefaultParams(),
@@ -54,7 +54,7 @@ func (gs GenesisState) Validate() error {
 		}
 
 		for i, checkpoint := range gs.Checkpoints {
-			// create checkpoint message for the purpose of validation
+			// create the checkpoint message for validation
 			msg := NewMsgCheckpointBlock(
 				checkpoint.Proposer,
 				checkpoint.StartBlock,
@@ -86,7 +86,7 @@ func (gs GenesisState) Validate() error {
 	}
 
 	if gs.CheckpointSignaturesTxhash != "" {
-		return errors.New("checkpoint signatures txhash is not valid")
+		return errors.New("checkpoint signatures tx hash is not valid")
 	}
 
 	return nil

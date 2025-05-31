@@ -1,6 +1,6 @@
 // Package version is a convenience utility that provides SDK
 // consumers with a ready-to-use version command that
-// produces apps versioning information based on flags
+// produces app versioning information based on flags
 // passed at compile time.
 //
 // # Configure the version command

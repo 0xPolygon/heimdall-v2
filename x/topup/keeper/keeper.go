@@ -89,7 +89,7 @@ func (k *Keeper) GetAllTopupSequences(ctx context.Context) (seq []string, e erro
 		}
 	}(iter)
 
-	// iterate over sequences' keys, and return them
+	// iterate over sequences' keys and return them
 	sequences, err := iter.Keys()
 	if err != nil {
 		logger.Error("error getting topup sequences from the iterator", "err", err)
@@ -151,7 +151,7 @@ func (k *Keeper) GetAllDividendAccounts(ctx context.Context) (da []hTypes.Divide
 		}
 	}(iter)
 
-	// iterate over dividend accounts' values, and return them
+	// iterate over dividend accounts' values and return them
 	dividendAccounts, err := iter.Values()
 	if err != nil {
 		logger.Error("error getting dividend accounts from the iterator", "err", err)

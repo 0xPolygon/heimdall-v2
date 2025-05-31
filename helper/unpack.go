@@ -12,14 +12,14 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// Big batch of reflect types for topic reconstruction.
+// Big batch of reflect-types for topic reconstruction.
 var (
 	reflectHash    = reflect.TypeOf(common.Hash{})
 	reflectAddress = reflect.TypeOf(common.Address{})
 	reflectBigInt  = reflect.TypeOf(new(big.Int))
 )
 
-// UnpackLog function unpacks the given event into given log type
+// UnpackLog function unpacks the given event into the given log type
 func UnpackLog(abiObject *abi.ABI, out interface{}, event string, log *types.Log) error {
 	selectedEvent := EventByID(abiObject, log.Topics[0].Bytes())
 
@@ -49,7 +49,7 @@ func UnpackLog(abiObject *abi.ABI, out interface{}, event string, log *types.Log
 // Note, dynamic types cannot be reconstructed since they get mapped to Keccak256
 // hashes as the topic value!
 func parseTopics(out interface{}, fields abi.Arguments, topics []common.Hash) error {
-	// Sanity check that the fields and topics match up
+	// sanity-check the fields and topics match up
 	if len(fields) != len(topics) {
 		return errors.New("topic/field count mismatch")
 	}
@@ -60,7 +60,7 @@ func parseTopics(out interface{}, fields abi.Arguments, topics []common.Hash) er
 			return errors.New("non-indexed field in topic reconstruction")
 		}
 
-		field := reflect.ValueOf(out).Elem().FieldByName(capitalise(arg.Name))
+		field := reflect.ValueOf(out).Elem().FieldByName(capitalize(arg.Name))
 
 		// Try to parse the topic back into the fields based on primitive types
 		switch field.Kind() {
@@ -124,8 +124,8 @@ func parseTopics(out interface{}, fields abi.Arguments, topics []common.Hash) er
 	return nil
 }
 
-// capitalise makes a camel-case string which starts with an upper case character.
-func capitalise(input string) string {
+// capitalize makes a camel-case string which starts with an upper case character.
+func capitalize(input string) string {
 	for len(input) > 0 && input[0] == '_' {
 		input = input[1:]
 	}
@@ -137,7 +137,7 @@ func capitalise(input string) string {
 	return toCamelCase(strings.ToUpper(input[:1]) + input[1:])
 }
 
-// toCamelCase converts an under-score string to a camel-case string
+// toCamelCase converts an underscore string to a camel-case string
 func toCamelCase(input string) string {
 	toUpper := false
 	result := ""

@@ -46,32 +46,32 @@ func (msg MsgWithdrawFeeTx) Type() string {
 	return EventTypeWithdraw
 }
 
-func (data MsgTopupTx) ValidateBasic() error {
-	if data.Fee.IsNegative() {
+func (msg MsgTopupTx) ValidateBasic() error {
+	if msg.Fee.IsNegative() {
 		return errors.New("fee cannot be negative")
 	}
 	ac := addresscodec.NewHexCodec()
-	_, err := ac.StringToBytes(data.Proposer)
+	_, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
 		return errors.New("invalid proposer")
 	}
-	_, err = ac.StringToBytes(data.User)
+	_, err = ac.StringToBytes(msg.User)
 	if err != nil {
 		return errors.New("invalid user")
 	}
-	if len(data.TxHash) != common.HashLength {
+	if len(msg.TxHash) != common.HashLength {
 		return errors.New("invalid tx hash")
 	}
 
 	return nil
 }
 
-func (data MsgWithdrawFeeTx) ValidateBasic() error {
-	if data.Amount.IsNegative() {
+func (msg MsgWithdrawFeeTx) ValidateBasic() error {
+	if msg.Amount.IsNegative() {
 		return errors.New("amount cannot be negative")
 	}
 	ac := addresscodec.NewHexCodec()
-	_, err := ac.StringToBytes(data.Proposer)
+	_, err := ac.StringToBytes(msg.Proposer)
 	if err != nil {
 		return errors.New("invalid proposer")
 	}

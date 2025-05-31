@@ -19,7 +19,7 @@ func NewGenesisState(validators []*Validator,
 	}
 }
 
-// DefaultGenesisState gets the raw genesis raw message for testing
+// DefaultGenesisState gets the raw genesis message for testing
 func DefaultGenesisState() *GenesisState {
 	return &GenesisState{}
 }
@@ -36,7 +36,7 @@ func GetGenesisStateFromAppState(cdc codec.JSONCodec, appState map[string]json.R
 	return &genesisState
 }
 
-// SetGenesisStateToAppState sets x/stake GenesisState into raw application
+// SetGenesisStateToAppState sets x/stake GenesisState into the raw application
 // genesis state.
 func SetGenesisStateToAppState(cdc codec.JSONCodec, appState map[string]json.RawMessage, validators []*Validator, currentValSet ValidatorSet) (map[string]json.RawMessage, error) {
 	stakeState := GetGenesisStateFromAppState(cdc, appState)
