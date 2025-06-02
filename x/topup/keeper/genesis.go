@@ -10,7 +10,7 @@ import (
 
 // InitGenesis sets x/topup module information for genesis
 func (k Keeper) InitGenesis(ctx sdk.Context, state *types.GenesisState) {
-	// add sequences to genesis state
+	// add sequences to the genesis state
 	for _, sequence := range state.TopupSequences {
 		if err := k.SetTopupSequence(ctx, sequence); err != nil {
 			panic(fmt.Errorf("failed to set topup sequence during initGenesis: %w", err))

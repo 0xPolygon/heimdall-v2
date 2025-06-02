@@ -6,32 +6,34 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    ```bash
    git clone https://github.com/0xPolygon/heimdall-v2.git
    ```
-2. Adjust the following env vars of the [script](migrate.sh):
+2. Adjust the following environment vars of the [script](migrate.sh):
     ```bash
-    APOCALYPSE_TAG="1.2.3-27-g74c8af58"
+    APOCALYPSE_TAG="1.2.3-34-g020f6c0d"
     REQUIRED_BOR_VERSION="2.0.0"
-    HEIMDALL_V2_VERSION="0.1.18"
-    CHAIN_ID="devnet"
-    GENESIS_TIME="2025-05-15T14:15:00Z"
-    APOCALYPSE_HEIGHT=200
+    HEIMDALL_V2_VERSION="0.1.20"
+    V1_CHAIN_ID="devnet"
+    V2_CHAIN_ID="devnet"
+    V2_GENESIS_TIME="2025-05-22T10:20:00Z"
+    APOCALYPSE_HEIGHT=900
     BRANCH_NAME="mardizzone/migration-tests"
     ```
    where 
    - `APOCALYPSE_TAG` is the latest version of heimdall-v1 (currently, for testing is the version from `mardizzone/apocalypse` branch)
    - `REQUIRED_BOR_VERSION` is the latest version of bor (currently, for testing is the version from `avalkov/bor-without-heimdall` branch)
    - `HEIMDALL_V2_VERSION` is the latest version of heimdall-v2
-   - `CHAIN_ID` is the chain id of the network (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
-   - `GENESIS_TIME` is the genesis time of the v2 network (agreed through gov proposal, it should be set in the future, e.g. 1h after the pilot migration is initiated)
-   - `APOCALYPSE_HEIGHT` is the height of the last block of the v1 network (agreed through gov proposal, it should match the height defined in `APOCALYPSE_TAG`)  
+   - `V1_CHAIN_ID` is the chain id of the heimdall-v1 network (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
+   - `V2_CHAIN_ID` is the chain id of the heimdall-v2 network (pre-agreed during the gov proposal)
+   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed during the gov proposal, it should be set in the future, e.g., 1h after the pilot migration is initiated)
+   - `APOCALYPSE_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed during the gov proposal, it should match the height defined in `APOCALYPSE_TAG`)  
    - `BRANCH_NAME` is the branch of the heimdall-v2 repo where the script will be pushed after the migration of the pilot node is completed.  
      
-3. ssh into the node machine  
+3. ssh into the node machine by using the user that runs `heimdalld` service (for devnet, it is `ubuntu`):
    ```bash
     ssh <USER>@<NODE_IP>
    ```
-4. create the script with `sudo`
+4. create the script with
     ```bash
-    sudo nano migrate.sh
+    nano migrate.sh
     ```
 5. Paste the content of the [script](migrate.sh) into the newly created file
 6. Make sure that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
@@ -59,17 +61,17 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     ```bash
       sudo bash migrate.sh \
     --heimdall-home=/var/lib/heimdall \
-    --cli-path=/usr/bin/heimdallcli \
-    --d-path=/usr/bin/heimdalld \
+    --cli-path=/home/ubuntu/go/bin/heimdallcli \
+    --d-path=/home/ubuntu/go/bin/heimdalld \
     --network=amoy \
     --nodetype=validator \
     --backup-dir=/var/lib/heimdall.backup \
     --moniker=heimdall0 \
     --service-user=ubuntu \
     --generate-genesis=true \
-    --bor-path=/usr/bin/bor
+    --bor-path=/home/ubuntu/go/bin/bor
     ```
-9. cd into `heimdall-v2/migration/networks/<NETWORK>` where `<NETWORK>` is the `CHAIN_ID` from step 2
+9. cd into `heimdall-v2/migration/networks/<NETWORK>` where `<NETWORK>` is the `V1_CHAIN_ID` from step 2
    ```bash
    cd heimdall-v2/migration/networks/<NETWORK>
    ```
@@ -173,15 +175,15 @@ This can be run by any node operator.
    ```bash
      sudo bash migrate.sh \
        --heimdall-home=/var/lib/heimdall \
-       --cli-path=/usr/bin/heimdallcli \
-       --d-path=/usr/bin/heimdalld \
+       --cli-path=/home/ubuntu/go/bin/heimdallcli \
+       --d-path=/home/ubuntu/go/bin/heimdalld \
        --network=amoy \
        --nodetype=sentry \
        --backup-dir=/var/lib/heimdall.backup \
        --moniker=heimdall3 \
        --service-user=ubuntu \
        --generate-genesis=true \
-       --bor-path=/usr/bin/bor
+       --bor-path=/home/ubuntu/go/bin/bor
    ```
 7. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
    ```bash
@@ -202,7 +204,7 @@ This can be run by any node operator.
 
 # Rollback procedure
 The script is already equipped with rollback actions (if it fails during the execution).  
-However, if the migration itself doesn't go as planned (despite the script was executed successfully),
+However, if the migration itself doesn't go as planned (despite the script executed successfully),
 you can roll back to the previous state by following this procedure:
 1. Stop v2 `heimdalld` service
    ```bash

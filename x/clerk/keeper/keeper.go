@@ -15,6 +15,8 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/clerk/types"
 )
 
+const MaxPageLimit = uint64(50)
+
 // Keeper stores all related data
 type Keeper struct {
 	storeService storetypes.KVStoreService
@@ -92,7 +94,7 @@ func (k *Keeper) SetEventRecord(ctx context.Context, record types.EventRecord) e
 
 // GetEventRecord returns record from store
 func (k *Keeper) GetEventRecord(ctx context.Context, stateID uint64) (*types.EventRecord, error) {
-	// check if record exists
+	// check if the record exists
 	record, err := k.RecordsWithID.Get(ctx, stateID)
 	if err != nil {
 		return nil, err
@@ -117,12 +119,12 @@ func (k *Keeper) GetAllEventRecords(ctx context.Context) []types.EventRecord {
 
 // GetEventRecordList returns all records with params like page and limit
 func (k *Keeper) GetEventRecordList(ctx context.Context, page uint64, limit uint64) ([]types.EventRecord, error) {
-	// create records slice
+	// create the records' slice
 	var records []types.EventRecord
 
-	// set max limit
-	if limit > 50 {
-		limit = 50
+	// set the max limit
+	if limit > MaxPageLimit {
+		limit = MaxPageLimit
 	}
 
 	startIndex := int((page - 1) * limit)
@@ -165,9 +167,9 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	// create records
 	var records []types.EventRecord
 
-	// have max limit
-	if limit > 50 {
-		limit = 50
+	// have the max limit
+	if limit > MaxPageLimit {
+		limit = MaxPageLimit
 	}
 
 	rng := new(collections.Range[collections.Pair[time.Time, uint64]]).
@@ -219,7 +221,7 @@ func (k *Keeper) GetEventRecordListWithTime(ctx context.Context, fromTime, toTim
 	return records, nil
 }
 
-// IterateRecords iterates records and apply the given function
+// IterateRecords iterates records and applies the given function
 func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error) {
 	iterator, err := k.RecordsWithID.Iterate(ctx, nil)
 	if err != nil {
@@ -234,7 +236,7 @@ func (k *Keeper) IterateRecords(ctx context.Context) ([]types.EventRecord, error
 	return records, nil
 }
 
-// GetRecordSequences checks if record already exists
+// GetRecordSequences checks if the record already exists
 func (k *Keeper) GetRecordSequences(ctx context.Context) (sequences []string) {
 	k.IterateRecordSequencesAndApplyFn(ctx, func(sequence string) error {
 		sequences = append(sequences, sequence)
@@ -265,7 +267,7 @@ func (k *Keeper) IterateRecordSequencesAndApplyFn(ctx context.Context, f func(se
 	}
 }
 
-// SetRecordSequence sets mapping for sequence id to bool
+// SetRecordSequence sets mapping for the sequence id to bool
 func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	if sequence != "" {
 		err := k.RecordSequences.Set(ctx, sequence, types.DefaultValue)
@@ -275,7 +277,7 @@ func (k *Keeper) SetRecordSequence(ctx context.Context, sequence string) {
 	}
 }
 
-// HasRecordSequence checks if record already exists
+// HasRecordSequence checks if the record already exists
 func (k *Keeper) HasRecordSequence(ctx context.Context, sequence string) bool {
 	isPresent, err := k.RecordSequences.Has(ctx, sequence)
 	if err != nil {

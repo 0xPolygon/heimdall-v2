@@ -25,7 +25,7 @@ func CreateCheckpoint(
 	}
 }
 
-// SortCheckpoints sorts array of checkpoints on the basis for timestamps
+// SortCheckpoints sorts the array of checkpoints on the basis for timestamps
 func SortCheckpoints(checkpoints []Checkpoint) []Checkpoint {
 	sort.Slice(checkpoints, func(i, j int) bool {
 		return checkpoints[i].Timestamp < checkpoints[j].Timestamp

@@ -15,9 +15,9 @@ The command will take as input Heimdall v1 genesis and do all the necessary tran
 - [x] chainmanager
 - [x] stake
 
-## Modules app state size on mainnet
+## Modules' app state size on the mainnet
 
-We don't have the exact height at which the export was generated but the most recent checkpoint in the genesis
+We don't have the exact height at which the export was generated, but the most recent checkpoint in the genesis
 was generated at timestamp 1706745464 (Wednesday, January 31, 2024 11:57:44 PM).
 
 - **auth**: 0.10 MB (107260 bytes)
@@ -38,7 +38,8 @@ The following Tendermint parameters that are not used by CometBFT are removed: `
 
 ### checkpoint
 
-Parsing `checkpoint_buffer_time`, which is in nanoseconds, and converting it into seconds with suffix `s`, otherwise it cannot be unmarshaled into `time.Duration`.  
+Parsing `checkpoint_buffer_time`, which is in nanoseconds,
+and converting it into seconds with suffix `s`, otherwise it cannot be unmarshalled into `time.Duration`.  
 Renaming `child_chain_block_interval` to `child_block_interval`.  
 Iterating over all the `checkpoints`, decoding the hex-encoded `root_hash` and encoding it as base64.
 
@@ -84,7 +85,10 @@ We skip the module accounts during the migration because Heimdall v2 will initia
 
 #### v0.38 - v0.39
 
-None of the changes concern us in this migration. They refactored vesting accounts, added an additional vesting account type, and switched from the default Go JSON marshal/unmarshal package to using `legacy.Cdc`. [Link](https://github.com/cosmos/cosmos-sdk/blob/v0.39.3/x/auth/legacy/v0_39/migrate.go)
+None of the changes concern us in this migration.
+They refactored vesting accounts, added a vesting account type,
+and switched from the default Go JSON marshal/unmarshal package to using `legacy.Cdc`.
+[Link](https://github.com/cosmos/cosmos-sdk/blob/v0.39.3/x/auth/legacy/v0_39/migrate.go)
 
 #### v0.39 - v0.40
 

@@ -131,7 +131,7 @@ func (am AppModule) GenerateGenesisState(simState *module.SimulationState) {
 func (am AppModule) RegisterStoreDecoder(_ simulation.StoreDecoderRegistry) {
 }
 
-// WeightedOperations returns the all the gov module operations with their respective weights.
+// WeightedOperations returns all the gov module operations with their respective weights.
 func (am AppModule) WeightedOperations(_ module.SimulationState) []simulation.WeightedOperation {
 	return nil
 }

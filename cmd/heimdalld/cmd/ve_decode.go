@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	app "github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/app"
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
@@ -52,7 +52,7 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("error parsing height: %w", err)
 	}
 
-	// Determine genesis file path, default from SDK client context, override if flag provided.
+	// Determine the genesis file path, default from SDK client context, override if the flag is provided.
 	ctx := client.GetClientContextFromCmd(cmd)
 	defaultGenPath := filepath.Join(ctx.HomeDir, "config", "genesis.json")
 	genPath, err := cmd.Flags().GetString("genesis-file")
@@ -63,7 +63,7 @@ func runVeDecode(cmd *cobra.Command, args []string) error {
 		genPath = defaultGenPath
 	}
 
-	// Parse chain_id and vote_extensions_enable_height from genesis file.
+	// Parse chain_id and vote_extensions_enable_height from the genesis file.
 	chainId, enableHeight, err := extractGenesisMetadata(genPath)
 	if err != nil {
 		return fmt.Errorf("failed to parse genesis: %w", err)
@@ -154,7 +154,7 @@ func getVEs(height int64, host string, port uint64) (*abci.ExtendedCommitInfo, e
 		return voteExt, nil
 	}
 
-	// 3) Both failed, report generic error
+	// 3) Both failed, report a generic error
 	return nil, fmt.Errorf("cannot fetch vote extensions:\nRPC error: %w\nBlock store error: %w", err1, err2)
 }
 
@@ -254,8 +254,8 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 
 	for i, v := range ext.Votes {
 		// Unmarshal sideTx extension
-		var stxs sidetxs.VoteExtension
-		if err := goproto.Unmarshal(v.VoteExtension, &stxs); err != nil {
+		var ves sidetxs.VoteExtension
+		if err := goproto.Unmarshal(v.VoteExtension, &ves); err != nil {
 			return nil, err
 		}
 
@@ -267,7 +267,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 		}
 
 		// SideTxResponses
-		for _, r := range stxs.SideTxResponses {
+		for _, r := range ves.SideTxResponses {
 			vote.SideTxs = append(vote.SideTxs, SideTxData{
 				TxHash: common.BytesToHash(r.TxHash).Hex(),
 				Result: r.Result.String(),
@@ -275,7 +275,7 @@ func BuildCommitJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo)
 		}
 
 		// Milestone
-		if mp := stxs.MilestoneProposition; mp != nil {
+		if mp := ves.MilestoneProposition; mp != nil {
 			hashes := make([]string, len(mp.BlockHashes))
 			for j, bh := range mp.BlockHashes {
 				hashes[j] = common.BytesToHash(bh).Hex()
@@ -331,16 +331,16 @@ func BuildSummaryJSON(height int64, chainId string, ext *abci.ExtendedCommitInfo
 	for _, v := range ext.Votes {
 		power := v.Validator.Power
 
-		var stxs sidetxs.VoteExtension
-		if err := goproto.Unmarshal(v.VoteExtension, &stxs); err != nil {
+		var ves sidetxs.VoteExtension
+		if err := goproto.Unmarshal(v.VoteExtension, &ves); err != nil {
 			return nil, err
 		}
-		if mp := stxs.MilestoneProposition; mp != nil {
+		if mp := ves.MilestoneProposition; mp != nil {
 			for _, h := range mp.BlockHashes {
 				milestoneVP["0x"+hex.EncodeToString(h)] += power
 			}
 		}
-		for _, r := range stxs.SideTxResponses {
+		for _, r := range ves.SideTxResponses {
 			txKey := common.BytesToHash(r.TxHash).Hex()
 			if sideTxVP[txKey] == nil {
 				sideTxVP[txKey] = make(map[string]int64)

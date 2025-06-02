@@ -5,7 +5,7 @@ Please provide a detailed description of what was done in this PR
 # Changes
 
 - [ ] Bugfix (non-breaking change that solves an issue)
-- [ ] Hotfix (change that solves an urgent issue, and requires immediate attention)
+- [ ] Hotfix (change that solves an urgent issue and requires immediate attention)
 - [ ] New feature (non-breaking change that adds functionality)
 - [ ] Breaking change (change that is not backwards-compatible and/or changes current functionality)
 - [ ] Changes only for a subset of nodes
@@ -14,17 +14,18 @@ Please provide a detailed description of what was done in this PR
 
 Please complete this section if any breaking changes have been made, otherwise delete it
 
-# Nodes audience
+# Node audience
 
-In case this PR includes changes that must be applied only to a subset of nodes, please specify how you handled it (e.g. by adding a flag with a default value...)
+In case this PR includes changes that must be applied only to a subset of nodes, please specify how you handled it
+(e.g., by adding a flag with a default value...)
 
 # Checklist
 
-- [ ] I have added at least 2 reviewer or the whole pos-v1 team
+- [ ] I have added at least two reviewers or the whole pos-v1 team
 - [ ] I have added sufficient documentation in code
-- [ ] I will be resolving comments - if any - by pushing each fix in a separate commit and linking the commit hash in the comment reply
+- [ ] I will be resolving comments — if any — by pushing each fix in a separate commit and linking the commit hash in the comment reply
 
-# Cross repository changes
+# Cross-repository changes
 
 - [ ] This PR requires changes to bor 
   - In case link the PR here:
@@ -35,8 +36,8 @@ In case this PR includes changes that must be applied only to a subset of nodes,
 
 - [ ] I have added unit tests
 - [ ] I have added tests to CI
-- [ ] I have tested this code manually on local environment
-- [ ] I have tested this code manually on remote devnet using express-cli
+- [ ] I have tested this code manually on the local environment
+- [ ] I have tested this code manually on a remote devnet using express-cli
 - [ ] I have tested this code manually on amoy/mumbai
 - [ ] I have created new e2e tests into express-cli
 

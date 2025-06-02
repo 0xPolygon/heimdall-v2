@@ -38,7 +38,10 @@ func TestGetVEsFromEndpoint_MockServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Logf("Received request %s %s", r.Method, r.URL.Path)
 		w.WriteHeader(http.StatusOK)
-		w.Write(body)
+		_, err := w.Write(body)
+		if err != nil {
+			return
+		}
 	}))
 	defer server.Close()
 	t.Logf("Mock server URL: %s", server.URL)
@@ -80,7 +83,10 @@ func TestBuildCommitJSON_MockVe(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write(body)
+		_, err := w.Write(body)
+		if err != nil {
+			return
+		}
 	}))
 	defer server.Close()
 
@@ -120,7 +126,10 @@ func TestGetVEsFromEndpoint_NoTxs(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write(body)
+		_, err := w.Write(body)
+		if err != nil {
+			return
+		}
 	}))
 	defer server.Close()
 

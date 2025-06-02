@@ -27,7 +27,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 	pk1 := ed25519.GenPrivKey().PubKey()
 	require.NotNil(pk1)
 
-	// Msg with wrong pub key
+	// Msg with the wrong public key
 	msgValJoin := stakingtypes.MsgValidatorJoin{
 		From:            pk1.Address().String(),
 		ValId:           uint64(1),
@@ -89,7 +89,7 @@ func (s *KeeperTestSuite) TestMsgValidatorJoin() {
 func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	// pass 0 as time alive to generate non de-activated validators
+	// pass 0 as time alive to generate the non-deactivated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
@@ -153,7 +153,7 @@ func (s *KeeperTestSuite) TestHandleMsgSignerUpdate() {
 func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 	ctx, msgServer, keeper, require, checkpointKeeper := s.ctx, s.msgServer, s.stakeKeeper, s.Require(), s.checkpointKeeper
 
-	// pass 0 as time alive to generate non de-activated validators
+	// pass 0 as time alive to generate the non-deactivated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	checkpointKeeper.EXPECT().GetAckCount(ctx).AnyTimes().Return(uint64(1), nil)
 
@@ -188,7 +188,7 @@ func (s *KeeperTestSuite) TestHandleMsgValidatorExit() {
 func (s *KeeperTestSuite) TestHandleMsgStakeUpdate() {
 	ctx, msgServer, keeper, require := s.ctx, s.msgServer, s.stakeKeeper, s.Require()
 
-	// pass 0 as time alive to generate non de-activated validators
+	// pass 0 as time alive to generate the non-deactivated validators
 	testutil.LoadRandomValidatorSet(require, 4, keeper, ctx, false, 0, 0)
 	oldValSet, err := keeper.GetValidatorSet(ctx)
 	require.NoError(err)

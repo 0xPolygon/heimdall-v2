@@ -5,7 +5,7 @@ func NewGenesisState(params Params) GenesisState {
 	return GenesisState{Params: params}
 }
 
-// DefaultGenesisState gets the raw genesis raw message for testing
+// DefaultGenesisState gets the raw genesis message for testing
 func DefaultGenesisState() *GenesisState {
 	params := DefaultParams()
 	return &GenesisState{Params: params}

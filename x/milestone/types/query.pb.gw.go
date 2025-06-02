@@ -364,13 +364,13 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_GetMilestoneParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"milestone", "params"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetMilestoneParams_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"milestones", "params"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetMilestoneCount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"milestone", "count"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetMilestoneCount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"milestones", "count"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetLatestMilestone_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"milestone", "latest"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetLatestMilestone_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"milestones", "latest"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetMilestoneByNumber_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"milestone", "number"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetMilestoneByNumber_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"milestones", "number"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
