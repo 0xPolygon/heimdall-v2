@@ -20,4 +20,3 @@ cmd/heimdalld/cmd/testdata/migrated_dump-genesis-amoy.json
 
 migration/networks/amoy/
 migration/networks/mainnet/
-migration/networks/mumbai/
