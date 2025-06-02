@@ -93,7 +93,7 @@ func NewSpanProposalCmd() *cobra.Command {
 			}
 			spanDuration := res.Params.SpanDuration
 
-			// fetch next span seed
+			// fetch the next span seed
 			nextSpanSeedResponse, err := queryClient.GetNextSpanSeed(cmd.Context(), &types.QueryNextSpanSeedRequest{
 				Id: spanID,
 			})

@@ -42,7 +42,7 @@ func NewTxCmd() *cobra.Command {
 	return txCmd
 }
 
-// SendCheckpointCmd returns a CLI command handler for creating a MsgCheckpoint transaction.
+// SendCheckpointCmd returns a CLI command handler to create a `MsgCheckpoint` transaction.
 func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send-checkpoint",
@@ -86,7 +86,7 @@ func SendCheckpointCmd(ac address.Codec) *cobra.Command {
 				return cli.BroadcastMsg(clientCtx, proposer.Validator.Signer, msg, logger)
 			}
 
-			// get and check proposer
+			// get and check the proposer
 			proposer := viper.GetString(FlagProposerAddress)
 			if proposer == "" {
 				proposer, err = helper.GetAddressString()
@@ -158,7 +158,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 				return err
 			}
 
-			// get and check proposer
+			// get and check the proposer
 			proposer := viper.GetString(FlagProposerAddress)
 			if proposer == "" {
 				proposer, err = helper.GetAddressString()
@@ -203,7 +203,7 @@ func SendCheckpointAckCmd() *cobra.Command {
 				return fmt.Errorf("transaction %s is not confirmed yet, please wait for some time and try again", txHash)
 			}
 
-			// decode new header block event
+			// decode the new header block event
 			res, err := contractCaller.DecodeNewHeaderBlockEvent(
 				cmParams.Params.ChainParams.RootChainAddress,
 				receipt,

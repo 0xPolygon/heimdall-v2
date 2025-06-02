@@ -6,7 +6,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     permissions:
-      issues: write # Grants write permission to issues
+      issues: write # Grants write permission to the issues
       pull-requests: write # Grants write permission to pull requests
 
     steps:

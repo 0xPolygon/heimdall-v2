@@ -150,12 +150,7 @@ type HeimdallApp struct {
 }
 
 func init() {
-	userHomeDir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-
-	DefaultNodeHome = filepath.Join(userHomeDir, "/var/lib/heimdall")
+	DefaultNodeHome = filepath.Join("/var/lib/heimdall")
 }
 
 func NewHeimdallApp(
@@ -687,6 +682,29 @@ func (app *HeimdallApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.A
 	// register heimdall-v2 and cosmos swagger API
 	if err := RegisterSwaggerAPI(apiSvr.ClientCtx, apiSvr.Router, apiConfig.Swagger); err != nil {
 		panic(err)
+	}
+
+	apiSvr.Router.HandleFunc("/status", getCometStatusHandler(clientCtx)).Methods("GET")
+}
+
+func getCometStatusHandler(cliCtx client.Context) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resultStatus, err := helper.GetNodeStatus(cliCtx, r.Context())
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to get node status: %v", err), http.StatusInternalServerError)
+			return
+		}
+		resp, err := json.Marshal(resultStatus.SyncInfo)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to marshal node status: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write(resp); err != nil {
+			http.Error(w, fmt.Sprintf("failed to write response: %v", err), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

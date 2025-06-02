@@ -800,7 +800,7 @@ var (
 
 	pattern_Query_GetCheckpointList_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"checkpoints", "list"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetCheckpointSignatures_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"checkpoint", "signatures", "tx_hash"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetCheckpointSignatures_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2}, []string{"checkpoints", "signatures", "tx_hash"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetCheckpoint_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"checkpoints", "number"}, "", runtime.AssumeColonVerbOpt(false)))
 )

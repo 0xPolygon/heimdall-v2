@@ -5,7 +5,7 @@
 * [Preliminary terminology](#preliminary-terminology)
 * [Overview](#overview)
 * [State-Sync Mechanism](#state-sync-mechanism)
-* [How does it work](#how-does-it-work)
+* [How it works](#how-it-works)
 * [How to add an event](#how-to-add-an-event)
 * [Query commands](#query-commands)
   * [CLI Commands](#cli-commands)
@@ -20,15 +20,21 @@
 
 ## Overview
 
-Clerk manages generic event records from Ethereum blockchain related to state-sync events, These are specially designed events that are emitted by the StateSender contract on the L1 chain to notify the L2 nodes (Bor in case of PoS) about the state changes in the L1. Once the events are processed by the bridge, Clerk listens to these events and stores them in the database for further processing.
+Clerk module manages generic event records from the Ethereum blockchain related to state-sync events.  
+These are specially designed events that are emitted by the StateSender contract on the L1 chain to notify the L2 nodes
+(Bor in case of PoS) about the state changes in the L1. 
+Once the bridge processes the events,
+the clerk module listens to these events and stores them in the database for further processing.
 
 ## State-Sync Mechanism
 
-It's a mechanism for state-management between Ethereum and Bor chain, The events generated are called state-sync events. This is a way to move data from the L1 chain to L2 chain.
+It's a mechanism for state-management between the Ethereum and Bor chain.
+The events generated are called state-sync events.
+This is a way to move data from the L1 chain to the L2 chain.
 
 ![State-Sync Flow](state_sync_flow.png)
 
-## How does it work
+## How it works
 
 An `EventRecord` is defined by the data structure :
 
@@ -89,7 +95,9 @@ message MsgEventRecord {
 
 [Handler](keeper/msg_server.go) for this transaction validates for multiple conditions including `TxHash` and `LogIndex` to ensure that the event exists on L1 and the data is not tampered with, It throws `Older invalid tx found` error if the event is already processed.
 
-Once the event is validated by the Handler, It will go to `SideHandleMsgEventRecord` in each validator node and after verifying the event, The validators will vote with either a `YES` return an error for a failed verification.
+Once the event is validated by the Handler,
+it will go to `SideHandleMsgEventRecord` in each validator node and after verifying the event,
+the validators will vote with either a `YES` return an error for failed verification.
 
 Only when there is a majority of `YES` votes, The event will be processed by `PostHandleMsgEventRecord` which will persist the event in the state via keeper.
 
@@ -134,7 +142,8 @@ heimdalld query clerk is-old-tx [tx-hash] [log-index]
 
 ### GRPC Endpoints
 
-The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file. Please refer them for more information about the optional params.
+The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file.
+Please refer to them for more information about the optional params.
 
 ```bash
 grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetRecordList
@@ -158,14 +167,15 @@ grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdall
 
 ### REST endpoints
 
-The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file. Please refer them for more information about the optional params.
+The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file.
+Please refer to them for more information about the optional params.
 
 ```bash
-curl localhost:1317/clerk/event-record/list?page=<page>&limit=<limit>
+curl localhost:1317/clerk/event-records/list?page=<page>&limit=<limit>
 ```
 
 ```bash
-curl localhost:1317/clerk/event-record/<event-id>
+curl localhost:1317/clerk/event-records/<event-id>
 ```
 
 ```bash
@@ -177,5 +187,5 @@ curl localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-curl localhost:1317/clerk/isoldtx?tx_hash=<tx-hash>&log_index=<log-index>
+curl localhost:1317/clerk/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
 ```

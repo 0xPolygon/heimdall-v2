@@ -27,7 +27,7 @@ func GenerateAuthObj(client *ethclient.Client, address common.Address, data []by
 		Data: data,
 	}
 
-	// get priv key
+	// get the private key
 	pkObject := GetPrivKey()
 
 	// create ecdsa private key

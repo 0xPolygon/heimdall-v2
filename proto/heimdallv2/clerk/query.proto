@@ -15,12 +15,12 @@ service Query {
   // GetRecordList queries a list of records
   rpc GetRecordList(RecordListRequest) returns (RecordListResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/list";
+    option (google.api.http).get = "/clerk/event-records/list";
   }
   // GetRecordById retrieves a record by its id
   rpc GetRecordById(RecordRequest) returns (RecordResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
-    option (google.api.http).get = "/clerk/event-record/{record_id}";
+    option (google.api.http).get = "/clerk/event-records/{record_id}";
   }
   // GetRecordListWithTime queries a list of records with time
   rpc GetRecordListWithTime(RecordListWithTimeRequest)
@@ -37,7 +37,7 @@ service Query {
   // IsClerkTxOld queries for a specific clerk tx to check its status (old
   // means already submitted)
   rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
-    option (google.api.http).get = "/clerk/isoldtx";
+    option (google.api.http).get = "/clerk/is-old-tx";
   }
 }
 

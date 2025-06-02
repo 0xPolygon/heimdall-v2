@@ -37,7 +37,7 @@ func (srv msgServer) HandleMsgEventRecord(ctx context.Context, msg *types.MsgEve
 		"blockNumber", msg.BlockNumber,
 	)
 
-	// check if event record exists
+	// check if the event record exists
 	if exists := srv.HasEventRecord(ctx, msg.Id); exists {
 		return nil, types.ErrEventRecordAlreadySynced
 	}

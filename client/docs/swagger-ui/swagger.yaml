@@ -50,7 +50,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /bor/span/latest:
+  /bor/spans/latest:
     get:
       summary: GetLatestSpan queries the latest span.
       operationId: GetLatestSpan
@@ -198,7 +198,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /bor/span/list:
+  /bor/spans/list:
     get:
       summary: GetSpanList queries a list of spans.
       operationId: GetSpanList
@@ -433,7 +433,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /bor/span/prepare:
+  /bor/spans/prepare:
     get:
       summary: GetNextSpan queries the next span given a QueryNextSpanRequest.
       operationId: GetNextSpan
@@ -596,7 +596,7 @@ paths:
           type: string
       tags:
         - Query
-  /bor/span/seed/{id}:
+  /bor/spans/seed/{id}:
     get:
       summary: |-
         GetNextSpanSeed queries the next span seed given a
@@ -642,7 +642,7 @@ paths:
           format: uint64
       tags:
         - Query
-  /bor/span/{id}:
+  /bor/spans/{id}:
     get:
       summary: GetSpanById retrieves a span by its id.
       operationId: GetSpanById
@@ -859,59 +859,6 @@ paths:
                     value:
                       type: string
                       format: byte
-      tags:
-        - Query
-  /checkpoint/signatures/{tx_hash}:
-    get:
-      summary: GetCheckpointSignatures queries signatures for latest checkpoint
-      operationId: GetCheckpointSignatures
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              signatures:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    validator_address:
-                      type: string
-                      format: byte
-                    signature:
-                      type: string
-                      format: byte
-            title: |-
-              QueryCheckpointSignaturesResponse is response type for
-              QueryCheckpointSignatures RPC method
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      parameters:
-        - name: tx_hash
-          in: path
-          required: true
-          type: string
       tags:
         - Query
   /checkpoints/buffer:
@@ -1477,6 +1424,59 @@ paths:
                       format: byte
       tags:
         - Query
+  /checkpoints/signatures/{tx_hash}:
+    get:
+      summary: GetCheckpointSignatures queries signatures for latest checkpoint
+      operationId: GetCheckpointSignatures
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              signatures:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    validator_address:
+                      type: string
+                      format: byte
+                    signature:
+                      type: string
+                      format: byte
+            title: |-
+              QueryCheckpointSignaturesResponse is response type for
+              QueryCheckpointSignatures RPC method
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      parameters:
+        - name: tx_hash
+          in: path
+          required: true
+          type: string
+      tags:
+        - Query
   /checkpoints/{number}:
     get:
       summary: GetCheckpoint queries for the checkpoint based on the number
@@ -1539,7 +1539,7 @@ paths:
           format: uint64
       tags:
         - Query
-  /clerk/event-record/list:
+  /clerk/event-records/list:
     get:
       summary: GetRecordList queries a list of records
       operationId: GetRecordList
@@ -1607,7 +1607,7 @@ paths:
           format: uint64
       tags:
         - Query
-  /clerk/event-record/{record_id}:
+  /clerk/event-records/{record_id}:
     get:
       summary: GetRecordById retrieves a record by its id
       operationId: GetRecordById
@@ -1668,7 +1668,7 @@ paths:
           format: uint64
       tags:
         - Query
-  /clerk/isoldtx:
+  /clerk/is-old-tx:
     get:
       summary: |-
         IsClerkTxOld queries for a specific clerk tx to check its status (old
@@ -1887,7 +1887,7 @@ paths:
           type: boolean
       tags:
         - Query
-  /milestone/count:
+  /milestones/count:
     get:
       summary: GetMilestoneCount queries for the milestone count
       operationId: GetMilestoneCount
@@ -1924,7 +1924,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /milestone/latest:
+  /milestones/latest:
     get:
       summary: GetLatestMilestone queries for the latest milestone
       operationId: GetLatestMilestone
@@ -1955,6 +1955,9 @@ paths:
                   timestamp:
                     type: string
                     format: uint64
+                  total_difficulty:
+                    type: string
+                    format: uint64
         default:
           description: An unexpected error response.
           schema:
@@ -1979,7 +1982,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /milestone/params:
+  /milestones/params:
     get:
       summary: GetMilestoneParams queries for the x/milestone parameters
       operationId: GetMilestoneParams
@@ -2025,7 +2028,7 @@ paths:
                       format: byte
       tags:
         - Query
-  /milestone/{number}:
+  /milestones/{number}:
     get:
       summary: GetMilestoneByNumber queries for the milestone based on the number
       operationId: GetMilestoneByNumber
@@ -2054,6 +2057,9 @@ paths:
                   milestone_id:
                     type: string
                   timestamp:
+                    type: string
+                    format: uint64
+                  total_difficulty:
                     type: string
                     format: uint64
         default:
@@ -2374,108 +2380,6 @@ paths:
                       format: byte
       tags:
         - Query
-  /stake/validator-set:
-    get:
-      summary: GetCurrentValidatorSet queries for the current validator set
-      operationId: GetCurrentValidatorSet
-      responses:
-        '200':
-          description: A successful response.
-          schema:
-            type: object
-            properties:
-              validator_set:
-                type: object
-                properties:
-                  validators:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        val_id:
-                          type: string
-                          format: uint64
-                        start_epoch:
-                          type: string
-                          format: uint64
-                        end_epoch:
-                          type: string
-                          format: uint64
-                        nonce:
-                          type: string
-                          format: uint64
-                        voting_power:
-                          type: string
-                          format: int64
-                        pub_key:
-                          type: string
-                          format: byte
-                        signer:
-                          type: string
-                        last_updated:
-                          type: string
-                        jailed:
-                          type: boolean
-                        proposer_priority:
-                          type: string
-                          format: int64
-                  proposer:
-                    type: object
-                    properties:
-                      val_id:
-                        type: string
-                        format: uint64
-                      start_epoch:
-                        type: string
-                        format: uint64
-                      end_epoch:
-                        type: string
-                        format: uint64
-                      nonce:
-                        type: string
-                        format: uint64
-                      voting_power:
-                        type: string
-                        format: int64
-                      pub_key:
-                        type: string
-                        format: byte
-                      signer:
-                        type: string
-                      last_updated:
-                        type: string
-                      jailed:
-                        type: boolean
-                      proposer_priority:
-                        type: string
-                        format: int64
-                  total_voting_power:
-                    type: string
-                    format: int64
-        default:
-          description: An unexpected error response.
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-              code:
-                type: integer
-                format: int32
-              message:
-                type: string
-              details:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    type_url:
-                      type: string
-                    value:
-                      type: string
-                      format: byte
-      tags:
-        - Query
   /stake/validator-status/{val_address}:
     get:
       summary: |-
@@ -2587,6 +2491,108 @@ paths:
           required: true
           type: string
           format: uint64
+      tags:
+        - Query
+  /stake/validators-set:
+    get:
+      summary: GetCurrentValidatorSet queries for the current validator set
+      operationId: GetCurrentValidatorSet
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              validator_set:
+                type: object
+                properties:
+                  validators:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        val_id:
+                          type: string
+                          format: uint64
+                        start_epoch:
+                          type: string
+                          format: uint64
+                        end_epoch:
+                          type: string
+                          format: uint64
+                        nonce:
+                          type: string
+                          format: uint64
+                        voting_power:
+                          type: string
+                          format: int64
+                        pub_key:
+                          type: string
+                          format: byte
+                        signer:
+                          type: string
+                        last_updated:
+                          type: string
+                        jailed:
+                          type: boolean
+                        proposer_priority:
+                          type: string
+                          format: int64
+                  proposer:
+                    type: object
+                    properties:
+                      val_id:
+                        type: string
+                        format: uint64
+                      start_epoch:
+                        type: string
+                        format: uint64
+                      end_epoch:
+                        type: string
+                        format: uint64
+                      nonce:
+                        type: string
+                        format: uint64
+                      voting_power:
+                        type: string
+                        format: int64
+                      pub_key:
+                        type: string
+                        format: byte
+                      signer:
+                        type: string
+                      last_updated:
+                        type: string
+                      jailed:
+                        type: boolean
+                      proposer_priority:
+                        type: string
+                        format: int64
+                  total_voting_power:
+                    type: string
+                    format: int64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
       tags:
         - Query
   /topup/account-proof/{address}:
@@ -2776,7 +2782,7 @@ paths:
           type: string
       tags:
         - Query
-  /topup/isoldtx:
+  /topup/is-old-tx:
     get:
       summary: |-
         IsTopupTxOld queries for a specific topup tx to check its status (old
@@ -4301,6 +4307,9 @@ definitions:
       timestamp:
         type: string
         format: uint64
+      total_difficulty:
+        type: string
+        format: uint64
   heimdallv2.milestone.Params:
     type: object
     properties:
@@ -4343,6 +4352,9 @@ definitions:
           timestamp:
             type: string
             format: uint64
+          total_difficulty:
+            type: string
+            format: uint64
   heimdallv2.milestone.QueryMilestoneResponse:
     type: object
     properties:
@@ -4365,6 +4377,9 @@ definitions:
           milestone_id:
             type: string
           timestamp:
+            type: string
+            format: uint64
+          total_difficulty:
             type: string
             format: uint64
   heimdallv2.milestone.QueryParamsResponse:

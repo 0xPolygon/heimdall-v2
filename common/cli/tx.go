@@ -25,7 +25,7 @@ func BroadcastMsg(clientCtx client.Context, sender string, msg sdk.Msg, logger l
 		return err
 	}
 	// setting this to true to as the if block in BroadcastTx
-	// might cause a cancelled transaction.
+	// might cause a canceled transaction.
 	clientCtx.SkipConfirm = true
 	account, err := util.GetAccount(clientCtx, sender)
 	if err != nil {

@@ -124,7 +124,7 @@ func initCometBFTConfig() *cmtcfg.Config {
 	return customCMTConfig
 }
 
-// initAppConfig helps to override default appConfig template and configs.
+// initAppConfig helps to override the default app config template and configs.
 // It returns "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
 	srvConf := serverconfig.DefaultConfig()
@@ -177,7 +177,7 @@ func initRootCmd(
 		PostSetup: func(svrCtx *server.Context, clientCtx client.Context, ctx context.Context, g *errgroup.Group) error {
 			helper.InitHeimdallConfig("")
 
-			// wait for rest server to start
+			// wait for the rest server to start
 			resultChan := make(chan string)
 			timeout := time.After(60 * time.Second)
 
@@ -235,6 +235,8 @@ func initRootCmd(
 	rootCmd.AddCommand(showPrivateKeyCmd())
 	rootCmd.AddCommand(bridgeCmd.BridgeCommands(viper.GetViper(), logger, "main"))
 	rootCmd.AddCommand(VerifyGenesis(ctx, hApp))
+
+	rootCmd.AddCommand(veDecodeCmd())
 }
 
 func checkServerStatus(ctx client.Context, url string, resultChan chan<- string) {
@@ -413,7 +415,7 @@ func appExport(
 	return hApp.ExportAppStateAndValidators(false, nil, modulesToExport)
 }
 
-// generateKeystore generate keystore file from private key
+// generateKeystore generate the keystore file from the private key
 func generateKeystore() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate-keystore",
@@ -435,7 +437,7 @@ func generateKeystore() *cobra.Command {
 	return cmd
 }
 
-// importKeyStore imports keystore from private key in the given file path
+// importKeyStore imports keystore from the private key in the given file path
 func importKeyStore() *cobra.Command {
 	return &cobra.Command{
 		Use:   "import-keystore <keystore-file>",
@@ -505,7 +507,7 @@ func importValidatorKey() *cobra.Command {
 
 			bz := ethcrypto.FromECDSA(pk)
 
-			// set private object
+			// set the private object
 			var privKeyObject secp256k1.PrivKey
 			copy(privKeyObject[:], bz)
 
@@ -557,7 +559,7 @@ func showPrivateKeyCmd() *cobra.Command {
 	}
 }
 
-// VerifyGenesis verifies the genesis file and brings it in sync with on-chain contract
+// VerifyGenesis verifies the genesis file and brings it to sync with the on-chain contract
 func VerifyGenesis(ctx *server.Context, hApp *app.HeimdallApp) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "verify-genesis",
@@ -651,7 +653,7 @@ func nodeDir(i int) string {
 	return filepath.Join(outDir, nodeDirName, nodeDaemonHomeName)
 }
 
-// hostnameOrIP returns the hostname of ip of nodes
+// hostnameOrIP returns the IP or the hostname of the node
 func hostnameOrIP(i int) string {
 	return fmt.Sprintf("%s%d", viper.GetString(flagNodeHostPrefix), i)
 }

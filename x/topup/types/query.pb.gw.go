@@ -612,7 +612,7 @@ func RegisterQueryHandlerClient(ctx context.Context, mux *runtime.ServeMux, clie
 }
 
 var (
-	pattern_Query_IsTopupTxOld_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"topup", "isoldtx"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_IsTopupTxOld_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"topup", "is-old-tx"}, "", runtime.AssumeColonVerbOpt(false)))
 
 	pattern_Query_GetTopupTxSequence_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"topup", "sequence"}, "", runtime.AssumeColonVerbOpt(false)))
 

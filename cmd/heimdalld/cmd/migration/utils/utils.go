@@ -45,7 +45,7 @@ func LoadJSONFromFile(filename string) (map[string]interface{}, error) {
 	return data, nil
 }
 
-// SaveJSONToFile writes data map to a file in JSON format.
+// SaveJSONToFile writes the data map to a file in JSON format.
 func SaveJSONToFile(data map[string]interface{}, filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
@@ -175,7 +175,7 @@ func MigrateValidator(validator map[string]interface{}) error {
 	return nil
 }
 
-// MigrateGovProposalContent returns the proposal into new format with proto encoding.
+// MigrateGovProposalContent returns the proposal into the new format with proto encoding.
 func MigrateGovProposalContent(oldContent v036gov.Content) *codecTypes.Any {
 	authority := authTypes.NewModuleAddress(v036gov.ModuleName).String()
 

@@ -63,7 +63,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 		"blockNumber", msg.BlockNumber,
 	)
 
-	// check feasibility of topup tx based on msg fee
+	// check the feasibility of topup tx based on msg fee
 	if msg.Fee.LT(ante.DefaultFeeWantedPerTx[0].Amount) {
 		logger.Error("default fee exceeds amount to topup", "user", msg.User,
 			"amount", msg.Fee, "defaultFeeWantedPerTx", ante.DefaultFeeWantedPerTx[0])
@@ -127,7 +127,7 @@ func (s sideMsgServer) SideHandleTopupTx(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	return sidetxs.Vote_VOTE_YES
 }
 
-// PostHandleTopupTx handles the post side tx for a validator's topup tx
+// PostHandleTopupTx handles the post-handler tx for a validator's topup tx
 func (s sideMsgServer) PostHandleTopupTx(ctx sdk.Context, msgI sdk.Msg, sideTxResult sidetxs.Vote) error {
 	logger := s.k.Logger(ctx)
 

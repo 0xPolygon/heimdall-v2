@@ -31,7 +31,7 @@ type RootChainListener struct {
 	stakingInfoAbi *abi.ABI
 	stateSenderAbi *abi.ABI
 
-	// For self-heal, Will be only initialised if sub_graph_url is provided
+	// For self-healing, it will be only initialized if sub_graph_url is provided
 	subGraphClient *subGraphClient
 }
 
@@ -71,16 +71,16 @@ func (rl *RootChainListener) Start() error {
 	headerCtx, cancelHeaderProcess := context.WithCancel(context.Background())
 	rl.cancelHeaderProcess = cancelHeaderProcess
 
-	// start header process
+	// start the header process
 	go rl.StartHeaderProcess(headerCtx)
 
-	// start go routine to poll for new header using client object
+	// start go routine to poll for the new header using the client object
 	rl.Logger.Info("Start polling for rootChain header blocks", "pollInterval", helper.GetConfig().SyncerPollInterval)
 
-	// start polling for the finalized block in main chain (available post-merge)
+	// start polling for the finalized block in the main L1 chain (available post-merge)
 	go rl.StartPolling(ctx, helper.GetConfig().SyncerPollInterval, big.NewInt(int64(rpc.FinalizedBlockNumber)))
 
-	// Start self-healing process
+	// Start the self-healing process
 	go rl.startSelfHealing(ctx)
 
 	return nil
@@ -100,10 +100,10 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 	headerNumber := newHeader.header.Number
 	from := headerNumber
 
-	// If incoming header is a `finalized` header, it can directly be considered as
-	// the upper cap (i.e. the `to` value)
+	// If the incoming header is a `finalized` header, it can directly be considered as
+	// the upper cap (i.e., the `to` value)
 	//
-	// If incoming header is a `latest` header, rely on `requiredConfirmations` to get
+	// If the incoming header is a `latest` header, rely on `requiredConfirmations` to get
 	// finalized block range.
 	if !newHeader.isFinalized {
 		// This check is only useful when the L1 blocks received are < requiredConfirmations
@@ -121,7 +121,7 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		from = headerNumber
 	}
 
-	// get last block from storage
+	// get the last block from storage
 	hasLastBlock, _ := rl.storageClient.Has([]byte(lastRootBlockKey), nil)
 	if hasLastBlock {
 		lastBlockBytes, err := rl.storageClient.Get([]byte(lastRootBlockKey), nil)
@@ -148,7 +148,7 @@ func (rl *RootChainListener) ProcessHeader(newHeader *blockHeader) {
 		from = to
 	}
 
-	// Set last block to storage
+	// Set the last block to storage
 	if err = rl.storageClient.Put([]byte(lastRootBlockKey), []byte(to.String()), nil); err != nil {
 		rl.Logger.Error("rl.storageClient.Put", "Error", err)
 	}
@@ -216,7 +216,7 @@ func (rl *RootChainListener) SendTaskWithDelay(taskName string, eventName string
 	}
 	signature.RetryCount = 3
 
-	// add delay for task so that multiple validators won't send same transaction at same time
+	// add delay for the task so that multiple validators won't send same transaction at same time
 	eta := time.Now().Add(delay)
 	signature.ETA = &eta
 	rl.Logger.Info("Sending task", "taskName", taskName, "currentTime", time.Now(), "delayTime", eta)

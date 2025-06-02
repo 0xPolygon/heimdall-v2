@@ -10,6 +10,11 @@ import (
 
 const MaxProofLength = 1024
 
+// FormatHex returns a checksum hex string prefixed with 0x.
+func FormatHex(data []byte) string {
+	return "0x" + common.Bytes2Hex(data)
+}
+
 // FormatAddress makes sure the address is compliant with the heimdall-v2 format
 func FormatAddress(hexAddr string) string {
 	hexAddr = strings.TrimSpace(strings.ToLower(hexAddr))

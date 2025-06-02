@@ -24,8 +24,8 @@ type Keeper struct {
 	Schema       collections.Schema
 	params       collections.Item[types.Params]
 
-	// the address capable of executing a MsgUpdateParams message. This
-	// should be the x/gov module account.
+	// The address capable of executing a `MsgUpdateParams` message.
+	// This should be the x/gov module account.
 	authority string
 }
 

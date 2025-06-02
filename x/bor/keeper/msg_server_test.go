@@ -9,6 +9,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
 func (s *KeeperTestSuite) TestProposeSpan() {
@@ -220,7 +221,7 @@ func (s *KeeperTestSuite) TestMsgUpdateParams() {
 }
 
 func (s *KeeperTestSuite) TestBackfillSpans() {
-	require, ctx, borKeeper, cmKeeper, msgServer := s.Require(), s.ctx, s.borKeeper, s.chainManagerKeeper, s.msgServer
+	require, ctx, borKeeper, milestoneKeeper, cmKeeper, msgServer := s.Require(), s.ctx, s.borKeeper, s.milestoneKeeper, s.chainManagerKeeper, s.msgServer
 
 	testChainParams := chainmanagertypes.DefaultParams()
 	testSpan := s.genTestSpans(1)[0]
@@ -264,7 +265,7 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 				LatestBorSpanId: 7,
 			},
 			expRes: nil,
-			expErr: "span not found for id: 2",
+			expErr: "invalid span",
 		},
 		{
 			name: "invalid last bor span id",
@@ -275,17 +276,6 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 				LatestBorSpanId: 0,
 			},
 			expErr: "invalid last bor span id",
-		},
-		{
-			name: "invalid last bor block",
-			backfillSpans: types.MsgBackfillSpans{
-				Proposer:        common.HexToAddress("someProposer").String(),
-				ChainId:         testChainParams.ChainParams.BorChainId,
-				LatestSpanId:    1,
-				LatestBorSpanId: 2,
-			},
-			expRes: nil,
-			expErr: "invalid last bor block",
 		},
 		{
 			name: "mismatch between calculated and provided last span id",
@@ -302,6 +292,9 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 	}
 
 	cmKeeper.EXPECT().GetParams(ctx).Return(testChainParams, nil).AnyTimes()
+	milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
+		EndBlock: 1000,
+	}, nil).AnyTimes()
 
 	for _, tc := range testcases {
 		s.T().Run(tc.name, func(t *testing.T) {

@@ -7,13 +7,15 @@
   * [Tx Commands](#tx-commands)
   * [CLI Query Commands](#cli-query-commands)
   * [GRPC Endpoints](#grpc-endpoints)
-  * [REST Endpoints](#rest-endpoints)
+  * [REST Endpoints](#rest-apis)
 
 ## Overview
 
 This module manages the validators' related transactions and state for Heimdall.  
-Validators stake their tokens on the Ethereum chain and send the transactions on Heimdall using necessary parameters to acknowledge the Ethereum stake change.  
-Once the majority of the validators agree on the change on the stake, this module saves the validator information on Heimdall state.  
+Validators stake their tokens on the Ethereum chain
+and send the transactions on Heimdall using the necessary parameters to acknowledge the Ethereum stake change.  
+Once the majority of the validators agree on the change on the stake,
+this module saves the validator information on Heimdall state.  
 
 ![Stake Flow.png](stake_flow.png)
 
@@ -191,7 +193,7 @@ heimdalld tx stake validator-exit [valAddress] [valId] [deactivationEpoch] [txHa
 
 One can run the following query commands from the stake module:
 
-* `current-validator-set` - Query all validators which are currently active in validator set
+* `current-validator-set` - Query all validators that are currently active in the validators' set
 * `signer` - Query validator info for given validator address
 * `validator` - Query validator info for a given validator id
 * `validator-status` - Query validator status for given validator address
@@ -224,7 +226,8 @@ heimdalld query stake is-old-tx [txHash] [logIndex]
 
 ### GRPC Endpoints
 
-The endpoints and the params are defined in the [stake/query.proto](/proto/heimdallv2/stake/query.proto) file. Please refer them for more information about the optional params.
+The endpoints and the params are defined in the [stake/query.proto](/proto/heimdallv2/stake/query.proto) file.
+Please refer to them for more information about the optional params.
 
 ```bash
 grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.stake.Query/GetCurrentValidatorSet
@@ -256,10 +259,11 @@ grpcurl -plaintest -d '{"times": <>}' localhost:9090 heimdallv2.stake.Query/GetP
 
 ## REST APIs
 
-The endpoints and the params are defined in the [stake/query.proto](/proto/heimdallv2/stake/query.proto) file. Please refer them for more information about the optional params.
+The endpoints and the params are defined in the [stake/query.proto](/proto/heimdallv2/stake/query.proto) file.
+Please refer to them for more information about the optional params.
 
 ```bash
-curl localhost:1317/stake/validator-set
+curl localhost:1317/stake/validators-set
 ```
 
 ```bash

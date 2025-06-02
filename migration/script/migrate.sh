@@ -3,19 +3,23 @@
 umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
-APOCALYPSE_TAG="1.2.3-27-g74c8af58"
+APOCALYPSE_TAG="1.2.3-34-g020f6c0d"
 REQUIRED_BOR_VERSION="2.0.0"
-CHECKSUM="bb03425f30197c51d4a762dfd4f8068c8b3bb94c01c42b1da2c4b97db309e834775737d6502642ac5042e59117d97a3d593bc89e5c9084bbefb1994f14353af4"
-MIGRATED_CHECKSUM="ca45005fc462d074816bd2926823ca11540c0dd45aac5a02fdfb9505b819f353c1e67c4394abf177c89c21cc517f9660793db306feab2b937b76fc50b9440bc3"
-HEIMDALL_V2_VERSION="0.1.16"
-CHAIN_ID="devnet"
-GENESIS_TIME="2025-05-16T16:00:00Z"
-APOCALYPSE_HEIGHT=200
+CHECKSUM="25ff6918888b080d6ed4f87320338bd9cfd102b5dd476998e44674bd43a66c8d2d42bc4aa3d370f963cfbc9641e904d79256eb51c145f0daac7cfaf817b66c87"
+MIGRATED_CHECKSUM="1e3e64360efe2282c065d3b2e8aa7574568bec0ee139561ad3d968939168de22a166b3a6f1a87ab0afe6bec3716ddf71b26217bc17815336ef1e97390396def2"
+HEIMDALL_V2_VERSION="0.1.20"
+V1_CHAIN_ID="devnet"
+V2_CHAIN_ID="devnet"
+V2_GENESIS_TIME="2025-05-22T10:20:00Z"
+APOCALYPSE_HEIGHT=900
+BRANCH_NAME="mardizzone/migration-tests"
+
+# -------------------- const env variables --------------------
 INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/networks/devnet/dump-genesis.json"
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${BRANCH_NAME}/migration/networks/${V1_CHAIN_ID}/dump-genesis.json"
 
 START_TIME=$(date +%s)
 SCRIPT_PATH=$(realpath "$0")
@@ -56,7 +60,7 @@ show_help() {
   echo "  --backup-dir=PATH            Directory where a backup of Heimdall v1 will be stored"
   echo "  --moniker=NAME               The node's moniker (must match 'moniker' in config.toml)"
   echo "  --service-user=USER          System user that runs the Heimdall service"
-  echo "                                (typically 'heimdall'; check systemd with 'systemctl status heimdalld')"
+  echo "                                (typically 'heimdall'; check systemd with 'sudo systemctl status heimdalld')"
   echo "  --generate-genesis=true|false Whether to export genesis from heimdalld (recommended: true)"
   echo "Optional arguments:"
   echo "  --bor-path=PATH              Path to 'bor' binary (only needed if Bor runs on the same machine)"
@@ -299,6 +303,27 @@ fi
 if [[ "$NETWORK" != "amoy" && "$NETWORK" != "mainnet" ]]; then
     handle_error $STEP "Invalid network! Must be 'amoy' or 'mainnet'."
 fi
+# V1_CHAIN_ID validation (only determine EXPECTED_V1_CHAIN_ID if V1_CHAIN_ID is not "devnet")
+if [[ "$V1_CHAIN_ID" != "devnet" ]]; then
+    case "$NETWORK" in
+        mainnet)
+            EXPECTED_V1_CHAIN_ID="heimdall-137"
+            ;;
+        amoy)
+            EXPECTED_V1_CHAIN_ID="heimdall-80002"
+            ;;
+        *)
+            # For any other network, fallback to devnet
+            EXPECTED_V1_CHAIN_ID="devnet"
+            ;;
+    esac
+fi
+if [[ -n "$EXPECTED_V1_CHAIN_ID" ]]; then
+    if [[ "$V1_CHAIN_ID" != "$EXPECTED_V1_CHAIN_ID" ]]; then
+        echo "❌ Chain ID mismatch: expected '$EXPECTED_V1_CHAIN_ID', got '$V1_CHAIN_ID'"
+        exit 1
+    fi
+fi
 # NODETYPE
 if [[ "$NODETYPE" != "sentry" && "$NODETYPE" != "validator" ]]; then
     handle_error $STEP "Invalid node type! Must be 'sentry' or 'validator'."
@@ -336,6 +361,9 @@ echo "       BACKUP_DIR:            $BACKUP_DIR"
 echo "       MONIKER_NODE_NAME:     $MONIKER_NODE_NAME"
 echo "       HEIMDALL_SERVICE_USER: $HEIMDALL_SERVICE_USER"
 echo "       GENERATE_GENESIS:      $GENERATE_GENESIS"
+echo "       V1_CHAIN_ID:           $V1_CHAIN_ID"
+echo "       V2_CHAIN_ID:           $V2_CHAIN_ID"
+echo "       V2_GENESIS_TIME:       $V2_GENESIS_TIME"
 echo ""
 
 
@@ -397,7 +425,7 @@ GENESIS_FILE="$HEIMDALL_HOME/$DUMP_V1_GENESIS_FILE_NAME"
 ROLLBACK_ACTIONS["$STEP"]="rm -f $GENESIS_FILE"
 if $GENERATE_GENESIS; then
     echo "[INFO] Generating genesis file using heimdalld export..."
-    if ! $HEIMDALL_CLI_PATH export-heimdall --home "$HEIMDALL_HOME" --chain-id "$CHAIN_ID"; then
+    if ! $HEIMDALL_CLI_PATH export-heimdall --home "$HEIMDALL_HOME" --chain-id "$V1_CHAIN_ID"; then
         handle_error $STEP "Failed to generate Heimdall v1 genesis file $GENESIS_FILE"
     fi
     echo "[INFO] Genesis file generated to $GENESIS_FILE"
@@ -595,7 +623,7 @@ else
 fi
 # Copy the new heimdalld binary
 echo "[INFO] Resolved new binary at: $NEW_BINARY"
-echo "[INFO] Copying new heimdalld binary from $NEW_BINARY to $HEIMDALLD_PATH..."
+echo "[INFO] Copying new heimdalld binary from $NEW_BINARY to $HEIMDALLD_PATH ..."
 sudo cp "$NEW_BINARY" "$HEIMDALLD_PATH" || handle_error $STEP "Failed to copy new heimdalld binary"
 # Ensure the new binary is executable
 sudo chmod +x "$HEIMDALLD_PATH" || handle_error $STEP "Failed to set execution permissions on $HEIMDALLD_PATH"
@@ -643,15 +671,15 @@ MIGRATED_GENESIS_FILE="$BACKUP_DIR/migrated_$DUMP_V1_GENESIS_FILE_NAME"
 if [[ ! -f "$BACKUP_DIR/$DUMP_V1_GENESIS_FILE_NAME" ]]; then
     handle_error $STEP "Genesis file $BACKUP_DIR/$DUMP_V1_GENESIS_FILE_NAME not found! Cannot proceed with migration."
 fi
-# Sanity check: warn if GENESIS_TIME is in the future
-GENESIS_TIMESTAMP=$(date -d "$GENESIS_TIME" +%s)
+# Sanity check: warn if V2_GENESIS_TIME is in the future
+GENESIS_TIMESTAMP=$(date -d "$V2_GENESIS_TIME" +%s)
 NOW_TIMESTAMP=$(date +%s)
 if (( GENESIS_TIMESTAMP > NOW_TIMESTAMP )); then
-    echo "[WARNING] GENESIS_TIME is in the future: $GENESIS_TIME"
+    echo "[WARNING] V2_GENESIS_TIME is in the future: $V2_GENESIS_TIME"
     echo "          This may cause Heimdall to sleep until that time on startup."
 fi
 # Run the migration command
-if ! heimdalld migrate "$BACKUP_DIR/$DUMP_V1_GENESIS_FILE_NAME" --chain-id="$CHAIN_ID" --genesis-time="$GENESIS_TIME" --initial-height="$INITIAL_HEIGHT" --verify-data="$VERIFY_DATA"; then
+if ! heimdalld migrate "$BACKUP_DIR/$DUMP_V1_GENESIS_FILE_NAME" --chain-id="$V2_CHAIN_ID" --genesis-time="$V2_GENESIS_TIME" --initial-height="$INITIAL_HEIGHT" --verify-data="$VERIFY_DATA"; then
     handle_error $STEP "Migration command failed."
 fi
 # Define rollback action only if the file was created successfully
@@ -745,7 +773,7 @@ if [[ -d "$HEIMDALL_HOME" ]]; then
 fi
 ROLLBACK_ACTIONS["$STEP"]="if [ -d \"$HEIMDALL_HOME.bak\" ]; then mv \"$HEIMDALL_HOME.bak\" \"$HEIMDALL_HOME\"; fi"
 # Init Heimdall v2
-if ! heimdalld init "$MONIKER_NODE_NAME" --chain-id "$CHAIN_ID" --home="$tmpDirV2Home" &> /dev/null; then
+if ! heimdalld init "$MONIKER_NODE_NAME" --chain-id "$V2_CHAIN_ID" --home="$tmpDirV2Home" &> /dev/null; then
     handle_error $STEP "Failed to initialize heimdalld."
 fi
 # Ensure Heimdall home directory exists before clearing it
@@ -961,7 +989,7 @@ echo -e "   - bor_grpc_flag"
 echo -e "   - bor_grpc_url"
 echo -e "   - amqp_url\n"
 echo -e "📁 Into \033[1mclient.toml\033[0m:"
-echo -e "   - chain-id = \"$CHAIN_ID\"\n"
+echo -e "   - chain-id = \"$V2_CHAIN_ID\"\n"
 echo -e "💡 You may manually edit other parameters (e.g. ports, metrics, logging) after migration."
 echo -e "\n📁 \033[1mBor Configuration Notice\033[0m:"
 echo -e "   ⚠️  Please update your Bor's \033[1mbor/config.toml\033[0m manually to reflect v2-compatible settings."
@@ -973,12 +1001,12 @@ echo -e "   🔄 After updating the config, make sure to restart your Bor node f
 # 1. Set chain-id in client.toml
 CLIENT_TOML="$HEIMDALL_HOME/config/client.toml"
 echo "[INFO] Setting chain-id in client.toml..."
-set_toml_key "$CLIENT_TOML" "chain-id" "$CHAIN_ID"
+set_toml_key "$CLIENT_TOML" "chain-id" "$V2_CHAIN_ID"
 actual_chain_id=$(grep -E '^chain-id\s*=' "$CLIENT_TOML" | cut -d'=' -f2 | tr -d ' "')
-if [[ "$actual_chain_id" != "$CHAIN_ID" ]]; then
-    handle_error $STEP "Validation failed: expected chain-id = $CHAIN_ID, found $actual_chain_id"
+if [[ "$actual_chain_id" != "$V2_CHAIN_ID" ]]; then
+    handle_error $STEP "Validation failed: expected chain-id = $V2_CHAIN_ID, found $actual_chain_id"
 fi
-echo "[OK]   client.toml: chain-id = $CHAIN_ID"
+echo "[OK]   client.toml: chain-id = $V2_CHAIN_ID"
 # 2. Migrate config.toml keys
 OLD_CONFIG_TOML="$BACKUP_DIR/config/config.toml"
 NEW_CONFIG_TOML="$HEIMDALL_HOME/config/config.toml"
@@ -1130,7 +1158,7 @@ echo -e "   - bor_grpc_flag"
 echo -e "   - bor_grpc_url"
 echo -e "   - amqp_url\n"
 echo -e "📁 \033[1mclient.toml\033[0m:"
-echo -e "   - chain-id = \"$CHAIN_ID\"\n"
+echo -e "   - chain-id = \"$V2_CHAIN_ID\"\n"
 
 echo -e "\n✅ [SUCCESS] Heimdall v2 migration completed successfully! ✅"
 echo -e "🕓 Migration completed in ${MINUTES}m ${SECONDS}s."

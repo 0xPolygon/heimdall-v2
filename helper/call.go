@@ -59,7 +59,8 @@ type IContractCaller interface {
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
-	GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error)
+	GetBorChainBlocksAndTdInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, error)
+	GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
@@ -162,7 +163,7 @@ func NewContractCaller() (contractCallerObj ContractCaller, err error) {
 	return contractCallerObj, nil
 }
 
-// GetRootChainInstance returns RootChain contract instance for selected base chain
+// GetRootChainInstance returns the RootChain contract instance for a selected chain
 func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootchain.Rootchain, error) {
 	address := common.HexToAddress(rootChainAddress)
 
@@ -182,7 +183,7 @@ func (c *ContractCaller) GetRootChainInstance(rootChainAddress string) (*rootcha
 	return contractInstance.(*rootchain.Rootchain), nil
 }
 
-// GetStakingInfoInstance returns stakingInfo contract instance for selected base chain
+// GetStakingInfoInstance returns stakingInfo contract instance for a selected chain
 func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*stakinginfo.Stakinginfo, error) {
 	address := common.HexToAddress(stakingInfoAddress)
 
@@ -202,7 +203,7 @@ func (c *ContractCaller) GetStakingInfoInstance(stakingInfoAddress string) (*sta
 	return contractInstance.(*stakinginfo.Stakinginfo), nil
 }
 
-// GetValidatorSetInstance returns stakingInfo contract instance for selected base chain
+// GetValidatorSetInstance returns stakingInfo contract instance for a selected chain
 func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*validatorset.Validatorset, error) {
 	address := common.HexToAddress(validatorSetAddress)
 
@@ -222,7 +223,7 @@ func (c *ContractCaller) GetValidatorSetInstance(validatorSetAddress string) (*v
 	return contractInstance.(*validatorset.Validatorset), nil
 }
 
-// GetStakeManagerInstance returns stakingInfo contract instance for selected base chain
+// GetStakeManagerInstance returns stakingInfo contract instance for a selected base chain
 func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (*stakemanager.Stakemanager, error) {
 	address := common.HexToAddress(stakingManagerAddress)
 
@@ -242,7 +243,7 @@ func (c *ContractCaller) GetStakeManagerInstance(stakingManagerAddress string) (
 	return contractInstance.(*stakemanager.Stakemanager), nil
 }
 
-// GetSlashManagerInstance returns slashManager contract instance for selected base chain
+// GetSlashManagerInstance returns the slashManager contract instance for a selected base chain
 func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*slashmanager.Slashmanager, error) {
 	address := common.HexToAddress(slashManagerAddress)
 
@@ -262,7 +263,7 @@ func (c *ContractCaller) GetSlashManagerInstance(slashManagerAddress string) (*s
 	return contractInstance.(*slashmanager.Slashmanager), nil
 }
 
-// GetStateSenderInstance returns stakingInfo contract instance for selected base chain
+// GetStateSenderInstance returns stakingInfo contract instance for a selected base chain
 func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*statesender.Statesender, error) {
 	address := common.HexToAddress(stateSenderAddress)
 
@@ -282,7 +283,7 @@ func (c *ContractCaller) GetStateSenderInstance(stateSenderAddress string) (*sta
 	return contractInstance.(*statesender.Statesender), nil
 }
 
-// GetStateReceiverInstance returns stakingInfo contract instance for selected base chain
+// GetStateReceiverInstance returns stakingInfo contract instance for a selected base chain
 func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (*statereceiver.Statereceiver, error) {
 	address := common.HexToAddress(stateReceiverAddress)
 
@@ -302,7 +303,7 @@ func (c *ContractCaller) GetStateReceiverInstance(stateReceiverAddress string) (
 	return contractInstance.(*statereceiver.Statereceiver), nil
 }
 
-// GetTokenInstance returns the contract instance for selected chain
+// GetTokenInstance returns the contract instance for a selected chain
 func (c *ContractCaller) GetTokenInstance(tokenAddress string) (*erc20.Erc20, error) {
 	address := common.HexToAddress(tokenAddress)
 
@@ -347,7 +348,7 @@ func (c *ContractCaller) GetHeaderInfo(headerID uint64, rootChainInstance *rootc
 		nil
 }
 
-// GetRootHash get root hash from bor chain for the corresponding start and end block
+// GetRootHash get root hash from the bor chain for the corresponding start and end block
 func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byte, error) {
 	noOfBlock := end - start + 1
 
@@ -379,7 +380,7 @@ func (c *ContractCaller) GetRootHash(start, end, checkpointLength uint64) ([]byt
 	return common.FromHex(rootHash), nil
 }
 
-// GetVoteOnHash get vote on hash from bor chain for the corresponding milestone
+// GetVoteOnHash get vote on hash from the bor chain for the corresponding milestone
 func (c *ContractCaller) GetVoteOnHash(start, end uint64, hash, milestoneID string) (bool, error) {
 	if start > end {
 		return false, errors.New("Start block number is greater than the end block number")
@@ -420,7 +421,7 @@ func (c *ContractCaller) GetLastChildBlock(rootChainInstance *rootchain.Rootchai
 	return lastChildBlock.Uint64(), nil
 }
 
-// CurrentHeaderBlock fetches current header block
+// CurrentHeaderBlock fetches the current header block
 func (c *ContractCaller) CurrentHeaderBlock(rootChainInstance *rootchain.Rootchain, childBlockInterval uint64) (uint64, error) {
 	currentHeaderBlock, err := rootChainInstance.CurrentHeaderBlock(nil)
 	if err != nil {
@@ -436,7 +437,7 @@ func (c *ContractCaller) CurrentHeaderBlock(rootChainInstance *rootchain.Rootcha
 	return currentHeaderBlock.Uint64() / childBlockInterval, nil
 }
 
-// GetBalance get balance of account (returns big.Int balance won't fit in uint64)
+// GetBalance get balance of an account (returns big.Int balance won't fit in uint64)
 func (c *ContractCaller) GetBalance(address common.Address) (*big.Int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
 	defer cancel()
@@ -489,7 +490,7 @@ func (c *ContractCaller) GetMainChainBlock(blockNum *big.Int) (header *ethTypes.
 	return latestBlock, nil
 }
 
-// GetMainChainFinalizedBlock returns finalized main chain block header (post-merge)
+// GetMainChainFinalizedBlock returns the finalized main chain block header (post-merge)
 func (c *ContractCaller) GetMainChainFinalizedBlock() (header *ethTypes.Header, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.MainChainTimeout)
 	defer cancel()
@@ -562,16 +563,18 @@ func (c *ContractCaller) GetStartBlockHeimdallSpanID(ctx context.Context, startB
 	return spanID, nil
 }
 
-// GetBorChainBlocksInBatch returns bor chain block headers via single RPC Batch call
-func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, error) {
+// GetBorChainBlocksAndTdInBatch returns bor chain block headers and TD via a single RPC Batch call.
+// It tries to get blocks from the range interval but returns only the ones found on the chain
+func (c *ContractCaller) GetBorChainBlocksAndTdInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
+	totalBlocks := end - start + 1
 	rpcClient := c.BorChainClient.Client()
+	batchElems := make([]rpc.BatchElem, 0, 2*(totalBlocks))
 
-	// Prepare a slice of batch elements.
-	batchElems := make([]rpc.BatchElem, 0, end-start+1)
-	result := make([]*ethTypes.Header, end-start+1)
+	// Header Batch
+	result := make([]*ethTypes.Header, totalBlocks)
 	for i := start; i <= end; i++ {
 		blockNumHex := fmt.Sprintf("0x%x", i)
 
@@ -582,21 +585,66 @@ func (c *ContractCaller) GetBorChainBlocksInBatch(ctx context.Context, start, en
 		})
 	}
 
-	// Execute the batch call.
-	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
-		return nil, err
+	type tdResp struct {
+		TotalDifficulty hexutil.Uint64 `json:"totalDifficulty"`
 	}
 
-	// Collect the results.
-	response := make([]*ethTypes.Header, 0, len(batchElems))
-	for i, elem := range batchElems {
-		if elem.Error != nil || result[i] == nil {
+	// TD Batch
+	resultTd := make([]*tdResp, totalBlocks)
+	for i := start; i <= end; i++ {
+		blockNumHex := fmt.Sprintf("0x%x", i)
+
+		batchElems = append(batchElems, rpc.BatchElem{
+			Method: "eth_getTdByNumber",
+			Args:   []interface{}{blockNumHex},
+			Result: &resultTd[i-start],
+		})
+	}
+
+	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
+		return nil, nil, err
+	}
+
+	// Get results until capture an error (header not found)
+	tds := make([]uint64, 0, totalBlocks)
+	headers := make([]*ethTypes.Header, 0, totalBlocks)
+	for i := range totalBlocks {
+		elemHeader := batchElems[i]
+		elemTd := batchElems[i+totalBlocks]
+		if elemHeader.Error != nil || elemTd.Error != nil || result[i] == nil || resultTd[i] == nil {
 			break
 		}
-		response = append(response, result[i])
+
+		headers = append(headers, result[i])
+		tds = append(tds, uint64(resultTd[i].TotalDifficulty))
 	}
 
-	return response, nil
+	return headers, tds, nil
+}
+
+// GetBorChainBlockTd returns total difficulty of a block
+func (c *ContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
+
+	rpcClient := c.BorChainClient.Client()
+
+	var resp map[string]interface{}
+	if err := rpcClient.CallContext(ctx, &resp, "eth_getTdByHash", blockHash.Hex()); err != nil {
+		return 0, err
+	}
+
+	raw, ok := resp["totalDifficulty"].(string)
+	if !ok {
+		return 0, fmt.Errorf("unexpected totalDifficulty type %T", resp["totalDifficulty"])
+	}
+
+	td, err := hexutil.DecodeUint64(raw)
+	if err != nil {
+		return 0, fmt.Errorf("failed to decode totalDifficulty %q: %w", raw, err)
+	}
+
+	return td, nil
 }
 
 // GetBorChainBlockAuthor returns the producer of the bor block
@@ -618,7 +666,7 @@ func (c *ContractCaller) GetBorChainBlockAuthor(blockNum *big.Int) (*common.Addr
 	return author, nil
 }
 
-// GetBlockNumberFromTxHash gets block number of transaction
+// GetBlockNumberFromTxHash gets the block number of transaction
 func (c *ContractCaller) GetBlockNumberFromTxHash(tx common.Hash) (*big.Int, error) {
 	var rpcTx rpcTransaction
 	if err := c.MainChainRPC.CallContext(context.Background(), &rpcTx, "eth_getTransactionByHash", tx); err != nil {
@@ -689,7 +737,7 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 		Logger.Error("error getting latest finalized block from main chain", "error", err)
 	}
 
-	// If latest finalized block is available, use it to check if receipt is finalized or not.
+	// If the latest finalized block is available, use it to check if the receipt is finalized or not.
 	// Else, fallback to the `requiredConfirmations` value
 	if latestFinalizedBlock != nil {
 		Logger.Debug("latest finalized block on main chain obtained", "Block", latestFinalizedBlock.Number.Uint64(), "receipt block", receiptBlockNumber)
@@ -698,7 +746,7 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 			return nil, errors.New("not enough confirmations")
 		}
 	} else {
-		// get current/latest main chain block
+		// get the current/latest main chain block
 		latestBlk, err := c.GetMainChainBlock(nil)
 		if err != nil {
 			Logger.Error("error getting latest block from main chain", "error", err)
@@ -720,7 +768,7 @@ func (c *ContractCaller) GetConfirmedTxReceipt(tx common.Hash, requiredConfirmat
 // Validator decode events
 //
 
-// DecodeNewHeaderBlockEvent represents new header block event
+// DecodeNewHeaderBlockEvent represents the new header block event
 func (c *ContractCaller) DecodeNewHeaderBlockEvent(contractAddressString string, receipt *ethTypes.Receipt, logIndex uint64) (*rootchain.RootchainNewHeaderBlock, error) {
 	event := new(rootchain.RootchainNewHeaderBlock)
 
@@ -894,10 +942,10 @@ func (c *ContractCaller) DecodeUnJailedEvent(contractAddressString string, recei
 }
 
 //
-// Account root related functions
+// Account root functions
 //
 
-// CurrentAccountStateRoot get current account root from on chain
+// CurrentAccountStateRoot get current account root from on the chain
 func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginfo.Stakinginfo) ([32]byte, error) {
 	accountStateRoot, err := stakingInfoInstance.GetAccountStateRoot(nil)
 	if err != nil {
@@ -912,7 +960,7 @@ func (c *ContractCaller) CurrentAccountStateRoot(stakingInfoInstance *stakinginf
 }
 
 //
-// Span related functions
+// Span-related functions
 //
 
 // CurrentSpanNumber get current span
@@ -951,7 +999,7 @@ func (c *ContractCaller) CurrentStateCounter(stateSenderInstance *statesender.St
 	return result
 }
 
-// CheckIfBlocksExist - check if the given block exists on local chain
+// CheckIfBlocksExist - check if the given block exists on the local chain
 func (c *ContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), c.BorChainTimeout)
 	defer cancel()
@@ -964,7 +1012,7 @@ func (c *ContractCaller) CheckIfBlocksExist(end uint64) (bool, error) {
 	return end == block.NumberU64(), err
 }
 
-// GetBlockByNumber returns blocks by number from child chain (bor)
+// GetBlockByNumber returns blocks by number from the child chain (bor)
 func (c *ContractCaller) GetBlockByNumber(ctx context.Context, blockNumber uint64) (*ethTypes.Block, error) {
 	var block *ethTypes.Block
 	var err error
@@ -1036,10 +1084,12 @@ func (c *ContractCaller) GetCheckpointSign(txHash common.Hash) ([]byte, []byte, 
 
 // utility and helper methods
 
-// populateABIs fills the package level cache for contracts' ABIs
-// When called the first time, ContractsABIsMap will be filled and getABI method won't be invoked the next times
-// This reduces the number of calls to json decode methods made by the contract caller
-// It uses ABIs' definitions instead of contracts addresses, as the latter might not be available at init time
+// populateABIs fills the package level cache for contracts' ABIs.
+// When called the first time, ContractsABIsMap will be filled,
+// and the getABI method won't be invoked the next time.
+// This reduces the number of calls to JSON decode methods made by the contract caller.
+// It uses ABIs' definitions instead of contracts' addresses,
+// as the latter might not be available at initialization time
 func populateABIs(contractCallerObj *ContractCaller) error {
 	var ccAbi *abi.ABI
 

@@ -72,10 +72,10 @@ cosmossdk.io/depinject v1.0.0/go.mod h1:zxK/h3HgHoA/eJVtiSsoaRaRA2D5U4cJ5thIG4ss
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 filippo.io/edwards25519 v1.0.0 h1:0wAIcmJUqRdI8IJ/3eGi5/HwXZWPujYXXlkrQogz0Ek=
 filippo.io/edwards25519 v1.0.0/go.mod h1:N1IkdkCkiLB6tki+MYJoSx2JTY9NUlxZE7eHn5EwJns=
-github.com/0xPolygon/cometbft v0.1.7-beta-polygon h1:H+lcunvq4K/i5prPWmtorsOCSkhQWosjYCiplE3mZQA=
-github.com/0xPolygon/cometbft v0.1.7-beta-polygon/go.mod h1:65PwuxvivN0GbqxcMLQ2ze5hCXvZQrR8/ds/jOBg4f8=
-github.com/0xPolygon/cosmos-sdk v0.1.20-beta-polygon h1:AvWxth66LA/xjgeYHpFjoR2xAqYnGDEEdCjG1CIt8YI=
-github.com/0xPolygon/cosmos-sdk v0.1.20-beta-polygon/go.mod h1:XoU/rWXbnS1BfEgqj2ThC9m0+aKofYfLa5R+n/FQ+iE=
+github.com/0xPolygon/cometbft v0.1.8-beta-polygon h1:VQ4hTf8K9Wz+hpsTMnT1i1cpfrI3r9P+mb1/XwrUVCA=
+github.com/0xPolygon/cometbft v0.1.8-beta-polygon/go.mod h1:65PwuxvivN0GbqxcMLQ2ze5hCXvZQrR8/ds/jOBg4f8=
+github.com/0xPolygon/cosmos-sdk v0.1.22-beta-polygon h1:QdTpkkhN4jSG8f3Gxr+vlcuUKzJh5TrM3GpUp6fUsjI=
+github.com/0xPolygon/cosmos-sdk v0.1.22-beta-polygon/go.mod h1:N/cQf6WV2snBLvOCim0ULtEolsgnGdGtj8z6BPDCbYs=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e h1:RLUwoGYtf4IahtrMHTJdesTXM+ggz+2iikaxmViCNGo=
 github.com/0xPolygon/cosmos-sdk/api v0.7.6-0.20250429154832-7177ebac408e/go.mod h1:IcxpYS5fMemZGqyYtErK7OqvdM0C8kdW3dq8Q/XIG38=
 github.com/0xPolygon/cosmos-sdk/client/v2 v2.0.0-beta.6 h1:+6AxZcMTWHaRHV0HILf/rADWexzB4FJckdO/DnUlk+s=

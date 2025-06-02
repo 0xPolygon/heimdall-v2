@@ -21,7 +21,7 @@ var (
 	_ sdk.Msg = &MsgCpNoAck{}
 )
 
-// NewMsgCheckpointBlock creates new checkpoint message using mentioned arguments
+// NewMsgCheckpointBlock creates the new checkpoint message using the mentioned arguments
 func NewMsgCheckpointBlock(
 	proposer string,
 	startBlock uint64,
@@ -106,7 +106,7 @@ func UnpackCheckpointSideSignBytes(data []byte) (*MsgCheckpoint, error) {
 	proposerBytes := data[offset : offset+chunkSize]
 	offset += chunkSize
 
-	proposerAddrBytes := proposerBytes[12:] // Take last 20 bytes
+	proposerAddrBytes := proposerBytes[12:] // take the last 20 bytes
 	ac := addressCodec.NewHexCodec()
 	proposer, err := ac.BytesToString(proposerAddrBytes)
 	if err != nil {

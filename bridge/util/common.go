@@ -34,31 +34,25 @@ const (
 	AccountParamsURL        = "/cosmos/auth/v1beta1/params"
 	LastNoAckURL            = "/checkpoints/last-no-ack"
 	CheckpointParamsURL     = "/checkpoints/params"
-	CheckpointSignaturesURL = "/checkpoint/signatures/%v"
+	CheckpointSignaturesURL = "/checkpoints/signatures/%v"
 	ChainManagerParamsURL   = "/chainmanager/params"
 	ProposersURL            = "/stake/proposers/%v"
 	BufferedCheckpointURL   = "/checkpoints/buffer"
 	LatestCheckpointURL     = "/checkpoints/latest"
 	CountCheckpointURL      = "/checkpoints/count"
 	CurrentProposerURL      = "/stake/proposers/current"
-	LatestSpanURL           = "/bor/span/latest"
-	SpanByIdURL             = "/bor/span/%v"
-	NextSpanInfoURL         = "/bor/span/prepare"
-	NextSpanSeedURL         = "/bor/span/seed/%v"
+	LatestSpanURL           = "/bor/spans/latest"
+	SpanByIdURL             = "/bor/spans/%v"
+	NextSpanInfoURL         = "/bor/spans/prepare"
+	NextSpanSeedURL         = "/bor/spans/seed/%v"
 	DividendAccountRootURL  = "/topup/dividend-account-root"
 	ValidatorURL            = "/stake/validator/%v"
-	CurrentValidatorSetURL  = "/stake/validator-set"
+	CurrentValidatorSetURL  = "/stake/validators-set"
 	StakingTxStatusURL      = "/stake/is-old-tx"
-	TopupTxStatusURL        = "/topup/isoldtx"
-	ClerkTxStatusURL        = "/clerk/isoldtx"
-	ClerkEventRecordURL     = "/clerk/event-record/%d"
-	LatestMilestoneURL      = "/milestone/latest"
-	/* HV2 - not adding slashing
-	LatestSlashInfoBytesURL = "/slashing/latest_slash_info_bytes"
-	TickSlashInfoListURL    = "/slashing/tick_slash_infos"
-	SlashingTxStatusURL     = "/slashing/isoldtx"
-	SlashingTickCountURL    = "/slashing/tick-count"
-	*/
+	TopupTxStatusURL        = "/topup/is-old-tx"
+	ClerkTxStatusURL        = "/clerk/is-old-tx"
+	ClerkEventRecordURL     = "/clerk/event-records/%d"
+	LatestMilestoneURL      = "/milestones/latest"
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
@@ -81,7 +75,7 @@ func Logger() log.Logger {
 	return helper.Logger.With("module", "bridge")
 }
 
-// IsProposer checks if we are proposer
+// IsProposer checks if the current is the proposer
 func IsProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 	var (
@@ -150,8 +144,8 @@ func IsInProposerList(count uint64, cdc codec.Codec) (bool, error) {
 	return false, nil
 }
 
-// CalculateTaskDelay calculates delay required for current validator to propose the tx
-// It solves for multiple validators sending same transaction.
+// CalculateTaskDelay calculates delay required for the current validator to propose the tx
+// It solves for multiple validators sending the same transaction.
 func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration) {
 	logger := Logger()
 
@@ -184,13 +178,12 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 		}
 	}
 
-	// Change calculation later as per the discussion
-	// Currently it will multiply delay for every 1000 unconfirmed txs in mempool
-	// For example if the current default delay is 12 Seconds
-	// Then for upto 1000 txs it will stay as 12 only
-	// For 1000-2000 It will be 24 seconds
-	// For 2000-3000 it will be 36 seconds
-	// Basically for every 1000 txs it will increase the factor by 1.
+	// Multiply the delay for every 1000 unconfirmed txs in the mempool.
+	// For example, if the current default delay is 12 seconds,
+	// then for up to 1000 txs it will stay as 12 only.
+	// For 1000-2000 It will be 24 seconds.
+	// For 2000-3000 it will be 36 seconds.
+	// Basically, for every 1000 txs it will increase the factor by 1.
 
 	mempoolFactor := GetUnconfirmedTxnCount(event) / mempoolTxnCountDivisor
 
@@ -200,7 +193,7 @@ func CalculateTaskDelay(event interface{}, cdc codec.Codec) (bool, time.Duration
 	return isCurrentValidator, taskDelay
 }
 
-// IsCurrentProposer checks if we are current proposer
+// IsCurrentProposer checks if we are the current proposer
 func IsCurrentProposer(cdc codec.Codec) (bool, error) {
 	logger := Logger()
 
@@ -410,8 +403,8 @@ func GetLatestCheckpoint(cdc codec.Codec) (*checkpointTypes.Checkpoint, error) {
 
 // AppendPrefix returns PublicKey in uncompressed format
 func AppendPrefix(signerPubKey []byte) []byte {
-	// append prefix - "0x04" as heimdall uses publickey in uncompressed format. Refer below link
-	// https://superuser.com/questions/1465455/what-is-the-size-of-public-key-for-ecdsa-spec256r1
+	// Append the prefix "0x04", because heimdall uses publicKey in an uncompressed format.
+	// See https://superuser.com/questions/1465455/what-is-the-size-of-public-key-for-ecdsa-spec256r1
 	prefix := make([]byte, 1)
 	prefix[0] = byte(0x04)
 	signerPubKey = append(prefix[:], signerPubKey[:]...)

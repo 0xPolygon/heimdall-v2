@@ -27,9 +27,9 @@ type Service struct {
 	listeners []Listener
 }
 
-// NewListenerService returns new service object for listening to events
+// NewListenerService returns the new service object for listening to events
 func NewListenerService(cdc codec.Codec, queueConnector *queue.Connector, httpClient *rpchttp.HTTP) *Service {
-	// creating listener object
+	// creating the listener object
 	listenerService := &Service{}
 
 	listenerService.BaseService = *common.NewBaseService(logger.NewTMLogger(logger.NewSyncWriter(os.Stdout)).With("service", "listener"), listenerServiceStr, listenerService)
@@ -49,7 +49,7 @@ func NewListenerService(cdc codec.Codec, queueConnector *queue.Connector, httpCl
 	return listenerService
 }
 
-// OnStart starts new block subscription
+// OnStart starts the new block subscription
 func (listenerService *Service) OnStart() error {
 	if err := listenerService.BaseService.OnStart(); err != nil {
 		listenerService.Logger.Error("OnStart | OnStart", "Error", err)

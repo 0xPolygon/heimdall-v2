@@ -16,7 +16,6 @@ func TestUnpackSigAndVotes(t *testing.T) {
 	t.Skip("Skipped because RecoverPubKey is not actively used in cosmos-sdk and GetCheckpointSign (invoking UnpackSigAndVotes) is not used in Heimdall")
 	t.Parallel()
 
-	// Signer Address List for below SubmitHeaderBlock Transaction Payload
 	signerAddresses := []string{"a03d8f5af7413e4fd5a37fde9286e390ef8f3c07", "b1bf4473c6b1918a6e37408e1c14df81281411a8", "ba754e3893adb3cabc0afe7932b4b5a3cee3f3ab"}
 	signatureLen := 65
 

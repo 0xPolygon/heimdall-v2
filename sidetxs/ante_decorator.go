@@ -30,7 +30,7 @@ func (std SideTxDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool,
 	return next(ctx, tx, simulate)
 }
 
-// CountSideHandlers returns the number of side handlers for the transaction, to make sure we only propose and process one side msg per tx.
+// CountSideHandlers returns the number of side handlers for the transaction to make sure we only propose and process one side msg per tx.
 // This enforces only one message per sideTx. Otherwise, a single comet tx would contain more than one side msg, allowing for more than one vote for the same tx hash.
 func CountSideHandlers(sideTxCfg SideTxConfigurator, tx sdk.Tx) int {
 	sideHandlerCount := 0

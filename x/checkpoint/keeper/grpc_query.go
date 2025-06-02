@@ -29,7 +29,7 @@ func isPaginationEmpty(p query.PageRequest) bool {
 }
 
 // NewQueryServer creates a new querier for the checkpoint client.
-// It uses the underlying keeper and its contractCaller to interact with Ethereum chain.
+// It uses the underlying keeper and its contractCaller to interact with the Ethereum chain.
 func NewQueryServer(k *Keeper) types.QueryServer {
 	return queryServer{
 		k: k,
@@ -38,7 +38,7 @@ func NewQueryServer(k *Keeper) types.QueryServer {
 
 // GetCheckpointParams returns the checkpoint params
 func (q queryServer) GetCheckpointParams(ctx context.Context, _ *types.QueryParamsRequest) (*types.QueryParamsResponse, error) {
-	// get validator set
+	// get the validator set
 	params, err := q.k.GetParams(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -79,7 +79,7 @@ func (q queryServer) GetCheckpointLatest(ctx context.Context, _ *types.QueryChec
 	return &types.QueryCheckpointLatestResponse{Checkpoint: checkpoint}, nil
 }
 
-// GetCheckpointBuffer returns the checkpoint from buffer
+// GetCheckpointBuffer returns the checkpoint from the buffer
 func (q queryServer) GetCheckpointBuffer(ctx context.Context, _ *types.QueryCheckpointBufferRequest) (*types.QueryCheckpointBufferResponse, error) {
 	checkpoint, err := q.k.GetCheckpointFromBuffer(ctx)
 	if err != nil {
@@ -110,7 +110,7 @@ func (q queryServer) GetNextCheckpoint(ctx context.Context, req *types.QueryNext
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	// get validator set
+	// get the validator set
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -201,7 +201,7 @@ func (q queryServer) GetCheckpointList(ctx context.Context, req *types.QueryChec
 // GetCheckpointOverview returns the checkpoint overview
 // which includes AckCount, LastNoAckId, BufferCheckpoint, ValidatorCount, and ValidatorSet
 func (q queryServer) GetCheckpointOverview(ctx context.Context, _ *types.QueryCheckpointOverviewRequest) (*types.QueryCheckpointOverviewResponse, error) {
-	// get validator set
+	// get the validator set
 	validatorSet, err := q.k.stakeKeeper.GetValidatorSet(ctx)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get validator set: %v", err)
