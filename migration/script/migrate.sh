@@ -117,8 +117,6 @@ fi
 
 # Track temp files to clean up on exit
 TEMP_FILES=()
-# Init last executed step
-LAST_STEP_EXECUTED=0
 
 # Function to print step information
 print_step() {
@@ -128,7 +126,6 @@ print_step() {
     local timestamp
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo -e "\n[$timestamp] [STEP $step_number] $message"
-    LAST_STEP_EXECUTED=$step_number
 }
 
 # Function to handle errors
