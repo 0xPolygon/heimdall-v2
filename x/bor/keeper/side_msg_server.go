@@ -170,17 +170,13 @@ func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg)
 		"latestHeimdallSpan", msg.LatestBorSpanId,
 	)
 
-	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
+	latestSpan, err := s.k.GetLastSpan(ctx)
 	if err != nil {
-		logger.Error("failed to get latest milestone", "error", err)
-		return sidetxs.Vote_VOTE_NO
-	}
-	if latestMilestone == nil {
-		logger.Error("latest milestone is nil")
+		logger.Error("failed to get latest span", "error", err)
 		return sidetxs.Vote_VOTE_NO
 	}
 
-	borLastUsedSpanID, err := s.k.contractCaller.GetStartBlockHeimdallSpanID(ctx, latestMilestone.EndBlock+1)
+	borLastUsedSpanID, err := s.k.contractCaller.GetStartBlockHeimdallSpanID(ctx, latestSpan.EndBlock+1)
 	if err != nil {
 		logger.Error("failed to get last used bor span id", "error", err)
 		return sidetxs.Vote_VOTE_NO
