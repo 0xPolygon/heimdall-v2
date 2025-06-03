@@ -309,6 +309,7 @@ func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg,
 	borSpans := types.GenerateBorCommittedSpans(latestMilestone.EndBlock, &latestSpan)
 	spansOverlap := 0
 	for i := range borSpans {
+		logger.Error(fmt.Sprintf("bor span %d: %+v", i, borSpans[i]))
 		if _, err := s.k.GetSpan(ctx, borSpans[i].Id); err != nil {
 			spansOverlap++
 		}
