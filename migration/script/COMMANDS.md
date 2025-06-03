@@ -31,7 +31,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    ```bash
     ssh <USER>@<NODE_IP>
    ```
-4. create the script with
+4. create the script with a command line editor (e.g., `nano`, `vim`, etc.):
     ```bash
     nano migrate.sh
     ```
@@ -203,9 +203,7 @@ This can be run by any node operator.
 
 
 # Rollback procedure
-The script is already equipped with rollback actions (if it fails during the execution).  
-However, if the migration itself doesn't go as planned (despite the script executed successfully),
-you can roll back to the previous state by following this procedure:
+If the migration itself doesn't go as planned, you can roll back to the previous state by following this procedure:
 1. Stop v2 `heimdalld` service
    ```bash
    sudo systemctl stop heimdalld
@@ -232,6 +230,7 @@ you can roll back to the previous state by following this procedure:
     # It should print
     # <version>
     ```
+   If it still prints the v2 version, you need to move the v1 binary to the correct location.  
 6. Reload the daemon
    ```bash
    sudo systemctl daemon-reload

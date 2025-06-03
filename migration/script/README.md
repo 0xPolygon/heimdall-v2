@@ -34,7 +34,6 @@ For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script]
 - 🛡️ **Script checksum**: The script will be delivered with checksum to prevent any tampering
 - 🔐 **`sudo` enforcement**: Ensures system permissions
 - 🧱 **Checksum validation**: Protects against tampered genesis
-- 🧠 **Rollback logic**: Allows partial undo of dangerous steps
 - 👤 **Systemd user detection**: Avoids ownership mismatches
 - 🪵 **Logs & prompts**: Transparent and user-guided
 

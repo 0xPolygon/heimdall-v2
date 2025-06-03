@@ -19,6 +19,8 @@ INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
 VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
+
+# TODO GitHub has a limit on file size for raw content, so we need to compress the file and adapt the STEP=5 of the script to handle it, or use a different source (not GitHub)
 TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${BRANCH_NAME}/migration/networks/${V1_CHAIN_ID}/dump-genesis.json"
 
 START_TIME=$(date +%s)
@@ -113,9 +115,6 @@ if (( ${#missing_args[@]} > 0 )); then
   show_help
 fi
 
-
-# Initialize rollback actions
-ROLLBACK_ACTIONS=()
 # Track temp files to clean up on exit
 TEMP_FILES=()
 # Init last executed step
@@ -137,22 +136,7 @@ handle_error() {
     local step_number=$1
     local message=$2
     echo -e "\n[ERROR] Step $step_number failed: $message"
-    rollback
     exit 1
-}
-
-# Function to rollback executed steps
-rollback() {
-    echo -e "\n[ROLLBACK] Reverting changes from step $LAST_STEP_EXECUTED down to step 1..."
-    for (( i=LAST_STEP_EXECUTED; i>=1; i-- )); do
-        if [[ -n "${ROLLBACK_ACTIONS[i]}" && "${ROLLBACK_ACTIONS[i]}" != ":" ]]; then
-            echo "[ROLLBACK] Executing rollback for Step $i: ${ROLLBACK_ACTIONS[i]}"
-            eval "${ROLLBACK_ACTIONS[i]}" || echo "[WARN] Rollback for Step $i failed"
-        else
-            echo "[ROLLBACK] Step $i has no rollback action. Skipping."
-        fi
-    done
-    echo "[ROLLBACK] Completed."
 }
 
 # Function to clean up temp files on script exit
@@ -219,7 +203,6 @@ sleep 3
 # Step 1: Check script dependencies
 STEP=1
 print_step $STEP "Checking for required dependencies"
-ROLLBACK_ACTIONS["$STEP"]=":"
 # Define base and new dependencies
 DEPENDENCIES=("curl" "tar" "jq" "sha512sum")
 MISSING_DEPS=()
@@ -239,7 +222,6 @@ echo "[INFO] All required dependencies are installed."
 # Step 2: Validate provided arguments
 STEP=2
 print_step $STEP "Validating provided arguments"
-ROLLBACK_ACTIONS["$STEP"]=":"
 # HEIMDALL_HOME
 validate_absolute_path "$HEIMDALL_HOME" "HEIMDALL_HOME"
 if [[ ! -d "$HEIMDALL_HOME/data" || ! -d "$HEIMDALL_HOME/config" ]]; then
@@ -370,7 +352,6 @@ echo ""
 # Step 3: stop heimdall-v1. The apocalypse tag embeds the halt_height so heimdalld should be down already, running it for consistency/completeness
 STEP=3
 print_step $STEP "Stopping heimdall-v1"
-ROLLBACK_ACTIONS["$STEP"]=":"
 if systemctl list-units --type=service | grep -q heimdalld.service; then
     if systemctl is-active --quiet heimdalld; then
         systemctl stop heimdalld
@@ -388,7 +369,6 @@ fi
 # Step 4: Ensure node has committed up to latest height
 STEP=4
 print_step $STEP "Checking that Heimdall v1 has committed the latest height"
-ROLLBACK_ACTIONS["$STEP"]=":"
 
 if [[ "$GENERATE_GENESIS" == "false" ]]; then
     echo "[INFO] Skipping committed height check since GENERATE_GENESIS=false was passed."
@@ -422,7 +402,6 @@ fi
 STEP=5
 print_step $STEP "Obtaining Heimdall v1 genesis JSON file"
 GENESIS_FILE="$HEIMDALL_HOME/$DUMP_V1_GENESIS_FILE_NAME"
-ROLLBACK_ACTIONS["$STEP"]="rm -f $GENESIS_FILE"
 if $GENERATE_GENESIS; then
     echo "[INFO] Generating genesis file using heimdalld export..."
     if ! $HEIMDALL_CLI_PATH export-heimdall --home "$HEIMDALL_HOME" --chain-id "$V1_CHAIN_ID"; then
@@ -446,7 +425,6 @@ CHECKSUM_FILE="$HEIMDALL_HOME/$DUMP_V1_GENESIS_FILE_NAME.sha512"
 if [[ ! -f "$GENESIS_FILE" ]]; then
     handle_error $STEP "Genesis file $GENESIS_FILE not found. Cannot generate checksum."
 fi
-ROLLBACK_ACTIONS["$STEP"]="rm -f $CHECKSUM_FILE"
 # execute command
 sha512sum "$GENESIS_FILE" | awk '{print $1}' > "$CHECKSUM_FILE"
 # Verify checksum file exists and is not empty
@@ -461,7 +439,6 @@ echo "[INFO] Generated checksum: $GENERATED_CHECKSUM"
 # Step 7: verify checksum
 STEP=7
 print_step $STEP "Verifying checksum"
-ROLLBACK_ACTIONS["$STEP"]=":"
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "[DRY-RUN] Skipping checksum verification"
 else
@@ -482,7 +459,6 @@ fi
 # Step 8: move heimdall-v1 to backup location
 STEP=8
 print_step $STEP "Moving $HEIMDALL_HOME to $BACKUP_DIR"
-ROLLBACK_ACTIONS["$STEP"]="if [ -d \"$HEIMDALL_HOME\" ]; then rm -rf \"$HEIMDALL_HOME\"; fi && cp -a \"$BACKUP_DIR\" \"$HEIMDALL_HOME\""
 # Create parent directory in case it doesn't exist
 sudo mkdir -p "$(dirname "$BACKUP_DIR")" || handle_error $STEP "Failed to create parent directory for $BACKUP_DIR"
 # Move Heimdall home to backup location
@@ -493,7 +469,6 @@ echo "[INFO] Backup (move) completed successfully."
 STEP=9
 print_step $STEP "Create temp directory for heimdall-v2 and target the right package based on current system"
 tmpDir="/tmp/tmp-heimdall-v2"
-ROLLBACK_ACTIONS["$STEP"]="rm -rf \"$tmpDir\""
 sudo mkdir -p $tmpDir || handle_error $STEP "Cannot create $tmpDir directory for downloading files"
 profileInfo=${NETWORK}-${NODETYPE}-config_v${HEIMDALL_V2_VERSION}
 profileInforpm=${NETWORK}-${NODETYPE}-config-v${HEIMDALL_V2_VERSION}
@@ -545,7 +520,6 @@ package="$tmpDir/$binary"
 STEP=10
 print_step $STEP "Download heimdall-v2 binary package from $baseUrl to $tmpDir"
 curl -L "$url" -o "$package" || handle_error $STEP "Failed to download binary from \"$url\""
-ROLLBACK_ACTIONS["$STEP"]="rm -rf \"$tmpDir\""
 if [ -n "$profile"  ]; then
     profileUrl="${baseUrl}/${profile}"
     profilePackage=$tmpDir/$profile
@@ -558,7 +532,6 @@ STEP=11
 print_step $STEP "Unpack heimdall-v2 binary package and install it"
 if [ "$type" = "tar.gz" ]; then
     unpack=$tmpDir/unpack
-    ROLLBACK_ACTIONS["$STEP"]="rm -rf \"$unpack\""
     echo "[INFO] Creating unpack directory..."
     mkdir -p "$unpack" || handle_error $STEP "Failed to create unpack directory"
     echo "[INFO] Unpacking..."
@@ -567,13 +540,11 @@ if [ "$type" = "tar.gz" ]; then
     if [ -f "/usr/local/bin/heimdalld" ]; then
         echo "[INFO] Backing up existing heimdalld binary"
         sudo cp /usr/local/bin/heimdalld /usr/local/bin/heimdalld.bak || handle_error $STEP "Failed to backup existing heimdalld binary"
-        ROLLBACK_ACTIONS["$STEP"]+=" && mv \"/usr/local/bin/heimdalld.bak\" \"/usr/local/bin/heimdalld\""
     fi
     echo "[INFO] Copying new binary from ${unpack}/heimdalld into /usr/local/bin/heimdalld"
     sudo cp "${unpack}/heimdalld" /usr/local/bin/heimdalld || handle_error $STEP "Failed to copy heimdalld binary to '/usr/local/bin/heimdalld'"
 elif [ "$type" = "deb" ]; then
     echo "[INFO] Uninstalling any existing old binary"
-    ROLLBACK_ACTIONS["$STEP"]=":"
     sudo dpkg -r heimdall heimdalld || handle_error $STEP "Failed to uninstall existing packages"
     sudo dpkg -i "$package" || handle_error $STEP "Failed to install $package"
 
@@ -582,7 +553,6 @@ elif [ "$type" = "deb" ]; then
         sudo dpkg -i "$profilePackage" || handle_error $STEP "Failed to install profile package"
     fi
 elif [ "$type" = "rpm" ]; then
-    ROLLBACK_ACTIONS["$STEP"]=":"
     sudo rpm -e heimdall || handle_error $STEP "Failed to uninstall old package"
     sudo rpm -i --force "$package" || handle_error $STEP "Failed to install $package"
 
@@ -593,7 +563,6 @@ elif [ "$type" = "rpm" ]; then
 elif [ "$type" = "apk" ]; then
     echo "[INFO] Installing package"
     sudo apk add --allow-untrusted "$package" || handle_error $STEP "Failed to install $package"
-    ROLLBACK_ACTIONS["$STEP"]=":"
 fi
 echo "[INFO] Heimdall-v2 installation completed."
 
@@ -612,7 +581,6 @@ if [ -f "$HEIMDALLD_PATH" ]; then
     echo "[INFO] Backing up existing heimdalld binary..."
     sudo mv "$HEIMDALLD_PATH" "${HEIMDALLD_PATH}.bak" || handle_error $STEP "Failed to backup old heimdalld binary"
 fi
-ROLLBACK_ACTIONS["$STEP"]="if [ -f \"${HEIMDALLD_PATH}.bak\" ]; then mv \"${HEIMDALLD_PATH}.bak\" \"$HEIMDALLD_PATH\"; fi"
 # Determine the actual location of the new binary
 if [ -f "/usr/bin/heimdalld" ]; then
     NEW_BINARY="/usr/bin/heimdalld"
@@ -633,12 +601,6 @@ echo "[INFO] heimdalld binary copied and set as executable successfully!"
 # Step 13: verify heimdall-v2 version
 STEP=13
 print_step $STEP "Verifying Heimdall v2 version"
-# Define rollback: Restore previous binary if something goes wrong
-if [ -f "${HEIMDALLD_PATH}.bak" ]; then
-    ROLLBACK_ACTIONS["$STEP"]="sudo mv \"${HEIMDALLD_PATH}.bak\" \"$HEIMDALLD_PATH\""
-else
-    ROLLBACK_ACTIONS["$STEP"]=":"
-fi
 # Check if heimdalld is installed and executable
 if [[ ! -x "$HEIMDALLD_PATH" ]]; then
     handle_error $STEP "Heimdalld binary is missing or not executable: $HEIMDALLD_PATH"
@@ -682,10 +644,6 @@ fi
 if ! heimdalld migrate "$BACKUP_DIR/$DUMP_V1_GENESIS_FILE_NAME" --chain-id="$V2_CHAIN_ID" --genesis-time="$V2_GENESIS_TIME" --initial-height="$INITIAL_HEIGHT" --verify-data="$VERIFY_DATA"; then
     handle_error $STEP "Migration command failed."
 fi
-# Define rollback action only if the file was created successfully
-if [ -f "$MIGRATED_GENESIS_FILE" ]; then
-    ROLLBACK_ACTIONS["$STEP"]="rm -f \"$MIGRATED_GENESIS_FILE\""
-fi
 echo "[INFO] Genesis file migrated successfully from v1 to v2"
 # ensure migrated genesis file exists
 if [[ ! -f "$MIGRATED_GENESIS_FILE" ]]; then
@@ -713,7 +671,6 @@ MIGRATED_CHECKSUM_FILE="$MIGRATED_GENESIS_FILE.sha512"
 if [[ ! -f "$MIGRATED_GENESIS_FILE" ]]; then
     handle_error $STEP "Migrated genesis file $MIGRATED_GENESIS_FILE not found. Cannot generate checksum."
 fi
-ROLLBACK_ACTIONS["$STEP"]="rm -f $MIGRATED_CHECKSUM_FILE"
 # execute command
 sha512sum "$MIGRATED_GENESIS_FILE" | awk '{print $1}' > "$MIGRATED_CHECKSUM_FILE"
 # Verify checksum file exists and is not empty
@@ -728,7 +685,6 @@ echo "[INFO] Generated checksum: $GENERATED_MIGRATED_CHECKSUM"
 # Step 16: verify checksum of the migrated genesis
 STEP=16
 print_step $STEP "Verifying checksum of the migrated genesis file"
-ROLLBACK_ACTIONS["$STEP"]=":"
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "[DRY-RUN] Skipping checksum verification"
 else
@@ -751,7 +707,6 @@ fi
 STEP=17
 print_step $STEP "Creating temp directory for heimdall-v2 in and applying proper permissions"
 tmpDirV2Home="/tmp/tmp-heimdall-v2-home"
-ROLLBACK_ACTIONS["$STEP"]="rm -rf \"$tmpDirV2Home\""
 sudo mkdir -p "$tmpDirV2Home" || handle_error $STEP "Failed to create temporary directory"
 # apply proper permissions for the current user
 sudo chmod -R 755 "$tmpDirV2Home" || handle_error $STEP "Failed to set permissions"
@@ -771,7 +726,6 @@ if [[ -d "$HEIMDALL_HOME" ]]; then
     echo "[INFO] Creating backup of existing Heimdall home..."
     sudo mv "$HEIMDALL_HOME" "$HEIMDALL_HOME.bak" || handle_error $STEP "Failed to backup old Heimdall home."
 fi
-ROLLBACK_ACTIONS["$STEP"]="if [ -d \"$HEIMDALL_HOME.bak\" ]; then mv \"$HEIMDALL_HOME.bak\" \"$HEIMDALL_HOME\"; fi"
 # Init Heimdall v2
 if ! heimdalld init "$MONIKER_NODE_NAME" --chain-id "$V2_CHAIN_ID" --home="$tmpDirV2Home" &> /dev/null; then
     handle_error $STEP "Failed to initialize heimdalld."
@@ -794,12 +748,6 @@ echo "[INFO] heimdalld initialized successfully."
 # Step 19: verify required directories exist
 STEP=19
 print_step $STEP "Verifying required directories and configuration files in $HEIMDALL_HOME"
-# Define rollback: Restore old Heimdall home if needed
-if [ -d "$HEIMDALL_HOME.bak" ]; then
-    ROLLBACK_ACTIONS["$STEP"]="mv \"$HEIMDALL_HOME.bak\" \"$HEIMDALL_HOME\""
-else
-    ROLLBACK_ACTIONS["$STEP"]=":"
-fi
 # Check if required directories exist
 REQUIRED_DIRS=("data" "config")
 for dir in "${REQUIRED_DIRS[@]}"; do
@@ -827,7 +775,6 @@ echo "[INFO] All required directories are present in $HEIMDALL_HOME"
 # Step 20: Restore bridge directory from backup
 STEP=20
 print_step $STEP "Restoring bridge directory from backup if present"
-ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for restore
 BRIDGE_SRC="$BACKUP_DIR/bridge"
 BRIDGE_DEST="$HEIMDALL_HOME/bridge"
 
@@ -850,9 +797,6 @@ if [ -f "$TARGET_GENESIS_FILE" ]; then
     echo "[INFO] Backing up existing genesis file..."
     mv "$TARGET_GENESIS_FILE" "${TARGET_GENESIS_FILE}.bak"
     echo "[INFO] Backup saved at: $TARGET_GENESIS_FILE.bak"
-    ROLLBACK_ACTIONS["$STEP"]="mv \"${TARGET_GENESIS_FILE}.bak\" \"$TARGET_GENESIS_FILE\""
-else
-    ROLLBACK_ACTIONS["$STEP"]="rm -f \"$TARGET_GENESIS_FILE\""
 fi
 # Replace with the migrated genesis
 cp -p "$MIGRATED_GENESIS_FILE" "$TARGET_GENESIS_FILE" || handle_error $STEP "Failed to replace genesis file with migrated version."
@@ -869,7 +813,6 @@ if [ -f "$PRIV_VALIDATOR_FILE" ]; then
     echo "[INFO] Creating backup of priv_validator_key.json..."
     sudo cp "$PRIV_VALIDATOR_FILE" "$PRIV_VALIDATOR_FILE.bak" || handle_error $STEP "Failed to backup priv_validator_key.json"
     echo "[INFO] Backup saved at: $PRIV_VALIDATOR_FILE.bak"
-    ROLLBACK_ACTIONS["$STEP"]="if [ -f \"$PRIV_VALIDATOR_FILE.bak\" ]; then mv \"$PRIV_VALIDATOR_FILE.bak\" \"$PRIV_VALIDATOR_FILE\"; fi"
 else
     handle_error $STEP "priv_validator_key.json not found in Heimdall config directory!"
 fi
@@ -901,7 +844,6 @@ if [ -f "$NODE_KEY_FILE" ]; then
     echo "[INFO] Creating backup of node_key.json..."
     cp "$NODE_KEY_FILE" "$NODE_KEY_FILE.bak" || handle_error $STEP "Failed to backup node_key.json"
     echo "[INFO] Backup saved at: $NODE_KEY_FILE.bak"
-    ROLLBACK_ACTIONS["$STEP"]="if [ -f \"$NODE_KEY_FILE.bak\" ]; then mv \"$NODE_KEY_FILE.bak\" \"$NODE_KEY_FILE\"; fi"
 else
     handle_error $STEP "node_key.json not found in Heimdall config directory!"
 fi
@@ -931,7 +873,6 @@ fi
 echo "[INFO] Creating backup of priv_validator_state.json..."
 cp "$PRIV_VALIDATOR_STATE" "$PRIV_VALIDATOR_STATE.bak" || handle_error $STEP "Failed to backup priv_validator_state.json"
 echo "[INFO] Backup saved at: $PRIV_VALIDATOR_STATE.bak"
-ROLLBACK_ACTIONS["$STEP"]="if [ -f \"$PRIV_VALIDATOR_STATE.bak\" ]; then mv \"$PRIV_VALIDATOR_STATE.bak\" \"$PRIV_VALIDATOR_STATE\"; fi"
 # Validate the file has proper JSON
 jq empty "$PRIV_VALIDATOR_STATE" || handle_error $STEP "Invalid JSON detected in priv_validator_state.json"
 # Apply transformations:
@@ -961,10 +902,8 @@ if [ -f "$ADDRBOOK_FILE" ]; then
     fi
     cp "$ADDRBOOK_FILE" "$TARGET_ADDRBOOK_FILE" || handle_error $STEP "Failed to restore addrbook.json from backup"
     echo "[INFO] addrbook.json restored successfully."
-    ROLLBACK_ACTIONS["$STEP"]="if [ -f \"$TARGET_ADDRBOOK_FILE.bak\" ]; then mv \"$TARGET_ADDRBOOK_FILE.bak\" \"$TARGET_ADDRBOOK_FILE\"; else rm -f \"$TARGET_ADDRBOOK_FILE\"; fi"
 else
     echo "[INFO] No addrbook.json found in backup. Skipping restore."
-    ROLLBACK_ACTIONS["$STEP"]=":"  # No-op rollback if nothing changed
 fi
 
 
@@ -1073,7 +1012,6 @@ echo "[INFO] app.toml values migrated successfully."
 # Step 27: Assign correct ownership to Heimdall directories
 STEP=27
 print_step $STEP "Assigning correct ownership and permissions under $HEIMDALL_HOME as user: $HEIMDALL_SERVICE_USER"
-ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed
 # Sanity check: avoid chowning critical paths
 CRITICAL_PATHS=("/" "/usr" "/usr/bin" "/bin" "/lib" "/lib64" "/etc" "/boot")
 for path in "${CRITICAL_PATHS[@]}"; do
@@ -1116,7 +1054,6 @@ fi
 # Step 29: Clean up .bak files in HEIMDALL_HOME
 STEP=29
 print_step $STEP "Cleaning up .bak files in parent directory of $HEIMDALL_HOME"
-ROLLBACK_ACTIONS["$STEP"]=":"  # No rollback needed for cleanup
 # Determine the parent directory of HEIMDALL_HOME
 HEIMDALL_PARENT_DIR=$(dirname "$HEIMDALL_HOME")
 # Find and delete all .bak files or directories
