@@ -539,32 +539,43 @@ fi
 # Step 11: unpack heimdall-v2 binary and install it
 STEP=11
 print_step $STEP "Unpack heimdall-v2 binary package and install it"
+# Dynamically determine the real installed binary path for use in Step 12
+NEW_BINARY=""
 if [ "$type" = "tar.gz" ]; then
-    unpack=$tmpDir/unpack
+    unpack="$tmpDir/unpack"
     echo "[INFO] Creating unpack directory..."
     mkdir -p "$unpack" || handle_error $STEP "Failed to create unpack directory"
     echo "[INFO] Unpacking..."
     tar -xzf "$package" -C "$unpack" || handle_error $STEP "Failed to unpack '$package'"
-
+    NEW_BINARY="${unpack}/heimdalld"
     if [ -f "/usr/local/bin/heimdalld" ]; then
         echo "[INFO] Backing up existing heimdalld binary"
         sudo cp /usr/local/bin/heimdalld /usr/local/bin/heimdalld.bak || handle_error $STEP "Failed to backup existing heimdalld binary"
     fi
-    echo "[INFO] Copying new binary from ${unpack}/heimdalld into /usr/local/bin/heimdalld"
-    sudo cp "${unpack}/heimdalld" /usr/local/bin/heimdalld || handle_error $STEP "Failed to copy heimdalld binary to '/usr/local/bin/heimdalld'"
+    echo "[INFO] Copying new binary from ${NEW_BINARY} into /usr/local/bin/heimdalld"
+    sudo cp "$NEW_BINARY" /usr/local/bin/heimdalld || handle_error $STEP "Failed to copy heimdalld binary"
 elif [ "$type" = "deb" ]; then
     echo "[INFO] Uninstalling any existing old binary"
-    sudo dpkg -r heimdall heimdalld || handle_error $STEP "Failed to uninstall existing packages"
+    sudo dpkg -r heimdall heimdalld || echo "[WARN] Nothing to uninstall"
+    echo "[INFO] Installing $package"
     sudo dpkg -i "$package" || handle_error $STEP "Failed to install $package"
-
-    if [ -n "$profilePackage" ] && [ ! -d "var/lib/heimdall/config" ]; then
+    # Dynamically resolve the path
+    if [ -f "/usr/local/bin/heimdalld" ]; then
+        NEW_BINARY="/usr/local/bin/heimdalld"
+    elif [ -f "/usr/bin/heimdalld" ]; then
+        NEW_BINARY="/usr/bin/heimdalld"
+    else
+        handle_error $STEP "Heimdalld binary not found after .deb installation"
+    fi
+    if [ -n "$profilePackage" ] && [ ! -d "/var/lib/heimdall/config" ]; then
         echo "[INFO] Installing v2 profile package"
         sudo dpkg -i "$profilePackage" || handle_error $STEP "Failed to install profile package"
     fi
 elif [ "$type" = "rpm" ]; then
-    sudo rpm -e heimdall || handle_error $STEP "Failed to uninstall old package"
+    sudo rpm -e heimdall || echo "[WARN] Nothing to uninstall"
     sudo rpm -i --force "$package" || handle_error $STEP "Failed to install $package"
 
+    NEW_BINARY="/usr/bin/heimdalld"
     if [ -n "$profilePackage" ] && [ ! -d "/var/lib/heimdall/config" ]; then
         echo "[INFO] Installing v2 profile package"
         sudo rpm -i --force "$profilePackage" || handle_error $STEP "Failed to install profile package"
@@ -572,40 +583,43 @@ elif [ "$type" = "rpm" ]; then
 elif [ "$type" = "apk" ]; then
     echo "[INFO] Installing package"
     sudo apk add --allow-untrusted "$package" || handle_error $STEP "Failed to install $package"
+    NEW_BINARY="/usr/bin/heimdalld"
+else
+    handle_error $STEP "Unknown package type: $type"
 fi
-echo "[INFO] Heimdall-v2 installation completed."
+# Verify that NEW_BINARY is valid
+if [[ ! -x "$NEW_BINARY" ]]; then
+    handle_error $STEP "Resolved binary $NEW_BINARY is not executable"
+fi
+file_type=$(file "$NEW_BINARY")
+if [[ "$file_type" != *"ELF 64-bit"* ]]; then
+    handle_error $STEP "Resolved binary at $NEW_BINARY is not a valid ELF executable: $file_type"
+fi
+echo "[INFO] Heimdall-v2 binary installation completed at $NEW_BINARY"
 
 
-# Step 12: move the heimdall-v2 binary to heimdall path
+# Step 12: move the heimdall-v2 binary to heimdalld path
 STEP=12
 print_step $STEP "Moving the binary to $HEIMDALLD_PATH"
-# Extract the directory path
+
 dir_path=$(dirname "$HEIMDALLD_PATH")
-# Ensure target directory exists
 if [ ! -d "$dir_path" ]; then
     handle_error $STEP "Target directory $dir_path does not exist!"
 fi
-# Backup existing heimdalld binary if it exists
-if [ -f "$HEIMDALLD_PATH" ]; then
-    echo "[INFO] Backing up existing heimdalld binary..."
-    sudo mv "$HEIMDALLD_PATH" "${HEIMDALLD_PATH}.bak" || handle_error $STEP "Failed to backup old heimdalld binary"
-fi
-# Determine the actual location of the new binary
-if [ -f "/usr/bin/heimdalld" ]; then
-    NEW_BINARY="/usr/bin/heimdalld"
-elif [ -f "$package" ]; then
-    NEW_BINARY="$package"
+# Prevent self-overwrite
+if [ "$NEW_BINARY" = "$HEIMDALLD_PATH" ]; then
+    echo "[INFO] Source and destination are the same: $NEW_BINARY — skipping copy"
 else
-    handle_error $STEP "Could not find the new heimdalld binary!"
-fi
-# Copy the new heimdalld binary
-echo "[INFO] Resolved new binary at: $NEW_BINARY"
-echo "[INFO] Copying new heimdalld binary from $NEW_BINARY to $HEIMDALLD_PATH ..."
-sudo cp "$NEW_BINARY" "$HEIMDALLD_PATH" || handle_error $STEP "Failed to copy new heimdalld binary"
-# Ensure the new binary is executable
-sudo chmod +x "$HEIMDALLD_PATH" || handle_error $STEP "Failed to set execution permissions on $HEIMDALLD_PATH"
-echo "[INFO] heimdalld binary copied and set as executable successfully!"
+    if [ -f "$HEIMDALLD_PATH" ]; then
+        echo "[INFO] Backing up existing heimdalld binary..."
+        sudo mv "$HEIMDALLD_PATH" "${HEIMDALLD_PATH}.bak" || handle_error $STEP "Failed to backup old heimdalld binary"
+    fi
 
+    echo "[INFO] Copying new heimdalld binary from $NEW_BINARY to $HEIMDALLD_PATH ..."
+    sudo cp "$NEW_BINARY" "$HEIMDALLD_PATH" || handle_error $STEP "Failed to copy heimdalld binary"
+    sudo chmod +x "$HEIMDALLD_PATH" || handle_error $STEP "Failed to set execution permissions"
+fi
+echo "[INFO] heimdalld binary moved to $HEIMDALLD_PATH successfully"
 
 # Step 13: verify heimdall-v2 version
 STEP=13
@@ -616,7 +630,7 @@ if [[ ! -x "$HEIMDALLD_PATH" ]]; then
 fi
 # Check heimdalld version
 # Extract version from last non-empty line of heimdalld output
-HEIMDALLD_V2_VERSION_RAW=$($HEIMDALLD_PATH version 2>/dev/null | awk 'NF' | tail -n 1)
+HEIMDALLD_V2_VERSION_RAW=$($HEIMDALLD_PATH version | awk 'NF' | tail -n 1)
 if [[ -z "$HEIMDALLD_V2_VERSION_RAW" ]]; then
     handle_error $STEP "Failed to retrieve Heimdall v2 version. Installation may have failed."
 fi
@@ -721,6 +735,7 @@ sudo mkdir -p "/var/lib/heimdall" || handle_error $STEP "Failed to create $V2_HO
 sudo chmod -R 755 "$V2_HOME" || handle_error $STEP "Failed to set permissions"
 sudo chown -R "$HEIMDALL_SERVICE_USER" "$V2_HOME" || handle_error $STEP "Failed to change ownership"
 echo "[INFO] $V2_HOME created successfully"
+sudo rm "$V2_HOME/config/genesis.json" || handle_error $STEP "Failed to remove existing json in $V2_HOME/config"
 
 
 # Step 18: init heimdall-v2
@@ -731,7 +746,7 @@ if [[ ! -d "/var/lib/heimdall" ]]; then
     handle_error $STEP "/var/lib/heimdall does not exist. Cannot proceed with initialization."
 fi
 # Init Heimdall v2
-if ! heimdalld init "$MONIKER_NODE_NAME" --chain-id "$V2_CHAIN_ID" --home="$V2_HOME" &> /dev/null; then
+if ! heimdalld init "$MONIKER_NODE_NAME" --chain-id="$V2_CHAIN_ID" --home="$V2_HOME"; then
     handle_error $STEP "Failed to initialize heimdalld."
 fi
 echo "[INFO] heimdalld initialized successfully."
