@@ -212,6 +212,7 @@ If the migration itself doesn't go as planned, you can roll back to the previous
    ```bash
    sudo rm -rf /mumbai/heimdall/*
    sudo cp -r /mumbai/heimdall.backup/* /mumbai/heimdall/
+   sudo rm -rf /mumbai/heimdall.backup
     ```
 3. Delete the genesis dump and its migrated version
    ```bash
