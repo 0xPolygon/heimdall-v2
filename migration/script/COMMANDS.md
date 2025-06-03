@@ -183,7 +183,7 @@ This can be run by any node operator.
        --backup-dir=/mumbai/heimdall.backup \
        --moniker=heimdall0 \
        --service-user=heimdall \
-       --generate-genesis=false
+       --generate-genesis=true
    ```
 7. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
    ```bash
@@ -211,6 +211,7 @@ If the migration itself doesn't go as planned, you can roll back to the previous
 2. Restore the backup of the v1 home directory
    ```bash
    sudo rm -rf /mumbai/heimdall/*
+   sudo mkdir -p /mumbai/heimdall
    sudo cp -r /mumbai/heimdall.backup/* /mumbai/heimdall/
    sudo rm -rf /mumbai/heimdall.backup
     ```
@@ -221,31 +222,36 @@ If the migration itself doesn't go as planned, you can roll back to the previous
    sudo rm -f /mumbai/heimdall/migrated_dump_genesis.json
    sudo rm -f /mumbai/heimdall/migrated_dump_genesis.json.sha512
    ```
-4. Install the "fallback version" of heimdall (without `halt_height` embedded). Replace the version tag, network name (`amoy` or `mainnet`), and node type (`sentry` or `validator`).
+4. Restore the v1 service file (previously backed up by the script)
+    ```bash
+    sudo rm /lib/systemd/system/heimdalld.service
+    sudo mv /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heimdalld.service
+    ```
+5. Install the "fallback version" of heimdall (without `halt_height` embedded). Replace the version tag, network name (`amoy` or `mainnet`), and node type (`sentry` or `validator`).
     ```bash
     curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- v<version> <network> <node_type>    ```
     ```
-5. Check `heimdalld` version
+6. Check `heimdalld` version
     ```bash
     /usr/bin/heimdalld version
     # It should print
     # <version>
     ```
    If it still prints the v2 version, you need to move the v1 binary to the correct location.  
-6. Reload the daemon
+7. Reload the daemon
    ```bash
    sudo systemctl daemon-reload
    ```
-7. Start heimdall
+8. Start heimdall
    ```bash
     sudo systemctl start heimdalld
     ```
-8. Restart telemetry
+9. Restart telemetry
    ```bash
    sudo systemctl restart telemetry
    ```
-9. Check the logs
-   ```bash
-    journalctl -fu heimdalld
-    ```
-10. Potentially rerun the migration process when the issues are fixed.
+10. Check the logs
+    ```bash
+     journalctl -fu heimdalld
+     ```
+11. Potentially rerun the migration process when the issues are fixed.
