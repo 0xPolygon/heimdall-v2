@@ -13,7 +13,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     HEIMDALL_V2_VERSION="0.1.27"
     V1_CHAIN_ID="devnet"
     V2_CHAIN_ID="devnet"
-    V2_GENESIS_TIME="2025-06-03T14:30:00Z"
+    V2_GENESIS_TIME="2025-06-05T16:30:00Z"
     APOCALYPSE_HEIGHT=22238836
     BRANCH_NAME="migration-mumbai"
     ```
