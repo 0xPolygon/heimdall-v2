@@ -39,7 +39,7 @@ type subGraphClient struct {
 // startSelfHealing starts self-healing processes for all required events
 func (rl *RootChainListener) startSelfHealing(ctx context.Context) {
 	if !helper.GetConfig().EnableSH || helper.GetConfig().SubGraphUrl == "" {
-		rl.Logger.Info("Self-healing disabled")
+		rl.Logger.Info("Self-healing is disabled")
 		return
 	}
 
@@ -74,11 +74,11 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 	// Fetch all heimdall validators
 	validatorSet, err := util.GetValidatorSet(rl.cliCtx.Codec)
 	if err != nil {
-		rl.Logger.Error("Error getting heimdall validators", "error", err)
+		rl.Logger.Error("Failed to fetch validator set from Heimdall", "error", err)
 		return
 	}
 
-	rl.Logger.Info("Fetched validators list from heimdall", "len", len(validatorSet.Validators))
+	rl.Logger.Info("Fetched validator list from Heimdall", "validatorCount", len(validatorSet.Validators))
 
 	// Make sure each validator is in sync
 	var wg sync.WaitGroup
@@ -90,7 +90,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 
 			nonce, err := util.GetValidatorNonce(id, rl.cliCtx.Codec)
 			if err != nil {
-				rl.Logger.Error("Error getting nonce for validator from heimdall", "error", err, "id", id)
+				rl.Logger.Error("Failed to fetch nonce for validator from Heimdall", "validatorId", id, "error", err)
 				return
 			}
 
@@ -100,9 +100,10 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 				ethereumNonce, err = rl.getLatestNonce(ctx, id)
 				return err
 			}, 3, time.Second); err != nil {
-				rl.Logger.Error("Error getting nonce for validator from L1", "error", err, "id", id)
+				rl.Logger.Error("Failed to fetch latest nonce from Ethereum (L1) for validator", "validatorId", id, "error", err)
 				return
 			}
+			rl.Logger.Info("Retrieved nonces for validator", "validatorId", id, "ethereumNonce", ethereumNonce, "heimdallNonce", nonce)
 
 			if ethereumNonce <= nonce {
 				return
@@ -110,7 +111,7 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 
 			nonce++
 
-			rl.Logger.Info("Processing stake update for validator", "id", id, "ethereumNonce", ethereumNonce, "nonce", nonce)
+			rl.Logger.Info("Validator is behind; processing missing stake update", "validatorId", id, "ethereumNonce", ethereumNonce, "nextExpectedNonce", nonce)
 
 			var stakeUpdate *types.Log
 
@@ -118,9 +119,10 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 				stakeUpdate, err = rl.getStakeUpdate(ctx, id, nonce)
 				return err
 			}, 3, time.Second); err != nil {
-				rl.Logger.Error("Error getting stake update for validator", "error", err, "id", id)
+				rl.Logger.Error("Failed to retrieve StakeUpdate event from subgraph", "validatorId", id, "nonce", nonce, "error", err)
 				return
 			}
+			rl.Logger.Info("Fetched StakeUpdate event from Ethereum", "validatorId", id, "nonce", nonce, "blockNumber", stakeUpdate.BlockNumber, "txHash", stakeUpdate.TxHash.Hex())
 
 			stakeUpdateCounter.WithLabelValues(
 				fmt.Sprintf("%d", id),
@@ -131,9 +133,9 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 			).Add(1)
 
 			if _, err = rl.processEvent(ctx, stakeUpdate); err != nil {
-				rl.Logger.Error("Error processing stake update for validator", "error", err, "id", id)
+				rl.Logger.Error("Failed to process StakeUpdate event", "validatorId", id, "nonce", nonce, "error", err)
 			} else {
-				rl.Logger.Info("Processed stake update for validator", "id", id, "nonce", nonce)
+				rl.Logger.Info("Successfully processed StakeUpdate event", "validatorId", id, "nonce", nonce)
 			}
 		}(validator.ValId)
 	}
@@ -145,15 +147,16 @@ func (rl *RootChainListener) processStakeUpdate(ctx context.Context) {
 func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 	latestPolygonStateId, err := rl.getCurrentStateID(ctx)
 	if err != nil {
-		rl.Logger.Error("Unable to fetch latest state id from state receiver contract", "error", err)
+		rl.Logger.Error("Failed to fetch current Polygon stateId from StateReceiver contract", "error", err)
 		return
 	}
 
 	latestEthereumStateId, err := rl.getLatestStateID(ctx)
 	if err != nil {
-		rl.Logger.Error("Unable to fetch latest state id from state sender contract", "error", err)
+		rl.Logger.Error("Failed to fetch latest Ethereum stateId from StateSender contract", "error", err)
 		return
 	}
+	rl.Logger.Info("Retrieved latest state IDs", "polygonStateId", latestPolygonStateId, "ethereumStateId", latestEthereumStateId)
 
 	if latestEthereumStateId.Cmp(latestPolygonStateId) != 1 {
 		return
@@ -161,19 +164,19 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 	for i := latestPolygonStateId.Int64() + 1; i <= latestEthereumStateId.Int64(); i++ {
 		if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
-			rl.Logger.Info("State found on heimdall", "id", i)
+			rl.Logger.Info("State ID already synced on Heimdall; skipping", "stateId", i)
 			continue
 		}
 
-		rl.Logger.Info("Processing state sync", "id", i)
+		rl.Logger.Info("Missing state detected; processing StateSynced event", "stateId", i)
 
 		var stateSynced *types.Log
 
 		if err = helper.ExponentialBackoff(func() error {
-			stateSynced, err = rl.getStateSync(ctx, i)
+			stateSynced, err = rl.getStateSynced(ctx, i)
 			return err
 		}, 3, time.Second); err != nil {
-			rl.Logger.Error("Error getting state sync", "error", err, "id", i)
+			rl.Logger.Error("Failed to retrieve StateSynced event for missing state", "stateId", i, "error", err)
 			continue
 		}
 
@@ -186,9 +189,8 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 
 		ignore, err := rl.processEvent(ctx, stateSynced)
 		if err != nil {
-			rl.Logger.Error("Unable to update state id on heimdall", "error", err)
+			rl.Logger.Error("Failed to process StateSynced event and update Heimdall", "stateId", i, "error", err)
 			i--
-
 			continue
 		}
 
@@ -198,11 +200,10 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 			var statusCheck int
 			for statusCheck = 0; statusCheck < 15; statusCheck++ {
 				if _, err = util.GetClerkEventRecord(i, rl.cliCtx.Codec); err == nil {
-					rl.Logger.Info("State found on heimdall", "id", i)
+					rl.Logger.Info("StateId found on Heimdall after processing", "stateId", i)
 					break
 				}
-
-				rl.Logger.Info("State not found on heimdall", "id", i)
+				rl.Logger.Info("StateId not yet found on Heimdall; retrying", "stateId", i)
 				time.Sleep(1 * time.Second)
 			}
 
@@ -217,12 +218,12 @@ func (rl *RootChainListener) processStateSynced(ctx context.Context) {
 func (rl *RootChainListener) processEvent(ctx context.Context, vLog *types.Log) (bool, error) {
 	blockTime, err := rl.contractCaller.GetMainChainBlockTime(ctx, vLog.BlockNumber)
 	if err != nil {
-		rl.Logger.Error("Unable to get block time", "error", err)
+		rl.Logger.Error("Failed to get block time", "error", err)
 		return false, err
 	}
 
 	if time.Since(blockTime) < helper.GetConfig().SHMaxDepthDuration {
-		rl.Logger.Info("Block time is less than max time depth, skipping event")
+		rl.Logger.Info("Block time is less than the max time depth; skipping event")
 		return true, err
 	}
 
