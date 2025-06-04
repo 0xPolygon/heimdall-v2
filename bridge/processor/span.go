@@ -72,6 +72,7 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	}
 
 	if !isProposer {
+		sp.Logger.Debug("Not the proposer, skipping span proposal")
 		return
 	}
 
