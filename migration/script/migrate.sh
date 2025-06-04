@@ -191,7 +191,7 @@ sleep 3
 STEP=1
 print_step $STEP "Checking for required dependencies"
 # Define base and new dependencies
-DEPENDENCIES=("curl" "tar" "jq" "sha512sum")
+DEPENDENCIES=("curl" "tar" "jq" "sha512sum" "file" "awk" "sed" "systemctl" "grep" "id")
 MISSING_DEPS=()
 # Check if commands are available
 for dep in "${DEPENDENCIES[@]}"; do

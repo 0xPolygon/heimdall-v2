@@ -12,6 +12,17 @@ For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script]
 ## Migration script
 
 - Validate dependencies and prerequisites
+  - the system needs to have the following tools installed:
+    - `curl`
+    - `tar`
+    - `jq`
+    - `sha512sum`
+    - `file`
+    - `awk`
+    - `sed`
+    - `systemctl`
+    - `grep`
+    - `id`
 - Halt your current Heimdall v1
 - Make sure the latest committed height is reached
   - If yes, it exports the genesis from v1
