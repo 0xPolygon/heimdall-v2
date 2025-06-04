@@ -65,6 +65,16 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 
 // checkAndPropose checks if the current user is the span proposer and proposes the span
 func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
+	isProposer, err := util.IsProposer(sp.cliCtx.Codec)
+	if err != nil {
+		sp.Logger.Error("Error while checking if proposer", "error", err)
+		return
+	}
+
+	if !isProposer {
+		return
+	}
+
 	lastSpan, err := sp.getLastSpan()
 	if err != nil {
 		sp.Logger.Error("Unable to fetch last span", "error", err)
@@ -99,16 +109,6 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	maxBlockNumber := max(latestMilestoneEndBlock, latestBorBlockNumber)
 
 	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.Id, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
-
-	isProposer, err := util.IsProposer(sp.cliCtx.Codec)
-	if err != nil {
-		sp.Logger.Error("Error while checking if proposer", "error", err)
-		return
-	}
-
-	if !isProposer {
-		return
-	}
 
 	if maxBlockNumber > lastSpan.EndBlock {
 		if latestMilestoneEndBlock > lastSpan.EndBlock {
