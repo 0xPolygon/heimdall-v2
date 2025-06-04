@@ -88,17 +88,16 @@ The majority of the steps below are automated in the [migration script](migrate.
     - v2 `node_key.json` must reflect v1 values (`priv_key.value`) and preserve v2 types
     - v2 `priv_validator_key.json` must reflect v1 values (`pub_key.value`, `priv_key.value` and `address`) and preserve v2 types
 18. **Move New Genesis File** – Make sure the migrated genesis file is placed it in the correct directory.
-19. **Reload daemon with** `sudo systemctl daemon-reload`
-20. **Start Heimdall-v2 with** `sudo systemctl start heimdalld`
-21. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
-22. **Internal Monitoring**
-23. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
+19. **Reload daemon and start heimdall with** `sudo systemctl daemon-reload && sudo systemctl start heimdalld`
+20. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
+21. **Internal Monitoring**
+22. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
     ```toml
     [heimdall]
     ws-address = "ws://localhost:26657/websocket"
     ```
-24. **Restart bor** Only in case the step above was done.  
-25. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic   
+23. **Restart bor** Only in case the step above was done.  
+24. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic   
 
 ### Rollback strategy to restore v1
 We decided not to enforce an HF in heimdall-v1,
@@ -117,7 +116,8 @@ by simply changing the hardcoded `halt_height` to a future block.
 In case of issues with v2, node operators can roll back to the previous version of heimdall-v1 by following these steps:
    1. Install heimdall-v1 “fallback” version (with postponed or removed `halt_height`)
    2. Restore backed up `heimdall`-v1 folder
-   3. Make sure no `symlink` or service for heimdall is bound to v2
-   4. Restart the node with v1 commands
-   5. If v1 still creates problems, we have the opportunity to roll back to pre-`halt_height`.
-   6. If the rollback doesn't work, snapshot restore is safe to execute and the ultimate fallback.
+   3. Restore previous `heimdall` v1 service file 
+   4. Make sure no `symlink` or service for heimdall is bound to v2
+   5. Restart the node with v1 commands
+   6. If v1 still creates problems, we have the opportunity to roll back to pre-`halt_height`.
+   7. If the rollback doesn't work, snapshot restore is safe to execute and the ultimate fallback.
