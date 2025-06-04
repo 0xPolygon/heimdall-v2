@@ -23,6 +23,8 @@ Once the migration on that node is successful:
     - `systemctl`
     - `grep`
     - `id`
+- Make sure your system has at least 16 GB of available RAM
+- Make sure your system has at least 2x current size (in GB) of `HEIMDALL_HOME/data` available disk space
 - Halt your current Heimdall v1
 - Make sure the latest committed height is reached
   - If yes, it exports the genesis from v1
@@ -93,7 +95,7 @@ The migration script will anyway fail early if such tools are not installed.
 | `grep`      | Text searching        | Pre-installed on most distros   |
 | `id`        | User information      | Pre-installed on most distros   |
 
-Also, make sure the node's disk has enough space to store the backup of Heimdall v1 and the new genesis file.  
+Also, make sure the node's disk has enough space to store the backup of Heimdall v1 and the new genesis file, and enough RAM to run the migration process (at least 16 GB of available RAM is recommended).
 Furthermore, the user must ensure that heimdall v1 config files are correct and properly formatted.
 
 ---
