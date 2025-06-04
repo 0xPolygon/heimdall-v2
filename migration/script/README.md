@@ -86,6 +86,12 @@ The migration script will anyway fail early if such tools are not installed.
 | `tar`       | Extracting archives   | `sudo apt install tar`          |
 | `jq`        | JSON manipulation     | `sudo apt install jq`           |
 | `sha512sum` | File integrity checks | `sudo apt install coreutils`    |
+| `file`      | File type detection   | `sudo apt install file`         |
+| `awk`       | Text processing       | `sudo apt install gawk`         |
+| `sed`       | Stream editing        | `sudo apt install sed`          |
+| `systemctl` | Service management    | Pre-installed on most distros   |
+| `grep`      | Text searching        | Pre-installed on most distros   |
+| `id`        | User information      | Pre-installed on most distros   |
 
 Also, make sure the node's disk has enough space to store the backup of Heimdall v1 and the new genesis file.  
 Furthermore, the user must ensure that heimdall v1 config files are correct and properly formatted.  
