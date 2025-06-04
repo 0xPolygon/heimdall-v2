@@ -520,8 +520,8 @@ func TestExtendVoteHandler(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-		Return([]*ethTypes.Header{}, nil)
+		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, []uint64{}, nil)
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		app.AppCodec(),
@@ -558,7 +558,7 @@ func TestExtendVoteHandler(t *testing.T) {
 	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 	require.NoError(t, err)
 	require.NotNil(t, respExtend.VoteExtension)
-	mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+	mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 	terrUnmarshal := "error occurred while decoding ExtendedCommitInfo"
 	terrTxDecode := "error occurred while decoding tx bytes in ExtendVoteHandler"
@@ -609,7 +609,7 @@ func TestExtendVoteHandler(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, respExtend)
-				mockCaller.AssertCalled(t, "GetBorChainBlocksInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+				mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 			}
 		})
 	}
