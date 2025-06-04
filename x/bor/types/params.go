@@ -4,9 +4,8 @@ import "fmt"
 
 // Default parameter values
 const (
-	DefaultSprintDuration uint64 = 16
-	// TODO: REVERT. Shorter span duration for testing
-	DefaultSpanDuration      uint64 = 12 * DefaultSprintDuration
+	DefaultSprintDuration    uint64 = 16
+	DefaultSpanDuration      uint64 = 100 * DefaultSprintDuration
 	DefaultFirstSpanDuration uint64 = 256
 	DefaultProducerCount     uint64 = 4
 )
