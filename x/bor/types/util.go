@@ -27,7 +27,6 @@ func SortSpansById(a []Span) {
 
 func IsBlockCloseToSpanEnd(blockNumber, spanEnd uint64) bool {
 	// Check if the block number is within 100 blocks of the span end
-	// TODO: Move the 100 to params?
 	return blockNumber <= spanEnd && blockNumber >= (spanEnd-100)
 }
 
