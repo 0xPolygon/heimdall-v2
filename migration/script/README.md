@@ -7,7 +7,7 @@ Once the migration on that node is successful:
 - The v2 genesis will be created and made available for the community on heimdall-v2 repo together with a checksum
 - The script will be distributed with the checksum to prevent any tampering and made available for the community on heimdall-v2 repo
 - Node operators can perform the migration on their own nodes using the script (or a modified version of it if the architecture is not supported)
-For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script](migrate.sh).
+  For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script](migrate.sh).
 
 ## Migration script
 
@@ -23,6 +23,8 @@ For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script]
     - `systemctl`
     - `grep`
     - `id`
+- Make sure your system has at least 16 GB of available RAM
+- Make sure your system has at least 2x current size (in GB) of `HEIMDALL_HOME/data` available disk space
 - Halt your current Heimdall v1
 - Make sure the latest committed height is reached
   - If yes, it exports the genesis from v1
@@ -78,7 +80,7 @@ For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script]
 - Supported nodes: `sentry` and `validator`
 
 Before running the migration script, make sure the following tools are installed on your system.  
-The migration script will anyway fail early if such tools are not installed.  
+The migration script will anyway fail early if such tools are not installed.
 
 | Tool        | Purpose               | Install Command (Ubuntu/Debian) |
 |-------------|-----------------------|---------------------------------|
@@ -93,8 +95,8 @@ The migration script will anyway fail early if such tools are not installed.
 | `grep`      | Text searching        | Pre-installed on most distros   |
 | `id`        | User information      | Pre-installed on most distros   |
 
-Also, make sure the node's disk has enough space to store the backup of Heimdall v1 and the new genesis file.  
-Furthermore, the user must ensure that heimdall v1 config files are correct and properly formatted.  
+Also, make sure the node's disk has enough space to store the backup of Heimdall v1 and the new genesis file, and enough RAM to run the migration process (at least 16 GB of available RAM is recommended).
+Furthermore, the user must ensure that heimdall v1 config files are correct and properly formatted.
 
 ---
 
@@ -145,7 +147,7 @@ For a possible output, see [output.log](./output-example.txt)
 | Alpine | Any     | `apk`           | ❌         | Not supported           |
 
 The script determines the correct Heimdall v2 package to install based on your system architecture and package manager.
-If your machine doesn't match any supported platform (or if you are using docker), you would need to modify the script accordingly.  
+If your machine doesn't match any supported platform (or if you are using docker), you would need to modify the script accordingly.
 
 ### Optional: use WebSocket for Bor–Heimdall communication
 After the migration, to optimize communication between Heimdall and Bor, you can optionally enable WebSocket support in your bor `config.toml` file.  
