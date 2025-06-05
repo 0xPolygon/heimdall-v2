@@ -282,7 +282,7 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 
 // get span by id
 func (sp *SpanProcessor) getSpanById(id uint64) (*types.Span, error) {
-	// fetch latest start block from heimdall via rest query
+	// fetch latest span from heimdall using the rest query
 	result, err := helper.FetchFromAPI(fmt.Sprintf(helper.GetHeimdallServerEndpoint(util.SpanByIdURL), strconv.FormatUint(id, 10)))
 	if err != nil {
 		sp.Logger.Error("Error while fetching latest span")
