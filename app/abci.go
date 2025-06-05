@@ -15,7 +15,6 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/common/strutil"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	borTypes "github.com/0xPolygon/heimdall-v2/x/bor/types"
 	"github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	milestoneAbci "github.com/0xPolygon/heimdall-v2/x/milestone/abci"
@@ -119,36 +118,24 @@ func (app *HeimdallApp) NewProcessProposalHandler() sdk.ProcessProposalHandler {
 		// validate non-RP vote extensions
 		if err := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err != nil {
 			logger.Error("Invalid non-rp vote extension proposal", "error", err)
+		}
 
-			// RFC-105 retry logic
-			if err2 := ValidateNonRpVoteExtensions(ctx, req.Height, extCommitInfo.Votes, app.StakeKeeper, app.ChainManagerKeeper, app.CheckpointKeeper, app.caller, logger); err2 != nil {
-				if errors.Is(err2, borTypes.ErrFailedToQueryBor) {
-					logger.Error("Failed to query bor, rejecting proposal", "error", err2)
-				} else {
-					logger.Error("Invalid non-rp vote extension, rejecting proposal", "error", err2)
-				}
+		// run the rest of the txs
+		for _, tx := range req.Txs[1:] {
+			txn, err := app.TxDecode(tx)
+			if err != nil {
+				logger.Error("error occurred while decoding tx bytes in ProcessProposalHandler", "error", err)
 				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
-			// run the rest of the txs
-			for _, tx := range req.Txs[1:] {
-				txn, err := app.TxDecode(tx)
-				if err != nil {
-					logger.Error("error occurred while decoding tx bytes in ProcessProposalHandler", "error", err)
-					return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-				}
-
-				if sidetxs.CountSideHandlers(app.sideTxCfg, txn) > 1 {
-					return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-				}
-
-				if _, err := app.ProcessProposalVerifyTx(tx); err != nil {
-					logger.Error("RunTx returned an error in ProcessProposal", "error", err)
-					return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
-				}
+			if sidetxs.CountSideHandlers(app.sideTxCfg, txn) > 1 {
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 			}
 
-			return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_ACCEPT}, nil
+			if _, err := app.ProcessProposalVerifyTx(tx); err != nil {
+				logger.Error("RunTx returned an error in ProcessProposal", "error", err)
+				return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
+			}
 		}
 
 		// if all validations passed

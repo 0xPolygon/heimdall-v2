@@ -805,6 +805,12 @@ func TestSidetxsHappyPath(t *testing.T) {
 		BlockNumber: new(big.Int).SetUint64(blockNumber),
 	}
 
+	stateSyncEvent := &statesender.StatesenderStateSynced{
+		Id:              new(big.Int).SetUint64(1),
+		ContractAddress: common.HexToAddress("0x0000000000000000000000000000000000000000"),
+		Data:            []byte("test-data"),
+	}
+
 	event := &stakinginfo.StakinginfoTopUpFee{
 		User: common.Address(sdk.AccAddress(addr2.String())),
 		Fee:  new(big.Int).SetUint64(1),
@@ -927,7 +933,7 @@ func TestSidetxsHappyPath(t *testing.T) {
 
 	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(txReceipt, nil)
 
-	mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
+	mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(stateSyncEvent, nil)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -2443,8 +2449,9 @@ func TestPrepareProposal(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = app.FinalizeBlock(&abci.RequestFinalizeBlock{
-		Height: 3,
-		Txs:    [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	})
 	require.NoError(t, err)
 	// _, err = app.Commit()
@@ -2820,8 +2827,9 @@ func TestPrepareProposal(t *testing.T) {
 
 	// Test FinalizeBlock handler
 	finalizeReq := abci.RequestFinalizeBlock{
-		Txs:    [][]byte{extCommitBytes, txBytes},
-		Height: 3,
+		Txs:             [][]byte{extCommitBytes, txBytes},
+		Height:          3,
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 	_, err = app.PreBlocker(ctx, &finalizeReq)
 	require.NoError(t, err)
@@ -2879,8 +2887,9 @@ func TestPrepareProposal(t *testing.T) {
 
 	// Test FinalizeBlock handler
 	finalizeReqBorSidetx := abci.RequestFinalizeBlock{
-		Txs:    [][]byte{extCommitBytes2, txBytesBor},
-		Height: 3,
+		Txs:             [][]byte{extCommitBytes2, txBytesBor},
+		Height:          3,
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 	_, err = app.PreBlocker(ctx, &finalizeReqBorSidetx)
 	require.NoError(t, err)
@@ -2935,8 +2944,9 @@ func TestPrepareProposal(t *testing.T) {
 
 	// Test FinalizeBlock handler
 	finalizeReqClerkSidetx := abci.RequestFinalizeBlock{
-		Txs:    [][]byte{extCommitBytes3, txBytesClerk},
-		Height: 3,
+		Txs:             [][]byte{extCommitBytes3, txBytesClerk},
+		Height:          3,
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 	_, err = app.PreBlocker(ctx, &finalizeReqClerkSidetx)
 	require.NoError(t, err)
@@ -2987,8 +2997,9 @@ func TestPrepareProposal(t *testing.T) {
 
 	// Test FinalizeBlock handler
 	finalizeReqTopUpSidetx := abci.RequestFinalizeBlock{
-		Txs:    [][]byte{extCommitBytes4, txBytesTopUp},
-		Height: 3,
+		Txs:             [][]byte{extCommitBytes4, txBytesTopUp},
+		Height:          3,
+		ProposerAddress: common.FromHex(validators[0].Signer),
 	}
 	_, err = app.PreBlocker(ctx, &finalizeReqTopUpSidetx)
 	require.NoError(t, err)
