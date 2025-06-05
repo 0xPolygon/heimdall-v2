@@ -100,6 +100,8 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	latestMilestone, err := s.k.mk.GetLastMilestone(ctx)
 	if err == nil {
 		latestMilestoneEndBlock = latestMilestone.EndBlock
+	} else {
+		logger.Error("error fetching latest milestone", "error", err)
 	}
 
 	// fetch current child block

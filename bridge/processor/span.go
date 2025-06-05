@@ -103,6 +103,8 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	latestMilestone, err := util.GetLatestMilestone(sp.cliCtx.Codec)
 	if err == nil {
 		latestMilestoneEndBlock = latestMilestone.EndBlock
+	} else {
+		sp.Logger.Error("Error fetching latest milestone", "error", err)
 	}
 
 	// Max of latest milestone end block and latest bor block number
