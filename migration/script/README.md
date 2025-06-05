@@ -7,11 +7,24 @@ Once the migration on that node is successful:
 - The v2 genesis will be created and made available for the community on heimdall-v2 repo together with a checksum
 - The script will be distributed with the checksum to prevent any tampering and made available for the community on heimdall-v2 repo
 - Node operators can perform the migration on their own nodes using the script (or a modified version of it if the architecture is not supported)
-For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script](migrate.sh).
+  For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script](migrate.sh).
 
 ## Migration script
 
 - Validate dependencies and prerequisites
+  - the system needs to have the following tools installed:
+    - `curl`
+    - `tar`
+    - `jq`
+    - `sha512sum`
+    - `file`
+    - `awk`
+    - `sed`
+    - `systemctl`
+    - `grep`
+    - `id`
+- Make sure your system has at least 16 GB of available RAM
+- Make sure your system has at least 2x current size (in GB) of `HEIMDALL_HOME/data` available disk space
 - Halt your current Heimdall v1
 - Make sure the latest committed height is reached
   - If yes, it exports the genesis from v1
@@ -25,7 +38,6 @@ For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script]
 - Restore and update keys, configuration, and validator state
 - Assign ownership permissions
 - Update the systemd unit file
-- Clean up backups (heimdall v1 data will be kept in the backup directory and can be manually deleted later on)
 ---
 
 ## 🛡️ Built-In Safety
@@ -34,7 +46,6 @@ For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script]
 - 🛡️ **Script checksum**: The script will be delivered with checksum to prevent any tampering
 - 🔐 **`sudo` enforcement**: Ensures system permissions
 - 🧱 **Checksum validation**: Protects against tampered genesis
-- 🧠 **Rollback logic**: Allows partial undo of dangerous steps
 - 👤 **Systemd user detection**: Avoids ownership mismatches
 - 🪵 **Logs & prompts**: Transparent and user-guided
 
@@ -57,20 +68,19 @@ For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script]
 | 26    | Configs update                                                                            |
 | 27    | Assign ownership permissions                                                              |
 | 28    | Update systemd unit file                                                                  |
-| 29    | Clean backups                                                                             |
 
 ---
 
 ## ⚙️ Requirements
 
 - Ubuntu 20.04+ or similar Linux distro
-- `heimdalld` and`heimdallcli` in PATH (optional control over `bor` if on the same machine)
+- `heimdalld` and`heimdallcli` in PATH
 - Migration prerequisites (`halt_height`, correct config backups…)
 - Network: `devnet` (for testing), `amoy` or `mainnet`
 - Supported nodes: `sentry` and `validator`
 
 Before running the migration script, make sure the following tools are installed on your system.  
-The migration script will anyway fail early if such tools are not installed.  
+The migration script will anyway fail early if such tools are not installed.
 
 | Tool        | Purpose               | Install Command (Ubuntu/Debian) |
 |-------------|-----------------------|---------------------------------|
@@ -78,6 +88,15 @@ The migration script will anyway fail early if such tools are not installed.
 | `tar`       | Extracting archives   | `sudo apt install tar`          |
 | `jq`        | JSON manipulation     | `sudo apt install jq`           |
 | `sha512sum` | File integrity checks | `sudo apt install coreutils`    |
+| `file`      | File type detection   | `sudo apt install file`         |
+| `awk`       | Text processing       | `sudo apt install gawk`         |
+| `sed`       | Stream editing        | `sudo apt install sed`          |
+| `systemctl` | Service management    | Pre-installed on most distros   |
+| `grep`      | Text searching        | Pre-installed on most distros   |
+| `id`        | User information      | Pre-installed on most distros   |
+
+Also, make sure the node's disk has enough space to store the backup of Heimdall v1 and the new genesis file, and enough RAM to run the migration process (at least 16 GB of available RAM is recommended).
+Furthermore, the user must ensure that heimdall v1 config files are correct and properly formatted.
 
 ---
 
@@ -85,16 +104,15 @@ The migration script will anyway fail early if such tools are not installed.
 
 ```bash
 sudo bash migrate.sh \
-  --heimdall-home=/var/lib/heimdall \
-  --cli-path=/usr/bin/heimdallcli \
+  --heimdall-v1-home=/var/lib/heimdall \
+  --heimdallcli-path=/usr/bin/heimdallcli \
   --d-path=/usr/bin/heimdalld \
   --network=mainnet \
-  --nodetype=validator \
+  --node-type=validator \
   --backup-dir=/var/lib/heimdall.backup \
   --moniker=my-node \
   --service-user=heimdall \
   --generate-genesis=true \
-  --bor-path=/usr/bin/bor
 ```
 
 For a possible output, see [output.log](./output-example.txt)
@@ -103,13 +121,11 @@ For a possible output, see [output.log](./output-example.txt)
 
 | Flag                 | Description                                                                                                    |
 |----------------------|----------------------------------------------------------------------------------------------------------------|
-| `--heimdall-home`    | Path to Heimdall v1 home (must contain `config` and `data`)                                                    |
-| `--cli-path`         | Path to `heimdallcli` (must be latest stable version). It can be retrieved with `which heimdallcli`            |
+| `--heimdall-v1-home` | Path to Heimdall v1 home (must contain `config` and `data`)                                                    |
+| `--heimdallcli-path` | Path to `heimdallcli` (must be latest stable version). It can be retrieved with `which heimdallcli`            |
 | `--d-path`           | Path to `heimdalld` (must be latest stable version). It can be retrieved with `which heimdalld`                |
 | `--network`          | `mainnet` or `amoy`                                                                                            |
-| `--nodetype`         | `sentry` or `validator`                                                                                        |
-| `--backup-dir`       | Directory where a backup of Heimdall v1 will be stored. Recommended to use `<HEIMDALL_HOME>.backup`            |
-| `--moniker`          | Node moniker (must match the value in v1 `<HEIMDALL_V1_HOME>/config/config.toml`)                              |
+| `--node-type`        | `sentry` or `validator`                                                                                        |
 | `--service-user`     | System user running Heimdall (e.g., `heimdall`).                                                               |
 |                      | Check with: `systemctl status heimdalld` and inspect the `User=` field.                                        |
 |                      | Confirm it's correct by checking the user currently running the process (e.g., with `ps -o user= -C heimdalld` |
@@ -118,13 +134,6 @@ For a possible output, see [output.log](./output-example.txt)
 |                      | Note that this value will be anyway overwritten by the script.                                                 |
 |                      | This happens when the node was not able to commit to the latest block's heigh needed for the migration,        |
 |                      | hence generate-genesis will be set to false and the genesis.json file downloaded from trusted source.          |
-
-
-### ⚙️ Optional Arguments
-
-| Flag         | Description                                                                    |
-|--------------|--------------------------------------------------------------------------------|
-| `--bor-path` | Path to `bor` binary (only needed if Bor runs on the same machine as heimdall) |
 
 ## ✅ Supported Platforms
 
@@ -138,7 +147,7 @@ For a possible output, see [output.log](./output-example.txt)
 | Alpine | Any     | `apk`           | ❌         | Not supported           |
 
 The script determines the correct Heimdall v2 package to install based on your system architecture and package manager.
-If your machine doesn't match any supported platform (or if you are using docker), you would need to modify the script accordingly.  
+If your machine doesn't match any supported platform (or if you are using docker), you would need to modify the script accordingly.
 
 ### Optional: use WebSocket for Bor–Heimdall communication
 After the migration, to optimize communication between Heimdall and Bor, you can optionally enable WebSocket support in your bor `config.toml` file.  
