@@ -79,7 +79,7 @@ func (am AppModule) RegisterSideMsgServices(sideCfg sidetxs.SideTxConfigurator) 
 // AppModule implements an application module for the bor module.
 type AppModule struct {
 	keeper         keeper.Keeper
-	contractCaller *helper.IContractCaller
+	contractCaller helper.IContractCaller
 }
 
 // GetTxCmd returns the root tx command for the bor module.
@@ -103,7 +103,7 @@ func NewAppModule(
 ) AppModule {
 	return AppModule{
 		keeper:         keeper,
-		contractCaller: &contractCaller,
+		contractCaller: contractCaller,
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	milestoneKeeper "github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeKeeper "github.com/0xPolygon/heimdall-v2/x/stake/keeper"
 )
 
@@ -544,6 +545,21 @@ func returnExtendedVoteInfo(flag cmtTypes.BlockIDFlag, extension, signature []by
 	}
 }
 
+func returnExtendedVoteInfoWithNonRp(flag cmtTypes.BlockIDFlag, extension, signature []byte, validator abci.Validator, height int64, app *HeimdallApp) abci.ExtendedVoteInfo {
+	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
+	if err != nil {
+		panic(err)
+	}
+	return abci.ExtendedVoteInfo{
+		BlockIdFlag:             flag,
+		VoteExtension:           extension,
+		ExtensionSignature:      signature,
+		Validator:               validator,
+		NonRpVoteExtension:      dummyExt,
+		NonRpExtensionSignature: signature,
+	}
+}
+
 func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey) abci.ExtendedVoteInfo {
 	t.Helper()
 	// create a protobuf msg for ConsolidatedSideTxResponse
@@ -585,9 +601,136 @@ func setupExtendedVoteInfo(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes,
 	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
 
 	return abci.ExtendedVoteInfo{
-		BlockIdFlag:        flag,
-		VoteExtension:      voteExtensionBytes,
-		ExtensionSignature: signature,
-		Validator:          validator,
+		BlockIdFlag:             flag,
+		VoteExtension:           voteExtensionBytes,
+		ExtensionSignature:      signature,
+		Validator:               validator,
+		NonRpVoteExtension:      []byte("\t\r\n#HEIMDALL-VOTE-EXTENSION#\r\n\t"),
+		NonRpExtensionSignature: signature,
+	}
+}
+
+func setupExtendedVoteInfoWithNonRp(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey, height int64, app *HeimdallApp, cmtPubKey cmtcrypto.PubKey) abci.ExtendedVoteInfo {
+	t.Helper()
+
+	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
+	if err != nil {
+		panic(err)
+	}
+	// create a protobuf msg for ConsolidatedSideTxResponse
+	voteExtensionProto := sidetxs.VoteExtension{
+		SideTxResponses: []sidetxs.SideTxResponse{
+			{
+				TxHash: txHashBytes,
+				Result: sidetxs.Vote_VOTE_YES,
+			},
+		},
+		BlockHash: blockHashBytes,
+		Height:    VoteExtBlockHeight,
+	}
+
+	// marshal it into Protobuf bytes
+	voteExtensionBytes, err := voteExtensionProto.Marshal()
+	require.NoErrorf(t, err, "failed to marshal voteExtensionProto: %v", err)
+
+	cve := cmtTypes.CanonicalVoteExtension{
+		Extension: voteExtensionBytes,
+		Height:    CurrentHeight - 1, // the vote extension was signed in the previous height
+		Round:     int64(1),
+		ChainId:   "",
+	}
+
+	marshalDelimitedFn := func(msg proto.Message) ([]byte, error) {
+		var buf bytes.Buffer
+		if _, err := protoio.NewDelimitedWriter(&buf).WriteMsg(msg); err != nil {
+			return nil, err
+		}
+
+		return buf.Bytes(), nil
+	}
+	extSignBytes, err := marshalDelimitedFn(&cve)
+	require.NoErrorf(t, err, "failed to encode CanonicalVoteExtension: %v", err)
+
+	// Sign the vote extension
+	signature, err := privKey.Sign(extSignBytes)
+	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
+
+	// Sign nonRpVE
+	signatureNonRpVE, err := privKey.Sign(dummyExt)
+	ok := cmtPubKey.VerifySignature(dummyExt, signatureNonRpVE)
+	if !ok {
+		fmt.Println(" Error : Signature verification failed!")
+	}
+
+	return abci.ExtendedVoteInfo{
+		BlockIdFlag:             flag,
+		VoteExtension:           voteExtensionBytes,
+		ExtensionSignature:      signature,
+		Validator:               validator,
+		NonRpVoteExtension:      dummyExt,
+		NonRpExtensionSignature: signatureNonRpVE,
+	}
+}
+
+func setupExtendedVoteInfoWithMilestoneProposition(t *testing.T, flag cmtTypes.BlockIDFlag, txHashBytes, blockHashBytes []byte, validator abci.Validator, privKey cmtcrypto.PrivKey, height int64, app *HeimdallApp, cmtPubKey cmtcrypto.PubKey, milestoneProposition milestoneTypes.MilestoneProposition) abci.ExtendedVoteInfo {
+	t.Helper()
+
+	dummyExt, err := GetDummyNonRpVoteExtension(height, app.ChainID())
+	if err != nil {
+		panic(err)
+	}
+	// create a protobuf msg for ConsolidatedSideTxResponse
+	voteExtensionProto := sidetxs.VoteExtension{
+		SideTxResponses: []sidetxs.SideTxResponse{
+			{
+				TxHash: txHashBytes,
+				Result: sidetxs.Vote_VOTE_YES,
+			},
+		},
+		BlockHash:            blockHashBytes,
+		Height:               VoteExtBlockHeight,
+		MilestoneProposition: &milestoneProposition,
+	}
+
+	// marshal it into Protobuf bytes
+	voteExtensionBytes, err := voteExtensionProto.Marshal()
+	require.NoErrorf(t, err, "failed to marshal voteExtensionProto: %v", err)
+
+	cve := cmtTypes.CanonicalVoteExtension{
+		Extension: voteExtensionBytes,
+		Height:    CurrentHeight - 1, // the vote extension was signed in the previous height
+		Round:     int64(1),
+		ChainId:   "",
+	}
+
+	marshalDelimitedFn := func(msg proto.Message) ([]byte, error) {
+		var buf bytes.Buffer
+		if _, err := protoio.NewDelimitedWriter(&buf).WriteMsg(msg); err != nil {
+			return nil, err
+		}
+
+		return buf.Bytes(), nil
+	}
+	extSignBytes, err := marshalDelimitedFn(&cve)
+	require.NoErrorf(t, err, "failed to encode CanonicalVoteExtension: %v", err)
+
+	// Sign the vote extension
+	signature, err := privKey.Sign(extSignBytes)
+	require.NoErrorf(t, err, "failed to sign extSignBytes: %v", err)
+
+	// Sign nonRpVE
+	signatureNonRpVE, err := privKey.Sign(dummyExt)
+	ok := cmtPubKey.VerifySignature(dummyExt, signatureNonRpVE)
+	if !ok {
+		fmt.Println(" Error : Signature verification failed!")
+	}
+
+	return abci.ExtendedVoteInfo{
+		BlockIdFlag:             flag,
+		VoteExtension:           voteExtensionBytes,
+		ExtensionSignature:      signature,
+		Validator:               validator,
+		NonRpVoteExtension:      dummyExt,
+		NonRpExtensionSignature: signatureNonRpVE,
 	}
 }

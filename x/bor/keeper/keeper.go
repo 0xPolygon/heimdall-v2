@@ -51,7 +51,7 @@ func NewKeeper(
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
 	milestoneKeeper types.MilestoneKeeper,
-	caller *helper.ContractCaller,
+	caller helper.IContractCaller,
 ) Keeper {
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
