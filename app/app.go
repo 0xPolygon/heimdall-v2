@@ -136,7 +136,7 @@ type HeimdallApp struct {
 	BorKeeper          borKeeper.Keeper
 
 	// utility for invoking contracts in Ethereum and Bor chain
-	caller helper.ContractCaller
+	caller helper.IContractCaller
 
 	ModuleManager *module.Manager
 	BasicManager  module.BasicManager
@@ -223,7 +223,7 @@ func NewHeimdallApp(
 		panic(err)
 	}
 
-	app.caller = contractCallerObj
+	app.caller = &contractCallerObj
 
 	moduleAccountAddresses := app.ModuleAccountAddrs()
 	blockedAddr := app.BlockedModuleAccountAddrs(moduleAccountAddresses)
@@ -256,7 +256,7 @@ func NewHeimdallApp(
 		appCodec,
 		runtime.NewKVStoreService(keys[clerktypes.StoreKey]),
 		app.ChainManagerKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
@@ -273,7 +273,7 @@ func NewHeimdallApp(
 		runtime.NewKVStoreService(keys[topupTypes.StoreKey]),
 		app.BankKeeper,
 		app.ChainManagerKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	app.StakeKeeper = stakeKeeper.NewKeeper(
@@ -282,7 +282,7 @@ func NewHeimdallApp(
 		app.BankKeeper,
 		app.ChainManagerKeeper,
 		address.HexCodec{},
-		&app.caller,
+		app.caller,
 	)
 
 	govRouter := govv1beta1.NewRouter()
@@ -312,14 +312,14 @@ func NewHeimdallApp(
 		&app.StakeKeeper,
 		app.ChainManagerKeeper,
 		&app.TopupKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		appCodec,
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		runtime.NewKVStoreService(keys[milestoneTypes.StoreKey]),
-		&app.caller,
+		app.caller,
 	)
 
 	app.BorKeeper = borKeeper.NewKeeper(
@@ -328,7 +328,7 @@ func NewHeimdallApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		&app.ChainManagerKeeper,
 		&app.StakeKeeper,
-		&app.caller,
+		app.caller,
 	)
 
 	// HV2: stake and checkpoint keepers are circularly dependent. This workaround solves it
@@ -344,7 +344,7 @@ func NewHeimdallApp(
 		topup.NewAppModule(app.TopupKeeper, app.caller),
 		checkpoint.NewAppModule(&app.CheckpointKeeper),
 		milestone.NewAppModule(&app.MilestoneKeeper),
-		bor.NewAppModule(app.BorKeeper, &app.caller),
+		bor.NewAppModule(app.BorKeeper, app.caller),
 		params.NewAppModule(app.ParamsKeeper),
 		consensus.NewAppModule(appCodec, app.ConsensusParamsKeeper),
 	)

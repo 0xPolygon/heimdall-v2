@@ -49,7 +49,7 @@ func NewKeeper(
 	authority string,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
-	caller *helper.ContractCaller,
+	caller helper.IContractCaller,
 ) Keeper {
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
