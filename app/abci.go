@@ -256,7 +256,11 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 
 		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, app.caller)
 		if err != nil {
-			logger.Error("Error occurred while generating milestone proposition", "error", err)
+			if errors.Is(err, milestoneAbci.ErrNoHeadersFound) {
+				logger.Debug("No headers found for generating milestone proposition, continuing without it")
+			} else {
+				logger.Error("Error occurred while generating milestone proposition", "error", err)
+			}
 			// We still want to participate in the consensus even if we fail to generate the milestone proposition
 		} else if milestoneProp != nil {
 			if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, milestoneProp); err != nil {

@@ -1,7 +1,6 @@
 package processor
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -9,13 +8,11 @@ import (
 	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	"github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 // SpanProcessor - process span related events
@@ -68,6 +65,17 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 
 // checkAndPropose checks if the current user is the span proposer and proposes the span
 func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
+	isProposer, err := util.IsProposer(sp.cliCtx.Codec)
+	if err != nil {
+		sp.Logger.Error("Error while checking if proposer", "error", err)
+		return
+	}
+
+	if !isProposer {
+		sp.Logger.Debug("Not the proposer, skipping span proposal")
+		return
+	}
+
 	lastSpan, err := sp.getLastSpan()
 	if err != nil {
 		sp.Logger.Error("Unable to fetch last span", "error", err)
@@ -84,32 +92,135 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 		sp.Logger.Error("Error fetching current child block", "error", err)
 		return
 	}
-	if latestBlock.Number.Uint64() < lastSpan.StartBlock {
+	latestBorBlockNumber := latestBlock.Number.Uint64()
+
+	if latestBorBlockNumber < lastSpan.StartBlock {
 		sp.Logger.Debug("Current bor block is less than last span start block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanStartBlock", lastSpan.StartBlock)
 		return
 	}
 
-	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.Id, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
-
-	nextSpanMsg, err := sp.fetchNextSpanDetails(lastSpan.Id+1, lastSpan.EndBlock+1)
-	if err != nil {
-		sp.Logger.Error("Unable to fetch next span details", "error", err, "lastSpanId", lastSpan.Id)
-		return
+	var latestMilestoneEndBlock uint64
+	latestMilestone, err := util.GetLatestMilestone(sp.cliCtx.Codec)
+	if err == nil {
+		latestMilestoneEndBlock = latestMilestone.EndBlock
+	} else {
+		sp.Logger.Error("Error fetching latest milestone", "error", err)
 	}
 
-	// check if current user is among next span producers
-	if sp.isSpanProposer(nextSpanMsg.SelectedProducers) {
-		go sp.propose(ctx, lastSpan, nextSpanMsg)
+	// Max of latest milestone end block and latest bor block number
+	// Handle cases where bor is syncing and latest milestone end block is greater than latest bor block number
+	maxBlockNumber := max(latestMilestoneEndBlock, latestBorBlockNumber)
+
+	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.Id, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
+
+	if maxBlockNumber > lastSpan.EndBlock {
+		if latestMilestoneEndBlock > lastSpan.EndBlock {
+			sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						sp.Logger.Error("Recovered panic in backfillSpans goroutine", "panic", r)
+					}
+				}()
+
+				if err := sp.backfillSpans(ctx, latestMilestoneEndBlock, lastSpan); err != nil {
+					sp.Logger.Error("Error in backfillSpans", "error", err)
+				}
+			}()
+
+		} else {
+			sp.Logger.Debug("Will not backfill heimdall spans, as latest milestone end block is less than last span end block", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+		}
+	} else {
+		if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
+			sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+			return
+		}
+
+		nextSpanMsg, err := sp.fetchNextSpanDetails(lastSpan.Id+1, lastSpan.EndBlock+1)
+		if err != nil {
+			sp.Logger.Error("Unable to fetch next span details", "error", err, "lastSpanId", lastSpan.Id)
+			return
+		}
+
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					sp.Logger.Error("Recovered panic in propose goroutine", "panic", r)
+				}
+			}()
+
+			if err := sp.propose(ctx, lastSpan, nextSpanMsg); err != nil {
+				sp.Logger.Error("Error in propose", "error", err)
+			}
+		}()
 	}
 }
 
+func (sp *SpanProcessor) backfillSpans(ctx context.Context, latestFinalizedBorBlockNumber uint64, lastHeimdallSpan *types.Span) error {
+	// Get what span bor used when heimdall was down and it tried to fetch the next span from heimdall
+	// We need to know if it managed to fetch the latest span or it used the previous one
+	// We will take it from the next start block after the last heimdall span end block
+	borLastUsedSpanID, err := sp.contractCaller.GetStartBlockHeimdallSpanID(ctx, lastHeimdallSpan.EndBlock+1)
+	if err != nil {
+		return fmt.Errorf("error while fetching last used span id for bor: %w", err)
+	}
+
+	if borLastUsedSpanID == 0 {
+		return fmt.Errorf("bor last used span id is 0, cannot backfill spans")
+	}
+
+	borLastUsedSpan, err := sp.getSpanById(borLastUsedSpanID)
+	if err != nil {
+		return fmt.Errorf("error while fetching last used span for bor: %w", err)
+	}
+
+	if borLastUsedSpan == nil {
+		return fmt.Errorf("bor last used span is nil, cannot backfill spans")
+	}
+
+	params, err := util.GetChainmanagerParams(sp.cliCtx.Codec)
+	if err != nil {
+		return fmt.Errorf("error while fetching chainmanager params: %w", err)
+	}
+
+	addrString, err := helper.GetAddressString()
+	if err != nil {
+		return fmt.Errorf("error converting address to string: %w", err)
+	}
+
+	borSpanId, err := types.CalcCurrentBorSpanId(latestFinalizedBorBlockNumber, borLastUsedSpan)
+	if err != nil {
+		return fmt.Errorf("error while calculating bor span id: %w", err)
+	}
+
+	msg := types.MsgBackfillSpans{
+		Proposer:        addrString,
+		ChainId:         params.ChainParams.BorChainId,
+		LatestSpanId:    borLastUsedSpan.Id,
+		LatestBorSpanId: borSpanId,
+	}
+
+	txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
+	if err != nil {
+		return fmt.Errorf("error while broadcasting backfill spans to heimdall: %w", err)
+	}
+
+	if txRes.Code != abci.CodeTypeOK {
+		return fmt.Errorf("backfill spans tx failed on heimdall, txHash: %s, code: %d", txRes.TxHash, txRes.Code)
+	}
+
+	sp.Logger.Info("Backfill spans tx successfully broadcasted to heimdall", "txHash", txRes.TxHash, "borLastUsedSpanId", borLastUsedSpan.Id, "borSpanId", borSpanId)
+
+	return nil
+}
+
 // propose producers for the next span if needed
-func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, nextSpanMsg *types.Span) {
+func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, nextSpanMsg *types.Span) error {
 	// call with the last span on record plus new span duration and see if it has been proposed
 	currentBlock, err := sp.getCurrentChildBlock(ctx)
 	if err != nil {
-		sp.Logger.Error("Unable to fetch current block", "error", err)
-		return
+		return fmt.Errorf("error while fetching current child block: %w", err)
 	}
 
 	if lastSpan.StartBlock <= currentBlock && currentBlock <= lastSpan.EndBlock {
@@ -118,14 +229,12 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 
 		seed, seedAuthor, err := sp.fetchNextSpanSeed(nextSpanMsg.Id)
 		if err != nil {
-			sp.Logger.Info("Error while fetching next span seed from HeimdallServer", "err", err)
-			return
+			return fmt.Errorf("error while fetching next span seed: %w", err)
 		}
 
 		addrString, err := helper.GetAddressString()
 		if err != nil {
-			sp.Logger.Info("error converting address to string", "err", err)
-			return
+			return fmt.Errorf("error converting address to string: %w", err)
 		}
 
 		// broadcast to heimdall
@@ -142,16 +251,19 @@ func (sp *SpanProcessor) propose(ctx context.Context, lastSpan *types.Span, next
 		// return broadcast to heimdall
 		txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
 		if err != nil {
-			sp.Logger.Error("Error while broadcasting span to heimdall", "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock, "error", err)
-			return
+			return fmt.Errorf("error while broadcasting span to heimdall. spanId: %d, startBlock: %d, endBlock: %d, error: %w",
+				nextSpanMsg.Id, nextSpanMsg.StartBlock, nextSpanMsg.EndBlock, err)
 		}
 
 		if txRes.Code != abci.CodeTypeOK {
-			sp.Logger.Error("span tx failed on heimdall", "txHash", txRes.TxHash, "code", txRes.Code)
-			return
+			return fmt.Errorf("propose span tx failed on heimdall, txHash: %s, code: %d, spanId: %d, startBlock: %d, endBlock: %d",
+				txRes.TxHash, txRes.Code, nextSpanMsg.Id, nextSpanMsg.StartBlock, nextSpanMsg.EndBlock)
 		}
 
+		sp.Logger.Info("Span tx successfully broadcasted to heimdall", "txHash", txRes.TxHash, "spanId", nextSpanMsg.Id, "startBlock", nextSpanMsg.StartBlock, "endBlock", nextSpanMsg.EndBlock)
 	}
+
+	return nil
 }
 
 // checks span status
@@ -170,6 +282,25 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 	return &lastSpan.Span, nil
 }
 
+// get span by id
+func (sp *SpanProcessor) getSpanById(id uint64) (*types.Span, error) {
+	// fetch latest span from heimdall using the rest query
+	result, err := helper.FetchFromAPI(fmt.Sprintf(helper.GetHeimdallServerEndpoint(util.SpanByIdURL), strconv.FormatUint(id, 10)))
+	if err != nil {
+		sp.Logger.Error("Error while fetching latest span")
+		return nil, err
+	}
+
+	var span types.QuerySpanByIdResponse
+	if err = sp.cliCtx.Codec.UnmarshalJSON(result, &span); err != nil {
+		sp.Logger.Error("Error unmarshalling span", "error", err)
+		return nil, err
+	}
+
+	sp.Logger.Debug("Span details", "span", span.Span.String())
+	return span.Span, nil
+}
+
 // getCurrentChildBlock gets the current child block
 func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, error) {
 	childBlock, err := sp.contractCaller.GetBorChainBlock(ctx, nil)
@@ -178,23 +309,6 @@ func (sp *SpanProcessor) getCurrentChildBlock(ctx context.Context) (uint64, erro
 	}
 
 	return childBlock.Number.Uint64(), nil
-}
-
-// isSpanProposer checks if current user is span proposer
-func (sp *SpanProcessor) isSpanProposer(nextSpanProducers []stakeTypes.Validator) bool {
-	ac := address.NewHexCodec()
-	// anyone among the next span producers can become the next span proposer
-	for _, val := range nextSpanProducers {
-		signerBytes, err := ac.StringToBytes(val.Signer)
-		if err != nil {
-			return false
-		}
-		if bytes.Equal(signerBytes, helper.GetAddress()) {
-			return true
-		}
-	}
-
-	return false
 }
 
 // fetch next span details from heimdall.

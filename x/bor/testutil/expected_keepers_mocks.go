@@ -9,7 +9,8 @@ import (
 	reflect "reflect"
 
 	types "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
-	types0 "github.com/0xPolygon/heimdall-v2/x/stake/types"
+	types0 "github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	types1 "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -37,10 +38,10 @@ func (m *MockStakeKeeper) EXPECT() *MockStakeKeeperMockRecorder {
 }
 
 // GetSpanEligibleValidators mocks base method.
-func (m *MockStakeKeeper) GetSpanEligibleValidators(ctx context.Context) []types0.Validator {
+func (m *MockStakeKeeper) GetSpanEligibleValidators(ctx context.Context) []types1.Validator {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSpanEligibleValidators", ctx)
-	ret0, _ := ret[0].([]types0.Validator)
+	ret0, _ := ret[0].([]types1.Validator)
 	return ret0
 }
 
@@ -51,10 +52,10 @@ func (mr *MockStakeKeeperMockRecorder) GetSpanEligibleValidators(ctx interface{}
 }
 
 // GetValidatorFromValID mocks base method.
-func (m *MockStakeKeeper) GetValidatorFromValID(ctx context.Context, valID uint64) (types0.Validator, error) {
+func (m *MockStakeKeeper) GetValidatorFromValID(ctx context.Context, valID uint64) (types1.Validator, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorFromValID", ctx, valID)
-	ret0, _ := ret[0].(types0.Validator)
+	ret0, _ := ret[0].(types1.Validator)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -66,10 +67,10 @@ func (mr *MockStakeKeeperMockRecorder) GetValidatorFromValID(ctx, valID interfac
 }
 
 // GetValidatorSet mocks base method.
-func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) (types0.ValidatorSet, error) {
+func (m *MockStakeKeeper) GetValidatorSet(ctx context.Context) (types1.ValidatorSet, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetValidatorSet", ctx)
-	ret0, _ := ret[0].(types0.ValidatorSet)
+	ret0, _ := ret[0].(types1.ValidatorSet)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -116,4 +117,42 @@ func (m *MockChainManagerKeeper) GetParams(ctx context.Context) (types.Params, e
 func (mr *MockChainManagerKeeperMockRecorder) GetParams(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetParams", reflect.TypeOf((*MockChainManagerKeeper)(nil).GetParams), ctx)
+}
+
+// MockMilestoneKeeper is a mock of MilestoneKeeper interface.
+type MockMilestoneKeeper struct {
+	ctrl     *gomock.Controller
+	recorder *MockMilestoneKeeperMockRecorder
+}
+
+// MockMilestoneKeeperMockRecorder is the mock recorder for MockMilestoneKeeper.
+type MockMilestoneKeeperMockRecorder struct {
+	mock *MockMilestoneKeeper
+}
+
+// NewMockMilestoneKeeper creates a new mock instance.
+func NewMockMilestoneKeeper(ctrl *gomock.Controller) *MockMilestoneKeeper {
+	mock := &MockMilestoneKeeper{ctrl: ctrl}
+	mock.recorder = &MockMilestoneKeeperMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMilestoneKeeper) EXPECT() *MockMilestoneKeeperMockRecorder {
+	return m.recorder
+}
+
+// GetLastMilestone mocks base method.
+func (m *MockMilestoneKeeper) GetLastMilestone(ctx context.Context) (*types0.Milestone, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLastMilestone", ctx)
+	ret0, _ := ret[0].(*types0.Milestone)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLastMilestone indicates an expected call of GetLastMilestone.
+func (mr *MockMilestoneKeeperMockRecorder) GetLastMilestone(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLastMilestone", reflect.TypeOf((*MockMilestoneKeeper)(nil).GetLastMilestone), ctx)
 }

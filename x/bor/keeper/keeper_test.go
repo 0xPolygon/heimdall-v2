@@ -36,6 +36,7 @@ type KeeperTestSuite struct {
 	borKeeper          keeper.Keeper
 	chainManagerKeeper *bortestutil.MockChainManagerKeeper
 	stakeKeeper        *bortestutil.MockStakeKeeper
+	milestoneKeeper    *bortestutil.MockMilestoneKeeper
 	contractCaller     mocks.IContractCaller
 	queryClient        types.QueryClient
 	msgServer          types.MsgServer
@@ -62,6 +63,9 @@ func (s *KeeperTestSuite) SetupTest() {
 	stakeKeeper := bortestutil.NewMockStakeKeeper(ctrl)
 	s.stakeKeeper = stakeKeeper
 
+	milestoneKeeper := bortestutil.NewMockMilestoneKeeper(ctrl)
+	s.milestoneKeeper = milestoneKeeper
+
 	s.contractCaller = mocks.IContractCaller{}
 	s.ctx = ctx
 
@@ -71,6 +75,7 @@ func (s *KeeperTestSuite) SetupTest() {
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.chainManagerKeeper,
 		s.stakeKeeper,
+		s.milestoneKeeper,
 		nil,
 	)
 

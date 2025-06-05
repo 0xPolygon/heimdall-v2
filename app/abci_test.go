@@ -545,6 +545,7 @@ func TestExtendVoteHandler(t *testing.T) {
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
 		nil,
+		nil,
 	)
 	app.BorKeeper.SetContractCaller(mockCaller)
 	app.MilestoneKeeper.IContractCaller = mockCaller
@@ -682,6 +683,7 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		nil,
 		nil,
 	)
 	app.BorKeeper.SetContractCaller(mockCaller)
@@ -851,6 +853,7 @@ func TestSidetxsHappyPath(t *testing.T) {
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		nil,
 		nil,
 	)
 
@@ -1032,6 +1035,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		nil,
 		mockCaller,
 	)
 	app.BorKeeper = mockBorKeeper
@@ -1305,6 +1309,7 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		nil,
 		mockCaller,
 	)
 	app.BorKeeper = mockBorKeeper
@@ -1712,6 +1717,7 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		nil,
 		mockCaller,
 	)
 	app.BorKeeper = mockBorKeeper
@@ -2132,6 +2138,7 @@ func TestMilestoneHappyPath(t *testing.T) {
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
 		nil,
+		nil,
 	)
 	app.BorKeeper.SetContractCaller(mockCaller)
 	app.MilestoneKeeper.IContractCaller = mockCaller
@@ -2250,6 +2257,7 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
 		nil,
+		nil,
 	)
 	app.BorKeeper.SetContractCaller(mockCaller)
 	app.MilestoneKeeper.IContractCaller = mockCaller
@@ -2361,6 +2369,7 @@ func TestPrepareProposal(t *testing.T) {
 		authTypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		nil,
 		nil,
 	)
 	app.BorKeeper.SetContractCaller(mockCaller)

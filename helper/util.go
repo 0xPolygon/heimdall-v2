@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -48,7 +49,9 @@ func GetFromAddress(cliCtx client.Context) string {
 }
 
 func init() {
-	Client = &http.Client{}
+	Client = &http.Client{
+		Timeout: 10 * time.Second,
+	}
 }
 
 // ToBytes32 is a convenience method for converting a byte slice to a fixed-sized 32-byte array.

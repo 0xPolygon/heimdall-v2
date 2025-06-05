@@ -328,6 +328,7 @@ func NewHeimdallApp(
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		&app.ChainManagerKeeper,
 		&app.StakeKeeper,
+		&app.MilestoneKeeper,
 		app.caller,
 	)
 
