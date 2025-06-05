@@ -22,4 +22,5 @@ var (
 	ProducerVotesKey         = collections.NewPrefix(0x39) // Key to store the producer votes in the store
 	PerformanceScoreKey      = collections.NewPrefix(0x3A) // Key to store the performance score in the store
 	LatestActiveValidatorKey = collections.NewPrefix(0x3B) // Key to store the latest active validator in the store
+	LatestFailedValidatorKey = collections.NewPrefix(0x3C) // Key to store the latest failed validator in the store
 )

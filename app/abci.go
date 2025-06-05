@@ -473,6 +473,12 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
+		err = app.BorKeeper.ClearLatestFailedValidator(addMilestoneCtx)
+		if err != nil {
+			logger.Error("Error occurred while clearing latest failed validator", "error", err)
+			return nil, err
+		}
+
 		lastSpan, err := app.BorKeeper.GetLastSpan(ctx)
 		if err != nil {
 			logger.Error("Error occurred while fetching the last span", "error", err)
@@ -490,7 +496,13 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 			endBlock := lastSpan.EndBlock + params.SpanDuration - 1
 
-			err = app.BorKeeper.AddNewVeblopSpan(addMilestoneCtx, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs)
+			currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, lastSpan.EndBlock)
+			if err != nil {
+				logger.Error("Error occurred while finding current producer", "error", err)
+				return nil, err
+			}
+
+			err = app.BorKeeper.AddNewVeblopSpan(addMilestoneCtx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs)
 			if err != nil {
 				logger.Error("Error occurred while adding new veblop span", "error", err)
 				return nil, err
@@ -520,10 +532,10 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 			return nil, err
 		}
 
-		diff := uint64(ctx.BlockHeight()) - lastMilestoneBlock
+		diff := ctx.BlockHeight() - int64(lastMilestoneBlock)
 
-		if lastMilestone != nil && lastMilestoneBlock != 0 && diff > 4 && ctx.BlockHeight() >= helper.GetVeblopHeight() {
-			logger.Warn("Block finalization time is greater than 4 seconds, creating a new veblop span", "lastMilestone", lastMilestone, "currentBlockTime", ctx.BlockTime().Unix())
+		if lastMilestone != nil && lastMilestoneBlock != 0 && diff > 5 && ctx.BlockHeight() >= helper.GetVeblopHeight() {
+			logger.Warn("Block finalization time is greater than 5 heimdall blocks, creating a new veblop span", "lastMilestone", lastMilestone, "currentBlockTime", ctx.BlockTime().Unix())
 
 			addSpanCtx, spanCache := app.cacheTxContext(ctx)
 
@@ -558,20 +570,45 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 				}
 			}
 
-			err = app.BorKeeper.AddNewVeblopSpan(addSpanCtx, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveValidator)
+			currentProducer, err := app.BorKeeper.FindCurrentProducerID(ctx, lastMilestone.EndBlock+1)
 			if err != nil {
-				logger.Error("Error occurred while adding new veblop span", "error", err)
+				logger.Error("Error occurred while finding current producer", "error", err)
 				return nil, err
 			}
 
-			// update the last milestone block to the current block height to avoid creating a new span in the next block
-			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight()))
+			latestFailedValidator, err := app.BorKeeper.GetLatestFailedValidator(ctx)
 			if err != nil {
-				logger.Error("Error occurred while setting last milestone block", "error", err)
+				logger.Error("Error occurred while getting latest failed validator", "error", err)
 				return nil, err
 			}
 
-			spanCache.Write()
+			for validatorID := range latestFailedValidator {
+				delete(latestActiveValidator, validatorID)
+			}
+
+			delete(latestActiveValidator, currentProducer)
+
+			err = app.BorKeeper.AddNewVeblopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveValidator)
+			if err != nil {
+				logger.Warn("Error occurred while adding new veblop span", "error", err)
+			} else {
+				// update the last milestone block to the current block height to avoid creating a new span in the next block
+				err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+60)
+				if err != nil {
+					logger.Error("Error occurred while setting last milestone block", "error", err)
+					return nil, err
+				}
+
+				err = app.BorKeeper.AddLatestFailedValidator(addSpanCtx, currentProducer)
+				if err != nil {
+					logger.Error("Error occurred while adding latest failed validator", "error", err)
+					return nil, err
+				}
+			}
+
+			if err == nil {
+				spanCache.Write()
+			}
 		}
 	}
 

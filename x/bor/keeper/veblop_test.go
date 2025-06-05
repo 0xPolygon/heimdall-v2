@@ -434,7 +434,17 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			tc.setupParams()
 			tc.setupValidatorSet()
 
-			result, err := borKeeper.SelectNextSpanProducer(ctx, tc.activeValidatorIDs)
+			lastMilestone, err := s.milestoneKeeper.GetLastMilestone(ctx)
+			if err != nil {
+				s.T().Fatalf("Failed to get last milestone block: %v", err)
+			}
+
+			currentProducer, err := borKeeper.FindCurrentProducerID(ctx, lastMilestone.EndBlock)
+			if err != nil {
+				s.T().Fatalf("Failed to find current producer: %v", err)
+			}
+
+			result, err := borKeeper.SelectNextSpanProducer(ctx, currentProducer, tc.activeValidatorIDs)
 
 			if tc.expectedError {
 				require.Error(err)

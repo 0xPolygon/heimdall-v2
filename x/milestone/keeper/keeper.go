@@ -147,7 +147,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone, block uint64) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
-	// GetMilestoneCount gives the number of the previous milestones
+	// GetMilestoneCount gives the number of previous milestone
 	milestoneNumber, err := k.GetMilestoneCount(ctx)
 	if err != nil {
 		return err
@@ -193,7 +193,7 @@ func (k *Keeper) GetMilestoneByNumber(ctx context.Context, number uint64) (*type
 	return &milestone, nil
 }
 
-// HasMilestone checks for the existence of a milestone
+// HasMilestone checks for existence of milestone
 func (k *Keeper) HasMilestone(ctx context.Context) (bool, error) {
 	lastMilestoneNumber, err := k.GetMilestoneCount(ctx)
 	if err != nil {

@@ -5,23 +5,17 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
-func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}) error {
+func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}) error {
 	logger := k.Logger(ctx)
 
-	activeProducerID, err := k.FindCurrentProducerID(ctx, startBlock)
-	if err == nil {
-		delete(activeValidatorIDs, activeProducerID)
-	}
-
 	// select next producers
-	newProducerId, err := k.SelectNextSpanProducer(ctx, activeValidatorIDs)
+	newProducerId, err := k.SelectNextSpanProducer(ctx, currentProducer, activeValidatorIDs)
 	if err != nil {
 		return err
 	}
@@ -62,7 +56,7 @@ func (k *Keeper) FindCurrentProducerID(ctx context.Context, blockNum uint64) (ui
 		return 0, err
 	}
 
-	for i := lastSpan.Id; i > 0; i-- {
+	for i := lastSpan.Id; i >= 0; i-- {
 		span, err := k.GetSpan(ctx, i)
 		if err != nil {
 			return 0, err
@@ -74,6 +68,31 @@ func (k *Keeper) FindCurrentProducerID(ctx context.Context, blockNum uint64) (ui
 	}
 
 	return 0, fmt.Errorf("no active producer found")
+}
+
+func (k *Keeper) FindPastBackupProducerIDs(ctx context.Context, blockNum uint64) ([]uint64, error) {
+	lastSpan, err := k.GetLastSpan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	producerIDs := make([]uint64, 0)
+	for i := lastSpan.Id; i > 0; i-- {
+		span, err := k.GetSpan(ctx, i)
+		if err != nil {
+			return nil, err
+		}
+
+		if blockNum > span.EndBlock {
+			break
+		}
+
+		if blockNum == span.StartBlock {
+			producerIDs = append(producerIDs, span.SelectedProducers[0].ValId)
+		}
+	}
+
+	return producerIDs, nil
 }
 
 func (k *Keeper) UpdateValidatorPerformanceScore(ctx context.Context, activeValidatorIDs map[uint64]struct{}, blocks uint64) error {
@@ -161,20 +180,45 @@ func (k *Keeper) GetLatestActiveValidator(ctx context.Context) (map[uint64]struc
 	return latestActiveValidator, nil
 }
 
+func (k *Keeper) AddLatestFailedValidator(ctx context.Context, validatorID uint64) error {
+	err := k.LatestFailedValidator.Set(ctx, validatorID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (k *Keeper) GetLatestFailedValidator(ctx context.Context) (map[uint64]struct{}, error) {
+	iter, err := k.LatestFailedValidator.Iterate(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	latestFailedValidator := make(map[uint64]struct{})
+	for ; iter.Valid(); iter.Next() {
+		validatorID, err := iter.Key()
+		if err != nil {
+			return nil, err
+		}
+		latestFailedValidator[validatorID] = struct{}{}
+	}
+
+	return latestFailedValidator, nil
+}
+
+func (k *Keeper) ClearLatestFailedValidator(ctx context.Context) error {
+	err := k.LatestFailedValidator.Clear(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SelectNextSpanProducer selects the next producer for a new span.
 // It calculates candidate set, filters by active producers and selects one.
-func (k *Keeper) SelectNextSpanProducer(ctx context.Context, activeValidatorIDs map[uint64]struct{}) (uint64, error) {
-	currentSpan, err := k.GetLastSpan(ctx)
-	if err != nil {
-		return 0, fmt.Errorf("failed to get last span: %w", err)
-	}
-
-	if len(currentSpan.SelectedProducers) == 0 {
-		return 0, fmt.Errorf("no producers found in last span")
-	}
-
-	currentProducer := currentSpan.SelectedProducers[0].ValId
-
+func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uint64, activeValidatorIDs map[uint64]struct{}) (uint64, error) {
 	candidates, err := k.CalculateProducerSet(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
@@ -183,12 +227,16 @@ func (k *Keeper) SelectNextSpanProducer(ctx context.Context, activeValidatorIDs 
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
 
 	// If no candidate is available after threshold filtering,
-	// the candidate list will fall back to a default list of producers operated by Polygon labs.
+	// the candidate list will be rotated to the next producer EVEN IF the the producer is not active.
 	if len(activeCandidates) == 0 {
-		activeCandidates = helper.GetFallbackProducerVotes()
+		newCandidates := make([]uint64, 0)
+		for _, validatorID := range candidates {
+			if validatorID != currentProducer {
+				newCandidates = append(newCandidates, validatorID)
+			}
+		}
+		activeCandidates = newCandidates
 	}
-
-	activeCandidates = k.FilterByActiveProducerSet(ctx, activeCandidates, activeValidatorIDs)
 
 	nextProducer, err := k.SelectProducer(ctx, currentProducer, activeCandidates)
 	if err != nil {
@@ -373,6 +421,6 @@ func (k *Keeper) SelectProducer(ctx context.Context, currentProducer uint64, can
 
 	// Select the next candidate in the list, wrapping around
 	nextIndex := (currentIndex + 1) % len(candidates)
-	k.Logger(ctx).Debug("Selecting next producer in list", "currentProducer", currentProducer, "currentIndex", currentIndex, "nextIndex", nextIndex, "selected", candidates[nextIndex])
+	k.Logger(ctx).Info("Selecting next producer in list", "currentProducer", currentProducer, "currentIndex", currentIndex, "nextIndex", nextIndex, "selected", candidates[nextIndex])
 	return candidates[nextIndex], nil
 }

@@ -43,6 +43,7 @@ type Keeper struct {
 	ProducerVotes         collections.Map[uint64, types.ProducerVotes]
 	PerformanceScore      collections.Map[uint64, uint64]
 	LatestActiveValidator collections.KeySet[uint64]
+	LatestFailedValidator collections.KeySet[uint64]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -79,6 +80,7 @@ func NewKeeper(
 		ProducerVotes:         collections.NewMap(sb, types.ProducerVotesKey, "producerVotes", collections.Uint64Key, codec.CollValue[types.ProducerVotes](cdc)),
 		PerformanceScore:      collections.NewMap(sb, types.PerformanceScoreKey, "performanceScore", collections.Uint64Key, collections.Uint64Value),
 		LatestActiveValidator: collections.NewKeySet(sb, types.LatestActiveValidatorKey, "latestActiveValidator", collections.Uint64Key),
+		LatestFailedValidator: collections.NewKeySet(sb, types.LatestFailedValidatorKey, "latestFailedValidator", collections.Uint64Key),
 	}
 
 	schema, err := sb.Build()

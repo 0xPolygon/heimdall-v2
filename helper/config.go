@@ -413,7 +413,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		veblopHeight = 1000000
 	default:
-		veblopHeight = 256
+		veblopHeight = 100
 	}
 }
 
