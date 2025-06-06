@@ -12,7 +12,7 @@ V2_CHAIN_ID="devnet"
 V2_GENESIS_TIME="2025-06-01T00:00:00Z"
 V1_HALT_HEIGHT=900
 VERIFY_EXPORTED_DATA=true
-TRUSTED_GENESIS_URL="bit.ly/3ZfAeMQ"
+TRUSTED_GENESIS_URL="bit.ly/devnet-genesis"
 
 # -------------------- const env variables --------------------
 V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
