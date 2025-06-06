@@ -3,23 +3,23 @@
 umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
-V1_VERSION="1.2.3-34-g020f6c0d"
+V1_VERSION="1.2.3-35-gdafcbb67"
 V1_GENESIS_CHECKSUM="25ff6918888b080d6ed4f87320338bd9cfd102b5dd476998e44674bd43a66c8d2d42bc4aa3d370f963cfbc9641e904d79256eb51c145f0daac7cfaf817b66c87"
 V2_GENESIS_CHECKSUM="1e3e64360efe2282c065d3b2e8aa7574568bec0ee139561ad3d968939168de22a166b3a6f1a87ab0afe6bec3716ddf71b26217bc17815336ef1e97390396def2"
-V2_VERSION="0.1.27"
+V2_VERSION="0.1.28"
 V1_CHAIN_ID="devnet"
 V2_CHAIN_ID="devnet"
-V2_GENESIS_TIME="2025-05-22T10:20:00Z"
+V2_GENESIS_TIME="2025-06-01T00:00:00Z"
 V1_HALT_HEIGHT=900
 V2_BRANCH_NAME="mardizzone/migration-tests"
+VERIFY_EXPORTED_DATA=true
+# TODO GitHub has a limit on file size for raw content, so we need to compress the file and adapt the STEP=5 of the script to handle it, or use a different source (not GitHub)
+TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${V2_BRANCH_NAME}/migration/networks/${V1_CHAIN_ID}/dump-genesis.json"
 
 # -------------------- const env variables --------------------
 V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
-VERIFY_EXPORTED_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-# TODO GitHub has a limit on file size for raw content, so we need to compress the file and adapt the STEP=5 of the script to handle it, or use a different source (not GitHub)
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${V2_BRANCH_NAME}/migration/networks/${V1_CHAIN_ID}/dump-genesis.json"
 
 # -------------------- Script start --------------------
 START_TIME=$(date +%s)
@@ -964,7 +964,7 @@ for key in "${APP_KEYS[@]}"; do
         echo "[WARN] app.toml: key '$key' not found or empty in v1, skipping"
     fi
 done
-# Validate
+# 5. Validate
 for key in "${APP_KEYS[@]}"; do
     expected=$(grep -E "^$key\s*=" "$OLD_HEIMDALL_CONFIG_TOML" | cut -d'=' -f2- | tr -d ' "' || true)
     actual=$(grep -E "^$key\s*=" "$NEW_APP_TOML" | cut -d'=' -f2- | tr -d ' "' || true)
@@ -972,7 +972,16 @@ for key in "${APP_KEYS[@]}"; do
         echo "[WARN] Validation failed for '$key' in app.toml: expected '$expected', got '$actual'"
     fi
 done
-echo "[INFO] app.toml values migrated successfully."
+# 6. Set static bor_grpc_flag=false in app.toml (recommended for the migration)
+echo "[INFO] Setting bor_grpc_flag param to false in app.toml..."
+set_toml_key "app.toml" "bor_grpc_flag" "false"
+echo "[OK]   app.toml: bor_grpc_flag = false"
+echo "[INFO] app.toml values migrated and updated successfully."
+# 6. Set static bor_rpc_timeout=1s in app.toml (recommended for the migration)
+echo "[INFO] Setting bor_rpc_timeout param to 1s in config.toml..."
+set_toml_key "app.toml" "bor_rpc_timeout" "1s"
+echo "[OK]   app.toml: bor_rpc_timeout = 1s"
+echo "[INFO] app.toml values migrated and updated successfully."
 
 
 # Step 27: Assign correct ownership to Heimdall directories

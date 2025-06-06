@@ -27,16 +27,17 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     V2_GENESIS_TIME="2025-05-22T10:20:00Z"
     V1_HALT_HEIGHT=900
     V2_BRANCH_NAME="mardizzone/migration-tests"
+    VERIFY_EXPORTED_DATA=true
     ```
     where
    - `V1_VERSION` is the latest version of heimdall-v1 (currently, for testing is the version from `mardizzone/apocalypse` branch)
    - `V2_VERSION` is the latest version of heimdall-v2
    - `V1_CHAIN_ID` is the chain id of the heimdall-v1 network (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
-   - `V2_CHAIN_ID` is the chain id of the heimdall-v2 network (pre-agreed during the gov proposal)
-   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed during the gov proposal, it should be set in the future, e.g., 1h after the pilot migration is initiated)
-   - `V1_HALT_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed during the gov proposal, it should match the height defined in `APOCALYPSE_TAG`)
+   - `V2_CHAIN_ID` is the chain id of the heimdall-v2 network (pre-agreed)
+   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed, it should be set in the future, e.g., 30mins after the pilot migration is initiated)
+   - `V1_HALT_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed, it should match the height defined in `APOCALYPSE_TAG`)
    - `V2_BRANCH_NAME` is the branch of the heimdall-v2 repo where the script will be pushed after the migration of the pilot node is completed.
-
+   - `VERIFY_EXPORTED_DATA` is set to `true` because the genesis data will be verified on the pilot node.  
 4. ssh into the node machine by using a valid user:
    ```bash
     ssh <USER>@<NODE_IP>
@@ -50,7 +51,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
 8. Retrieve the parameters needed by the script
 
    | Flag                 | Description                                                                                                    |
-      |----------------------|----------------------------------------------------------------------------------------------------------------|
+   |----------------------|----------------------------------------------------------------------------------------------------------------|
    | `--heimdall-v1-home` | Path to Heimdall v1 home (must contain `config` and `data`)                                                    |
    | `--heimdallcli-path` | Path to `heimdallcli` (must be latest stable version). It can be retrieved with `which heimdallcli`            |
    | `--heimdalld-path`   | Path to `heimdalld` (must be latest stable version). It can be retrieved with `which heimdalld`                |
@@ -69,8 +70,8 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     ```bash
       sudo bash migrate.sh \
     --heimdall-v1-home=/var/lib/heimdall \
-    --heimdallcli-path=/home/ubuntu/go/bin/heimdallcli \
-    --heimdalld-path=/home/ubuntu/go/bin/heimdalld \
+    --heimdallcli-path=/usr/bin/heimdallcli \
+    --heimdalld-path=/usr/bin/heimdalld \
     --network=amoy \
     --node-type=validator \
     --service-user=ubuntu \
@@ -98,11 +99,13 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
      V1_GENESIS_CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
      V2_GENESIS_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
      TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/<BRANCH_NAME>/migration/networks/devnet/dump-genesis.json"
+     VERIFY_EXPORTED_DATA=false
      ```
     where
     - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
     - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
     - `TRUSTED_GENESIS_URL` is the URL of the genesis file (branch you are currently using).
+    - `VERIFY_EXPORTED_DATA` is set to `false` because the genesis data has been already verified on the pilot node, and this will save some time and computational resources on other nodes.  
 13. cd into the migration script folder
     ```bash
     cd heimdall-v2/migration/script
@@ -128,10 +131,12 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    ```bash
       journalctl -fu heimdalld
    ```
-20. The genesis time is most probably set in the future so `heimdalld` will print something like:
+20. If the genesis time is set in the future, `heimdalld` will print something like:
     ```bash
     heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
     ```
+    Otherwise, it will start syncing immediately
+    (trying to connect to peers and throw errors if they are not yet available).
 21. Wait until the genesis time is reached, and the node will start syncing.
 22. Now other node operators can run the migration.
 

@@ -31,6 +31,18 @@ import (
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 )
 
+var (
+	appCodec    *codec.ProtoCodec
+	legacyAmino *codec.LegacyAmino
+)
+
+const (
+	flagChainId       = "chain-id"
+	flagGenesisTime   = "genesis-time"
+	flagInitialHeight = "initial-height"
+	flagVerifyData    = "verify-data"
+)
+
 // MigrateCommand returns a command that migrates the heimdall v1 genesis file to heimdall v2.
 func MigrateCommand() *cobra.Command {
 	cmd := cobra.Command{
@@ -579,6 +591,12 @@ func migrateGovModule(genesisData map[string]interface{}) error {
 		defaultParams.MinDepositRatio,
 	)
 
+	if params.ExpeditedVotingPeriod != nil && params.VotingPeriod != nil {
+		if *params.ExpeditedVotingPeriod >= *params.VotingPeriod {
+			*params.ExpeditedVotingPeriod = *params.VotingPeriod / 2
+		}
+	}
+
 	newGovState := govTypes.GenesisState{
 		StartingProposalId: oldGovState.StartingProposalID,
 		Deposits:           newDeposits,
@@ -1049,15 +1067,3 @@ func replaceMaticWithPol(v interface{}) {
 		}
 	}
 }
-
-var (
-	appCodec    *codec.ProtoCodec
-	legacyAmino *codec.LegacyAmino
-)
-
-const (
-	flagChainId       = "chain-id"
-	flagGenesisTime   = "genesis-time"
-	flagInitialHeight = "initial-height"
-	flagVerifyData    = "verify-data"
-)

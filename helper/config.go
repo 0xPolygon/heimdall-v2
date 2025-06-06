@@ -66,10 +66,10 @@ const (
 	DefaultMainRPCUrl  = "http://localhost:9545"
 	DefaultBorRPCUrl   = "http://localhost:8545"
 	DefaultBorGRPCUrl  = "localhost:3131"
-	DefaultBorGRPCFlag = true
+	DefaultBorGRPCFlag = false
 
 	DefaultEthRPCTimeout = 5 * time.Second
-	DefaultBorRPCTimeout = 5 * time.Second
+	DefaultBorRPCTimeout = 1 * time.Second
 
 	// DefaultAmqpURL represents default AMQP url
 	DefaultAmqpURL = "amqp://guest:guest@localhost:5672/"

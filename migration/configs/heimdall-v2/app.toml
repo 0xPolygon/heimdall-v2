@@ -248,7 +248,7 @@ eth_rpc_url = "http://34.142.14.241:9545"
 bor_rpc_url = "http://localhost:8545"
 
 # GRPC flag for bor chain
-bor_grpc_flag = "true"
+bor_grpc_flag = "false"
 
 # GRPC endpoint for bor chain
 bor_grpc_url = "localhost:3131"
