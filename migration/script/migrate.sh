@@ -11,10 +11,8 @@ V1_CHAIN_ID="devnet"
 V2_CHAIN_ID="devnet"
 V2_GENESIS_TIME="2025-06-01T00:00:00Z"
 V1_HALT_HEIGHT=900
-V2_BRANCH_NAME="mardizzone/migration-tests"
 VERIFY_EXPORTED_DATA=true
-# TODO GitHub has a limit on file size for raw content, so we need to compress the file and adapt the STEP=5 of the script to handle it, or use a different source (not GitHub)
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${V2_BRANCH_NAME}/migration/networks/${V1_CHAIN_ID}/dump-genesis.json"
+TRUSTED_GENESIS_URL="bit.ly/devnet-genesis"
 
 # -------------------- const env variables --------------------
 V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
