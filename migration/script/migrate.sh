@@ -11,15 +11,13 @@ V1_CHAIN_ID="devnet"
 V2_CHAIN_ID="devnet"
 V2_GENESIS_TIME="2025-06-05T13:30:00Z"
 V1_HALT_HEIGHT=22238836
-V2_BRANCH_NAME="migration-mumbai"
 
 # -------------------- const env variables --------------------
 V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
 VERIFY_EXPORTED_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-# TODO GitHub has a limit on file size for raw content, so we need to compress the file and adapt the STEP=5 of the script to handle it, or use a different source (not GitHub)
-TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/${V2_BRANCH_NAME}/migration/networks/${V1_CHAIN_ID}/dump-genesis.json"
+TRUSTED_GENESIS_URL="bit.ly/mumbai-genesis"
 
 # -------------------- Script start --------------------
 START_TIME=$(date +%s)
