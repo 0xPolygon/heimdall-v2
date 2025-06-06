@@ -78,11 +78,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     --generate-genesis=true
     ```
    This will create `heimdall-v2` into `/var/lib/heimdall`
-10. cd into `heimdall-v2/migration/networks/<NETWORK>` where `<NETWORK>` is the `V1_CHAIN_ID` from step 2
-    ```bash
-    cd heimdall-v2/migration/networks/<NETWORK>
-    ```
-11. Copy the following files from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
+10. Copy the following files from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
     - `dump-genesis.json`
     - `dump-genesis.json.sha512`
     - `migrated_dump-genesis.json`
@@ -94,17 +90,25 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json ./
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json.sha512 ./
       ```
+11. Upload such files to the GCP bucket so that they can be accessed by other node operators.
+    - For example, you can upload them to the GCP bucket `heimdall-genesis` with the following command:
+      ```bash
+      gsutil cp dump-genesis.json gs://heimdall-genesis/
+      gsutil cp dump-genesis.json.sha512 gs://heimdall-genesis/
+      gsutil cp migrated_dump-genesis.json gs://heimdall-genesis/
+      gsutil cp migrated_dump-genesis.json.sha512 gs://heimdall-genesis/
+      ```
 12. Update the following configs in the script:
      ```bash
      V1_GENESIS_CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
      V2_GENESIS_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
-     TRUSTED_GENESIS_URL="https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/<BRANCH_NAME>/migration/networks/devnet/dump-genesis.json"
+     TRUSTED_GENESIS_URL="bit.ly/3ZfAeMQ"
      VERIFY_EXPORTED_DATA=false
      ```
     where
     - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
     - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
-    - `TRUSTED_GENESIS_URL` is the URL of the genesis file (branch you are currently using).
+    - `TRUSTED_GENESIS_URL` is the URL of the genesis file (previously updated on a GCP bucket).
     - `VERIFY_EXPORTED_DATA` is set to `false` because the genesis data has been already verified on the pilot node, and this will save some time and computational resources on other nodes.  
 13. cd into the migration script folder
     ```bash
