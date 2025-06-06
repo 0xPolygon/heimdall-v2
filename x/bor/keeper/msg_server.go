@@ -149,3 +149,83 @@ func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducer
 
 	return &types.MsgVoteProducersResponse{}, nil
 }
+
+func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpans) (*types.MsgBackfillSpansResponse, error) {
+	logger := s.Logger(ctx)
+
+	logger.Debug("✅ validating proposed backfill spans msg",
+		"proposer", msg.Proposer,
+		"latestSpanId", msg.LatestSpanId,
+		"latestBorSpanId", msg.LatestBorSpanId,
+		"chainId", msg.ChainId,
+	)
+
+	_, err := sdk.ValAddressFromHex(msg.Proposer)
+	if err != nil {
+		logger.Error("invalid proposer address", "error", err)
+		return nil, errors.Wrapf(err, "invalid proposer address")
+	}
+
+	chainParams, err := s.ck.GetParams(ctx)
+	if err != nil {
+		logger.Error("failed to get chain params", "error", err)
+		return nil, errors.Wrapf(err, "failed to get chain params")
+	}
+
+	if chainParams.ChainParams.BorChainId != msg.ChainId {
+		logger.Error("invalid bor chain id", "expected", chainParams.ChainParams.BorChainId, "got", msg.ChainId)
+		return nil, types.ErrInvalidChainID
+	}
+
+	latestSpan, err := s.GetLastSpan(ctx)
+	if err != nil {
+		logger.Error("failed to get latest span", "error", err)
+		return nil, errors.Wrapf(err, "failed to get latest span")
+	}
+
+	if msg.LatestSpanId != latestSpan.Id && msg.LatestSpanId != latestSpan.Id-1 {
+		logger.Error("invalid latest span id", "expected",
+			fmt.Sprintf("%d or %d", latestSpan.Id, latestSpan.Id-1), "got", msg.LatestSpanId)
+		return nil, types.ErrInvalidSpan
+	}
+
+	if msg.LatestBorSpanId <= msg.LatestSpanId {
+		logger.Error("invalid bor span id, expected greater than latest span id",
+			"latestSpanId", latestSpan.Id,
+			"latestBorSpanId", msg.LatestBorSpanId,
+		)
+		return nil, types.ErrInvalidLastBorSpanID
+	}
+
+	latestMilestone, err := s.mk.GetLastMilestone(ctx)
+	if err != nil {
+		logger.Error("failed to get latest milestone", "error", err)
+		return nil, errors.Wrapf(err, "failed to get latest milestone")
+	}
+
+	if latestMilestone == nil {
+		logger.Error("latest milestone is nil")
+		return nil, types.ErrLatestMilestoneNotFound
+	}
+
+	borSpanId, err := types.CalcCurrentBorSpanId(latestMilestone.EndBlock, &latestSpan)
+	if err != nil {
+		logger.Error("failed to calculate bor span id", "error", err)
+		return nil, errors.Wrapf(err, "failed to calculate bor span id")
+	}
+
+	if borSpanId != msg.LatestBorSpanId {
+		logger.Error(
+			"bor span id mismatch",
+			"calculatedBorSpanId", borSpanId,
+			"msgLatestBorSpanId", msg.LatestBorSpanId,
+			"latestMilestoneEndBlock", latestMilestone.EndBlock,
+			"latestSpanStartBlock", latestSpan.StartBlock,
+			"latestSpanEndBlock", latestSpan.EndBlock,
+			"latestSpanId", latestSpan.Id,
+		)
+		return nil, types.ErrInvalidSpan
+	}
+
+	return &types.MsgBackfillSpansResponse{}, nil
+}

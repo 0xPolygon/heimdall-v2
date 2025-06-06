@@ -65,6 +65,7 @@ type IContractCaller interface {
 	IsTxConfirmed(common.Hash, uint64) bool
 	GetConfirmedTxReceipt(common.Hash, uint64) (*ethTypes.Receipt, error)
 	GetBlockNumberFromTxHash(common.Hash) (*big.Int, error)
+	GetStartBlockHeimdallSpanID(ctx context.Context, startBlock uint64) (spanID uint64, err error)
 
 	DecodeNewHeaderBlockEvent(string, *ethTypes.Receipt, uint64) (*rootchain.RootchainNewHeaderBlock, error)
 
@@ -541,6 +542,25 @@ func (c *ContractCaller) GetBorChainBlock(ctx context.Context, blockNum *big.Int
 	}
 
 	return latestBlock, nil
+}
+
+// GetStartBlockHeimdallSpanID returns which heimdall span id was used for given bor span
+func (c *ContractCaller) GetStartBlockHeimdallSpanID(ctx context.Context, startBlock uint64) (spanID uint64, err error) {
+	ctx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
+	defer cancel()
+
+	if c.BorChainGrpcFlag {
+		spanID, err = c.BorChainGrpcClient.GetStartBlockHeimdallSpanID(ctx, startBlock)
+	} else {
+		spanID, err = c.BorChainClient.GetStartBlockHeimdallSpanID(ctx, startBlock)
+	}
+
+	if err != nil {
+		Logger.Error("unable to connect to bor chain", "error", err)
+		return
+	}
+
+	return spanID, nil
 }
 
 // GetBorChainBlocksAndTdInBatch returns bor chain block headers and TD via a single RPC Batch call.

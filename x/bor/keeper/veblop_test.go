@@ -2,6 +2,7 @@ package keeper_test
 
 import (
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	"github.com/golang/mock/gomock"
 )
@@ -133,29 +134,11 @@ func (s *KeeperTestSuite) TestCalculateProducerSet() {
 			expectedCandidates: []uint64{prodC},
 			expectedError:      false,
 		},
-		{
-			name:               "totalPotentialProducers vote cap in action",
-			params:             types.Params{ProducerCount: 2},
-			allValidatorsInSet: []staketypes.Validator{val1}, // totalPotentialProducers will be 1
-			validatorDetails:   map[uint64]staketypes.Validator{1: val1},
-			setupVotes: func() {
-				require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{prodA, prodB}}))
-			},
-			expectedCandidates: []uint64{prodA},
-			expectedError:      false,
-		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			valIDsToClear := []uint64{1, 2, 3}
-			for _, valID := range valIDsToClear {
-				if ctx.IsZero() {
-					s.T().Fatalf("SDK context is zero before clearing votes, test setup issue.")
-				}
-				err := borKeeper.SetProducerVotes(ctx, valID, types.ProducerVotes{Votes: []uint64{}})
-				require.NoError(err, "Failed to clear votes for validator %d", valID)
-			}
+			borKeeper.ClearProducerVotes(ctx)
 
 			require.NoError(borKeeper.SetParams(ctx, tc.params))
 
@@ -163,8 +146,10 @@ func (s *KeeperTestSuite) TestCalculateProducerSet() {
 			for i := range tc.allValidatorsInSet {
 				valSet.Validators[i] = &tc.allValidatorsInSet[i]
 			}
-			stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+			// Set up mock expectations for this specific test case
+			stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
 
+			// Set up specific validator details for the test case
 			for valIDInDetails, valDetailFromDetails := range tc.validatorDetails {
 				localValDetail := valDetailFromDetails
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, valIDInDetails).Return(localValDetail, nil).AnyTimes()
@@ -190,6 +175,20 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 	borKeeper := s.borKeeper
 	stakeKeeper := s.stakeKeeper
 
+	// Add missing mock for GetLastMilestone
+	s.milestoneKeeper.EXPECT().GetLastMilestone(ctx).Return(&milestoneTypes.Milestone{
+		EndBlock: 1000,
+	}, nil).AnyTimes()
+
+	s.borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         0,
+		StartBlock: 0,
+		EndBlock:   1001,
+		SelectedProducers: []staketypes.Validator{
+			{ValId: 1, VotingPower: 100},
+		},
+	})
+
 	// Test validators
 	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
 	val2 := staketypes.Validator{ValId: 2, VotingPower: 90}
@@ -213,10 +212,20 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			},
 			setupProducerVotes: func() {},
 			setupParams:        func() {},
-			setupValidatorSet:  func() {},
+			setupValidatorSet: func() {
+				valSet := staketypes.ValidatorSet{
+					Validators: []*staketypes.Validator{
+						{ValId: 1, VotingPower: 100},
+					},
+				}
+				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
+				// Updated mock to handle both expected IDs
+				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(1)).Return(val1, nil).AnyTimes()
+				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).Return(staketypes.Validator{VotingPower: 0}, nil).AnyTimes()
+			},
 			activeValidatorIDs: map[uint64]struct{}{},
 			expectedError:      true,
-			errorContains:      "failed to get last span",
+			errorContains:      "no candidates found",
 		},
 		{
 			name: "Last span has no selected producers",
@@ -234,10 +243,10 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			setupValidatorSet:  func() {},
 			activeValidatorIDs: map[uint64]struct{}{},
 			expectedError:      true,
-			errorContains:      "no producers found in last span",
+			errorContains:      "no candidates found",
 		},
 		{
-			name: "Fallback with active candidates - selects next from fallback",
+			name: "Fail to find any candidates",
 			setupSpan: func() {
 				span := types.Span{
 					Id:         1,
@@ -250,12 +259,6 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				require.NoError(borKeeper.AddNewSpan(ctx, &span))
 			},
 			setupProducerVotes: func() {
-				// Ensure global producer votes are cleared for this specific test
-				// to guarantee CalculateProducerSet will not find any candidates from votes.
-				allPossibleVoterIDs := []uint64{1, 2, 3, 4, 5, 100, 101, 102, 103}
-				for _, id := range allPossibleVoterIDs {
-					require.NoError(borKeeper.SetProducerVotes(ctx, id, types.ProducerVotes{Votes: []uint64{}}))
-				}
 			},
 			setupParams: func() {
 				params := types.DefaultParams()
@@ -272,7 +275,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 						// {ValId: 100, VotingPower: 0},
 					},
 				}
-				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
 				// No GetValidatorFromValID needed if GetValidatorSet is empty or all have 0 power with no votes
 			},
 			activeValidatorIDs: map[uint64]struct{}{
@@ -280,8 +283,8 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				2: {}, // Active fallback producer
 				3: {}, // Active fallback producer
 			},
-			expectedProducer: 2, // Fallback is [1,2,3], current is 1, next is 2
-			expectedError:    false,
+			expectedProducer: 0,
+			expectedError:    true,
 		},
 		{
 			name: "Current producer not in candidate list - selects first candidate",
@@ -297,11 +300,6 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				require.NoError(borKeeper.AddNewSpan(ctx, &span))
 			},
 			setupProducerVotes: func() {
-				// Clear relevant votes first for this specific test
-				idsToClear := []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 101, 102, 103} // Wider range
-				for _, id := range idsToClear {
-					require.NoError(borKeeper.SetProducerVotes(ctx, id, types.ProducerVotes{Votes: []uint64{}}))
-				}
 				// Set specific votes for this test (val1, val2, val3 vote for candidates 2, 3)
 				require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
 				require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
@@ -316,7 +314,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				valSet := staketypes.ValidatorSet{
 					Validators: []*staketypes.Validator{&val1, &val2, &val3}, // These are actual voters
 				}
-				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
 				// Specific expectations first
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val1.ValId).Return(val1, nil).AnyTimes()
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val2.ValId).Return(val2, nil).AnyTimes()
@@ -346,11 +344,6 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				require.NoError(borKeeper.AddNewSpan(ctx, &span))
 			},
 			setupProducerVotes: func() {
-				// Clear relevant votes first for this specific test
-				idsToClear := []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 100, 101, 102, 103} // Wider range
-				for _, id := range idsToClear {
-					require.NoError(borKeeper.SetProducerVotes(ctx, id, types.ProducerVotes{Votes: []uint64{}}))
-				}
 				// Set specific votes for this test (val1, val2, val3 vote for candidates 2, 3)
 				require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
 				require.NoError(borKeeper.SetProducerVotes(ctx, val2.ValId, types.ProducerVotes{Votes: []uint64{2, 3}}))
@@ -365,7 +358,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				valSet := staketypes.ValidatorSet{
 					Validators: []*staketypes.Validator{&val1, &val2, &val3}, // Actual voters
 				}
-				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
 				// Specific expectations first
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val1.ValId).Return(val1, nil).AnyTimes()
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, val2.ValId).Return(val2, nil).AnyTimes()
@@ -407,7 +400,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 						{ValId: 100, VotingPower: 10},
 					},
 				}
-				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).Times(1)
+				stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(100)).Return(staketypes.Validator{ValId: 100, VotingPower: 10}, nil).AnyTimes()
 			},
 			activeValidatorIDs: map[uint64]struct{}{
@@ -420,12 +413,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			// Clear producer votes from previous tests
-			valIDsToClear := []uint64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 99, 101, 102, 103}
-			for _, valID := range valIDsToClear {
-				err := borKeeper.SetProducerVotes(ctx, valID, types.ProducerVotes{Votes: []uint64{}})
-				require.NoError(err, "Failed to clear votes for validator %d", valID)
-			}
+			borKeeper.ClearProducerVotes(ctx)
 
 			tc.setupSpan()
 			if tc.setupProducerVotes != nil {
@@ -459,4 +447,39 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			}
 		})
 	}
+}
+
+func (s *KeeperTestSuite) TestCalculateProducerSet_TotalPotentialProducersVoteCap() {
+	require := s.Require()
+	ctx := s.ctx
+	borKeeper := s.borKeeper
+	stakeKeeper := s.stakeKeeper
+
+	val1 := staketypes.Validator{ValId: 1, VotingPower: 100}
+	prodA := uint64(101)
+	prodB := uint64(102)
+
+	// Clear any existing votes
+	borKeeper.ClearProducerVotes(ctx)
+
+	// Set up parameters
+	params := types.Params{ProducerCount: 2}
+	require.NoError(borKeeper.SetParams(ctx, params))
+
+	// Set up validator set with only 1 validator (totalPotentialProducers will be 1)
+	valSet := staketypes.ValidatorSet{
+		Validators: []*staketypes.Validator{&val1},
+	}
+	stakeKeeper.EXPECT().GetValidatorSet(ctx).Return(valSet, nil).AnyTimes()
+	stakeKeeper.EXPECT().GetValidatorFromValID(ctx, uint64(1)).Return(val1, nil).AnyTimes()
+
+	// Set up votes: val1 votes for [prodA, prodB]
+	require.NoError(borKeeper.SetProducerVotes(ctx, val1.ValId, types.ProducerVotes{Votes: []uint64{prodA, prodB}}))
+
+	// Call CalculateProducerSet
+	candidates, err := borKeeper.CalculateProducerSet(ctx)
+
+	// Verify results
+	require.NoError(err)
+	require.ElementsMatch([]uint64{prodA}, candidates, "Expected: [%d], Got: %v", prodA, candidates)
 }

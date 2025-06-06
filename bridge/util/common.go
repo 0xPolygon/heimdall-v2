@@ -23,6 +23,7 @@ import (
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	checkpointTypes "github.com/0xPolygon/heimdall-v2/x/checkpoint/types"
 	clerktypes "github.com/0xPolygon/heimdall-v2/x/clerk/types"
+	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
@@ -41,6 +42,7 @@ const (
 	CountCheckpointURL      = "/checkpoints/count"
 	CurrentProposerURL      = "/stake/proposers/current"
 	LatestSpanURL           = "/bor/spans/latest"
+	SpanByIdURL             = "/bor/spans/%v"
 	NextSpanInfoURL         = "/bor/spans/prepare"
 	NextSpanSeedURL         = "/bor/spans/seed/%v"
 	ProducerVotesURL        = "/bor/producer-votes/%v"
@@ -51,6 +53,7 @@ const (
 	TopupTxStatusURL        = "/topup/is-old-tx"
 	ClerkTxStatusURL        = "/clerk/is-old-tx"
 	ClerkEventRecordURL     = "/clerk/event-records/%d"
+	LatestMilestoneURL      = "/milestones/latest"
 
 	CometBFTUnconfirmedTxsURL      = "/unconfirmed_txs"
 	CometBFTUnconfirmedTxsCountURL = "/num_unconfirmed_txs"
@@ -540,4 +543,23 @@ func LogElapsedTimeForStateSyncedEvent(event interface{}, functionName string, s
 	logger.Info("StateSyncedEvent: "+functionName,
 		"stateSyncId", typedEvent.Id,
 		"timeElapsed", timeElapsed)
+}
+
+// GetLatestMilestone return last successful milestone
+func GetLatestMilestone(cdc codec.Codec) (*milestoneTypes.Milestone, error) {
+	logger := Logger()
+
+	response, err := helper.FetchFromAPI(helper.GetHeimdallServerEndpoint(LatestMilestoneURL))
+	if err != nil {
+		logger.Debug("Error fetching latest milestone", "err", err)
+		return nil, err
+	}
+
+	var milestone milestoneTypes.QueryLatestMilestoneResponse
+	if err = cdc.UnmarshalJSON(response, &milestone); err != nil {
+		logger.Error("Error unmarshalling latest milestone", "url", LatestMilestoneURL, "err", err)
+		return nil, err
+	}
+
+	return &milestone.Milestone, nil
 }

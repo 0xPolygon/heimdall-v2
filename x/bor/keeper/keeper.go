@@ -33,6 +33,7 @@ type Keeper struct {
 	authority      string
 	ck             types.ChainManagerKeeper
 	sk             types.StakeKeeper
+	mk             types.MilestoneKeeper
 	contractCaller helper.IContractCaller
 
 	Schema                collections.Schema
@@ -53,7 +54,8 @@ func NewKeeper(
 	authority string,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
-	caller *helper.ContractCaller,
+	milestoneKeeper types.MilestoneKeeper,
+	caller helper.IContractCaller,
 ) Keeper {
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
@@ -72,6 +74,7 @@ func NewKeeper(
 		authority:             authority,
 		ck:                    chainKeeper,
 		sk:                    stakingKeeper,
+		mk:                    milestoneKeeper,
 		contractCaller:        caller,
 		spans:                 collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
 		latestSpan:            collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
@@ -414,6 +417,14 @@ func (k *Keeper) GetProducerVotes(ctx context.Context, id uint64) (types.Produce
 
 func (k *Keeper) SetProducerVotes(ctx context.Context, id uint64, votes types.ProducerVotes) error {
 	return k.ProducerVotes.Set(ctx, id, votes)
+}
+
+func (k *Keeper) RemoveProducerVotes(ctx context.Context, id uint64) error {
+	return k.ProducerVotes.Remove(ctx, id)
+}
+
+func (k *Keeper) ClearProducerVotes(ctx context.Context) error {
+	return k.ProducerVotes.Clear(ctx, nil)
 }
 
 // getBorBlockForSpanSeed returns the bor block number and its producer whose hash is used as seed for the next span

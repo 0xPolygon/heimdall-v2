@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/helper/mocks"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	"github.com/0xPolygon/heimdall-v2/x/bor/keeper"
@@ -36,6 +37,7 @@ type KeeperTestSuite struct {
 	borKeeper          keeper.Keeper
 	chainManagerKeeper *bortestutil.MockChainManagerKeeper
 	stakeKeeper        *bortestutil.MockStakeKeeper
+	milestoneKeeper    *bortestutil.MockMilestoneKeeper
 	contractCaller     mocks.IContractCaller
 	queryClient        types.QueryClient
 	msgServer          types.MsgServer
@@ -48,6 +50,7 @@ func TestKeeperTestSuite(t *testing.T) {
 }
 
 func (s *KeeperTestSuite) SetupTest() {
+	helper.SetVeblopHeight(100000)
 	key := storetypes.NewKVStoreKey(types.StoreKey)
 	testCtx := testutil.DefaultContextWithDB(s.T(), key, storetypes.NewTransientStoreKey("transient_test"))
 	ctx := testCtx.Ctx.WithBlockHeader(cmtproto.Header{Time: cmttime.Now()})
@@ -62,6 +65,9 @@ func (s *KeeperTestSuite) SetupTest() {
 	stakeKeeper := bortestutil.NewMockStakeKeeper(ctrl)
 	s.stakeKeeper = stakeKeeper
 
+	milestoneKeeper := bortestutil.NewMockMilestoneKeeper(ctrl)
+	s.milestoneKeeper = milestoneKeeper
+
 	s.contractCaller = mocks.IContractCaller{}
 	s.ctx = ctx
 
@@ -71,11 +77,16 @@ func (s *KeeperTestSuite) SetupTest() {
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		s.chainManagerKeeper,
 		s.stakeKeeper,
+		s.milestoneKeeper,
 		nil,
 	)
 
 	s.borKeeper.SetContractCaller(&s.contractCaller)
 	types.RegisterInterfaces(encCfg.InterfaceRegistry)
+
+	borParams := types.DefaultParams()
+	err := s.borKeeper.SetParams(ctx, borParams)
+	s.Require().NoError(err)
 
 	queryHelper := baseapp.NewQueryServerTestHelper(ctx, encCfg.InterfaceRegistry)
 	types.RegisterQueryServer(queryHelper, keeper.NewQueryServer(&s.borKeeper))

@@ -373,6 +373,8 @@ func GetMajorityMilestoneProposition(
 	return proposition, aggregatedProposersHash, supportingValidatorList[0], supportingValidatorIDs, nil
 }
 
+var ErrNoHeadersFound = errors.New("no header found")
+
 func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, error) {
 	headers, tds, err := contractCaller.GetBorChainBlocksAndTdInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
 	if err != nil {
@@ -380,7 +382,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 	}
 
 	if len(headers) == 0 {
-		return nil, nil, nil, fmt.Errorf("no headers found: %w", err)
+		return nil, nil, nil, ErrNoHeadersFound
 	}
 
 	result := make([][]byte, 0, len(headers))

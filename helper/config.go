@@ -413,7 +413,7 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	case AmoyChain:
 		veblopHeight = 1000000
 	default:
-		veblopHeight = 100
+		veblopHeight = 256
 	}
 }
 
@@ -519,6 +519,10 @@ func GetValidChains() []string {
 
 func GetVeblopHeight() int64 {
 	return veblopHeight
+}
+
+func SetVeblopHeight(height int64) {
+	veblopHeight = height
 }
 
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
