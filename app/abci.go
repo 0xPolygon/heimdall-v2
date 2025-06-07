@@ -517,7 +517,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
-			// update the last milestone block to the current block height to avoid creating a new span in the next block
+			// update the last milestone block to a future block height to avoid immediately rotating the span in the next block
 			err = app.MilestoneKeeper.SetLastMilestoneBlock(addSpanCtx, uint64(ctx.BlockHeight())+SpanRotationBuffer)
 			if err != nil {
 				logger.Error("Error occurred while setting last milestone block", "error", err)
