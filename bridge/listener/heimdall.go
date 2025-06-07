@@ -43,6 +43,26 @@ func (hl *HeimdallListener) Start() error {
 	return nil
 }
 
+// Stop stops the heimdall listener
+func (hl *HeimdallListener) Stop() {
+	// Stop stops the heimdall listener
+	hl.Logger.Info("Stopping heimdall listener")
+
+	// cancel subscription if any
+	if hl.cancelSubscription != nil {
+		hl.cancelSubscription()
+		hl.cancelSubscription = nil // clean-up reference
+	}
+
+	// cancel header processing
+	if hl.cancelHeaderProcess != nil {
+		hl.cancelHeaderProcess()
+		hl.cancelHeaderProcess = nil // clean-up reference
+	}
+
+	hl.Logger.Info("Heimdall listener stopped")
+}
+
 // ProcessHeader -
 func (hl *HeimdallListener) ProcessHeader(_ *blockHeader) {
 }
@@ -63,22 +83,30 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 			fromBlock, toBlock, err := hl.fetchFromAndToBlock(ctx)
 			if err != nil {
 				hl.Logger.Error("Error fetching from and toBlock, skipping events query", "fromBlock", fromBlock, "toBlock", toBlock, "error", err)
+				continue
 			} else if fromBlock < toBlock {
-
 				hl.Logger.Info("Fetching new events between", "fromBlock", fromBlock, "toBlock", toBlock)
 
 				// Querying and processing Begin events
 				for i := fromBlock; i <= toBlock; i++ {
+					// Early context check to ensure graceful shutdown
+					select {
+					case <-ctx.Done():
+						hl.Logger.Info("Polling stopped during event fetch loop")
+						ticker.Stop()
+						return
+					default:
+					}
 					events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(i))
 					if err != nil {
 						hl.Logger.Error("Error fetching begin block events", "error", err)
+						continue
 					}
 					for _, event := range events {
 						hl.ProcessBlockEvent(sdk.StringifyEvent(event), int64(i))
 					}
 				}
-
-				// set the last block to storage
+				// store last block processed
 				if err := hl.storageClient.Put([]byte(heimdallLastBlockKey), []byte(strconv.FormatUint(toBlock, 10)), nil); err != nil {
 					hl.Logger.Error("hl.storageClient.Put", "Error", err)
 				}
@@ -87,7 +115,6 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 		case <-ctx.Done():
 			hl.Logger.Info("Polling stopped")
 			ticker.Stop()
-
 			return
 		}
 	}
