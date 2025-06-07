@@ -104,7 +104,7 @@ func (s *KeeperTestSuite) TestAddMilestone() {
 		timestamp,
 	)
 
-	err := keeper.AddMilestone(ctx, milestone, 0)
+	err := keeper.AddMilestone(ctx, milestone)
 	require.NoError(err)
 
 	result, err := keeper.GetLastMilestone(ctx)
@@ -150,7 +150,7 @@ func (s *KeeperTestSuite) TestGetMilestoneCount() {
 		milestoneID,
 		timestamp,
 	)
-	err = keeper.AddMilestone(ctx, milestone, 0)
+	err = keeper.AddMilestone(ctx, milestone)
 	require.NoError(err)
 
 	result, err = keeper.GetMilestoneCount(ctx)

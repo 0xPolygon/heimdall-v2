@@ -144,15 +144,15 @@ func (k *Keeper) GetAllValidatorPerformanceScore(ctx context.Context) (map[uint6
 	return validatorPerformanceScore, nil
 }
 
-// UpdateLatestActiveValidator updates the latest active validator
-func (k *Keeper) UpdateLatestActiveValidator(ctx context.Context, activeValidatorIDs map[uint64]struct{}) error {
-	err := k.LatestActiveValidator.Clear(ctx, nil)
+// UpdateLatestActiveProducer updates the latest active producer
+func (k *Keeper) UpdateLatestActiveProducer(ctx context.Context, activeProducerIDs map[uint64]struct{}) error {
+	err := k.LatestActiveProducer.Clear(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	for validatorID := range activeValidatorIDs {
-		err := k.LatestActiveValidator.Set(ctx, validatorID)
+	for producerID := range activeProducerIDs {
+		err := k.LatestActiveProducer.Set(ctx, producerID)
 		if err != nil {
 			return err
 		}
@@ -161,27 +161,27 @@ func (k *Keeper) UpdateLatestActiveValidator(ctx context.Context, activeValidato
 	return nil
 }
 
-// GetLatestActiveValidator returns the latest active validator
-func (k *Keeper) GetLatestActiveValidator(ctx context.Context) (map[uint64]struct{}, error) {
-	iter, err := k.LatestActiveValidator.Iterate(ctx, nil)
+// GetLatestActiveProducer returns the latest active producer
+func (k *Keeper) GetLatestActiveProducer(ctx context.Context) (map[uint64]struct{}, error) {
+	iter, err := k.LatestActiveProducer.Iterate(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	latestActiveValidator := make(map[uint64]struct{})
+	latestActiveProducer := make(map[uint64]struct{})
 	for ; iter.Valid(); iter.Next() {
-		validatorID, err := iter.Key()
+		producerID, err := iter.Key()
 		if err != nil {
 			return nil, err
 		}
-		latestActiveValidator[validatorID] = struct{}{}
+		latestActiveProducer[producerID] = struct{}{}
 	}
 
-	return latestActiveValidator, nil
+	return latestActiveProducer, nil
 }
 
-func (k *Keeper) AddLatestFailedValidator(ctx context.Context, validatorID uint64) error {
-	err := k.LatestFailedValidator.Set(ctx, validatorID)
+func (k *Keeper) AddLatestFailedProducer(ctx context.Context, producerID uint64) error {
+	err := k.LatestFailedProducer.Set(ctx, producerID)
 	if err != nil {
 		return err
 	}
@@ -189,26 +189,26 @@ func (k *Keeper) AddLatestFailedValidator(ctx context.Context, validatorID uint6
 	return nil
 }
 
-func (k *Keeper) GetLatestFailedValidator(ctx context.Context) (map[uint64]struct{}, error) {
-	iter, err := k.LatestFailedValidator.Iterate(ctx, nil)
+func (k *Keeper) GetLatestFailedProducer(ctx context.Context) (map[uint64]struct{}, error) {
+	iter, err := k.LatestFailedProducer.Iterate(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	latestFailedValidator := make(map[uint64]struct{})
+	latestFailedProducer := make(map[uint64]struct{})
 	for ; iter.Valid(); iter.Next() {
-		validatorID, err := iter.Key()
+		producerID, err := iter.Key()
 		if err != nil {
 			return nil, err
 		}
-		latestFailedValidator[validatorID] = struct{}{}
+		latestFailedProducer[producerID] = struct{}{}
 	}
 
-	return latestFailedValidator, nil
+	return latestFailedProducer, nil
 }
 
-func (k *Keeper) ClearLatestFailedValidator(ctx context.Context) error {
-	err := k.LatestFailedValidator.Clear(ctx, nil)
+func (k *Keeper) ClearLatestFailedProducer(ctx context.Context) error {
+	err := k.LatestFailedProducer.Clear(ctx, nil)
 	if err != nil {
 		return err
 	}

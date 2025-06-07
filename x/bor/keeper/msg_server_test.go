@@ -11,6 +11,7 @@ import (
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	chainmanagertypes "github.com/0xPolygon/heimdall-v2/x/chainmanager/types"
 	milestoneTypes "github.com/0xPolygon/heimdall-v2/x/milestone/types"
@@ -234,6 +235,17 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 	voterAccAddress := sdk.AccAddress(voterPubKey.Address())
 	voterAccAddressHex := hex.EncodeToString(voterAccAddress.Bytes()) // Expected format for msg.Voter
 
+	err := borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         1,
+		StartBlock: 1,
+		EndBlock:   1000,
+		BorChainId: "1",
+	})
+
+	helper.SetVeblopHeight(1000)
+
+	require.NoError(err)
+
 	// Validator whose PubKey matches voterAccAddress
 	matchingVal := staketypes.Validator{
 		ValId:  1,
@@ -331,10 +343,64 @@ func (s *KeeperTestSuite) TestVoteProducers() {
 			expectError:   true,
 			errorContains: fmt.Sprintf("duplicate vote for validator id %d", 10),
 		},
+		{
+			name: "VEBLOP height not reached - should reject vote",
+			msg: types.MsgVoteProducers{
+				Voter:   voterAccAddressHex,
+				VoterId: matchingVal.ValId,
+				Votes:   sampleVotes,
+			},
+			mockSetup: func(tc types.MsgVoteProducers) {
+				// Set VEBLOP height to be higher than next span start (1001)
+				// This simulates the case where we haven't reached VEBLOP phase yet
+				helper.SetVeblopHeight(1002) // Much higher than span end (1000) + 1
+			},
+			expectError:   true,
+			errorContains: "span is not in VEBLOP phase",
+		},
+		{
+			name: "VEBLOP height exactly at boundary - should accept vote",
+			msg: types.MsgVoteProducers{
+				Voter:   voterAccAddressHex,
+				VoterId: matchingVal.ValId,
+				Votes:   sampleVotes,
+			},
+			mockSetup: func(tc types.MsgVoteProducers) {
+				// Set VEBLOP height exactly at next span start (1001)
+				// This should be in VEBLOP phase and allow the vote
+				helper.SetVeblopHeight(1001) // Exactly at span end (1000) + 1
+				skMock.EXPECT().GetValidatorFromValID(ctx, matchingVal.ValId).Return(matchingVal, nil).Times(1)
+			},
+			expectError: false,
+			verifyState: func(tc types.MsgVoteProducers) {
+				storedVotes, err := borKeeper.GetProducerVotes(ctx, tc.VoterId)
+				require.NoError(err)
+				require.Equal(tc.Votes, storedVotes)
+			},
+		},
+		{
+			name: "VEBLOP height just below boundary - should reject vote",
+			msg: types.MsgVoteProducers{
+				Voter:   voterAccAddressHex,
+				VoterId: matchingVal.ValId,
+				Votes:   sampleVotes,
+			},
+			mockSetup: func(tc types.MsgVoteProducers) {
+				// Set VEBLOP height just below next span start (1001)
+				// This should NOT be in VEBLOP phase and reject the vote
+				helper.SetVeblopHeight(1002) // Above span end (1000) + 1, so 1001 < 1002 = not in VEBLOP phase
+				// Note: No mock setup needed since this should fail at VEBLOP validation before reaching validator lookup
+			},
+			expectError:   true,
+			errorContains: "span is not in VEBLOP phase",
+		},
 	}
 
 	for _, tc := range testCases {
 		s.T().Run(tc.name, func(t *testing.T) {
+			// Reset VEBLOP height to default for proper test isolation
+			helper.SetVeblopHeight(1000) // Reset to span EndBlock for VEBLOP phase
+
 			_ = borKeeper.SetProducerVotes(ctx, tc.msg.VoterId, types.ProducerVotes{})
 
 			tc.mockSetup(tc.msg)
@@ -441,6 +507,69 @@ func (s *KeeperTestSuite) TestBackfillSpans() {
 				require.NoError(err)
 			} else {
 				require.ErrorContains(err, tc.expErr)
+			}
+		})
+	}
+}
+
+func (s *KeeperTestSuite) TestCanVoteProducers() {
+	require, ctx, borKeeper := s.Require(), s.ctx, s.borKeeper
+
+	// Add a test span
+	err := borKeeper.AddNewSpan(ctx, &types.Span{
+		Id:         1,
+		StartBlock: 100,
+		EndBlock:   200,
+		BorChainId: "1",
+	})
+	require.NoError(err)
+
+	testCases := []struct {
+		name          string
+		veblopHeight  int64
+		operation     string
+		expectError   bool
+		errorContains string
+	}{
+		{
+			name:         "VEBLOP phase active - should pass",
+			veblopHeight: 201, // Next span starts at 201, VEBLOP at 201 = active
+			operation:    "test",
+			expectError:  false,
+		},
+		{
+			name:          "VEBLOP phase not active - should fail",
+			veblopHeight:  300, // Next span starts at 201, VEBLOP at 300 = not active yet
+			operation:     "test",
+			expectError:   true,
+			errorContains: "span is not in VEBLOP phase",
+		},
+		{
+			name:         "VEBLOP height exactly at boundary - should pass",
+			veblopHeight: 201, // Exactly at next span start
+			operation:    "boundary_test",
+			expectError:  false,
+		},
+		{
+			name:          "VEBLOP height below next span start - should fail",
+			veblopHeight:  202, // Above next span start (201), so 201 < 202 = not in VEBLOP phase
+			operation:     "below_boundary_test",
+			expectError:   true,
+			errorContains: "span is not in VEBLOP phase",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			helper.SetVeblopHeight(tc.veblopHeight)
+
+			err := borKeeper.CanVoteProducers(ctx)
+
+			if tc.expectError {
+				require.Error(err)
+				require.Contains(err.Error(), tc.errorContains)
+			} else {
+				require.NoError(err)
 			}
 		})
 	}

@@ -144,7 +144,7 @@ func (k Keeper) GetParams(ctx context.Context) (params types.Params, err error) 
 }
 
 // AddMilestone adds a milestone to the store
-func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone, block uint64) error {
+func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone) error {
 	sdkCtx := sdk.UnwrapSDKContext(ctx)
 
 	// GetMilestoneCount gives the number of previous milestone
@@ -165,12 +165,6 @@ func (k *Keeper) AddMilestone(ctx context.Context, milestone types.Milestone, bl
 	err = k.SetMilestoneCount(ctx, milestoneNumber)
 	if err != nil {
 		k.Logger(ctx).Error("error while storing milestone count in store", "err", err)
-		return err
-	}
-
-	err = k.SetLastMilestoneBlock(ctx, block)
-	if err != nil {
-		k.Logger(ctx).Error("error while setting last milestone block in store", "err", err)
 		return err
 	}
 

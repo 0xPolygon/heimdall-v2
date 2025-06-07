@@ -36,15 +36,15 @@ type Keeper struct {
 	mk             types.MilestoneKeeper
 	contractCaller helper.IContractCaller
 
-	Schema                collections.Schema
-	spans                 collections.Map[uint64, types.Span]
-	latestSpan            collections.Item[uint64]
-	seedLastProducer      collections.Map[uint64, []byte]
-	Params                collections.Item[types.Params]
-	ProducerVotes         collections.Map[uint64, types.ProducerVotes]
-	PerformanceScore      collections.Map[uint64, uint64]
-	LatestActiveValidator collections.KeySet[uint64]
-	LatestFailedValidator collections.KeySet[uint64]
+	Schema               collections.Schema
+	spans                collections.Map[uint64, types.Span]
+	latestSpan           collections.Item[uint64]
+	seedLastProducer     collections.Map[uint64, []byte]
+	Params               collections.Item[types.Params]
+	ProducerVotes        collections.Map[uint64, types.ProducerVotes]
+	PerformanceScore     collections.Map[uint64, uint64]
+	LatestActiveProducer collections.KeySet[uint64]
+	LatestFailedProducer collections.KeySet[uint64]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -69,21 +69,21 @@ func NewKeeper(
 
 	sb := collections.NewSchemaBuilder(storeService)
 	k := Keeper{
-		cdc:                   cdc,
-		storeService:          storeService,
-		authority:             authority,
-		ck:                    chainKeeper,
-		sk:                    stakingKeeper,
-		mk:                    milestoneKeeper,
-		contractCaller:        caller,
-		spans:                 collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
-		latestSpan:            collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
-		seedLastProducer:      collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
-		Params:                collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
-		ProducerVotes:         collections.NewMap(sb, types.ProducerVotesKey, "producerVotes", collections.Uint64Key, codec.CollValue[types.ProducerVotes](cdc)),
-		PerformanceScore:      collections.NewMap(sb, types.PerformanceScoreKey, "performanceScore", collections.Uint64Key, collections.Uint64Value),
-		LatestActiveValidator: collections.NewKeySet(sb, types.LatestActiveValidatorKey, "latestActiveValidator", collections.Uint64Key),
-		LatestFailedValidator: collections.NewKeySet(sb, types.LatestFailedValidatorKey, "latestFailedValidator", collections.Uint64Key),
+		cdc:                  cdc,
+		storeService:         storeService,
+		authority:            authority,
+		ck:                   chainKeeper,
+		sk:                   stakingKeeper,
+		mk:                   milestoneKeeper,
+		contractCaller:       caller,
+		spans:                collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
+		latestSpan:           collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),
+		seedLastProducer:     collections.NewMap(sb, types.SeedLastBlockProducerKey, "seedLastProducer", collections.Uint64Key, collections.BytesValue),
+		Params:               collections.NewItem(sb, types.ParamsKey, "params", codec.CollValue[types.Params](cdc)),
+		ProducerVotes:        collections.NewMap(sb, types.ProducerVotesKey, "producerVotes", collections.Uint64Key, codec.CollValue[types.ProducerVotes](cdc)),
+		PerformanceScore:     collections.NewMap(sb, types.PerformanceScoreKey, "performanceScore", collections.Uint64Key, collections.Uint64Value),
+		LatestActiveProducer: collections.NewKeySet(sb, types.LatestActiveProducerKey, "latestActiveProducer", collections.Uint64Key),
+		LatestFailedProducer: collections.NewKeySet(sb, types.LatestFailedProducerKey, "latestFailedProducer", collections.Uint64Key),
 	}
 
 	schema, err := sb.Build()
@@ -543,4 +543,21 @@ func RollbackVotingPowers(valsNew, valsOld []staketypes.Validator) []staketypes.
 	}
 
 	return valsNew
+}
+
+// CanVoteProducers checks if the current span is in VEBLOP phase and returns an error if not.
+func (k Keeper) CanVoteProducers(ctx context.Context) error {
+	latestSpan, err := k.GetLastSpan(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get latest span for VEBLOP validation: %w", err)
+	}
+
+	if !helper.IsVeblop(latestSpan.EndBlock + 1) {
+		return fmt.Errorf("MsgVoteProducers not allowed: span is not in VEBLOP phase (span start block: %d, span end block: %d, veblop height: %d)",
+			latestSpan.StartBlock,
+			latestSpan.EndBlock,
+			helper.GetVeblopHeight())
+	}
+
+	return nil
 }

@@ -17,6 +17,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"cosmossdk.io/x/tx/signing"
 	abci "github.com/cometbft/cometbft/abci/types"
+	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/client"
@@ -86,6 +87,7 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const (
@@ -450,6 +452,42 @@ func NewHeimdallApp(
 	}
 
 	return app
+}
+
+func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
+	app.Logger().Info("check tx", "exec mode", req.Type)
+
+	// Only apply VEBLOP validation during normal CheckTx (not recheck)
+	if req.Type == abci.CheckTxType_New {
+		// Decode transaction to check for MsgVoteProducers
+		tx, err := app.TxDecode(req.Tx)
+		if err != nil {
+			return &abci.ResponseCheckTx{
+				Code: sdkerrors.ErrTxDecode.ABCICode(),
+				Log:  fmt.Sprintf("failed to decode transaction: %v", err),
+			}, nil
+		}
+
+		// Check for MsgVoteProducers and apply VEBLOP validation
+		msgs := tx.GetMsgs()
+		for _, msg := range msgs {
+			if _, ok := msg.(*borTypes.MsgVoteProducers); ok {
+				// Create a context for validation
+				ctx := app.NewUncachedContext(true, cmtproto.Header{})
+
+				// Validate VEBLOP phase using common function
+				if err := app.BorKeeper.CanVoteProducers(ctx); err != nil {
+					app.Logger().Debug("rejecting MsgVoteProducers in CheckTx", "error", err)
+					return &abci.ResponseCheckTx{
+						Code: sdkerrors.ErrInvalidRequest.ABCICode(),
+						Log:  err.Error(),
+					}, nil
+				}
+			}
+		}
+	}
+
+	return app.BaseApp.CheckTx(req)
 }
 
 func (app *HeimdallApp) setAnteHandler(txConfig client.TxConfig, sideTxConfig sidetxs.SideTxConfigurator) {

@@ -407,13 +407,13 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	switch conf.Custom.Chain {
 	case MainChain:
-		veblopHeight = 1000000
+		veblopHeight = 0
 	case MumbaiChain:
-		veblopHeight = 1000000
+		veblopHeight = 0
 	case AmoyChain:
-		veblopHeight = 1000000
+		veblopHeight = 0
 	default:
-		veblopHeight = 256
+		veblopHeight = 383
 	}
 }
 
@@ -519,6 +519,13 @@ func GetValidChains() []string {
 
 func GetVeblopHeight() int64 {
 	return veblopHeight
+}
+
+func IsVeblop(blockNum uint64) bool {
+	if veblopHeight == 0 {
+		return false
+	}
+	return blockNum >= uint64(veblopHeight)
 }
 
 func SetVeblopHeight(height int64) {

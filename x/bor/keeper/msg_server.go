@@ -117,6 +117,11 @@ func (m msgServer) UpdateParams(ctx context.Context, msg *types.MsgUpdateParams)
 }
 
 func (m msgServer) VoteProducers(ctx context.Context, msg *types.MsgVoteProducers) (*types.MsgVoteProducersResponse, error) {
+	// Validate VEBLOP phase
+	if err := m.CanVoteProducers(ctx); err != nil {
+		return nil, err
+	}
+
 	voter, err := sdk.AccAddressFromHex(msg.Voter)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid voter address")
