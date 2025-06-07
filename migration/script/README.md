@@ -106,13 +106,11 @@ Furthermore, the user must ensure that heimdall v1 config files are correct and 
 sudo bash migrate.sh \
   --heimdall-v1-home=/var/lib/heimdall \
   --heimdallcli-path=/usr/bin/heimdallcli \
-  --d-path=/usr/bin/heimdalld \
+  --heimdalld-path=/usr/bin/heimdalld \
   --network=mainnet \
   --node-type=validator \
-  --backup-dir=/var/lib/heimdall.backup \
-  --moniker=my-node \
   --service-user=heimdall \
-  --generate-genesis=true \
+  --generate-genesis=true
 ```
 
 For a possible output, see [output.log](./output-example.txt)
