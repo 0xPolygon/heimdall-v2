@@ -101,10 +101,7 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 					events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(i))
 					if err != nil {
 						// Check if error is due to context cancellation or client shutdown
-						if errors.Is(err, context.Canceled) ||
-							errors.Is(err, context.DeadlineExceeded) ||
-							strings.Contains(err.Error(), "client is not running") ||
-							strings.Contains(err.Error(), "client is shutting down") {
+						if isErrorDueToContextCancellationOrClientShutdown(err) {
 							hl.Logger.Info("Polling stopped - shutdown in progress")
 							ticker.Stop()
 							return
@@ -208,4 +205,11 @@ func (hl *HeimdallListener) sendBlockTask(taskName string, eventBytes []byte, bl
 	if err != nil {
 		hl.Logger.Error("Error sending block level task", "taskName", taskName, "blockHeight", blockHeight, "error", err)
 	}
+}
+
+func isErrorDueToContextCancellationOrClientShutdown(err error) bool {
+	return errors.Is(err, context.Canceled) ||
+		errors.Is(err, context.DeadlineExceeded) ||
+		strings.Contains(err.Error(), "client is not running") ||
+		strings.Contains(err.Error(), "client is shutting down")
 }
