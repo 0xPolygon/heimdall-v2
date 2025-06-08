@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -99,9 +100,12 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 					}
 					events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(i))
 					if err != nil {
-						// Check if error is due to context cancellation
-						if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-							hl.Logger.Info("Polling stopped - context cancelled")
+						// Check if error is due to context cancellation or client shutdown
+						if errors.Is(err, context.Canceled) ||
+							errors.Is(err, context.DeadlineExceeded) ||
+							strings.Contains(err.Error(), "client is not running") ||
+							strings.Contains(err.Error(), "client is shutting down") {
+							hl.Logger.Info("Polling stopped - shutdown in progress")
 							ticker.Stop()
 							return
 						}

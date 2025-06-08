@@ -65,6 +65,11 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 	default:
 	}
 
+	// Check if the client is still running before using it
+	if !client.IsRunning() {
+		return events, errors.New("client is shutting down")
+	}
+
 	c, cancel := context.WithTimeout(ctx, CommitTimeout)
 	defer cancel()
 
@@ -80,6 +85,11 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 	case <-ctx.Done():
 		return events, ctx.Err()
 	default:
+	}
+
+	// Check client again before subscribing
+	if !client.IsRunning() {
+		return events, errors.New("client is shutting down")
 	}
 
 	// subscriber
