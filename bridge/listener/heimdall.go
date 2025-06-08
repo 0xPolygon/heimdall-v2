@@ -3,6 +3,7 @@ package listener
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"strconv"
 	"time"
@@ -98,6 +99,12 @@ func (hl *HeimdallListener) StartPolling(ctx context.Context, pollInterval time.
 					}
 					events, err := helper.GetBeginBlockEvents(ctx, hl.httpClient, int64(i))
 					if err != nil {
+						// Check if error is due to context cancellation
+						if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+							hl.Logger.Info("Polling stopped - context cancelled")
+							ticker.Stop()
+							return
+						}
 						hl.Logger.Error("Error fetching begin block events", "error", err)
 						continue
 					}

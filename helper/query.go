@@ -58,6 +58,13 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 	var events []abci.Event
 	var err error
 
+	// Check if the parent context is already canceled
+	select {
+	case <-ctx.Done():
+		return events, ctx.Err()
+	default:
+	}
+
 	c, cancel := context.WithTimeout(ctx, CommitTimeout)
 	defer cancel()
 
@@ -66,6 +73,13 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 	if err == nil && blockResults != nil {
 		events = blockResults.FinalizeBlockEvents
 		return events, nil
+	}
+
+	// Check again before subscribing
+	select {
+	case <-ctx.Done():
+		return events, ctx.Err()
+	default:
 	}
 
 	// subscriber
@@ -101,6 +115,9 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 			default:
 				return events, errors.New("timed out waiting for event")
 			}
+		case <-ctx.Done():
+			// Parent context cancelled - return immediately
+			return events, ctx.Err()
 		case <-c.Done():
 			return events, errors.New("timed out waiting for event")
 		}
