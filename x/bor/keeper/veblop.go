@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"sort"
 
+	sdk "github.com/cosmos/cosmos-sdk/types"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
 	staketypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
-	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
@@ -56,7 +58,7 @@ func (k *Keeper) FindCurrentProducerID(ctx context.Context, blockNum uint64) (ui
 		return 0, err
 	}
 
-	for i := lastSpan.Id; i >= 0; i-- {
+	for i := lastSpan.Id; ; i-- {
 		span, err := k.GetSpan(ctx, i)
 		if err != nil {
 			return 0, err
@@ -64,6 +66,10 @@ func (k *Keeper) FindCurrentProducerID(ctx context.Context, blockNum uint64) (ui
 
 		if blockNum >= span.StartBlock && blockNum <= span.EndBlock {
 			return span.SelectedProducers[0].ValId, nil
+		}
+
+		if i == 0 {
+			break
 		}
 	}
 
@@ -103,13 +109,19 @@ func (k *Keeper) UpdateValidatorPerformanceScore(ctx context.Context, activeVali
 		}
 
 		if !hasKey {
-			k.PerformanceScore.Set(ctx, validatorID, blocks)
+			err := k.PerformanceScore.Set(ctx, validatorID, blocks)
+			if err != nil {
+				return err
+			}
 		} else {
 			currentScore, err := k.PerformanceScore.Get(ctx, validatorID)
 			if err != nil {
 				return err
 			}
-			k.PerformanceScore.Set(ctx, validatorID, currentScore+blocks)
+			err = k.PerformanceScore.Set(ctx, validatorID, currentScore+blocks)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -224,6 +236,10 @@ func (k *Keeper) SelectNextSpanProducer(ctx context.Context, currentProducer uin
 		return 0, fmt.Errorf("failed to calculate producer set: %w", err)
 	}
 
+	if len(candidates) == 0 {
+		candidates = helper.GetFallbackProducerVotes()
+	}
+
 	activeCandidates := k.FilterByActiveProducerSet(ctx, candidates, activeValidatorIDs)
 
 	// If no candidate is available after threshold filtering,
@@ -320,7 +336,7 @@ func (k *Keeper) CalculateProducerSet(ctx context.Context) ([]uint64, error) {
 		Score int64
 	}
 
-	var rankedProducers []scoredProducer
+	rankedProducers := make([]scoredProducer, 0, len(producerWeightedScores))
 	for id, score := range producerWeightedScores {
 		rankedProducers = append(rankedProducers, scoredProducer{ID: id, Score: score})
 	}

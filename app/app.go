@@ -34,6 +34,7 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/std"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	"github.com/cosmos/cosmos-sdk/types/module"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/version"
@@ -87,7 +88,6 @@ import (
 	"github.com/0xPolygon/heimdall-v2/x/topup"
 	topupKeeper "github.com/0xPolygon/heimdall-v2/x/topup/keeper"
 	topupTypes "github.com/0xPolygon/heimdall-v2/x/topup/types"
-	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 const (
@@ -455,8 +455,6 @@ func NewHeimdallApp(
 }
 
 func (app *HeimdallApp) CheckTx(req *abci.RequestCheckTx) (*abci.ResponseCheckTx, error) {
-	app.Logger().Info("check tx", "exec mode", req.Type)
-
 	// Only apply VEBLOP validation during normal CheckTx (not recheck)
 	if req.Type == abci.CheckTxType_New {
 		// Decode transaction to check for MsgVoteProducers

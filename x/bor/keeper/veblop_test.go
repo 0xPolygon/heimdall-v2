@@ -224,8 +224,8 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				stakeKeeper.EXPECT().GetValidatorFromValID(ctx, gomock.Any()).Return(staketypes.Validator{VotingPower: 0}, nil).AnyTimes()
 			},
 			activeValidatorIDs: map[uint64]struct{}{},
-			expectedError:      true,
-			errorContains:      "no candidates found",
+			expectedProducer:   2,
+			expectedError:      false,
 		},
 		{
 			name: "Last span has no selected producers",
@@ -242,8 +242,8 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			setupParams:        func() {},
 			setupValidatorSet:  func() {},
 			activeValidatorIDs: map[uint64]struct{}{},
-			expectedError:      true,
-			errorContains:      "no candidates found",
+			expectedProducer:   2,
+			expectedError:      false,
 		},
 		{
 			name: "Fail to find any candidates",
@@ -283,8 +283,8 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 				2: {}, // Active fallback producer
 				3: {}, // Active fallback producer
 			},
-			expectedProducer: 0,
-			expectedError:    true,
+			expectedProducer: 2,
+			expectedError:    false,
 		},
 		{
 			name: "Current producer not in candidate list - selects first candidate",
@@ -375,7 +375,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			expectedError:    false,
 		},
 		{
-			name: "Even fallback has no active candidates - returns error",
+			name: "Even fallback has no active candidates - selects next candidate",
 			setupSpan: func() {
 				span := types.Span{
 					Id:         1,
@@ -406,8 +406,8 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			activeValidatorIDs: map[uint64]struct{}{
 				// No validator IDs are active, so even fallback [1,2,3] becomes empty
 			},
-			expectedError: true,
-			errorContains: "no candidates found", // SelectProducer should fail with empty candidates
+			expectedProducer: 2,
+			expectedError:    false,
 		},
 	}
 
@@ -422,17 +422,7 @@ func (s *KeeperTestSuite) TestSelectNextSpanProducer() {
 			tc.setupParams()
 			tc.setupValidatorSet()
 
-			lastMilestone, err := s.milestoneKeeper.GetLastMilestone(ctx)
-			if err != nil {
-				s.T().Fatalf("Failed to get last milestone block: %v", err)
-			}
-
-			currentProducer, err := borKeeper.FindCurrentProducerID(ctx, lastMilestone.EndBlock)
-			if err != nil {
-				s.T().Fatalf("Failed to find current producer: %v", err)
-			}
-
-			result, err := borKeeper.SelectNextSpanProducer(ctx, currentProducer, tc.activeValidatorIDs)
+			result, err := borKeeper.SelectNextSpanProducer(ctx, 1, tc.activeValidatorIDs)
 
 			if tc.expectedError {
 				require.Error(err)

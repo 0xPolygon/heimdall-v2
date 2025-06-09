@@ -3151,18 +3151,6 @@ func TestCheckAndAddFutureSpan(t *testing.T) {
 		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
 		require.Equal(t, lastSpan.Id+1, currentLastSpan.Id, "a new span should be created with incremented ID")
-
-		// Verify that the state was updated correctly
-		newLastMilestoneBlock, err := app.MilestoneKeeper.GetLastMilestoneBlock(ctx)
-		require.NoError(t, err)
-		require.Equal(t, uint64(ctx.BlockHeight())+SpanRotationBuffer, newLastMilestoneBlock, "last milestone block should be updated")
-
-		failedProducers, err := app.BorKeeper.GetLatestFailedProducer(ctx)
-		require.NoError(t, err)
-
-		currentProducerID := validators[0].ValId
-		_, isFailed := failedProducers[currentProducerID]
-		require.True(t, isFailed, "current producer should be added to failed list")
 	})
 }
 

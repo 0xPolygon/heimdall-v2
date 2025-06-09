@@ -55,7 +55,7 @@ func (sp *SpanProcessor) startPolling(ctx context.Context, interval time.Duratio
 		select {
 		case <-ticker.C:
 			sp.checkAndPropose(ctx)
-			sp.checkAndVoteProducers(ctx)
+			sp.checkAndVoteProducers() //nolint:contextcheck
 		case <-ctx.Done():
 			sp.Logger.Info("Polling stopped")
 			ticker.Stop()
@@ -159,7 +159,7 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	}
 }
 
-func (sp *SpanProcessor) checkAndVoteProducers(ctx context.Context) {
+func (sp *SpanProcessor) checkAndVoteProducers() {
 	validatorPubKey := helper.GetPubKey()
 
 	lastSpan, err := sp.getLastSpan()
@@ -209,11 +209,14 @@ func (sp *SpanProcessor) checkAndVoteProducers(ctx context.Context) {
 	}
 
 	if needToUpdateVotes {
-		sp.sendProducerVotes(ctx, validatorId, localProducers)
+		err := sp.sendProducerVotes(validatorId, localProducers)
+		if err != nil {
+			sp.Logger.Error("Error while sending producer votes", "error", err)
+		}
 	}
 }
 
-func (sp *SpanProcessor) sendProducerVotes(ctx context.Context, validatorId uint64, producerVotes []uint64) error {
+func (sp *SpanProcessor) sendProducerVotes(validatorId uint64, producerVotes []uint64) error {
 	sp.Logger.Debug("Updating producer votes", "producers", producerVotes)
 
 	addrString, err := helper.GetAddressString()
@@ -228,7 +231,7 @@ func (sp *SpanProcessor) sendProducerVotes(ctx context.Context, validatorId uint
 		Votes:   types.ProducerVotes{Votes: producerVotes},
 	}
 
-	txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil) //nolint:contextcheck
+	txRes, err := sp.txBroadcaster.BroadcastToHeimdall(&msg, nil)
 	if err != nil {
 		sp.Logger.Error("Error while broadcasting span to heimdall", "error", err)
 		return err
