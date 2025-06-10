@@ -76,7 +76,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     --generate-genesis=true
     ```
    This will create `heimdall-v2` into `/var/lib/heimdall`
-10. Copy the following files from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
+10. Copy the following file from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
     - `dump-genesis.json`
     - `dump-genesis.json.sha512`
     - `migrated_dump-genesis.json`
@@ -85,16 +85,12 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     ```bash
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json ./
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json.sha512 ./
-     scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json ./
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json.sha512 ./
       ```
-11. Upload such files to the GCP bucket so that they can be accessed by other node operators.
+11. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators.
     - For example, you can upload them to the GCP bucket `heimdall-genesis` with the following command:
       ```bash
       gsutil cp dump-genesis.json gs://heimdall-genesis/
-      gsutil cp dump-genesis.json.sha512 gs://heimdall-genesis/
-      gsutil cp migrated_dump-genesis.json gs://heimdall-genesis/
-      gsutil cp migrated_dump-genesis.json.sha512 gs://heimdall-genesis/
       ```
 12. Update the following configs in the script:
      ```bash
