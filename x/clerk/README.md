@@ -118,7 +118,6 @@ One can run the following query commands from the clerk module :
 * `is-old-tx` - Query if the event record is already processed.
 * `latest-state-sync-id` - Query the latest state-sync id from L1.
 
-
 ### CLI commands
 
 ```bash
@@ -200,5 +199,5 @@ curl localhost:1317/clerk/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
 ```
 
 ```bash
-curl localhost:1317/clerk/event-records/latest-state-sync-id
+curl localhost:1317/clerk/latest-state-sync-id
 ```

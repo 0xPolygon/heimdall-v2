@@ -568,7 +568,7 @@ var (
 
 	pattern_Query_IsClerkTxOld_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"clerk", "is-old-tx"}, "", runtime.AssumeColonVerbOpt(false)))
 
-	pattern_Query_GetLatestStateSyncId_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"clerk", "event-records", "latest-state-sync-id"}, "", runtime.AssumeColonVerbOpt(false)))
+	pattern_Query_GetLatestStateSyncId_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"clerk", "latest-state-sync-id"}, "", runtime.AssumeColonVerbOpt(false)))
 )
 
 var (
