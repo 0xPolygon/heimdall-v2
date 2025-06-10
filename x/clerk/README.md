@@ -116,6 +116,7 @@ One can run the following query commands from the clerk module :
 * `record` - Query for a specific event record by its ID.
 * `record-list` - Query a list of event records by page and limit.
 * `is-old-tx` - Query if the event record is already processed.
+* `latest-state-sync-id` - Query the latest state-sync id from L1.
 
 
 ### CLI commands
@@ -138,6 +139,10 @@ heimdalld query clerk record-sequence [tx-hash] [log-index]
 
 ```bash
 heimdalld query clerk is-old-tx [tx-hash] [log-index]
+```
+
+```bash
+heimdalld query clerk latest-state-sync-id
 ```
 
 ### GRPC Endpoints
@@ -165,6 +170,10 @@ grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdall
 grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdallv2.clerk.Query/IsClerkTxOld
 ```
 
+```bash
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetLatestStateSyncId
+```
+
 ### REST endpoints
 
 The endpoints and the params are defined in the [clerk/query.proto](/proto/heimdallv2/clerk/query.proto) file.
@@ -188,4 +197,8 @@ curl localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>
 
 ```bash
 curl localhost:1317/clerk/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
+```
+
+```bash
+curl localhost:1317/clerk/event-records/latest-state-sync-id
 ```

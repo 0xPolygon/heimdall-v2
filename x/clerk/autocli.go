@@ -58,6 +58,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 						{ProtoField: "log_index"},
 					},
 				},
+				{
+					RpcMethod: "GetLatestStateSyncId",
+					Use:       "latest-state-sync-id",
+					Short:     "Query the latest state-sync ID from L1.",
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
