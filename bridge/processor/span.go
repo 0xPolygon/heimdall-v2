@@ -95,7 +95,10 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	latestBorBlockNumber := latestBlock.Number.Uint64()
 
 	if latestBorBlockNumber < lastSpan.StartBlock {
-		sp.Logger.Debug("Current bor block is less than last span start block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanStartBlock", lastSpan.StartBlock)
+		sp.Logger.Debug("Current bor block is less than last span start block, skipping proposing span",
+			"lastBlock", latestBorBlockNumber,
+			"lastSpanStartBlock", lastSpan.StartBlock,
+		)
 		return
 	}
 
@@ -111,11 +114,19 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	// Handle cases where bor is syncing and latest milestone end block is greater than latest bor block number
 	maxBlockNumber := max(latestMilestoneEndBlock, latestBorBlockNumber)
 
-	sp.Logger.Debug("Found last span", "lastSpan", lastSpan.Id, "startBlock", lastSpan.StartBlock, "endBlock", lastSpan.EndBlock)
+	sp.Logger.Debug("Found last span",
+		"lastSpan", lastSpan.Id,
+		"startBlock", lastSpan.StartBlock,
+		"endBlock", lastSpan.EndBlock,
+	)
 
 	if maxBlockNumber > lastSpan.EndBlock {
 		if latestMilestoneEndBlock > lastSpan.EndBlock {
-			sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+			sp.Logger.Debug("Bor self commmitted spans, backfill heimdall to fill missing spans",
+				"lastBlock", latestBorBlockNumber,
+				"lastFinalizedBlock", latestMilestoneEndBlock,
+				"lastSpanEndBlock", lastSpan.EndBlock,
+			)
 			go func() {
 				defer func() {
 					if r := recover(); r != nil {
@@ -129,11 +140,19 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 			}()
 
 		} else {
-			sp.Logger.Debug("Will not backfill heimdall spans, as latest milestone end block is less than last span end block", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+			sp.Logger.Debug("Will not backfill heimdall spans, as latest milestone end block is less than last span end block",
+				"lastBlock", latestBorBlockNumber,
+				"lastFinalizedBlock", latestMilestoneEndBlock,
+				"lastSpanEndBlock", lastSpan.EndBlock,
+			)
 		}
 	} else {
 		if types.IsBlockCloseToSpanEnd(maxBlockNumber, lastSpan.EndBlock) {
-			sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span", "currentBlock", latestBlock.Number.Uint64(), "lastSpanEndBlock", lastSpan.EndBlock)
+			sp.Logger.Debug("Current bor block is close to last span end block, skipping proposing span",
+				"lastBlock", latestBorBlockNumber,
+				"lastFinalizedBlock", latestMilestoneEndBlock,
+				"lastSpanEndBlock", lastSpan.EndBlock,
+			)
 			return
 		}
 
