@@ -101,6 +101,9 @@ func GetBeginBlockEvents(ctx context.Context, client *httpClient.HTTP, height in
 			default:
 				return events, errors.New("timed out waiting for event")
 			}
+		case <-ctx.Done():
+			// Parent context cancelled - return immediately
+			return events, ctx.Err()
 		case <-c.Done():
 			return events, errors.New("timed out waiting for event")
 		}
