@@ -24,6 +24,7 @@ const (
 	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
 	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
 	Query_IsClerkTxOld_FullMethodName          = "/heimdallv2.clerk.Query/IsClerkTxOld"
+	Query_GetLatestStateSyncId_FullMethodName  = "/heimdallv2.clerk.Query/GetLatestStateSyncId"
 )
 
 // QueryClient is the client API for Query service.
@@ -41,6 +42,8 @@ type QueryClient interface {
 	// IsClerkTxOld queries for a specific clerk tx to check its status (old
 	// means already submitted)
 	IsClerkTxOld(ctx context.Context, in *RecordSequenceRequest, opts ...grpc.CallOption) (*IsClerkTxOldResponse, error)
+	// GetLatestStateSyncId queries the latest state-sync id from L1.
+	GetLatestStateSyncId(ctx context.Context, in *LatestStateSyncIdRequest, opts ...grpc.CallOption) (*LatestStateSyncIdResponse, error)
 }
 
 type queryClient struct {
@@ -96,6 +99,15 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 	return out, nil
 }
 
+func (c *queryClient) GetLatestStateSyncId(ctx context.Context, in *LatestStateSyncIdRequest, opts ...grpc.CallOption) (*LatestStateSyncIdResponse, error) {
+	out := new(LatestStateSyncIdResponse)
+	err := c.cc.Invoke(ctx, Query_GetLatestStateSyncId_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -111,6 +123,8 @@ type QueryServer interface {
 	// IsClerkTxOld queries for a specific clerk tx to check its status (old
 	// means already submitted)
 	IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error)
+	// GetLatestStateSyncId queries the latest state-sync id from L1.
+	GetLatestStateSyncId(context.Context, *LatestStateSyncIdRequest) (*LatestStateSyncIdResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -132,6 +146,9 @@ func (UnimplementedQueryServer) GetRecordSequence(context.Context, *RecordSequen
 }
 func (UnimplementedQueryServer) IsClerkTxOld(context.Context, *RecordSequenceRequest) (*IsClerkTxOldResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsClerkTxOld not implemented")
+}
+func (UnimplementedQueryServer) GetLatestStateSyncId(context.Context, *LatestStateSyncIdRequest) (*LatestStateSyncIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestStateSyncId not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -236,6 +253,24 @@ func _Query_IsClerkTxOld_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetLatestStateSyncId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LatestStateSyncIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetLatestStateSyncId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetLatestStateSyncId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetLatestStateSyncId(ctx, req.(*LatestStateSyncIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -262,6 +297,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsClerkTxOld",
 			Handler:    _Query_IsClerkTxOld_Handler,
+		},
+		{
+			MethodName: "GetLatestStateSyncId",
+			Handler:    _Query_GetLatestStateSyncId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

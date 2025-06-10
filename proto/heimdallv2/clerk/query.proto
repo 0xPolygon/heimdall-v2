@@ -39,6 +39,13 @@ service Query {
   rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
     option (google.api.http).get = "/clerk/is-old-tx";
   }
+
+  // GetLatestStateSyncId queries the latest state-sync id from L1.
+  rpc GetLatestStateSyncId(LatestStateSyncIdRequest)
+      returns (LatestStateSyncIdResponse) {
+    option (cosmos.query.v1.module_query_safe) = true;
+    option (google.api.http).get = "/clerk/event-records/latest-state-sync-id";
+  }
 }
 
 message RecordRequest {
@@ -87,4 +94,10 @@ message RecordSequenceResponse {
 
 message IsClerkTxOldResponse {
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message LatestStateSyncIdRequest {}
+
+message LatestStateSyncIdResponse {
+  uint64 latest_state_sync_id = 1 [ (amino.dont_omitempty) = true ];
 }
