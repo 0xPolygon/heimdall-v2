@@ -4142,23 +4142,23 @@ func (x *fastReflection_IsClerkTxOldResponse) ProtoMethods() *protoiface.Methods
 }
 
 var (
-	md_LatestStateSyncIdRequest protoreflect.MessageDescriptor
+	md_LatestRecordIdRequest protoreflect.MessageDescriptor
 )
 
 func init() {
 	file_heimdallv2_clerk_query_proto_init()
-	md_LatestStateSyncIdRequest = File_heimdallv2_clerk_query_proto.Messages().ByName("LatestStateSyncIdRequest")
+	md_LatestRecordIdRequest = File_heimdallv2_clerk_query_proto.Messages().ByName("LatestRecordIdRequest")
 }
 
-var _ protoreflect.Message = (*fastReflection_LatestStateSyncIdRequest)(nil)
+var _ protoreflect.Message = (*fastReflection_LatestRecordIdRequest)(nil)
 
-type fastReflection_LatestStateSyncIdRequest LatestStateSyncIdRequest
+type fastReflection_LatestRecordIdRequest LatestRecordIdRequest
 
-func (x *LatestStateSyncIdRequest) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_LatestStateSyncIdRequest)(x)
+func (x *LatestRecordIdRequest) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_LatestRecordIdRequest)(x)
 }
 
-func (x *LatestStateSyncIdRequest) slowProtoReflect() protoreflect.Message {
+func (x *LatestRecordIdRequest) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_clerk_query_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4170,43 +4170,43 @@ func (x *LatestStateSyncIdRequest) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_LatestStateSyncIdRequest_messageType fastReflection_LatestStateSyncIdRequest_messageType
-var _ protoreflect.MessageType = fastReflection_LatestStateSyncIdRequest_messageType{}
+var _fastReflection_LatestRecordIdRequest_messageType fastReflection_LatestRecordIdRequest_messageType
+var _ protoreflect.MessageType = fastReflection_LatestRecordIdRequest_messageType{}
 
-type fastReflection_LatestStateSyncIdRequest_messageType struct{}
+type fastReflection_LatestRecordIdRequest_messageType struct{}
 
-func (x fastReflection_LatestStateSyncIdRequest_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_LatestStateSyncIdRequest)(nil)
+func (x fastReflection_LatestRecordIdRequest_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_LatestRecordIdRequest)(nil)
 }
-func (x fastReflection_LatestStateSyncIdRequest_messageType) New() protoreflect.Message {
-	return new(fastReflection_LatestStateSyncIdRequest)
+func (x fastReflection_LatestRecordIdRequest_messageType) New() protoreflect.Message {
+	return new(fastReflection_LatestRecordIdRequest)
 }
-func (x fastReflection_LatestStateSyncIdRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_LatestStateSyncIdRequest
+func (x fastReflection_LatestRecordIdRequest_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_LatestRecordIdRequest
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_LatestStateSyncIdRequest) Descriptor() protoreflect.MessageDescriptor {
-	return md_LatestStateSyncIdRequest
+func (x *fastReflection_LatestRecordIdRequest) Descriptor() protoreflect.MessageDescriptor {
+	return md_LatestRecordIdRequest
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_LatestStateSyncIdRequest) Type() protoreflect.MessageType {
-	return _fastReflection_LatestStateSyncIdRequest_messageType
+func (x *fastReflection_LatestRecordIdRequest) Type() protoreflect.MessageType {
+	return _fastReflection_LatestRecordIdRequest_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_LatestStateSyncIdRequest) New() protoreflect.Message {
-	return new(fastReflection_LatestStateSyncIdRequest)
+func (x *fastReflection_LatestRecordIdRequest) New() protoreflect.Message {
+	return new(fastReflection_LatestRecordIdRequest)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_LatestStateSyncIdRequest) Interface() protoreflect.ProtoMessage {
-	return (*LatestStateSyncIdRequest)(x)
+func (x *fastReflection_LatestRecordIdRequest) Interface() protoreflect.ProtoMessage {
+	return (*LatestRecordIdRequest)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -4214,7 +4214,7 @@ func (x *fastReflection_LatestStateSyncIdRequest) Interface() protoreflect.Proto
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_LatestStateSyncIdRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+func (x *fastReflection_LatestRecordIdRequest) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
 }
 
 // Has reports whether a field is populated.
@@ -4228,13 +4228,13 @@ func (x *fastReflection_LatestStateSyncIdRequest) Range(f func(protoreflect.Fiel
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_LatestStateSyncIdRequest) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_LatestRecordIdRequest) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4244,13 +4244,13 @@ func (x *fastReflection_LatestStateSyncIdRequest) Has(fd protoreflect.FieldDescr
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdRequest) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_LatestRecordIdRequest) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4260,13 +4260,13 @@ func (x *fastReflection_LatestStateSyncIdRequest) Clear(fd protoreflect.FieldDes
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_LatestStateSyncIdRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_LatestRecordIdRequest) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdRequest does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdRequest does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -4280,13 +4280,13 @@ func (x *fastReflection_LatestStateSyncIdRequest) Get(descriptor protoreflect.Fi
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_LatestRecordIdRequest) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdRequest does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4300,36 +4300,36 @@ func (x *fastReflection_LatestStateSyncIdRequest) Set(fd protoreflect.FieldDescr
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_LatestRecordIdRequest) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_LatestStateSyncIdRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_LatestRecordIdRequest) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdRequest"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdRequest"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdRequest does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdRequest does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_LatestStateSyncIdRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_LatestRecordIdRequest) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.LatestStateSyncIdRequest", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.LatestRecordIdRequest", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -4337,7 +4337,7 @@ func (x *fastReflection_LatestStateSyncIdRequest) WhichOneof(d protoreflect.Oneo
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_LatestStateSyncIdRequest) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_LatestRecordIdRequest) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -4348,7 +4348,7 @@ func (x *fastReflection_LatestStateSyncIdRequest) GetUnknown() protoreflect.RawF
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdRequest) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_LatestRecordIdRequest) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -4360,7 +4360,7 @@ func (x *fastReflection_LatestStateSyncIdRequest) SetUnknown(fields protoreflect
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_LatestStateSyncIdRequest) IsValid() bool {
+func (x *fastReflection_LatestRecordIdRequest) IsValid() bool {
 	return x != nil
 }
 
@@ -4370,9 +4370,9 @@ func (x *fastReflection_LatestStateSyncIdRequest) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_LatestStateSyncIdRequest) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_LatestRecordIdRequest) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*LatestStateSyncIdRequest)
+		x := input.Message.Interface().(*LatestRecordIdRequest)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4394,7 +4394,7 @@ func (x *fastReflection_LatestStateSyncIdRequest) ProtoMethods() *protoiface.Met
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*LatestStateSyncIdRequest)
+		x := input.Message.Interface().(*LatestRecordIdRequest)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4424,7 +4424,7 @@ func (x *fastReflection_LatestStateSyncIdRequest) ProtoMethods() *protoiface.Met
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*LatestStateSyncIdRequest)
+		x := input.Message.Interface().(*LatestRecordIdRequest)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4456,10 +4456,10 @@ func (x *fastReflection_LatestStateSyncIdRequest) ProtoMethods() *protoiface.Met
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestStateSyncIdRequest: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestRecordIdRequest: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestStateSyncIdRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestRecordIdRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			default:
@@ -4498,25 +4498,27 @@ func (x *fastReflection_LatestStateSyncIdRequest) ProtoMethods() *protoiface.Met
 }
 
 var (
-	md_LatestStateSyncIdResponse                      protoreflect.MessageDescriptor
-	fd_LatestStateSyncIdResponse_latest_state_sync_id protoreflect.FieldDescriptor
+	md_LatestRecordIdResponse                          protoreflect.MessageDescriptor
+	fd_LatestRecordIdResponse_latest_record_id         protoreflect.FieldDescriptor
+	fd_LatestRecordIdResponse_is_processed_by_heimdall protoreflect.FieldDescriptor
 )
 
 func init() {
 	file_heimdallv2_clerk_query_proto_init()
-	md_LatestStateSyncIdResponse = File_heimdallv2_clerk_query_proto.Messages().ByName("LatestStateSyncIdResponse")
-	fd_LatestStateSyncIdResponse_latest_state_sync_id = md_LatestStateSyncIdResponse.Fields().ByName("latest_state_sync_id")
+	md_LatestRecordIdResponse = File_heimdallv2_clerk_query_proto.Messages().ByName("LatestRecordIdResponse")
+	fd_LatestRecordIdResponse_latest_record_id = md_LatestRecordIdResponse.Fields().ByName("latest_record_id")
+	fd_LatestRecordIdResponse_is_processed_by_heimdall = md_LatestRecordIdResponse.Fields().ByName("is_processed_by_heimdall")
 }
 
-var _ protoreflect.Message = (*fastReflection_LatestStateSyncIdResponse)(nil)
+var _ protoreflect.Message = (*fastReflection_LatestRecordIdResponse)(nil)
 
-type fastReflection_LatestStateSyncIdResponse LatestStateSyncIdResponse
+type fastReflection_LatestRecordIdResponse LatestRecordIdResponse
 
-func (x *LatestStateSyncIdResponse) ProtoReflect() protoreflect.Message {
-	return (*fastReflection_LatestStateSyncIdResponse)(x)
+func (x *LatestRecordIdResponse) ProtoReflect() protoreflect.Message {
+	return (*fastReflection_LatestRecordIdResponse)(x)
 }
 
-func (x *LatestStateSyncIdResponse) slowProtoReflect() protoreflect.Message {
+func (x *LatestRecordIdResponse) slowProtoReflect() protoreflect.Message {
 	mi := &file_heimdallv2_clerk_query_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -4528,43 +4530,43 @@ func (x *LatestStateSyncIdResponse) slowProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-var _fastReflection_LatestStateSyncIdResponse_messageType fastReflection_LatestStateSyncIdResponse_messageType
-var _ protoreflect.MessageType = fastReflection_LatestStateSyncIdResponse_messageType{}
+var _fastReflection_LatestRecordIdResponse_messageType fastReflection_LatestRecordIdResponse_messageType
+var _ protoreflect.MessageType = fastReflection_LatestRecordIdResponse_messageType{}
 
-type fastReflection_LatestStateSyncIdResponse_messageType struct{}
+type fastReflection_LatestRecordIdResponse_messageType struct{}
 
-func (x fastReflection_LatestStateSyncIdResponse_messageType) Zero() protoreflect.Message {
-	return (*fastReflection_LatestStateSyncIdResponse)(nil)
+func (x fastReflection_LatestRecordIdResponse_messageType) Zero() protoreflect.Message {
+	return (*fastReflection_LatestRecordIdResponse)(nil)
 }
-func (x fastReflection_LatestStateSyncIdResponse_messageType) New() protoreflect.Message {
-	return new(fastReflection_LatestStateSyncIdResponse)
+func (x fastReflection_LatestRecordIdResponse_messageType) New() protoreflect.Message {
+	return new(fastReflection_LatestRecordIdResponse)
 }
-func (x fastReflection_LatestStateSyncIdResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
-	return md_LatestStateSyncIdResponse
+func (x fastReflection_LatestRecordIdResponse_messageType) Descriptor() protoreflect.MessageDescriptor {
+	return md_LatestRecordIdResponse
 }
 
 // Descriptor returns message descriptor, which contains only the protobuf
 // type information for the message.
-func (x *fastReflection_LatestStateSyncIdResponse) Descriptor() protoreflect.MessageDescriptor {
-	return md_LatestStateSyncIdResponse
+func (x *fastReflection_LatestRecordIdResponse) Descriptor() protoreflect.MessageDescriptor {
+	return md_LatestRecordIdResponse
 }
 
 // Type returns the message type, which encapsulates both Go and protobuf
 // type information. If the Go type information is not needed,
 // it is recommended that the message descriptor be used instead.
-func (x *fastReflection_LatestStateSyncIdResponse) Type() protoreflect.MessageType {
-	return _fastReflection_LatestStateSyncIdResponse_messageType
+func (x *fastReflection_LatestRecordIdResponse) Type() protoreflect.MessageType {
+	return _fastReflection_LatestRecordIdResponse_messageType
 }
 
 // New returns a newly allocated and mutable empty message.
-func (x *fastReflection_LatestStateSyncIdResponse) New() protoreflect.Message {
-	return new(fastReflection_LatestStateSyncIdResponse)
+func (x *fastReflection_LatestRecordIdResponse) New() protoreflect.Message {
+	return new(fastReflection_LatestRecordIdResponse)
 }
 
 // Interface unwraps the message reflection interface and
 // returns the underlying ProtoMessage interface.
-func (x *fastReflection_LatestStateSyncIdResponse) Interface() protoreflect.ProtoMessage {
-	return (*LatestStateSyncIdResponse)(x)
+func (x *fastReflection_LatestRecordIdResponse) Interface() protoreflect.ProtoMessage {
+	return (*LatestRecordIdResponse)(x)
 }
 
 // Range iterates over every populated field in an undefined order,
@@ -4572,10 +4574,16 @@ func (x *fastReflection_LatestStateSyncIdResponse) Interface() protoreflect.Prot
 // Range returns immediately if f returns false.
 // While iterating, mutating operations may only be performed
 // on the current field descriptor.
-func (x *fastReflection_LatestStateSyncIdResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
-	if x.LatestStateSyncId != uint64(0) {
-		value := protoreflect.ValueOfUint64(x.LatestStateSyncId)
-		if !f(fd_LatestStateSyncIdResponse_latest_state_sync_id, value) {
+func (x *fastReflection_LatestRecordIdResponse) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+	if x.LatestRecordId != uint64(0) {
+		value := protoreflect.ValueOfUint64(x.LatestRecordId)
+		if !f(fd_LatestRecordIdResponse_latest_record_id, value) {
+			return
+		}
+	}
+	if x.IsProcessedByHeimdall != false {
+		value := protoreflect.ValueOfBool(x.IsProcessedByHeimdall)
+		if !f(fd_LatestRecordIdResponse_is_processed_by_heimdall, value) {
 			return
 		}
 	}
@@ -4592,15 +4600,17 @@ func (x *fastReflection_LatestStateSyncIdResponse) Range(f func(protoreflect.Fie
 // In other cases (aside from the nullable cases above),
 // a proto3 scalar field is populated if it contains a non-zero value, and
 // a repeated field is populated if it is non-empty.
-func (x *fastReflection_LatestStateSyncIdResponse) Has(fd protoreflect.FieldDescriptor) bool {
+func (x *fastReflection_LatestRecordIdResponse) Has(fd protoreflect.FieldDescriptor) bool {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.LatestStateSyncIdResponse.latest_state_sync_id":
-		return x.LatestStateSyncId != uint64(0)
+	case "heimdallv2.clerk.LatestRecordIdResponse.latest_record_id":
+		return x.LatestRecordId != uint64(0)
+	case "heimdallv2.clerk.LatestRecordIdResponse.is_processed_by_heimdall":
+		return x.IsProcessedByHeimdall != false
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4610,15 +4620,17 @@ func (x *fastReflection_LatestStateSyncIdResponse) Has(fd protoreflect.FieldDesc
 // associated with the given field number.
 //
 // Clear is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdResponse) Clear(fd protoreflect.FieldDescriptor) {
+func (x *fastReflection_LatestRecordIdResponse) Clear(fd protoreflect.FieldDescriptor) {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.LatestStateSyncIdResponse.latest_state_sync_id":
-		x.LatestStateSyncId = uint64(0)
+	case "heimdallv2.clerk.LatestRecordIdResponse.latest_record_id":
+		x.LatestRecordId = uint64(0)
+	case "heimdallv2.clerk.LatestRecordIdResponse.is_processed_by_heimdall":
+		x.IsProcessedByHeimdall = false
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4628,16 +4640,19 @@ func (x *fastReflection_LatestStateSyncIdResponse) Clear(fd protoreflect.FieldDe
 // the default value of a bytes scalar is guaranteed to be a copy.
 // For unpopulated composite types, it returns an empty, read-only view
 // of the value; to obtain a mutable reference, use Mutable.
-func (x *fastReflection_LatestStateSyncIdResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_LatestRecordIdResponse) Get(descriptor protoreflect.FieldDescriptor) protoreflect.Value {
 	switch descriptor.FullName() {
-	case "heimdallv2.clerk.LatestStateSyncIdResponse.latest_state_sync_id":
-		value := x.LatestStateSyncId
+	case "heimdallv2.clerk.LatestRecordIdResponse.latest_record_id":
+		value := x.LatestRecordId
 		return protoreflect.ValueOfUint64(value)
+	case "heimdallv2.clerk.LatestRecordIdResponse.is_processed_by_heimdall":
+		value := x.IsProcessedByHeimdall
+		return protoreflect.ValueOfBool(value)
 	default:
 		if descriptor.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdResponse does not contain field %s", descriptor.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdResponse does not contain field %s", descriptor.FullName()))
 	}
 }
 
@@ -4651,15 +4666,17 @@ func (x *fastReflection_LatestStateSyncIdResponse) Get(descriptor protoreflect.F
 // empty, read-only value, then it panics.
 //
 // Set is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
+func (x *fastReflection_LatestRecordIdResponse) Set(fd protoreflect.FieldDescriptor, value protoreflect.Value) {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.LatestStateSyncIdResponse.latest_state_sync_id":
-		x.LatestStateSyncId = value.Uint()
+	case "heimdallv2.clerk.LatestRecordIdResponse.latest_record_id":
+		x.LatestRecordId = value.Uint()
+	case "heimdallv2.clerk.LatestRecordIdResponse.is_processed_by_heimdall":
+		x.IsProcessedByHeimdall = value.Bool()
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdResponse does not contain field %s", fd.FullName()))
 	}
 }
 
@@ -4673,40 +4690,44 @@ func (x *fastReflection_LatestStateSyncIdResponse) Set(fd protoreflect.FieldDesc
 // It panics if the field does not contain a composite type.
 //
 // Mutable is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_LatestRecordIdResponse) Mutable(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.LatestStateSyncIdResponse.latest_state_sync_id":
-		panic(fmt.Errorf("field latest_state_sync_id of message heimdallv2.clerk.LatestStateSyncIdResponse is not mutable"))
+	case "heimdallv2.clerk.LatestRecordIdResponse.latest_record_id":
+		panic(fmt.Errorf("field latest_record_id of message heimdallv2.clerk.LatestRecordIdResponse is not mutable"))
+	case "heimdallv2.clerk.LatestRecordIdResponse.is_processed_by_heimdall":
+		panic(fmt.Errorf("field is_processed_by_heimdall of message heimdallv2.clerk.LatestRecordIdResponse is not mutable"))
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // NewField returns a new value that is assignable to the field
 // for the given descriptor. For scalars, this returns the default value.
 // For lists, maps, and messages, this returns a new, empty, mutable value.
-func (x *fastReflection_LatestStateSyncIdResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
+func (x *fastReflection_LatestRecordIdResponse) NewField(fd protoreflect.FieldDescriptor) protoreflect.Value {
 	switch fd.FullName() {
-	case "heimdallv2.clerk.LatestStateSyncIdResponse.latest_state_sync_id":
+	case "heimdallv2.clerk.LatestRecordIdResponse.latest_record_id":
 		return protoreflect.ValueOfUint64(uint64(0))
+	case "heimdallv2.clerk.LatestRecordIdResponse.is_processed_by_heimdall":
+		return protoreflect.ValueOfBool(false)
 	default:
 		if fd.IsExtension() {
-			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestStateSyncIdResponse"))
+			panic(fmt.Errorf("proto3 declared messages do not support extensions: heimdallv2.clerk.LatestRecordIdResponse"))
 		}
-		panic(fmt.Errorf("message heimdallv2.clerk.LatestStateSyncIdResponse does not contain field %s", fd.FullName()))
+		panic(fmt.Errorf("message heimdallv2.clerk.LatestRecordIdResponse does not contain field %s", fd.FullName()))
 	}
 }
 
 // WhichOneof reports which field within the oneof is populated,
 // returning nil if none are populated.
 // It panics if the oneof descriptor does not belong to this message.
-func (x *fastReflection_LatestStateSyncIdResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
+func (x *fastReflection_LatestRecordIdResponse) WhichOneof(d protoreflect.OneofDescriptor) protoreflect.FieldDescriptor {
 	switch d.FullName() {
 	default:
-		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.LatestStateSyncIdResponse", d.FullName()))
+		panic(fmt.Errorf("%s is not a oneof field in heimdallv2.clerk.LatestRecordIdResponse", d.FullName()))
 	}
 	panic("unreachable")
 }
@@ -4714,7 +4735,7 @@ func (x *fastReflection_LatestStateSyncIdResponse) WhichOneof(d protoreflect.One
 // GetUnknown retrieves the entire list of unknown fields.
 // The caller may only mutate the contents of the RawFields
 // if the mutated bytes are stored back into the message with SetUnknown.
-func (x *fastReflection_LatestStateSyncIdResponse) GetUnknown() protoreflect.RawFields {
+func (x *fastReflection_LatestRecordIdResponse) GetUnknown() protoreflect.RawFields {
 	return x.unknownFields
 }
 
@@ -4725,7 +4746,7 @@ func (x *fastReflection_LatestStateSyncIdResponse) GetUnknown() protoreflect.Raw
 // An empty RawFields may be passed to clear the fields.
 //
 // SetUnknown is a mutating operation and unsafe for concurrent use.
-func (x *fastReflection_LatestStateSyncIdResponse) SetUnknown(fields protoreflect.RawFields) {
+func (x *fastReflection_LatestRecordIdResponse) SetUnknown(fields protoreflect.RawFields) {
 	x.unknownFields = fields
 }
 
@@ -4737,7 +4758,7 @@ func (x *fastReflection_LatestStateSyncIdResponse) SetUnknown(fields protoreflec
 // message type, but the details are implementation dependent.
 // Validity is not part of the protobuf data model, and may not
 // be preserved in marshaling or other operations.
-func (x *fastReflection_LatestStateSyncIdResponse) IsValid() bool {
+func (x *fastReflection_LatestRecordIdResponse) IsValid() bool {
 	return x != nil
 }
 
@@ -4747,9 +4768,9 @@ func (x *fastReflection_LatestStateSyncIdResponse) IsValid() bool {
 // The returned methods type is identical to
 // "google.golang.org/protobuf/runtime/protoiface".Methods.
 // Consult the protoiface package documentation for details.
-func (x *fastReflection_LatestStateSyncIdResponse) ProtoMethods() *protoiface.Methods {
+func (x *fastReflection_LatestRecordIdResponse) ProtoMethods() *protoiface.Methods {
 	size := func(input protoiface.SizeInput) protoiface.SizeOutput {
-		x := input.Message.Interface().(*LatestStateSyncIdResponse)
+		x := input.Message.Interface().(*LatestRecordIdResponse)
 		if x == nil {
 			return protoiface.SizeOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4761,8 +4782,11 @@ func (x *fastReflection_LatestStateSyncIdResponse) ProtoMethods() *protoiface.Me
 		var n int
 		var l int
 		_ = l
-		if x.LatestStateSyncId != 0 {
-			n += 1 + runtime.Sov(uint64(x.LatestStateSyncId))
+		if x.LatestRecordId != 0 {
+			n += 1 + runtime.Sov(uint64(x.LatestRecordId))
+		}
+		if x.IsProcessedByHeimdall {
+			n += 2
 		}
 		if x.unknownFields != nil {
 			n += len(x.unknownFields)
@@ -4774,7 +4798,7 @@ func (x *fastReflection_LatestStateSyncIdResponse) ProtoMethods() *protoiface.Me
 	}
 
 	marshal := func(input protoiface.MarshalInput) (protoiface.MarshalOutput, error) {
-		x := input.Message.Interface().(*LatestStateSyncIdResponse)
+		x := input.Message.Interface().(*LatestRecordIdResponse)
 		if x == nil {
 			return protoiface.MarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4793,8 +4817,18 @@ func (x *fastReflection_LatestStateSyncIdResponse) ProtoMethods() *protoiface.Me
 			i -= len(x.unknownFields)
 			copy(dAtA[i:], x.unknownFields)
 		}
-		if x.LatestStateSyncId != 0 {
-			i = runtime.EncodeVarint(dAtA, i, uint64(x.LatestStateSyncId))
+		if x.IsProcessedByHeimdall {
+			i--
+			if x.IsProcessedByHeimdall {
+				dAtA[i] = 1
+			} else {
+				dAtA[i] = 0
+			}
+			i--
+			dAtA[i] = 0x10
+		}
+		if x.LatestRecordId != 0 {
+			i = runtime.EncodeVarint(dAtA, i, uint64(x.LatestRecordId))
 			i--
 			dAtA[i] = 0x8
 		}
@@ -4809,7 +4843,7 @@ func (x *fastReflection_LatestStateSyncIdResponse) ProtoMethods() *protoiface.Me
 		}, nil
 	}
 	unmarshal := func(input protoiface.UnmarshalInput) (protoiface.UnmarshalOutput, error) {
-		x := input.Message.Interface().(*LatestStateSyncIdResponse)
+		x := input.Message.Interface().(*LatestRecordIdResponse)
 		if x == nil {
 			return protoiface.UnmarshalOutput{
 				NoUnkeyedLiterals: input.NoUnkeyedLiterals,
@@ -4841,17 +4875,17 @@ func (x *fastReflection_LatestStateSyncIdResponse) ProtoMethods() *protoiface.Me
 			fieldNum := int32(wire >> 3)
 			wireType := int(wire & 0x7)
 			if wireType == 4 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestStateSyncIdResponse: wiretype end group for non-group")
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestRecordIdResponse: wiretype end group for non-group")
 			}
 			if fieldNum <= 0 {
-				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestStateSyncIdResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+				return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: LatestRecordIdResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 			}
 			switch fieldNum {
 			case 1:
 				if wireType != 0 {
-					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field LatestStateSyncId", wireType)
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field LatestRecordId", wireType)
 				}
-				x.LatestStateSyncId = 0
+				x.LatestRecordId = 0
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
@@ -4861,11 +4895,31 @@ func (x *fastReflection_LatestStateSyncIdResponse) ProtoMethods() *protoiface.Me
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					x.LatestStateSyncId |= uint64(b&0x7F) << shift
+					x.LatestRecordId |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
 				}
+			case 2:
+				if wireType != 0 {
+					return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, fmt.Errorf("proto: wrong wireType = %d for field IsProcessedByHeimdall", wireType)
+				}
+				var v int
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, runtime.ErrIntOverflow
+					}
+					if iNdEx >= l {
+						return protoiface.UnmarshalOutput{NoUnkeyedLiterals: input.NoUnkeyedLiterals, Flags: input.Flags}, io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= int(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				x.IsProcessedByHeimdall = bool(v != 0)
 			default:
 				iNdEx = preIndex
 				skippy, err := runtime.Skip(dAtA[iNdEx:])
@@ -5261,14 +5315,14 @@ func (x *IsClerkTxOldResponse) GetIsOld() bool {
 	return false
 }
 
-type LatestStateSyncIdRequest struct {
+type LatestRecordIdRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 }
 
-func (x *LatestStateSyncIdRequest) Reset() {
-	*x = LatestStateSyncIdRequest{}
+func (x *LatestRecordIdRequest) Reset() {
+	*x = LatestRecordIdRequest{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_clerk_query_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5276,27 +5330,28 @@ func (x *LatestStateSyncIdRequest) Reset() {
 	}
 }
 
-func (x *LatestStateSyncIdRequest) String() string {
+func (x *LatestRecordIdRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LatestStateSyncIdRequest) ProtoMessage() {}
+func (*LatestRecordIdRequest) ProtoMessage() {}
 
-// Deprecated: Use LatestStateSyncIdRequest.ProtoReflect.Descriptor instead.
-func (*LatestStateSyncIdRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use LatestRecordIdRequest.ProtoReflect.Descriptor instead.
+func (*LatestRecordIdRequest) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_clerk_query_proto_rawDescGZIP(), []int{9}
 }
 
-type LatestStateSyncIdResponse struct {
+type LatestRecordIdResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	LatestStateSyncId uint64 `protobuf:"varint,1,opt,name=latest_state_sync_id,json=latestStateSyncId,proto3" json:"latest_state_sync_id,omitempty"`
+	LatestRecordId        uint64 `protobuf:"varint,1,opt,name=latest_record_id,json=latestRecordId,proto3" json:"latest_record_id,omitempty"`
+	IsProcessedByHeimdall bool   `protobuf:"varint,2,opt,name=is_processed_by_heimdall,json=isProcessedByHeimdall,proto3" json:"is_processed_by_heimdall,omitempty"`
 }
 
-func (x *LatestStateSyncIdResponse) Reset() {
-	*x = LatestStateSyncIdResponse{}
+func (x *LatestRecordIdResponse) Reset() {
+	*x = LatestRecordIdResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_heimdallv2_clerk_query_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5304,22 +5359,29 @@ func (x *LatestStateSyncIdResponse) Reset() {
 	}
 }
 
-func (x *LatestStateSyncIdResponse) String() string {
+func (x *LatestRecordIdResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LatestStateSyncIdResponse) ProtoMessage() {}
+func (*LatestRecordIdResponse) ProtoMessage() {}
 
-// Deprecated: Use LatestStateSyncIdResponse.ProtoReflect.Descriptor instead.
-func (*LatestStateSyncIdResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use LatestRecordIdResponse.ProtoReflect.Descriptor instead.
+func (*LatestRecordIdResponse) Descriptor() ([]byte, []int) {
 	return file_heimdallv2_clerk_query_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *LatestStateSyncIdResponse) GetLatestStateSyncId() uint64 {
+func (x *LatestRecordIdResponse) GetLatestRecordId() uint64 {
 	if x != nil {
-		return x.LatestStateSyncId
+		return x.LatestRecordId
 	}
 	return 0
+}
+
+func (x *LatestRecordIdResponse) GetIsProcessedByHeimdall() bool {
+	if x != nil {
+		return x.IsProcessedByHeimdall
+	}
+	return false
 }
 
 var File_heimdallv2_clerk_query_proto protoreflect.FileDescriptor
@@ -5393,78 +5455,81 @@ var file_heimdallv2_clerk_query_proto_rawDesc = []byte{
 	0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x22, 0x34, 0x0a, 0x14, 0x49, 0x73, 0x43, 0x6c, 0x65, 0x72,
 	0x6b, 0x54, 0x78, 0x4f, 0x6c, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1c,
 	0x0a, 0x06, 0x69, 0x73, 0x5f, 0x6f, 0x6c, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x42, 0x05,
-	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x69, 0x73, 0x4f, 0x6c, 0x64, 0x22, 0x1a, 0x0a, 0x18,
-	0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x49,
-	0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x53, 0x0a, 0x19, 0x4c, 0x61, 0x74, 0x65,
-	0x73, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x49, 0x64, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x36, 0x0a, 0x14, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x5f,
-	0x73, 0x74, 0x61, 0x74, 0x65, 0x5f, 0x73, 0x79, 0x6e, 0x63, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x11, 0x6c, 0x61, 0x74, 0x65,
-	0x73, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x49, 0x64, 0x32, 0xb7, 0x06,
-	0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x82, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x52,
-	0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x23, 0x2e, 0x68, 0x65, 0x69, 0x6d,
+	0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x05, 0x69, 0x73, 0x4f, 0x6c, 0x64, 0x22, 0x17, 0x0a, 0x15,
+	0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x52, 0x65,
+	0x71, 0x75, 0x65, 0x73, 0x74, 0x22, 0x89, 0x01, 0x0a, 0x16, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74,
+	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
+	0x12, 0x2f, 0x0a, 0x10, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x5f, 0x72, 0x65, 0x63, 0x6f, 0x72,
+	0x64, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a,
+	0x01, 0x52, 0x0e, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49,
+	0x64, 0x12, 0x3e, 0x0a, 0x18, 0x69, 0x73, 0x5f, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x65,
+	0x64, 0x5f, 0x62, 0x79, 0x5f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x08, 0x42, 0x05, 0xa8, 0xe7, 0xb0, 0x2a, 0x01, 0x52, 0x15, 0x69, 0x73, 0x50, 0x72,
+	0x6f, 0x63, 0x65, 0x73, 0x73, 0x65, 0x64, 0x42, 0x79, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x32, 0xac, 0x06, 0x0a, 0x05, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x82, 0x01, 0x0a, 0x0d,
+	0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x12, 0x23, 0x2e,
+	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b,
+	0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x24, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74,
+	0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82,
+	0xd3, 0xe4, 0x93, 0x02, 0x1b, 0x12, 0x19, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76,
+	0x65, 0x6e, 0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x6c, 0x69, 0x73, 0x74,
+	0x12, 0x8e, 0x01, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65,
+	0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74,
+	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
+	0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65,
+	0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x49,
+	0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x82, 0xd3, 0xe4, 0x93, 0x02,
+	0x20, 0x12, 0x1e, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x2d,
+	0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x2d, 0x69,
+	0x64, 0x12, 0x81, 0x01, 0x0a, 0x0d, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x42,
+	0x79, 0x49, 0x64, 0x12, 0x1f, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32,
+	0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x71,
+	0x75, 0x65, 0x73, 0x74, 0x1a, 0x20, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x2d, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4,
+	0x93, 0x02, 0x22, 0x12, 0x20, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65, 0x6e,
+	0x74, 0x2d, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x7b, 0x72, 0x65, 0x63, 0x6f, 0x72,
+	0x64, 0x5f, 0x69, 0x64, 0x7d, 0x12, 0x8c, 0x01, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63,
+	0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74, 0x68, 0x54, 0x69, 0x6d, 0x65, 0x12,
+	0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65,
+	0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74,
+	0x68, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68,
+	0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e,
+	0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74, 0x68, 0x54, 0x69,
+	0x6d, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x88, 0xe7, 0xb0, 0x2a,
+	0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x0d, 0x12, 0x0b, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f,
+	0x74, 0x69, 0x6d, 0x65, 0x12, 0x7f, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72,
+	0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d,
 	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63,
-	0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24,
+	0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65,
+	0x73, 0x74, 0x1a, 0x28, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e,
+	0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75,
+	0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0x82, 0xd3,
+	0xe4, 0x93, 0x02, 0x11, 0x12, 0x0f, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x73, 0x65, 0x71,
+	0x75, 0x65, 0x6e, 0x63, 0x65, 0x12, 0x79, 0x0a, 0x0c, 0x49, 0x73, 0x43, 0x6c, 0x65, 0x72, 0x6b,
+	0x54, 0x78, 0x4f, 0x6c, 0x64, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c,
+	0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53,
+	0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26,
 	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72,
-	0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x52, 0x65, 0x73, 0x70,
-	0x6f, 0x6e, 0x73, 0x65, 0x22, 0x26, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02,
-	0x1b, 0x12, 0x19, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x2d,
-	0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x2f, 0x6c, 0x69, 0x73, 0x74, 0x12, 0x81, 0x01, 0x0a,
-	0x0d, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x42, 0x79, 0x49, 0x64, 0x12, 0x1f,
-	0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72,
-	0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
-	0x20, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65,
-	0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x2d, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x22, 0x12, 0x20,
-	0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x2d, 0x72, 0x65, 0x63,
-	0x6f, 0x72, 0x64, 0x73, 0x2f, 0x7b, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x5f, 0x69, 0x64, 0x7d,
-	0x12, 0x8c, 0x01, 0x0a, 0x15, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69,
-	0x73, 0x74, 0x57, 0x69, 0x74, 0x68, 0x54, 0x69, 0x6d, 0x65, 0x12, 0x2b, 0x2e, 0x68, 0x65, 0x69,
-	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65,
-	0x63, 0x6f, 0x72, 0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74, 0x68, 0x54, 0x69, 0x6d, 0x65,
-	0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x2c, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61,
-	0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72,
-	0x64, 0x4c, 0x69, 0x73, 0x74, 0x57, 0x69, 0x74, 0x68, 0x54, 0x69, 0x6d, 0x65, 0x52, 0x65, 0x73,
-	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x88, 0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93,
-	0x02, 0x0d, 0x12, 0x0b, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x12,
-	0x7f, 0x0a, 0x11, 0x47, 0x65, 0x74, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75,
-	0x65, 0x6e, 0x63, 0x65, 0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65,
-	0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x28, 0x2e,
-	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b,
-	0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65, 0x52,
-	0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x17, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x11, 0x12,
-	0x0f, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x73, 0x65, 0x71, 0x75, 0x65, 0x6e, 0x63, 0x65,
-	0x12, 0x79, 0x0a, 0x0c, 0x49, 0x73, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x54, 0x78, 0x4f, 0x6c, 0x64,
-	0x12, 0x27, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c,
-	0x65, 0x72, 0x6b, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x65, 0x71, 0x75, 0x65, 0x6e,
-	0x63, 0x65, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x26, 0x2e, 0x68, 0x65, 0x69, 0x6d,
-	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x49, 0x73, 0x43,
-	0x6c, 0x65, 0x72, 0x6b, 0x54, 0x78, 0x4f, 0x6c, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
-	0x65, 0x22, 0x18, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x12, 0x12, 0x10, 0x2f, 0x63, 0x6c, 0x65, 0x72,
-	0x6b, 0x2f, 0x69, 0x73, 0x2d, 0x6f, 0x6c, 0x64, 0x2d, 0x74, 0x78, 0x12, 0x99, 0x01, 0x0a, 0x14,
-	0x47, 0x65, 0x74, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x53, 0x79,
-	0x6e, 0x63, 0x49, 0x64, 0x12, 0x2a, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
-	0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x74,
-	0x61, 0x74, 0x65, 0x53, 0x79, 0x6e, 0x63, 0x49, 0x64, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74,
-	0x1a, 0x2b, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c,
-	0x65, 0x72, 0x6b, 0x2e, 0x4c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x53, 0x74, 0x61, 0x74, 0x65, 0x53,
-	0x79, 0x6e, 0x63, 0x49, 0x64, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x28, 0x88,
-	0xe7, 0xb0, 0x2a, 0x01, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x1d, 0x12, 0x1b, 0x2f, 0x63, 0x6c, 0x65,
-	0x72, 0x6b, 0x2f, 0x6c, 0x61, 0x74, 0x65, 0x73, 0x74, 0x2d, 0x73, 0x74, 0x61, 0x74, 0x65, 0x2d,
-	0x73, 0x79, 0x6e, 0x63, 0x2d, 0x69, 0x64, 0x42, 0xba, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e,
-	0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b,
-	0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35,
-	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c,
-	0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32,
-	0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f,
-	0x63, 0x6c, 0x65, 0x72, 0x6b, 0xa2, 0x02, 0x03, 0x48, 0x43, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65,
-	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2e, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xca, 0x02,
-	0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72,
-	0x6b, 0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43,
-	0x6c, 0x65, 0x72, 0x6b, 0x5c, 0x47, 0x50, 0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61,
-	0xea, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43,
-	0x6c, 0x65, 0x72, 0x6b, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6b, 0x2e, 0x49, 0x73, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x54, 0x78, 0x4f, 0x6c, 0x64, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x22, 0x18, 0x82, 0xd3, 0xe4, 0x93, 0x02, 0x12, 0x12, 0x10,
+	0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x2f, 0x69, 0x73, 0x2d, 0x6f, 0x6c, 0x64, 0x2d, 0x74, 0x78,
+	0x42, 0xba, 0x01, 0x0a, 0x14, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c,
+	0x6c, 0x76, 0x32, 0x2e, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0x42, 0x0a, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x50, 0x72, 0x6f, 0x74, 0x6f, 0x50, 0x01, 0x5a, 0x35, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x30, 0x78, 0x50, 0x6f, 0x6c, 0x79, 0x67, 0x6f, 0x6e, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x2d, 0x76, 0x32, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x68, 0x65,
+	0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x2f, 0x63, 0x6c, 0x65, 0x72, 0x6b, 0xa2, 0x02,
+	0x03, 0x48, 0x43, 0x58, 0xaa, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76,
+	0x32, 0x2e, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xca, 0x02, 0x10, 0x48, 0x65, 0x69, 0x6d, 0x64, 0x61,
+	0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0xe2, 0x02, 0x1c, 0x48, 0x65, 0x69,
+	0x6d, 0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x5c, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x5c, 0x47, 0x50,
+	0x42, 0x4d, 0x65, 0x74, 0x61, 0x64, 0x61, 0x74, 0x61, 0xea, 0x02, 0x11, 0x48, 0x65, 0x69, 0x6d,
+	0x64, 0x61, 0x6c, 0x6c, 0x76, 0x32, 0x3a, 0x3a, 0x43, 0x6c, 0x65, 0x72, 0x6b, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5490,8 +5555,8 @@ var file_heimdallv2_clerk_query_proto_goTypes = []interface{}{
 	(*RecordSequenceRequest)(nil),      // 6: heimdallv2.clerk.RecordSequenceRequest
 	(*RecordSequenceResponse)(nil),     // 7: heimdallv2.clerk.RecordSequenceResponse
 	(*IsClerkTxOldResponse)(nil),       // 8: heimdallv2.clerk.IsClerkTxOldResponse
-	(*LatestStateSyncIdRequest)(nil),   // 9: heimdallv2.clerk.LatestStateSyncIdRequest
-	(*LatestStateSyncIdResponse)(nil),  // 10: heimdallv2.clerk.LatestStateSyncIdResponse
+	(*LatestRecordIdRequest)(nil),      // 9: heimdallv2.clerk.LatestRecordIdRequest
+	(*LatestRecordIdResponse)(nil),     // 10: heimdallv2.clerk.LatestRecordIdResponse
 	(*EventRecord)(nil),                // 11: heimdallv2.clerk.EventRecord
 	(*timestamppb.Timestamp)(nil),      // 12: google.protobuf.Timestamp
 	(*v1beta1.PageRequest)(nil),        // 13: cosmos.base.query.v1beta1.PageRequest
@@ -5503,17 +5568,17 @@ var file_heimdallv2_clerk_query_proto_depIdxs = []int32{
 	13, // 3: heimdallv2.clerk.RecordListWithTimeRequest.pagination:type_name -> cosmos.base.query.v1beta1.PageRequest
 	11, // 4: heimdallv2.clerk.RecordListWithTimeResponse.event_records:type_name -> heimdallv2.clerk.EventRecord
 	2,  // 5: heimdallv2.clerk.Query.GetRecordList:input_type -> heimdallv2.clerk.RecordListRequest
-	0,  // 6: heimdallv2.clerk.Query.GetRecordById:input_type -> heimdallv2.clerk.RecordRequest
-	4,  // 7: heimdallv2.clerk.Query.GetRecordListWithTime:input_type -> heimdallv2.clerk.RecordListWithTimeRequest
-	6,  // 8: heimdallv2.clerk.Query.GetRecordSequence:input_type -> heimdallv2.clerk.RecordSequenceRequest
-	6,  // 9: heimdallv2.clerk.Query.IsClerkTxOld:input_type -> heimdallv2.clerk.RecordSequenceRequest
-	9,  // 10: heimdallv2.clerk.Query.GetLatestStateSyncId:input_type -> heimdallv2.clerk.LatestStateSyncIdRequest
+	9,  // 6: heimdallv2.clerk.Query.GetLatestRecordId:input_type -> heimdallv2.clerk.LatestRecordIdRequest
+	0,  // 7: heimdallv2.clerk.Query.GetRecordById:input_type -> heimdallv2.clerk.RecordRequest
+	4,  // 8: heimdallv2.clerk.Query.GetRecordListWithTime:input_type -> heimdallv2.clerk.RecordListWithTimeRequest
+	6,  // 9: heimdallv2.clerk.Query.GetRecordSequence:input_type -> heimdallv2.clerk.RecordSequenceRequest
+	6,  // 10: heimdallv2.clerk.Query.IsClerkTxOld:input_type -> heimdallv2.clerk.RecordSequenceRequest
 	3,  // 11: heimdallv2.clerk.Query.GetRecordList:output_type -> heimdallv2.clerk.RecordListResponse
-	1,  // 12: heimdallv2.clerk.Query.GetRecordById:output_type -> heimdallv2.clerk.RecordResponse
-	5,  // 13: heimdallv2.clerk.Query.GetRecordListWithTime:output_type -> heimdallv2.clerk.RecordListWithTimeResponse
-	7,  // 14: heimdallv2.clerk.Query.GetRecordSequence:output_type -> heimdallv2.clerk.RecordSequenceResponse
-	8,  // 15: heimdallv2.clerk.Query.IsClerkTxOld:output_type -> heimdallv2.clerk.IsClerkTxOldResponse
-	10, // 16: heimdallv2.clerk.Query.GetLatestStateSyncId:output_type -> heimdallv2.clerk.LatestStateSyncIdResponse
+	10, // 12: heimdallv2.clerk.Query.GetLatestRecordId:output_type -> heimdallv2.clerk.LatestRecordIdResponse
+	1,  // 13: heimdallv2.clerk.Query.GetRecordById:output_type -> heimdallv2.clerk.RecordResponse
+	5,  // 14: heimdallv2.clerk.Query.GetRecordListWithTime:output_type -> heimdallv2.clerk.RecordListWithTimeResponse
+	7,  // 15: heimdallv2.clerk.Query.GetRecordSequence:output_type -> heimdallv2.clerk.RecordSequenceResponse
+	8,  // 16: heimdallv2.clerk.Query.IsClerkTxOld:output_type -> heimdallv2.clerk.IsClerkTxOldResponse
 	11, // [11:17] is the sub-list for method output_type
 	5,  // [5:11] is the sub-list for method input_type
 	5,  // [5:5] is the sub-list for extension type_name
@@ -5637,7 +5702,7 @@ func file_heimdallv2_clerk_query_proto_init() {
 			}
 		}
 		file_heimdallv2_clerk_query_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LatestStateSyncIdRequest); i {
+			switch v := v.(*LatestRecordIdRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5649,7 +5714,7 @@ func file_heimdallv2_clerk_query_proto_init() {
 			}
 		}
 		file_heimdallv2_clerk_query_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LatestStateSyncIdResponse); i {
+			switch v := v.(*LatestRecordIdResponse); i {
 			case 0:
 				return &v.state
 			case 1:

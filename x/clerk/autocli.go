@@ -59,9 +59,9 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 					},
 				},
 				{
-					RpcMethod: "GetLatestStateSyncId",
-					Use:       "latest-state-sync-id",
-					Short:     "Query the latest state-sync ID from L1.",
+					RpcMethod: "GetLatestRecordId",
+					Use:       "latest-record-id",
+					Short:     "Query the latest record id from L1.",
 				},
 			},
 		},
