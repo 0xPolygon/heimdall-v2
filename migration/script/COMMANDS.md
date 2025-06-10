@@ -20,11 +20,11 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
 
 3. Adjust the following environment vars of the [script](migrate.sh):
     ```bash 
-    V1_VERSION="1.2.3-34-g020f6c0d"
-    V2_VERSION="0.1.27"
+    V1_VERSION="1.2.3-35-gdafcbb67"
+    V2_VERSION="0.1.31"
     V1_CHAIN_ID="devnet"
     V2_CHAIN_ID="devnet"
-    V2_GENESIS_TIME="2025-05-22T10:20:00Z"
+    V2_GENESIS_TIME="2025-06-10T00:00:00Z"
     V1_HALT_HEIGHT=900
     VERIFY_EXPORTED_DATA=true
     ```
@@ -98,9 +98,9 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
       ```
 12. Update the following configs in the script:
      ```bash
-     V1_GENESIS_CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
-     V2_GENESIS_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
-     TRUSTED_GENESIS_URL="bit.ly/devnet-genesis"
+     V1_GENESIS_CHECKSUM="4eb6ddd5d84f08f6db4c1cc0f1793cc8b68ac112684eae4ce2b26042a7a9b3645ac6657fda212d77e5881c54cbc829384e1fc31eb9ced167c6d10ac8afbadd7e"
+     V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
+     TRUSTED_GENESIS_URL="https://ff4e1ab493fa24466b3a3009a12c1d75fb5c73be934b516ae874408-apidata.googleusercontent.com/download/storage/v1/b/devnet-genesis-bucket/o/dump-genesis.json?jk=AXbWWml5MvxXEdQk3zUyyhgkH-5Ot7rZk2MedTvPZHkddiQSShcH7x4mxX1ouiPvLYFEFR7ghAD3y8CQ-rqh3dV7j_K3gEtgdE0jjlcdp8D-9uljy0emzfOMpmvD5Gb1nz1eUhH-Apn4ELaVAuy8VvFAprUkRG-UlFtpcgoHjYm1exhNCMTImWKBDJrn_-SDA6loZNIMHUCpWlBPYCptzcSerGTehLOQdyrAnY4-vVPpgzMSaSP6BvsOgD-0a05xeilUvYQDCbSla21LBavH5F9SjgT8hTZgY9rz8Bt75ZxmsX16OkWem1T2Quoqg6dd5TvSqG7Au994eYve8gzMBucauWvTHgOkyV0mLytPK5CSfcGemy4L84lc-hTxCYO047untGYrDthYLJdi-jV4c-u82nNrjY8ZvVI8UIyhapFPFTcks9EJYVGdEDFFaGNZwcMo4CBfLKgwPgNdxREhDkZzT7iZrTwp1_dttf1Tob4FLjacJKMz1W6uJjTZ8ifJsJlyqiXDgL0E_NeuZNpH6pyd-L9LfgbAbxA6LjWMwScCUOXhG_F3O9dH8QGu5GAYjhO5BMMxvfnaIB25QBgYzzFsw0Es67kT6TDLKmjUlGJD27xsZhzMRegKJ4PMXLT5A8EHIQMlsv23lYwrmVx-ndc6kcBAPM02CLqiah5rivgFV2rDM-82NZviiH0BeHUgVtu8MEGKdm4mjVolTjUXwvR8AKSQHIkZ1pXZGC2AmLkZdjEP5pNBOwtL0PL9xSBGtbJqCcQ319RREqKKxvnCZ-8IK038FYC800xZawI3lVfDr0uilpVVkXzyRaO_Ruh8gPiqxJs74XOuKX5ezxlyjx81lfLQhssV4g7DnjP8-1nVXXrQGU0PnHveX0cGBQS2MpqD64LG5EyB-rjLcxLQqjC2Oy6xAMCBoUBD1c3LOeqJeK6SD8_CEqThWvZSfqNc5zSom401pW6jkQ05AW9z9insKauEo34djbXeVPy3Oq3ne7zKDLYApr0Z-Sp-M5GZ3hSi_DXaOIIy3lwg-hU9RdBn_F3EsMYEWQjS_p8dCQD_fZGIffbSIglW4SfzfsVOMy83p8OMujHnMeuvL9IL6O1O8hjZKFm8d5mKF4f2Ig_XaVqrEDp0aOgGGqfUk609JaI_HeVzm9iPammQ3_3k9cxzkRRDPaTlRsb9gZMHcItf8RNlnfNbdXHHLceJ_5QMtEfqunxB9UkpWF_zyrZnH9_FjVR_EtQFd-XH&isca=1"
      VERIFY_EXPORTED_DATA=false
      ```
     where
@@ -145,11 +145,11 @@ This can be run by any node operator.
 1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
 2. download the script
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/script/migrate.sh
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-tests/migration/script/migrate.sh
    ```
 3. download the checksum
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migration-tests/migration/script/migrate.sh.sha512
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-tests/migration/script/migrate.sh.sha512
    ```
 4. verify the script checksum
    ```bash
