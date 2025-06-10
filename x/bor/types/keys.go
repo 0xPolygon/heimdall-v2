@@ -23,4 +23,5 @@ var (
 	PerformanceScoreKey      = collections.NewPrefix(0x3A) // Key to store the performance score in the store
 	LatestActiveProducerKey  = collections.NewPrefix(0x3B) // Key to store the latest active producer in the store
 	LatestFailedProducerKey  = collections.NewPrefix(0x3C) // Key to store the latest failed producer in the store
+	LastSpanBlockKey         = collections.NewPrefix(0x3D) // Key to store the last span block in the store
 )

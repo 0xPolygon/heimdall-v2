@@ -13,7 +13,7 @@ import (
 )
 
 // AddNewVeblopSpan adds a new veblop (Validator-elected block producer) span
-func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}) error {
+func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, startBlock uint64, endBlock uint64, borChainID string, activeValidatorIDs map[uint64]struct{}, heimdallBlock uint64) error {
 	logger := k.Logger(ctx)
 
 	// select next producers
@@ -49,7 +49,12 @@ func (k *Keeper) AddNewVeblopSpan(ctx sdk.Context, currentProducer uint64, start
 
 	logger.Info("Freezing new veblop span", "id", newSpan.Id, "span", newSpan)
 
-	return k.AddNewSpan(ctx, newSpan)
+	err = k.AddNewSpan(ctx, newSpan)
+	if err != nil {
+		return err
+	}
+
+	return k.SetLastSpanBlock(ctx, heimdallBlock)
 }
 
 func (k *Keeper) FindCurrentProducerID(ctx context.Context, blockNum uint64) (uint64, error) {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"sort"
 
 	"cosmossdk.io/log"
@@ -23,7 +24,9 @@ import (
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
-func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller) (*types.MilestoneProposition, error) {
+type GetBlockAuthorFunc func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error)
+
+func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, getBlockAuthor GetBlockAuthorFunc) (*types.MilestoneProposition, error) {
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
@@ -60,9 +63,27 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	parentHash, blockHashes, tds, err := getBlockHashes(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
+	parentHash, blockHashes, tds, authors, err := getBlockInfo(ctx, propStartBlock, params.MaxMilestonePropositionLength, lastMilestoneHash, lastMilestoneBlockNumber, contractCaller)
 	if err != nil {
 		return nil, err
+	}
+
+	validIndex := 0
+	for i := 0; i < len(authors); i++ {
+		allowedAuthors, err := getBlockAuthor(ctx, propStartBlock+uint64(i))
+		if err != nil {
+			return nil, err
+		}
+
+		if slices.Contains(allowedAuthors, authors[i]) || propStartBlock+uint64(i) == 0 {
+			validIndex = i + 1
+		} else {
+			break
+		}
+	}
+
+	if validIndex == 0 {
+		return nil, fmt.Errorf("no valid block author found")
 	}
 
 	if err := validateMilestonePropositionFork(parentHash, lastMilestoneHash); err != nil {
@@ -70,10 +91,10 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 	}
 
 	milestoneProp := &types.MilestoneProposition{
-		BlockHashes:      blockHashes,
+		BlockHashes:      blockHashes[:validIndex],
 		StartBlockNumber: propStartBlock,
 		ParentHash:       parentHash,
-		BlockTds:         tds,
+		BlockTds:         tds[:validIndex],
 	}
 
 	return milestoneProp, nil
@@ -375,14 +396,14 @@ func GetMajorityMilestoneProposition(
 
 var ErrNoHeadersFound = errors.New("no header found")
 
-func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, error) {
-	headers, tds, err := contractCaller.GetBorChainBlocksAndTdInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
+func getBlockInfo(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, lastMilestoneHash []byte, lastMilestoneBlock uint64, contractCaller helper.IContractCaller) ([]byte, [][]byte, []uint64, []common.Address, error) {
+	headers, tds, authors, err := contractCaller.GetBorChainBlockInfoInBatch(ctx, int64(startBlock), int64(startBlock+maxBlocksInProposition-1))
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 	}
 
 	if len(headers) == 0 {
-		return nil, nil, nil, ErrNoHeadersFound
+		return nil, nil, nil, nil, ErrNoHeadersFound
 	}
 
 	result := make([][]byte, 0, len(headers))
@@ -393,7 +414,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		if startBlock-lastMilestoneBlock > 1 {
 			header, err := contractCaller.GetBorChainBlock(ctx, big.NewInt(int64(lastMilestoneBlock+1)))
 			if err != nil {
-				return nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
+				return nil, nil, nil, nil, fmt.Errorf("failed to get headers: %w", err)
 			}
 
 			parentHash = header.ParentHash.Bytes()
@@ -404,7 +425,7 @@ func getBlockHashes(ctx sdk.Context, startBlock, maxBlocksInProposition uint64, 
 		result = append(result, h.Hash().Bytes())
 	}
 
-	return parentHash, result, tds, nil
+	return parentHash, result, tds, authors, nil
 }
 
 func validateMilestonePropositionFork(parentHash []byte, lastMilestoneHash []byte) error {

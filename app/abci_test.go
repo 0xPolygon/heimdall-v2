@@ -104,7 +104,7 @@ func buildSignedTx2(
 	// 5) force this account to be the explicit fee-payer
 	txBuilder.SetFeePayer(feePayerAddr)
 
-	// 6) now tell the SDK “I’m going to sign two slots”
+	// 6) now tell the SDK "I'm going to sign two slots"
 	emptySig := signing.SignatureV2{
 		PubKey:   priv.PubKey(),
 		Data:     &signing.SingleSignatureData{SignMode: defaultSignMode},
@@ -120,7 +120,7 @@ func buildSignedTx2(
 		PubKey:        priv.PubKey(),
 	}
 
-	// 8) sign slot #0 (the “message” signer)
+	// 8) sign slot #0 (the "message" signer)
 	sigMsg, err := tx.SignWithPrivKey(
 		context.TODO(),
 		defaultSignMode,
@@ -136,7 +136,7 @@ func buildSignedTx2(
 	// re-apply with slot 0 filled
 	txBuilder.SetSignatures(sigMsg, emptySig)
 
-	// 9) sign slot #1 (the “fee-payer” signer)
+	// 9) sign slot #1 (the "fee-payer" signer)
 	sigFee, err := tx.SignWithPrivKey(
 		context.TODO(),
 		defaultSignMode,
@@ -524,8 +524,8 @@ func TestExtendVoteHandler(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-		Return([]*ethTypes.Header{}, []uint64{}, nil)
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		app.AppCodec(),
@@ -563,7 +563,7 @@ func TestExtendVoteHandler(t *testing.T) {
 	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 	require.NoError(t, err)
 	require.NotNil(t, respExtend.VoteExtension)
-	mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+	mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 	terrUnmarshal := "error occurred while decoding ExtendedCommitInfo"
 	terrTxDecode := "error occurred while decoding tx bytes in ExtendVoteHandler"
@@ -614,7 +614,7 @@ func TestExtendVoteHandler(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, respExtend)
-				mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+				mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 			}
 		})
 	}
@@ -663,8 +663,8 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-		Return([]*ethTypes.Header{}, []uint64{}, nil)
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		app.AppCodec(),
@@ -702,7 +702,7 @@ func TestVerifyVoteExtensionHandler(t *testing.T) {
 	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 	require.NoError(t, err)
 	require.NotNil(t, respExtend.VoteExtension)
-	mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+	mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 	reqVerify := abci.RequestVerifyVoteExtension{
 		VoteExtension:      respExtend.VoteExtension,
@@ -824,8 +824,8 @@ func TestSidetxsHappyPath(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-		Return([]*ethTypes.Header{}, []uint64{}, nil)
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 	mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.AnythingOfType("int64")).Return(txReceipt, nil)
 	mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
@@ -979,7 +979,7 @@ func TestSidetxsHappyPath(t *testing.T) {
 			respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 			require.NoError(t, err)
 			require.NotNil(t, respExtend.VoteExtension)
-			mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+			mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 			app.StakeKeeper.SetLastBlockTxs(ctx, [][]byte{txBytes})
 
@@ -1110,8 +1110,8 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 
 	mockCaller.On("GetBorChainBlock", mock.Anything, mock.Anything).Return(&blockHeader1, nil)
 	mockCaller.
-		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.Anything, mock.Anything).
-		Return([]*ethTypes.Header{&blockHeader1}, []uint64{1}, nil)
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.Anything, mock.Anything).
+		Return([]*ethTypes.Header{&blockHeader1}, []uint64{1}, []common.Address{common.HexToAddress(vals[0].GetOperator())}, nil)
 
 	for _, span := range spans {
 		err := app.BorKeeper.AddNewSpan(ctx, &span)
@@ -1166,7 +1166,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 		require.NoError(t, err)
 		require.NotNil(t, respExtend.VoteExtension)
-		mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+		mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 	})
 
@@ -1215,7 +1215,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 		require.NoError(t, err)
 		require.NotNil(t, respExtend.VoteExtension)
-		mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+		mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 	})
 
@@ -1264,7 +1264,7 @@ func TestAllUnhappyPathBorSideTxs(t *testing.T) {
 		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 		require.NoError(t, err)
 		require.NotNil(t, respExtend.VoteExtension)
-		mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+		mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 	})
 
@@ -1377,8 +1377,8 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		mockCaller.On("GetConfirmedTxReceipt", mock.Anything, mock.Anything).Return(nil, nil).Once()
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
@@ -1451,8 +1451,8 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
@@ -1537,8 +1537,8 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
@@ -1620,8 +1620,8 @@ func TestAllUnhappyPathClerkSideTxs(t *testing.T) {
 		//clerkKeeper.Keeper.ChainKeeper.(*clerktestutil.MockChainKeeper).EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).Times(1)
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
@@ -1779,8 +1779,8 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		mockCaller.On("DecodeStateSyncedEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
@@ -1850,8 +1850,8 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Once()
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
@@ -1924,8 +1924,8 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil).Once()
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		txBytes, err := buildSignedTx(&msg, validators[0].Signer, ctx, priv, app)
 		var txBytesCmt cmtTypes.Tx = txBytes
@@ -1999,8 +1999,8 @@ func TestAllUnhappyPathTopupSideTxs(t *testing.T) {
 		mockCaller.On("DecodeValidatorTopupFeesEvent", mock.Anything, mock.Anything, mock.Anything).Return(event, nil)
 
 		mockCaller.
-			On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-			Return([]*ethTypes.Header{}, []uint64{}, nil)
+			On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+			Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 		// mockChainKeeper.EXPECT().GetParams(gomock.Any()).Return(chainmanagertypes.DefaultParams(), nil).AnyTimes()
 
@@ -2053,6 +2053,18 @@ func TestMilestoneHappyPath(t *testing.T) {
 	priv, app, ctx, validatorPrivKeys := SetupAppWithABCIctx(t)
 	validators := app.StakeKeeper.GetAllValidators(ctx)
 
+	app.BorKeeper.AddNewSpan(ctx, &borTypes.Span{
+		Id:         0,
+		StartBlock: 0,
+		EndBlock:   10000000000000000,
+		ValidatorSet: stakeTypes.ValidatorSet{
+			Validators: validators,
+			Proposer:   validators[0],
+		},
+		SelectedProducers: []stakeTypes.Validator{*validators[0]},
+		BorChainId:        "test",
+	})
+
 	// Create a checkpoint message
 	msg := &types.MsgCheckpoint{
 		Proposer:        validators[0].Signer,
@@ -2090,11 +2102,9 @@ func TestMilestoneHappyPath(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, respPrep.Txs)
 
-	fmt.Println("lama")
-
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
 		Return(
 			[]*ethTypes.Header{
 				{
@@ -2108,6 +2118,7 @@ func TestMilestoneHappyPath(t *testing.T) {
 				},
 			},
 			[]uint64{10000000000000000},
+			[]common.Address{common.HexToAddress(validators[0].Signer)},
 			nil,
 		).Times(100)
 	mockCaller.
@@ -2228,8 +2239,8 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-		Return([]*ethTypes.Header{}, []uint64{}, nil)
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 	mockCaller.
 		On("GetBorChainBlock", mock.Anything, mock.Anything).
 		Return(
@@ -2276,7 +2287,7 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 		require.NoError(t, err)
 		require.NotNil(t, respExtend.VoteExtension)
-		mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+		mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 		finalizeReq := abci.RequestFinalizeBlock{
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -2299,7 +2310,6 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 		}
 
 		app.MilestoneKeeper.AddMilestone(ctx, testMilestone1)
-		fmt.Println("aktln")
 
 		reqExtend := abci.RequestExtendVote{
 			Txs:    respPrep.Txs,
@@ -2309,7 +2319,7 @@ func TestMilestoneUnhappyPaths(t *testing.T) {
 		respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 		require.NoError(t, err)
 		require.NotNil(t, respExtend.VoteExtension)
-		mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+		mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 		finalizeReq := abci.RequestFinalizeBlock{
 			Txs:             [][]byte{extCommitBytes, txBytes},
@@ -2349,8 +2359,8 @@ func TestPrepareProposal(t *testing.T) {
 
 	mockCaller := new(helpermocks.IContractCaller)
 	mockCaller.
-		On("GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
-		Return([]*ethTypes.Header{}, []uint64{}, nil)
+		On("GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64")).
+		Return([]*ethTypes.Header{}, []uint64{}, []common.Address{}, nil)
 
 	app.MilestoneKeeper = milestoneKeeper.NewKeeper(
 		app.AppCodec(),
@@ -2617,7 +2627,7 @@ func TestPrepareProposal(t *testing.T) {
 	respExtend, err := app.ExtendVoteHandler()(ctx, &reqExtend)
 	require.NoError(t, err)
 	require.NotNil(t, respExtend.VoteExtension)
-	mockCaller.AssertCalled(t, "GetBorChainBlocksAndTdInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
+	mockCaller.AssertCalled(t, "GetBorChainBlockInfoInBatch", mock.Anything, mock.AnythingOfType("int64"), mock.AnythingOfType("int64"))
 
 	// ------------------------------- Extend Vote Handler throws error when Unmarshalling of extCommit fails------------------------
 	reqExtendUnmarshalFail := abci.RequestExtendVote{
@@ -2648,7 +2658,7 @@ func TestPrepareProposal(t *testing.T) {
 
 	// ------------------------------- Extend Vote Handler throws error when Unmarshalling of extCommit fails------------------------
 
-	// VerifyVoteExtension — **here’s the fix: pass the consensus address** 🎉
+	// VerifyVoteExtension — **here's the fix: pass the consensus address** 🎉
 	reqVerify := abci.RequestVerifyVoteExtension{
 		VoteExtension:      respExtend.VoteExtension,
 		NonRpVoteExtension: respExtend.NonRpExtension,
@@ -3082,7 +3092,14 @@ func TestCheckAndAddFutureSpan(t *testing.T) {
 	err := app.BorKeeper.AddNewSpan(ctx, &lastSpan)
 	require.NoError(t, err)
 
-	supportingValidatorIDs := map[uint64]struct{}{1: {}, 2: {}}
+	producerValID := selectedProducers[0].ValId
+	// The producer is not in the supporting set.
+	supportingValidatorIDs := make(map[uint64]struct{})
+	for _, v := range validators {
+		if v.ValId != producerValID {
+			supportingValidatorIDs[v.ValId] = struct{}{}
+		}
+	}
 
 	t.Run("condition false", func(t *testing.T) {
 		majorityMilestone := &milestoneTypes.MilestoneProposition{
@@ -3107,47 +3124,45 @@ func TestCheckAndAddFutureSpan(t *testing.T) {
 
 		helper.SetVeblopHeight(int64(lastSpan.EndBlock + 1))
 
-		// Mock IContractCaller
+		// Mock IContractCaller to return the lowercase address.
 		mockCaller := new(helpermocks.IContractCaller)
-		producerAddr := common.HexToAddress("0x1111111111111111111111111111111111111111")
-		mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return(&producerAddr, nil)
+		mockCaller.On("GetBorChainBlockAuthor", mock.Anything, mock.Anything).Return([]common.Address{common.HexToAddress(validators[0].Signer)}, nil)
 		app.BorKeeper.SetContractCaller(mockCaller)
 
 		// Set up producer votes so that producer selection can work
-		validators := app.StakeKeeper.GetAllValidators(ctx)
-		if len(validators) > 0 {
-			// Set up some producer votes for the validators - use actual validator IDs
-			actualValidatorID := validators[0].ValId
-			producerVotes := borTypes.ProducerVotes{Votes: []uint64{actualValidatorID}}
-			err := app.BorKeeper.SetProducerVotes(ctx, validators[0].ValId, producerVotes)
+		if len(validators) > 1 {
+			// All validators vote for the same candidate to ensure consensus
+			var consensusCandidateID uint64
+			for _, v := range validators {
+				if v.ValId != producerValID {
+					consensusCandidateID = v.ValId
+					break
+				}
+			}
+
+			allValidatorIDs := make(map[uint64]struct{})
+			for _, val := range validators {
+				allValidatorIDs[val.ValId] = struct{}{}
+				producerVotes := borTypes.ProducerVotes{Votes: []uint64{consensusCandidateID}}
+				err := app.BorKeeper.SetProducerVotes(ctx, val.ValId, producerVotes)
+				require.NoError(t, err)
+			}
+
+			// Set up producer performance scores
+			err := app.BorKeeper.UpdateValidatorPerformanceScore(ctx, allValidatorIDs, 1)
 			require.NoError(t, err)
 
-			// Set up producer performance scores to ensure candidates are valid
-			err = app.BorKeeper.UpdateValidatorPerformanceScore(ctx, map[uint64]struct{}{actualValidatorID: {}}, 1)
-			require.NoError(t, err)
-
-			// Set up minimal span state to ensure producer selection works
+			// Set up minimal span state
 			params, err := app.BorKeeper.GetParams(ctx)
 			require.NoError(t, err)
-			if params.ProducerCount == 0 {
-				params.ProducerCount = 1 // Ensure at least 1 producer can be selected
-				app.BorKeeper.SetParams(ctx, params)
-			}
+			params.ProducerCount = 1
+			app.BorKeeper.SetParams(ctx, params)
 		}
 
 		err := app.checkAndAddFutureSpan(ctx, majorityMilestone, lastSpan, supportingValidatorIDs)
-
-		// For this integration test, we accept that the complex producer selection might fail
-		// The important thing is that our refactored function is being called and handling the error properly
-		if err != nil && (err.Error() == "failed to select producer: no candidates found" ||
-			err.Error() == "failed to select producer: position 1: no valid candidates for producer selection") {
-			// This is expected due to complex producer selection logic requirements
-			t.Logf("Producer selection failed as expected in integration test: %v", err)
-			return // Skip the span assertion since producer selection failed
-		}
 		require.NoError(t, err)
 
-		// Check that a new span was created with incremented ID
+		// Check that a new span was created
 		currentLastSpan, err := app.BorKeeper.GetLastSpan(ctx)
 		require.NoError(t, err)
 		require.Equal(t, lastSpan.Id+1, currentLastSpan.Id, "a new span should be created with incremented ID")

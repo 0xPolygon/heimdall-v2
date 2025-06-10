@@ -45,6 +45,7 @@ type Keeper struct {
 	PerformanceScore     collections.Map[uint64, uint64]
 	LatestActiveProducer collections.KeySet[uint64]
 	LatestFailedProducer collections.KeySet[uint64]
+	LastSpanBlock        collections.Item[uint64]
 }
 
 // NewKeeper creates a new instance of the bor Keeper
@@ -84,6 +85,7 @@ func NewKeeper(
 		PerformanceScore:     collections.NewMap(sb, types.PerformanceScoreKey, "performanceScore", collections.Uint64Key, collections.Uint64Value),
 		LatestActiveProducer: collections.NewKeySet(sb, types.LatestActiveProducerKey, "latestActiveProducer", collections.Uint64Key),
 		LatestFailedProducer: collections.NewKeySet(sb, types.LatestFailedProducerKey, "latestFailedProducer", collections.Uint64Key),
+		LastSpanBlock:        collections.NewItem(sb, types.LastSpanBlockKey, "lastSpanBlock", collections.Uint64Value),
 	}
 
 	schema, err := sb.Build()
@@ -142,7 +144,6 @@ func (k *Keeper) GetSpan(ctx context.Context, id uint64) (types.Span, error) {
 	if err != nil {
 		return types.Span{}, err
 	}
-
 	return span, nil
 }
 
@@ -301,6 +302,36 @@ func (k *Keeper) SelectNextProducers(ctx context.Context, seed common.Hash, prev
 // UpdateLastSpan updates the last span
 func (k *Keeper) UpdateLastSpan(ctx context.Context, id uint64) error {
 	return k.latestSpan.Set(ctx, id)
+}
+
+func (k *Keeper) SetLastSpanBlock(ctx context.Context, block uint64) error {
+	err := k.LastSpanBlock.Set(ctx, block)
+	if err != nil {
+		k.Logger(ctx).Error("error while setting last span block in store", "err", err)
+		return err
+	}
+
+	return nil
+}
+
+func (k *Keeper) GetLastSpanBlock(ctx context.Context) (uint64, error) {
+	doExist, err := k.LastSpanBlock.Has(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while checking the existence of last span block in store", "err", err)
+		return 0, err
+	}
+
+	if !doExist {
+		return 0, nil
+	}
+
+	block, err := k.LastSpanBlock.Get(ctx)
+	if err != nil {
+		k.Logger(ctx).Error("error while getting last span block from store", "err", err)
+		return 0, err
+	}
+
+	return block, nil
 }
 
 // FetchNextSpanSeed gets the eth block hash which serves as seed for random selection of the producer set
@@ -560,4 +591,43 @@ func (k Keeper) CanVoteProducers(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (k *Keeper) SpanByBlockNumber(ctx context.Context, blockNumber uint64) (types.Span, error) {
+	lastSpan, err := k.GetLastSpan(ctx)
+	if err != nil {
+		return types.Span{}, err
+	}
+
+	for id := lastSpan.Id; ; id-- {
+		span, err := k.GetSpan(ctx, id)
+		if err != nil {
+			// Not finding a span that should exist is a critical error.
+			return types.Span{}, fmt.Errorf("failed to get span with id %d: %w", id, err)
+		}
+
+		if blockNumber >= span.StartBlock && blockNumber <= span.EndBlock {
+			return span, nil
+		}
+
+		if id == 0 { // prevent uint64 underflow
+			break
+		}
+	}
+
+	return types.Span{}, fmt.Errorf("span not found for block %d", blockNumber)
+}
+
+func (k *Keeper) GetProducersByBlockNumber(ctx context.Context, blockNumber uint64) ([]common.Address, error) {
+	span, err := k.SpanByBlockNumber(ctx, blockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	producers := make([]common.Address, 0, len(span.SelectedProducers))
+	for _, producer := range span.SelectedProducers {
+		producers = append(producers, common.HexToAddress(producer.Signer))
+	}
+
+	return producers, nil
 }

@@ -290,7 +290,11 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			MilestoneProposition: nil,
 		}
 
-		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, app.caller)
+		getBlockAuthor := func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error) {
+			return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
+		}
+
+		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, app.caller, getBlockAuthor)
 		if err != nil {
 			if errors.Is(err, milestoneAbci.ErrNoHeadersFound) {
 				logger.Debug("No headers found for generating milestone proposition, continuing without it")
@@ -411,7 +415,7 @@ func (app *HeimdallApp) checkAndAddFutureSpan(ctx sdk.Context, majorityMilestone
 			return err
 		}
 
-		err = app.BorKeeper.AddNewVeblopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs)
+		err = app.BorKeeper.AddNewVeblopSpan(ctx, currentProducer, lastSpan.EndBlock+1, endBlock, lastSpan.BorChainId, supportingValidatorIDs, uint64(ctx.BlockHeight()))
 		if err != nil {
 			logger.Error("Error occurred while adding new veblop span", "error", err)
 			return err
@@ -513,7 +517,7 @@ func (app *HeimdallApp) checkAndRotateCurrentSpan(ctx sdk.Context) error {
 
 		delete(latestActiveProducer, currentProducer)
 
-		err = app.BorKeeper.AddNewVeblopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer)
+		err = app.BorKeeper.AddNewVeblopSpan(addSpanCtx, currentProducer, lastMilestone.EndBlock+1, endBlock, lastMilestone.BorChainId, latestActiveProducer, uint64(ctx.BlockHeight()))
 		if err != nil {
 			logger.Warn("Error occurred while adding new veblop span", "error", err)
 		} else {
@@ -624,9 +628,19 @@ func (app *HeimdallApp) PreBlocker(ctx sdk.Context, req *abci.RequestFinalizeBlo
 
 	isValidMilestone := false
 	if majorityMilestone != nil {
+		var lastSpanHeimdallBlock uint64
+		if helper.IsVeblop(majorityMilestone.StartBlockNumber) {
+			lastSpanHeimdallBlock, err = app.BorKeeper.GetLastSpanBlock(ctx)
+			if err != nil {
+				logger.Warn("Error occurred while getting last span block", "error", err)
+			}
+		}
+
 		if err := milestoneAbci.ValidateMilestoneProposition(ctx, &app.MilestoneKeeper, majorityMilestone); err != nil {
 			logger.Error("Invalid milestone proposition", "error", err, "height", req.Height, "majorityMilestone", majorityMilestone)
 			// We don't want to halt consensus because of invalid majority milestone proposition
+		} else if helper.IsVeblop(majorityMilestone.StartBlockNumber) && ctx.BlockHeight() == int64(lastSpanHeimdallBlock)+1 {
+			logger.Info("Last span was created in the previous block, skipping milestone addition", "lastSpanHeimdallBlock", lastSpanHeimdallBlock, "currentBlock", ctx.BlockHeight())
 		} else {
 			isValidMilestone = true
 		}
