@@ -1539,6 +1539,43 @@ paths:
           format: uint64
       tags:
         - Query
+  /clerk/event-records/latest-state-sync-id:
+    get:
+      summary: GetLatestStateSyncId queries the latest state-sync id from L1.
+      operationId: GetLatestStateSyncId
+      responses:
+        '200':
+          description: A successful response.
+          schema:
+            type: object
+            properties:
+              latest_state_sync_id:
+                type: string
+                format: uint64
+        default:
+          description: An unexpected error response.
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              code:
+                type: integer
+                format: int32
+              message:
+                type: string
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type_url:
+                      type: string
+                    value:
+                      type: string
+                      format: byte
+      tags:
+        - Query
   /clerk/event-records/list:
     get:
       summary: GetRecordList queries a list of records
@@ -4204,6 +4241,12 @@ definitions:
     properties:
       is_old:
         type: boolean
+  heimdallv2.clerk.LatestStateSyncIdResponse:
+    type: object
+    properties:
+      latest_state_sync_id:
+        type: string
+        format: uint64
   heimdallv2.clerk.RecordListResponse:
     type: object
     properties:
