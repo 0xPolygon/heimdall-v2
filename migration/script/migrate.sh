@@ -3,21 +3,23 @@
 umask 0022
 
 # -------------------- Env variables, to be adjusted before rolling out --------------------
-V1_VERSION="1.2.3-35-gab6cbfb0"
+V1_VERSION="1.2.3-35-gdafcbb67"
 V1_GENESIS_CHECKSUM="25ff6918888b080d6ed4f87320338bd9cfd102b5dd476998e44674bd43a66c8d2d42bc4aa3d370f963cfbc9641e904d79256eb51c145f0daac7cfaf817b66c87"
 V2_GENESIS_CHECKSUM="1e3e64360efe2282c065d3b2e8aa7574568bec0ee139561ad3d968939168de22a166b3a6f1a87ab0afe6bec3716ddf71b26217bc17815336ef1e97390396def2"
-V2_VERSION="0.1.27"
+V2_VERSION="0.1.28"
 V1_CHAIN_ID="devnet"
 V2_CHAIN_ID="devnet"
-V2_GENESIS_TIME="2025-06-05T13:30:00Z"
+V2_GENESIS_TIME="2025-06-01T00:00:00Z"
 V1_HALT_HEIGHT=22238836
+VERIFY_EXPORTED_DATA=true
+TRUSTED_GENESIS_URL="bit.ly/mumbai-genesis"
 
 # -------------------- const env variables --------------------
-V2_INITIAL_HEIGHT=$(( V1_HALT_HEIGHT + 1 ))
-VERIFY_EXPORTED_DATA=true
+INITIAL_HEIGHT=$(( APOCALYPSE_HEIGHT + 1 ))
+VERIFY_DATA=true
 DUMP_V1_GENESIS_FILE_NAME="dump-genesis.json"
 DRY_RUN=false
-TRUSTED_GENESIS_URL="bit.ly/mumbai-genesis"
+V2_HEIMDALL_HOME="/var/lib/heimdall"
 
 # -------------------- Script start --------------------
 START_TIME=$(date +%s)
@@ -494,7 +496,7 @@ if [ "$type" = "deb" ]; then
     sudo dpkg -r heimdalld heimdall || echo "[WARN] Nothing to uninstall"
     echo "[INFO] Installing $package..."
     sudo dpkg -i "$package" || handle_error $STEP "Failed to install $package"
-    if [ -n "$profilePackage" ] && [ ! -d /var/lib/heimdall/config ]; then
+    if [ -n "$profilePackage" ] && [ ! -d "$V2_HEIMDALL_HOME"/config ]; then
         echo "[INFO] Installing profile package..."
         sudo dpkg -i "$profilePackage" || handle_error $STEP "Failed to install profile package"
     fi
@@ -503,7 +505,7 @@ elif [ "$type" = "rpm" ]; then
     sudo rpm -e heimdall || echo "[WARN] Nothing to uninstall"
     echo "[INFO] Installing $package..."
     sudo rpm -i --force "$package" || handle_error $STEP "Failed to install $package"
-    if [ -n "$profilePackage" ] && [ ! -d /var/lib/heimdall/config ]; then
+    if [ -n "$profilePackage" ] && [ ! -d "$V2_HEIMDALL_HOME"/config ]; then
         echo "[INFO] Installing profile package..."
         sudo rpm -i --force "$profilePackage" || handle_error $STEP "Failed to install profile package"
     fi
@@ -592,8 +594,8 @@ if [[ "$NORMALIZED_HEIMDALLD_V2_VERSION" != "$NORMALIZED_EXPECTED_V2_VERSION" ]]
     handle_error $STEP "Heimdall v2 version mismatch! Expected: $V2_VERSION, Found: $HEIMDALLD_V2_VERSION_RAW"
 fi
 # Ensure HEIMDALL_HOME exists
-if [[ ! -d "/var/lib/heimdall" ]]; then
-    handle_error $STEP "/var/lib/heimdall does not exist after installation."
+if [[ ! -d "$V2_HEIMDALL_HOME" ]]; then
+    handle_error $STEP "$V2_HEIMDALL_HOME does not exist after installation."
 fi
 echo "[INFO] heimdall-v2 is using the correct version $V2_VERSION"
 
@@ -679,25 +681,24 @@ fi
 # Step 17: create temp heimdall-v2 home dir
 STEP=17
 print_step $STEP "Creating temp directory for heimdall-v2 in and applying proper permissions"
-V2_HOME="/var/lib/heimdall"
-sudo mkdir -p "/var/lib/heimdall" || handle_error $STEP "Failed to create $V2_HOME directory"
+sudo mkdir -p "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to create $V2_HEIMDALL_HOME directory"
 # apply proper permissions for the current user
-sudo chmod -R 755 "$V2_HOME" || handle_error $STEP "Failed to set permissions"
-sudo chown -R "$HEIMDALL_SERVICE_USER" "$V2_HOME" || handle_error $STEP "Failed to change ownership"
-echo "[INFO] $V2_HOME created successfully"
-if [ -f "$V2_HOME/config/genesis.json" ]; then
-    sudo rm "$V2_HOME/config/genesis.json" || handle_error $STEP "Failed to remove existing json in $V2_HOME/config"
+sudo chmod -R 755 "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to set permissions"
+sudo chown -R "$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to change ownership"
+echo "[INFO] $V2_HEIMDALL_HOME created successfully"
+if [ -f "$V2_HEIMDALL_HOME/config/genesis.json" ]; then
+    sudo rm "V2_HEIMDALL_HOME/config/genesis.json" || handle_error $STEP "Failed to remove existing json in $V2_HEIMDALL_HOME/config"
 fi
 
 # Step 18: init heimdall-v2
 STEP=18
 print_step $STEP "Initializing heimdalld for version v2"
 # Ensure Heimdall home exists before proceeding
-if [[ ! -d "/var/lib/heimdall" ]]; then
-    handle_error $STEP "/var/lib/heimdall does not exist. Cannot proceed with initialization."
+if [[ ! -d "$V2_HEIMDALL_HOME" ]]; then
+    handle_error $STEP "$V2_HEIMDALL_HOME does not exist. Cannot proceed with initialization."
 fi
 # Init Heimdall v2
-if ! heimdalld init "temp_moniker" --chain-id="$V2_CHAIN_ID" --home="$V2_HOME"; then
+if ! heimdalld init "temp_moniker" --chain-id="$V2_CHAIN_ID" --home="$V2_HEIMDALL_HOME"; then
     handle_error $STEP "Failed to initialize heimdalld."
 fi
 echo "[INFO] heimdalld initialized successfully."
@@ -705,36 +706,36 @@ echo "[INFO] heimdalld initialized successfully."
 
 # Step 19: verify required directories exist
 STEP=19
-print_step $STEP "Verifying required directories and configuration files in /var/lib/heimdall"
+print_step $STEP "Verifying required directories and configuration files in $V2_HEIMDALL_HOME"
 # Check if required directories exist
 REQUIRED_DIRS=("data" "config")
 for dir in "${REQUIRED_DIRS[@]}"; do
-    if [[ ! -d "/var/lib/heimdall/$dir" ]]; then
-        handle_error $STEP "Required directory is missing: /var/lib/heimdall/$dir"
+    if [[ ! -d "$V2_HEIMDALL_HOME/$dir" ]]; then
+        handle_error $STEP "Required directory is missing: $V2_HEIMDALL_HOME/$dir"
     fi
 done
 # Ensure config directory contains the necessary files
 REQUIRED_CONFIG_FILES=("app.toml" "client.toml" "config.toml" "genesis.json" "node_key.json" "priv_validator_key.json")
 for file in "${REQUIRED_CONFIG_FILES[@]}"; do
-    if [[ ! -f "/var/lib/heimdall/config/$file" ]]; then
+    if [[ ! -f "$V2_HEIMDALL_HOME/config/$file" ]]; then
         handle_error $STEP "Missing required configuration file: $file"
     fi
 done
 # Ensure data directory contains the necessary files
 REQUIRED_DATA_FILES=("priv_validator_state.json")
 for file in "${REQUIRED_DATA_FILES[@]}"; do
-    if [[ ! -f "/var/lib/heimdall//data/$file" ]]; then
+    if [[ ! -f "$V2_HEIMDALL_HOME/data/$file" ]]; then
         handle_error $STEP "Missing required data file: $file"
     fi
 done
-echo "[INFO] All required directories are present in var/lib/heimdall"
+echo "[INFO] All required directories are present in $V2_HEIMDALL_HOME"
 
 
 # Step 20: Restore bridge directory from backup
 STEP=20
 print_step $STEP "Restoring bridge directory from backup if present"
 BRIDGE_SRC="$BACKUP_DIR/bridge"
-BRIDGE_DEST="/var/lib/heimdall/bridge"
+BRIDGE_DEST="$V2_HEIMDALL_HOME/bridge"
 
 if [[ -d "$BRIDGE_SRC" ]]; then
     echo "[INFO] Detected bridge directory in backup: $BRIDGE_SRC"
@@ -748,8 +749,8 @@ fi
 
 # Step 21: move genesis file to new heimdall home
 STEP=21
-print_step $STEP "Moving genesis file to /var/lib/heimdall"
-TARGET_GENESIS_FILE="/var/lib/heimdall/config/genesis.json"
+print_step $STEP "Moving genesis file to $V2_HEIMDALL_HOME/config"
+TARGET_GENESIS_FILE="$V2_HEIMDALL_HOME/config/genesis.json"
 # Backup existing genesis file before replacing it
 if [ -f "$TARGET_GENESIS_FILE" ]; then
     echo "[INFO] Backing up existing genesis file..."
@@ -763,7 +764,7 @@ cp -p "$MIGRATED_GENESIS_FILE" "$TARGET_GENESIS_FILE" || handle_error $STEP "Fai
 # Step 22: edit priv_validator_key.json file according to v2 setup
 STEP=22
 print_step $STEP "Updating priv_validator_key.json file"
-PRIV_VALIDATOR_FILE="/var/lib/heimdall/config/priv_validator_key.json"
+PRIV_VALIDATOR_FILE="$V2_HEIMDALL_HOME/config/priv_validator_key.json"
 TEMP_PRIV_FILE="temp_priv_validator_key.json"
 TEMP_FILES+=("$TEMP_PRIV_FILE")
 
@@ -795,7 +796,7 @@ echo "[INFO] Updated priv_validator_key.json file saved as $PRIV_VALIDATOR_FILE"
 # Step 23: edit node_key.json file according to v2 setup
 STEP=23
 print_step $STEP "Updating node_key.json file"
-NODE_KEY_FILE="/var/lib/heimdall/config/node_key.json"
+NODE_KEY_FILE="$V2_HEIMDALL_HOME/config/node_key.json"
 TEMP_NODE_KEY_FILE="temp_node_key.json"
 TEMP_FILES+=("$TEMP_NODE_KEY_FILE")
 if [ -f "$NODE_KEY_FILE" ]; then
@@ -822,11 +823,11 @@ echo "[INFO] Updated node_key.json file saved as $NODE_KEY_FILE"
 # Step 24: Fix JSON formatting in priv_validator_state.json and set initial height
 STEP=24
 print_step $STEP "Fixing formatting in priv_validator_state.json and set initial height"
-PRIV_VALIDATOR_STATE="/var/lib/heimdall/data/priv_validator_state.json"
+PRIV_VALIDATOR_STATE="$V2_HEIMDALL_HOME/data/priv_validator_state.json"
 TEMP_STATE_FILE="temp_priv_validator_state.json"
 TEMP_FILES+=("$TEMP_STATE_FILE")
 if [ ! -f "$PRIV_VALIDATOR_STATE" ]; then
-    handle_error $STEP "priv_validator_state.json not found in /var/lib/heimdall/data/"
+    handle_error $STEP "priv_validator_state.json not found in $V2_HEIMDALL_HOME/data/"
 fi
 echo "[INFO] Creating backup of priv_validator_state.json..."
 cp "$PRIV_VALIDATOR_STATE" "$PRIV_VALIDATOR_STATE.bak" || handle_error $STEP "Failed to backup priv_validator_state.json"
@@ -851,7 +852,7 @@ echo "[INFO] Successfully updated priv_validator_state.json"
 STEP=25
 print_step $STEP "Restoring addrbook.json from backup (if present)"
 ADDRBOOK_FILE="$BACKUP_DIR/config/addrbook.json"
-TARGET_ADDRBOOK_FILE="/var/lib/heimdall/config/addrbook.json"
+TARGET_ADDRBOOK_FILE="$V2_HEIMDALL_HOME/config/addrbook.json"
 if [ -f "$ADDRBOOK_FILE" ]; then
     # Backup current one (if any)
     if [ -f "$TARGET_ADDRBOOK_FILE" ]; then
@@ -896,7 +897,7 @@ echo -e "     ws-address = \"ws://localhost:26657/websocket\"\n"
 echo -e "   ✅ This setting is recommended, as it improves performance by reducing the number of HTTP polling requests from Heimdall to Bor."
 echo -e "   🔄 After updating the config, make sure to restart your Bor node for changes to take effect.\n"
 # 1. Set chain-id in client.toml
-CLIENT_TOML="/var/lib/heimdall/config/client.toml"
+CLIENT_TOML="$V2_HEIMDALL_HOME/config/client.toml"
 echo "[INFO] Setting chain-id in client.toml..."
 set_toml_key "$CLIENT_TOML" "chain-id" "$V2_CHAIN_ID"
 actual_chain_id=$(grep -E '^chain-id\s*=' "$CLIENT_TOML" | cut -d'=' -f2 | tr -d ' "')
@@ -906,7 +907,7 @@ fi
 echo "[OK]   client.toml: chain-id = $V2_CHAIN_ID"
 # 2. Migrate config.toml keys
 OLD_CONFIG_TOML="$BACKUP_DIR/config/config.toml"
-NEW_CONFIG_TOML="/var/lib/heimdall/config/config.toml"
+NEW_CONFIG_TOML="$V2_HEIMDALL_HOME/config/config.toml"
 CONFIG_KEYS=(
     "moniker"
     "external_address"
@@ -944,7 +945,7 @@ echo "[OK]   config.toml: log_level = info"
 echo "[OK]   config.toml: log_format = plain"
 # 4. Migrate heimdall-config.toml → app.toml
 OLD_HEIMDALL_CONFIG_TOML="$BACKUP_DIR/config/heimdall-config.toml"
-NEW_APP_TOML="/var/lib/heimdall/config/app.toml"
+NEW_APP_TOML="$V2_HEIMDALL_HOME/config/app.toml"
 APP_KEYS=(
     "eth_rpc_url"
     "bor_rpc_url"
@@ -962,7 +963,7 @@ for key in "${APP_KEYS[@]}"; do
         echo "[WARN] app.toml: key '$key' not found or empty in v1, skipping"
     fi
 done
-# Validate
+# 5. Validate
 for key in "${APP_KEYS[@]}"; do
     expected=$(grep -E "^$key\s*=" "$OLD_HEIMDALL_CONFIG_TOML" | cut -d'=' -f2- | tr -d ' "' || true)
     actual=$(grep -E "^$key\s*=" "$NEW_APP_TOML" | cut -d'=' -f2- | tr -d ' "' || true)
@@ -970,28 +971,50 @@ for key in "${APP_KEYS[@]}"; do
         echo "[WARN] Validation failed for '$key' in app.toml: expected '$expected', got '$actual'"
     fi
 done
-echo "[INFO] app.toml values migrated successfully."
+# 6. Set static bor_grpc_flag=false in app.toml (recommended for the migration)
+echo "[INFO] Setting bor_grpc_flag param to false in app.toml..."
+set_toml_key "app.toml" "bor_grpc_flag" "false"
+echo "[OK]   app.toml: bor_grpc_flag = false"
+echo "[INFO] app.toml values migrated and updated successfully."
+# 6. Set static bor_rpc_timeout=1s in app.toml (recommended for the migration)
+echo "[INFO] Setting bor_rpc_timeout param to 1s in config.toml..."
+set_toml_key "app.toml" "bor_rpc_timeout" "1s"
+echo "[OK]   app.toml: bor_rpc_timeout = 1s"
+echo "[INFO] app.toml values migrated and updated successfully."
 
 
 # Step 27: Assign correct ownership to Heimdall directories
 STEP=27
-print_step $STEP "Assigning correct ownership and permissions under /var/lib/heimdall as user: $HEIMDALL_SERVICE_USER"
+print_step $STEP "Assigning correct ownership and permissions under $V2_HEIMDALL_HOME as user: $HEIMDALL_SERVICE_USER"
 # Sanity check: avoid chowning critical paths
 CRITICAL_PATHS=("/" "/usr" "/usr/bin" "/bin" "/lib" "/lib64" "/etc" "/boot")
 for path in "${CRITICAL_PATHS[@]}"; do
-    if [[ "/var/lib/heimdall" == "$path" ]]; then
+    if [[ "$V2_HEIMDALL_HOME" == "$path" ]]; then
         handle_error $STEP "Refusing to chown critical system path: $path"
     fi
 done
-echo "[INFO] Recursively setting ownership of all contents in /var/lib/heimdall to $HEIMDALL_SERVICE_USER"
-sudo chown -R "$HEIMDALL_SERVICE_USER":"$HEIMDALL_SERVICE_USER" "/var/lib/heimdall" || handle_error $STEP "Failed to chown /var/lib/heimdall"
-# Set 600 permissions for all files
-echo "[INFO] Setting 600 permissions for all files under /var/lib/heimdall"
-find "/var/lib/heimdall" -type f ! -name '.*' -exec chmod 600 {} \; || handle_error $STEP "Failed to chmod files"
-# Set 700 permissions for all directories
-echo "[INFO] Setting 700 permissions for all directories under /var/lib/heimdall"
-find "/var/lib/heimdall" -type d ! -name '.*' -exec chmod 700 {} \; || handle_error $STEP "Failed to chmod directories"
-echo "[INFO] Ownership and permissions successfully enforced under /var/lib/heimdall"
+echo "[INFO] Recursively setting ownership of all contents in $V2_HEIMDALL_HOME to $HEIMDALL_SERVICE_USER"
+sudo chown -R "$HEIMDALL_SERVICE_USER":"$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to chown $V2_HEIMDALL_HOME"
+# Set 640 permissions for all files
+echo "[INFO] Setting 640 permissions for all files under $V2_HEIMDALL_HOME"
+find "$V2_HEIMDALL_HOME" -type f ! -name '.*' -exec chmod 644 {} \; || handle_error $STEP "Failed to chmod files"
+# Set 750 permissions for all directories
+echo "[INFO] Setting 755 permissions for all directories under $V2_HEIMDALL_HOME"
+find "$V2_HEIMDALL_HOME" -type d ! -name '.*' -exec chmod 755 {} \; || handle_error $STEP "Failed to chmod directories"
+echo "[INFO] Ownership and permissions successfully enforced under $V2_HEIMDALL_HOME"
+# Override sensitive files with stricter permissions
+SENSITIVE_FILES=(
+  "$V2_HEIMDALL_HOME/config/priv_validator_key.json"
+  "$V2_HEIMDALL_HOME/config/node_key.json"
+  "$V2_HEIMDALL_HOME/data/priv_validator_state.json"
+)
+echo "[INFO] Enforcing stricter 600 permissions on sensitive files"
+for f in "${SENSITIVE_FILES[@]}"; do
+  if [[ -f "$f" ]]; then
+    chmod 600 "$f" || echo "[WARN] Failed to chmod 600 $f"
+  fi
+done
+echo "[INFO] Ownership and permissions successfully enforced under $V2_HEIMDALL_HOME"
 
 # Step 28: Automatically update the systemd unit file to set the correct user
 STEP=28
@@ -1015,11 +1038,11 @@ else
 fi
 
 
-# Step 29: Clean up .bak files in /var/lib/heimdall
+# Step 29: Clean up .bak files in "$V2_HEIMDALL_HOME"
 STEP=29
-print_step $STEP "Cleaning up .bak files in parent directory of /var/lib/heimdall"
-# Determine the parent directory of /var/lib/heimdall
-HEIMDALL_PARENT_DIR=$(dirname "/var/lib/heimdall")
+print_step $STEP "Cleaning up .bak files in parent directory of $V2_HEIMDALL_HOME"
+# Determine the parent directory of V2_HEIMDALL_HOME
+HEIMDALL_PARENT_DIR=$(dirname "$V2_HEIMDALL_HOME")
 # Find and delete all .bak files or directories
 BAK_FILES=$(find "$HEIMDALL_PARENT_DIR" -name "*.bak")
 if [[ -n "$BAK_FILES" ]]; then

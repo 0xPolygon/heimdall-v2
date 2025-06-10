@@ -12,29 +12,31 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    - `jq`
    - `sha512sum`
    - `file`
-   - `awk` 
+   - `awk`
    - `sed`
-   - `systemctl` 
-   - `grep` 
+   - `systemctl`
+   - `grep`
    - `id`
 
 3. Adjust the following environment vars of the [script](migrate.sh):
     ```bash 
-    V1_VERSION="1.2.3-35-gab6cbfb0"
+    V1_VERSION="1.2.3-34-g020f6c0d"
     V2_VERSION="0.1.27"
     V1_CHAIN_ID="devnet"
     V2_CHAIN_ID="devnet"
-    V2_GENESIS_TIME="2025-06-05T13:45:00Z"
+    V2_GENESIS_TIME="2025-05-22T10:20:00Z"
     V1_HALT_HEIGHT=22238836
+    VERIFY_EXPORTED_DATA=true
     ```
-   where 
+    where
    - `V1_VERSION` is the latest version of heimdall-v1 (currently, for testing is the version from `mardizzone/apocalypse` branch)
    - `V2_VERSION` is the latest version of heimdall-v2
    - `V1_CHAIN_ID` is the chain id of the heimdall-v1 network (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
-   - `V2_CHAIN_ID` is the chain id of the heimdall-v2 network (pre-agreed during the gov proposal)
-   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed during the gov proposal, it should be set in the future, e.g., 1h after the pilot migration is initiated)
-   - `V1_HALT_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed during the gov proposal, it should match the height defined in `APOCALYPSE_TAG`)  
-     
+   - `V2_CHAIN_ID` is the chain id of the heimdall-v2 network (pre-agreed)
+   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed, it should be set in the future, e.g., 30mins after the pilot migration is initiated)
+   - `V1_HALT_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed, it should match the height defined in `APOCALYPSE_TAG`)
+   - `VERIFY_EXPORTED_DATA` is set to `true` because the genesis data will be verified on the pilot node.  
+
 4. ssh into the node machine by using a valid user:
    ```bash
     ssh <USER>@<NODE_IP>
@@ -68,7 +70,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
       sudo bash migrate.sh \
     --heimdall-v1-home=/mumbai/heimdall \
     --heimdallcli-path=/usr/local/bin/heimdallcli \
-    --heimdalld-path=/usr/local/bin/heimdalld \
+    --heimdalld-path=/usr/bin/heimdalld \
     --network=amoy \
     --node-type=validator \
     --service-user=heimdall \
@@ -80,7 +82,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     - `dump-genesis.json.sha512`
     - `migrated_dump-genesis.json`
     - `migrated_dump-genesis.json.sha512`
-    You can use the following commands from your local machine
+     You can use the following commands from your local machine
     ```bash
      scp <USER>@<NODE_IP>:/mumbai/heimdall.backup/dump-genesis.json ./
      scp <USER>@<NODE_IP>:/mumbai/heimdall.backup/dump-genesis.json.sha512 ./
@@ -88,25 +90,25 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
      scp <USER>@<NODE_IP>:/mumbai/heimdall.backup/migrated_dump-genesis.json.sha512 ./
     ```
 11. Upload such files to the GCP bucket so that they can be accessed by other node operators.
-    For example, you can upload them to the GCP bucket `heimdall-genesis` with the following command:
-     ```bash
-     gsutil cp dump-genesis.json gs://heimdall-genesis/
-     gsutil cp dump-genesis.json.sha512 gs://heimdall-genesis/
-     gsutil cp migrated_dump-genesis.json gs://heimdall-genesis/
-     gsutil cp migrated_dump-genesis.json.sha512 gs://heimdall-genesis/
-     ```
+    - For example, you can upload them to the GCP bucket `heimdall-genesis` with the following command:
+      ```bash
+      gsutil cp dump-genesis.json gs://heimdall-genesis/
+      gsutil cp dump-genesis.json.sha512 gs://heimdall-genesis/
+      gsutil cp migrated_dump-genesis.json gs://heimdall-genesis/
+      gsutil cp migrated_dump-genesis.json.sha512 gs://heimdall-genesis/
+      ```
 12. Update the following configs in the script:
      ```bash
      V1_GENESIS_CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
      V2_GENESIS_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
      TRUSTED_GENESIS_URL="bit.ly/mumbai-genesis"
+     VERIFY_EXPORTED_DATA=false
      ```
-     where
-     ```
-     where 
-     - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
-     - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`  
-     - `TRUSTED_GENESIS_URL` is the URL of the genesis file (previously updated on a GCP bucket).
+    where
+    - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
+    - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
+    - `TRUSTED_GENESIS_URL` is the URL of the genesis file (previously updated on a GCP bucket).
+    - `VERIFY_EXPORTED_DATA` is set to `false` because the genesis data has been already verified on the pilot node, and this will save some time and computational resources on other nodes.  
 13. cd into the migration script folder
     ```bash
     cd heimdall-v2/migration/script
@@ -127,19 +129,21 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    ```bash
       journalctl -fu heimdalld
    ```
-18. The genesis time is most probably set in the future so `heimdalld` will print something like:
+18. If the genesis time is set in the future, `heimdalld` will print something like:
     ```bash
     heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
     ```
+    Otherwise, it will start syncing immediately
+    (trying to connect to peers and throw errors if they are not yet available).
 19. Wait until the genesis time is reached, and the node will start syncing.
 20. Now other node operators can run the migration.
 
 
 # Other executions (internal and external)
 
-This can be run by any node operator.  
+This can be run by any node operator.
 
-1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted  
+1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
 2. download the script
    ```bash
    curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/migration-mumbai/migration/script/migrate.sh
@@ -148,7 +152,7 @@ This can be run by any node operator.
    ```bash
    curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/migration-mumbai/migration/script/migrate.sh.sha512
    ```
-4. verify the script checksum 
+4. verify the script checksum
    ```bash
    sha512sum -c migrate.sh.sha512
    ```
@@ -159,21 +163,21 @@ This can be run by any node operator.
    DO NOT run the script if the checksum verification fails!
 
 5. Make sure the required software is installed on the machine, otherwise install them:
-    - `curl`
-    - `tar`
-    - `jq`
-    - `sha512sum`
-    - `file`
-    - `awk`
-    - `sed`
-    - `systemctl`
-    - `grep`
-    - `id`
+   - `curl`
+   - `tar`
+   - `jq`
+   - `sha512sum`
+   - `file`
+   - `awk`
+   - `sed`
+   - `systemctl`
+   - `grep`
+   - `id`
 
 6. retrieve the parameters needed by the script
 
    | Flag                 | Description                                                                                                    |
-      |----------------------|----------------------------------------------------------------------------------------------------------------|
+         |----------------------|----------------------------------------------------------------------------------------------------------------|
    | `--heimdall-v1-home` | Path to Heimdall v1 home (must contain `config` and `data`)                                                    |
    | `--heimdallcli-path` | Path to `heimdallcli` (must be latest stable version). It can be retrieved with `which heimdallcli`            |
    | `--heimdalld-path`   | Path to `heimdalld` (must be latest stable version). It can be retrieved with `which heimdalld`                |
@@ -241,7 +245,7 @@ If the migration itself doesn't go as planned, you can roll back to the previous
     ```bash
     sudo mv -f /lib/systemd/system/heimdalld.service.backup /lib/systemd/system/heimdalld.service
     ```
-5. Install the "fallback version" of heimdall (without `halt_height` embedded). 
+5. Install the "fallback version" of heimdall (without `halt_height` embedded).
    This can be previously backed up or downloaded with the following command, after replacing the version tag, network name (`amoy` or `mainnet`), and node type (`sentry` or `validator`).
     ```bash
     curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- v<version> <network> <node_type>    ```
@@ -252,7 +256,7 @@ If the migration itself doesn't go as planned, you can roll back to the previous
     # It should print
     # <version>
     ```
-   If it still prints the v2 version, you need to move the v1 binary to the correct location.  
+   If it still prints the v2 version, you need to move the v1 binary to the correct location.
 7. Reload the daemon and start heimdall
    ```bash
    sudo systemctl daemon-reload && sudo systemctl start heimdalld

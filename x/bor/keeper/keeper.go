@@ -33,6 +33,7 @@ type Keeper struct {
 	authority      string
 	ck             types.ChainManagerKeeper
 	sk             types.StakeKeeper
+	mk             types.MilestoneKeeper
 	contractCaller helper.IContractCaller
 
 	Schema           collections.Schema
@@ -49,7 +50,8 @@ func NewKeeper(
 	authority string,
 	chainKeeper types.ChainManagerKeeper,
 	stakingKeeper types.StakeKeeper,
-	caller *helper.ContractCaller,
+	milestoneKeeper types.MilestoneKeeper,
+	caller helper.IContractCaller,
 ) Keeper {
 	bz, err := address.NewHexCodec().StringToBytes(authority)
 	if err != nil {
@@ -68,6 +70,7 @@ func NewKeeper(
 		authority:        authority,
 		ck:               chainKeeper,
 		sk:               stakingKeeper,
+		mk:               milestoneKeeper,
 		contractCaller:   caller,
 		spans:            collections.NewMap(sb, types.SpanPrefixKey, "span", collections.Uint64Key, codec.CollValue[types.Span](cdc)),
 		latestSpan:       collections.NewItem(sb, types.LastSpanIDKey, "lastSpanId", collections.Uint64Value),

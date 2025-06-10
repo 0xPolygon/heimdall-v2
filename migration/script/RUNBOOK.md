@@ -16,15 +16,9 @@ This transition requires a structured and coordinated approach across multiple t
 ### Preparation
 
 1. Preserve some RPC nodes for heimdall-v1 historical data (this can be done in advance)
-2. **Governance Proposal Submission.** Includes:
-   1. Agreed Heimdall v1 `halt_height`
-   2. Release 'apocalypse' versions of Heimdall-v1, Bor and Erigon
-   3. Release 'fallback' version of Heimdall-v1
-   4. Release a final stable version of Heimdall-v2 (together with final stable versions of comet and cosmos-sdk)
-   5. New Heimdall-v2 Chain ID
-   6. Approximate time window for new genesis time (e.g., 1–2h after `halt_height`)
-3. **Node Operators Update Bor/Erigon**  
-4. **Node Operators Update Heimdall-v1**
+2. Disable self-heal on heimdall-v1 nodes (this can be done in advance)
+3. **Node Operators Update Bor/Erigon to latest version (compatible with v1 and v2)**
+4. **Node Operators Update Heimdall-v1 to migration-ready version**
 5. **Confirmation of a successful upgrade from all node operators**
 6. **Advise all node operators to refrain from performing any actions on L1 involving the bridge until v2 is fully operational.** This precaution is intended to prevent any potential issues with the bridge during the migration process. As an additional safeguard, we could consider temporarily disabling the staking UI to further minimize the risk of unintended interactions.
 7. Establish a real-time coordination hub for migration execution.
@@ -38,17 +32,17 @@ The majority of the steps below are automated in the [migration script](migrate.
 3. Node operators confirm to be on the latest `heimdallcli` version (with `get-last-committed-height` embedded)
 4. Node operators confirm they can execute `heimdalld` and `heimdallcli` by running `version` command for both of them
 5. Node operators confirm the heimdall config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
-6. Node operators confirm heimdall-v1 is down due to hitting `halt_height`  
-   - This can be achieved with `heimdallcli get-last-committed-height --home HEIMDALLD_HOME --quiet` command
-   - The output of this command should match the `halt_height`
-   - If some nodes are not down, or a block's height mismatch is detected, it means they did not reach the apocalypse height  
-   - This can happen, and the migration script handles this case by downloading the genesis.json from a trusted source (instead of generating it, to avoid risks of checksum mismatches and especially app hash errors in v2).  
+6. Node operators confirm heimdall-v1 is down due to hitting `halt_height`
+    - This can be achieved with `heimdallcli get-last-committed-height --home HEIMDALLD_HOME --quiet` command
+    - The output of this command should match the `halt_height`
+    - If some nodes are not down, or a block's height mismatch is detected, it means they did not reach the apocalypse height
+    - This can happen, and the migration script handles this case by downloading the `genesis.json` from a trusted source (instead of generating it, to avoid risks of checksum mismatches and especially app hash errors in v2).
 7. Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
 8. **Genesis Export from Heimdall-v1**
    `heimdallcli export-heimdall --home HEIMDALLD_HOME --chain-id V1_CHAIN_ID`
-   - operators should use the latest version of `heimdallcli`
-   - `HEIMDALLD_HOME` is usually `/var/lib/heimdall` directory, 
-   - `V1_CHAIN_ID` is the heimdall-v1 chain id, (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
+    - operators should use the latest version of `heimdallcli`
+    - `HEIMDALLD_HOME` is usually `/var/lib/heimdall` directory,
+    - `V1_CHAIN_ID` is the heimdall-v1 chain id, (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
       The command will generate `dump-genesis.json` there. This process must be run first on a fully synced pilot node.
 9. **v1 Checksum Generation**
    The exported genesis file is subject to checksum.
@@ -59,7 +53,7 @@ The majority of the steps below are automated in the [migration script](migrate.
     ```bash
     heimdalld migrate dump-genesis.json --chain-id=<V2_CHAIN_ID> --genesis-time=<TIME_IN_FORMAT_YYYY-MM-DDTHH:MM:SSZ) --initial-height=<H>
     ```
-    where `H = v1_halt_height + 1`, whilst `--chain-id` and `genesis-time` are pre-agreed offline via the governance proposal on v1.
+    where `H = v1_halt_height + 1`, whilst `--chain-id` and `genesis-time` are pre-agreed offline.
 14. **v2 Checksum Generation**
     The migrated genesis is used to generate its checksum.  
     At this point, script env vars can be set,
@@ -67,22 +61,23 @@ The majority of the steps below are automated in the [migration script](migrate.
     The genesis exports (v1 and migrated) will be made available to the community together with their checksums.
     The script will be distributed to the community together with its checksum.
 15. Node operators delete (or rename) their `HEIMDALL_HOME` directory (**make sure it was backed up earlier**)
-16. Node operators create a new `HEIMDALL_HOME` directory with the new Heimdall v2 binary by running `heimdalld init [moniker-name] --home=<V2_HOME> --chain-id=<V2_CHAIN_ID>`.  
-    The moniker is available in v1 at `HEIMDALL_HOME/config/config.toml`.
+16. Node operators create a new `HEIMDALL_HOME` directory under `/var/lib/heimdall` by running `heimdalld init [moniker-name] --home=/var/lib/heimdall --chain-id=<V2_CHAIN_ID>`.  
+    The moniker is available in v1 at `V1_HEIMDALL_HOME/config/config.toml`.
     The service file `heimdall.service` should reflect the same `User` (and possibly `Group`) coming from v1 service file.
 17. Node operators edit their configuration files with config information from their backup, plus default values. For detailed info, see [here](../configs).
     1. v2 `app.toml` must reflect the “merge” from v1 `app.toml` and `heimdall-config.toml`
-       - All values from v1 `app.toml` should NOT be carried over.
-       - For `heimdall-config.toml`:
-         - `heimdall_rest_server` key is no longer required in v2
+        - All values from v1 `app.toml` should NOT be carried over.
+        - For `heimdall-config.toml`:
+            - `heimdall_rest_server` key is no longer required in v2
+            - It's recommended to set `bor_grpc_flag = "false"` for the sake of the migration (you can set it to `true` later on)
     2. v2 `config.toml` also needs to be edited
-       - Ensure `moniker` remains the same in v2.
-       - Use `log_level = "info"` or `debug` (v2 default is `info`)
-       - Do NOT port the following:
-         - `upnp`
-         - the entire `[fastsync]` section
-         - the `[consensus]` section (v2 defaults are fine)
-         - `index_tags` and `index_all_tags`
+        - Ensure `moniker` remains the same in v2.
+        - Use `log_level = "info"` (v2 default is `info`)
+        - Do NOT port the following:
+            - `upnp`
+            - the entire `[fastsync]` section
+            - the `[consensus]` section (v2 defaults are fine)
+            - `index_tags` and `index_all_tags`
     3. v2 `priv_validator_state.json` must reflect v1 `priv_validator_state.json` and update the `round` from a string type to an int type. Also, `height` must be set to the agreed initial v2 height (`v1_halt_height + 1`)
     - v2 `addrbook.json` must match v1 `addrbook.json` (this is not mandatory but will help heimdall to peer faster)
     - v2 `node_key.json` must reflect v1 values (`priv_key.value`) and preserve v2 types
@@ -96,8 +91,8 @@ The majority of the steps below are automated in the [migration script](migrate.
     [heimdall]
     ws-address = "ws://localhost:26657/websocket"
     ```
-23. **Restart bor** Only in case the step above was done.  
-24. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic   
+23. **Restart bor** Only in case the step above was done.
+24. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
 
 ### Rollback strategy to restore v1
 We decided not to enforce an HF in heimdall-v1,
@@ -114,10 +109,10 @@ Also, with this approach,
 the `halt-height` can be simply postponed (even if heimdall already stopped because of it)
 by simply changing the hardcoded `halt_height` to a future block.  
 In case of issues with v2, node operators can roll back to the previous version of heimdall-v1 by following these steps:
-   1. Install heimdall-v1 “fallback” version (with postponed or removed `halt_height`)
-   2. Restore backed up `heimdall`-v1 folder
-   3. Restore previous `heimdall` v1 service file 
-   4. Make sure no `symlink` or service for heimdall is bound to v2
-   5. Restart the node with v1 commands
-   6. If v1 still creates problems, we have the opportunity to roll back to pre-`halt_height`.
-   7. If the rollback doesn't work, snapshot restore is safe to execute and the ultimate fallback.
+1. Install heimdall-v1 “fallback” version (with postponed or removed `halt_height`)
+2. Restore backed up `heimdall`-v1 folder
+3. Restore previous `heimdall` v1 service file
+4. Make sure no `symlink` or service for heimdall is bound to v2
+5. Restart the node with v1 commands
+6. If v1 still creates problems, we have the opportunity to roll back to pre-`halt_height`.
+7. If the rollback doesn't work, snapshot restore is safe to execute and the ultimate fallback.
