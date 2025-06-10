@@ -141,7 +141,7 @@ heimdalld query clerk is-old-tx [tx-hash] [log-index]
 ```
 
 ```bash
-heimdalld query clerk latest-state-sync-id
+heimdalld query clerk latest-record-id
 ```
 
 ### GRPC Endpoints
@@ -170,7 +170,7 @@ grpcurl -plaintext -d '{"tx_hash": <>, "log_index": <>}' localhost:9090 heimdall
 ```
 
 ```bash
-grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetLatestStateSyncId
+grpcurl -plaintext -d '{}' localhost:9090 heimdallv2.clerk.Query/GetLatestRecordId
 ```
 
 ### REST endpoints
@@ -180,6 +180,10 @@ Please refer to them for more information about the optional params.
 
 ```bash
 curl localhost:1317/clerk/event-records/list?page=<page>&limit=<limit>
+```
+
+```bash
+curl localhost:1317/clerk/event-records/latest-id
 ```
 
 ```bash
@@ -196,8 +200,4 @@ curl localhost:1317/clerk/sequence?tx_hash=<tx-hash>&log_index=<log-index>
 
 ```bash
 curl localhost:1317/clerk/is-old-tx?tx_hash=<tx-hash>&log_index=<log-index>
-```
-
-```bash
-curl localhost:1317/clerk/latest-state-sync-id
 ```
