@@ -25,9 +25,10 @@ This transition requires a structured and coordinated approach across multiple t
 
 ### Execution
 
-The majority of the steps below are automated in the [migration script](migrate.sh), the following is just a runbook for manual execution.  
+The majority of the steps below are automated in the [bash migration script](migrate.sh), the following is just a runbook for manual execution.  
 In case the script does not support your architecture, you can use this runbook to perform the migration manually.  
-Please also refer to the [migration script](migrate.sh) for more details on the steps, the configuration files examples under `configs` [directory](./../configs), and the [README](README.md).  
+Be aware that some commands must be adapted to your architecture (e.g. if running heimdall inside docker or kubernetes, rather than plain Linux/Ubuntu machnes).
+Please also refer to the [bash migration script](migrate.sh) for more details on the steps, the configuration files examples under `configs` [directory](./../configs), and the [README](README.md).  
 
 ### Migration Steps
 1. Node operators confirm to be on the latest Bor/Erigon version (compatible with v1 and v2)
