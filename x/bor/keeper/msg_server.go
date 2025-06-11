@@ -172,7 +172,13 @@ func (s msgServer) BackfillSpans(ctx context.Context, msg *types.MsgBackfillSpan
 		return nil, types.ErrLatestMilestoneNotFound
 	}
 
-	borSpanId, err := types.CalcCurrentBorSpanId(latestMilestone.EndBlock, &latestSpan)
+	borLastUsedSpan, err := s.GetSpan(ctx, msg.LatestSpanId)
+	if err != nil {
+		logger.Error("failed to get last used bor span", "error", err)
+		return nil, errors.Wrapf(err, "failed to get last used bor span")
+	}
+
+	borSpanId, err := types.CalcCurrentBorSpanId(latestMilestone.EndBlock, &borLastUsedSpan)
 	if err != nil {
 		logger.Error("failed to calculate bor span id", "error", err)
 		return nil, errors.Wrapf(err, "failed to calculate bor span id")
