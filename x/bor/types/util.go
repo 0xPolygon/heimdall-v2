@@ -51,9 +51,6 @@ func GenerateBorCommittedSpans(latestBorBlock uint64, latestBorUsedSpan *Span) [
 }
 
 // CalcCurrentBorSpanId computes the Bor span ID corresponding to latestBorBlock,
-// using latestHeimdallSpan as the reference.  It returns an error if inputs are invalid
-// (nil span, zero or negative span length) or if arithmetic overflow is detected.
-// CalcCurrentBorSpanId computes the Bor span ID corresponding to latestBorBlock,
 // using latestHeimdallSpan as the reference. It returns an error if inputs are invalid
 // (nil span, zero or negative span length) or if arithmetic overflow is detected.
 func CalcCurrentBorSpanId(latestBorBlock uint64, latestHeimdallSpan *Span) (uint64, error) {
