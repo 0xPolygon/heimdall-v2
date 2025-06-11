@@ -16,12 +16,12 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/0xPolygon/heimdall-v2/app"
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/version"
 )
 
 const (
-	bridgeDBFlag   = "bridge-db"
 	borChainIDFlag = "bor-chain-id"
 	logsTypeFlag   = "logs-type"
 )
@@ -76,13 +76,13 @@ func DecorateWithBridgeRootFlags(cmd *cobra.Command, v *viper.Viper, loggerInsta
 
 	// bridge storage db
 	cmd.PersistentFlags().String(
-		bridgeDBFlag,
+		util.BridgeDBFlag,
 		"",
 		"Bridge db path (default <home>/bridge/storage)",
 	)
 
-	if err := v.BindPFlag(bridgeDBFlag, cmd.PersistentFlags().Lookup(bridgeDBFlag)); err != nil {
-		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, bridgeDBFlag), "Error", err)
+	if err := v.BindPFlag(util.BridgeDBFlag, cmd.PersistentFlags().Lookup(util.BridgeDBFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, util.BridgeDBFlag), "Error", err)
 	}
 
 	// bridge chain id
@@ -130,7 +130,7 @@ func initMetrics() {
 func AdjustBridgeDBValue(cmd *cobra.Command) {
 	cometbftNode, _ := cmd.Flags().GetString(helper.CometBFTNodeFlag)
 	withHeimdallConfigValue, _ := cmd.Flags().GetString(helper.WithHeimdallConfigFlag)
-	bridgeDBValue, _ := cmd.Flags().GetString(bridgeDBFlag)
+	bridgeDBValue, _ := cmd.Flags().GetString(util.BridgeDBFlag)
 	borChainIDValue, _ := cmd.Flags().GetString(borChainIDFlag)
 	logsTypeValue, _ := cmd.Flags().GetString(logsTypeFlag)
 
@@ -142,7 +142,7 @@ func AdjustBridgeDBValue(cmd *cobra.Command) {
 	// set to viper
 	viper.Set(helper.CometBFTNodeFlag, cometbftNode)
 	viper.Set(helper.WithHeimdallConfigFlag, withHeimdallConfigValue)
-	viper.Set(bridgeDBFlag, bridgeDBValue)
+	viper.Set(util.BridgeDBFlag, bridgeDBValue)
 	viper.Set(borChainIDFlag, borChainIDValue)
 	viper.Set(logsTypeFlag, logsTypeValue)
 }
