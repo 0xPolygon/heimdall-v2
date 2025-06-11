@@ -166,6 +166,31 @@ func (q queryServer) IsClerkTxOld(ctx context.Context, request *types.RecordSequ
 	return &types.IsClerkTxOldResponse{IsOld: true}, nil
 }
 
+// GetLatestRecordId implements the gRPC service handler to query the latest record id from L1.
+func (q queryServer) GetLatestRecordId(ctx context.Context, _ *types.LatestRecordIdRequest) (*types.LatestRecordIdResponse, error) {
+	// Get chain params to get the StateSender contract address.
+	chainParams, err := q.k.ChainKeeper.GetParams(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// Get the StateSender contract instance.
+	stateSenderInstance, err := q.k.contractCaller.GetStateSenderInstance(chainParams.ChainParams.StateSenderAddress)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get state sender instance")
+	}
+
+	// Get the current state counter from L1.
+	stateCounter := q.k.contractCaller.CurrentStateCounter(stateSenderInstance)
+	if stateCounter == nil {
+		return nil, status.Error(codes.Internal, "failed to get latest state counter from L1")
+	}
+
+	latestRecordId := stateCounter.Uint64()
+	eventRecordExists := q.k.HasEventRecord(ctx, latestRecordId)
+	return &types.LatestRecordIdResponse{LatestRecordId: latestRecordId, IsProcessedByHeimdall: eventRecordExists}, nil
+}
+
 func isPaginationEmpty(p query.PageRequest) bool {
 	return p.Key == nil &&
 		p.Offset == 0 &&
