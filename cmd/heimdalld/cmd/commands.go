@@ -152,6 +152,7 @@ func initRootCmd(
 	hApp *app.HeimdallApp,
 	keyring keyring.Keyring,
 	keyringDir string,
+	initClientCtx client.Context,
 ) {
 	ctx := server.NewDefaultContext()
 
@@ -195,6 +196,7 @@ func initRootCmd(
 				return err
 			}
 
+			fmt.Println("KEYRING DIR IN INITCLIENTCTX:", initClientCtx.KeyringDir)
 			clientCtx = clientCtx.
 				WithKeyring(keyring).
 				WithKeyringDir(keyringDir).

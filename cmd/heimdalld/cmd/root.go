@@ -1,6 +1,7 @@
 package heimdalld
 
 import (
+	"fmt"
 	"os"
 
 	"cosmossdk.io/log"
@@ -73,10 +74,7 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
-			if err != nil {
-				return err
-			}
+			fmt.Println("HOME AFTER!!:", initClientCtx.HomeDir)
 
 			// This needs to go after ReadFromClientConfig, as that function
 			// sets the RPC client needed for SIGN_MODE_TEXTUAL. This sign mode
@@ -155,7 +153,8 @@ func NewRootCmd() *cobra.Command {
 
 	initClientCtx, _ = config.ReadFromClientConfig(initClientCtx)
 
-	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp, initClientCtx.Keyring, initClientCtx.KeyringDir)
+	fmt.Println("KEYRING DIR BEFORE initRootCmd:", initClientCtx.KeyringDir)
+	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp, initClientCtx.Keyring, initClientCtx.KeyringDir, initClientCtx)
 
 	// add keyring to autocli opts
 	autoCliOpts := tempApp.AutoCliOpts()
