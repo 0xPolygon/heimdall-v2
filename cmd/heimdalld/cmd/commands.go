@@ -149,7 +149,6 @@ func initRootCmd(
 	_ client.TxConfig,
 	basicManager module.BasicManager,
 	hApp *app.HeimdallApp,
-	initClientCtx client.Context,
 ) {
 	ctx := server.NewDefaultContext()
 
