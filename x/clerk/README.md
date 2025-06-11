@@ -116,7 +116,7 @@ One can run the following query commands from the clerk module :
 * `record` - Query for a specific event record by its ID.
 * `record-list` - Query a list of event records by page and limit.
 * `is-old-tx` - Query if the event record is already processed.
-* `latest-state-sync-id` - Query the latest state-sync id from L1.
+* `latest-record-id` - Query the latest record (state-sync) id from L1.
 
 ### CLI commands
 
