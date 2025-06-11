@@ -8,7 +8,6 @@ import (
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	db "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -151,10 +150,8 @@ func NewRootCmd() *cobra.Command {
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
 	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
 
-	initClientCtx, _ = config.ReadFromClientConfig(initClientCtx)
-
 	fmt.Println("KEYRING DIR BEFORE initRootCmd:", initClientCtx.KeyringDir)
-	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp, initClientCtx.Keyring, initClientCtx.KeyringDir, initClientCtx)
+	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp, initClientCtx)
 
 	// add keyring to autocli opts
 	autoCliOpts := tempApp.AutoCliOpts()

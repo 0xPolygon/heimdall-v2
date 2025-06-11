@@ -33,7 +33,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/client/rpc"
 	"github.com/cosmos/cosmos-sdk/client/snapshot"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/cosmos/cosmos-sdk/server"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/server/types"
@@ -150,8 +149,6 @@ func initRootCmd(
 	_ client.TxConfig,
 	basicManager module.BasicManager,
 	hApp *app.HeimdallApp,
-	keyring keyring.Keyring,
-	keyringDir string,
 	initClientCtx client.Context,
 ) {
 	ctx := server.NewDefaultContext()
@@ -198,8 +195,6 @@ func initRootCmd(
 
 			fmt.Println("KEYRING DIR IN INITCLIENTCTX:", initClientCtx.KeyringDir)
 			clientCtx = clientCtx.
-				// WithKeyring(keyring).
-				// WithKeyringDir(keyringDir).
 				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
 			// start bridge
