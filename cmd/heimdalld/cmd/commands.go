@@ -198,8 +198,8 @@ func initRootCmd(
 
 			fmt.Println("KEYRING DIR IN INITCLIENTCTX:", initClientCtx.KeyringDir)
 			clientCtx = clientCtx.
-				WithKeyring(keyring).
-				WithKeyringDir(keyringDir).
+				// WithKeyring(keyring).
+				// WithKeyringDir(keyringDir).
 				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
 			// start bridge
