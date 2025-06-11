@@ -4,8 +4,10 @@ import (
 	"os"
 	"path"
 
-	"github.com/cosmos/cosmos-sdk/server"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	"github.com/0xPolygon/heimdall-v2/bridge/util"
 )
 
 // resetCmd resets the bridge server data
@@ -13,9 +15,7 @@ var resetCmd = &cobra.Command{
 	Use:   "unsafe-reset-all",
 	Short: "Reset bridge server data",
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		serverCtx := server.GetServerContextFromCmd(cmd)
-
-		dbLocation := serverCtx.Viper.GetString(bridgeDBFlag)
+		dbLocation := viper.GetString(util.BridgeDBFlag)
 		dir, err := os.ReadDir(dbLocation)
 		if err != nil {
 			return err
