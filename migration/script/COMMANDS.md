@@ -33,7 +33,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    - `V2_VERSION` is the latest version of heimdall-v2
    - `V1_CHAIN_ID` is the chain id of the heimdall-v1 network (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
    - `V2_CHAIN_ID` is the chain id of the heimdall-v2 network (pre-agreed)
-   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed, it should be set in the future, e.g., 30mins after the pilot migration is initiated)
+   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed, it should be set in the future, e.g., 30 mins after the pilot migration is initiated)
    - `V1_HALT_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed, it should match the height defined in `APOCALYPSE_TAG`)
    - `VERIFY_EXPORTED_DATA` is set to `true` because the genesis data will be verified on the pilot node.  
 4. ssh into the node machine by using a valid user:
@@ -64,7 +64,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    |                      | This happens when the node was not able to commit to the latest block's heigh needed for the migration,        |
    |                      | hence generate-genesis will be set to false and the genesis.json file downloaded from trusted source.          |
 
-9. Run the script with the following command (after modifying the parameters based on the previous step):
+9. Run the script with the following command (after modifying the parameters based on the previous step). Note that the script uses `bash` features, hence `sh` won't work.  
     ```bash
       sudo bash migrate.sh \
     --heimdall-v1-home=/var/lib/heimdall \
