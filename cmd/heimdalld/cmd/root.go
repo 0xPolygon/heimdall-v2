@@ -1,13 +1,13 @@
 package heimdalld
 
 import (
-	"fmt"
 	"os"
 
 	"cosmossdk.io/log"
 	"github.com/cometbft/cometbft/cmd/cometbft/commands"
 	db "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/client/config"
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
@@ -73,7 +73,10 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
-			fmt.Println("HOME AFTER!!:", initClientCtx.HomeDir)
+			initClientCtx, err = config.ReadFromClientConfig(initClientCtx)
+			if err != nil {
+				return err
+			}
 
 			// This needs to go after ReadFromClientConfig, as that function
 			// sets the RPC client needed for SIGN_MODE_TEXTUAL. This sign mode
@@ -150,7 +153,6 @@ func NewRootCmd() *cobra.Command {
 	helper.DecorateWithHeimdallFlags(rootCmd, viper.GetViper(), logger, "main")
 	helper.DecorateWithCometBFTFlags(rootCmd, viper.GetViper(), logger, "main")
 
-	fmt.Println("KEYRING DIR BEFORE initRootCmd:", initClientCtx.KeyringDir)
 	initRootCmd(rootCmd, encodingConfig.TxConfig, tempApp.BasicManager, tempApp, initClientCtx)
 
 	// add keyring to autocli opts

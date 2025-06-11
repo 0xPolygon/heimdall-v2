@@ -193,7 +193,6 @@ func initRootCmd(
 				return err
 			}
 
-			fmt.Println("KEYRING DIR IN INITCLIENTCTX:", initClientCtx.KeyringDir)
 			clientCtx = clientCtx.
 				WithChainID(chainParam.ChainParams.HeimdallChainId)
 
