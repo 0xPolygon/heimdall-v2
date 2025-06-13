@@ -92,7 +92,8 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     gcloud auth login
     ```
 12. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators.
-      ```bash
+    For example, for `mumbai` bucket, you can use the following command:
+    ```bash
       gsutil cp dump-genesis.json gs://mumbai-genesis-bucket
       ```
     In case the command fails,
