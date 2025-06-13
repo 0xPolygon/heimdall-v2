@@ -20,12 +20,12 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
 
 3. Adjust the following environment vars of the [script](migrate.sh):
     ```bash 
-    V1_VERSION="1.2.3-34-g020f6c0d"
-    V2_VERSION="0.1.27"
+    V1_VERSION="1.2.3-35-gdafcbb67"
+    V2_VERSION="0.1.31"
     V1_CHAIN_ID="devnet"
     V2_CHAIN_ID="devnet"
-    V2_GENESIS_TIME="2025-05-22T10:20:00Z"
-    V1_HALT_HEIGHT=22238836
+    V2_GENESIS_TIME="2025-06-10T00:00:00Z"
+    V1_HALT_HEIGHT=900
     VERIFY_EXPORTED_DATA=true
     ```
     where
@@ -33,10 +33,9 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    - `V2_VERSION` is the latest version of heimdall-v2
    - `V1_CHAIN_ID` is the chain id of the heimdall-v1 network (`heimdall-137` for mainnet, or `heimdall-80002` for amoy, and `devnet` for testing)
    - `V2_CHAIN_ID` is the chain id of the heimdall-v2 network (pre-agreed)
-   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed, it should be set in the future, e.g., 30mins after the pilot migration is initiated)
+   - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed, it should be set in the future, e.g., 30 mins after the pilot migration is initiated)
    - `V1_HALT_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed, it should match the height defined in `APOCALYPSE_TAG`)
    - `VERIFY_EXPORTED_DATA` is set to `true` because the genesis data will be verified on the pilot node.  
-
 4. ssh into the node machine by using a valid user:
    ```bash
     ssh <USER>@<NODE_IP>
@@ -65,43 +64,39 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    |                      | This happens when the node was not able to commit to the latest block's heigh needed for the migration,        |
    |                      | hence generate-genesis will be set to false and the genesis.json file downloaded from trusted source.          |
 
-9. Run the script with the following command (after modifying the parameters based on the previous step):
+9. Run the script with the following command (after modifying the parameters based on the previous step). Note that the script uses `bash` features, hence `sh` won't work.  
     ```bash
       sudo bash migrate.sh \
-    --heimdall-v1-home=/mumbai/heimdall \
-    --heimdallcli-path=/usr/local/bin/heimdallcli \
+    --heimdall-v1-home=/var/lib/heimdall \
+    --heimdallcli-path=/usr/bin/heimdallcli \
     --heimdalld-path=/usr/bin/heimdalld \
     --network=amoy \
     --node-type=validator \
-    --service-user=heimdall \
+    --service-user=ubuntu \
     --generate-genesis=true
     ```
    This will create `heimdall-v2` into `/var/lib/heimdall`
-10. Copy the following files from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
+10. Copy the following file from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
     - `dump-genesis.json`
     - `dump-genesis.json.sha512`
     - `migrated_dump-genesis.json`
     - `migrated_dump-genesis.json.sha512`
      You can use the following commands from your local machine
     ```bash
-     scp <USER>@<NODE_IP>:/mumbai/heimdall.backup/dump-genesis.json ./
-     scp <USER>@<NODE_IP>:/mumbai/heimdall.backup/dump-genesis.json.sha512 ./
-     scp <USER>@<NODE_IP>:/mumbai/heimdall.backup/migrated_dump-genesis.json ./
-     scp <USER>@<NODE_IP>:/mumbai/heimdall.backup/migrated_dump-genesis.json.sha512 ./
-    ```
-11. Upload such files to the GCP bucket so that they can be accessed by other node operators.
+     scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json ./
+     scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json.sha512 ./
+     scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json.sha512 ./
+      ```
+11. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators.
     - For example, you can upload them to the GCP bucket `heimdall-genesis` with the following command:
       ```bash
       gsutil cp dump-genesis.json gs://heimdall-genesis/
-      gsutil cp dump-genesis.json.sha512 gs://heimdall-genesis/
-      gsutil cp migrated_dump-genesis.json gs://heimdall-genesis/
-      gsutil cp migrated_dump-genesis.json.sha512 gs://heimdall-genesis/
       ```
 12. Update the following configs in the script:
      ```bash
-     V1_GENESIS_CHECKSUM="bf981f39f84eeedeaa08cd18c00069d1761cf85b70b6b8546329dbeb6f2cea90529faf90f9f3e55ad037677ffb745b5eca66e794f4458c09924cbedac30b44e7"
-     V2_GENESIS_CHECKSUM="a128f317ffd9f78002e8660e7890e13a6d3ad21c325c4fa8fc246de6e4d745a55c465633a075d66e6a1aa7813fc7431638654370626be123bd2d1767cc165321"
-     TRUSTED_GENESIS_URL="bit.ly/mumbai-genesis"
+     V1_GENESIS_CHECKSUM="4eb6ddd5d84f08f6db4c1cc0f1793cc8b68ac112684eae4ce2b26042a7a9b3645ac6657fda212d77e5881c54cbc829384e1fc31eb9ced167c6d10ac8afbadd7e"
+     V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
+     TRUSTED_GENESIS_URL="https://ff4e1ab493fa24466b3a3009a12c1d75fb5c73be934b516ae874408-apidata.googleusercontent.com/download/storage/v1/b/devnet-genesis-bucket/o/dump-genesis.json?jk=AXbWWml5MvxXEdQk3zUyyhgkH-5Ot7rZk2MedTvPZHkddiQSShcH7x4mxX1ouiPvLYFEFR7ghAD3y8CQ-rqh3dV7j_K3gEtgdE0jjlcdp8D-9uljy0emzfOMpmvD5Gb1nz1eUhH-Apn4ELaVAuy8VvFAprUkRG-UlFtpcgoHjYm1exhNCMTImWKBDJrn_-SDA6loZNIMHUCpWlBPYCptzcSerGTehLOQdyrAnY4-vVPpgzMSaSP6BvsOgD-0a05xeilUvYQDCbSla21LBavH5F9SjgT8hTZgY9rz8Bt75ZxmsX16OkWem1T2Quoqg6dd5TvSqG7Au994eYve8gzMBucauWvTHgOkyV0mLytPK5CSfcGemy4L84lc-hTxCYO047untGYrDthYLJdi-jV4c-u82nNrjY8ZvVI8UIyhapFPFTcks9EJYVGdEDFFaGNZwcMo4CBfLKgwPgNdxREhDkZzT7iZrTwp1_dttf1Tob4FLjacJKMz1W6uJjTZ8ifJsJlyqiXDgL0E_NeuZNpH6pyd-L9LfgbAbxA6LjWMwScCUOXhG_F3O9dH8QGu5GAYjhO5BMMxvfnaIB25QBgYzzFsw0Es67kT6TDLKmjUlGJD27xsZhzMRegKJ4PMXLT5A8EHIQMlsv23lYwrmVx-ndc6kcBAPM02CLqiah5rivgFV2rDM-82NZviiH0BeHUgVtu8MEGKdm4mjVolTjUXwvR8AKSQHIkZ1pXZGC2AmLkZdjEP5pNBOwtL0PL9xSBGtbJqCcQ319RREqKKxvnCZ-8IK038FYC800xZawI3lVfDr0uilpVVkXzyRaO_Ruh8gPiqxJs74XOuKX5ezxlyjx81lfLQhssV4g7DnjP8-1nVXXrQGU0PnHveX0cGBQS2MpqD64LG5EyB-rjLcxLQqjC2Oy6xAMCBoUBD1c3LOeqJeK6SD8_CEqThWvZSfqNc5zSom401pW6jkQ05AW9z9insKauEo34djbXeVPy3Oq3ne7zKDLYApr0Z-Sp-M5GZ3hSi_DXaOIIy3lwg-hU9RdBn_F3EsMYEWQjS_p8dCQD_fZGIffbSIglW4SfzfsVOMy83p8OMujHnMeuvL9IL6O1O8hjZKFm8d5mKF4f2Ig_XaVqrEDp0aOgGGqfUk609JaI_HeVzm9iPammQ3_3k9cxzkRRDPaTlRsb9gZMHcItf8RNlnfNbdXHHLceJ_5QMtEfqunxB9UkpWF_zyrZnH9_FjVR_EtQFd-XH&isca=1"
      VERIFY_EXPORTED_DATA=false
      ```
     where
@@ -146,11 +141,11 @@ This can be run by any node operator.
 1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
 2. download the script
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/migration-mumbai/migration/script/migrate.sh
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-test/migration/script/migrate.sh
    ```
 3. download the checksum
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/migration-mumbai/migration/script/migrate.sh.sha512
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-test/migration/script/migrate.sh.sha512
    ```
 4. verify the script checksum
    ```bash
@@ -195,12 +190,12 @@ This can be run by any node operator.
 7. if checksum verification is correct, launch the migration script (after adjusting the parameters)
    ```bash
      sudo bash migrate.sh \
-       --heimdall-v1-home=/mumbai/heimdall \
-       --heimdallcli-path=/usr/local/bin/heimdallcli \
-       --heimdalld-path=/usr/local/bin/heimdalld \
+       --heimdall-v1-home=/var/lib/heimdall \
+       --heimdallcli-path=/home/ubuntu/go/bin/heimdallcli \
+       --heimdalld-path=/home/ubuntu/go/bin/heimdalld \
        --network=amoy \
        --node-type=validator \
-       --service-user=heimdall \
+       --service-user=ubuntu \
        --generate-genesis=true
    ```
    This will create `heimdall-v2` into `/var/lib/heimdall`
@@ -231,15 +226,15 @@ If the migration itself doesn't go as planned, you can roll back to the previous
    ```
 2. Restore the backup of the v1 home directory
    ```bash
-   sudo rm -rf /mumbai/heimdall && \
-   sudo mv /mumbai/heimdall.backup /mumbai/heimdall
+   sudo rm -rf /var/lib/heimdall && \
+   sudo mv /var/lib/heimdall.backup /var/lib/heimdall
     ```
 3. Delete the genesis dump and its migrated version
    ```bash
-   sudo rm -f /mumbai/heimdall/dump_genesis.json
-   sudo rm -f /mumba/heimdall/dump_genesis.json.sha512
-   sudo rm -f /mumbai/heimdall/migrated_dump_genesis.json
-   sudo rm -f /mumbai/heimdall/migrated_dump_genesis.json.sha512
+   sudo rm -f /var/lib/heimdall/dump_genesis.json
+   sudo rm -f /var/lib/heimdall/dump_genesis.json.sha512
+   sudo rm -f /var/lib/heimdall/migrated_dump_genesis.json
+   sudo rm -f /var/lib/heimdall/migrated_dump_genesis.json.sha512
    ```
 4. Restore the v1 service file (previously backed up by the script)
     ```bash

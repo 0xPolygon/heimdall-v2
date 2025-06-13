@@ -186,7 +186,7 @@ jobs:
         run: ls -ltr packaging/deb/ | grep heimdall
 
       - name: Release heimdall Packages
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.2
         with:
           tag_name: ${{ env.GIT_TAG }}
           make_latest: false

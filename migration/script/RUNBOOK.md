@@ -16,8 +16,8 @@ This transition requires a structured and coordinated approach across multiple t
 ### Preparation
 
 1. Preserve some RPC nodes for heimdall-v1 historical data (this can be done in advance)
-2. Disable self-heal on heimdall-v1 nodes (this can be done in advance)
-3. **Node Operators Update Bor/Erigon to latest version (compatible with v1 and v2)**
+2. (Internal) Disable self-heal on heimdall-v1 nodes (this can be done in advance)
+3. **Node Operators Update Bor/Erigon to the latest version (compatible with v1 and v2)**
 4. **Node Operators Update Heimdall-v1 to migration-ready version**
 5. **Confirmation of a successful upgrade from all node operators**
 6. **Advise all node operators to refrain from performing any actions on L1 involving the bridge until v2 is fully operational.** This precaution is intended to prevent any potential issues with the bridge during the migration process. As an additional safeguard, we could consider temporarily disabling the staking UI to further minimize the risk of unintended interactions.
@@ -25,8 +25,12 @@ This transition requires a structured and coordinated approach across multiple t
 
 ### Execution
 
-The majority of the steps below are automated in the [migration script](migrate.sh), the following is just a runbook for manual execution.
+The majority of the steps below are automated in the [bash migration script](migrate.sh), the following is just a runbook for manual execution.  
+In case the script does not support your architecture, you can use this runbook to perform the migration manually.  
+Be aware that some commands must be adapted to your architecture (e.g. if running heimdall inside docker or kubernetes, rather than plain Linux/Ubuntu machnes).
+Please also refer to the [bash migration script](migrate.sh) for more details on the steps, the configuration files examples under `configs` [directory](./../configs), and the [README](README.md).  
 
+### Migration Steps
 1. Node operators confirm to be on the latest Bor/Erigon version (compatible with v1 and v2)
 2. Node operators confirm to be on the latest Heimdall-v1 version (with `halt_height` embedded)
 3. Node operators confirm to be on the latest `heimdallcli` version (with `get-last-committed-height` embedded)
@@ -37,7 +41,7 @@ The majority of the steps below are automated in the [migration script](migrate.
     - The output of this command should match the `halt_height`
     - If some nodes are not down, or a block's height mismatch is detected, it means they did not reach the apocalypse height
     - This can happen, and the migration script handles this case by downloading the `genesis.json` from a trusted source (instead of generating it, to avoid risks of checksum mismatches and especially app hash errors in v2).
-7. Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
+7. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
 8. **Genesis Export from Heimdall-v1**
    `heimdallcli export-heimdall --home HEIMDALLD_HOME --chain-id V1_CHAIN_ID`
     - operators should use the latest version of `heimdallcli`
@@ -46,7 +50,7 @@ The majority of the steps below are automated in the [migration script](migrate.
       The command will generate `dump-genesis.json` there. This process must be run first on a fully synced pilot node.
 9. **v1 Checksum Generation**
    The exported genesis file is subject to checksum.
-10. **Backup Heimdall v1 Data** - Node operators back up their Heimdall v1 `HEIMDALL_HOME` directory (containing `config`, `data` and – for validators - `bridge`).
+10. **Backup Heimdall v1 Data** - Node operators back up their Heimdall v1 `HEIMDALL_HOME` directory (containing `config`, `data` and (potentially) `bridge`).
 11. **Install Heimdall-v2** – Node operators install heimdall-v2 with the install-script available at https://github.com/maticnetwork/install/blob/heimdall-v2/heimdall-v2.sh
 12. **Verify Heimdall-v2 installation** – Node operators make sure `heimdall-v2` is successfully installed by running the `version` command
 13. **Run Migration Command** - Converts the old genesis to v2 format using:
@@ -82,17 +86,18 @@ The majority of the steps below are automated in the [migration script](migrate.
     - v2 `addrbook.json` must match v1 `addrbook.json` (this is not mandatory but will help heimdall to peer faster)
     - v2 `node_key.json` must reflect v1 values (`priv_key.value`) and preserve v2 types
     - v2 `priv_validator_key.json` must reflect v1 values (`pub_key.value`, `priv_key.value` and `address`) and preserve v2 types
-18. **Move New Genesis File** – Make sure the migrated genesis file is placed it in the correct directory.
-19. **Reload daemon and start heimdall with** `sudo systemctl daemon-reload && sudo systemctl start heimdalld`
-20. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
-21. **Internal Monitoring**
-22. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
+18. **Move bridge folder** — Move the `bridge` folder from the backup to the new `HEIMDALL_HOME` directory, if it was used in v1.
+19. **Move New Genesis File** – Make sure the migrated genesis file is placed it in the correct directory.
+20. **Reload daemon and start heimdall with** `sudo systemctl daemon-reload && sudo systemctl start heimdalld`
+21. **Restart telemetry** (if needed) with `sudo systemctl restart telemetry`
+22. **Internal Monitoring**
+23. **Optional: WebSocket for Bor–Heimdall comm** - Edit bor `config.toml` file by adding the following under the [heimdall] section:
     ```toml
     [heimdall]
     ws-address = "ws://localhost:26657/websocket"
     ```
-23. **Restart bor** Only in case the step above was done.
-24. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
+24. **Restart bor** Only in case the step above was done.
+25. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
 
 ### Rollback strategy to restore v1
 We decided not to enforce an HF in heimdall-v1,

@@ -17,6 +17,11 @@ service Query {
     option (cosmos.query.v1.module_query_safe) = true;
     option (google.api.http).get = "/clerk/event-records/list";
   }
+  // GetLatestRecordId queries the latest record id from L1.
+  rpc GetLatestRecordId(LatestRecordIdRequest)
+      returns (LatestRecordIdResponse) {
+    option (google.api.http).get = "/clerk/event-records/latest-id";
+  }
   // GetRecordById retrieves a record by its id
   rpc GetRecordById(RecordRequest) returns (RecordResponse) {
     option (cosmos.query.v1.module_query_safe) = true;
@@ -33,7 +38,6 @@ service Query {
       returns (RecordSequenceResponse) {
     option (google.api.http).get = "/clerk/sequence";
   }
-
   // IsClerkTxOld queries for a specific clerk tx to check its status (old
   // means already submitted)
   rpc IsClerkTxOld(RecordSequenceRequest) returns (IsClerkTxOldResponse) {
@@ -87,4 +91,11 @@ message RecordSequenceResponse {
 
 message IsClerkTxOldResponse {
   bool is_old = 1 [ (amino.dont_omitempty) = true ];
+}
+
+message LatestRecordIdRequest {}
+
+message LatestRecordIdResponse {
+  uint64 latest_record_id = 1 [ (amino.dont_omitempty) = true ];
+  bool is_processed_by_heimdall = 2 [ (amino.dont_omitempty) = true ];
 }

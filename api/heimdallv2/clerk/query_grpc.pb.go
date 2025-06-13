@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Query_GetRecordList_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordList"
+	Query_GetLatestRecordId_FullMethodName     = "/heimdallv2.clerk.Query/GetLatestRecordId"
 	Query_GetRecordById_FullMethodName         = "/heimdallv2.clerk.Query/GetRecordById"
 	Query_GetRecordListWithTime_FullMethodName = "/heimdallv2.clerk.Query/GetRecordListWithTime"
 	Query_GetRecordSequence_FullMethodName     = "/heimdallv2.clerk.Query/GetRecordSequence"
@@ -32,6 +33,8 @@ const (
 type QueryClient interface {
 	// GetRecordList queries a list of records
 	GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error)
+	// GetLatestRecordId queries the latest record id from L1.
+	GetLatestRecordId(ctx context.Context, in *LatestRecordIdRequest, opts ...grpc.CallOption) (*LatestRecordIdResponse, error)
 	// GetRecordById retrieves a record by its id
 	GetRecordById(ctx context.Context, in *RecordRequest, opts ...grpc.CallOption) (*RecordResponse, error)
 	// GetRecordListWithTime queries a list of records with time
@@ -54,6 +57,15 @@ func NewQueryClient(cc grpc.ClientConnInterface) QueryClient {
 func (c *queryClient) GetRecordList(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*RecordListResponse, error) {
 	out := new(RecordListResponse)
 	err := c.cc.Invoke(ctx, Query_GetRecordList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetLatestRecordId(ctx context.Context, in *LatestRecordIdRequest, opts ...grpc.CallOption) (*LatestRecordIdResponse, error) {
+	out := new(LatestRecordIdResponse)
+	err := c.cc.Invoke(ctx, Query_GetLatestRecordId_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +114,8 @@ func (c *queryClient) IsClerkTxOld(ctx context.Context, in *RecordSequenceReques
 type QueryServer interface {
 	// GetRecordList queries a list of records
 	GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error)
+	// GetLatestRecordId queries the latest record id from L1.
+	GetLatestRecordId(context.Context, *LatestRecordIdRequest) (*LatestRecordIdResponse, error)
 	// GetRecordById retrieves a record by its id
 	GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error)
 	// GetRecordListWithTime queries a list of records with time
@@ -120,6 +134,9 @@ type UnimplementedQueryServer struct {
 
 func (UnimplementedQueryServer) GetRecordList(context.Context, *RecordListRequest) (*RecordListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordList not implemented")
+}
+func (UnimplementedQueryServer) GetLatestRecordId(context.Context, *LatestRecordIdRequest) (*LatestRecordIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLatestRecordId not implemented")
 }
 func (UnimplementedQueryServer) GetRecordById(context.Context, *RecordRequest) (*RecordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRecordById not implemented")
@@ -160,6 +177,24 @@ func _Query_GetRecordList_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(QueryServer).GetRecordList(ctx, req.(*RecordListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetLatestRecordId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LatestRecordIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetLatestRecordId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetLatestRecordId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetLatestRecordId(ctx, req.(*LatestRecordIdRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -246,6 +281,10 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRecordList",
 			Handler:    _Query_GetRecordList_Handler,
+		},
+		{
+			MethodName: "GetLatestRecordId",
+			Handler:    _Query_GetLatestRecordId_Handler,
 		},
 		{
 			MethodName: "GetRecordById",

@@ -23,6 +23,7 @@ Once the migration on that node is successful:
     - `systemctl`
     - `grep`
     - `id`
+- Make sure your system has `bash` installed, as the script uses `bash` features (`sh` won't work)
 - Make sure your system has at least 20 GB of available RAM
 - Make sure your system has at least 2x current size (in GB) of `HEIMDALL_HOME/data` available disk space
 - Halt your current Heimdall v1

@@ -58,6 +58,11 @@ func (am AppModule) AutoCLIOptions() *autocliv1.ModuleOptions {
 						{ProtoField: "log_index"},
 					},
 				},
+				{
+					RpcMethod: "GetLatestRecordId",
+					Use:       "latest-record-id",
+					Short:     "Query the latest record id from L1.",
+				},
 			},
 		},
 		Tx: &autocliv1.ServiceCommandDescriptor{
