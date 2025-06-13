@@ -20,12 +20,12 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
 
 3. Adjust the following environment vars of the [script](migrate.sh):
     ```bash 
-    V1_VERSION="1.2.3-35-gdafcbb67"
-    V2_VERSION="0.1.31"
+    V1_VERSION="0.0.1-hv2-test"
+    V2_VERSION="0.1.32"
     V1_CHAIN_ID="devnet"
     V2_CHAIN_ID="devnet"
-    V2_GENESIS_TIME="2025-06-10T00:00:00Z"
-    V1_HALT_HEIGHT=900
+    V2_GENESIS_TIME="2025-06-13T16:00:00Z"
+    V1_HALT_HEIGHT=21710414
     VERIFY_EXPORTED_DATA=true
     ```
     where
@@ -87,51 +87,56 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json.sha512 ./
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json.sha512 ./
       ```
-11. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators.
-    - For example, you can upload them to the GCP bucket `heimdall-genesis` with the following command:
+11. Login to GCP by using the following command:
+    ```bash
+    gcloud auth login
+    ```
+12. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators.
       ```bash
-      gsutil cp dump-genesis.json gs://heimdall-genesis/
+      gsutil cp dump-genesis.json gs://mumbai-genesis-bucket
       ```
-12. Update the following configs in the script:
+    In case the command fails,
+    you can always upload the file manually [here](https://console.cloud.google.com/storage/browser/mumbai-genesis-bucket;tab=objects?authuser=1&inv=1&invt=Abz_Zg&project=prj-polygonlabs-pos-v1-dev&prefix=&forceOnObjectsSortingFiltering=false) with drag and drop
+13. Update the following configs in the script:
      ```bash
      V1_GENESIS_CHECKSUM="4eb6ddd5d84f08f6db4c1cc0f1793cc8b68ac112684eae4ce2b26042a7a9b3645ac6657fda212d77e5881c54cbc829384e1fc31eb9ced167c6d10ac8afbadd7e"
      V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
-     TRUSTED_GENESIS_URL="https://ff4e1ab493fa24466b3a3009a12c1d75fb5c73be934b516ae874408-apidata.googleusercontent.com/download/storage/v1/b/devnet-genesis-bucket/o/dump-genesis.json?jk=AXbWWml5MvxXEdQk3zUyyhgkH-5Ot7rZk2MedTvPZHkddiQSShcH7x4mxX1ouiPvLYFEFR7ghAD3y8CQ-rqh3dV7j_K3gEtgdE0jjlcdp8D-9uljy0emzfOMpmvD5Gb1nz1eUhH-Apn4ELaVAuy8VvFAprUkRG-UlFtpcgoHjYm1exhNCMTImWKBDJrn_-SDA6loZNIMHUCpWlBPYCptzcSerGTehLOQdyrAnY4-vVPpgzMSaSP6BvsOgD-0a05xeilUvYQDCbSla21LBavH5F9SjgT8hTZgY9rz8Bt75ZxmsX16OkWem1T2Quoqg6dd5TvSqG7Au994eYve8gzMBucauWvTHgOkyV0mLytPK5CSfcGemy4L84lc-hTxCYO047untGYrDthYLJdi-jV4c-u82nNrjY8ZvVI8UIyhapFPFTcks9EJYVGdEDFFaGNZwcMo4CBfLKgwPgNdxREhDkZzT7iZrTwp1_dttf1Tob4FLjacJKMz1W6uJjTZ8ifJsJlyqiXDgL0E_NeuZNpH6pyd-L9LfgbAbxA6LjWMwScCUOXhG_F3O9dH8QGu5GAYjhO5BMMxvfnaIB25QBgYzzFsw0Es67kT6TDLKmjUlGJD27xsZhzMRegKJ4PMXLT5A8EHIQMlsv23lYwrmVx-ndc6kcBAPM02CLqiah5rivgFV2rDM-82NZviiH0BeHUgVtu8MEGKdm4mjVolTjUXwvR8AKSQHIkZ1pXZGC2AmLkZdjEP5pNBOwtL0PL9xSBGtbJqCcQ319RREqKKxvnCZ-8IK038FYC800xZawI3lVfDr0uilpVVkXzyRaO_Ruh8gPiqxJs74XOuKX5ezxlyjx81lfLQhssV4g7DnjP8-1nVXXrQGU0PnHveX0cGBQS2MpqD64LG5EyB-rjLcxLQqjC2Oy6xAMCBoUBD1c3LOeqJeK6SD8_CEqThWvZSfqNc5zSom401pW6jkQ05AW9z9insKauEo34djbXeVPy3Oq3ne7zKDLYApr0Z-Sp-M5GZ3hSi_DXaOIIy3lwg-hU9RdBn_F3EsMYEWQjS_p8dCQD_fZGIffbSIglW4SfzfsVOMy83p8OMujHnMeuvL9IL6O1O8hjZKFm8d5mKF4f2Ig_XaVqrEDp0aOgGGqfUk609JaI_HeVzm9iPammQ3_3k9cxzkRRDPaTlRsb9gZMHcItf8RNlnfNbdXHHLceJ_5QMtEfqunxB9UkpWF_zyrZnH9_FjVR_EtQFd-XH&isca=1"
+     TRUSTED_GENESIS_URL="https://ffe639e7356c9c75efc1f5e069f06b2f8b5db92829dfb9cb6c837e4-apidata.googleusercontent.com/download/storage/v1/b/mumbai-genesis-bucket/o/dump-genesis.json?jk=AXbWWmkb96ODnd94uFXV5cLH2Jqh693AY2RUj4xy6SW_lQkOccqN8AVbXSUquJgaBSAjzoKXHXjNWed9WliFNc5D5HgU7abgyTpc0Zbnyy48S58_sjzful6n3JP13Ji9SNRGvzPaMM8W4RX5T_sotpXwCfyflqpk41p4_u3GcFfYAjMCpw_rBvjmGbnl23rmd2HIF7d6MifVQEnxkh4WvKK3v-KnOjXXA3exJByFGN1080t5u06N205Tb-8H1OGP2u5YLUQMGux7w_Oyzq6VOR8K-2N-0XtpfdpFC2yWGtpzqfWZIq9Q-wSqM_USy_7ekwZ-Aehr5RsKPr7YXJ5fVfO9bg-0FU3BVLn5wBbr76xg2aVeQu8FgYlF85EG0aJ4NVSzeH2IewwfSvWQySgeQ38x1EYN2k1Cis502bXmFbS2qGYr1bA3Trb93zjjNpTAKmYDdIIdtKI84RHR9cvE0wcalrd_WBMPOASdJMEQp5VlLFe6lNN9triVeQgONYtsO7Sb7uom6K-SxTnF3pDqYQGJ3cosNpd981LpFlOgAUCphF9yMzAL6C__2Fad9whRWjZh4dzAkC90tD0uHQctL_-_NQwaovTOGB9588KDGSHIz92lyHVbaq6hhpHA3VpE0K5Fds60VQI7AYhXy3KVNAkz4Ta-J1diAxPMPWvZARdFpEMwtEoZFopgahMVTlaMeF-FT1d6sz666ZjWQZkKuW7JetG3R0ghIXhWZkbZTg6y4YgWKeeXzmnSpVvVdQ_lgnjqVoBhHs725Lb99--7AHsdcFDAGeDftd_BuLE6Z7pGqCfnvddMxQLx09UJFDxctIF-WuIMTfvlF-sQxR2iNoZuHqs5Dvjkgtd4qbqIsy-WQOufGNvpm4IRna97VSTwKXopPgDVbwLOFGW7stBcEoZZ4Eer7C_CKMVaxGMH1lbzD-xkRlbxlZTDhPV10-IOFsOipKgpHa6t-UIEOyKivg6ldIM8IrifSraSZPzGyIpdksFmMFBF0Dqw42XXVFtN87TXFyLWrqKTr0Mrk-ma9_j4ReCjv-vsAjemCYD0-YX-UPCJOnuPiBLHqcPdEdRVZmUyjX9zwf3mIP3CMwy3n6e_8anNdrzmn8s4p3BSnoPsUXOOeS8mIMH0wae67pV0jYtCIytgCpzXF8JsilporA2vFoTM0L7-IDYorOYY1uAxvyoqm3mpGgZYUgIQmO0X69Qk3Vpol52UvnJAWj2G5lri3m4UNNY75NBt&isca=1"
      VERIFY_EXPORTED_DATA=false
      ```
     where
     - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
     - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
-    - `TRUSTED_GENESIS_URL` is the URL of the genesis file (previously updated on a GCP bucket).
+    - `TRUSTED_GENESIS_URL` is the URL of the genesis file (previously updated on a GCP bucket). It can be fetched by clicking "Download" on the file in the GCP bucket, and copying the URL from the browser (e.g., [here](https://console.cloud.google.com/storage/browser/_details/mumbai-genesis-bucket/dump-genesis.json;tab=live_object?authuser=1&inv=1&invt=Abz_Zg&project=prj-polygonlabs-pos-v1-dev))
     - `VERIFY_EXPORTED_DATA` is set to `false` because the genesis data has been already verified on the pilot node, and this will save some time and computational resources on other nodes.  
-13. cd into the migration script folder
+14. cd into the migration script folder
     ```bash
     cd heimdall-v2/migration/script
     ```
-14. generate the checksum of the [script](migrate.sh) by running
+15. generate the checksum of the [script](migrate.sh) by running
      ```bash
      sha512sum migrate.sh > migrate.sh.sha512
      ```
-15. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
+16. When the script finishes run the following commands to reload the daemon, and start `heimdall`
     ```bash
     sudo systemctl daemon-reload && sudo systemctl start heimdalld
     ```
-16. Restart telemetry (if needed)
+17. Restart telemetry (if needed)
     ```bash
     sudo systemctl restart telemetry
     ```
-17. check the logs by running
+18. check the logs by running
    ```bash
       journalctl -fu heimdalld
    ```
-18. If the genesis time is set in the future, `heimdalld` will print something like:
+19. If the genesis time is set in the future, `heimdalld` will print something like:
     ```bash
     heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
     ```
     Otherwise, it will start syncing immediately
-    (trying to connect to peers and throw errors if they are not yet available).
-19. Wait until the genesis time is reached, and the node will start syncing.
-20. Now other node operators can run the migration.
+    (trying to connect to peers and throw errors if they are not yet available, in that case it will eventually crash, and it'll need to be restarted when other peers complete the migration).
+20. Wait until the genesis time is reached, and the node will start syncing.
+21. Now other node operators can run the migration.
 
 
 # Other executions (internal and external)
@@ -141,11 +146,11 @@ This can be run by any node operator.
 1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
 2. download the script
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-test/migration/script/migrate.sh
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/migration-mumbai/migration/script/migrate.sh
    ```
 3. download the checksum
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-test/migration/script/migrate.sh.sha512
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/migration-mumbai/migration/script/migrate.sh.sha512
    ```
 4. verify the script checksum
    ```bash
@@ -191,8 +196,8 @@ This can be run by any node operator.
    ```bash
      sudo bash migrate.sh \
        --heimdall-v1-home=/var/lib/heimdall \
-       --heimdallcli-path=/home/ubuntu/go/bin/heimdallcli \
-       --heimdalld-path=/home/ubuntu/go/bin/heimdalld \
+       --heimdallcli-path=/usr/bin/heimdallcli \
+       --heimdalld-path=/usr/bin/heimdalld \
        --network=amoy \
        --node-type=validator \
        --service-user=ubuntu \
@@ -245,6 +250,10 @@ If the migration itself doesn't go as planned, you can roll back to the previous
     ```bash
     curl -L https://raw.githubusercontent.com/maticnetwork/install/main/heimdall.sh | bash -s -- v<version> <network> <node_type>    ```
     ```
+   Or build it manually (if the `heimdall-tester` repo is being used),
+   and replace the binary in `/usr/bin/heimdalld` and `/usr/bin/heimdallcli` with the one
+   built from the `avalkov/reset` branch.
+   ```bash
 6. Check `heimdalld` version
     ```bash
     /usr/bin/heimdalld version
