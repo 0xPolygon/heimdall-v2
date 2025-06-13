@@ -25,7 +25,7 @@ import (
 
 const (
 	ChangeProducerThreshold = 5
-	SpanRotationBuffer      = 60
+	SpanRotationBuffer      = 10
 )
 
 // NewPrepareProposalHandler prepares the proposal after validating the vote extensions
