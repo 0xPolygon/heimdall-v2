@@ -142,7 +142,7 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
 
 # Other executions (internal and external)
 
-This can be run by any node operator.
+This can be run by any node operator, in parallel, after the pilot migration is completed, and the genesis file is uploaded to the GCP bucket.
 
 1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
 2. download the script
