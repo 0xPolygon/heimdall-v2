@@ -6,7 +6,7 @@ umask 0022
 V1_VERSION="1.2.3-35-gdafcbb67"
 V1_GENESIS_CHECKSUM="4eb6ddd5d84f08f6db4c1cc0f1793cc8b68ac112684eae4ce2b26042a7a9b3645ac6657fda212d77e5881c54cbc829384e1fc31eb9ced167c6d10ac8afbadd7e"
 V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
-V2_VERSION="0.1.31"
+V2_VERSION="0.1.32"
 V1_CHAIN_ID="devnet"
 V2_CHAIN_ID="devnet"
 V2_GENESIS_TIME="2025-06-10T00:00:00Z"
@@ -686,7 +686,7 @@ sudo chmod -R 755 "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to set permi
 sudo chown -R "$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to change ownership"
 echo "[INFO] $V2_HEIMDALL_HOME created successfully"
 if [ -f "$V2_HEIMDALL_HOME/config/genesis.json" ]; then
-    sudo rm "V2_HEIMDALL_HOME/config/genesis.json" || handle_error $STEP "Failed to remove existing json in $V2_HEIMDALL_HOME/config"
+    sudo rm "$V2_HEIMDALL_HOME/config/genesis.json" || handle_error $STEP "Failed to remove existing json in $V2_HEIMDALL_HOME/config"
 fi
 
 # Step 18: init heimdall-v2
