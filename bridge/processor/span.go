@@ -159,6 +159,7 @@ func (sp *SpanProcessor) checkAndPropose(ctx context.Context) {
 	}
 }
 
+//nolint:unused
 func (sp *SpanProcessor) checkAndVoteProducers() {
 	validatorPubKey := helper.GetPubKey()
 
@@ -216,6 +217,7 @@ func (sp *SpanProcessor) checkAndVoteProducers() {
 	}
 }
 
+//nolint:unused
 func (sp *SpanProcessor) sendProducerVotes(validatorId uint64, producerVotes []uint64) error {
 	sp.Logger.Debug("Updating producer votes", "producers", producerVotes)
 
@@ -371,6 +373,8 @@ func (sp *SpanProcessor) getLastSpan() (*types.Span, error) {
 }
 
 // getProducerVotes gets the producer votes for a given voter id
+//
+//nolint:unused
 func (sp *SpanProcessor) getProducerVotesByValidatorId(validatorId uint64) (*types.ProducerVotes, error) {
 	req, err := http.NewRequest("GET", helper.GetHeimdallServerEndpoint(fmt.Sprintf(util.ProducerVotesURL, validatorId)), nil)
 	if err != nil {
