@@ -19,12 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Query_GetSpanList_FullMethodName     = "/heimdallv2.bor.Query/GetSpanList"
-	Query_GetLatestSpan_FullMethodName   = "/heimdallv2.bor.Query/GetLatestSpan"
-	Query_GetNextSpanSeed_FullMethodName = "/heimdallv2.bor.Query/GetNextSpanSeed"
-	Query_GetNextSpan_FullMethodName     = "/heimdallv2.bor.Query/GetNextSpan"
-	Query_GetSpanById_FullMethodName     = "/heimdallv2.bor.Query/GetSpanById"
-	Query_GetBorParams_FullMethodName    = "/heimdallv2.bor.Query/GetBorParams"
+	Query_GetSpanList_FullMethodName                   = "/heimdallv2.bor.Query/GetSpanList"
+	Query_GetLatestSpan_FullMethodName                 = "/heimdallv2.bor.Query/GetLatestSpan"
+	Query_GetNextSpanSeed_FullMethodName               = "/heimdallv2.bor.Query/GetNextSpanSeed"
+	Query_GetNextSpan_FullMethodName                   = "/heimdallv2.bor.Query/GetNextSpan"
+	Query_GetSpanById_FullMethodName                   = "/heimdallv2.bor.Query/GetSpanById"
+	Query_GetBorParams_FullMethodName                  = "/heimdallv2.bor.Query/GetBorParams"
+	Query_GetProducerVotes_FullMethodName              = "/heimdallv2.bor.Query/GetProducerVotes"
+	Query_GetProducerVotesByValidatorId_FullMethodName = "/heimdallv2.bor.Query/GetProducerVotesByValidatorId"
 )
 
 // QueryClient is the client API for Query service.
@@ -44,6 +46,11 @@ type QueryClient interface {
 	GetSpanById(ctx context.Context, in *QuerySpanByIdRequest, opts ...grpc.CallOption) (*QuerySpanByIdResponse, error)
 	// GetBorParams queries the parameters of x/bor module.
 	GetBorParams(ctx context.Context, in *QueryParamsRequest, opts ...grpc.CallOption) (*QueryParamsResponse, error)
+	// GetProducerVotes queries producer votes from all validators.
+	GetProducerVotes(ctx context.Context, in *QueryProducerVotesRequest, opts ...grpc.CallOption) (*QueryProducerVotesResponse, error)
+	// GetProducerVotesByValidatorId queries the producer votes for a given
+	// validator id.
+	GetProducerVotesByValidatorId(ctx context.Context, in *QueryProducerVotesByValidatorIdRequest, opts ...grpc.CallOption) (*QueryProducerVotesByValidatorIdResponse, error)
 }
 
 type queryClient struct {
@@ -108,6 +115,24 @@ func (c *queryClient) GetBorParams(ctx context.Context, in *QueryParamsRequest, 
 	return out, nil
 }
 
+func (c *queryClient) GetProducerVotes(ctx context.Context, in *QueryProducerVotesRequest, opts ...grpc.CallOption) (*QueryProducerVotesResponse, error) {
+	out := new(QueryProducerVotesResponse)
+	err := c.cc.Invoke(ctx, Query_GetProducerVotes_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *queryClient) GetProducerVotesByValidatorId(ctx context.Context, in *QueryProducerVotesByValidatorIdRequest, opts ...grpc.CallOption) (*QueryProducerVotesByValidatorIdResponse, error) {
+	out := new(QueryProducerVotesByValidatorIdResponse)
+	err := c.cc.Invoke(ctx, Query_GetProducerVotesByValidatorId_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryServer is the server API for Query service.
 // All implementations must embed UnimplementedQueryServer
 // for forward compatibility
@@ -125,6 +150,11 @@ type QueryServer interface {
 	GetSpanById(context.Context, *QuerySpanByIdRequest) (*QuerySpanByIdResponse, error)
 	// GetBorParams queries the parameters of x/bor module.
 	GetBorParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error)
+	// GetProducerVotes queries producer votes from all validators.
+	GetProducerVotes(context.Context, *QueryProducerVotesRequest) (*QueryProducerVotesResponse, error)
+	// GetProducerVotesByValidatorId queries the producer votes for a given
+	// validator id.
+	GetProducerVotesByValidatorId(context.Context, *QueryProducerVotesByValidatorIdRequest) (*QueryProducerVotesByValidatorIdResponse, error)
 	mustEmbedUnimplementedQueryServer()
 }
 
@@ -149,6 +179,12 @@ func (UnimplementedQueryServer) GetSpanById(context.Context, *QuerySpanByIdReque
 }
 func (UnimplementedQueryServer) GetBorParams(context.Context, *QueryParamsRequest) (*QueryParamsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBorParams not implemented")
+}
+func (UnimplementedQueryServer) GetProducerVotes(context.Context, *QueryProducerVotesRequest) (*QueryProducerVotesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProducerVotes not implemented")
+}
+func (UnimplementedQueryServer) GetProducerVotesByValidatorId(context.Context, *QueryProducerVotesByValidatorIdRequest) (*QueryProducerVotesByValidatorIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProducerVotesByValidatorId not implemented")
 }
 func (UnimplementedQueryServer) mustEmbedUnimplementedQueryServer() {}
 
@@ -271,6 +307,42 @@ func _Query_GetBorParams_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Query_GetProducerVotes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProducerVotesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetProducerVotes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetProducerVotes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetProducerVotes(ctx, req.(*QueryProducerVotesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Query_GetProducerVotesByValidatorId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProducerVotesByValidatorIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryServer).GetProducerVotesByValidatorId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Query_GetProducerVotesByValidatorId_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryServer).GetProducerVotesByValidatorId(ctx, req.(*QueryProducerVotesByValidatorIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Query_ServiceDesc is the grpc.ServiceDesc for Query service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -301,6 +373,14 @@ var Query_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBorParams",
 			Handler:    _Query_GetBorParams_Handler,
+		},
+		{
+			MethodName: "GetProducerVotes",
+			Handler:    _Query_GetProducerVotes_Handler,
+		},
+		{
+			MethodName: "GetProducerVotesByValidatorId",
+			Handler:    _Query_GetProducerVotesByValidatorId_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

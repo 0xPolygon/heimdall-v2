@@ -16,7 +16,8 @@ const (
 )
 
 var (
-	ParamsPrefixKey       = collections.NewPrefix([]byte{0x80})
-	MilestoneMapPrefixKey = collections.NewPrefix([]byte{0x81})
-	CountPrefixKey        = collections.NewPrefix([]byte{0x83})
+	ParamsPrefixKey             = collections.NewPrefix([]byte{0x80})
+	MilestoneMapPrefixKey       = collections.NewPrefix([]byte{0x81})
+	CountPrefixKey              = collections.NewPrefix([]byte{0x83})
+	LastMilestoneBlockPrefixKey = collections.NewPrefix([]byte{0x84})
 )

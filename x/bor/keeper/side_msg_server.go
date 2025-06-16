@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	util "github.com/0xPolygon/heimdall-v2/common/hex"
+	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
 	heimdallTypes "github.com/0xPolygon/heimdall-v2/types"
 	"github.com/0xPolygon/heimdall-v2/x/bor/types"
@@ -52,7 +53,11 @@ func (s sideMsgServer) SideHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg) sidetxs.
 	if !ok {
 		logger.Error("MsgProposeSpan type mismatch", "msg type received", msgI)
 		return sidetxs.Vote_VOTE_NO
+	}
 
+	if helper.IsVeblop(msg.StartBlock) {
+		logger.Debug("skipping span msg since block height is greater than veblop height", "block height", ctx.BlockHeight(), "veblop height", helper.GetVeblopHeight())
+		return sidetxs.Vote_VOTE_NO
 	}
 
 	logger.Debug("✅ validating external call for span msg",
@@ -165,6 +170,11 @@ func (s sideMsgServer) SideHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg)
 
 	}
 
+	if helper.IsVeblop(msg.LatestSpanId) {
+		logger.Debug("skipping backfill spans msg since span id is greater than veblop height", "span id", msg.LatestSpanId, "veblop height", helper.GetVeblopHeight())
+		return sidetxs.Vote_VOTE_NO
+	}
+
 	logger.Debug("✅ validating external call for fill missing spans msg",
 		"proposer", msg.Proposer,
 		"chainId", msg.ChainId,
@@ -222,6 +232,11 @@ func (s sideMsgServer) PostHandleMsgSpan(ctx sdk.Context, msgI sdk.Msg, sideTxRe
 		err := errors.New("MsgProposeSpan type mismatch")
 		logger.Error(err.Error(), "msg type received", msg)
 		return err
+	}
+
+	if helper.IsVeblop(msg.StartBlock) {
+		logger.Debug("skipping span msg since block height is greater than veblop height", "block height", ctx.BlockHeight(), "veblop height", helper.GetVeblopHeight())
+		return nil
 	}
 
 	// Skip handler if the span is not approved
@@ -284,6 +299,11 @@ func (s sideMsgServer) PostHandleMsgBackfillSpans(ctx sdk.Context, msgI sdk.Msg,
 		err := errors.New("MsgBackfillSpans type mismatch")
 		logger.Error(err.Error(), "msg type received", msg)
 		return err
+	}
+
+	if helper.IsVeblop(msg.LatestSpanId) {
+		logger.Debug("skipping backfill spans msg since span id is greater than veblop height", "span id", msg.LatestSpanId, "veblop height", helper.GetVeblopHeight())
+		return nil
 	}
 
 	if sideTxResult != sidetxs.Vote_VOTE_YES {

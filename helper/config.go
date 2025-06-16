@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,6 +63,7 @@ const (
 
 	NoACKWaitTimeFlag = "no_ack_wait_time"
 	ChainFlag         = "chain"
+	ProducerVotesFlag = "producer_votes"
 
 	DefaultMainRPCUrl  = "http://localhost:9545"
 	DefaultBorRPCUrl   = "http://localhost:8545"
@@ -108,6 +110,12 @@ const (
 
 	DefaultMainnetSeeds     = "e019e16d4e376723f3adc58eb1761809fea9bee0@35.234.150.253:26656,7f3049e88ac7f820fd86d9120506aaec0dc54b27@34.89.75.187:26656,1f5aff3b4f3193404423c3dd1797ce60cd9fea43@34.142.43.249:26656,2d5484feef4257e56ece025633a6ea132d8cadca@35.246.99.203:26656,17e9efcbd173e81a31579310c502e8cdd8b8ff2e@35.197.233.240:26656,72a83490309f9f63fdca3a0bef16c290e5cbb09c@35.246.95.65:26656,00677b1b2c6282fb060b7bb6e9cc7d2d05cdd599@34.105.180.11:26656,721dd4cebfc4b78760c7ee5d7b1b44d29a0aa854@34.147.169.102:26656,4760b3fc04648522a0bcb2d96a10aadee141ee89@34.89.55.74:26656"
 	DefaultAmoyTestnetSeeds = "e4eabef3111155890156221f018b0ea3b8b64820@35.197.249.21:26656,811c3127677a4a34df907b021aad0c9d22f84bf4@34.89.39.114:26656,2ec15d1d33261e8cf42f57236fa93cfdc21c1cfb@35.242.167.175:26656,38120f9d2c003071a7230788da1e3129b6fb9d3f@34.89.15.223:26656,2f16f3857c6c99cc11e493c2082b744b8f36b127@34.105.128.110:26656,2833f06a5e33da2e80541fb1bfde2a7229877fcb@34.89.21.99:26656,2e6f1342416c5d758f5ae32f388bb76f7712a317@34.89.101.16:26656,a596f98b41851993c24de00a28b767c7c5ff8b42@34.89.11.233:26656"
+
+	DefaultMainnetProducers = "91,92,93"
+
+	DefaultAmoyTestnetProducers = "1,2,3"
+
+	DefaultLocalTestnetProducers = "1,2,3"
 
 	secretFilePerm = 0o600
 
@@ -157,6 +165,8 @@ type CustomConfig struct {
 	LogsWriterFile string `mapstructure:"logs_writer_file"` // if given, Logs will be written to this file else os.Stdout
 
 	Chain string `mapstructure:"chain"`
+
+	ProducerVotes string `mapstructure:"producer_votes"`
 }
 
 type CustomAppConfig struct {
@@ -184,8 +194,12 @@ var privKeyObject secp256k1.PrivKey
 
 var pubKeyObject secp256k1.PubKey
 
+var producerVotes []uint64
+
 // Logger stores global logger object
 var Logger logger.Logger
+
+var veblopHeight int64 = 0
 
 type ChainManagerAddressMigration struct {
 	PolTokenAddress       string
@@ -201,6 +215,32 @@ var chainManagerAddressMigrations = map[string]map[int64]ChainManagerAddressMigr
 	MumbaiChain: {},
 	AmoyChain:   {},
 	"default":   {},
+}
+
+// parseProducerVotes parses a comma-separated string of producer IDs into a slice of uint64
+func parseProducerVotes(producerVotesStr string) []uint64 {
+	if producerVotesStr == "" {
+		return []uint64{}
+	}
+
+	producerStrings := strings.Split(producerVotesStr, ",")
+	if len(producerStrings) > 0 && producerStrings[0] != "" {
+		votes := make([]uint64, len(producerStrings))
+		for i, p := range producerStrings {
+			pTrimmed := strings.TrimSpace(p)
+			if pTrimmed == "" {
+				log.Fatalf("Empty producer ID found in producer votes list: '%s'", producerVotesStr)
+			}
+			var parseErr error
+			votes[i], parseErr = strconv.ParseUint(pTrimmed, 10, 64)
+			if parseErr != nil {
+				log.Fatalf("Failed to parse producer ID '%s': %v", pTrimmed, parseErr)
+			}
+		}
+		return votes
+	}
+
+	return []uint64{}
 }
 
 // InitHeimdallConfig initializes with viper config (from heimdall configuration)
@@ -335,6 +375,26 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 
 	borGRPCClient = borgrpc.NewBorGRPCClient(conf.Custom.BorGRPCUrl)
 
+	// Set default producers based on chain if not already set by config or flags
+	if conf.Custom.ProducerVotes == "" {
+		switch conf.Custom.Chain {
+		case MainChain:
+			conf.Custom.ProducerVotes = DefaultMainnetProducers
+			Logger.Debug("Using default mainnet producers", "producers", DefaultMainnetProducers)
+		case AmoyChain:
+			conf.Custom.ProducerVotes = DefaultAmoyTestnetProducers
+			Logger.Debug("Using default amoy producers", "producers", DefaultAmoyTestnetProducers)
+		default:
+			conf.Custom.ProducerVotes = DefaultLocalTestnetProducers
+			Logger.Debug("Using default local producers", "producers", DefaultLocalTestnetProducers)
+		}
+	}
+
+	producerVotes = parseProducerVotes(conf.Custom.ProducerVotes)
+	if len(producerVotes) == 0 {
+		Logger.Info("No producer votes configured or parsed.")
+	}
+
 	// load pv file, unmarshall and set to privKeyObject
 	err = file.PermCheck(file.Rootify("priv_validator_key.json", configDir), secretFilePerm)
 	if err != nil {
@@ -346,8 +406,14 @@ func InitHeimdallConfigWith(homeDir string, heimdallConfigFileFromFlag string) {
 	pubKeyObject = privVal.Key.PubKey.Bytes()
 
 	switch conf.Custom.Chain {
-	case MainChain, MumbaiChain, AmoyChain:
+	case MainChain:
+		veblopHeight = 0
+	case MumbaiChain:
+		veblopHeight = 0
+	case AmoyChain:
+		veblopHeight = 0
 	default:
+		veblopHeight = 383
 	}
 }
 
@@ -358,6 +424,8 @@ func GetDefaultHeimdallConfig() CustomConfig {
 		BorRPCUrl:   DefaultBorRPCUrl,
 		BorGRPCFlag: DefaultBorGRPCFlag,
 		BorGRPCUrl:  DefaultBorGRPCUrl,
+
+		ProducerVotes: DefaultMainnetProducers,
 
 		CometBFTRPCUrl: DefaultCometBFTNodeURL,
 
@@ -449,6 +517,21 @@ func GetValidChains() []string {
 	return []string{"mainnet", "mumbai", "amoy", "local"}
 }
 
+func GetVeblopHeight() int64 {
+	return veblopHeight
+}
+
+func IsVeblop(blockNum uint64) bool {
+	if veblopHeight == 0 {
+		return false
+	}
+	return blockNum >= uint64(veblopHeight)
+}
+
+func SetVeblopHeight(height int64) {
+	veblopHeight = height
+}
+
 func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigration, bool) {
 	chainMigration := chainManagerAddressMigrations[conf.Custom.Chain]
 	if chainMigration == nil {
@@ -458,6 +541,21 @@ func GetChainManagerAddressMigration(blockNum int64) (ChainManagerAddressMigrati
 	result, found := chainMigration[blockNum]
 
 	return result, found
+}
+
+func GetProducerVotes() []uint64 {
+	return producerVotes
+}
+
+func GetFallbackProducerVotes() []uint64 {
+	switch conf.Custom.Chain {
+	case MainChain:
+		return parseProducerVotes(DefaultMainnetProducers)
+	case AmoyChain:
+		return parseProducerVotes(DefaultAmoyTestnetProducers)
+	default:
+		return parseProducerVotes(DefaultLocalTestnetProducers)
+	}
 }
 
 // DecorateWithHeimdallFlags adds persistent flags for app configs and bind flags with command
@@ -681,6 +779,17 @@ func DecorateWithHeimdallFlags(cmd *cobra.Command, v *viper.Viper, loggerInstanc
 	if err := v.BindPFlag(LogsWriterFileFlag, cmd.PersistentFlags().Lookup(LogsWriterFileFlag)); err != nil {
 		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, LogsWriterFileFlag), "Error", err)
 	}
+
+	// add producers flag
+	cmd.PersistentFlags().String(
+		ProducerVotesFlag,
+		"",
+		"Set comma-separated list of producer IDs",
+	)
+
+	if err := v.BindPFlag(ProducerVotesFlag, cmd.PersistentFlags().Lookup(ProducerVotesFlag)); err != nil {
+		loggerInstance.Error(fmt.Sprintf("%v | BindPFlag | %v", caller, ProducerVotesFlag), "Error", err)
+	}
 }
 
 func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.Logger) error {
@@ -825,6 +934,12 @@ func (c *CustomAppConfig) UpdateWithFlags(v *viper.Viper, loggerInstance logger.
 		c.Custom.LogsWriterFile = stringConfigValue
 	}
 
+	// get producer votes from viper/cobra flag
+	stringConfigValue = v.GetString(ProducerVotesFlag)
+	if stringConfigValue != "" {
+		c.Custom.ProducerVotes = stringConfigValue
+	}
+
 	return nil
 }
 
@@ -895,6 +1010,13 @@ func (c *CustomAppConfig) Merge(cc *CustomConfig) {
 
 	if cc.LogsWriterFile != "" {
 		c.Custom.LogsWriterFile = cc.LogsWriterFile
+	}
+
+	// Add merge logic for Producers if necessary, though flags and direct config usually take precedence.
+	// If direct config file sets it, it's already in c.Custom.Producers before merge.
+	// If override file (cc) sets it, we might want to let it override.
+	if cc.ProducerVotes != "" {
+		c.Custom.ProducerVotes = cc.ProducerVotes
 	}
 }
 

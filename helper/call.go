@@ -59,7 +59,7 @@ type IContractCaller interface {
 	GetCheckpointSign(txHash common.Hash) ([]byte, []byte, []byte, error)
 	GetMainChainBlock(*big.Int) (*ethTypes.Header, error)
 	GetBorChainBlock(context.Context, *big.Int) (*ethTypes.Header, error)
-	GetBorChainBlocksAndTdInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, error)
+	GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error)
 	GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error)
 	GetBorChainBlockAuthor(*big.Int) (*common.Address, error)
 	IsTxConfirmed(common.Hash, uint64) bool
@@ -563,9 +563,9 @@ func (c *ContractCaller) GetStartBlockHeimdallSpanID(ctx context.Context, startB
 	return spanID, nil
 }
 
-// GetBorChainBlocksAndTdInBatch returns bor chain block headers and TD via a single RPC Batch call.
+// GetBorChainBlockInfoInBatch returns bor chain block headers and TD via a single RPC Batch call.
 // It tries to get blocks from the range interval but returns only the ones found on the chain
-func (c *ContractCaller) GetBorChainBlocksAndTdInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, error) {
+func (c *ContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start, end int64) ([]*ethTypes.Header, []uint64, []common.Address, error) {
 	timeoutCtx, cancel := context.WithTimeout(ctx, c.BorChainTimeout)
 	defer cancel()
 
@@ -601,25 +601,57 @@ func (c *ContractCaller) GetBorChainBlocksAndTdInBatch(ctx context.Context, star
 		})
 	}
 
+	// Author Batch
+	resultAuthor := make([]*common.Address, totalBlocks)
+	for i := start; i <= end; i++ {
+		if i > 0 { // skip genesis block
+			blockNumHex := fmt.Sprintf("0x%x", i)
+			batchElems = append(batchElems, rpc.BatchElem{
+				Method: "bor_getAuthor",
+				Args:   []interface{}{blockNumHex},
+				Result: &resultAuthor[i-start],
+			})
+		}
+	}
+
 	if err := rpcClient.BatchCallContext(timeoutCtx, batchElems); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	// Get results until capture an error (header not found)
 	tds := make([]uint64, 0, totalBlocks)
 	headers := make([]*ethTypes.Header, 0, totalBlocks)
-	for i := range totalBlocks {
+	authors := make([]common.Address, 0, totalBlocks)
+	for i := 0; i < int(totalBlocks); i++ {
+		blockNum := start + int64(i)
 		elemHeader := batchElems[i]
-		elemTd := batchElems[i+totalBlocks]
+		elemTd := batchElems[i+int(totalBlocks)]
+
 		if elemHeader.Error != nil || elemTd.Error != nil || result[i] == nil || resultTd[i] == nil {
+			Logger.Debug("error fetching block info", "error", elemHeader.Error, "error", elemTd.Error, "blockNum", blockNum)
 			break
+		}
+
+		var author common.Address
+		if blockNum > 0 {
+			authorReqIndex := 2*int(totalBlocks) + i
+			if start == 0 {
+				authorReqIndex--
+			}
+			elemAuthor := batchElems[authorReqIndex]
+			if elemAuthor.Error != nil || resultAuthor[i] == nil {
+				Logger.Debug("error fetching block author", "error", elemAuthor.Error, "blockNum", blockNum)
+				break
+			}
+			author = *resultAuthor[i]
 		}
 
 		headers = append(headers, result[i])
 		tds = append(tds, uint64(resultTd[i].TotalDifficulty))
+		authors = append(authors, author)
 	}
 
-	return headers, tds, nil
+	return headers, tds, authors, nil
 }
 
 // GetBorChainBlockTd returns total difficulty of a block

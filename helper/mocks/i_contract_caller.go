@@ -570,6 +570,54 @@ func (_m *IContractCaller) GetBorChainBlockAuthor(_a0 *big.Int) (*common.Address
 	return r0, r1
 }
 
+// GetBorChainBlockInfoInBatch provides a mock function with given fields: ctx, start, end
+func (_m *IContractCaller) GetBorChainBlockInfoInBatch(ctx context.Context, start int64, end int64) ([]*types.Header, []uint64, []common.Address, error) {
+	ret := _m.Called(ctx, start, end)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetBorChainBlockInfoInBatch")
+	}
+
+	var r0 []*types.Header
+	var r1 []uint64
+	var r2 []common.Address
+	var r3 error
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) ([]*types.Header, []uint64, []common.Address, error)); ok {
+		return rf(ctx, start, end)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) []*types.Header); ok {
+		r0 = rf(ctx, start, end)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*types.Header)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, int64, int64) []uint64); ok {
+		r1 = rf(ctx, start, end)
+	} else {
+		if ret.Get(1) != nil {
+			r1 = ret.Get(1).([]uint64)
+		}
+	}
+
+	if rf, ok := ret.Get(2).(func(context.Context, int64, int64) []common.Address); ok {
+		r2 = rf(ctx, start, end)
+	} else {
+		if ret.Get(2) != nil {
+			r2 = ret.Get(2).([]common.Address)
+		}
+	}
+
+	if rf, ok := ret.Get(3).(func(context.Context, int64, int64) error); ok {
+		r3 = rf(ctx, start, end)
+	} else {
+		r3 = ret.Error(3)
+	}
+
+	return r0, r1, r2, r3
+}
+
 // GetBorChainBlockTd provides a mock function with given fields: ctx, blockHash
 func (_m *IContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash common.Hash) (uint64, error) {
 	ret := _m.Called(ctx, blockHash)
@@ -596,45 +644,6 @@ func (_m *IContractCaller) GetBorChainBlockTd(ctx context.Context, blockHash com
 	}
 
 	return r0, r1
-}
-
-// GetBorChainBlocksAndTdInBatch provides a mock function with given fields: ctx, start, end
-func (_m *IContractCaller) GetBorChainBlocksAndTdInBatch(ctx context.Context, start int64, end int64) ([]*types.Header, []uint64, error) {
-	ret := _m.Called(ctx, start, end)
-
-	if len(ret) == 0 {
-		panic("no return value specified for GetBorChainBlocksAndTdInBatch")
-	}
-
-	var r0 []*types.Header
-	var r1 []uint64
-	var r2 error
-	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) ([]*types.Header, []uint64, error)); ok {
-		return rf(ctx, start, end)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, int64, int64) []*types.Header); ok {
-		r0 = rf(ctx, start, end)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*types.Header)
-		}
-	}
-
-	if rf, ok := ret.Get(1).(func(context.Context, int64, int64) []uint64); ok {
-		r1 = rf(ctx, start, end)
-	} else {
-		if ret.Get(1) != nil {
-			r1 = ret.Get(1).([]uint64)
-		}
-	}
-
-	if rf, ok := ret.Get(2).(func(context.Context, int64, int64) error); ok {
-		r2 = rf(ctx, start, end)
-	} else {
-		r2 = ret.Error(2)
-	}
-
-	return r0, r1, r2
 }
 
 // GetBorTxReceipt provides a mock function with given fields: _a0
