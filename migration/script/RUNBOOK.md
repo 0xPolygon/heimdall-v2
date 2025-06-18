@@ -101,26 +101,3 @@ Please also refer to the [bash migration script](migrate.sh) for more details on
 24. **Restart bor** Only in case the step above was done.
 25. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
 26. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
-
-### Rollback strategy to restore v1
-We decided not to enforce an HF in heimdall-v1,
-to avoid issues with rolling back to previous versions if the migration doesn’t work out as planned.  
-The only changes to the code will enforce the `halt_height`.
-This theoretically means we will be releasing one 'fallback' version with the updated `halt_height`,
-and in case something goes wrong,
-the node operators will only need to install the previous version (without `halt_height` changes) and restart heimdall.
-If something doesn’t work with this procedure, snapshot restore would be safe to execute.
-The HF will complicate things much.
-The `halt_height` param is also available in the `heimdall-config.toml` file,
-but we want to avoid such changes, hence we are enforcing it through the code.  
-Also, with this approach,
-the `halt-height` can be simply postponed (even if heimdall already stopped because of it)
-by simply changing the hardcoded `halt_height` to a future block.  
-In case of issues with v2, node operators can roll back to the previous version of heimdall-v1 by following these steps:
-1. Install heimdall-v1 “fallback” version (with postponed or removed `halt_height`)
-2. Restore backed up `heimdall`-v1 folder
-3. Restore previous `heimdall` v1 service file
-4. Make sure no `symlink` or service for heimdall is bound to v2
-5. Restart the node with v1 commands
-6. If v1 still creates problems, we have the opportunity to roll back to pre-`halt_height`.
-7. If the rollback doesn't work, snapshot restore is safe to execute and the ultimate fallback.
