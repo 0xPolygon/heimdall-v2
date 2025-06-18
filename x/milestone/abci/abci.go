@@ -73,7 +73,7 @@ func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, miles
 		return nil, err
 	}
 
-	if err := borKeeper.CanVoteProducers(ctx); err != nil {
+	if err := borKeeper.CanVoteProducers(ctx); err == nil {
 		validIndex := 0
 		for i := 0; i < len(authors); i++ {
 			allowedAuthors, err := getBlockAuthor(ctx, propStartBlock+uint64(i))
