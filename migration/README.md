@@ -21,8 +21,8 @@ If you are using a containerized version of Heimdall (e.g. `docker` or inside a 
 an image will be available to pull once the pilot node migration is successful.
 You'd need to backup everything related to heimdall-v1, then pull the proper image and run heimdall-v2.
 Note that the image will contain the `genesis.json` file, so you won't need to download it separately.
-However, the file is going to be pretty large, especially for mainnet,
-so make sure you have enough disk space available and you have a fast internet connection.
+However, the file is going to be pretty large, especially for mainnet, where is expected to be around 4-5 GB.
+Hence, please make sure you have enough disk space available, and you have a fast internet connection.
 If you prefer to use the migration script, you'd need to make it compatible with your containerized environment.
 Otherwise, you can use the [RUNBOOK](script/RUNBOOK.md) to run the migration process manually.
 However, we strongly recommend using the containerized approach or the script to avoid mistakes and
