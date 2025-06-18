@@ -19,6 +19,7 @@ const (
 	defaultPageLimit          = 1
 	defaultRecordListLimit    = 50
 	maxRecordListLimitPerPage = 1000
+	maxTimeWindow             = time.Hour * 24 * 2 // 2 days of data
 )
 
 var _ types.QueryServer = queryServer{}
@@ -90,6 +91,16 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 
 	if request.ToTime.After(time.Now()) {
 		return nil, status.Errorf(codes.InvalidArgument, "to_time cannot be in the future")
+	}
+
+	record, err := q.GetRecordById(ctx, &types.RecordRequest{RecordId: request.FromId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error during GetRecordListWithTime while getting record by id: %d, %v", request.FromId, err)
+	}
+
+	if request.ToTime.Sub(record.Record.RecordTime) > maxTimeWindow {
+		return nil, status.Errorf(codes.InvalidArgument, "time range too long: from %v to %v exceeds max allowed duration %v",
+			record.Record.RecordTime, request.ToTime, maxTimeWindow)
 	}
 
 	res, _, err := query.CollectionPaginate(
