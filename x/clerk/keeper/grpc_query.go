@@ -3,6 +3,7 @@ package keeper
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,6 +19,7 @@ const (
 	defaultPageLimit          = 1
 	defaultRecordListLimit    = 50
 	maxRecordListLimitPerPage = 1000
+	maxTimeWindow             = time.Hour * 24 * 2 // 2 days of data
 )
 
 var _ types.QueryServer = queryServer{}
@@ -57,6 +59,8 @@ func (q queryServer) GetRecordList(ctx context.Context, request *types.RecordLis
 
 	if request.Limit == 0 {
 		request.Limit = defaultRecordListLimit
+	} else if request.Limit > maxRecordListLimitPerPage {
+		return nil, status.Errorf(codes.InvalidArgument, "limit cannot exceed %d", maxRecordListLimitPerPage)
 	}
 
 	records, err := q.k.GetEventRecordList(ctx, request.Page, request.Limit)
@@ -75,8 +79,28 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 		return nil, status.Error(codes.InvalidArgument, "empty request")
 	}
 
-	if isPaginationEmpty(request.Pagination) && request.Pagination.Limit > maxRecordListLimitPerPage {
-		return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to 1000")
+	if isPaginationEmpty(request.Pagination) {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination request is empty: at least one of offset, key, or limit must be set")
+	}
+
+	if request.Pagination.Limit == 0 {
+		request.Pagination.Limit = defaultRecordListLimit
+	} else if request.Pagination.Limit > maxRecordListLimitPerPage {
+		return nil, status.Errorf(codes.InvalidArgument, "pagination limit cannot exceed %d", maxRecordListLimitPerPage)
+	}
+
+	if request.ToTime.After(time.Now()) {
+		return nil, status.Errorf(codes.InvalidArgument, "to_time cannot be in the future")
+	}
+
+	record, err := q.GetRecordById(ctx, &types.RecordRequest{RecordId: request.FromId})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error during GetRecordListWithTime while getting record by id: %d, %v", request.FromId, err)
+	}
+
+	if request.ToTime.Sub(record.Record.RecordTime) > maxTimeWindow {
+		return nil, status.Errorf(codes.InvalidArgument, "time range too long: from %v to %v exceeds max allowed duration %v",
+			record.Record.RecordTime, request.ToTime, maxTimeWindow)
 	}
 
 	res, _, err := query.CollectionPaginate(
@@ -94,6 +118,9 @@ func (q queryServer) GetRecordListWithTime(ctx context.Context, request *types.R
 	for _, r := range res {
 		if r.Id >= request.FromId && r.RecordTime.Before(request.ToTime) {
 			records = append(records, *r)
+			if len(records) >= maxRecordListLimitPerPage {
+				break
+			}
 		}
 	}
 
