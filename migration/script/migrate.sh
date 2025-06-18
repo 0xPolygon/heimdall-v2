@@ -686,7 +686,7 @@ sudo chmod -R 755 "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to set permi
 sudo chown -R "$HEIMDALL_SERVICE_USER" "$V2_HEIMDALL_HOME" || handle_error $STEP "Failed to change ownership"
 echo "[INFO] $V2_HEIMDALL_HOME created successfully"
 if [ -f "$V2_HEIMDALL_HOME/config/genesis.json" ]; then
-    sudo rm "V2_HEIMDALL_HOME/config/genesis.json" || handle_error $STEP "Failed to remove existing json in $V2_HEIMDALL_HOME/config"
+    sudo rm "$V2_HEIMDALL_HOME/config/genesis.json" || handle_error $STEP "Failed to remove existing json in $V2_HEIMDALL_HOME/config"
 fi
 
 # Step 18: init heimdall-v2
