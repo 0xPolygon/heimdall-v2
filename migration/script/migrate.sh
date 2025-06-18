@@ -756,9 +756,12 @@ if [ -f "$TARGET_GENESIS_FILE" ]; then
     mv "$TARGET_GENESIS_FILE" "${TARGET_GENESIS_FILE}.bak"
     echo "[INFO] Backup saved at: $TARGET_GENESIS_FILE.bak"
 fi
+
 # Replace with the migrated genesis
 cp -p "$MIGRATED_GENESIS_FILE" "$TARGET_GENESIS_FILE" || handle_error $STEP "Failed to replace genesis file with migrated version."
 
+echo "FORCING AN ERROR"
+exit 1
 
 # Step 22: edit priv_validator_key.json file according to v2 setup
 STEP=22
