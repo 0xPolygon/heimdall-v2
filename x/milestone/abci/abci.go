@@ -10,18 +10,19 @@ import (
 	"sort"
 
 	"cosmossdk.io/log"
-	"github.com/0xPolygon/heimdall-v2/helper"
-	"github.com/0xPolygon/heimdall-v2/sidetxs"
-	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
-	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
-	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 	abciTypes "github.com/cometbft/cometbft/abci/types"
 	cmtTypes "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/codec/address"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	"github.com/0xPolygon/heimdall-v2/helper"
+	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
+	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
+	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
 )
 
 type GetBlockAuthorFunc func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error)
