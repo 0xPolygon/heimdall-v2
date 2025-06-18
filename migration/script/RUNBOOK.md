@@ -9,7 +9,7 @@ Once the migration on that node is successful:
 - Once the pilot node has been migrated, the genesis and the checksum files are available,
   and the script has been distributed, node operators can perform the migration on their own nodes using the [script](migrate.sh)
   (please check the [COMMANDS.md](./COMMANDS.md) in case).
-  Operators can also execute the migration via [docker](DOCKER-README.md) or [manually](RUNBOOK.md).
+  Operators can also execute the migration via [docker](../README.md#containerized-migration) or [manually](RUNBOOK.md).
 
 ### Overview
 

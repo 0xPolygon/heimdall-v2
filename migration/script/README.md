@@ -9,7 +9,7 @@ Once the migration on that node is successful:
 - Once the pilot node has been migrated, the genesis and the checksum files are available,
   and the script has been distributed, node operators can perform the migration on their own nodes using the [script](migrate.sh)
   (please check the [COMMANDS.md](./COMMANDS.md) in case).
-  Operators can also execute the migration via [docker](DOCKER-README.md) or [manually](RUNBOOK.md).
+  Operators can also execute the migration via [docker](../README.md#containerized-migration) or [manually](RUNBOOK.md).
 
 ## Migration script
 
@@ -148,7 +148,6 @@ For a possible output, see [output.log](./output-example.txt)
 | Alpine | Any     | `apk`           | ❌         | Not supported           |
 
 The script determines the correct Heimdall v2 package to install based on your system architecture and package manager.
-If your machine doesn't match any supported platform (or if you are using docker), you would need to modify the script accordingly.
 
 ### Optional: use WebSocket for Bor–Heimdall communication
 After the migration, to optimize communication between Heimdall and Bor, you can optionally enable WebSocket support in your bor `config.toml` file.  
