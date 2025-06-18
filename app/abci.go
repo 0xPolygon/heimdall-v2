@@ -294,7 +294,7 @@ func (app *HeimdallApp) ExtendVoteHandler() sdk.ExtendVoteHandler {
 			return app.BorKeeper.GetProducersByBlockNumber(ctx, blockNumber)
 		}
 
-		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.MilestoneKeeper, app.caller, getBlockAuthor)
+		milestoneProp, err := milestoneAbci.GenMilestoneProposition(ctx, &app.BorKeeper, &app.MilestoneKeeper, app.caller, getBlockAuthor)
 		if err != nil {
 			if errors.Is(err, milestoneAbci.ErrNoHeadersFound) {
 				logger.Debug("No headers found for generating milestone proposition, continuing without it")

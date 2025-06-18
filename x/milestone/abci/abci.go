@@ -19,6 +19,7 @@ import (
 
 	"github.com/0xPolygon/heimdall-v2/helper"
 	"github.com/0xPolygon/heimdall-v2/sidetxs"
+	borKeeper "github.com/0xPolygon/heimdall-v2/x/bor/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/keeper"
 	"github.com/0xPolygon/heimdall-v2/x/milestone/types"
 	stakeTypes "github.com/0xPolygon/heimdall-v2/x/stake/types"
@@ -26,7 +27,7 @@ import (
 
 type GetBlockAuthorFunc func(ctx sdk.Context, blockNumber uint64) ([]common.Address, error)
 
-func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, getBlockAuthor GetBlockAuthorFunc) (*types.MilestoneProposition, error) {
+func GenMilestoneProposition(ctx sdk.Context, borKeeper *borKeeper.Keeper, milestoneKeeper *keeper.Keeper, contractCaller helper.IContractCaller, getBlockAuthor GetBlockAuthorFunc) (*types.MilestoneProposition, error) {
 	milestone, err := milestoneKeeper.GetLastMilestone(ctx)
 	if err != nil && !errors.Is(err, types.ErrNoMilestoneFound) {
 		return nil, err
@@ -68,36 +69,43 @@ func GenMilestoneProposition(ctx sdk.Context, milestoneKeeper *keeper.Keeper, co
 		return nil, err
 	}
 
-	validIndex := 0
-	for i := 0; i < len(authors); i++ {
-		allowedAuthors, err := getBlockAuthor(ctx, propStartBlock+uint64(i))
-		if err != nil {
-			return nil, err
-		}
-
-		if slices.Contains(allowedAuthors, authors[i]) || propStartBlock+uint64(i) == 0 {
-			validIndex = i + 1
-		} else {
-			break
-		}
-	}
-
-	if validIndex == 0 {
-		return nil, fmt.Errorf("no valid block author found")
-	}
-
 	if err := validateMilestonePropositionFork(parentHash, lastMilestoneHash); err != nil {
 		return nil, err
 	}
 
-	milestoneProp := &types.MilestoneProposition{
-		BlockHashes:      blockHashes[:validIndex],
-		StartBlockNumber: propStartBlock,
-		ParentHash:       parentHash,
-		BlockTds:         tds[:validIndex],
+	if err := borKeeper.CanVoteProducers(ctx); err == nil {
+		validIndex := 0
+		for i := 0; i < len(authors); i++ {
+			allowedAuthors, err := getBlockAuthor(ctx, propStartBlock+uint64(i))
+			if err != nil {
+				return nil, err
+			}
+
+			if slices.Contains(allowedAuthors, authors[i]) || propStartBlock+uint64(i) == 0 {
+				validIndex = i + 1
+			} else {
+				break
+			}
+		}
+
+		if validIndex == 0 {
+			return nil, fmt.Errorf("no valid block author found")
+		}
+
+		return &types.MilestoneProposition{
+			BlockHashes:      blockHashes[:validIndex],
+			StartBlockNumber: propStartBlock,
+			ParentHash:       parentHash,
+			BlockTds:         tds[:validIndex],
+		}, nil
 	}
 
-	return milestoneProp, nil
+	return &types.MilestoneProposition{
+		BlockHashes:      blockHashes,
+		StartBlockNumber: propStartBlock,
+		ParentHash:       parentHash,
+		BlockTds:         tds,
+	}, nil
 }
 
 func isFastForwardMilestone(latestHeaderNumber, latestMilestoneEndBlock, ffMilestoneThreshold uint64) bool {
