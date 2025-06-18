@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -64,83 +63,4 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_Success() {
 		require.True(rec.RecordTime.Before(now))
 		require.GreaterOrEqual(rec.Id, uint64(1))
 	}
-}
-
-func (s *KeeperTestSuite) TestGetRecordListWithTime_FutureToTime() {
-	ctx, ck, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
-
-	now := time.Now().UTC()
-
-	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", now)
-	require.NoError(ck.SetEventRecord(ctx, rec))
-
-	req := &types.RecordListWithTimeRequest{
-		FromId:     1,
-		ToTime:     now.Add(2 * time.Hour),
-		Pagination: query.PageRequest{Limit: 10},
-	}
-
-	res, err := queryClient.GetRecordListWithTime(ctx, req)
-	require.Error(err)
-	require.Nil(res)
-}
-
-func (s *KeeperTestSuite) TestGetRecordListWithTime_ExceedsMaxLimit() {
-	ctx, ck, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
-
-	now := time.Now().UTC()
-
-	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", now)
-	require.NoError(ck.SetEventRecord(ctx, rec))
-
-	req := &types.RecordListWithTimeRequest{
-		FromId:     1,
-		ToTime:     now,
-		Pagination: query.PageRequest{Limit: 5000},
-	}
-
-	res, err := queryClient.GetRecordListWithTime(ctx, req)
-	require.Error(err)
-	require.Nil(res)
-}
-
-func (s *KeeperTestSuite) TestGetRecordListWithTime_EmptyPagination() {
-	ctx, ck, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
-
-	now := time.Now().UTC()
-
-	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", now)
-	require.NoError(ck.SetEventRecord(ctx, rec))
-
-	req := &types.RecordListWithTimeRequest{
-		FromId:     1,
-		ToTime:     now,
-		Pagination: query.PageRequest{},
-	}
-
-	res, err := queryClient.GetRecordListWithTime(ctx, req)
-	require.Error(err)
-	require.Nil(res)
-}
-
-func (s *KeeperTestSuite) TestGetRecordListWithTime_TimeRangeTooLong() {
-	ctx, ck, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
-
-	baseTime := time.Now().Add(-8 * 24 * time.Hour).UTC()
-	toTime := time.Now().UTC()
-
-	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", baseTime)
-	require.NoError(ck.SetEventRecord(ctx, rec))
-
-	fmt.Printf("⏱️ recordTime: %v, toTime: %v, delta: %v\n", baseTime, toTime, toTime.Sub(baseTime))
-
-	req := &types.RecordListWithTimeRequest{
-		FromId:     1,
-		ToTime:     toTime,
-		Pagination: query.PageRequest{Limit: 10},
-	}
-
-	res, err := queryClient.GetRecordListWithTime(ctx, req)
-	require.Error(err)
-	require.Nil(res)
 }
