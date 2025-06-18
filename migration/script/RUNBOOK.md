@@ -99,5 +99,13 @@ Please also refer to the [bash migration script](migrate.sh) for more details on
     ws-address = "ws://localhost:26657/websocket"
     ```
 24. **Restart bor** Only in case the step above was done.
-25. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
-26. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
+25. *Verification (internal)*
+    Once the migration is completed, and the v2 network is up and running:
+    1. Make sure checkpoints are going through via APIs
+    2. If the next checkpoint is stuck in the buffer, send the ack message for it manually:
+       ```bash
+       heimdalld tx checkpoint send-ack --home /var/lib/heimdall --auto-configure=true
+       ```
+    3. Make sure state syncs are going through via APIs
+26. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
+27. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic

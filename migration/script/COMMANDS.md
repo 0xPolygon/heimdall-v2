@@ -124,7 +124,7 @@ In order for other node operators to run the migration, the pilot node must be m
     where
     - `V1_GENESIS_CHECKSUM` is the content of `dump-genesis.json.sha512`
     - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
-    - `TRUSTED_GENESIS_URL` is the URL of the genesis file (previously updated on a GCP bucket).
+    - `TRUSTED_GENESIS_URL` is the `Public URL` of the genesis file (previously updated on a GCP bucket).
     - `VERIFY_EXPORTED_DATA` is set to `false` because the genesis data has been already verified on the pilot node, and this will save some time and computational resources on other nodes.  
 18. cd into the migration script folder
     ```bash
@@ -271,3 +271,13 @@ If the migration itself doesn't go as planned, you can roll back to the previous
     journalctl -fu heimdalld
     ```
 10. Potentially rerun the migration process when the issues are fixed.
+
+
+# Verification (internal)
+Once the migration is completed and the v2 network is up and running:
+1. Make sure checkpoints are going through via APIs
+2. If the next checkpoint is stuck in the buffer, send the ack message for it manually:
+   ```bash
+   heimdalld tx checkpoint send-ack --home /var/lib/heimdall --auto-configure=true
+   ```
+3. Make sure state syncs are going through via APIs
