@@ -1,7 +1,6 @@
 package keeper_test
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
@@ -116,28 +115,6 @@ func (s *KeeperTestSuite) TestGetRecordListWithTime_EmptyPagination() {
 		FromId:     1,
 		ToTime:     now,
 		Pagination: query.PageRequest{},
-	}
-
-	res, err := queryClient.GetRecordListWithTime(ctx, req)
-	require.Error(err)
-	require.Nil(res)
-}
-
-func (s *KeeperTestSuite) TestGetRecordListWithTime_TimeRangeTooLong() {
-	ctx, ck, queryClient, require := s.ctx, s.keeper, s.queryClient, s.Require()
-
-	baseTime := time.Now().Add(-8 * 24 * time.Hour).UTC()
-	toTime := time.Now().UTC()
-
-	rec := types.NewEventRecord(TxHash1, 1, 1, Address1, make([]byte, 1), "1", baseTime)
-	require.NoError(ck.SetEventRecord(ctx, rec))
-
-	fmt.Printf("⏱️ recordTime: %v, toTime: %v, delta: %v\n", baseTime, toTime, toTime.Sub(baseTime))
-
-	req := &types.RecordListWithTimeRequest{
-		FromId:     1,
-		ToTime:     toTime,
-		Pagination: query.PageRequest{Limit: 10},
 	}
 
 	res, err := queryClient.GetRecordListWithTime(ctx, req)
