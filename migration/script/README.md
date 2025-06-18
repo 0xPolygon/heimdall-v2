@@ -1,13 +1,15 @@
 # Heimdall v1 -> v2 README
 
 ## ⚠️ Important notice on the migration process
-The script will be executed for the very first time on a node managed by the Polygon team (pilot node).  
+The migration will be executed for the very first time on a node managed by the Polygon team (pilot node).  
 Once the migration on that node is successful:
-- The v1 genesis will be exported and made available for the community on heimdall-v2 repo together with a checksum
-- The v2 genesis will be created and made available for the community on heimdall-v2 repo together with a checksum
+- The v1 genesis will be exported and made available for the community in a GCP bucket together with a checksum
+- The v2 genesis will be created and made available for the community in a GCP bucket together with a checksum
 - The script will be distributed with the checksum to prevent any tampering and made available for the community on heimdall-v2 repo
-- Node operators can perform the migration on their own nodes using the script (or a modified version of it if the architecture is not supported)
-  For more info about the process, check [COMMANDS.md](./COMMANDS.md) and [script](migrate.sh).
+- Once the pilot node has been migrated, the genesis and the checksum files are available,
+  and the script has been distributed, node operators can perform the migration on their own nodes using the [script](migrate.sh)
+  (please check the [COMMANDS.md](./COMMANDS.md) in case).
+  Operators can also execute the migration via [docker](DOCKER-README.md) or [manually](RUNBOOK.md).
 
 ## Migration script
 

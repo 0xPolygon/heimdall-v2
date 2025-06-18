@@ -1,24 +1,17 @@
 # Pilot — First execution (internal)
 
-This is run by the Polygon team on a synced `heimdall` node with `bor` running on the same machine  
+This is run by the Polygon team on a synced `heimdall` node.
+In order for other node operators to run the migration, the pilot node must be migrated first.  
 
-1. Checkout heimdall-v2 repo locally
+1. Checkout `heimdall-v2` repo on your local machine and create a branch from `develop`. This will be needed to adjust the script parameters before distributing it to other node operators.  
    ```bash
-   git clone https://github.com/0xPolygon/heimdall-v2.git
+    git clone https://github.com/0xPolygon/heimdall-v2.git
+    cd heimdall-v2
+    git checkout develop
+    git pull 
+    git checkout -b <BRANCH_NAME>
    ```
-2. Make sure the required software is installed on the machine, otherwise install them:
-   - `curl`
-   - `tar`
-   - `jq`
-   - `sha512sum`
-   - `file`
-   - `awk`
-   - `sed`
-   - `systemctl`
-   - `grep`
-   - `id`
-
-3. Adjust the following environment vars of the [script](migrate.sh):
+2. Adjust the following environment vars of the [script](migrate.sh):
     ```bash 
     V1_VERSION="1.2.3-35-gdafcbb67"
     V2_VERSION="0.1.31"
@@ -36,16 +29,27 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
    - `V2_GENESIS_TIME` is the genesis time of the v2 network (pre-agreed, it should be set in the future, e.g., 30 mins after the pilot migration is initiated)
    - `V1_HALT_HEIGHT` is the height of the heimdall-v1's last block the (pre-agreed, it should match the height defined in `APOCALYPSE_TAG`)
    - `VERIFY_EXPORTED_DATA` is set to `true` because the genesis data will be verified on the pilot node.  
-4. ssh into the node machine by using a valid user:
+3. `ssh` into the node machine by using a valid user:
    ```bash
     ssh <USER>@<NODE_IP>
    ```
-5. create the script with a command line editor (e.g., `nano`, `vim`, etc.):
+4. Make sure the required software is installed, otherwise install them:
+   - `curl`
+   - `tar`
+   - `jq`
+   - `sha512sum`
+   - `file`
+   - `awk`
+   - `sed`
+   - `systemctl`
+   - `grep`
+   - `id`
+5. Make sure that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
+6. Create the script with a command line editor (e.g., `nano`, `vim`, etc.):
     ```bash
     nano migrate.sh
     ```
-6. Paste the content of the [script](migrate.sh) into the newly created file
-7. Make sure that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
+7. Paste the content of the (modified) [script](migrate.sh) into the newly created file
 8. Retrieve the parameters needed by the script
 
    | Flag                 | Description                                                                                                    |
@@ -75,11 +79,29 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     --service-user=ubuntu \
     --generate-genesis=true
     ```
-   This will create `heimdall-v2` into `/var/lib/heimdall`
-10. Copy the following file from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
+   This will migrate heimdall, and create its home under `/var/lib/heimdall`
+10. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
+    ```bash
+    sudo systemctl daemon-reload && sudo systemctl start heimdalld
+    ```
+11. Restart telemetry (if needed)
+    ```bash
+    sudo systemctl restart telemetry
+    ```
+12. check the logs by running
+   ```bash
+      journalctl -fu heimdalld
+   ```
+13. If the genesis time is set in the future, `heimdalld` will print something like:
+    ```bash
+    heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
+    ```
+    Otherwise, it will start syncing immediately
+    (trying to connect to peers and throw errors if they are not yet available, eventually leading to crash, so a nee restart of heimdall could be needed later).
+14. Wait until the genesis time is reached, and the node will start syncing.
+15. Copy the following file from the remote machine to the local one (they are located under `backup-dir`, which is `HEIMDALL_HOME.backup/`, typically `/var/lib/heimdall.backup/`):
     - `dump-genesis.json`
     - `dump-genesis.json.sha512`
-    - `migrated_dump-genesis.json`
     - `migrated_dump-genesis.json.sha512`
      You can use the following commands from your local machine
     ```bash
@@ -87,16 +109,16 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/dump-genesis.json.sha512 ./
      scp <USER>@<NODE_IP>:/var/lib/heimdall.backup/migrated_dump-genesis.json.sha512 ./
       ```
-11. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators.
-    - For example, you can upload them to the GCP bucket `heimdall-genesis` with the following command:
+16. Upload the `dump-genesis.json` to the GCP bucket so that they can be accessed by other node operators:
+    - You can drag and drop it on GCP console, or upload it to the GCP bucket with the following command (which requires `gcloud auth login` first):  
       ```bash
-      gsutil cp dump-genesis.json gs://heimdall-genesis/
+      gsutil cp dump-genesis.json gs://<BUCKET_NAME>/
       ```
-12. Update the following configs in the script:
+17. Update the following configs in the script locally:
      ```bash
      V1_GENESIS_CHECKSUM="4eb6ddd5d84f08f6db4c1cc0f1793cc8b68ac112684eae4ce2b26042a7a9b3645ac6657fda212d77e5881c54cbc829384e1fc31eb9ced167c6d10ac8afbadd7e"
      V2_GENESIS_CHECKSUM="02c4d40eada58ee8835bfdbe633bda07f2989bc0d65c18114df2cbfe4b07d8fdbbce3a72a1c3bfeef2b7fc9c295bbf5b4d5ede70c3fb480546625075459675e2"
-     TRUSTED_GENESIS_URL="https://ff4e1ab493fa24466b3a3009a12c1d75fb5c73be934b516ae874408-apidata.googleusercontent.com/download/storage/v1/b/devnet-genesis-bucket/o/dump-genesis.json?jk=AXbWWml5MvxXEdQk3zUyyhgkH-5Ot7rZk2MedTvPZHkddiQSShcH7x4mxX1ouiPvLYFEFR7ghAD3y8CQ-rqh3dV7j_K3gEtgdE0jjlcdp8D-9uljy0emzfOMpmvD5Gb1nz1eUhH-Apn4ELaVAuy8VvFAprUkRG-UlFtpcgoHjYm1exhNCMTImWKBDJrn_-SDA6loZNIMHUCpWlBPYCptzcSerGTehLOQdyrAnY4-vVPpgzMSaSP6BvsOgD-0a05xeilUvYQDCbSla21LBavH5F9SjgT8hTZgY9rz8Bt75ZxmsX16OkWem1T2Quoqg6dd5TvSqG7Au994eYve8gzMBucauWvTHgOkyV0mLytPK5CSfcGemy4L84lc-hTxCYO047untGYrDthYLJdi-jV4c-u82nNrjY8ZvVI8UIyhapFPFTcks9EJYVGdEDFFaGNZwcMo4CBfLKgwPgNdxREhDkZzT7iZrTwp1_dttf1Tob4FLjacJKMz1W6uJjTZ8ifJsJlyqiXDgL0E_NeuZNpH6pyd-L9LfgbAbxA6LjWMwScCUOXhG_F3O9dH8QGu5GAYjhO5BMMxvfnaIB25QBgYzzFsw0Es67kT6TDLKmjUlGJD27xsZhzMRegKJ4PMXLT5A8EHIQMlsv23lYwrmVx-ndc6kcBAPM02CLqiah5rivgFV2rDM-82NZviiH0BeHUgVtu8MEGKdm4mjVolTjUXwvR8AKSQHIkZ1pXZGC2AmLkZdjEP5pNBOwtL0PL9xSBGtbJqCcQ319RREqKKxvnCZ-8IK038FYC800xZawI3lVfDr0uilpVVkXzyRaO_Ruh8gPiqxJs74XOuKX5ezxlyjx81lfLQhssV4g7DnjP8-1nVXXrQGU0PnHveX0cGBQS2MpqD64LG5EyB-rjLcxLQqjC2Oy6xAMCBoUBD1c3LOeqJeK6SD8_CEqThWvZSfqNc5zSom401pW6jkQ05AW9z9insKauEo34djbXeVPy3Oq3ne7zKDLYApr0Z-Sp-M5GZ3hSi_DXaOIIy3lwg-hU9RdBn_F3EsMYEWQjS_p8dCQD_fZGIffbSIglW4SfzfsVOMy83p8OMujHnMeuvL9IL6O1O8hjZKFm8d5mKF4f2Ig_XaVqrEDp0aOgGGqfUk609JaI_HeVzm9iPammQ3_3k9cxzkRRDPaTlRsb9gZMHcItf8RNlnfNbdXHHLceJ_5QMtEfqunxB9UkpWF_zyrZnH9_FjVR_EtQFd-XH&isca=1"
+     TRUSTED_GENESIS_URL="https://ff2a3d20e9422d35abcfacbef541fa329a7dd62328a7c3f94781f1a-apidata.googleusercontent.com/download/storage/v1/b/devnet-genesis-bucket/o/dump-genesis.json?jk=AXbWWmlPH78-jPvydkuiSclwri_291WzUTvrGzrXiveI2b2At-pNKnOPNm7PBirxw27r9FVog5jViiWauGYxpwGFTvQu-EutXcV8w_BwXbgaNPErqIdysJ4UO4PfS8EGQeQQWXO7Z-FSaZk0JEsjqxVzTy0mrMH2dNmn4u2EcELNeVak3pq2buVKJXPgOwJhg2aIlJTOisHUHlyXonMt7HotBjvRWksj9fCegG0-SBAk-4ia06taWKXk7uUzTWooolOTENcco3B2R2kB0YlTVicXwXDCx0Gjj1hbsOP_WpOz2jqKx1Chh60MF_ZUyNw2zeJduitENUXgF1k6dr_EyycemOIjBArh3CYtLVBLm1-flltTEE2nhDrlJwt87S95gmCGh8eYa4k-jciTceTxGMjUqYR5rPyM-Tdsa2gyn5PFJ1gKLM3pt1A1jZfkbKPp2X5zBrBdtUgOTW7DWZJLB2yxPritL_T3W_IzaP7ae21Eblbr2J-oQggCl2AneBXEskoo2ILwjWIkMCRf_2ScnQNY1EdaduC3akevlWwC13qJWLzxvC21QYUI4o95H3_kS55NWH9qKBheNlSA1cbaNz5P9WXILUX7kPewInx5FCNvPaps2kLRyLG53EauS3iNrOV2yuUIwPXftcwSy_44tF8dl-qJ-iTSmTtwOUjnqDvHv8JwA1odMBdACY094-0uk0AEpTP38q6w9eZU7FIIyb79yVhRepN9rqcWkHzhuQEBwaCN61gOcVFFE3to27AWfpcUms59sG9-3tJi-kggRkmEswuwxjs7rKaFCyMfQAkvod0a9thYhWs7WRCUHMJfqTU0dHRV_ApHo__i8jJeJHbP0mu6nur7AluRz8MTFXvZoqBn3eDvk5_scTzmZgIC8EI5O9xARUSgMKuxeLYRcUNIhMMlwK7Fbm-HMSsz_xdqn-_k9b7sHIHYnNudwbVQ_J1ECb5n90KVzeAdnGPtU7wDZSGhv7PLSHyIC0b9q6QH8GJ5oTmU7ejd_eJm7HJyUzhVNIs1liCyVu06_-ewdNIsYg-I0YmdnTHLdMCjwXoCBe6990xg6PufQ6O6llcoQXHk1XjVyzItB0kcIr3YrxQ-0WLSGy2Sj5tfa59kobFC6hQHmXWnias-J6kRwVTXBVp4CNVx84P7DB1_ZMROQCsUVGOgnw7qFj0MMKugFAb2UDZ4tZ-KptI4GIczVYLIXiuNm4zD8OhkLkYC8aUNV4yHlTwbzUencx0F&isca=1"
      VERIFY_EXPORTED_DATA=false
      ```
     where
@@ -104,34 +126,18 @@ This is run by the Polygon team on a synced `heimdall` node with `bor` running o
     - `V2_GENESIS_CHECKSUM` is the content of `migrated_dump-genesis.json.sha512`
     - `TRUSTED_GENESIS_URL` is the URL of the genesis file (previously updated on a GCP bucket).
     - `VERIFY_EXPORTED_DATA` is set to `false` because the genesis data has been already verified on the pilot node, and this will save some time and computational resources on other nodes.  
-13. cd into the migration script folder
+18. cd into the migration script folder
     ```bash
     cd heimdall-v2/migration/script
     ```
-14. generate the checksum of the [script](migrate.sh) by running
+19. generate the checksum of the [script](migrate.sh) by running
      ```bash
      sha512sum migrate.sh > migrate.sh.sha512
      ```
-15. When the script finishes, run the following commands to reload the daemon, and start `heimdall`
-    ```bash
-    sudo systemctl daemon-reload && sudo systemctl start heimdalld
-    ```
-16. Restart telemetry (if needed)
-    ```bash
-    sudo systemctl restart telemetry
-    ```
-17. check the logs by running
-   ```bash
-      journalctl -fu heimdalld
-   ```
-18. If the genesis time is set in the future, `heimdalld` will print something like:
-    ```bash
-    heimdalld[147853]: 10:57AM INF Genesis time is in the future. Sleeping until then... genTime=2025-05-15T14:15:00Z module=server
-    ```
-    Otherwise, it will start syncing immediately
-    (trying to connect to peers and throw errors if they are not yet available).
-19. Wait until the genesis time is reached, and the node will start syncing.
-20. Now other node operators can run the migration.
+20. Push the `migrated_dump-genesis.json` into the docker image as `genesis.json`, so that node operators using docker can pull the latest image and run the migration without needing to download the genesis file manually. 
+21. Push all the changes (modified version of the script, checksum, etc...) to `heimdall-v2` repo, create a PR and merge it to `develop`.
+22. Create a release from GitHub, so that the docker image is available for other node operators to pull.
+23. Now other node operators can run the migration.
 
 
 # Other executions (internal and external)
@@ -141,11 +147,11 @@ This can be run by any node operator.
 1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
 2. download the script
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-test/migration/script/migrate.sh
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/script/migrate.sh
    ```
 3. download the checksum
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/mardizzone/migrate-test/migration/script/migrate.sh.sha512
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/script/migrate.sh.sha512
    ```
 4. verify the script checksum
    ```bash

@@ -1,12 +1,15 @@
 # Heimdall v1 -> v2 RUNBOOK
 
 ## ⚠️ Important notice on the migration process
-The script will be executed for the very first time on a node managed by the Polygon team.  
+The migration will be executed for the very first time on a node managed by the Polygon team (pilot node).  
 Once the migration on that node is successful:
-- The v1 genesis will be exported and made available for the community on heimdall-v2 repo together with a checksum
-- The v2 genesis will be created and made available for the community on heimdall-v2 repo together with a checksum
+- The v1 genesis will be exported and made available for the community in a GCP bucket together with a checksum
+- The v2 genesis will be created and made available for the community in a GCP bucket together with a checksum
 - The script will be distributed with the checksum to prevent any tampering and made available for the community on heimdall-v2 repo
-- Node operators can perform the migration on their own nodes using the script (or a modified version of it if the architecture is not supported)
+- Once the pilot node has been migrated, the genesis and the checksum files are available,
+  and the script has been distributed, node operators can perform the migration on their own nodes using the [script](migrate.sh)
+  (please check the [COMMANDS.md](./COMMANDS.md) in case).
+  Operators can also execute the migration via [docker](DOCKER-README.md) or [manually](RUNBOOK.md).
 
 ### Overview
 
@@ -25,23 +28,22 @@ This transition requires a structured and coordinated approach across multiple t
 
 ### Execution
 
-The majority of the steps below are automated in the [bash migration script](migrate.sh), the following is just a runbook for manual execution.  
-In case the script does not support your architecture, you can use this runbook to perform the migration manually.  
-Be aware that some commands must be adapted to your architecture (e.g. if running heimdall inside docker or kubernetes, rather than plain Linux/Ubuntu machnes).
+In case the script does not support your architecture, or you are not using the 0xpolygon docker image, you can use this runbook to perform the migration manually.  
+Be aware that some commands must be adapted to your architecture (e.g. if running heimdall inside docker or kubernetes, rather than plain Linux/Ubuntu machines).
 Please also refer to the [bash migration script](migrate.sh) for more details on the steps, the configuration files examples under `configs` [directory](./../configs), and the [README](README.md).  
 
 ### Migration Steps
-1. Node operators confirm to be on the latest Bor/Erigon version (compatible with v1 and v2)
-2. Node operators confirm to be on the latest Heimdall-v1 version (with `halt_height` embedded)
-3. Node operators confirm to be on the latest `heimdallcli` version (with `get-last-committed-height` embedded)
-4. Node operators confirm they can execute `heimdalld` and `heimdallcli` by running `version` command for both of them
-5. Node operators confirm the heimdall config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
-6. Node operators confirm heimdall-v1 is down due to hitting `halt_height`
+1. (Internally) Resolve all the [PRE-MIGRATION] tasks in JIRA under heimdall-v2 epic
+2. Node operators confirm to be on the latest Bor/Erigon version (compatible with v1 and v2)
+3. Node operators confirm to be on the latest Heimdall-v1 version (with `halt_height` embedded)
+4. Node operators confirm to be on the latest `heimdallcli` version (with `get-last-committed-height` embedded)
+5. Node operators confirm they can execute `heimdalld` and `heimdallcli` by running `version` command for both of them
+6. Node operators confirm the heimdall config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
+7. Node operators confirm heimdall-v1 is down due to hitting `halt_height`
     - This can be achieved with `heimdallcli get-last-committed-height --home HEIMDALLD_HOME --quiet` command
     - The output of this command should match the `halt_height`
     - If some nodes are not down, or a block's height mismatch is detected, it means they did not reach the apocalypse height
     - This can happen, and the migration script handles this case by downloading the `genesis.json` from a trusted source (instead of generating it, to avoid risks of checksum mismatches and especially app hash errors in v2).
-7. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
 8. **Genesis Export from Heimdall-v1**
    `heimdallcli export-heimdall --home HEIMDALLD_HOME --chain-id V1_CHAIN_ID`
     - operators should use the latest version of `heimdallcli`
@@ -97,7 +99,8 @@ Please also refer to the [bash migration script](migrate.sh) for more details on
     ws-address = "ws://localhost:26657/websocket"
     ```
 24. **Restart bor** Only in case the step above was done.
-25. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
+25. (Internal) Contract `RootChain` is updated on L1 via method `RootChain.setHeimdallId` with the chainId previously agreed (since this is not used, can be done in advance or after the migration)
+26. (Internally) Resolve all the [POST-MIGRATION] tasks in JIRA under heimdall-v2 epic
 
 ### Rollback strategy to restore v1
 We decided not to enforce an HF in heimdall-v1,
