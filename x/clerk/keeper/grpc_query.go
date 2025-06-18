@@ -3,7 +3,6 @@ package keeper
 import (
 	"context"
 	"math/big"
-	"time"
 
 	"github.com/cosmos/cosmos-sdk/types/query"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +18,6 @@ const (
 	defaultPageLimit          = 1
 	defaultRecordListLimit    = 50
 	maxRecordListLimitPerPage = 1000
-	maxTimeWindow             = time.Hour * 24 * 2 // 2 days of data
 )
 
 var _ types.QueryServer = queryServer{}
