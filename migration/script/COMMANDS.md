@@ -147,11 +147,11 @@ This can be run by any node operator.
 1. check that all the config files under `HEIMDALL_HOME/config` are correct and the files are properly formatted
 2. download the script
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/script/migrate.sh
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/raneet10/test-a/migration/script/migrate.sh
    ```
 3. download the checksum
    ```bash
-   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/develop/migration/script/migrate.sh.sha512
+   curl -O https://raw.githubusercontent.com/0xPolygon/heimdall-v2/refs/heads/raneet10/test-a/migration/script/migrate.sh.sha512
    ```
 4. verify the script checksum
    ```bash
