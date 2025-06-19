@@ -14,7 +14,7 @@ Once the migration on that node is successful:
 - Once the pilot node has been migrated, the genesis and the checksum files are available,
   and the script has been distributed, node operators can perform the migration on their own nodes using the [script](script/migrate.sh)
   (please check the [COMMANDS.md](./COMMANDS.md) in case).
-  Operators can also execute the migration via [docker](script/DOCKER-README.md) or [manually](script/RUNBOOK.md).
+  Operators can also execute the migration via [docker](#containerized-migration) or [manually](script/RUNBOOK.md).
 
 ### Containerized Migration
 If you are using a containerized version of Heimdall (e.g. `docker` or inside a `kubernetes` cluster),
